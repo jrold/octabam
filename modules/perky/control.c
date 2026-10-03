@@ -1,9 +1,9 @@
 /* PERKY source-machine control path.
  *
  * Readable C is the authority; generate.py emits the freestanding ColdFire
- * assembly used by a future active manifest.  The hook/descriptor ABI is the
- * measured ANALOG BD route.  Milestone 0 exposes only Noise / Tone in the
- * engine browser and packs a PERKY control record for probe_glue.asm.
+ * assembly used by the active module. The hook/descriptor ABI follows the
+ * measured ANALOG BD source-machine route. Milestone 0 exposes only Noise /
+ * Tone and packs a PERKY control record for probe_glue.asm.
  */
 #include <stdint.h>
 
@@ -18,13 +18,13 @@
 #define DESC_SIZE 0x1cau
 #define PERKY_ROW 5u
 #define DEFAULT_ENGINE 10u /* zero-based catalog index: Noise / Tone */
+#define MODEL_SLOT 11u     /* hidden persisted source parameter */
 
-/* Keep the twelve source bytes independent from the engine-family selector.
- * ANALOG BD stores MODEL in source slot 6; PERKY needs slot 6 for MODE, so its
- * model lives in the fourth byte of the otherwise-unused signature area.
+/* PERKY needs five visible source controls: TUNE, DECAY, P1, P2 and MODE.
+ * Keep the engine-family selector in the known persisted parameter arena rather
+ * than assuming a fourth byte after the proven three-byte PK/1 signature is
+ * unused. Slot 11 is hidden from the page and browser-owned.
  */
-enum { MODEL_IN_SIGNATURE = 3 };
-
 const uint8_t pk_defaults[12] = {
     64, /* TUNE  */
     64, /* DECAY */
@@ -33,17 +33,23 @@ const uint8_t pk_defaults[12] = {
     0,
     0,
     0,  /* MODE: waveform 1 */
-    127,/* velocity/accent source placeholder; trigger semantics still WIP */
     0,
     0,
     0,
-    0
+    0,
+    DEFAULT_ENGINE
 };
 
 static uint8_t desc[DESC_SIZE] = {0};
 uint32_t pk_desc_p = 0;
 uint32_t pk_render_calls = 0;
 uint32_t pk_hits = 0;
+
+static unsigned source_offset(unsigned track, unsigned slot)
+{
+    return (slot < 6u ? 0x2au : 0x1dau)
+         + 30u * track + 6u + slot % 6u;
+}
 
 static unsigned signed_track(const volatile uint8_t *part, unsigned track)
 {
@@ -101,9 +107,9 @@ static void text(uint8_t *p, const char *s, unsigned n)
         p[i] = 0;
 }
 
-/* One descriptor is enough for the milestone-0 Noise / Tone family.  The
- * engine-family browser is already stored independently so this can grow to a
- * descriptor per family without changing Part layout later.
+/* One descriptor is enough for milestone-0 Noise / Tone. The hidden family
+ * byte already has final storage, so this can grow to one descriptor per
+ * family without another Part-layout migration.
  */
 static uint32_t page_for(unsigned model)
 {
@@ -122,13 +128,13 @@ static uint32_t page_for(unsigned model)
         text(desc + 0x3c, "PRK", 5);
         text(desc + 0x41, "NOISE/TONE", 13);
 
-        for (unsigned i = 0; i < 12; ++i)
+        for (unsigned i = 0; i < 12u; ++i)
         {
             text(desc + 0x4e + 6u * i, names[i], 6);
             desc[0x96 + i] = pk_defaults[i];
             put32(desc + 0xa2 + 4u * i, 0);
 
-            if (i < 4u || i == 7u)
+            if (i < 4u)
                 put32(desc + 0xd2 + 4u * i, 128);
             else if (i == 6u)
                 put32(desc + 0xd2 + 4u * i, 3);
@@ -140,12 +146,12 @@ static uint32_t page_for(unsigned model)
             put32(desc + 0x162 + 4u * i, 0);
         }
 
-        /* Preserve the donor's known-good page enable topology for the first
-         * integration probe.  A descriptor gate will tighten the bitmap to the
-         * final five controls once MODE's stepped-widget behavior is measured.
+        /* P+0x18a = params 8..11; P+0x18e = params 0..7, one nibble each.
+         * Only TUNE/DECAY/P1/P2/MODE are published. MODEL (slot 11) remains
+         * persisted but browser-owned and invisible to p-lock/LFO staging.
          */
-        put32(desc + 0x1c2, 0x111u);
-        put32(desc + 0x1c6, 0x10111111u);
+        put32(desc + 0x1c2, 0x00000000u);
+        put32(desc + 0x1c6, 0x01001111u);
         pk_desc_p = (uint32_t)(uintptr_t)(desc + 0x38);
     }
     return (uint32_t)(uintptr_t)(desc + 0x38);
@@ -155,8 +161,9 @@ uint32_t pk_track_page(const volatile uint8_t *type_ptr)
 {
     volatile uint8_t *part = part_base();
     const uintptr_t track = (uintptr_t)type_ptr - (uintptr_t)(part + 0x22u);
-    const unsigned model = track < 8u ? part[SIG + 30u * track + MODEL_IN_SIGNATURE]
-                                      : DEFAULT_ENGINE;
+    const unsigned model = track < 8u
+        ? part[source_offset((unsigned)track, MODEL_SLOT)]
+        : DEFAULT_ENGINE;
     return page_for(model);
 }
 
@@ -174,8 +181,7 @@ void pk_ui_tick(void)
 }
 
 /* Stock validates the underlying FLEX parameter ranges, not our descriptor.
- * Temporarily substitute the stock FLEX defaults, then restore every PERKY
- * source byte exactly as ANALOG BD's measured validator bridge does.
+ * Temporarily substitute stock FLEX defaults, then restore all twelve bytes.
  */
 extern int pk_stock_validate(void *part);
 int pk_validate_part(uint8_t *part)
@@ -192,8 +198,7 @@ int pk_validate_part(uint8_t *part)
         mask |= 1u << track;
         for (unsigned k = 0; k < 12u; ++k)
         {
-            const unsigned at = (k < 6u ? 0x2au : 0x1dau)
-                              + 30u * track + 6u + k % 6u;
+            const unsigned at = source_offset(track, k);
             saved[track][k] = part[at];
             part[at] = stock[k];
         }
@@ -206,18 +211,14 @@ int pk_validate_part(uint8_t *part)
         if (!(mask & (1u << track)))
             continue;
         for (unsigned k = 0; k < 12u; ++k)
-        {
-            const unsigned at = (k < 6u ? 0x2au : 0x1dau)
-                              + 30u * track + 6u + k % 6u;
-            part[at] = saved[track][k];
-        }
+            part[source_offset(track, k)] = saved[track][k];
     }
     return result;
 }
 
-/* Native source renderer ABI at 0x4000d430/0x4000d518.  Milestone 0 does not
+/* Native source renderer ABI at 0x4000d430/0x4000d518. Milestone 0 does not
  * synthesize here: it reserves exactly FLEX's record span, then replaces the
- * fixed per-track record with PERKY magic + trigger flag + twelve knob bytes.
+ * fixed per-track record with PERKY magic + trigger flag + twelve source bytes.
  * probe_glue.asm turns that record into one timing impulse on the DSP.
  */
 int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
@@ -253,8 +254,8 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
                 (0x80001c90u + (ping & 1u) * 0xa80u + 336u * track);
             const unsigned trig = (U8(0x46104d0cu + track) & 16u) != 0u;
 
-            /* DSP words see low16(record[0]) at w0 and low16(record[1]) at w2
-             * after the transport's high/low split: 'PK' + 'Y1'.
+            /* Transport splits each CF long high/low into DSP words: w0 sees
+             * 'PK', w2 sees 'Y1', w3 sees the trigger flag.
              */
             record[0] = 0x504b0000u;
             record[1] = 0x59310000u | trig;
@@ -271,8 +272,8 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
     }
 }
 
-/* Engine-family browser.  The storage location is already final even though
- * milestone 0 exposes only Noise / Tone: signature byte +3, not source slot 6.
+/* Engine-family browser. Slot 11 is the persisted browser-owned model byte;
+ * slot 6 remains the visible three-way MODE parameter.
  */
 static uint32_t engine_bank = 0;
 static unsigned engine_part = 0;
@@ -289,9 +290,10 @@ void pk_engine_select(unsigned model)
         || !pk_selected_source())
         return;
 
-    const unsigned offset = SIG + 30u * track + MODEL_IN_SIGNATURE;
+    const unsigned offset = source_offset(track, MODEL_SLOT);
     part_base()[offset] = (uint8_t)model;
     U8(0x100a4eceu + PART_STRIDE * part + offset) = (uint8_t)model;
+    U8(0x80000810u + 72u * track + 0x20u + MODEL_SLOT - 6u) = (uint8_t)model;
 
     U8(engine_bank + 0x95048u) |= (uint8_t)(1u << part);
     U8(0x100b145eu) |= (uint8_t)(1u << part);
