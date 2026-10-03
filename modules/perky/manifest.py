@@ -3,8 +3,8 @@
 This is deliberately NOT the final PERKY machine yet.  In the isolated
 ``perky-probe`` remix it replaces FLEX's source-render callback with a tiny
 record writer, then hooks the hardware-proven Analog-BD DSP source seam.  A
-real trig must emerge as one +0.5 impulse at the stock event offset and then
-continue through the stock AMP -> FX1 -> FX2 path.
+real trig must emerge as one +0.5 stereo impulse at the stock event offset and
+then continue through the stock AMP -> FX1 -> FX2 path.
 
 Keeping this as its own module/remix gives us one falsifiable result before the
 Noise/Tone renderer and the full machine browser are allowed into the image.
@@ -84,5 +84,6 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_noise_tone_ref.py", remix_arg=False),
         Gate("tools/verify/verify_perky_dsp_word_model.py", remix_arg=False),
         Gate("tools/verify/verify_perky_sources.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_probe_port.py", remix_arg=False, stage="image"),
     ),
 )
