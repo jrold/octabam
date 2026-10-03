@@ -12,6 +12,7 @@ import importlib.util
 import json
 from pathlib import Path
 import struct
+import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -21,6 +22,7 @@ spec = importlib.util.spec_from_file_location("perky_tables", TOOL)
 if spec is None or spec.loader is None:
     raise SystemExit("verify-perky-table-extractor: cannot import extractor")
 mod = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = mod
 spec.loader.exec_module(mod)
 
 
