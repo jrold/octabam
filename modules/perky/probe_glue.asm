@@ -3,9 +3,10 @@
 ;
 ; This mirrors ANALOG BD's hardware-qualified source hook.  A stock/non-PERKY
 ; record returns immediately and lets the original source renderer run.  A
-; PERKY record writes sixteen zero samples to the stock source buffer and, on
-; a real trig, places one +0.5 impulse at the exact stock event offset.  It
-; then skips the stock source and resumes at @CONT@ so AMP, FX1 and FX2 run.
+; PERKY record writes sixteen zero stereo frames to the stock source buffer
+; and, on a real trig, places one +0.5 stereo impulse at the exact stock event
+; offset.  It then skips the stock source and resumes at @CONT@ so AMP, FX1
+; and FX2 run.
 ;
 ; In the isolated `perky-probe` remix a tiny ColdFire callback temporarily
 ; replaces FLEX and writes PK/Y1 records for FLEX tracks.  The final machine
@@ -21,6 +22,10 @@
 ; DspHook sites (the build asserts both stock words before planting the JSR):
 ;   payload A P:$0039c, payload B P:$001a2
 ;   displaced words $567000 $00020e = `move a,x:>$20e`
+;
+; Stock source format at X:0 is sixteen interleaved stereo frames:
+;   frame 0 L, frame 0 R, frame 1 L, frame 1 R, ... frame 15 R.
+; This is the same contract used by Analog BD's source engines.
 ;
 ; Build-time substitution:
 ;   @CONT@ = A $000426 / B $000221, immediately after stock source render
@@ -54,14 +59,14 @@ pk_probe_hit:
         move    a,x:>$20b
 
         ; Match Analog BD's source-stage contract: this path hands exactly one
-        ; 16-sample source block to the unchanged AMP/FX continuation.
+        ; 16-frame stereo source block to the unchanged AMP/FX continuation.
         move    #>$10,n7
 
-        ; Clear the sixteen-sample mono source block at X:0.
+        ; Clear all sixteen interleaved stereo frames (32 X words) at X:0.
         move    #>$ffffff,m0
         move    #$0,r0
         clr     a
-        do      #$10,pk_probe_zero_done
+        do      #$20,pk_probe_zero_done
         move    a,x:(r0)+
 pk_probe_zero_done:
 
@@ -79,9 +84,14 @@ pk_probe_zero_done:
         cmp     #>$10,a
         bge     pk_probe_continue
 
+        ; Convert the frame offset to the interleaved stereo word index and
+        ; write the same diagnostic impulse to L and R.
+        asl     a
         move    a1,n1
-        move    #$0,r1
         move    #>$400000,a              ; +0.5 Q1.23 integration impulse
+        move    #$0,r1
+        move    a,x:(r1+n1)
+        move    #$1,r1
         move    a,x:(r1+n1)
 
 pk_probe_continue:
