@@ -1,31 +1,35 @@
 #!/usr/bin/env python3
 """Assemble/execute PERKY u32 math in dsp56kEmu and compare exactly."""
 from __future__ import annotations
-import pathlib, subprocess, sys
+import pathlib, re, subprocess, sys
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 PERKY=ROOT/'modules/perky'; V=ROOT/'vendor/dsp56300'; OUT=ROOT/'out/perky/math'
 sys.path.insert(0,str(PERKY))
 from noise_tone_word_model import U32,add32,sub32,arshift32_words,mul_low32_words  # noqa:E402
-ASM=V/'build/source/dsp_host/dsp_asm'; HOST=OUT/'bd909_host'; SRC=ROOT/'tools/harness/bd909_host/bd909_host.cpp'; ORG=0x2000
-
+ASM=V/'build/source/dsp_host/dsp_asm'; DIS=V/'build/source/disassemble/dsp56kDisassemble'
+HOST=OUT/'bd909_host'; SRC=ROOT/'tools/harness/bd909_host/bd909_host.cpp'; ORG=0x2000
+LINE=re.compile(r'^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$')
 def fail(s): raise SystemExit('verify-perky-math-exec: '+s)
+def decoded(text): return {int(m.group(1),16):(m.group(2),(m.group(3) or '').strip()) for m in map(LINE.match,text.splitlines()) if m}
 def host():
     libs=[V/'build/source/dsp56kEmu/libdsp56kEmu.a',V/'build/source/dsp56kBase/libdsp56kBase.a',V/'build/source/asmjit/libasmjit.a']
-    miss=[p for p in [ASM,*libs] if not p.exists()]
+    miss=[p for p in [ASM,DIS,*libs] if not p.exists()]
     if miss: fail('run `make setup` first; missing '+', '.join(map(str,miss)))
     OUT.mkdir(parents=True,exist_ok=True)
     if HOST.exists() and HOST.stat().st_mtime>SRC.stat().st_mtime:return
     subprocess.run(['c++','-O3','-DNDEBUG','-std=gnu++17','-DASMJIT_STATIC','-DDSP56300_DEBUGGER=0',f'-I{V}/source',f'-I{V}/source/asmjit/src',str(SRC),str(libs[0]),str(libs[1]),str(libs[2]),'-lpthread','-o',str(HOST)],check=True,capture_output=True)
 def build():
     b=OUT/'math.bin'; s=OUT/'math.sym'
-    subprocess.run([str(ASM),'-in',str(PERKY/'noise_tone_math.asm'),'-org',f'{ORG:x}','-out',str(b),'-sym',str(s)],check=True,capture_output=True,text=True)
-    labels={}
-    for line in s.read_text().splitlines():
-        q=line.split()
-        if len(q)>=2:
-            try: labels[q[0].rstrip(':')]=int(q[-1].replace('$','0x'),0)
-            except ValueError: pass
+    r=subprocess.run([str(ASM),'-in',str(PERKY/'noise_tone_math.asm'),'-org',f'{ORG:x}','-out',str(b),'-list','-sym',str(s)],capture_output=True,text=True)
+    if r.returncode: fail('assembler failed:\n'+r.stdout[-3000:]+r.stderr[-2000:])
+    labels={q[0]:int(q[1],16) for q in (line.split() for line in s.read_text().splitlines()) if len(q)==2}
     if 'pk_math_probe' not in labels: fail('assembler emitted no pk_math_probe symbol')
+    d=subprocess.run([str(DIS),'-in',str(b),'-pc',f'{ORG:x}','-le'],capture_output=True,text=True,check=True)
+    typed,actual=decoded(r.stdout),decoded(d.stdout)
+    if not typed or len(actual)<len(typed)*.9: fail('no usable disassembly to compare')
+    for addr,(mn,ops) in typed.items():
+        dm,dops=actual.get(addr,('?',''))
+        if dm!=mn: fail(f'P:{addr:06x} typed {mn} {ops} but decodes {dm} {dops}')
     return b,labels['pk_math_probe']
 def run(b,entry,tag,op,a,bv=0,shift=0):
     w=[0]*64; aa=U32.from_int(a); bb=U32.from_int(bv); w[:5]=[aa.lo,aa.hi,bb.lo,bb.hi,shift]
