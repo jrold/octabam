@@ -69,13 +69,14 @@ for token in (
     need(cf, token, "probe_cf.s")
 
 # The DSP half must replay the displaced instruction, use the stock record and
-# event-offset publications, check the trigger word, and discard the seam JSR
-# before jumping over the stock source renderer.
+# event-offset publications, retain Analog BD's n7=16 source-stage contract,
+# check the trigger word, and discard the seam JSR before jumping over stock.
 dsp = (ROOT / "modules/perky/probe_glue.asm").read_text()
 for token in (
     "pk_probe_source:",
     "move    a,x:>$20e",
     "move    x:>$209,r4",
+    "move    #>$10,n7",
     "move    x:(r4+$3),b",
     "beq     pk_probe_continue",
     "move    x:>$20c,a",
@@ -83,6 +84,13 @@ for token in (
     "jmp     @CONT@",
 ):
     need(dsp, token, "probe_glue.asm")
+
+# It is a diagnostic, not a normal card remix: one path, under remixes/test/.
+test_remix = ROOT / "remixes/test/perky-probe/remix.py"
+if not test_remix.exists():
+    fail("remixes/test/perky-probe/remix.py is missing")
+if (ROOT / "remixes/perky-probe").exists():
+    fail("perky-probe must not also exist as a top-level remix")
 
 # The abandoned payload-repacker prototype must never come back into this
 # canary.  DspHook is the one source of truth for seam placement/assertions.
