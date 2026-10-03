@@ -1,7 +1,7 @@
 | PERKY source-machine registration, following the measured Analog BD chooser
-| path. Underlying track type stays FLEX; PK/1 + engine-family byte live in the
-| otherwise-unused per-track signature area. The twelve source parameter bytes
-| remain free, including slot 6 for PERKY MODE.
+| path. Underlying track type stays FLEX; PK/1 uses the same proven three-byte
+| signature area. Engine family lives in hidden persisted source slot 11;
+| source slot 6 remains the visible three-way PERKY MODE parameter.
         .text
         .global pk_machine_name
         .global pk_src_names
@@ -17,7 +17,6 @@
 
         .equ    PK_ROW, 5
         .equ    FLEX, 1
-        .equ    DEFAULT_ENGINE, 10         | Noise / Tone, zero-based catalog
         .equ    SRC_CURSOR, 0x460d5c30
         .equ    BANK_PTR, 0x46c82456
         .equ    PART_IDX, 0x100b14cf
@@ -57,9 +56,9 @@ pk_sig_check:
         lea     8(%sp),%sp
         rts
 
-| d1 != 0 marks PERKY; d1 == 0 removes PERKY. A fresh mark seeds the twelve
-| source bytes and the engine family. Reselecting an existing PERKY track
-| preserves its patch and family.
+| d1 != 0 marks PERKY; d1 == 0 removes PERKY. A fresh mark seeds all twelve
+| source bytes from pk_defaults, including hidden model slot 11. Reselecting an
+| existing PERKY track preserves its sound, MODE and family.
 pk_sig_write:
         lea     -16(%sp),%sp
         movem.l %d0-%d2/%a1,(%sp)
@@ -101,7 +100,6 @@ pk_sig_write:
         lea     -6(%a1),%a1
         move.l  (%sp)+,%d0
         move.l  (%sp)+,%a0
-        move.b  #DEFAULT_ENGINE,3(%a1)
 .sw_mark:
         move.b  #'P',(%a1)
         move.b  #'K',1(%a1)
@@ -114,7 +112,6 @@ pk_sig_write:
         clr.b   (%a1)
         clr.b   1(%a1)
         clr.b   2(%a1)
-        clr.b   3(%a1)
 .sw_out:
         rts
 
@@ -237,7 +234,7 @@ pk_setup_open:
         pea     (0x400bb704).l
         jmp     (0x400585e6).l
 
-| PERKY's slot 6 is a real MODE select, not Analog BD's hidden MODEL slot.
+| PERKY's slot 6 is a real MODE selector, not Analog BD's hidden MODEL slot.
 pk_setup_edit6:
         cmpi.l  #PK_ROW,%d2
         bne.s   1f
