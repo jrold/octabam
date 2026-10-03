@@ -21,7 +21,6 @@
 ;   @CONT@ = stock continuation after the source renderer for this payload
 ; ---------------------------------------------------------------------------
 
-        .global pk_probe_source
 pk_probe_source:
         move    a,x:>$20e               ; replay displaced stock instruction
         move    x:>$209,r4              ; current track's source record
