@@ -21,13 +21,69 @@ Therefore a DSP56300 renderer alone is not a faithful Octatrack machine. The
 Noise / Tone milestone must also reproduce the original update mapping that
 turns those controls into its 0x120-byte render state.
 
+## Executable probe
+
+The probe strategy below is now implemented rather than aspirational.
+
+A supporting branch in the private PerkyBits repository,
+`octabam-control-probe`, adds the headless CMake target
+`perkybits-control-probe`. It runs the original v1.2.1 firmware `update()` under
+the existing Unicorn runtime and writes JSON Lines containing **numeric state
+only**. No firmware instructions or waveform/envelope table blobs are copied to
+Octabam.
+
+The target is deliberately pinned to the already-qualified v1.2.1 ABI and
+refuses another image identity. Its first target is Voice 4 panel algorithm 1
+(internal algorithm 0), whose panel modes 0 and 2 share the renderer at
+`0x08025a14` and the 0x120-byte state object at `0x200034dc`. Panel mode 1 is
+the separate waveform-2 renderer and stays out of this first fixture.
+
+The default run records:
+
+- 13 anchor values for each of TUNE, DECAY, P1 and P2 with the other controls
+  held at 2048;
+- the state immediately after the target control words are written;
+- every one of the next 16 firmware `update()` passes;
+- the complete 0x120 renderer state, the first 0x40 wrapper bytes, and the four
+  32-bit control words at every point;
+- pre/post-trigger snapshots across velocity and chromatic-note anchors.
+
+`--pairwise` additionally settles every pair of controls on a 0/2048/4095 grid
+so cross-terms cannot hide behind four independent one-dimensional sweeps.
+
+On the PerkyBits checkout:
+
+```sh
+git fetch origin
+git switch octabam-control-probe
+cmake -S smoke -B build-control-probe -DCMAKE_BUILD_TYPE=Release
+cmake --build build-control-probe --target perkybits-control-probe -j
+./build-control-probe/perkybits-control-probe \
+  ~/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img \
+  ~/Downloads/perky-control.jsonl --pairwise
+```
+
+Then, from this Octabam branch:
+
+```sh
+python3 tools/re/perky_control_analyze.py \
+  ~/Downloads/perky-control.jsonl \
+  --json ~/Downloads/perky-control-analysis.json
+```
+
+The analyzer refuses malformed fixtures, proves that the four control RAM words
+match the requested values, reports settled renderer/wrapper byte ownership per
+control, groups bytes by the last smoothing iteration that moved them, reports
+note/velocity trigger deltas, and identifies pairwise bytes not explained by
+either control's univariate ownership set.
+
 ## Probe strategy
 
 Do not attempt a 4096^4 lookup table. Treat the existing PerkyBits firmware
 runtime as a control oracle and identify the mapping experimentally, then
 translate the resulting integer math.
 
-For each of the three Noise / Tone modes:
+For each shared Noise / Tone mode:
 
 1. initialize the original voice at the known defaults;
 2. capture the complete selected render state before and after one `update()`;
