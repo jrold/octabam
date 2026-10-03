@@ -70,20 +70,30 @@ for token in (
 
 # The DSP half must replay the displaced instruction, use the stock record and
 # event-offset publications, retain Analog BD's n7=16 source-stage contract,
-# check the trigger word, and discard the seam JSR before jumping over stock.
+# emit the stock 16-frame *stereo* layout (32 interleaved X words), check the
+# trigger word, and discard the seam JSR before jumping over stock.
 dsp = (ROOT / "modules/perky/probe_glue.asm").read_text()
 for token in (
     "pk_probe_source:",
     "move    a,x:>$20e",
     "move    x:>$209,r4",
     "move    #>$10,n7",
+    "do      #$20,pk_probe_zero_done",
     "move    x:(r4+$3),b",
     "beq     pk_probe_continue",
     "move    x:>$20c,a",
+    "asl     a",
+    "move    a1,n1",
+    "move    #>$400000,a",
+    "move    #$0,r1",
+    "move    a,x:(r1+n1)",
+    "move    #$1,r1",
     "move    ssh,x0",
     "jmp     @CONT@",
 ):
     need(dsp, token, "probe_glue.asm")
+if dsp.count("move    a,x:(r1+n1)") != 2:
+    fail("probe_glue.asm: diagnostic impulse must be written once to L and once to R")
 
 # It is a diagnostic, not a normal card remix: one path, under remixes/test/.
 test_remix = ROOT / "remixes/test/perky-probe/remix.py"
