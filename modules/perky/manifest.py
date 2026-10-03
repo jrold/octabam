@@ -1,0 +1,87 @@
+"""PERKY milestone-0 source canary.
+
+This is deliberately NOT the final PERKY machine yet.  In the isolated
+``perky-probe`` remix it replaces FLEX's source-render callback with a tiny
+record writer, then hooks the hardware-proven Analog-BD DSP source seam.  A
+real trig must emerge as one +0.5 impulse at the stock event offset and then
+continue through the stock AMP -> FX1 -> FX2 path.
+
+Keeping this as its own module/remix gives us one falsifiable result before the
+Noise/Tone renderer and the full machine browser are allowed into the image.
+"""
+from remix.schema import (
+    Category,
+    DspHook,
+    DspSection,
+    Gate,
+    Kind,
+    Linked,
+    Module,
+    Proof,
+    SymbolRef,
+)
+
+MODULE = Module(
+    name="perky",
+    key="PERKY PROBE",
+    kind=Kind.HYBRID,
+    category=Category.MACHINES,
+    author="jrold",
+    author_url="https://github.com/jrold",
+    proof=Proof.CHECK,
+    proof_note="development source-seam canary; hardware flash still pending",
+    doc="Development canary: FLEX trig -> PERKY transport record -> DSP impulse before AMP/FX.",
+
+    # The probe writer is small enough for a normal floating ROM-linked unit.
+    # The final generated PERKY control/browser runtime can move to DRAM once
+    # its size warrants that; do not make milestone 0 pay that complexity.
+    linked=(
+        Linked("pkprobe", "modules/perky/probe_cf.s"),
+    ),
+
+    # Measured stock FLEX source renderer callback, the same pointer Analog BD
+    # replaces.  The build asserts the old pointer before installing ours.
+    symbol_refs=(
+        SymbolRef(
+            0x400D6438,
+            0x40004008,
+            "pkprobe",
+            "pk_probe_render",
+            note="isolated canary: replace FLEX renderer with PK/Y1 record writer",
+        ),
+    ),
+
+    # Hardware-proven source seam from Analog BD.  DspHook asserts the exact
+    # two stock words then plants `jsr >pk_probe_source`; the section itself
+    # replays `move a,x:>$20e`.  PERKY hits jump over the stock source renderer
+    # to the payload-specific continuation; non-PERKY records return to stock.
+    dsp=DspSection(
+        asm="modules/perky/probe_glue.asm",
+        priority=90,
+        hooks=(
+            DspHook(
+                site={"A": 0x0039C, "B": 0x001A2},
+                stock=(0x567000, 0x00020E),
+                label="pk_probe_source",
+                note="source prepare seam: replay x:$20e setup, inspect PK/Y1 record",
+            ),
+        ),
+        subst={
+            "A": {"@CONT@": "$000426"},
+            "B": {"@CONT@": "$000221"},
+        },
+    ),
+
+    conflicts=((
+        "ANALOG BD",
+        "both replace the FLEX source callback and hook the same DSP source seam",
+    ),),
+    pressure_blocker=(
+        "development source-machine canary; source work is outside the FX pressure pricer"
+    ),
+    gates=(
+        Gate("tools/verify/verify_perky_probe.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_noise_tone_ref.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_sources.py", remix_arg=False),
+    ),
+)
