@@ -82,6 +82,7 @@ MODULE = Module(
     gates=(
         Gate("tools/verify/verify_perky_probe.py", remix_arg=False),
         Gate("tools/verify/verify_perky_noise_tone_ref.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_dsp_word_model.py", remix_arg=False),
         Gate("tools/verify/verify_perky_sources.py", remix_arg=False),
     ),
 )
