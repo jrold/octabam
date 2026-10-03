@@ -53,6 +53,10 @@ pk_probe_hit:
         add     #>$80,a
         move    a,x:>$20b
 
+        ; Match Analog BD's source-stage contract: this path hands exactly one
+        ; 16-sample source block to the unchanged AMP/FX continuation.
+        move    #>$10,n7
+
         ; Clear the sixteen-sample mono source block at X:0.
         move    #>$ffffff,m0
         move    #$0,r0
