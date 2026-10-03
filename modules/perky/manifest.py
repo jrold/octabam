@@ -32,15 +32,7 @@ MODULE = Module(
     proof_note="development source-seam canary; hardware flash still pending",
     doc="Development canary: FLEX trig -> PERKY transport record -> DSP impulse before AMP/FX.",
 
-    # The probe writer is small enough for a normal floating ROM-linked unit.
-    # The final generated PERKY control/browser runtime can move to DRAM once
-    # its size warrants that; do not make milestone 0 pay that complexity.
-    linked=(
-        Linked("pkprobe", "modules/perky/probe_cf.s"),
-    ),
-
-    # Measured stock FLEX source renderer callback, the same pointer Analog BD
-    # replaces.  The build asserts the old pointer before installing ours.
+    linked=(Linked("pkprobe", "modules/perky/probe_cf.s"),),
     symbol_refs=(
         SymbolRef(
             0x400D6438,
@@ -50,11 +42,6 @@ MODULE = Module(
             note="isolated canary: replace FLEX renderer with PK/Y1 record writer",
         ),
     ),
-
-    # Hardware-proven source seam from Analog BD.  DspHook asserts the exact
-    # two stock words then plants `jsr >pk_probe_source`; the section itself
-    # replays `move a,x:>$20e`.  PERKY hits jump over the stock source renderer
-    # to the payload-specific continuation; non-PERKY records return to stock.
     dsp=DspSection(
         asm="modules/perky/probe_glue.asm",
         priority=90,
@@ -71,7 +58,6 @@ MODULE = Module(
             "B": {"@CONT@": "$000221"},
         },
     ),
-
     conflicts=((
         "ANALOG BD",
         "both replace the FLEX source callback and hook the same DSP source seam",
@@ -85,6 +71,8 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_dsp_word_model.py", remix_arg=False),
         Gate("tools/verify/verify_perky_sources.py", remix_arg=False),
         Gate("tools/verify/verify_perky_table_extractor.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_math_source.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_math_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_probe_port.py", remix_arg=False, stage="image"),
     ),
 )
