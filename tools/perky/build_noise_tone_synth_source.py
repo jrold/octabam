@@ -1,21 +1,25 @@
 #!/usr/bin/env python3
 """Generate the correctness-first PERKY Noise/Tone synth-seam DSP source.
 
-This is a DEVELOPMENT composition step, not the final size-optimized engine.
-It concatenates the independently gated primitive sources behind the real
-sample-accurate source seam, substitutes the four packed-wave identities from
-``layout.json`` and aliases the seam entry to the manifest's existing
-``pk_probe_source`` DspHook label.
+The standalone primitive probes intentionally each carry their own exact
+32-bit helper implementations so they can be tested in isolation. A firmware
+image must not pay for those duplicates. This generator therefore composes the
+same already-gated algorithm bodies but mechanically redirects their identical
+add/sub/ASR/low32-multiply calls to the single ``pk_u32_*`` implementation in
+``noise_tone_math.asm`` and removes only the duplicate helper sections.
 
-The generated source intentionally keeps @CONT@ unresolved. build_bus.py
-applies the normal PERKY per-payload substitution after the one-shot build
-wrapper swaps this path into the module declaration in memory.
+No synthesis state-transition or sample-math body is rewritten here. Every cut
+is guarded by exact marker/label counts so a source edit fails generation
+rather than silently moving a boundary.
 
-For the first synth canary we allow the full contiguous PLATE/SPRING/DARK donor
-region: P:$1000..$1aa3 = 2724 words. ``--measure`` assembles a payload-A copy
-and refuses anything larger before build_bus gets near the image. A later
-optimization milestone will deduplicate the standalone arithmetic helpers and
-target SPRING alone (~1063 words).
+The generated source keeps ``@CONT@`` unresolved. build_bus applies the normal
+PERKY A/B continuation substitution after the one-shot canary wrapper swaps
+this generated path into the in-memory module declaration.
+
+First-canary placement may use the contiguous PLATE/SPRING/DARK donor:
+P:$1000..$1aa3 = 2724 words. ``measure()`` reports whether the deduplicated
+source also happens to fit SPRING alone (1063 words), but only the full-donor
+limit is mandatory at this milestone.
 """
 from __future__ import annotations
 
@@ -28,6 +32,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PERKY = ROOT / "modules/perky"
 ASM = ROOT / "vendor/dsp56300/build/source/dsp_host/dsp_asm"
 FULL_DONOR_WORDS = 0x1AA4 - 0x1000  # PLATE + SPRING + DARK = 2724 words
+SPRING_DONOR_WORDS = 1063
 
 PIECES = (
     "synth_seam_glue.asm",
@@ -43,6 +48,91 @@ PIECES = (
 
 def die(msg: str) -> "NoReturn":
     raise SystemExit("perky-synth-source: " + msg)
+
+
+def exactly_once(text: str, token: str, where: str) -> None:
+    count = text.count(token)
+    if count != 1:
+        die(f"{where}: expected one {token!r}, found {count}")
+
+
+def redirect(text: str, mapping: dict[str, str]) -> str:
+    for old, new in mapping.items():
+        text = text.replace(old, new)
+    return text
+
+
+def truncate_at(text: str, marker: str, where: str) -> str:
+    exactly_once(text, marker, where)
+    return text.split(marker, 1)[0].rstrip() + "\n"
+
+
+def compact_piece(name: str, text: str) -> str:
+    """Drop only standalone-probe helper duplicates from one source file."""
+    if name == "noise_tone_filter.asm":
+        text = redirect(text, {
+            "pkf_add": "pk_u32_add",
+            "pkf_sub": "pk_u32_sub",
+            "pkf_asr": "pk_u32_asr",
+            "pkf_mul_low": "pk_u32_mul_low",
+        })
+        marker = "; ---- exact two-limb helpers"
+        clamp = "; Input +0/+1 is a signed 32-bit value."
+        exactly_once(text, marker, name)
+        exactly_once(text, clamp, name)
+        before = text.split(marker, 1)[0].rstrip()
+        unique = text[text.index(clamp):].rstrip()
+        return before + "\n\n" + unique + "\n"
+
+    if name == "noise_tone_oscillator_packed.asm":
+        text = redirect(text, {
+            "pkop_add": "pk_u32_add",
+            "pkop_asr": "pk_u32_asr",
+            "pkop_mul_low": "pk_u32_mul_low",
+        })
+        return truncate_at(text, "; ---- exact two-limb helpers", name)
+
+    if name == "noise_tone_envelope_packed7.asm":
+        # This wrapper intentionally calls the raw-envelope helper names so it
+        # can be concatenated with that standalone probe. In shipping source
+        # those helpers are replaced by the one shared math implementation.
+        return redirect(text, {
+            "pke_add": "pk_u32_add",
+            "pke_asr": "pk_u32_asr",
+            "pke_mul_low": "pk_u32_mul_low",
+        })
+
+    if name == "noise_tone_envelope.asm":
+        text = redirect(text, {
+            "pke_add": "pk_u32_add",
+            "pke_sub": "pk_u32_sub",
+            "pke_asr": "pk_u32_asr",
+            "pke_mul_low": "pk_u32_mul_low",
+        })
+        return truncate_at(text, "; ---- exact two-limb helpers", name)
+
+    if name == "noise_tone_mix.asm":
+        text = redirect(text, {
+            "pkm_add": "pk_u32_add",
+            "pkm_sub": "pk_u32_sub",
+            "pkm_asr": "pk_u32_asr",
+            "pkm_mul_low": "pk_u32_mul_low",
+        })
+        add_label = "pk_u32_add:"
+        clamp = "; Clamp signed32 +0/+1 to [-32768,32767]"
+        # The global name appears once here ONLY because the local pkm_add
+        # definition was renamed. Calls appear without a colon.
+        exactly_once(text, add_label, name)
+        exactly_once(text, clamp, name)
+        start = text.index(add_label)
+        end = text.index(clamp)
+        if not start < end:
+            die(f"{name}: helper/clamp boundaries reversed")
+        return text[:start].rstrip() + "\n\n" + text[end:].rstrip() + "\n"
+
+    # Seam, complete voice glue and noise_tone_math.asm carry no duplicate
+    # helper family to remove. The math file is the shared authority.
+    return text
 
 
 def wave_ids(layout: dict) -> list[int]:
@@ -85,7 +175,8 @@ def generate(layout_path: Path) -> str:
         path = PERKY / name
         if not path.exists():
             die(f"missing {path}")
-        chunks.append(f"; ===== BEGIN {name} =====\n" + path.read_text()
+        body = compact_piece(name, path.read_text())
+        chunks.append(f"; ===== BEGIN {name} =====\n" + body
                       + f"\n; ===== END {name} =====\n")
     src = "\n".join(chunks)
 
@@ -104,6 +195,19 @@ def generate(layout_path: Path) -> str:
         die(f"generated source contains {src.count('@CONT@')} @CONT@ markers, expected 1")
     if src.count("pk_probe_source:") != 1:
         die("generated source does not expose exactly one DspHook entry")
+
+    # Dedupe invariants: one shared arithmetic definition, no local copies.
+    for label in ("pk_u32_add:", "pk_u32_sub:", "pk_u32_asr:", "pk_u32_mul_low:"):
+        if src.count(label) != 1:
+            die(f"generated source expected one shared {label}, found {src.count(label)}")
+    for label in (
+        "pkf_add:", "pkf_sub:", "pkf_asr:", "pkf_mul_low:",
+        "pkop_add:", "pkop_asr:", "pkop_mul_low:",
+        "pke_add:", "pke_sub:", "pke_asr:", "pke_mul_low:",
+        "pkm_add:", "pkm_sub:", "pkm_asr:", "pkm_mul_low:",
+    ):
+        if label in src:
+            die(f"generated source still defines duplicate helper {label}")
     return src
 
 
@@ -128,8 +232,8 @@ def measure(source: str, out: Path) -> int:
     words = size // 3
     if words > FULL_DONOR_WORDS:
         die(
-            f"correctness synth is {words} P words, larger than the full "
-            f"three-reverb donor ({FULL_DONOR_WORDS}); deduplicate helpers first"
+            f"deduplicated synth is {words} P words, larger than the full "
+            f"three-reverb donor ({FULL_DONOR_WORDS})"
         )
     return words
 
@@ -141,7 +245,7 @@ def main() -> None:
     ap.add_argument("--out", type=Path,
                     default=ROOT / "out/perky/synth-canary/perky_synth.asm")
     ap.add_argument("--measure", action="store_true",
-                    help="assemble a temporary payload-A copy and enforce 2724-word budget")
+                    help="assemble payload-A copy and enforce full-donor budget")
     args = ap.parse_args()
 
     src = generate(args.layout)
@@ -150,9 +254,10 @@ def main() -> None:
     print(f"PERKY synth source: wrote {args.out} ({len(src):,} source bytes)")
     if args.measure:
         words = measure(src, args.out)
+        fit = "YES" if words <= SPRING_DONOR_WORDS else "not yet"
         print(
             f"PERKY synth source: {words}/{FULL_DONOR_WORDS} P words, "
-            f"FREE {FULL_DONOR_WORDS - words} in PLATE/SPRING/DARK donor"
+            f"FREE {FULL_DONOR_WORDS - words}; SPRING-only <= {SPRING_DONOR_WORDS}: {fit}"
         )
 
 
