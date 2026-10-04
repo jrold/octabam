@@ -10,18 +10,28 @@ must not be conflated:
 
 ## Measured private budget
 
-Octabam's current memory census leaves about **616 X words** and **2,155 Y
-words** of genuinely usable private data memory per DSP core. Do not infer a
-larger free range merely because the boot payload has no static record there;
-runtime FX allocations and host behaviour are part of the usable-memory
-boundary.
+Octabam's hardware memory sweep pins the usable private-Y interval on **each DSP
+core** exactly:
 
-The relevant executable gates are:
+```text
+Y:$0200..$0794   stock/static data ends here
+Y:$0795..$0fff   measured private gap: 2,155 words
+Y:$1000..        FX1 instance arena begins here
+```
+
+PERKY therefore treats **Y:$0795..$0FFF** as the only candidate table region;
+it does not infer a larger hole from the boot payload's static records. Runtime
+FX allocations and host behaviour are part of the usable-memory boundary.
+
+The measured private-X headroom is about **616 words** per core. The relevant
+gates are:
 
 - `tools/verify/verify_perky_runtime_memory.py` — renderer/cache allocation;
 - `tools/perky/analyze_noise_tone_tables.py` — exact table fit for extracted data;
 - `tools/verify/verify_perky_packed_tables.py` — packed-table runtime ABI;
-- `tools/verify/verify_perky_envelope_cache.py` — exact cached envelope access.
+- `tools/verify/verify_perky_envelope_cache.py` — exact cached envelope access;
+- `tools/verify/verify_perky_image_tables.py` — private-Y upload boundaries;
+- `tools/verify/verify_perky_preboot_reserve.py` — ColdFire preboot scratch reserve.
 
 ## Live state + envelope cache: 236 X words/core
 
@@ -108,6 +118,16 @@ measured private-Y budget        2,155 Y words
 synthetic margin                   180 Y words
 ```
 
+Placed at the measured base, that synthetic payload occupies exactly:
+
+```text
+Y:$0795..$0f4b   1,975 packed table words
+Y:$0f4c..$0fff     180 words left untouched
+```
+
+`tools/build/perky_image.py` appends that Y record to both finalized DSP
+uploads only after checking that no existing Y record overlaps it.
+
 Those numbers are a **development stress fixture**, not a claim about the real
 PĒRKONS curves. Real v1.2.1 table bytes are still required to determine their
 actual delta widths and exact Y footprint.
@@ -116,6 +136,41 @@ For reference, with 16-sample blocks an 8-bit-delta curve costs 726 words. Two
 8-bit curves plus the 683-word wave stream consume 2,135 Y words, leaving only
 20 words. The real curves therefore still need to pass the table analyzer
 before the packed format is admitted to a hardware image.
+
+## ColdFire preboot scratch: 242 audio pages
+
+The extended DSP uploads cannot overwrite their stock image slots, so the
+standard Octabam loader depacks each replacement upload to reserved SDRAM
+before the stock DSP boot routine reads it. PERKY uses the same four 256 KiB
+windows as the measured Analog-BD preboot path:
+
+```text
+cached destination A   0x40b00000..0x40b3ffff
+cached destination B   0x40b40000..0x40b7ffff
+cached stage A         0x40b80000..0x40bbffff
+cached stage B         0x40bc0000..0x40bfffff
+```
+
+Stock's audio arena begins at `0x40a955e0`. **242 × 6144-byte pages** is the
+smallest integral bottom reservation that contains all four windows:
+
+```text
+PERKY arena reserve    0x40a955e0..0x40c005df
+size                   1,486,848 bytes = 1.418 MiB
+```
+
+241 pages do not contain the final stage slot. The module therefore declares
+`ArenaReserve(pages=242, where="bottom")`; this is intentionally far smaller
+than Octabam's 1,707-page platform-runtime reserve. `platform_build.py` now
+supports a separate `preboot_reserve`, so the same single loader can carry
+PERKY's DSP uploads either by themselves or alongside an unrelated DRAM runtime
+without making the two regions overlap.
+
+`tools/build/build_perky_tables.py` is the current isolated development build:
+it verifies the normal `perky-probe` image already contains those arena-geometry
+pokes, adds the two extended DSP uploads, installs the standard loader, and
+writes `out/mainos_perky_tables.bin`. It does **not** change the active source
+renderer from the impulse canary.
 
 ## Required real-data check
 
@@ -130,11 +185,15 @@ python3 tools/perky/extract_noise_tone_tables.py \
 python3 tools/perky/analyze_noise_tone_tables.py \
   out/perky/noise-tone-tables \
   --json out/perky/noise-tone-memory.json
+
+python3 tools/perky/build_noise_tone_payload.py \
+  out/perky/noise-tone-tables \
+  --out out/perky/noise-tone-packed
 ```
 
-The second command must report that the exact tables fit the measured private
-X/Y budget under the realtime policy before the real table payload is wired
-into the image.
+The analyzer must report that the exact tables fit Y:$0795..$0FFF under the
+realtime decode policy before the real table payload is admitted to a hardware
+image.
 
 ## Current unresolved items
 
