@@ -93,12 +93,25 @@ def main() -> None:
             raise AssertionError(
                 f"four dense synthetic waves use {report['waves']['u16pack_words']} words, expected 683"
             )
+        envs = report["envelopes"]["tables"]
+        if [e["best_realtime"]["words"] for e in envs] != [646, 646]:
+            raise AssertionError(
+                "synthetic envelopes no longer use 646 words each under the realtime <=15-add rule"
+            )
+        if report["combined"]["table_y_words"] != 1975:
+            raise AssertionError(
+                f"synthetic exact table footprint drifted to {report['combined']['table_y_words']} Y words"
+            )
+        if report["combined"]["y_margin_words"] != 180:
+            raise AssertionError(
+                f"synthetic Y margin drifted to {report['combined']['y_margin_words']} words"
+            )
         if not report["combined"]["fits_measured_private_xy"]:
             raise AssertionError(
                 "synthetic exact table plan no longer fits the measured private X/Y budget"
             )
 
-    print("PERKY synthetic fixture gate: OK")
+    print("PERKY synthetic fixture gate: OK -- state X=168, tables Y=1975, margin Y=180")
 
 
 if __name__ == "__main__":
