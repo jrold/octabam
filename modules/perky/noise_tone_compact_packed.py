@@ -4,11 +4,12 @@ This is the bridge between the already-proven 41-word compact renderer and the
 DSP image representation:
 
 * oscillator reads use ``PackedWaves`` (three u16 samples / two 24-bit words);
-* shaped envelope reads use ``PackedEnvelope`` plus one 17-word-equivalent
-  cache per voice;
+* shaped envelope reads use ``PackedEnvelope`` plus ONE 17-word cache per voice;
 * state/RNG arithmetic is otherwise the same word-exact implementation as
   ``noise_tone_compact``.
 
+The one cache is keyed by curve selector + 16-sample block id, so changing
+shape invalidates/refills it without doubling the per-voice X-memory budget.
 The gate requires this renderer to produce identical PCM, compact state and RNG
 to the raw-table compact renderer. No approximation is introduced by packing.
 """
@@ -18,7 +19,7 @@ from dataclasses import dataclass
 
 import noise_tone_compact as c
 from noise_tone_envelope_cache import EnvelopeCache, envelope_at_cached
-from noise_tone_tables import PackedEnvelope, PackedWaves, WAVE_SAMPLES, wave_at
+from noise_tone_tables import PackedEnvelope, PackedWaves, wave_at
 from noise_tone_word_model import (
     MASK16,
     U32,
@@ -56,13 +57,8 @@ def _s16(value: int) -> int:
     return value - 0x10000 if value & 0x8000 else value
 
 
-def _s32(value: int) -> int:
-    value &= MASK32
-    return value - 0x100000000 if value & 0x80000000 else value
-
-
 def render_envelope(voice: c.CompactVoice, tables: PackedTables,
-                    cache1: EnvelopeCache, cache2: EnvelopeCache) -> int:
+                    cache: EnvelopeCache) -> int:
     state = voice.words[c.ENV_STATE] & 0xFF
     value = voice.u32(c.ENV_VALUE)
 
@@ -107,10 +103,12 @@ def render_envelope(voice: c.CompactVoice, tables: PackedTables,
     index = (raw >> 10) & 0x7FF
     nxt = (index + 1) & 0x7FF
     fraction = raw & 0x3FF
-    table = tables.envelope1 if shape == 1 else tables.envelope2
-    cache = cache1 if shape == 1 else cache2
-    first = envelope_at_cached(table, index, cache)
-    second = envelope_at_cached(table, nxt, cache)
+    if shape == 1:
+        table, curve_id = tables.envelope1, 0
+    else:
+        table, curve_id = tables.envelope2, 1
+    first = envelope_at_cached(table, index, cache, curve_id=curve_id)
+    second = envelope_at_cached(table, nxt, cache, curve_id=curve_id)
     delta = U32.from_int(second - first)
     interp = arshift32_words(mul_low32_words(delta, U32(fraction, 0)), 10).signed()
     return (first + interp) & MASK16
@@ -171,7 +169,6 @@ def render_oscillator(voice: c.CompactVoice, phase_off: int,
             voice.set_u32(current_off, current)
 
     address = current.unsigned()
-    # Resolve now so an invalid address fails before either sample read.
     tables.ordinal(address)
     raw_phase = phase.unsigned()
     index = (raw_phase >> 12) & 0xFF
@@ -185,14 +182,12 @@ def render_oscillator(voice: c.CompactVoice, phase_off: int,
 
 
 def render_block(voice: c.CompactVoice, sample_count: int, tables: PackedTables,
-                 rng: WordRng, cache1: EnvelopeCache | None = None,
-                 cache2: EnvelopeCache | None = None) -> list[int]:
-    cache1 = cache1 or EnvelopeCache()
-    cache2 = cache2 or EnvelopeCache()
+                 rng: WordRng, cache: EnvelopeCache | None = None) -> list[int]:
+    cache = cache or EnvelopeCache()
     out: list[int] = []
 
     for _ in range(sample_count):
-        amplitude = render_envelope(voice, tables, cache1, cache2)
+        amplitude = render_envelope(voice, tables, cache)
         noise = render_noise(voice, rng)
         advance_filter(voice, noise)
         advance_filter(voice, noise)
