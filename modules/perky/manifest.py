@@ -45,17 +45,7 @@ MODULE = Module(
             note="isolated canary: replace FLEX renderer with PK/Y1 record writer",
         ),
     ),
-    # Four 256 KiB preboot windows end at cached 0x40c00000.  From stock's
-    # arena base 0x40a955e0, 242 x 6144-byte pages are the smallest integral
-    # reservation that contains them (ceiling 0x40c005e0).  This is ~1.42 MiB,
-    # not the platform runtime's much larger 1,707-page reservation.
     arena=ArenaReserve(pages=242, where="bottom"),
-    # Persistent DSP data ownership. X:$3800..$38eb sits inside the same
-    # hardware-qualified private-X run Analog BD uses (the two modules conflict,
-    # so they never coexist). Y:$0795..$0fff is the exact free interval from
-    # the hardware Y-memory sweep. Claims make the ledger reject a future
-    # module that tries to reuse either region even before the synth source is
-    # switched on.
     claims=Claims(dsp_ranges=(
         DspRange("x", 0x3800, 236, "PERKY compact voice state + envelope caches + RNG"),
         DspRange("y", 0x0795, 0x1000 - 0x0795, "PERKY packed Noise/Tone tables"),
@@ -92,6 +82,7 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_compact_packed.py", remix_arg=False),
         Gate("tools/verify/verify_perky_voice_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_voice_packed_wave_exec.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_voice_packed_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_sources.py", remix_arg=False),
         Gate("tools/verify/verify_perky_table_extractor.py", remix_arg=False),
         Gate("tools/verify/verify_perky_memory_plan.py", remix_arg=False),
