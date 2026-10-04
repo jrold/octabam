@@ -19,6 +19,8 @@
 #define PERKY_ROW 5u
 #define DEFAULT_ENGINE 10u /* zero-based catalog index: Noise / Tone */
 #define MODEL_SLOT 11u     /* hidden persisted source parameter */
+#define MODE_FORMATTER 0x4003c718u /* stock stepped select: prints value+1 */
+#define MODE_WIDGET 0x40047424u    /* stock SPRING TYPE three-position ticks */
 
 /* PERKY needs five visible source controls: TUNE, DECAY, P1, P2 and MODE.
  * Keep the engine-family selector in the known persisted parameter arena rather
@@ -141,8 +143,8 @@ static uint32_t page_for(unsigned model)
             else
                 put32(desc + 0xd2 + 4u * i, 0);
 
-            put32(desc + 0x102 + 4u * i, 0);
-            put32(desc + 0x132 + 4u * i, 0);
+            put32(desc + 0x102 + 4u * i, i == 6u ? MODE_FORMATTER : 0);
+            put32(desc + 0x132 + 4u * i, i == 6u ? MODE_WIDGET : 0);
             put32(desc + 0x162 + 4u * i, 0);
         }
 
