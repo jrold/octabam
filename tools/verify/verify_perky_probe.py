@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Static gate for the isolated PERKY CF->DSP source-seam canary.
 
-This is deliberately image-independent.  The build itself asserts the stock
+This is deliberately image-independent. The build itself asserts the stock
 ColdFire pointer and both DSP hook words before writing them; this gate makes
 sure the module declaration and the two small assembly halves still describe
 the measured Analog-BD seam we mean to test.
 
-PERKY now also owns a small bottom audio-arena reservation for future packed
-DSP table preboot uploads.  That data-loader path is allowed here only when it
-stays completely separate from source-seam placement: DspHook remains the one
-source of truth for the two DSP patch sites.
+PERKY also owns a small bottom audio-arena reservation for preboot DSP data
+uploads. That data-loader path is allowed here only when it stays completely
+separate from source-seam placement: DspHook remains the one source of truth
+for the two DSP patch sites.
 """
 from __future__ import annotations
 
@@ -43,7 +43,7 @@ if m.key != "PERKY PROBE":
 if len(m.linked) != 1 or m.linked[0].label != "pkprobe":
     fail("expected one linked ColdFire unit named pkprobe")
 if m.linked[0].dram:
-    fail("pkprobe must stay in ROM; the table loader uses its own small arena reservation")
+    fail("pkprobe must stay in ROM; the data loader uses its own small arena reservation")
 if len(m.symbol_refs) != 1:
     fail("expected exactly one ColdFire symbol-ref rewrite")
 sr = m.symbol_refs[0]
@@ -53,6 +53,15 @@ if (sr.addr, sr.expect, sr.unit, sr.symbol) != (
 
 if m.arena is None or m.arena.where != "bottom" or m.arena.pages != 242:
     fail("PERKY preboot scratch must reserve exactly 242 bottom audio-arena pages")
+
+ranges = {(r.space, r.start, r.length) for r in m.claims.dsp_ranges}
+for want in (
+    ("x", 0x3800, 236),
+    ("x", 0x3900, 64),
+    ("y", 0x0795, 0x1000 - 0x0795),
+):
+    if want not in ranges:
+        fail(f"missing DSP data claim {want!r}")
 
 if m.dsp is None or len(m.dsp.hooks) != 1:
     fail("expected one hook-only DSP section")
@@ -78,10 +87,6 @@ for token in (
 ):
     need(cf, token, "probe_cf.s")
 
-# The DSP half must replay the displaced instruction, use the stock record and
-# event-offset publications, retain Analog BD's n7=16 source-stage contract,
-# emit the stock 16-frame *stereo* layout (32 interleaved X words), check the
-# trigger word, and discard the seam JSR before jumping over stock.
 dsp = (ROOT / "modules/perky/probe_glue.asm").read_text()
 for token in (
     "pk_probe_source:",
@@ -105,7 +110,6 @@ for token in (
 if dsp.count("move    a,x:(r1+n1)") != 2:
     fail("probe_glue.asm: diagnostic impulse must be written once to L and once to R")
 
-# It is a diagnostic, not a normal card remix: one path, under remixes/test/.
 test_remix = ROOT / "remixes/test/perky-probe/remix.py"
 if not test_remix.exists():
     fail("remixes/test/perky-probe/remix.py is missing")
@@ -113,15 +117,19 @@ if (ROOT / "remixes/perky-probe").exists():
     fail("perky-probe must not also exist as a top-level remix")
 
 # The old abandoned perky_image prototype repacked DSP code and owned the seam.
-# The NEW file is allowed only as a table-only upload extender: it may name the
-# measured private-Y interval and upload records, but it must never know the
-# source hook addresses/stock words or probe labels. DspHook above stays the
-# sole seam owner.
+# The current file is data-only: it may append private X/Y records and replace
+# the boot upload pointers, but it must never know the source hook addresses,
+# stock hook words, or probe labels. DspHook above stays the sole seam owner.
 image_tool = ROOT / "tools/build/perky_image.py"
 if not image_tool.exists():
-    fail("tools/build/perky_image.py table integrator is missing")
+    fail("tools/build/perky_image.py data integrator is missing")
 image_text = image_tool.read_text()
-for token in ("Y_BASE = 0x0795", "Y_END = 0x1000", "ot_record(2, Y_BASE, words)"):
+for token in (
+    "X_BASE = 0x3800", "X_WORDS = 236",
+    "Y_BASE = 0x0795", "Y_END = 0x1000",
+    "ot_record(1, X_BASE, x_words)",
+    "ot_record(2, Y_BASE, y_words)",
+):
     need(image_text, token, "perky_image.py")
 for forbidden in (
     "0x0039C", "0x001A2", "0x567000", "0x00020E",
