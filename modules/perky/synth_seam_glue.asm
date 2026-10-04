@@ -16,7 +16,8 @@
 ; Persistent memory per core:
 ;   X:$3800 + 58*voice   41 compact state + 17 envelope-cache words
 ;   X:$38e8..$38eb       shared RNG
-;   X:$3900..$393f       one shared 64-word scratch block
+;   X:$38ec              source-seam event-offset save word
+;   X:$3900..$393f       one shared 64-word render scratch block
 ;   Y:$0795..            packed wave/envelope tables
 ;
 ; x:$418 is stock's per-core track position: $00/$20/$40/$60. We map those
@@ -101,7 +102,7 @@ pks_voice_ready:
         blt     pks_render_full
         cmp     #>$10,a
         bge     pks_render_full
-        move    a1,x:(r5+$3f)           ; preserve event 0..15 in last scratch word
+        move    a1,x:>$38ec             ; preserve event outside render scratch
 
         ; Prefix [0,event). Do not issue a zero-count DO loop.
         tst     a
@@ -119,7 +120,7 @@ pks_trigger_sample:
 
         ; Suffix after the one trigger sample: 15-event samples.
         move    #>$f,a
-        move    x:(r5+$3f),x0
+        move    x:>$38ec,x0
         sub     x0,a
         tst     a
         beq     pks_continue
