@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Exact storage analysis for extracted PERKY Noise/Tone tables.
 
-Input is the directory produced by ``extract_noise_tone_tables.py``.  This tool
+Input is the directory produced by ``extract_noise_tone_tables.py``. This tool
 never needs the PĒRKONS update itself and never writes firmware-owned samples
-back into the repository.  It answers the concrete Octatrack question: can the
+back into the repository. It answers the concrete Octatrack question: can the
 four 256-sample waves plus two 2048-entry envelope curves fit in the measured
 private DSP data-memory headroom without approximation?
 
@@ -12,12 +12,15 @@ The formats reported here are all lossless and random-access capable:
 * ``raw24``: one 16-bit sample per DSP word (simple, expensive);
 * ``u16pack``: three 16-bit values in two 24-bit words;
 * ``block-delta``: one 16-bit anchor per block followed by fixed-width signed
-  deltas inside that block.  Lookup starts from the block anchor, so it never
+  deltas inside that block. Lookup starts from the block anchor, so it never
   needs a prefix sum from the beginning of the curve.
+
+The packing helpers below are executable specifications, not just size maths:
+the verifier round-trips them and checks random access at every sample.
 
 The report also includes the renderer's compact DSP-native live-state budget.
 The ARM oracle has a 0x120-byte object, but the shared Noise/Tone renderer only
-reads/writes a much smaller field set.  Keeping those fields as direct DSP
+reads/writes a much smaller field set. Keeping those fields as direct DSP
 words is both faster and dramatically smaller than the intentionally wasteful
 one-byte-per-word Python word model.
 """
@@ -26,7 +29,6 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass, asdict
 import json
-import math
 from pathlib import Path
 import struct
 from typing import Iterable
@@ -35,6 +37,8 @@ PRIVATE_X_WORDS = 616
 PRIVATE_Y_WORDS = 2155
 WAVE_SAMPLES = 256
 ENVELOPE_SAMPLES = 2048
+DSP_WORD_BITS = 24
+DSP_WORD_MASK = (1 << DSP_WORD_BITS) - 1
 
 # Direct DSP words per voice for fields actually touched by the validated
 # shared Noise/Tone renderer. u32 values are two 16-bit limbs.
@@ -90,32 +94,82 @@ def signed_bits(values: Iterable[int]) -> int:
 
 
 def words_for_bits(bits: int) -> int:
-    return (bits + 23) // 24
+    return (bits + DSP_WORD_BITS - 1) // DSP_WORD_BITS
 
 
-def u16pack_count(count: int) -> Encoding:
-    bits = count * 16
-    return Encoding("u16pack", words_for_bits(bits), bits)
+def _put_bits(words: list[int], bitpos: int, value: int, width: int) -> None:
+    """Write low ``width`` bits into a 24-bit-word array, LSB-first."""
+    value &= (1 << width) - 1
+    remaining = width
+    shift = 0
+    while remaining:
+        wi, off = divmod(bitpos, DSP_WORD_BITS)
+        take = min(remaining, DSP_WORD_BITS - off)
+        mask = (1 << take) - 1
+        words[wi] |= ((value >> shift) & mask) << off
+        words[wi] &= DSP_WORD_MASK
+        bitpos += take
+        shift += take
+        remaining -= take
 
 
-def block_delta(values: list[int], block: int) -> Encoding:
+def _get_bits(words: list[int], bitpos: int, width: int) -> int:
+    """Read ``width`` bits from a 24-bit-word array, LSB-first."""
+    result = 0
+    out_shift = 0
+    remaining = width
+    while remaining:
+        wi, off = divmod(bitpos, DSP_WORD_BITS)
+        take = min(remaining, DSP_WORD_BITS - off)
+        mask = (1 << take) - 1
+        result |= ((words[wi] >> off) & mask) << out_shift
+        bitpos += take
+        out_shift += take
+        remaining -= take
+    return result
+
+
+def pack_fixed(values: Iterable[int], width: int) -> list[int]:
+    vals = list(values)
+    if not 1 <= width <= 24:
+        raise ValueError("fixed packing width must be 1..24")
+    words = [0] * words_for_bits(len(vals) * width)
+    for index, value in enumerate(vals):
+        if not 0 <= value < (1 << width):
+            raise ValueError(f"value {value} does not fit unsigned {width} bits")
+        _put_bits(words, index * width, value, width)
+    return words
+
+
+def unpack_fixed(words: list[int], count: int, width: int) -> list[int]:
+    return [_get_bits(words, index * width, width) for index in range(count)]
+
+
+def u16pack(values: Iterable[int]) -> list[int]:
+    return pack_fixed(values, 16)
+
+
+def u16unpack(words: list[int], count: int) -> list[int]:
+    return unpack_fixed(words, count, 16)
+
+
+def _signed_encode(value: int, width: int) -> int:
+    lo = -(1 << (width - 1))
+    hi = (1 << (width - 1)) - 1
+    if not lo <= value <= hi:
+        raise ValueError(f"signed value {value} does not fit {width} bits")
+    return value & ((1 << width) - 1)
+
+
+def _signed_decode(value: int, width: int) -> int:
+    sign = 1 << (width - 1)
+    return value - (1 << width) if value & sign else value
+
+
+def block_delta_layout(values: list[int], block: int) -> tuple[int, int, int, int]:
+    """Return (width, anchors, delta_count, total_bits) for one curve."""
     if block <= 1:
         raise ValueError("block must be >1")
-    widths: list[int] = []
-    bits = 0
-    max_decode = 0
-    for start in range(0, len(values), block):
-        chunk = values[start:start + block]
-        bits += 16  # direct random-access anchor
-        if len(chunk) <= 1:
-            continue
-        deltas = [signed_delta(a, b) for a, b in zip(chunk, chunk[1:])]
-        width = signed_bits(deltas)
-        widths.append(width)
-        # Shipping decoder is simplest if the width is fixed for the entire
-        # curve. Recompute below after finding the global width.
-        max_decode = max(max_decode, len(deltas))
-
     all_deltas = [
         signed_delta(values[i], values[i + 1])
         for i in range(len(values) - 1)
@@ -125,6 +179,58 @@ def block_delta(values: list[int], block: int) -> Encoding:
     anchors = (len(values) + block - 1) // block
     delta_count = len(values) - anchors
     bits = anchors * 16 + delta_count * width
+    return width, anchors, delta_count, bits
+
+
+def _block_bitpos(block_index: int, block: int, width: int) -> int:
+    return block_index * (16 + (block - 1) * width)
+
+
+def pack_block_delta(values: list[int], block: int) -> tuple[list[int], int]:
+    width, _anchors, _delta_count, bits = block_delta_layout(values, block)
+    words = [0] * words_for_bits(bits)
+    for block_index, start in enumerate(range(0, len(values), block)):
+        chunk = values[start:start + block]
+        bitpos = _block_bitpos(block_index, block, width)
+        _put_bits(words, bitpos, chunk[0], 16)
+        bitpos += 16
+        for previous, current in zip(chunk, chunk[1:]):
+            delta = signed_delta(previous, current)
+            _put_bits(words, bitpos, _signed_encode(delta, width), width)
+            bitpos += width
+    return words, width
+
+
+def block_delta_at(words: list[int], index: int, count: int,
+                   block: int, width: int) -> int:
+    """Random-access one decoded value with at most ``block-1`` additions."""
+    if not 0 <= index < count:
+        raise IndexError(index)
+    block_index, within = divmod(index, block)
+    bitpos = _block_bitpos(block_index, block, width)
+    value = _get_bits(words, bitpos, 16)
+    bitpos += 16
+    for _ in range(within):
+        value += _signed_decode(_get_bits(words, bitpos, width), width)
+        bitpos += width
+    if not 0 <= value <= 0xFFFF:
+        raise ValueError(f"decoded curve value escaped u16: {value}")
+    return value
+
+
+def unpack_block_delta(words: list[int], count: int,
+                       block: int, width: int) -> list[int]:
+    return [block_delta_at(words, i, count, block, width) for i in range(count)]
+
+
+def u16pack_count(count: int) -> Encoding:
+    bits = count * 16
+    return Encoding("u16pack", words_for_bits(bits), bits)
+
+
+def block_delta(values: list[int], block: int) -> Encoding:
+    width, anchors, delta_count, bits = block_delta_layout(values, block)
+    max_decode = min(block - 1, max(0, len(values) - 1))
     return Encoding(
         f"block-delta-{block}",
         words_for_bits(bits),
@@ -188,6 +294,16 @@ def analyze(directory: Path) -> dict:
     for path in envelopes:
         values = read_u16(path, ENVELOPE_SAMPLES)
         best, candidates = best_curve_encoding(values)
+        # The analysis must describe a format that actually round-trips.
+        if best.block is None:
+            if u16unpack(u16pack(values), len(values)) != values:
+                raise AssertionError(f"{path.name}: u16pack round-trip failed")
+        else:
+            packed, width = pack_block_delta(values, best.block)
+            if width != best.delta_bits:
+                raise AssertionError(f"{path.name}: block-delta width drift")
+            if unpack_block_delta(packed, len(values), best.block, width) != values:
+                raise AssertionError(f"{path.name}: block-delta round-trip failed")
         env_best_words += best.words
         env_report.append({
             "file": path.name,
@@ -196,12 +312,15 @@ def analyze(directory: Path) -> dict:
             "candidates": [asdict(x) for x in candidates],
         })
 
-    # Every wave is random-indexed twice per sample. Use dense 16-bit bitpacking
-    # as the baseline exact representation: 3 samples / 2 DSP words. Delta
-    # forms are reported only as information because they add prefix/decode work
-    # to the hottest path.
+    # Every wave is random-indexed twice per sample. Use one contiguous dense
+    # 16-bit stream: three samples per two DSP words. Keeping all unique waves
+    # in one stream avoids a padding word at each 256-sample table boundary.
+    wave_values = [value for table in waves for value in table]
     wave_words_each = u16pack_count(WAVE_SAMPLES).words
-    wave_packed_words = wave_words_each * len(waves)
+    wave_packed = u16pack(wave_values)
+    if u16unpack(wave_packed, len(wave_values)) != wave_values:
+        raise AssertionError("wave u16pack round-trip failed")
+    wave_packed_words = len(wave_packed)
     wave_raw24_words = WAVE_SAMPLES * len(waves)
     wave_report = []
     for name, values in zip(wave_names, waves):
@@ -209,7 +328,7 @@ def analyze(directory: Path) -> dict:
         wave_report.append({
             "file": name,
             "raw24_words": WAVE_SAMPLES,
-            "u16pack_words": wave_words_each,
+            "standalone_u16pack_words": wave_words_each,
             "delta": delta_stats(values),
             "informational_best_delta": asdict(delta_best),
             "delta_candidates": [asdict(x) for x in delta_candidates],
@@ -270,7 +389,8 @@ def print_report(report: dict) -> None:
     w = report["waves"]
     print(
         f"  waves: {report['unique_wave_tables']} unique x {WAVE_SAMPLES}; "
-        f"raw24 {w['raw24_words']} words, u16pack {w['u16pack_words']} words"
+        f"raw24 {w['raw24_words']} words, contiguous u16pack "
+        f"{w['u16pack_words']} words"
     )
     for env in report["envelopes"]["tables"]:
         best = env["best"]
