@@ -12,6 +12,7 @@
 ;   w0 low16 $504b ('PK')
 ;   w2 low16 $5931 ('Y1')
 ;   w3 low16 1 iff this frame carries a trig
+;   w8..w19 twelve source-parameter bytes, one per DSP word
 ;
 ; Persistent memory per core:
 ;   X:$3800 + 58*voice   41 compact state + 17 envelope-cache words
@@ -23,6 +24,11 @@
 ; x:$418 is stock's per-core track position: $00/$20/$40/$60. We map those
 ; directly to four 58-word voice blocks. A signed PERKY source consumes the
 ; same FLEX ring slot advance as Analog BD and resumes at stock AMP/FX.
+;
+; Development control policy: once the voice block is resolved, call the
+; isolated pk_synth_apply_controls mapper exactly once per source block. That
+; mapper is intentionally synthetic and will later be replaced by the real
+; PĒRKONS control/update law without changing this seam or the sample renderer.
 ;
 ; Sample-accurate trigger policy for this development canary:
 ;   render [0,event) with trigger word low;
@@ -77,6 +83,10 @@ pks_voice2:
 pks_voice3:
         move    #>$0038ae,r6
 pks_voice_ready:
+        ; Apply current staged TUNE/DECAY/ENV/MIX/MODE to compact state.
+        ; This is the one synthetic development layer in the live path.
+        jsr     pk_synth_apply_controls
+
         move    #>$003900,r5            ; shared 64-word scratch
         move    #>$ffffff,m0
         move    #>$ffffff,m1
