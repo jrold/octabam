@@ -56,7 +56,7 @@ def main() -> None:
     if full.arena != perky.arena or full.claims != perky.claims:
         raise AssertionError("full machine changed the frozen PERKY memory ownership")
 
-    refs = {(r.address, r.expect, r.unit, r.symbol) for r in full.symbol_refs}
+    refs = {(r.addr, r.expect, r.unit, r.symbol) for r in full.symbol_refs}
     want_refs = {
         (0x400D6438, 0x40004008, "pkcontrol", "pk_render"),
         (0x400CE10E, 0, "pkcontrol", "pk_engine_left"),
@@ -69,7 +69,7 @@ def main() -> None:
     # measured/qualified addresses and guards. Destination symbols differ by
     # design, but adding/removing/moving a firmware patch is not allowed here.
     def detour_shape(module):
-        return {(d.address, d.expect, d.kind, d.pad_to) for d in module.detours}
+        return {(d.site, d.expect, d.kind, d.pad_to) for d in module.detours}
 
     if detour_shape(full) != detour_shape(analog):
         missing = detour_shape(analog) - detour_shape(full)
@@ -77,7 +77,7 @@ def main() -> None:
         raise AssertionError(f"PERKY detour surface differs; missing={missing!r} extra={extra!r}")
 
     def poke_shape(module):
-        return {(p.address, p.expect, p.write) for p in module.pokes}
+        return {(p.addr, p.expect, p.write) for p in module.pokes}
 
     if poke_shape(full) != poke_shape(analog):
         missing = poke_shape(analog) - poke_shape(full)
