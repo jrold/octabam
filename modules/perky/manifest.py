@@ -100,6 +100,7 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_mix_source.py", remix_arg=False),
         Gate("tools/verify/verify_perky_mix_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_wave_unpack_exec.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_envelope_unpack7_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_probe_port.py", remix_arg=False, stage="image"),
     ),
 )
