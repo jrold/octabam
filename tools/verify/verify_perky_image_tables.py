@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gate PERKY's private-Y packed-table injection policy without a stock image."""
+"""Gate PERKY's private-X/Y injection policy without a stock image."""
 from __future__ import annotations
 
 import importlib.util
@@ -38,6 +38,8 @@ def expect_fail(fn, text: str) -> None:
 
 
 def main() -> None:
+    if (perky_image.X_BASE, perky_image.X_WORDS) != (0x3800, 236):
+        raise AssertionError("private-X init geometry drifted from X:3800 + 236")
     if perky_image.Y_BASE != 0x0795 or perky_image.Y_END != 0x1000:
         raise AssertionError("private-Y interval drifted from hardware-measured 0x0795..0x0fff")
     if perky_image.Y_WORDS != 2155:
@@ -48,45 +50,70 @@ def main() -> None:
         source, packed = td / "source", td / "packed"
         fab.emit_tables(source)
         layout = builder.build(source, packed)
-        words, loaded = perky_image.load_tables(packed)
+        y_words, loaded = perky_image.load_tables(packed)
+        x_words = perky_image.load_state_init(packed, loaded)
         if loaded != layout:
             raise AssertionError("injector changed packed layout metadata")
-        if len(words) != 1975:
-            raise AssertionError(f"synthetic table payload has {len(words)} words, expected 1975")
-        if perky_image.Y_BASE + len(words) - 1 != 0x0F4B:
+        if len(y_words) != 1975:
+            raise AssertionError(f"synthetic table payload has {len(y_words)} words, expected 1975")
+        if len(x_words) != 236:
+            raise AssertionError(f"synthetic X init has {len(x_words)} words, expected 236")
+        if perky_image.Y_BASE + len(y_words) - 1 != 0x0F4B:
             raise AssertionError("synthetic table end address drifted")
-        if perky_image.Y_END - (perky_image.Y_BASE + len(words)) != 180:
+        if perky_image.Y_END - (perky_image.Y_BASE + len(y_words)) != 180:
             raise AssertionError("synthetic private-Y tail margin drifted")
 
-        # A finalized stock-like map ending immediately before our interval is
-        # legal; so is an unrelated FX1 record beginning at 0x1000.
         legal = [
-            (2, 0x0200, 0x0595, 0),   # ends at 0x0794
-            (2, 0x1000, 0x0C00, 0),   # FX1 starts immediately after private gap
-            (1, 0x0700, 0x0200, 0),   # X is a different address space
+            (2, 0x0200, 0x0595, 0),   # Y ends at 0x0794
+            (2, 0x1000, 0x0C00, 0),   # FX1 Y begins after private gap
+            (1, 0x3700, 0x0100, 0),   # X ends at 0x37ff
+            (1, 0x38EC, 0x0014, 0),   # X gap before shared scratch at 0x3900
         ]
-        perky_image._check_y_free(legal, len(words), "A")
+        perky_image._check_y_free(legal, len(y_words), "A")
+        perky_image._check_x_free(legal, "A")
 
         for record in (
-            (2, 0x0794, 2, 0),                    # crosses lower boundary
-            (2, 0x0795, 1, 0),                    # first PERKY word
-            (2, 0x0800, 0x20, 0),                 # middle
-            (2, 0x0F4B, 1, 0),                    # last synthetic word
+            (2, 0x0794, 2, 0),
+            (2, 0x0795, 1, 0),
+            (2, 0x0800, 0x20, 0),
+            (2, 0x0F4B, 1, 0),
         ):
             expect_fail(
-                lambda record=record: perky_image._check_y_free([record], len(words), "A"),
+                lambda record=record: perky_image._check_y_free([record], len(y_words), "A"),
                 "overlaps PERKY table destination",
             )
 
-        # The still-free tail after a smaller table is legal, while a table
-        # one word beyond the measured interval is refused by load_tables.
-        perky_image._check_y_free([(2, 0x0F4C, 0xB4, 0)], len(words), "B")
+        for record in (
+            (1, 0x37FF, 2, 0),
+            (1, 0x3800, 1, 0),
+            (1, 0x3840, 0x20, 0),
+            (1, 0x38EB, 1, 0),
+        ):
+            expect_fail(
+                lambda record=record: perky_image._check_x_free([record], "B"),
+                "overlaps PERKY state-init destination",
+            )
+
+        # The still-free Y tail after the synthetic tables remains legal.
+        perky_image._check_y_free([(2, 0x0F4C, 0xB4, 0)], len(y_words), "B")
+
+        # Corrupting the X-init hash must refuse before image integration.
+        state_path = packed / "state_init.bin"
+        state_raw = state_path.read_bytes()
+        try:
+            state_path.write_bytes(state_raw[:-3] + b"\x01\x00\x00")
+            expect_fail(
+                lambda: perky_image.load_state_init(packed, layout),
+                "state_init.bin sha256",
+            )
+        finally:
+            state_path.write_bytes(state_raw)
+
+        # A Y table one word beyond the measured interval is refused.
         raw = (packed / "tables.bin").read_bytes()
         layout_path = packed / "layout.json"
         layout_text = layout_path.read_text()
         try:
-            # Append 181 zero words and make metadata internally consistent
-            # enough to reach the capacity check.
             oversized = raw + bytes(181 * 3)
             (packed / "tables.bin").write_bytes(oversized)
             import hashlib, json
@@ -101,9 +128,9 @@ def main() -> None:
             layout_path.write_text(layout_text)
 
     print(
-        "PERKY image table policy: PASS "
-        "(Y:0795..0fff = 2155 words; synthetic ends 0f4b, margin 180; "
-        "overlap/oversize refusals exercised)"
+        "PERKY image data policy: PASS "
+        "(X:3800..38eb = 236 init words; Y:0795..0fff = 2155 capacity; "
+        "synthetic Y ends 0f4b; overlap/hash/oversize refusals exercised)"
     )
 
 
