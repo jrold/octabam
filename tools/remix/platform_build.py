@@ -101,26 +101,57 @@ def link_runtime(units, work: pathlib.Path, defsyms: dict, base: int, includes=N
     return raw.read_bytes(), _nm(elf, work)
 
 
-def preboot_layout(layout, entries):
-    """Declare cached-address extents and reject overlap with the runtime/stage."""
+def _cached(address: int) -> int:
+    """Normalize the firmware's cached/uncached SDRAM aliases."""
+    if 0x48000000 <= address < 0x50000000:
+        return address - UNCACHED
+    return address
+
+
+def preboot_layout(layout, entries, reserve=None):
+    """Declare preboot extents and reject overlap/out-of-reservation writes.
+
+    Historically preboot payloads were only carried beside a platform DRAM
+    runtime, so their scratch was required to live inside that runtime's arena
+    reserve.  A source machine such as PERKY needs the same proven loader but
+    no large ColdFire runtime.  ``reserve=(base,size)`` therefore declares a
+    separately reserved audio-arena slice used only for preboot dst/stage
+    buffers.  When omitted, the old platform-runtime reserve remains the
+    allowed region and behaviour is unchanged.
+    """
     if not entries:
         return []
-    if not all(k in layout for k in ('base', 'runtime_end', 'stage', 'stage_end', 'ceiling')):
-        raise ValueError('pre-boot payloads require a declared platform arena layout')
-    occupied = [('runtime', layout['base'], layout['runtime_end']),
-                ('runtime stage', layout['stage'], layout['stage_end'])]
-    if 'bss_end' in layout:
-        occupied.append(('runtime .bss', layout['runtime_end'], layout['bss_end']))
+
+    runtime_keys = ('base', 'runtime_end', 'stage', 'stage_end', 'ceiling')
+    has_runtime = all(k in layout for k in runtime_keys)
+    if reserve is not None:
+        allowed_base, allowed_size = reserve
+        if allowed_size <= 0:
+            raise ValueError('pre-boot reserve size must be positive')
+        allowed_end = allowed_base + allowed_size
+    elif has_runtime:
+        allowed_base, allowed_end = layout['base'], layout['ceiling']
+    else:
+        raise ValueError('pre-boot payloads require a declared arena reserve')
+
+    occupied = []
+    if has_runtime:
+        occupied += [('runtime', layout['base'], layout['runtime_end']),
+                     ('runtime stage', layout['stage'], layout['stage_end'])]
+        if 'bss_end' in layout:
+            occupied.append(('runtime .bss', layout['runtime_end'], layout['bss_end']))
+
     result = []
     for entry in entries:
         for role, length in (('dst', entry['rawlen']), ('stage', len(entry['blob']))):
-            start = entry[role]
-            if 0x48000000 <= start < 0x50000000:
-                start -= UNCACHED
+            start = _cached(entry[role])
             end = start + length
             name = entry['name'] + ' ' + role
-            if length <= 0 or not layout['base'] <= start < end <= layout['ceiling']:
-                raise ValueError(f'pre-boot {name} lies outside the platform arena')
+            if length <= 0 or not allowed_base <= start < end <= allowed_end:
+                raise ValueError(
+                    f'pre-boot {name} lies outside its arena reserve: '
+                    f'{start:#x}..{end:#x} not in {allowed_base:#x}..{allowed_end:#x}'
+                )
             for other, lo, hi in occupied:
                 if start < hi and lo < end:
                     raise ValueError(f'pre-boot {name} overlaps {other}: {start:#x}..{end:#x}')
@@ -130,7 +161,7 @@ def preboot_layout(layout, entries):
 
 
 def build(units, payloads, work: pathlib.Path, reserve=None, defsyms=None, preboot=(), includes=None,
-          unit_defs=None):
+          unit_defs=None, preboot_reserve=None):
     """units: [(module key, Linked)] with dram=True, in link order.
     payloads: [dict(name, blob, stage, dst, rawlen, rhash, backup)] for
     payloads built elsewhere (Octakit): `blob` = signature + GKA3 stream.
@@ -139,8 +170,10 @@ def build(units, payloads, work: pathlib.Path, reserve=None, defsyms=None, prebo
     link (a bridge's continuation targets, schema.Override). preboot:
     [dict(name, blob, stage, dst, rawlen, rhash)] depacked BEFORE the
     boot-continue call (Analog BD's DSP uploads); the loader
-    carries that section only when there is one. Returns
-    (append bytes, symbols of the octabam runtime, boot poke, payload
+    carries that section only when there is one. ``preboot_reserve`` may name
+    a separate (base,size) arena slice for those dst/stage buffers, allowing a
+    preboot-only loader or composition with a platform runtime elsewhere.
+    Returns (append bytes, symbols of the octabam runtime, boot poke, payload
     names) and writes LAYOUT. unit_defs: {unit label: resolved
     Linked.defsyms} for each unit's assembly (link_runtime)."""
     import json
@@ -186,9 +219,15 @@ def build(units, payloads, work: pathlib.Path, reserve=None, defsyms=None, prebo
             layout.update(bss_end=bss_end)
     if preboot:
         try:
-            layout['preboot'] = preboot_layout(layout, preboot)
+            layout['preboot'] = preboot_layout(layout, preboot, preboot_reserve)
         except ValueError as exc:
             sys.exit(f'platform build: {exc}')
+        if preboot_reserve is not None:
+            layout['preboot_reserve'] = {
+                'base': preboot_reserve[0],
+                'size': preboot_reserve[1],
+                'ceiling': preboot_reserve[0] + preboot_reserve[1],
+            }
     (work / LAYOUT).write_text(json.dumps(layout, indent=2) + "\n")
     # the table and the blobs, as assembler input
     inc = [f"        .long {len(entries)}"]
