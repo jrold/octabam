@@ -32,6 +32,7 @@ DIS = V / "build/source/disassemble/dsp56kDisassemble"
 HOST = OUT / "bd909_host"
 HOST_SRC = ROOT / "tools/harness/bd909_host/bd909_host.cpp"
 ORG = 0x3000
+TABLE_BASE = 0x0795
 LINE = re.compile(r"^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$")
 
 
@@ -68,9 +69,11 @@ def main():
     build_host(); binary, entry = assemble()
     wave_values = [[x & 0xFFFF for x in w] for w in fab.waves()]
     table = packed.pack_waves(zip(fab.WAVE_ADDRESSES, wave_values))
+    if TABLE_BASE + len(table.words) != 0x0A40:
+        fail("synthetic wave payload no longer ends exactly at Y:0x0a40")
     data = OUT/"wave.data"; script = OUT/"wave.script"; raw = OUT/"wave.raw"; meter = OUT/"wave.meter"
     state = [0]*64; state[40] = 0
-    data.write_text("X 200 " + " ".join(f"{x:06x}" for x in state) + "\nX 3000 " + " ".join(f"{x:06x}" for x in table.words) + "\n")
+    data.write_text("X 200 " + " ".join(f"{x:06x}" for x in state) + f"\nY {TABLE_BASE:x} " + " ".join(f"{x:06x}" for x in table.words) + "\n")
     script.write_text((" ".join(["0"]*12+["-1"]) + "\n") * 64)
     subprocess.run([str(HOST),"-code",str(binary),"-org",f"{ORG:x}","-entry",f"{entry:x}","-data",str(data),"-script",str(script),"-out",str(raw),"-meter",str(meter),"-frames","16"],check=True,capture_output=True,text=True)
     got = list(struct.unpack(f"<{raw.stat().st_size//4}i",raw.read_bytes()))
@@ -80,6 +83,6 @@ def main():
         at = next(i for i,(a,b) in enumerate(zip(got,expected)) if a!=b)
         fail(f"audio word {at}: {got[at]} != {expected[at]}")
     counts = [int(x) for x in meter.read_text().split()]
-    print(f"PERKY packed wave decoder executable gate: OK (1024 samples; {len(table.words)} words; max {max(counts)} instr/16 samples)")
+    print(f"PERKY packed wave decoder executable gate: OK (1024 samples; Y:{TABLE_BASE:04x}..0a3f; {len(table.words)} words; max {max(counts)} instr/16 samples)")
 
 if __name__ == "__main__": main()
