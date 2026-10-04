@@ -10,9 +10,13 @@
 ;   X:r5+51      returned u16 amplitude
 ;   X:r5+52..63  scratch
 ;
-; One shipping-sized derived cache lives at:
-;   X:r5+64      key = (curve_id << 7) | block_id, invalid = $ffff
-;   X:r5+65..80  sixteen decoded u16 values
+; One shipping-sized derived cache is addressed through r4:
+;   X:(r4)       key = (curve_id << 7) | block_id, invalid = $ffff
+;   X:(r4+1..16) sixteen decoded u16 values
+;
+; Two entries share one implementation:
+;   pk_envelope_packed7_probe  -- standalone gates; points r4 at X:r5+64
+;   pk_envelope_packed7_cached -- shipping caller supplies persistent r4
 ;
 ; Synthetic packed table geometry used by this executable canary:
 ;   curve 0 / shape 1: Y:$0a40, 7-bit deltas
@@ -21,6 +25,10 @@
 ; and payload metadata remain the source of truth until real bytes qualify it.
 
 pk_envelope_packed7_probe:
+        lua     (r5+$40),r4             ; standalone cache = scratch + 64
+        bra     pk_envelope_packed7_cached
+
+pk_envelope_packed7_cached:
         ; Preserve caller's shape outside the raw envelope kernel's scratch.
         move    x:(r5+$41),a
         move    a1,x:(r5+$62)
@@ -129,10 +137,8 @@ pkep_delta_sign_ready:
 ; pkep_curve_u16
 ;   input  x0 = curve index 0..2047
 ;   input  X:r5+63 = curve id 0/1
+;   input  r4 = 17-word persistent cache base
 ;   output A1 = unsigned u16 value
-;
-; One cache word keys BOTH the curve and block. Therefore switching shape at
-; the same block number is a miss and refills the same 17 words.
 ; ---------------------------------------------------------------------------
 pkep_curve_u16:
         move    x0,a
@@ -151,12 +157,12 @@ pkep_curve_u16:
         add     #>$000080,a
         move    a1,x1
 pkep_key_ready:
-        move    x:(r5+$64),a
+        move    x:(r4),a
         cmp     x1,a
         beq     pkep_cache_hit
 
         ; Publish the new curve+block key, then decode its 16 values.
-        move    x1,x:(r5+$64)
+        move    x1,x:(r4)
 
         ; block = index >> 4.
         move    x:(r5+$60),a
@@ -208,7 +214,7 @@ pkep_env1:
         move    #>$000a40,r1
 pkep_base_ready:
         lua     (r1+n1),r2
-        lua     (r5+$65),r3
+        lua     (r4+$1),r3
 
         ; Unsigned 16-bit anchor.
         clr     a
@@ -268,7 +274,7 @@ pkep_delta_done:
 pkep_cache_hit:
         move    x:(r5+$61),a
         move    a1,n1
-        lua     (r5+$65),r1
+        lua     (r4+$1),r1
         move    x:(r1+n1),a
         and     #>$00ffff,a
         rts
