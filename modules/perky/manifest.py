@@ -10,6 +10,7 @@ Keeping this as its own module/remix gives us one falsifiable result before the
 Noise/Tone renderer and the full machine browser are allowed into the image.
 """
 from remix.schema import (
+    ArenaReserve,
     Category,
     DspHook,
     DspSection,
@@ -42,6 +43,11 @@ MODULE = Module(
             note="isolated canary: replace FLEX renderer with PK/Y1 record writer",
         ),
     ),
+    # Four 256 KiB preboot windows end at cached 0x40c00000.  From stock's
+    # arena base 0x40a955e0, 242 x 6144-byte pages are the smallest integral
+    # reservation that contains them (ceiling 0x40c005e0).  This is ~1.42 MiB,
+    # not the platform runtime's much larger 1,707-page reservation.
+    arena=ArenaReserve(pages=242, where="bottom"),
     dsp=DspSection(
         asm="modules/perky/probe_glue.asm",
         priority=90,
@@ -77,6 +83,9 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_runtime_memory.py", remix_arg=False),
         Gate("tools/verify/verify_perky_packed_tables.py", remix_arg=False),
         Gate("tools/verify/verify_perky_envelope_cache.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_envelope_cursor.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_table_payload.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_image_tables.py", remix_arg=False),
         Gate("tools/verify/verify_perky_synthetic_fixtures.py", remix_arg=False),
         Gate("tools/verify/verify_perky_synthetic_render.py", remix_arg=False),
         Gate("tools/verify/verify_perky_math_source.py", remix_arg=False),
