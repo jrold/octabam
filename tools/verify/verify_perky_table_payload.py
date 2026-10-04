@@ -5,7 +5,6 @@ from __future__ import annotations
 import importlib.util
 import json
 from pathlib import Path
-import struct
 import sys
 import tempfile
 
@@ -45,9 +44,9 @@ def main() -> None:
         if layout["synthetic"] is not True:
             raise AssertionError("synthetic provenance marker was lost")
         if layout["total_words"] != 1975:
-            raise AssertionError(f"payload has {layout['total_words']} words, expected 1975")
+            raise AssertionError(f"Y payload has {layout['total_words']} words, expected 1975")
         if layout["total_bytes"] != 5925:
-            raise AssertionError(f"payload has {layout['total_bytes']} bytes, expected 5925")
+            raise AssertionError(f"Y payload has {layout['total_bytes']} bytes, expected 5925")
         if layout["waves"]["offset_words"] != 0 or layout["waves"]["words"] != 683:
             raise AssertionError("wave payload layout drifted")
         if [x["offset_words"] for x in layout["envelopes"]] != [683, 1329]:
@@ -57,28 +56,65 @@ def main() -> None:
         if [x["delta_bits"] for x in layout["envelopes"]] != [7, 7]:
             raise AssertionError("synthetic envelope delta widths drifted")
 
+        xi = layout.get("x_init", {})
+        if xi.get("base_word") != 0x3800 or xi.get("words") != 236:
+            raise AssertionError(f"X init geometry drifted: {xi!r}")
+        if xi.get("voice_words") != 41 or xi.get("cache_words_per_voice") != 17:
+            raise AssertionError("X init voice/cache geometry drifted")
+        if xi.get("voices") != 4 or xi.get("rng_words") != 4:
+            raise AssertionError("X init voice/RNG count drifted")
+        if xi.get("synthetic_audible_preset") is not True:
+            raise AssertionError("synthetic X init lost audible-preset provenance")
+
         disk_layout = json.loads((out / "layout.json").read_text())
         if disk_layout != layout:
             raise AssertionError("layout.json differs from returned layout")
-        blob = (out / "tables.bin").read_bytes()
-        words = read24(blob)
-        text_words = [int(line, 16) for line in (out / "tables.words").read_text().splitlines()]
-        if words != text_words:
-            raise AssertionError("binary and textual DSP-word payloads differ")
-        if len(words) != layout["total_words"]:
-            raise AssertionError("payload word count disagrees with metadata")
 
-        # Determinism is part of the image-build contract.
+        y_blob = (out / "tables.bin").read_bytes()
+        y_words = read24(y_blob)
+        y_text = [int(line, 16) for line in (out / "tables.words").read_text().splitlines()]
+        if y_words != y_text:
+            raise AssertionError("binary and textual Y-word payloads differ")
+        if len(y_words) != layout["total_words"]:
+            raise AssertionError("Y payload word count disagrees with metadata")
+
+        x_blob = (out / "state_init.bin").read_bytes()
+        x_words = read24(x_blob)
+        x_text = [int(line, 16) for line in (out / "state_init.words").read_text().splitlines()]
+        if x_words != x_text:
+            raise AssertionError("binary and textual X-init words differ")
+        if len(x_words) != 236 or len(x_blob) != 708:
+            raise AssertionError("X init must be 236 x 24-bit words / 708 bytes")
+        if any(word > 0xFFFF for word in x_words):
+            raise AssertionError("compact X init contains a word above 16 bits")
+
+        # Four [41 state + 17 cache] blocks. Each cache key starts invalid.
+        stride = 58
+        for voice in range(4):
+            base = voice * stride
+            if x_words[base] != 255:
+                raise AssertionError(f"voice {voice}: synthetic velocity is not 255")
+            if x_words[base + 41] != 0xFFFF:
+                raise AssertionError(f"voice {voice}: cache key is not invalid")
+            if any(x_words[base + 42:base + 58]):
+                raise AssertionError(f"voice {voice}: cache values are not zero-initialized")
+        if x_words[-4:] != [1, 0, 0, 0]:
+            raise AssertionError(f"RNG seed drifted: {x_words[-4:]}")
+
+        # Determinism is part of the image-build contract, for BOTH assets.
         second = td / "out2"
         layout2 = builder.build(source, second)
         if layout2 != layout:
             raise AssertionError("same source produced different layout metadata")
-        if (second / "tables.bin").read_bytes() != blob:
+        if (second / "tables.bin").read_bytes() != y_blob:
             raise AssertionError("same source produced different packed table bytes")
+        if (second / "state_init.bin").read_bytes() != x_blob:
+            raise AssertionError("same source produced different X-init bytes")
 
     print(
-        "PERKY table payload builder: PASS "
-        "(1975 x 24-bit words / 5925 bytes; deterministic layout + binary)"
+        "PERKY payload builder: PASS "
+        "(Y 1975 x 24-bit words; X init 236 x 24-bit words; "
+        "4 x [41 state + 17 cache] + RNG; deterministic binaries/layout)"
     )
 
 
