@@ -74,6 +74,7 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_sources.py", remix_arg=False),
         Gate("tools/verify/verify_perky_table_extractor.py", remix_arg=False),
         Gate("tools/verify/verify_perky_memory_plan.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_runtime_memory.py", remix_arg=False),
         Gate("tools/verify/verify_perky_packed_tables.py", remix_arg=False),
         Gate("tools/verify/verify_perky_envelope_cache.py", remix_arg=False),
         Gate("tools/verify/verify_perky_synthetic_fixtures.py", remix_arg=False),
