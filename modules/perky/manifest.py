@@ -48,6 +48,7 @@ MODULE = Module(
     arena=ArenaReserve(pages=242, where="bottom"),
     claims=Claims(dsp_ranges=(
         DspRange("x", 0x3800, 236, "PERKY compact voice state + envelope caches + RNG"),
+        DspRange("x", 0x38EC, 1, "PERKY source event-offset staging"),
         DspRange("x", 0x3900, 64, "PERKY shared source-render scratch"),
         DspRange("y", 0x0795, 0x1000 - 0x0795, "PERKY packed Noise/Tone tables"),
     )),
@@ -76,6 +77,7 @@ MODULE = Module(
     ),
     gates=(
         Gate("tools/verify/verify_perky_probe.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_synth_seam.py", remix_arg=False),
         Gate("tools/verify/verify_perky_preboot_reserve.py", remix_arg=False),
         Gate("tools/verify/verify_perky_noise_tone_ref.py", remix_arg=False),
         Gate("tools/verify/verify_perky_dsp_word_model.py", remix_arg=False),
