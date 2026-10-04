@@ -8,6 +8,11 @@ same already-gated algorithm bodies but mechanically redirects their identical
 add/sub/ASR/low32-multiply calls to the single ``pk_u32_*`` implementation in
 ``noise_tone_math.asm`` and removes only the duplicate helper sections.
 
+The development synthetic-control mapper is deliberately one isolated piece.
+It makes the five Octatrack controls audible for the synthetic canary while the
+real PĒRKONS v1.2.1 update/control law is still being ported; replacing that one
+piece later must not alter the qualified per-sample renderer.
+
 No synthesis state-transition or sample-math body is rewritten here. Every cut
 is guarded by exact marker/label counts so a source edit fails generation
 rather than silently moving a boundary.
@@ -36,6 +41,7 @@ SPRING_DONOR_WORDS = 1063
 
 PIECES = (
     "synth_seam_glue.asm",
+    "synthetic_control_map.asm",
     "noise_tone_voice_xstate_glue.asm",
     "noise_tone_math.asm",
     "noise_tone_filter.asm",
@@ -130,8 +136,8 @@ def compact_piece(name: str, text: str) -> str:
             die(f"{name}: helper/clamp boundaries reversed")
         return text[:start].rstrip() + "\n\n" + text[end:].rstrip() + "\n"
 
-    # Seam, complete voice glue and noise_tone_math.asm carry no duplicate
-    # helper family to remove. The math file is the shared authority.
+    # Seam, synthetic control mapper, complete voice glue and
+    # noise_tone_math.asm carry no duplicate helper family to remove.
     return text
 
 
@@ -195,6 +201,10 @@ def generate(layout_path: Path) -> str:
         die(f"generated source contains {src.count('@CONT@')} @CONT@ markers, expected 1")
     if src.count("pk_probe_source:") != 1:
         die("generated source does not expose exactly one DspHook entry")
+    if src.count("pk_synth_apply_controls:") != 1:
+        die("generated source must contain exactly one synthetic control mapper")
+    if src.count("jsr     pk_synth_apply_controls") != 1:
+        die("source seam must call the synthetic control mapper exactly once")
 
     # Dedupe invariants: one shared arithmetic definition, no local copies.
     for label in ("pk_u32_add:", "pk_u32_sub:", "pk_u32_asr:", "pk_u32_mul_low:"):
