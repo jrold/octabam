@@ -22,6 +22,7 @@ PRIVATE_X_WORDS = 616
 PRIVATE_Y_WORDS = 2155
 VOICES_PER_CORE = 4
 RNG_WORDS = 4
+EVENT_STAGING_WORDS = 1
 SHARED_SCRATCH_WORDS = 64
 SYNTHETIC_WAVE_Y = 683
 SYNTHETIC_ENVELOPE_Y_EACH = 646
@@ -31,17 +32,17 @@ def main() -> None:
     state = compact.WORDS_PER_VOICE
     cache = envcache.CACHE_WORDS_PER_VOICE
     persistent_x = VOICES_PER_CORE * (state + cache) + RNG_WORDS
-    x_words = persistent_x + SHARED_SCRATCH_WORDS
+    x_words = persistent_x + EVENT_STAGING_WORDS + SHARED_SCRATCH_WORDS
     if state != 41:
         raise AssertionError(f"compact state drifted to {state} words/voice")
     if cache != 17:
         raise AssertionError(f"envelope cache drifted to {cache} words/voice")
     if persistent_x != 236:
         raise AssertionError(f"persistent X footprint drifted to {persistent_x} words/core")
-    if x_words != 300:
-        raise AssertionError(f"runtime X footprint incl scratch drifted to {x_words} words/core")
+    if x_words != 301:
+        raise AssertionError(f"runtime X footprint incl seam/scratch drifted to {x_words} words/core")
     x_margin = PRIVATE_X_WORDS - x_words
-    if x_margin != 316:
+    if x_margin != 315:
         raise AssertionError(f"runtime X margin drifted to {x_margin} words")
 
     synthetic_y = SYNTHETIC_WAVE_Y + 2 * SYNTHETIC_ENVELOPE_Y_EACH
@@ -53,9 +54,10 @@ def main() -> None:
 
     print(
         "PERKY runtime memory: PASS "
-        f"(persistent X {persistent_x}; + shared scratch {SHARED_SCRATCH_WORDS} = "
-        f"{x_words}/{PRIVATE_X_WORDS}, margin {x_margin}; synthetic packed Y "
-        f"{synthetic_y}/{PRIVATE_Y_WORDS}, margin {y_margin})"
+        f"(persistent X {persistent_x}; + event {EVENT_STAGING_WORDS} + "
+        f"shared scratch {SHARED_SCRATCH_WORDS} = {x_words}/{PRIVATE_X_WORDS}, "
+        f"margin {x_margin}; synthetic packed Y {synthetic_y}/{PRIVATE_Y_WORDS}, "
+        f"margin {y_margin})"
     )
 
 
