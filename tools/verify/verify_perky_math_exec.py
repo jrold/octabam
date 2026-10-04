@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Assemble/execute PERKY u32/RNG math in dsp56kEmu and compare exactly."""
+"""Assemble/execute PERKY u32/RNG/noise math in dsp56kEmu and compare exactly."""
 from __future__ import annotations
 
 import pathlib
@@ -105,11 +105,17 @@ def build():
     return b, labels['pk_math_probe']
 
 
-def run(binary, entry, tag, op, a, b=0, shift=0):
+def run(binary, entry, tag, op, a, b=0, shift=0, extra=None, full=False):
     w = [0] * 64
     aa = U32.from_int(a)
     bb = U32.from_int(b)
     w[:5] = [aa.lo, aa.hi, bb.lo, bb.hi, shift]
+    if extra:
+        for index, value in extra.items():
+            if not 0 <= index < len(w):
+                fail(f'{tag}: extra state index {index} outside 0..{len(w)-1}')
+            w[index] = value & 0xFFFFFF
+
     data = OUT / (tag + '.data')
     script = OUT / (tag + '.script')
     raw = OUT / (tag + '.raw')
@@ -129,14 +135,23 @@ def run(binary, entry, tag, op, a, b=0, shift=0):
     d = [int(x, 16) for x in state.read_text().split()]
     if len(d) < 64:
         fail(tag + ': truncated state dump')
-    return U32(d[8] & 0xffff, d[9] & 0xffff), U32(
-        d[10] & 0xffff, d[11] & 0xffff
+    result = (
+        U32(d[8] & 0xffff, d[9] & 0xffff),
+        U32(d[10] & 0xffff, d[11] & 0xffff),
     )
+    return (*result, d) if full else result
 
 
 def ck(tag, got, want):
     if got != want:
         fail(f'{tag}: got {got.unsigned():08x}, want {want.unsigned():08x}')
+
+
+def ckw(tag, got, want):
+    got &= 0xFFFF
+    want &= 0xFFFF
+    if got != want:
+        fail(f'{tag}: got {got:04x}, want {want:04x}')
 
 
 def main():
@@ -208,7 +223,51 @@ def main():
         ck(f'rng-return-{i}', got_return, returned)
         n += 3
 
-    print(f'PERKY DSP math/RNG executable gate: OK ({n} exact result words)')
+    # Exact renderNoise sample-and-hold transitions. The standalone DSP probe
+    # stores count/reload/held as direct u16 words at +40/+41/+42; the final
+    # engine will adapt these to the byte-per-word firmware-state layout.
+    noise_cases = [
+        # count, reload, held, oldLow, oldHigh
+        (3, 7, 0x8001, 0x12345678, 0x9abcdef0),
+        (1, 0xffff, 0x7fff, 0xffffffff, 0xffffffff),
+        (0, 0, 0x1111, 0x00000000, 0x00000000),
+        (0, 0x1234, 0x2222, 0x89abcdef, 0x76543210),
+        (0, 0xffff, 0x3333, 0xcd61d75b, 0x13579bdf),
+    ]
+    for i, (count, reload, held, old_low, old_high) in enumerate(noise_cases):
+        rng = WordRng.from_ints(old_low, old_high)
+        if count:
+            want_count = (count - 1) & 0xffff
+            want_held = held & 0xffff
+            want_sample = held & 0xffff
+            want_low, want_high = rng.low, rng.high
+        else:
+            returned = next_random(rng)
+            want_count = reload & 0xffff
+            want_held = returned.lo & 0xffff
+            want_sample = want_held
+            want_low, want_high = rng.low, rng.high
+
+        got_low, got_high, state = run(
+            binary,
+            entry,
+            f'noise-{i}',
+            7,
+            old_low,
+            old_high,
+            extra={40: count, 41: reload, 42: held},
+            full=True,
+        )
+        ck(f'noise-rng-low-{i}', got_low, want_low)
+        ck(f'noise-rng-high-{i}', got_high, want_high)
+        ckw(f'noise-count-{i}', state[40], want_count)
+        ckw(f'noise-held-{i}', state[42], want_held)
+        ckw(f'noise-sample-{i}', state[12], want_sample)
+        n += 5
+
+    print(
+        f'PERKY DSP math/RNG/noise executable gate: OK ({n} exact result words)'
+    )
 
 
 if __name__ == '__main__':
