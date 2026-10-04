@@ -1,27 +1,33 @@
 # PERKY Noise/Tone memory plan
 
-The shared Noise/Tone renderer is no longer arithmetic-bound on paper; its
-first hard constraint is DSP data memory.  This note pins the current measured
-budget and refuses to confuse the 0x120-byte ARM oracle object with the state we
-actually need to keep on the Octatrack.
+The shared Noise/Tone renderer's first hard constraint is DSP data memory. This
+note pins the current measured budget and separates three different things that
+must not be conflated:
+
+1. the 0x120-byte ARM-shaped qualification object;
+2. the compact live DSP renderer state;
+3. static wave/envelope tables and their realtime decode cache.
 
 ## Measured private budget
 
 Octabam's current memory census leaves about **616 X words** and **2,155 Y
-words** of genuinely usable private data memory per DSP core.  Do not infer a
-larger free Y range just because the boot payload has no static record there;
+words** of genuinely usable private data memory per DSP core. Do not infer a
+larger free range merely because the boot payload has no static record there;
 runtime FX allocations and host behaviour are part of the usable-memory
 boundary.
 
-`tools/perky/analyze_noise_tone_tables.py` is the executable source of truth for
-all numbers below.  `tools/verify/verify_perky_memory_plan.py` round-trips its
-packing formats and tests both fitting and non-fitting synthetic table sets.
+The relevant executable gates are:
 
-## Live renderer state: 168 X words/core
+- `tools/verify/verify_perky_runtime_memory.py` — renderer/cache allocation;
+- `tools/perky/analyze_noise_tone_tables.py` — exact table fit for extracted data;
+- `tools/verify/verify_perky_packed_tables.py` — packed-table runtime ABI;
+- `tools/verify/verify_perky_envelope_cache.py` — exact cached envelope access.
+
+## Live state + envelope cache: 236 X words/core
 
 The validated ARM object is 0x120 bytes, but most of those bytes are irrelevant
-to `NativeV121NoiseToneShared::renderBlock()`.  A DSP-native state can keep only
-the fields the renderer actually touches, with every u32 represented as two
+to `NativeV121NoiseToneShared::renderBlock()`. `noise_tone_compact.py` keeps
+only the fields the renderer actually touches, with each u32 represented as two
 16-bit limbs:
 
 | field group | words / voice |
@@ -32,62 +38,88 @@ the fields the renderer actually touches, with every u32 represented as two
 | resonant filter | 8 |
 | two oscillators | 16 |
 | noise/tone mix | 2 |
-| **total / voice** | **41** |
+| **compact state / voice** | **41** |
 
-Four tracks on one DSP core therefore need 164 X words.  The firmware-style
-shared PRNG needs four more limbs, for **168 X words total**, leaving about 448
-of the measured 616 X words for transport scratch and any state we discover
-while integrating the control converter.
+A raw block-delta envelope lookup can require up to 15 additions. The shipping
+runtime therefore reserves a **17-word derived cache per voice**:
 
-This is intentionally a direct-word layout rather than bit-packed state.  The
-hot renderer gets cheap field access; compression effort is spent on static
-tables instead.
+- one cached envelope block id;
+- sixteen fully decoded u16 envelope values.
+
+A same-block lookup is then O(1). Crossing a 16-sample table block decodes its
+anchor + fifteen deltas once and reuses those values until the envelope enters a
+different block. The cache is not PĒRKONS state and never needs to round-trip to
+the ARM-shaped oracle.
+
+Per core:
+
+```text
+4 voices × (41 state + 17 cache) + 4 shared RNG limbs
+= 236 X words
+```
+
+Against the measured ~616-word private-X headroom that leaves about **380 X
+words** for source-record staging, decoder scratch and later control-converter
+state.
+
+This is intentionally a direct-word live layout. The hot renderer gets cheap
+field access; compression effort is spent on static tables.
 
 ## Waves: 683 Y words for four exact tables
 
-Noise/Tone uses four 256-sample signed-16 wave references.  Storing each sample
-as one DSP word would cost 1,024 Y words.  Treating all four tables as one
-contiguous 16-bit stream packs 1,024 samples into **683 24-bit words** exactly.
-The codec is equivalent to three 16-bit samples in two DSP words; no waveform
-approximation is involved.
+Noise/Tone uses four 256-sample signed-16 wave references. Storing each sample
+as one DSP word costs 1,024 Y words. `noise_tone_tables.py` concatenates all
+four waves and packs the resulting 1,024 u16 values LSB-first into 24-bit DSP
+words: **three 16-bit samples in two DSP words**.
 
-The final DSP accessor still needs a cycle measurement because one logical
-sample can straddle two physical words.  The memory planner assumes this exact
-packing, not delta compression, because oscillator lookup is random and occurs
-in the per-sample hot path.
+That costs exactly **683 Y words**. `noise_tone_wave_unpack.asm` is the first
+DSP implementation of this format, and `verify_perky_wave_unpack_exec.py`
+walks all 1,024 synthetic samples through it.
 
-## Envelope curves: realtime block-delta policy
+Oscillator lookup remains O(1); there is no delta chain in the waveform hot
+path.
 
-The two firmware curves are each 2,048 unsigned-16 values.  Raw 16-bit packing
-would cost 1,366 Y words per curve and cannot fit with the waves.
+## Envelope curves: exact 16-sample block delta
 
-The exact candidate is a random-access block-delta representation:
+The two curves are each 2,048 unsigned-16 values. Raw u16 packing would cost
+1,366 Y words per curve and cannot coexist with the waves.
 
-1. every block begins with a 16-bit absolute anchor;
-2. the remaining values in the block are fixed-width signed first differences;
-3. lookup starts at the block anchor and accumulates only the deltas inside
-   that block.
+The exact candidate format is:
 
-The fit calculation **does not** accept arbitrarily large blocks just because
-they compress better.  The current realtime policy is at most **15 delta adds
-per lookup**, i.e. a maximum block size of 16.  More aggressive exact encodings
-are reported by the analyzer but do not make the shipping-fit result pass.
+1. split a curve into 16-sample blocks;
+2. store the first value as a 16-bit absolute anchor;
+3. store the next fifteen values as fixed-width signed first differences;
+4. choose one delta width per curve.
 
-With a 16-sample block:
+The original random-access policy capped a lookup at 15 additions. The new
+17-word cache makes the runtime better than that: those additions occur only
+when the requested envelope index crosses into a different 16-sample block;
+subsequent lookups from the same block are direct cached reads.
 
-- 8-bit deltas cost 726 words per curve;
-- two such curves cost 1,452 words;
-- 1,452 curve words + 683 wave words = **2,135 Y words**;
-- measured Y budget is 2,155 words, leaving **20 words**.
+The synthetic development curves both happen to use 7-bit deltas:
 
-So two 8-bit-delta curves fit, narrowly.  A 7-bit curve can offset a 9-bit
-curve; in general the real extracted curves must be measured before claiming a
-fit.  No table bytes are currently checked into this repository, and no
-approximate curve is accepted as a substitute.
+```text
+wave stream                       683 Y words
+synthetic envelope 1              646 Y words
+synthetic envelope 2              646 Y words
+                                  ----
+synthetic exact table total      1,975 Y words
+measured private-Y budget        2,155 Y words
+synthetic margin                   180 Y words
+```
+
+Those numbers are a **development stress fixture**, not a claim about the real
+PĒRKONS curves. Real v1.2.1 table bytes are still required to determine their
+actual delta widths and exact Y footprint.
+
+For reference, with 16-sample blocks an 8-bit-delta curve costs 726 words. Two
+8-bit curves plus the 683-word wave stream consume 2,135 Y words, leaving only
+20 words. The real curves therefore still need to pass the table analyzer
+before the packed format is admitted to a hardware image.
 
 ## Required real-data check
 
-After the user extracts a prepared Noise/Tone state and tables:
+Once a prepared v1.2.1 Noise/Tone state and update image are available:
 
 ```bash
 python3 tools/perky/extract_noise_tone_tables.py \
@@ -100,23 +132,22 @@ python3 tools/perky/analyze_noise_tone_tables.py \
   --json out/perky/noise-tone-memory.json
 ```
 
-The second command must end with:
+The second command must report that the exact tables fit the measured private
+X/Y budget under the realtime policy before the real table payload is wired
+into the image.
 
-```text
-RESULT: FITS measured private X/Y budget under realtime decode policy
-```
+## Current unresolved items
 
-before the compressed table format is wired into the hardware image.
-
-## Still unresolved
-
-- Actual delta widths of the two v1.2.1 envelope curves: firmware/table bytes
-  are not present in this branch.
-- Cycle cost of packed-wave access and block-delta envelope lookup on the
-  DSP56300.
-- Additional state, if any, required by the still-unported ARM `update()`
-  control converter.  The per-sample renderer itself is covered by the 41-word
-  live-state census above.
-
-Until those are measured, the active `perky-probe` remix stays the impulse
-canary; it does not advertise a completed Noise/Tone voice.
+- Actual delta widths of the two v1.2.1 envelope curves. The private PerkyBits
+  `octabam-control-probe` branch contains the probe/runtime code but **does not
+  contain the firmware image or extracted table blobs**.
+- Executed cycle/instruction cost of the composed complete voice and packed
+  accessors on the Octabam DSP emulator/toolchain. The gates are committed but
+  this ChatGPT container does not currently contain Octabam's built
+  `dsp_asm`/`dsp56kEmu` artifacts.
+- Translation of the original ARM `update()` control converter. Synthetic
+  control captures exercise plumbing only; they are explicitly not treated as
+  PĒRKONS knob laws.
+- Final integration of the optimized renderer behind the live `PK/Y1` source
+  record. The active `perky-probe` remix remains the impulse canary until these
+  qualification steps are satisfied.
