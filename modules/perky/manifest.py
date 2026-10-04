@@ -84,6 +84,7 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_voice_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_voice_packed_wave_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_voice_packed_exec.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_voice_xstate_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_sources.py", remix_arg=False),
         Gate("tools/verify/verify_perky_table_extractor.py", remix_arg=False),
         Gate("tools/verify/verify_perky_memory_plan.py", remix_arg=False),
