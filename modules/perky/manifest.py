@@ -79,6 +79,7 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_probe.py", remix_arg=False),
         Gate("tools/verify/verify_perky_synth_seam.py", remix_arg=False),
         Gate("tools/verify/verify_perky_preboot_reserve.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_abi_contract.py", remix_arg=False),
         Gate("tools/verify/verify_perky_noise_tone_ref.py", remix_arg=False),
         Gate("tools/verify/verify_perky_dsp_word_model.py", remix_arg=False),
         Gate("tools/verify/verify_perky_compact_voice.py", remix_arg=False),
