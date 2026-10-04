@@ -7,27 +7,16 @@ back into the repository. It answers the concrete Octatrack question: can the
 four 256-sample waves plus two 2048-entry envelope curves fit in the measured
 private DSP data-memory headroom without approximation?
 
-The formats reported here are all lossless and random-access capable:
-
-* ``raw24``: one 16-bit sample per DSP word (simple, expensive);
-* ``u16pack``: three 16-bit values in two 24-bit words;
-* ``block-delta``: one 16-bit anchor per block followed by fixed-width signed
-  deltas inside that block. Lookup starts from the block anchor, so it never
-  needs a prefix sum from the beginning of the curve.
-
-The packing helpers below are executable specifications, not just size maths:
-the verifier round-trips them and checks random access at every sample.
-
-The report also includes the renderer's compact DSP-native live-state budget.
-The ARM oracle has a 0x120-byte object, but the shared Noise/Tone renderer only
-reads/writes a much smaller field set. Keeping those fields as direct DSP
-words is both faster and dramatically smaller than the intentionally wasteful
-one-byte-per-word Python word model.
+All reported formats are lossless and random-access capable. The shipping-fit
+result is intentionally stricter than "smallest possible": envelope encodings
+may require at most 15 delta additions per lookup (a 16-sample block). More
+aggressive exact compression is still reported, but it does not count as a
+realtime fit until cycle measurements say otherwise.
 """
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 import json
 from pathlib import Path
 import struct
@@ -39,6 +28,7 @@ WAVE_SAMPLES = 256
 ENVELOPE_SAMPLES = 2048
 DSP_WORD_BITS = 24
 DSP_WORD_MASK = (1 << DSP_WORD_BITS) - 1
+REALTIME_MAX_DELTA_ADDS = 15
 
 # Direct DSP words per voice for fields actually touched by the validated
 # shared Noise/Tone renderer. u32 values are two 16-bit limbs.
@@ -51,7 +41,7 @@ LIVE_STATE_FIELDS = {
     "mix": 2,           # u32
 }
 LIVE_STATE_WORDS_PER_VOICE = sum(LIVE_STATE_FIELDS.values())
-GLOBAL_RNG_WORDS = 4     # two u32 words, shared like the firmware PRNG
+GLOBAL_RNG_WORDS = 4
 VOICE_COUNT_PER_CORE = 4
 LIVE_STATE_X_WORDS = LIVE_STATE_WORDS_PER_VOICE * VOICE_COUNT_PER_CORE + GLOBAL_RNG_WORDS
 
@@ -77,7 +67,6 @@ def read_u16(path: Path, expected: int) -> list[int]:
 
 
 def signed_delta(a: int, b: int) -> int:
-    """Mathematical difference between adjacent unsigned-16 curve values."""
     return int(b) - int(a)
 
 
@@ -98,7 +87,6 @@ def words_for_bits(bits: int) -> int:
 
 
 def _put_bits(words: list[int], bitpos: int, value: int, width: int) -> None:
-    """Write low ``width`` bits into a 24-bit-word array, LSB-first."""
     value &= (1 << width) - 1
     remaining = width
     shift = 0
@@ -114,7 +102,6 @@ def _put_bits(words: list[int], bitpos: int, value: int, width: int) -> None:
 
 
 def _get_bits(words: list[int], bitpos: int, width: int) -> int:
-    """Read ``width`` bits from a 24-bit-word array, LSB-first."""
     result = 0
     out_shift = 0
     remaining = width
@@ -167,15 +154,14 @@ def _signed_decode(value: int, width: int) -> int:
 
 
 def block_delta_layout(values: list[int], block: int) -> tuple[int, int, int, int]:
-    """Return (width, anchors, delta_count, total_bits) for one curve."""
     if block <= 1:
         raise ValueError("block must be >1")
-    all_deltas = [
+    deltas = [
         signed_delta(values[i], values[i + 1])
         for i in range(len(values) - 1)
         if (i + 1) % block != 0
     ]
-    width = signed_bits(all_deltas)
+    width = signed_bits(deltas)
     anchors = (len(values) + block - 1) // block
     delta_count = len(values) - anchors
     bits = anchors * 16 + delta_count * width
@@ -195,15 +181,18 @@ def pack_block_delta(values: list[int], block: int) -> tuple[list[int], int]:
         _put_bits(words, bitpos, chunk[0], 16)
         bitpos += 16
         for previous, current in zip(chunk, chunk[1:]):
-            delta = signed_delta(previous, current)
-            _put_bits(words, bitpos, _signed_encode(delta, width), width)
+            _put_bits(
+                words,
+                bitpos,
+                _signed_encode(signed_delta(previous, current), width),
+                width,
+            )
             bitpos += width
     return words, width
 
 
 def block_delta_at(words: list[int], index: int, count: int,
                    block: int, width: int) -> int:
-    """Random-access one decoded value with at most ``block-1`` additions."""
     if not 0 <= index < count:
         raise IndexError(index)
     block_index, within = divmod(index, block)
@@ -229,24 +218,27 @@ def u16pack_count(count: int) -> Encoding:
 
 
 def block_delta(values: list[int], block: int) -> Encoding:
-    width, anchors, delta_count, bits = block_delta_layout(values, block)
-    max_decode = min(block - 1, max(0, len(values) - 1))
+    width, _anchors, _delta_count, bits = block_delta_layout(values, block)
     return Encoding(
         f"block-delta-{block}",
         words_for_bits(bits),
         bits,
         block=block,
         delta_bits=width,
-        max_decode_deltas=max_decode,
+        max_decode_deltas=min(block - 1, max(0, len(values) - 1)),
     )
 
 
-def best_curve_encoding(values: list[int]) -> tuple[Encoding, list[Encoding]]:
+def curve_encodings(values: list[int]) -> tuple[Encoding, Encoding, list[Encoding]]:
     candidates = [u16pack_count(len(values))]
     candidates += [block_delta(values, b) for b in (4, 8, 16, 32, 64, 128, 256)]
-    # Prefer fewer words, then fewer decode additions, then simpler raw packing.
-    best = min(candidates, key=lambda x: (x.words, x.max_decode_deltas, x.name != "u16pack"))
-    return best, candidates
+    compact = min(candidates, key=lambda x: (x.words, x.max_decode_deltas))
+    realtime_candidates = [
+        candidate for candidate in candidates
+        if candidate.max_decode_deltas <= REALTIME_MAX_DELTA_ADDS
+    ]
+    realtime = min(realtime_candidates, key=lambda x: (x.words, x.max_decode_deltas))
+    return compact, realtime, candidates
 
 
 def delta_stats(values: list[int]) -> dict:
@@ -261,21 +253,33 @@ def delta_stats(values: list[int]) -> dict:
     }
 
 
+def _roundtrip(values: list[int], encoding: Encoding, label: str) -> None:
+    if encoding.block is None:
+        got = u16unpack(u16pack(values), len(values))
+    else:
+        packed, width = pack_block_delta(values, encoding.block)
+        if width != encoding.delta_bits:
+            raise AssertionError(f"{label}: block-delta width drift")
+        got = unpack_block_delta(packed, len(values), encoding.block, width)
+    if got != values:
+        raise AssertionError(f"{label}: {encoding.name} round-trip failed")
+
+
 def analyze(directory: Path) -> dict:
     manifest_path = directory / "manifest.json"
     if not manifest_path.exists():
         raise ValueError(f"{directory}: missing manifest.json from table extractor")
     manifest = json.loads(manifest_path.read_text())
 
-    envelopes = [directory / "envelope1.bin", directory / "envelope2.bin"]
-    for path in envelopes:
+    envelope_paths = [directory / "envelope1.bin", directory / "envelope2.bin"]
+    for path in envelope_paths:
         if not path.exists():
             raise ValueError(f"{directory}: missing {path.name}")
 
-    wave_names = [item["file"] for item in manifest.get("files", [])
-                  if str(item.get("file", "")).startswith("wave_")]
-    # The shared renderer needs four state-selected wave references. Duplicate
-    # pointers are allowed; storage needs one copy per unique extracted file.
+    wave_names = [
+        item["file"] for item in manifest.get("files", [])
+        if str(item.get("file", "")).startswith("wave_")
+    ]
     wave_names = list(dict.fromkeys(wave_names))
     if not wave_names:
         raise ValueError(
@@ -289,34 +293,28 @@ def analyze(directory: Path) -> dict:
             raise ValueError(f"{directory}: manifest names missing {name}")
         waves.append(read_u16(path, WAVE_SAMPLES))
 
-    env_report = []
-    env_best_words = 0
-    for path in envelopes:
+    envelope_report = []
+    realtime_envelope_words = 0
+    compact_envelope_words = 0
+    for path in envelope_paths:
         values = read_u16(path, ENVELOPE_SAMPLES)
-        best, candidates = best_curve_encoding(values)
-        # The analysis must describe a format that actually round-trips.
-        if best.block is None:
-            if u16unpack(u16pack(values), len(values)) != values:
-                raise AssertionError(f"{path.name}: u16pack round-trip failed")
-        else:
-            packed, width = pack_block_delta(values, best.block)
-            if width != best.delta_bits:
-                raise AssertionError(f"{path.name}: block-delta width drift")
-            if unpack_block_delta(packed, len(values), best.block, width) != values:
-                raise AssertionError(f"{path.name}: block-delta round-trip failed")
-        env_best_words += best.words
-        env_report.append({
+        compact, realtime, candidates = curve_encodings(values)
+        _roundtrip(values, compact, path.name)
+        _roundtrip(values, realtime, path.name)
+        compact_envelope_words += compact.words
+        realtime_envelope_words += realtime.words
+        envelope_report.append({
             "file": path.name,
             "delta": delta_stats(values),
-            "best": asdict(best),
+            "compact_best": asdict(compact),
+            "realtime_best": asdict(realtime),
             "candidates": [asdict(x) for x in candidates],
         })
 
-    # Every wave is random-indexed twice per sample. Use one contiguous dense
-    # 16-bit stream: three samples per two DSP words. Keeping all unique waves
-    # in one stream avoids a padding word at each 256-sample table boundary.
+    # Waves are in the hottest path and need true random indexing. Pack all
+    # unique waves as one contiguous 16-bit stream (3 samples / 2 DSP words),
+    # avoiding one padding word per 256-sample table.
     wave_values = [value for table in waves for value in table]
-    wave_words_each = u16pack_count(WAVE_SAMPLES).words
     wave_packed = u16pack(wave_values)
     if u16unpack(wave_packed, len(wave_values)) != wave_values:
         raise AssertionError("wave u16pack round-trip failed")
@@ -324,24 +322,27 @@ def analyze(directory: Path) -> dict:
     wave_raw24_words = WAVE_SAMPLES * len(waves)
     wave_report = []
     for name, values in zip(wave_names, waves):
-        delta_best, delta_candidates = best_curve_encoding(values)
+        compact, realtime, candidates = curve_encodings(values)
         wave_report.append({
             "file": name,
             "raw24_words": WAVE_SAMPLES,
-            "standalone_u16pack_words": wave_words_each,
+            "standalone_u16pack_words": u16pack_count(WAVE_SAMPLES).words,
             "delta": delta_stats(values),
-            "informational_best_delta": asdict(delta_best),
-            "delta_candidates": [asdict(x) for x in delta_candidates],
+            "informational_compact_delta": asdict(compact),
+            "informational_realtime_delta": asdict(realtime),
+            "delta_candidates": [asdict(x) for x in candidates],
         })
 
-    table_words = wave_packed_words + env_best_words
-    y_margin = PRIVATE_Y_WORDS - table_words
+    realtime_table_words = wave_packed_words + realtime_envelope_words
+    compact_table_words = wave_packed_words + compact_envelope_words
+    y_margin = PRIVATE_Y_WORDS - realtime_table_words
     x_margin = PRIVATE_X_WORDS - LIVE_STATE_X_WORDS
 
     return {
-        "schema": "perky-noise-tone-memory-v1",
+        "schema": "perky-noise-tone-memory-v2",
         "source_manifest": manifest_path.name,
         "unique_wave_tables": len(waves),
+        "policy": {"max_delta_adds_per_envelope_lookup": REALTIME_MAX_DELTA_ADDS},
         "budgets": {
             "private_x_words": PRIVATE_X_WORDS,
             "private_y_words": PRIVATE_Y_WORDS,
@@ -361,14 +362,16 @@ def analyze(directory: Path) -> dict:
             "tables": wave_report,
         },
         "envelopes": {
-            "best_exact_words": env_best_words,
-            "tables": env_report,
+            "compact_exact_words": compact_envelope_words,
+            "realtime_exact_words": realtime_envelope_words,
+            "tables": envelope_report,
         },
         "combined": {
-            "table_y_words": table_words,
+            "compact_table_y_words": compact_table_words,
+            "realtime_table_y_words": realtime_table_words,
             "y_margin_words": y_margin,
-            "fits_private_y": y_margin >= 0,
-            "fits_measured_private_xy": y_margin >= 0 and x_margin >= 0,
+            "fits_private_y_realtime": y_margin >= 0,
+            "fits_measured_private_xy_realtime": y_margin >= 0 and x_margin >= 0,
         },
     }
 
@@ -393,29 +396,28 @@ def print_report(report: dict) -> None:
         f"{w['u16pack_words']} words"
     )
     for env in report["envelopes"]["tables"]:
-        best = env["best"]
+        compact = env["compact_best"]
+        realtime = env["realtime_best"]
         d = env["delta"]
-        extra = ""
-        if best["block"] is not None:
-            extra = (
-                f", block {best['block']}, {best['delta_bits']}-bit deltas, "
-                f"<= {best['max_decode_deltas']} adds/lookup"
-            )
         print(
             f"  {env['file']}: delta {d['min']}..{d['max']} "
-            f"({d['signed_bits']} bits global); best {best['name']} = "
-            f"{best['words']} words{extra}"
+            f"({d['signed_bits']} bits global); compact {compact['name']} "
+            f"{compact['words']} words; realtime {realtime['name']} "
+            f"{realtime['words']} words, <= {realtime['max_decode_deltas']} adds"
         )
     c = report["combined"]
     print(
-        f"  exact table plan: {c['table_y_words']} Y words "
+        f"  compact exact tables: {c['compact_table_y_words']} Y words"
+    )
+    print(
+        f"  realtime exact tables: {c['realtime_table_y_words']} Y words "
         f"(margin {c['y_margin_words']:+d})"
     )
     print(
         "  RESULT: " + (
-            "FITS measured private X/Y budget"
-            if c["fits_measured_private_xy"]
-            else "DOES NOT FIT measured private X/Y budget"
+            "FITS measured private X/Y budget under realtime decode policy"
+            if c["fits_measured_private_xy_realtime"]
+            else "DOES NOT FIT measured private X/Y budget under realtime decode policy"
         )
     )
 
