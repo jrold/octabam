@@ -109,6 +109,7 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_envelope_source.py", remix_arg=False),
         Gate("tools/verify/verify_perky_envelope_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_envelope_packed7_exec.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_envelope_cache_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_mix_source.py", remix_arg=False),
         Gate("tools/verify/verify_perky_mix_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_wave_unpack_exec.py", remix_arg=False),
