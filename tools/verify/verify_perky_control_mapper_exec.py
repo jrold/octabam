@@ -31,7 +31,7 @@ HOST_SRC = ROOT / "tools/harness/bd909_host/bd909_host.cpp"
 ORG = 0x2800
 STATE = 0x200
 LINE = re.compile(
-    r"^([0-9a-f]{6}): (\\S+)(?:\\s+(.*?))?\\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$"
+    r"^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$"
 )
 
 
