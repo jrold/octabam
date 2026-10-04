@@ -12,8 +12,8 @@
 ; the current u16 bit-pattern to X:(r5+$41), increments the index, and writes
 ; the sign-extended sample to both channels at X:(r0)+.
 ;
-; Synthetic executable-gate table base: X:$3000.
-; 0..1023 is the concatenation of four 256-sample waves.
+; Shipping table base: Y:$0795. The synthetic payload uses the identical
+; layout: its four concatenated 256-sample waves occupy Y:$0795..$0a3f.
 ;
 ; Division by 3 is exact for this range using
 ;   floor(n/3) = (n * $aaab) >> 17.
@@ -41,11 +41,11 @@ pk_wave_unpack_probe:
         sub     y0,a
         move    a1,y1                   ; remainder 0..2
 
-        ; pair pointer = X:$3000 + 2*q.
+        ; pair pointer = Y:$0795 + 2*q.
         move    x1,b
         asl     b
         move    b1,n1
-        move    #>$003000,r1
+        move    #>$000795,r1
         lua     (r1+n1),r2
 
         move    y1,a
@@ -55,18 +55,18 @@ pk_wave_unpack_probe:
         beq     pkw_r1
 
 pkw_r2:
-        move    x:(r2+$1),a
+        move    y:(r2+$1),a
         lsr     #$8,a,a
         and     #>$00ffff,a
         move    a1,x:(r5+$41)
         bra     pkw_got
 
 pkw_r1:
-        move    x:(r2),a
+        move    y:(r2),a
         lsr     #$10,a,a
         and     #>$0000ff,a
         move    a1,x1
-        move    x:(r2+$1),b
+        move    y:(r2+$1),b
         and     #>$0000ff,b
         asl     #$8,b,b
         add     x1,b
@@ -75,7 +75,7 @@ pkw_r1:
         bra     pkw_got
 
 pkw_r0:
-        move    x:(r2),a
+        move    y:(r2),a
         and     #>$00ffff,a
         move    a1,x:(r5+$41)
 
