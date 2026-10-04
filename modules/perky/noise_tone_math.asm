@@ -1,4 +1,4 @@
-; PERKY Noise/Tone DSP56300 32-bit arithmetic kernel / standalone probe.
+; PERKY Noise/Tone DSP56300 32-bit arithmetic/state kernel / standalone probe.
 ; Not in the audio hook yet. Firmware u32 values are two 16-bit limbs.
 ; Normal 24-bit DSP mode only: do not use SA; Octabam's emulator does not
 ; implement SA semantics, so explicit limbs keep the off-hardware oracle valid.
@@ -7,13 +7,21 @@
 ;   r5 = X state base, r6 = X parameter block, x:(r6+$0) = op
 ; State: +0 a.lo, +1 a.hi, +2 b.lo, +3 b.hi, +4 shift,
 ;        +8 result.low32.lo, +9 result.low32.hi,
-;       +10 result.high32.lo,+11 result.high32.hi
+;       +10 result.high32.lo,+11 result.high32.hi,
+;       +12 primitive result word,
+;       +40 noise countdown, +41 noise reload, +42 held noise sample.
 ; Ops: 1 add32, 2 sub32, 3 signed ASR32, 4 low32 multiply,
-;      5 full64 multiply, 6 PERKONS two-word RNG step.
+;      5 full64 multiply, 6 PERKONS two-word RNG step,
+;      7 Noise/Tone sample-and-hold noise step.
 ;
 ; RNG op 6 uses input a=oldLow, b=oldHigh. It mutates +0..+3 to
 ; newLow/newHigh and mirrors them to +8..+11 for the generic probe harness.
 ; Scratch +20..+36 is private to the RNG probe path.
+;
+; Noise op 7 uses the same RNG input/state plus +40/+41/+42. It writes the
+; 16-bit result bit-pattern to +12. When countdown is non-zero no RNG step is
+; performed; when it reaches zero the reload is copied to countdown and the
+; held sample becomes low16(nextRandom()).
 
 pk_math_probe:
         move    x:(r6+$0),a
@@ -35,6 +43,9 @@ pk_math_probe:
         move    #>$6,x0
         cmp     x0,a
         beq     pk_math_do_rng
+        move    #>$7,x0
+        cmp     x0,a
+        beq     pk_math_do_noise
         rts
 
 pk_math_do_add:
@@ -54,6 +65,9 @@ pk_math_do_mul64:
         rts
 pk_math_do_rng:
         jsr     pk_rng_step
+        rts
+pk_math_do_noise:
+        jsr     pk_noise_step
         rts
 
 ; Exact modulo-2^32 add. Low sum <= 0x1fffe, so A1 bit16 is carry.
@@ -393,4 +407,35 @@ pk_rng_no_carry:
         move    x:(r5+$33),a
         move    a1,x:(r5+$3)
         move    a1,x:(r5+$11)
+        rts
+
+; Noise/Tone sample-and-hold source primitive. This is the renderer's
+; renderNoise() reduced to its exact state transition. +40/+41/+42 are direct
+; 16-bit probe words corresponding to firmware count/reload/held-sample u16s.
+; +12 receives the returned sample bit-pattern.
+pk_noise_step:
+        move    x:(r5+$40),a
+        tst     a
+        beq     pk_noise_refresh
+
+        sub     #>$1,a
+        and     #>$00ffff,a
+        move    a1,x:(r5+$40)
+        move    x:(r5+$42),a
+        and     #>$00ffff,a
+        move    a1,x:(r5+$12)
+        rts
+
+pk_noise_refresh:
+        move    x:(r5+$41),a
+        and     #>$00ffff,a
+        move    a1,x:(r5+$40)
+        jsr     pk_rng_step
+
+        ; renderNoise casts low16(nextRandom()) to int16. nextRandom() is
+        ; newHigh & $7fffffff, so its low16 is exactly newHigh.low at +10.
+        move    x:(r5+$10),a
+        and     #>$00ffff,a
+        move    a1,x:(r5+$42)
+        move    a1,x:(r5+$12)
         rts
