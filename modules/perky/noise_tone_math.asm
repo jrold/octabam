@@ -8,7 +8,12 @@
 ; State: +0 a.lo, +1 a.hi, +2 b.lo, +3 b.hi, +4 shift,
 ;        +8 result.low32.lo, +9 result.low32.hi,
 ;       +10 result.high32.lo,+11 result.high32.hi
-; Ops: 1 add32, 2 sub32, 3 signed ASR32, 4 low32 multiply, 5 full64 multiply.
+; Ops: 1 add32, 2 sub32, 3 signed ASR32, 4 low32 multiply,
+;      5 full64 multiply, 6 PERKONS two-word RNG step.
+;
+; RNG op 6 uses input a=oldLow, b=oldHigh. It mutates +0..+3 to
+; newLow/newHigh and mirrors them to +8..+11 for the generic probe harness.
+; Scratch +20..+36 is private to the RNG probe path.
 
 pk_math_probe:
         move    x:(r6+$0),a
@@ -27,6 +32,9 @@ pk_math_probe:
         move    #>$5,x0
         cmp     x0,a
         beq     pk_math_do_mul64
+        move    #>$6,x0
+        cmp     x0,a
+        beq     pk_math_do_rng
         rts
 
 pk_math_do_add:
@@ -43,6 +51,9 @@ pk_math_do_mul:
         rts
 pk_math_do_mul64:
         jsr     pk_u32_mul_full
+        rts
+pk_math_do_rng:
+        jsr     pk_rng_step
         rts
 
 ; Exact modulo-2^32 add. Low sum <= 0x1fffe, so A1 bit16 is carry.
@@ -229,4 +240,157 @@ pk_u32_mul_full:
         add     x1,b
         and     #>$00ffff,b
         move    b1,x:(r5+$11)
+        rts
+
+; Exact PĒRKONS two-word RNG step used by the Noise/Tone renderer:
+;   accumulator = low32(oldLow*A) + low32(oldHigh*B)
+;   product     = full64(oldLow*B)
+;   newLow      = low32(product) + 1
+;   newHigh     = accumulator + high32(product) + carry(newLow)
+;   return      = newHigh & 0x7fffffff
+; Constants: A=$5851f42d, B=$4c957f2d.
+;
+; Input oldLow is +0/+1 and oldHigh is +2/+3. The routine stores newLow and
+; newHigh back to +0..+3 and mirrors them to +8..+11. The caller can obtain
+; the firmware return value by clearing bit 15 of the high limb at +11.
+pk_rng_step:
+        ; Preserve original RNG words in private scratch.
+        move    x:(r5+$0),a
+        move    a1,x:(r5+$20)
+        move    x:(r5+$1),a
+        move    a1,x:(r5+$21)
+        move    x:(r5+$2),a
+        move    a1,x:(r5+$22)
+        move    x:(r5+$3),a
+        move    a1,x:(r5+$23)
+
+        ; accumulator = low32(oldLow * A)
+        move    x:(r5+$20),a
+        move    a1,x:(r5+$0)
+        move    x:(r5+$21),a
+        move    a1,x:(r5+$1)
+        move    #>$00f42d,a
+        move    a1,x:(r5+$2)
+        move    #>$005851,a
+        move    a1,x:(r5+$3)
+        jsr     pk_u32_mul_low
+        move    x:(r5+$8),a
+        move    a1,x:(r5+$24)
+        move    x:(r5+$9),a
+        move    a1,x:(r5+$25)
+
+        ; accumulator += low32(oldHigh * B)
+        move    x:(r5+$22),a
+        move    a1,x:(r5+$0)
+        move    x:(r5+$23),a
+        move    a1,x:(r5+$1)
+        move    #>$007f2d,a
+        move    a1,x:(r5+$2)
+        move    #>$004c95,a
+        move    a1,x:(r5+$3)
+        jsr     pk_u32_mul_low
+        move    x:(r5+$24),a
+        move    a1,x:(r5+$0)
+        move    x:(r5+$25),a
+        move    a1,x:(r5+$1)
+        move    x:(r5+$8),a
+        move    a1,x:(r5+$2)
+        move    x:(r5+$9),a
+        move    a1,x:(r5+$3)
+        jsr     pk_u32_add
+        move    x:(r5+$8),a
+        move    a1,x:(r5+$24)
+        move    x:(r5+$9),a
+        move    a1,x:(r5+$25)
+
+        ; product = full64(oldLow * B)
+        move    x:(r5+$20),a
+        move    a1,x:(r5+$0)
+        move    x:(r5+$21),a
+        move    a1,x:(r5+$1)
+        move    #>$007f2d,a
+        move    a1,x:(r5+$2)
+        move    #>$004c95,a
+        move    a1,x:(r5+$3)
+        jsr     pk_u32_mul_full
+        move    x:(r5+$8),a
+        move    a1,x:(r5+$26)
+        move    x:(r5+$9),a
+        move    a1,x:(r5+$27)
+        move    x:(r5+$10),a
+        move    a1,x:(r5+$28)
+        move    x:(r5+$11),a
+        move    a1,x:(r5+$29)
+
+        ; newLow = productLow + 1
+        move    x:(r5+$26),a
+        move    a1,x:(r5+$0)
+        move    x:(r5+$27),a
+        move    a1,x:(r5+$1)
+        move    #>$1,a
+        move    a1,x:(r5+$2)
+        clr     a
+        move    a1,x:(r5+$3)
+        jsr     pk_u32_add
+        move    x:(r5+$8),a
+        move    a1,x:(r5+$30)
+        move    x:(r5+$9),a
+        move    a1,x:(r5+$31)
+
+        ; carry = 1 iff productLow was $ffffffff.
+        clr     a
+        move    a1,x:(r5+$36)
+        move    x:(r5+$26),a
+        cmp     #>$00ffff,a
+        bne     pk_rng_no_carry
+        move    x:(r5+$27),a
+        cmp     #>$00ffff,a
+        bne     pk_rng_no_carry
+        move    #>$1,a
+        move    a1,x:(r5+$36)
+pk_rng_no_carry:
+
+        ; newHigh = accumulator + productHigh
+        move    x:(r5+$24),a
+        move    a1,x:(r5+$0)
+        move    x:(r5+$25),a
+        move    a1,x:(r5+$1)
+        move    x:(r5+$28),a
+        move    a1,x:(r5+$2)
+        move    x:(r5+$29),a
+        move    a1,x:(r5+$3)
+        jsr     pk_u32_add
+        move    x:(r5+$8),a
+        move    a1,x:(r5+$32)
+        move    x:(r5+$9),a
+        move    a1,x:(r5+$33)
+
+        ; Add carry from newLow wrap.
+        move    x:(r5+$32),a
+        move    a1,x:(r5+$0)
+        move    x:(r5+$33),a
+        move    a1,x:(r5+$1)
+        move    x:(r5+$36),a
+        move    a1,x:(r5+$2)
+        clr     a
+        move    a1,x:(r5+$3)
+        jsr     pk_u32_add
+        move    x:(r5+$8),a
+        move    a1,x:(r5+$32)
+        move    x:(r5+$9),a
+        move    a1,x:(r5+$33)
+
+        ; Publish/mutate RNG state and generic probe outputs.
+        move    x:(r5+$30),a
+        move    a1,x:(r5+$0)
+        move    a1,x:(r5+$8)
+        move    x:(r5+$31),a
+        move    a1,x:(r5+$1)
+        move    a1,x:(r5+$9)
+        move    x:(r5+$32),a
+        move    a1,x:(r5+$2)
+        move    a1,x:(r5+$10)
+        move    x:(r5+$33),a
+        move    a1,x:(r5+$3)
+        move    a1,x:(r5+$11)
         rts
