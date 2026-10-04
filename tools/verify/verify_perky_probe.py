@@ -5,6 +5,11 @@ This is deliberately image-independent.  The build itself asserts the stock
 ColdFire pointer and both DSP hook words before writing them; this gate makes
 sure the module declaration and the two small assembly halves still describe
 the measured Analog-BD seam we mean to test.
+
+PERKY now also owns a small bottom audio-arena reservation for future packed
+DSP table preboot uploads.  That data-loader path is allowed here only when it
+stays completely separate from source-seam placement: DspHook remains the one
+source of truth for the two DSP patch sites.
 """
 from __future__ import annotations
 
@@ -37,12 +42,17 @@ if m.key != "PERKY PROBE":
     fail(f"module key is {m.key!r}, expected 'PERKY PROBE'")
 if len(m.linked) != 1 or m.linked[0].label != "pkprobe":
     fail("expected one linked ColdFire unit named pkprobe")
+if m.linked[0].dram:
+    fail("pkprobe must stay in ROM; the table loader uses its own small arena reservation")
 if len(m.symbol_refs) != 1:
     fail("expected exactly one ColdFire symbol-ref rewrite")
 sr = m.symbol_refs[0]
 if (sr.addr, sr.expect, sr.unit, sr.symbol) != (
         0x400D6438, 0x40004008, "pkprobe", "pk_probe_render"):
     fail("FLEX renderer pointer is not the measured 0x400d6438 -> pk_probe_render rewrite")
+
+if m.arena is None or m.arena.where != "bottom" or m.arena.pages != 242:
+    fail("PERKY preboot scratch must reserve exactly 242 bottom audio-arena pages")
 
 if m.dsp is None or len(m.dsp.hooks) != 1:
     fail("expected one hook-only DSP section")
@@ -102,9 +112,22 @@ if not test_remix.exists():
 if (ROOT / "remixes/perky-probe").exists():
     fail("perky-probe must not also exist as a top-level remix")
 
-# The abandoned payload-repacker prototype must never come back into this
-# canary.  DspHook is the one source of truth for seam placement/assertions.
-if (ROOT / "tools/build/perky_image.py").exists():
-    fail("obsolete tools/build/perky_image.py still exists; use DspHook")
+# The old abandoned perky_image prototype repacked DSP code and owned the seam.
+# The NEW file is allowed only as a table-only upload extender: it may name the
+# measured private-Y interval and upload records, but it must never know the
+# source hook addresses/stock words or probe labels. DspHook above stays the
+# sole seam owner.
+image_tool = ROOT / "tools/build/perky_image.py"
+if not image_tool.exists():
+    fail("tools/build/perky_image.py table integrator is missing")
+image_text = image_tool.read_text()
+for token in ("Y_BASE = 0x0795", "Y_END = 0x1000", "ot_record(2, Y_BASE, words)"):
+    need(image_text, token, "perky_image.py")
+for forbidden in (
+    "0x0039C", "0x001A2", "0x567000", "0x00020E",
+    "pk_probe_source", "probe_glue.asm",
+):
+    if forbidden in image_text:
+        fail(f"perky_image.py has forbidden source-seam knowledge {forbidden!r}")
 
 print("PERKY probe gate: OK")
