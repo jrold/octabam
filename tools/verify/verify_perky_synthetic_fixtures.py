@@ -94,19 +94,20 @@ def main() -> None:
                 f"four dense synthetic waves use {report['waves']['u16pack_words']} words, expected 683"
             )
         envs = report["envelopes"]["tables"]
-        if [e["best_realtime"]["words"] for e in envs] != [646, 646]:
+        if [e["realtime_best"]["words"] for e in envs] != [646, 646]:
             raise AssertionError(
                 "synthetic envelopes no longer use 646 words each under the realtime <=15-add rule"
             )
-        if report["combined"]["table_y_words"] != 1975:
+        if report["combined"]["realtime_table_y_words"] != 1975:
             raise AssertionError(
-                f"synthetic exact table footprint drifted to {report['combined']['table_y_words']} Y words"
+                f"synthetic exact table footprint drifted to "
+                f"{report['combined']['realtime_table_y_words']} Y words"
             )
         if report["combined"]["y_margin_words"] != 180:
             raise AssertionError(
                 f"synthetic Y margin drifted to {report['combined']['y_margin_words']} words"
             )
-        if not report["combined"]["fits_measured_private_xy"]:
+        if not report["combined"]["fits_measured_private_xy_realtime"]:
             raise AssertionError(
                 "synthetic exact table plan no longer fits the measured private X/Y budget"
             )
