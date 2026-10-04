@@ -77,6 +77,8 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_filter_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_oscillator_source.py", remix_arg=False),
         Gate("tools/verify/verify_perky_oscillator_exec.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_envelope_source.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_envelope_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_probe_port.py", remix_arg=False, stage="image"),
     ),
 )
