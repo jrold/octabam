@@ -12,7 +12,9 @@ Noise/Tone renderer and the full machine browser are allowed into the image.
 from remix.schema import (
     ArenaReserve,
     Category,
+    Claims,
     DspHook,
+    DspRange,
     DspSection,
     Gate,
     Kind,
@@ -48,6 +50,16 @@ MODULE = Module(
     # reservation that contains them (ceiling 0x40c005e0).  This is ~1.42 MiB,
     # not the platform runtime's much larger 1,707-page reservation.
     arena=ArenaReserve(pages=242, where="bottom"),
+    # Persistent DSP data ownership. X:$3800..$38eb sits inside the same
+    # hardware-qualified private-X run Analog BD uses (the two modules conflict,
+    # so they never coexist). Y:$0795..$0fff is the exact free interval from
+    # the hardware Y-memory sweep. Claims make the ledger reject a future
+    # module that tries to reuse either region even before the synth source is
+    # switched on.
+    claims=Claims(dsp_ranges=(
+        DspRange("x", 0x3800, 236, "PERKY compact voice state + envelope caches + RNG"),
+        DspRange("y", 0x0795, 0x1000 - 0x0795, "PERKY packed Noise/Tone tables"),
+    )),
     dsp=DspSection(
         asm="modules/perky/probe_glue.asm",
         priority=90,
