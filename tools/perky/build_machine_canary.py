@@ -2,9 +2,10 @@
 """Build the first hardware-testable PERKY Noise/Tone machine image.
 
 This command deliberately stops at an AUDIBLE SYNTHETIC development milestone:
-it does not claim PĒRKONS sonic equivalence, but it will not emit a flashable
-image until the current DSP control mapper and complete packed voice have run
-through the local DSP56300 emulator gates.
+it does not claim PĒRKONS sonic equivalence. Before emitting a flashable image
+it requires the full-machine declaration, executable five-control mapper,
+exact synthetic renderer parity, and the generated shipping synth source to
+assemble inside its donor budget.
 
 Pipeline:
 
@@ -55,14 +56,14 @@ STOCK_SYX = ROOT / "downloads/extracted/OCTATRACK_OS1.40C.syx"
 EFT = ROOT / "vendor/elektron-firmware-tool/elektron-firmware-tool"
 MAKE_BIN = ROOT / "tools/build/make_bin.py"
 
-# These are intentionally narrower than a full `make check`: they are the
-# blockers between this branch and a first audible hardware canary.
+# Narrow first-hardware blockers. The two older wrapper-style complete-voice
+# exec gates remain in the tree, but are not first-canary blockers until their
+# harness wrappers are converted to forced-long (>label) JSR syntax as well.
 PREFLIGHTS = (
     ("full-machine declaration", ROOT / "tools/verify/verify_perky_machine_module.py"),
     ("five-control DSP mapper", ROOT / "tools/verify/verify_perky_control_mapper_exec.py"),
-    ("complete packed X-state voice", ROOT / "tools/verify/verify_perky_voice_xstate_exec.py"),
+    ("exact synthetic renderer parity", ROOT / "tools/verify/verify_perky_synthetic_render.py"),
     ("generated complete synth source", ROOT / "tools/verify/verify_perky_synth_source_exec.py"),
-    ("control -> complete voice -> PCM", ROOT / "tools/verify/verify_perky_controlled_voice_exec.py"),
 )
 
 
