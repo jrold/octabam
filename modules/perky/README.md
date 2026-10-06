@@ -3,9 +3,16 @@
 This directory is the development home for a native Octatrack source-machine
 port of the twelve PerkyBits / PĒRKONS HD-01 engine families.
 
-**Status:** scaffolding only. This directory intentionally has no
-`manifest.py` yet, so the registry does not expose an incomplete machine and
-existing remixes remain unchanged.
+**Status:** PERKY2 synthetic Noise/Tone audio works on the user's Octatrack
+(user confirmation, 6 Oct 2026). The native renderer, boot, timing and full
+sequencer gates pass. Authentic tables/control conversion and the other eleven
+families remain to be ported and qualified. Current timing-qualified layout:
+one PERKY per DSP core (T1–T4 / T5–T8), FX1/FX2 NONE on all tracks.
+
+The tracked `manifest.py` is an impulse probe. The full audible machine is
+composed by `tools/perky/build_machine_canary.py`; use the full builder to test
+shipping behavior. See [HANDOFF.md](HANDOFF.md) for verified evidence, local
+paths, build steps, known limits, and continuation toward all twelve families.
 
 The first target is **Noise / Tone** (voice 4, panel algorithm 1). The goal of
 milestone 1 is not to land all twelve engines at once; it is to prove one

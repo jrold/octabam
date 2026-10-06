@@ -1,5 +1,9 @@
 # PERKY port architecture
 
+Current milestone: PERKY2 synthetic Noise/Tone hardware audio confirmed on
+6 Oct 2026. See [HANDOFF.md](HANDOFF.md) for the current implementation and
+qualification limits; the sections below describe the target architecture.
+
 ## Reference/oracle
 
 The sound oracle is the native integer implementation in the private PerkyBits
