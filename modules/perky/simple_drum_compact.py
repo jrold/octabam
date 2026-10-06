@@ -195,7 +195,7 @@ def _render_envelope(voice: CompactSimpleDrum, base: int,
         pass
     elif state == 3:
         if not voice.words[base + ENV_TRIGGER] and (
-            voice.words[base + ENV_FLAG4] or voice.u32(base + ENV_HOLD) == 0
+            voice.words[base + ENV_FLAG4] or (voice.words[base + ENV_HOLD] & 0xFF) == 0
         ):
             voice.words[base + ENV_STATE] = 4
     elif state == 4:
