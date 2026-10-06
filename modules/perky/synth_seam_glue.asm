@@ -18,7 +18,7 @@
 ;   X:$3800 + 58*voice   41 compact state + 17 envelope-cache words
 ;   X:$38e8..$38eb       shared RNG
 ;   X:$38ec              source-seam event-offset save word
-;   X:$3900..$393f       one shared 64-word render scratch block
+;   X:$3900..$3963       one shared 100-word render scratch block
 ;   Y:$0795..            packed wave/envelope tables
 ;
 ; x:$418 is stock's per-core track position: $00/$20/$40/$60. We map those
@@ -87,7 +87,7 @@ pks_voice_ready:
         ; This is the one synthetic development layer in the live path.
         jsr     pk_synth_apply_controls
 
-        move    #>$003900,r5            ; shared 64-word scratch
+        move    #>$003900,r5            ; shared 100-word scratch
         move    #>$ffffff,m0
         move    #>$ffffff,m1
         move    #>$ffffff,m2
