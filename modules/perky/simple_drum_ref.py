@@ -95,7 +95,7 @@ def _render_envelope(state: bytearray, base: int,
         pass
     elif envelope_state == 3:
         if state[base + 7] == 0 and (
-            state[base + 4] != 0 or _u32(state, base + 0x10) == 0
+            state[base + 4] != 0 or state[base + 0x10] == 0
         ):
             state[base] = 4
     elif envelope_state == 4:
@@ -149,7 +149,7 @@ def pitch_lookup(raw_pitch: int, pitch_table: bytes) -> int:
         shift = ((p - 0x1000) >> 9) & 0x7F
         adjust = shift * 127
         shift = (shift + 1) & 0xFF
-        adjusted = _s16((p + (shift << 9) - 0x200) & MASK16)
+        adjusted = _s16((p + (adjust << 9) - 0x200) & MASK16)
         index = adjusted & MASK16
         if index >= 4096:
             raise ValueError(f"pitch lookup index 0x{index:04x} outside 4096-entry table")
