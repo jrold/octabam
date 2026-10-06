@@ -60,7 +60,7 @@ def main() -> None:
     state = OUT / "jsrl_smoke.state"
 
     src.write_text(
-        """pk_jsrl_exec:\n"
+        "pk_jsrl_exec:\n"
         "        jsrl    pk_jsrl_callee\n"
         "        rts\n"
         "\n"
