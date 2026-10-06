@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Assemble and budget PERKY's generated complete synth-seam source."""
+"""Execute the shipping voice gate, then assemble/budget the generated synth."""
 from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 
@@ -24,9 +25,15 @@ def load_module(name: str, path: Path):
 fab = load_module("perky_synexec_fab", ROOT / "tools/perky/fabricate_noise_tone_fixtures.py")
 payload = load_module("perky_synexec_payload", ROOT / "tools/perky/build_noise_tone_payload.py")
 sourcegen = load_module("perky_synexec_source", ROOT / "tools/perky/build_noise_tone_synth_source.py")
+SHIPPING_GATE = ROOT / "tools/verify/verify_perky_shipping_voice_exec.py"
 
 
 def main() -> None:
+    # This is the hardware boundary: do not merely prove that the generated
+    # source assembles. Execute the complete X-state renderer first and require
+    # exact PCM + all compact state + shared RNG parity against the Python oracle.
+    subprocess.run([sys.executable, str(SHIPPING_GATE)], cwd=ROOT, check=True)
+
     with tempfile.TemporaryDirectory(prefix="perky-synth-source-exec.") as td:
         td = Path(td)
         raw, packed = td / "raw", td / "packed"
