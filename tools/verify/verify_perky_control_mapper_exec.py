@@ -7,6 +7,11 @@ r4 at X:$0f8 so those values are seen by ``pk_synth_apply_controls`` exactly as
 PK/Y1 record words 8..19, and points r6 at X:$200, the host's dumped state
 block.
 
+The wrapper deliberately FALLS THROUGH into the mapper body instead of calling
+it. Long-call plumbing has its own dedicated executable smoke gate; keeping the
+mapper gate call-free means a failure here is about the mapping itself, not the
+test harness's subroutine encoding.
+
 The mapper is a DEVELOPMENT-CANARY control law, not a claim of PĒRKONS sonic
 identity.  This gate proves only that the DSP56300 implementation performs that
 explicit temporary mapping exactly and does not clobber unrelated compact
@@ -97,7 +102,7 @@ def source_text() -> str:
         body = body.replace(f"@W{i}H@", f"${(address >> 16) & 0xFFFF:04x}")
     if "@W" in body:
         fail("wave identity substitution left an unresolved marker")
-    wrapper = """; executable test wrapper\npk_control_mapper_exec:\n        move    #>$0000f8,r4\n        move    #>$000200,r6\n        jsrl    pk_synth_apply_controls\n        rts\n\n"""
+    wrapper = """; executable test wrapper -- intentional fall-through\npk_control_mapper_exec:\n        move    #>$0000f8,r4\n        move    #>$000200,r6\n; next instruction is pk_synth_apply_controls\n\n"""
     return wrapper + body
 
 
@@ -126,6 +131,11 @@ def assemble():
     mapper = labels.get("pk_synth_apply_controls")
     if entry is None or mapper is None:
         fail(f"missing symbols: entry={entry!r} mapper={mapper!r}")
+    if mapper != entry + 4:
+        fail(
+            f"fall-through geometry drifted: wrapper={entry:06x}, mapper={mapper:06x}; "
+            "expected mapper exactly four P words after two immediate moves"
+        )
 
     d = subprocess.run(
         [str(DIS), "-in", str(binary), "-pc", f"{ORG:x}", "-le"],
