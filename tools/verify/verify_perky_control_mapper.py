@@ -46,9 +46,10 @@ def main() -> None:
         fail("synth seam must call mapper exactly once per source block")
     need(GEN, '"synthetic_control_map.asm"', "synth source generator")
     need(GEN, 'src.count("pk_synth_apply_controls:") != 1', "synth source generator")
-    need(GEN, 'src.count("jsr     pk_synth_apply_controls") != 1', "synth source generator")
+    need(GEN, "force_long_local_jsr", "synth source generator")
+    need(GEN, "jsrl", "synth source generator")
 
-    # Transport word -> published control.  These are DSP words 8..19 created
+    # Transport word -> published control. These are DSP words 8..19 created
     # from the twelve bytes pk_render() packs into record[4..9].
     for token, name in (
         ("move    x:(r4+$8),a", "TUNE"),
@@ -59,13 +60,13 @@ def main() -> None:
     ):
         need(MAP, token, f"{name} transport")
 
-    # Compact-state destinations. High limbs for the two u32 increments and
-    # MIX are explicitly zeroed by the mapper.
+    # Compact voice indices are decimal in the ABI, while DSP `$nn`
+    # displacements are hexadecimal. Pin the corrected translations here.
     for token in (
-        "x:(r6+$25)", "x:(r6+$26)",
-        "x:(r6+$33)", "x:(r6+$34)",
-        "x:(r6+$11)", "x:(r6+$10)",
-        "x:(r6+$39)", "x:(r6+$40)",
+        "x:(r6+$19)", "x:(r6+$1a)",  # words 25/26 osc1 increment
+        "x:(r6+$21)", "x:(r6+$22)",  # words 33/34 osc2 increment
+        "x:(r6+$0b)", "x:(r6+$0a)",  # words 11/10 decay/attack
+        "x:(r6+$27)", "x:(r6+$28)",  # words 39/40 mix
     ):
         need(MAP, token, "compact-state mapper")
 
@@ -95,6 +96,7 @@ def main() -> None:
         1: ("@W1L@", "@W1H@", "@W2L@", "@W2H@"),
         2: ("@W2L@", "@W2H@", "@W3L@", "@W3H@"),
     }
+    wave_fields_hex = ("1b", "1c", "1d", "1e", "23", "24", "25", "26")
     for mode, ids in mode_chunks.items():
         start = MAP.find(f"pksc_mode{mode}:")
         if start < 0:
@@ -104,9 +106,9 @@ def main() -> None:
         for identity in ids:
             if identity not in chunk:
                 fail(f"MODE {mode} missing wave identity {identity}")
-        for field in (27, 28, 29, 30, 35, 36, 37, 38):
+        for field in wave_fields_hex:
             if f"x:(r6+${field})" not in chunk:
-                fail(f"MODE {mode} does not write compact wave field {field}")
+                fail(f"MODE {mode} does not write compact wave field ${field}")
 
     # Panel contract: five enabled controls only; MODE is count 3 and uses a
     # stock stepped formatter + genuine 3-position widget.
@@ -123,7 +125,7 @@ def main() -> None:
 
     print(
         "PERKY synthetic five-control mapper: PASS "
-        "(TUNE/DECAY/ENV/MIX/MODE consumed; compact-state endpoints pinned; "
+        "(TUNE/DECAY/ENV/MIX/MODE consumed; corrected compact-state offsets pinned; "
         "3 distinct MODE wave pairs; descriptor exposes exactly five controls)"
     )
 
