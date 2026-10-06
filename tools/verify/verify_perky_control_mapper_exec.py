@@ -8,9 +8,9 @@ PK/Y1 record words 8..19, and points r6 at X:$200, the host's dumped state
 block.
 
 The wrapper deliberately FALLS THROUGH into the mapper body instead of calling
-it. Long-call plumbing has its own dedicated executable smoke gate; keeping the
-mapper gate call-free means a failure here is about the mapping itself, not the
-test harness's subroutine encoding.
+it. Long-call plumbing is checked first by a dedicated executable smoke gate;
+keeping the mapper body call-free means a mapper failure is about the mapping
+itself, not subroutine encoding.
 
 The mapper is a DEVELOPMENT-CANARY control law, not a claim of PĒRKONS sonic
 identity.  This gate proves only that the DSP56300 implementation performs that
@@ -69,6 +69,13 @@ def decoded(text: str):
         for m in map(LINE.match, text.splitlines())
         if m
     }
+
+
+def run_jsrl_smoke() -> None:
+    smoke = ROOT / "tools/verify/verify_dsp_asm_jsrl_exec.py"
+    r = subprocess.run([sys.executable, str(smoke)], cwd=ROOT)
+    if r.returncode:
+        fail(f"DSP long-call smoke failed ({smoke}, exit {r.returncode})")
 
 
 def build_host() -> None:
@@ -230,6 +237,7 @@ def run(binary: Path, entry: int, cases: list[tuple[int, ...]]) -> list[list[int
 
 
 def main() -> None:
+    run_jsrl_smoke()
     build_host()
     binary, entry = assemble()
 
