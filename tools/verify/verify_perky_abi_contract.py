@@ -65,6 +65,14 @@ def main() -> None:
         "manifest lost the 236-word X-state claim",
     )
     expect(
+        ("x", 0x38EC, 1, "PERKY source event-offset staging") in ranges,
+        "manifest lost the source event staging claim",
+    )
+    expect(
+        ("x", 0x3900, 0x64, "PERKY shared sparse source-render scratch") in ranges,
+        "manifest lost the 100-word sparse scratch claim",
+    )
+    expect(
         ("y", 0x0795, 0x1000 - 0x0795, "PERKY packed Noise/Tone tables") in ranges,
         "manifest lost the private-Y table claim",
     )
@@ -122,6 +130,7 @@ def main() -> None:
     print(
         "PERKY ABI contract: PASS "
         "(4 x (41 voice + 17 cache) + 4 RNG = 236 X words at $3800; "
+        "event $38EC; sparse scratch $3900..$3963; "
         "1975 packed Y words at $0795..$0F4B; env bases $0A40/$0CC6)"
     )
 
