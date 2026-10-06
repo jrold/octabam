@@ -97,7 +97,7 @@ def source_text() -> str:
         body = body.replace(f"@W{i}H@", f"${(address >> 16) & 0xFFFF:04x}")
     if "@W" in body:
         fail("wave identity substitution left an unresolved marker")
-    wrapper = """; executable test wrapper\npk_control_mapper_exec:\n        move    #>$0000f8,r4\n        move    #>$000200,r6\n        jsr     >pk_synth_apply_controls\n        rts\n\n"""
+    wrapper = """; executable test wrapper\npk_control_mapper_exec:\n        move    #>$0000f8,r4\n        move    #>$000200,r6\n        jsrl    pk_synth_apply_controls\n        rts\n\n"""
     return wrapper + body
 
 
