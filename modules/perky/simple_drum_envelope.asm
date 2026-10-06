@@ -126,12 +126,11 @@ pksde_commit:
         move    a1,x:(r6+$6)
 
 pksde_output:
-        ; Reconstruct bounded raw u32 value in A.
+        ; Reconstruct bounded raw u32 value in A for the analytic linear path.
         move    x:(r6+$6),a
         asl     #$10,a,a
         move    x:(r6+$5),x0
         add     x0,a
-        move    a1,x:(r5+$50)           ; low 24 bits of raw for shaped path
 
         move    x:(r6+$1),b
         cmp     #>$1,b
@@ -143,8 +142,10 @@ pksde_output:
         rts
 
 pksde_shape1:
-        ; index = raw >> 10 (0..1023), fraction = raw & $3ff.
-        move    x:(r5+$50),a
+        ; index = raw >> 10 (0..1023), fraction = raw.low & $3ff.
+        ; Use the compact limbs directly so this does not depend on accumulator
+        ; subregister placement after reconstructing the u32 value above.
+        move    x:(r6+$5),a
         move    a1,b
         and     #>$00fc00,b
         lsr     #$a,b
@@ -156,7 +157,7 @@ pksde_shape1:
         and     #>$0003ff,a
         move    a1,x:(r5+$52)
 
-        move    x:(r5+$50),a
+        move    x:(r6+$5),a
         and     #>$0003ff,a
         move    a1,x:(r5+$53)
 
