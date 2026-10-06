@@ -97,7 +97,7 @@ def source_text() -> str:
         body = body.replace(f"@W{i}H@", f"${(address >> 16) & 0xFFFF:04x}")
     if "@W" in body:
         fail("wave identity substitution left an unresolved marker")
-    wrapper = """; executable test wrapper\npk_control_mapper_exec:\n        move    #>$0000f8,r4\n        move    #>$000200,r6\n        jsr     pk_synth_apply_controls\n        rts\n\n"""
+    wrapper = """; executable test wrapper\npk_control_mapper_exec:\n        move    #>$0000f8,r4\n        move    #>$000200,r6\n        jsr     >pk_synth_apply_controls\n        rts\n\n"""
     return wrapper + body
 
 
@@ -127,9 +127,6 @@ def assemble():
     if entry is None or mapper is None:
         fail(f"missing symbols: entry={entry!r} mapper={mapper!r}")
 
-    # Same typed-vs-decoded guard as the other PERKY executable probes.  This
-    # catches an assembler accepting a spelling whose encoded instruction is
-    # not what its listing says.
     d = subprocess.run(
         [str(DIS), "-in", str(binary), "-pc", f"{ORG:x}", "-le"],
         capture_output=True,
@@ -150,8 +147,6 @@ def assemble():
 
 
 def sentinel_state() -> list[int]:
-    # Distinct low values make unintended writes obvious while staying far
-    # away from sign/width edge cases in the harness dump.
     return [(0x005000 + i) & 0xFFFFFF for i in range(64)]
 
 
@@ -228,8 +223,6 @@ def main() -> None:
     build_host()
     binary, entry = assemble()
 
-    # Individual axis endpoints plus mixed states. Slots 4/5 and 7..11 are
-    # varied in the mixed cases to prove the mapper ignores unpublished bytes.
     cases = [
         (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
         (127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
