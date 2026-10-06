@@ -11,6 +11,12 @@
 //
 // Source syntax: one instruction per line, ';' comments, "label:" on its own line
 // or leading a line. Blank lines ignored.
+//
+// Octabam extension: `jsrl <label-or-$addr>` emits the DSP56300 two-word absolute
+// long JSR form (0x0bf080, target). Upstream's one-instruction Assembler only
+// accepts the 12-bit `jsr xxx` spelling for absolute literals, while Octabam
+// modules often live above P:$0fff. Keeping this as an explicit pseudo-op avoids
+// changing the size of ordinary `jsr` instructions elsewhere in the tree.
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -52,6 +58,31 @@ const char* errName(AssembleError e) {
     case AssembleError::AmbiguousInstruction: return "AmbiguousInstruction";
     default: return "InternalError";
     }
+}
+
+bool isLongJsr(const std::string& t) {
+    const auto end = t.find_first_of(" \t");
+    auto m = t.substr(0, end);
+    for (auto& c : m) c = static_cast<char>(tolower(c));
+    return m == "jsrl";
+}
+
+bool parseLongJsrAddress(const std::string& t, TWord& addr) {
+    const auto p = t.find_first_of(" \t");
+    if (p == std::string::npos) return false;
+    auto op = trim(t.substr(p + 1));
+    if (op.empty()) return false;
+    const char* s = op.c_str();
+    int base = 0;
+    if (*s == '$') {
+        ++s;
+        base = 16;
+    }
+    char* end = nullptr;
+    const auto v = std::strtoul(s, &end, base);
+    if (!end || *end || v > 0xffffffu) return false;
+    addr = static_cast<TWord>(v);
+    return true;
 }
 
 } // namespace
@@ -136,9 +167,13 @@ int main(int argc, char** argv) {
             t = trim(t.substr(colon + 1));
             if (t.empty()) continue;
         }
-        const auto r = asmb.assemble(substitute(t, false, pc).c_str());
         code.emplace_back(n, t);
         sized.push_back(pc);
+        if (isLongJsr(t)) {
+            pc += 2;
+            continue;
+        }
+        const auto r = asmb.assemble(substitute(t, false, pc).c_str());
         pc += r.success() ? r.wordCount : 1;
     }
 
@@ -161,6 +196,24 @@ int main(int argc, char** argv) {
             return 1;
         }
         const auto resolved = substitute(text, true, pc);
+        if (isLongJsr(resolved)) {
+            TWord addr = 0;
+            if (!parseLongJsrAddress(resolved, addr)) {
+                std::fprintf(stderr, "%s:%d: InvalidAddress -- \"%s\"\n",
+                             in.c_str(), n, resolved.c_str());
+                ++errors;
+                continue;
+            }
+            constexpr TWord longJsr = 0x0bf080;
+            if (list)
+                std::printf("%06x: %-38s ; %06x %06x\n", pc,
+                            (std::string("jsr $") + [&](){ char b[16]; std::snprintf(b, sizeof b, "%06x", addr); return std::string(b); }()).c_str(),
+                            longJsr, addr);
+            outWords.push_back(longJsr);
+            outWords.push_back(addr);
+            pc += 2;
+            continue;
+        }
         const auto r = asmb.assemble(resolved.c_str());
         if (!r.success()) {
             std::fprintf(stderr, "%s:%d: %s -- \"%s\"\n", in.c_str(), n, errName(r.error), resolved.c_str());
@@ -172,7 +225,7 @@ int main(int argc, char** argv) {
             if (r.wordCount > 1) std::printf(" %06x", r.word[1]);
             std::printf("\n");
         }
-        for (uint32_t i = 0; i < r.wordCount; ++i) outWords.push_back(r.word[i]);
+        for (uint32_t j = 0; j < r.wordCount; ++j) outWords.push_back(r.word[j]);
         pc += r.wordCount;
     }
     if (errors) { std::fprintf(stderr, "%d error(s)\n", errors); return 1; }
