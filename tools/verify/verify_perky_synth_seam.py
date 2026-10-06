@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
-import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -44,7 +43,7 @@ ranges = {(r.space, r.start, r.length, r.what) for r in m.claims.dsp_ranges}
 want_ranges = (
     ("x", 0x3800, 236, "PERKY compact voice state + envelope caches + RNG"),
     ("x", 0x38EC, 1, "PERKY source event-offset staging"),
-    ("x", 0x3900, 64, "PERKY shared source-render scratch"),
+    ("x", 0x3900, 0x64, "PERKY shared sparse source-render scratch"),
     ("y", 0x0795, 0x1000 - 0x0795, "PERKY packed Noise/Tone tables"),
 )
 for row in want_ranges:
@@ -76,10 +75,10 @@ for token in (
 ):
     need(src, token)
 
-# The first draft saved the event in r5+$3f, which the renderer owns as an
-# oscillator temporary. Never allow that collision back in.
-if "x:(r5+$3f)" in src:
-    fail("event offset is stored inside the shared 64-word render scratch")
+# The first draft saved the event in r5+$3f. The primitive scratch ABI reaches
+# all the way through r5+$63, so event staging must stay completely outside it.
+if "x:(r5+$3f)" in src or "x:(r5+$63)" in src and "38ec" not in src:
+    fail("event offset staging is not pinned outside the sparse render scratch")
 
 # Exact voice geometry: 58 words = 0x3a, four consecutive blocks, then RNG.
 bases = [0x3800, 0x383A, 0x3874, 0x38AE]
@@ -92,6 +91,8 @@ if bases[-1] + 57 != 0x38E7:
     fail("voice 3 must end at X:$38e7")
 if 0x38EC >= 0x3900:
     fail("event staging word must remain outside shared scratch")
+if 0x3900 + 0x64 - 1 != 0x3963:
+    fail("sparse scratch geometry drifted")
 
 # Model every valid stock sample offset. The seam must never invoke a zero
 # length renderer call: prefix is omitted at event 0 and suffix at event 15.
@@ -111,10 +112,8 @@ for event in range(16):
     if sum(n for n, trig in segments if trig) != 1:
         fail(f"event {event}: trigger is not exactly one sample: {segments}")
 
-# The assembly should have exactly three potential renderer calls: prefix,
-# trigger sample, suffix/full path. Four indicates accidental duplicate work;
-# fewer means one path disappeared. Current spelling has prefix, trigger,
-# suffix, plus the mutually-exclusive full-block no-trigger path = four JSRs.
+# Current spelling has prefix, trigger, suffix, plus the mutually-exclusive
+# full-block no-trigger path = four renderer call sites.
 if src.count("jsr     pk_voice_xstate") != 4:
     fail(f"expected four syntactic renderer call sites, got {src.count('jsr     pk_voice_xstate')}")
 
@@ -129,6 +128,6 @@ if ">$400000" in src or "diagnostic impulse" in src.lower():
 
 print(
     "PERKY synth seam: PASS "
-    "(4 x 58-word voices; RNG/event/scratch disjoint; all 16 event offsets "
-    "split into exactly one triggered sample + 15 untriggered samples)"
+    "(4 x 58-word voices; RNG/event/100-word sparse scratch disjoint; all 16 "
+    "event offsets split into exactly one triggered sample + 15 untriggered samples)"
 )
