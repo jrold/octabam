@@ -1,12 +1,11 @@
 """Byte-level Simple Drum PK/Y1 transport model.
 
-The existing PERKY source record carries twelve one-byte parameter slots.  For
-engine 003 the ColdFire writer can repack the otherwise-unused slots with the
-four renderer-ready 16-bit values.  Engine 011 Noise/Tone keeps the original
-raw-byte record unchanged.
+The existing PERKY source record carries twelve one-byte parameter slots. For
+engine 003 the ColdFire writer repacks them with renderer-ready values. Engine
+011 Noise/Tone keeps the original raw-byte record unchanged.
 
-This model also mirrors PerkyBits' control cadence exactly enough to make the
-transport independently testable:
+This model mirrors the v1.2.1/PerkyBits control cadence used by the authentic
+state captures:
 - a dirty GUI/control change performs setAlgorithm/update + setMode/update
   against the old targets, then writes all four targets and performs 16 update
   passes;
@@ -14,6 +13,11 @@ transport independently testable:
 
 Octatrack's 7-bit controls are expanded to the firmware's 12-bit target domain
 with 127 mapping to 4095 and all other values mapping to value<<5.
+
+Record bytes 0..7 hold four big-endian u16 prepared values. Byte 8 is physical
+MODE. Byte 9 carries Simple Drum's amplitude-envelope gate bit: the original
+v1.2.1 update sets it when the smoothed DECAY control is >= 4080. Byte 10 is
+reserved and byte 11 is the zero-based engine index.
 """
 from __future__ import annotations
 
@@ -22,6 +26,7 @@ from dataclasses import dataclass
 import simple_drum_control as ctl
 
 ENGINE_INDEX = 2
+AMP_GATE_THRESHOLD = 4080
 
 
 def _be16(value: int) -> tuple[int, int]:
@@ -54,7 +59,7 @@ class State:
 
         if dirty:
             # PerkyBits MainComponent applies setAlgorithm and setMode before
-            # setSoundParameters.  Both calls execute one update with the old
+            # setSoundParameters. Both calls execute one update with the old
             # targets still installed.
             self._update_once()
             self._update_once()
@@ -80,7 +85,7 @@ class State:
         record[4:6] = bytes(_be16(pitch_decay))
         record[6:8] = bytes(_be16(amount))
         record[8] = mode
-        record[9] = 0
+        record[9] = int(decay >= AMP_GATE_THRESHOLD)
         record[10] = 0
         record[11] = ENGINE_INDEX
         return bytes(record)
@@ -96,5 +101,6 @@ def decode(record: bytes) -> dict[str, int]:
         "pitch_decay": u16(4),
         "pitch_env_amount": u16(6),
         "mode": record[8],
+        "amp_gate": record[9],
         "engine": record[11],
     }
