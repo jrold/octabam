@@ -30,3 +30,4 @@ jobs:
       - run: python3 tools/verify/verify_perky_simple_drum_compact.py
       - run: python3 tools/verify/verify_perky_simple_drum_frequency_exec.py
       - run: python3 tools/verify/verify_perky_simple_drum_oscillator_exec.py
+      - run: python3 tools/verify/verify_perky_simple_drum_envelope_exec.py
