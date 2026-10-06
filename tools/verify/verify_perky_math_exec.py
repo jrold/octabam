@@ -72,9 +72,25 @@ def host():
 def build():
     b = OUT / 'math.bin'
     s = OUT / 'math.sym'
+    sys.path.insert(0, str(ROOT / 'tools/perky'))
+    import build_noise_tone_synth_source as generator
+    source = generator.force_long_local_jsr(generator.relativize_local_conditionals(
+        (PERKY / 'noise_tone_math.asm').read_text()))
+    wrapper = '''pk_math_exec_entry:
+        jsrl pk_math_probe
+        move x:(r5+$40),a
+        move a1,x:(r5+$3d)
+        move x:(r5+$41),a
+        move a1,x:(r5+$3e)
+        move x:(r5+$42),a
+        move a1,x:(r5+$3f)
+        rts
+'''
+    generated = OUT / 'math_exec.asm'
+    generated.write_text(wrapper + source)
     r = subprocess.run(
         [
-            str(ASM), '-in', str(PERKY / 'noise_tone_math.asm'),
+            str(ASM), '-in', str(generated),
             '-org', f'{ORG:x}', '-out', str(b), '-list', '-sym', str(s),
         ],
         capture_output=True,
@@ -102,11 +118,11 @@ def build():
         dm, dops = actual.get(addr, ('?', ''))
         if dm != mn:
             fail(f'P:{addr:06x} typed {mn} {ops} but decodes {dm} {dops}')
-    return b, labels['pk_math_probe']
+    return b, labels['pk_math_exec_entry']
 
 
 def run(binary, entry, tag, op, a, b=0, shift=0, extra=None, full=False):
-    w = [0] * 64
+    w = [0] * 100
     aa = U32.from_int(a)
     bb = U32.from_int(b)
     w[:5] = [aa.lo, aa.hi, bb.lo, bb.hi, shift]
@@ -137,8 +153,11 @@ def run(binary, entry, tag, op, a, b=0, shift=0, extra=None, full=False):
         fail(tag + ': truncated state dump')
     result = (
         U32(d[8] & 0xffff, d[9] & 0xffff),
-        U32(d[10] & 0xffff, d[11] & 0xffff),
+        U32(d[0x10] & 0xffff, d[0x11] & 0xffff),
     )
+    if op == 7:
+        result = (U32(d[0] & 0xffff, d[1] & 0xffff),
+                  U32(d[2] & 0xffff, d[3] & 0xffff))
     return (*result, d) if full else result
 
 
@@ -255,14 +274,14 @@ def main():
             7,
             old_low,
             old_high,
-            extra={40: count, 41: reload, 42: held},
+            extra={0x40: count, 0x41: reload, 0x42: held},
             full=True,
         )
         ck(f'noise-rng-low-{i}', got_low, want_low)
         ck(f'noise-rng-high-{i}', got_high, want_high)
-        ckw(f'noise-count-{i}', state[40], want_count)
-        ckw(f'noise-held-{i}', state[42], want_held)
-        ckw(f'noise-sample-{i}', state[12], want_sample)
+        ckw(f'noise-count-{i}', state[61], want_count)
+        ckw(f'noise-held-{i}', state[63], want_held)
+        ckw(f'noise-sample-{i}', state[0x12], want_sample)
         n += 5
 
     print(

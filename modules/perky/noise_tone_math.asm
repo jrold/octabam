@@ -39,7 +39,7 @@ pk_math_probe:
         beq     pk_math_do_mul
         move    #>$5,x0
         cmp     x0,a
-        beq     pk_math_do_mul64
+        beq     pk_math_wide_mul
         move    #>$6,x0
         cmp     x0,a
         beq     pk_math_do_rng
@@ -60,7 +60,7 @@ pk_math_do_asr:
 pk_math_do_mul:
         jsr     pk_u32_mul_low
         rts
-pk_math_do_mul64:
+pk_math_wide_mul:
         jsr     pk_u32_mul_full
         rts
 pk_math_do_rng:
@@ -113,34 +113,23 @@ pk_sub_no_borrow:
 ; limb. Each iteration shifts low logically, high arithmetically, then uses
 ; the high shift's carry to inject old high bit0 into low bit15.
 pk_u32_asr:
-        move    x:(r5+$0),x1
-        move    x:(r5+$1),y0
-        move    y0,a
+        move    x:(r5+$1),a
         btst    #15,a1
-        jcc     pk_asr_sign_done
-        move    #>$010000,x0
-        sub     x0,a
-pk_asr_sign_done:
-        move    a1,y0
+        jcc     pk_u32_shift_sign_ready
+        sub     #>$010000,a
+pk_u32_shift_sign_ready:
+        move    x:(r5+$0),b
+        lsl     #$8,b
+        move    b1,a0
         move    x:(r5+$4),x0
-        move    #>$008000,y1
-        do      x0,pk_asr_loop_done
-        move    x1,b
-        lsr     b
-        move    b1,x1
-        move    y0,a
-        asr     a
-        add     y1,b ifcs
-        move    b1,x1
-        move    a1,y0
-pk_asr_loop_done:
-        nop
-        move    x1,a
-        and     #>$00ffff,a
-        move    a1,x:(r5+$8)
-        move    y0,b
+        asr     x0,a,a
+        move    a1,b
         and     #>$00ffff,b
         move    b1,x:(r5+$9)
+        move    a0,b
+        lsr     #$8,b
+        and     #>$00ffff,b
+        move    b1,x:(r5+$8)
         rts
 
 ; Low 32 bits of unsigned 32x32 multiply using three 16x16 products:
@@ -149,11 +138,12 @@ pk_u32_mul_low:
         move    x:(r5+$0),x0
         move    x:(r5+$2),y0
         mpyuu   x0,y0,a
+        asr     #$1,a,a                 ; remove fractional multiply alignment
         move    a0,x1
         move    x1,b
         and     #>$00ffff,b
         move    b1,x:(r5+$8)
-        lsr     #$10,a,a
+        asr     #$10,a,a
         move    a0,x1
         move    x1,b
         and     #>$00ffff,b
@@ -162,6 +152,8 @@ pk_u32_mul_low:
         move    x:(r5+$0),x0
         move    x:(r5+$3),y0
         mpyuu   x0,y0,a
+        asr     #$1,a,a                 ; remove fractional multiply alignment
+        move    a0,a
         and     #>$00ffff,a
         move    a1,x1
         move    y1,b
@@ -170,6 +162,8 @@ pk_u32_mul_low:
         move    x:(r5+$1),x0
         move    x:(r5+$2),y0
         mpyuu   x0,y0,a
+        asr     #$1,a,a                 ; remove fractional multiply alignment
+        move    a0,a
         and     #>$00ffff,a
         move    a1,x1
         add     x1,b
@@ -177,15 +171,17 @@ pk_u32_mul_low:
         move    b1,x:(r5+$9)
         rts
 
-; Helper: unsigned 16x16 -> x1=low16, y1=high16. MPYUU is right-justified
-; in A2:A1:A0, so A0 has bits 0..23 and LSR #16 exposes bits 16..31.
+; Helper: unsigned 16x16 -> x1=low16, y1=high16. Remove MPYUU
+; fractional alignment first; A0 then holds product bits 0..23, and
+; a full-accumulator ASR #16 exposes bits 16..31 in A0.
 pk_mul16:
         mpyuu   x0,y0,a
+        asr     #$1,a,a                 ; remove fractional multiply alignment
         move    a0,x1
         move    x1,b
         and     #>$00ffff,b
         move    b1,x1
-        lsr     #$10,a,a
+        asr     #$10,a,a
         move    a0,y1
         move    y1,b
         and     #>$00ffff,b
@@ -233,8 +229,8 @@ pk_u32_mul_full:
         move    a1,b
         and     #>$00ffff,b
         move    b1,x:(r5+$9)
-        lsr     #$10,a,a
-        move    a0,x1                   ; carry1 (0..2)
+        lsr     #$10,a
+        move    a1,x1                   ; carry1 (0..2)
 
         ; t2 = p1.high + p2.high + p3.low + carry1.
         move    x:(r5+$12),a
@@ -246,8 +242,8 @@ pk_u32_mul_full:
         move    a1,b
         and     #>$00ffff,b
         move    b1,x:(r5+$10)           ; r2
-        lsr     #$10,a,a
-        move    a0,x1                   ; carry2 (0..2)
+        lsr     #$10,a
+        move    a1,x1                   ; carry2 (0..2)
 
         ; r3 = low16(p3.high + carry2)
         move    x:(r5+$16),b

@@ -6,7 +6,7 @@
 ; renderer will substitute the measured width/constants at build time.
 ;
 ; Input / state (bd909_host probe ABI, X relative to r5):
-;   +39  curve selector: 0 = env1 at Y:$0a40, nonzero = env2 at Y:$0cc6
+;   +39  curve selector: 0 = env1 at Y:$0a50, nonzero = env2 at Y:$0cd6
 ;   +40  block id 0..127 (incremented after each call)
 ;   +41..+56  decoded 16-value u16 cache
 ;   +60  scratch absolute block bit position
@@ -35,13 +35,15 @@ pk_env_unpack7_probe:
         move    x:(r5+$40),x0
         move    #>$000079,y0
         mpyuu   x0,y0,a
+        asr     #$1,a,a                 ; remove fractional multiply alignment
         move    a0,x0
         move    x0,x:(r5+$60)
 
         ; q3 = floor(bitpos / 3).
         move    #>$00aaab,y0
         mpyuu   x0,y0,a
-        lsr     #$10,a,a
+        asr     #$1,a,a                 ; remove fractional multiply alignment
+        asr     #$10,a,a
         move    a0,x1
         move    x1,b
         and     #>$00ffff,b
@@ -50,7 +52,7 @@ pk_env_unpack7_probe:
 
         ; word = floor(q3 / 8) = floor(bitpos / 24).
         move    x1,b
-        lsr     #$3,b,b
+        lsr     #$3,b
         move    b1,n1                   ; word offset
         move    b1,x1                   ; keep word quotient for remainder
 
@@ -70,10 +72,10 @@ pk_env_unpack7_probe:
         move    x:(r5+$39),a
         tst     a
         beq     pke7_env1
-        move    #>$000cc6,r1
+        move    #>$000cd6,r1
         bra     pke7_base_ready
 pke7_env1:
-        move    #>$000a40,r1
+        move    #>$000a50,r1
 pke7_base_ready:
         lua     (r1+n1),r2
         lua     (r5+$41),r3             ; cache write cursor

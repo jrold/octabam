@@ -18,7 +18,7 @@ ASM = V / 'build/source/dsp_host/dsp_asm'
 DIS = V / 'build/source/disassemble/dsp56kDisassemble'
 HOST = OUT / 'bd909_host'
 SRC = ROOT / 'tools/harness/bd909_host/bd909_host.cpp'
-ORG = 0x2C00
+ORG = 0x0100  # isolated kernels fit the short-call region; shipping gate tests high P
 TABLE1 = 0x3200
 TABLE2 = 0x3A00
 BASE = 0x74
@@ -146,16 +146,16 @@ def oracle(case):
 
 def run(binary, entry, tag, case):
     env_state, shape, flag4, flag6, flag7, value, hold, attack, decay = case
-    words = [0] * 64
-    words[40] = env_state & 0xFF
-    words[41] = shape & 0xFF
-    words[42] = flag4 & 0xFF
-    words[43] = flag6 & 0xFF
-    words[44] = flag7 & 0xFF
-    words[45], words[46] = limbs(value)
-    words[47], words[48] = limbs(hold)
-    words[49] = attack & 0xFFFF
-    words[50] = decay & 0xFFFF
+    words = [0] * 100
+    words[0x40] = env_state & 0xFF
+    words[0x41] = shape & 0xFF
+    words[0x42] = flag4 & 0xFF
+    words[0x43] = flag6 & 0xFF
+    words[0x44] = flag7 & 0xFF
+    words[0x45], words[0x46] = limbs(value)
+    words[0x47], words[0x48] = limbs(hold)
+    words[0x49] = attack & 0xFFFF
+    words[0x50] = decay & 0xFFFF
 
     data = OUT / f'{tag}.data'
     script = OUT / f'{tag}.script'
@@ -172,7 +172,7 @@ def run(binary, entry, tag, case):
         [
             str(HOST), '-code', str(binary), '-org', f'{ORG:x}',
             '-entry', f'{entry:x}', '-data', str(data), '-script', str(script),
-            '-out', str(raw), '-state', str(state_path),
+            '-out', str(raw), '-state', str(state_path), '-state-words', '100',
         ],
         check=True,
         capture_output=True,
@@ -182,9 +182,9 @@ def run(binary, entry, tag, case):
     if len(dumped) < 64:
         fail(f'{tag}: truncated state dump')
     return (
-        dumped[40] & 0xFF,
-        U32(dumped[45] & 0xFFFF, dumped[46] & 0xFFFF),
-        dumped[51] & 0xFFFF,
+        dumped[0x40] & 0xFF,
+        U32(dumped[0x45] & 0xFFFF, dumped[0x46] & 0xFFFF),
+        dumped[0x51] & 0xFFFF,
     )
 
 

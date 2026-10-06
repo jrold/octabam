@@ -9,6 +9,16 @@ repeat: the 22–25 Sep diagnostic run wrapped past 108 to 19, and 64, 88 and
 
 The full text before this rewrite: `git show 666b6154:CHANGELOG.md`.
 
+## PERKY2 — 6 Oct 2026 — perky-machine
+
+- Synthetic Noise/Tone canary: user confirmed working on their Octatrack after
+  PERKY1 briefly sounded and stalled the sequencer. Native arithmetic and
+  direct state access repair the measured renderer overrun; one PERKY voice
+  per DSP core is admitted, with FX NONE required for the qualified layout.
+- Local qualification: exact PCM/state/RNG parity, 12,544-block timing sweep,
+  loader/boot readback, and 32,000-frame project-loaded sequencer run with both
+  DSP cores and dirty memory. Hardware test duration was not reported.
+
 ## Unreleased
 
 - Analog BD: engine selection now lives only in the pool-style browser; the

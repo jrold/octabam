@@ -116,7 +116,7 @@ def build(out: Path, final_image: Path) -> None:
     print(f"  image: {final_image}")
     print(f"  DSP correctness source: {pwords} P words")
     print("  X init: 236 words at X:$3800")
-    print("  Y tables: 1975 words at Y:$0795")
+    print("  Y tables: 1975 words at Y:$07a5")
     print("  provenance: SYNTHETIC DEVELOPMENT FIXTURE")
     print("  hardware status: NOT YET QUALIFIED / NOT FLASHED BY THIS SCRIPT")
 

@@ -770,6 +770,7 @@ def main():
              "wave": ("SPRING REV", "DARK REV"),   # WAVE runs in their words
              "transient": ("PLATE REV",),   # TRANSIENT runs in its words; the other 13 stay
              "euclid": ("SPATIALIZER", "FLANGER", "CHORUS", "COMB FILTER"),
+             "perky-probe": ("SPRING REV",),  # the impulse donor retains PLATE/DARK
              "rig": _rig, "bottleservice": _rig}
     for _n in registry.remix_names():
         _r = registry.remix(_n)

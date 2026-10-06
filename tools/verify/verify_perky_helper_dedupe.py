@@ -33,6 +33,9 @@ def extract(text: str, label: str) -> str:
 
 
 def canonical(body: str, prefix: str) -> tuple[str, ...]:
+    labels = re.findall(r"(?m)^([A-Za-z0-9_]+):", body)
+    for i, label in enumerate(labels):
+        body = re.sub(r"\b" + re.escape(label) + r"\b", f"H_LABEL_{i}", body)
     rows = []
     for raw in body.splitlines():
         raw = raw.split(";", 1)[0].strip()

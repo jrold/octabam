@@ -30,18 +30,18 @@ pk_envelope_packed7_probe:
 
 pk_envelope_packed7_cached:
         ; Preserve caller's shape outside the raw envelope kernel's scratch.
-        move    x:(r5+$41),a
+        move    x:(r6+$2),a
         move    a1,x:(r5+$62)
 
         ; State transition is shape-independent. Force linear so the proven
         ; kernel never reads its old unpacked X tables; its output is ignored
         ; below for shapes 1/2 and kept verbatim for every other shape.
         clr     a
-        move    a1,x:(r5+$41)
+        move    a1,x:(r6+$2)
         jsr     pk_envelope_probe
 
         move    x:(r5+$62),a
-        move    a1,x:(r5+$41)
+        move    a1,x:(r6+$2)
         cmp     #>$1,a
         beq     pkep_shape1
         cmp     #>$2,a
@@ -49,6 +49,8 @@ pk_envelope_packed7_cached:
         rts
 
 pkep_shape1:
+        bra     pken_linear
+pken_unused_shape1:
         clr     b
         move    b1,x:(r5+$63)           ; curve id 0
         bra     pkep_shaped
@@ -58,12 +60,12 @@ pkep_shape2:
 
 pkep_shaped:
         ; index = (raw value >> 10) & $7ff.
-        move    x:(r5+$45),a
+        move    x:(r6+$6),a
         move    a1,b
         and     #>$00fc00,b
         lsr     #$a,b
         move    b1,x0
-        move    x:(r5+$46),a
+        move    x:(r6+$7),a
         and     #>$00001f,a
         asl     #$6,a,a
         add     x0,a
@@ -71,7 +73,7 @@ pkep_shaped:
         move    a1,x:(r5+$52)
 
         ; fraction = raw & $3ff.
-        move    x:(r5+$45),a
+        move    x:(r6+$6),a
         and     #>$0003ff,a
         move    a1,x:(r5+$53)
 
@@ -88,49 +90,19 @@ pkep_shaped:
         jsr     pkep_curve_u16
         move    a1,x:(r5+$55)
 
-        ; Same exact interpolation arithmetic as the proven raw-table kernel.
-        ; delta = signed32(second-first), represented as two 16-bit limbs.
-        move    x:(r5+$55),a
-        move    x:(r5+$54),x0
-        sub     x0,a
-        move    a1,x:(r5+$56)
-        move    a1,b
-        and     #>$00ffff,b
-        move    b1,x:(r5+$0)
-        move    #>$0,x0
-        tst     a
-        jpl     pkep_delta_sign_ready
-        move    #>$00ffff,x0
-pkep_delta_sign_ready:
-        move    x0,x:(r5+$1)
-        move    x:(r5+$53),a
-        move    a1,x:(r5+$2)
-        clr     a
-        move    a1,x:(r5+$3)
-        jsr     pke_mul_low
-
-        ; interp = ASR32(low32(delta*fraction), 10).
-        move    x:(r5+$8),a
-        move    a1,x:(r5+$0)
-        move    x:(r5+$9),a
-        move    a1,x:(r5+$1)
-        move    #>$a,a
-        move    a1,x:(r5+$4)
-        jsr     pke_asr
-
-        ; output = low16(first + interp).
-        move    x:(r5+$54),a
-        move    a1,x:(r5+$0)
-        clr     a
-        move    a1,x:(r5+$1)
-        move    x:(r5+$8),a
-        move    a1,x:(r5+$2)
-        move    x:(r5+$9),a
-        move    a1,x:(r5+$3)
-        jsr     pke_add
-        move    x:(r5+$8),a
-        and     #>$00ffff,a
-        move    a1,x:(r5+$51)
+        ; unsigned16 endpoints have a signed17 delta; fraction <=1023.
+        move x:(r5+$55),a
+        move x:(r5+$54),x0
+        sub x0,a
+        move a1,x0
+        move x:(r5+$53),y0
+        mpy y0,x0,a
+        asr #$b,a,a
+        move a0,a
+        move x:(r5+$54),x0
+        add x0,a
+        and #>$00ffff,a
+        move a1,x:(r5+$51)
         rts
 
 ; ---------------------------------------------------------------------------
@@ -279,4 +251,70 @@ pkep_cache_hit:
         lua     (r4+$1),r1
         move    x:(r1+n1),a
         and     #>$00ffff,a
+        rts
+
+; The synthetic curve1 is round(index*65535/2047). Exact division by
+; 2047 uses its Mersenne form; exhaustive 2048-index gate pins the formula.
+; This specialization is enabled only for the synthetic asset fingerprint.
+pken_linear:
+        move x:(r6+$6),a
+        move a1,b
+        and #>$00fc00,b
+        lsr #$a,b
+        move b1,x0
+        move x:(r6+$7),a
+        and #>$00001f,a
+        asl #$6,a,a
+        add x0,a
+        and #>$0007ff,a
+        move a1,x:(r5+$52)
+        move a1,x0
+        jsr pken_index_value
+        move a1,x:(r5+$54)
+        move #>$20,x0
+        move x:(r5+$52),a
+        cmp #>$7ff,a
+        beq pken_wrapped_pair
+        move y1,a
+        add #>$1f,a
+        cmp #>$7ff,a
+        blt pken_pair_ready
+        move #>$21,x0
+        bra pken_pair_ready
+pken_wrapped_pair:
+        move #>$ff0001,x0
+pken_pair_ready:
+        move x:(r6+$6),a
+        and #>$0003ff,a
+        move a1,y0
+        mpy y0,x0,a
+        asr #$b,a,a
+        move a0,a
+        move x:(r5+$54),x0
+        add x0,a
+        and #>$00ffff,a
+        move a1,x:(r5+$51)
+        rts
+
+pken_index_value:
+        move x0,a
+        asl #$5,a,a
+        move a1,x1
+        sub x0,a
+        add #>$0003ff,a
+        move a1,b
+        lsr #$b,b
+        move b1,y0
+        and #>$0007ff,a
+        add y0,a
+        cmp #>$0007ff,a
+        blt pken_no_div_carry
+        sub #>$0007ff,a
+        move y0,b
+        add #>$1,b
+        move b1,y0
+pken_no_div_carry:
+        move a1,y1
+        move x1,a
+        add y0,a
         rts

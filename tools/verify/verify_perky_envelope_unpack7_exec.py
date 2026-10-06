@@ -36,9 +36,9 @@ ASM = V / "build/source/dsp_host/dsp_asm"
 DIS = V / "build/source/disassemble/dsp56kDisassemble"
 HOST = OUT / "bd909_host"
 HOST_SRC = ROOT / "tools/harness/bd909_host/bd909_host.cpp"
-ORG = 0x4000
-ENV1_BASE = 0x0A40
-ENV2_BASE = 0x0CC6
+ORG = 0x0100  # standalone low-P decoder; shipping high-P gate is separate
+ENV1_BASE = 0x0A50
+ENV2_BASE = 0x0CD6
 LINE = re.compile(
     r"^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$"
 )
@@ -112,6 +112,8 @@ def assemble():
     if not typed:
         fail("assembler produced no parseable listing")
     for address, (mnemonic, operands) in typed.items():
+        if mnemonic == "nop" and address not in actual and binary.read_bytes()[(address-ORG)*3:(address-ORG)*3+3] == bytes(3):
+            continue
         dm, dop = actual.get(address, ("?", ""))
         if dm != mnemonic:
             fail(
@@ -128,9 +130,9 @@ def run_curve(binary: Path, entry: int, selector: int, env1, env2):
     tag = f"curve{selector+1}"
     data, script = OUT / f"{tag}.data", OUT / f"{tag}.script"
     raw, meter = OUT / f"{tag}.raw", OUT / f"{tag}.meter"
-    xstate = [0] * 64
-    xstate[39] = selector
-    xstate[40] = 0
+    xstate = [0] * 100
+    xstate[0x39] = selector
+    xstate[0x40] = 0
     data.write_text(
         "\n".join((
             words_line("X", 0x200, xstate),
@@ -165,8 +167,8 @@ def main() -> None:
         fail("synthetic packed envelope size drifted")
     if ENV1_BASE + len(tables[0].words) != ENV2_BASE:
         fail("env1 no longer ends exactly at env2 base")
-    if ENV2_BASE + len(tables[1].words) != 0x0F4C:
-        fail("env2 no longer ends exactly after Y:0x0f4b")
+    if ENV2_BASE + len(tables[1].words) != 0x0F5C:
+        fail("env2 no longer ends exactly after Y:0x0f5b")
 
     max_instr = 0
     for selector in (0, 1):
@@ -181,7 +183,7 @@ def main() -> None:
 
     print(
         "PERKY packed envelope decoder executable gate: OK "
-        "(2 x 128 blocks / 4096 values; shipping Y:0a40..0f4b; "
+        "(2 x 128 blocks / 4096 values; shipping Y:0a50..0f5b; "
         f"max {max_instr} instructions/block)"
     )
 

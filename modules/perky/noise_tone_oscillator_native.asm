@@ -21,23 +21,26 @@
 ; samples occupy two 24-bit words, LSB-first (noise_tone_tables.py).
 
 pk_osc_packed_probe:
-        ; phase = phase + increment, modulo 2^32.
-        move    x:(r5+$40),a
-        move    a1,x:(r5+$0)
-        move    x:(r5+$41),a
-        move    a1,x:(r5+$1)
-        move    x:(r5+$42),a
-        move    a1,x:(r5+$2)
-        move    x:(r5+$43),a
-        move    a1,x:(r5+$3)
-        jsr     pkop_add
-        move    x:(r5+$8),a
-        move    a1,x:(r5+$40)
-        move    x:(r5+$9),a
-        move    a1,x:(r5+$41)
+        ; Both live phase and increment are bounded below 2^24. Assemble
+        ; their limbs in the DSP accumulator without four scratch copies.
+        move x:(r7+$1),a
+        asl #$10,a,a
+        move x:(r7+$0),x0
+        add x0,a
+        move x:(r7+$3),b
+        asl #$10,b,b
+        move x:(r7+$2),x0
+        add x0,b
+        add b,a
+        move a1,b
+        and #>$00ffff,b
+        move b1,x:(r7+$0)
+        lsr #$10,a
+        and #>$00ffff,a
+        move a1,x:(r7+$1)
 
         ; signed32(phase) > $00100000 -- strictly greater, exactly as native.
-        move    x:(r5+$41),a
+        move    x:(r7+$1),a
         btst    #15,a1
         jcc     pkop_phase_positive
         bra     pkop_phase_ready
@@ -45,86 +48,48 @@ pkop_phase_positive:
         cmp     #>$0010,a
         bgt     pkop_phase_wrap
         blt     pkop_phase_ready
-        move    x:(r5+$40),a
+        move    x:(r7+$0),a
         tst     a
         bgt     pkop_phase_wrap
         bra     pkop_phase_ready
 
 pkop_phase_wrap:
-        move    x:(r5+$41),a
+        move    x:(r7+$1),a
         sub     #>$0010,a
         and     #>$00ffff,a
-        move    a1,x:(r5+$41)
+        move    a1,x:(r7+$1)
 
         ; Deferred table switch occurs only at the wrap.
-        move    x:(r5+$44),a
-        move    x:(r5+$46),x0
+        move    x:(r7+$4),a
+        move    x:(r7+$6),x0
         cmp     x0,a
         bne     pkop_switch_table
-        move    x:(r5+$45),a
-        move    x:(r5+$47),x0
+        move    x:(r7+$5),a
+        move    x:(r7+$7),x0
         cmp     x0,a
         beq     pkop_phase_ready
 pkop_switch_table:
-        move    x:(r5+$46),a
-        move    a1,x:(r5+$44)
-        move    x:(r5+$47),a
-        move    a1,x:(r5+$45)
+        move    x:(r7+$6),a
+        move    a1,x:(r7+$4)
+        move    x:(r7+$7),a
+        move    a1,x:(r7+$5)
 
 pkop_phase_ready:
-        ; Resolve current 32-bit identity -> global packed sample base.
-        move    x:(r5+$44),a
-        cmp     #>@W0L@,a
-        bne     pkop_try_w1
-        move    x:(r5+$45),a
-        cmp     #>@W0H@,a
-        bne     pkop_try_w1
-        clr     a
-        move    a1,x:(r5+$59)
-        bra     pkop_have_wave
-pkop_try_w1:
-        move    x:(r5+$44),a
-        cmp     #>@W1L@,a
-        bne     pkop_try_w2
-        move    x:(r5+$45),a
-        cmp     #>@W1H@,a
-        bne     pkop_try_w2
-        move    #>$000100,a
-        move    a1,x:(r5+$59)
-        bra     pkop_have_wave
-pkop_try_w2:
-        move    x:(r5+$44),a
-        cmp     #>@W2L@,a
-        bne     pkop_try_w3
-        move    x:(r5+$45),a
-        cmp     #>@W2H@,a
-        bne     pkop_try_w3
-        move    #>$000200,a
-        move    a1,x:(r5+$59)
-        bra     pkop_have_wave
-pkop_try_w3:
-        move    x:(r5+$44),a
-        cmp     #>@W3L@,a
-        bne     pkop_missing_wave
-        move    x:(r5+$45),a
-        cmp     #>@W3H@,a
-        bne     pkop_missing_wave
-        move    #>$000300,a
-        move    a1,x:(r5+$59)
-        bra     pkop_have_wave
-pkop_missing_wave:
-        clr     a
-        move    a1,x:(r5+$48)
-        rts
-
+        ; The four synthetic identities are 0x10000000 + ordinal*512.
+        ; Exact ordinal extraction replaces a per-sample four-way lookup.
+        move x:(r7+$4),a
+        lsr a
+        and #>$000300,a
+        move a1,x:(r5+$59)
+        bra pkop_have_wave
 pkop_have_wave:
         ; local index = (phase >> 12) & $ff.
-        move    x:(r5+$40),a
+        move    x:(r7+$0),a
         move    a1,b
         and     #>$00f000,b
         lsr     #$c,b
         move    b1,x0
-        move    x:(r5+$41),a
+        move    x:(r7+$1),a
         and     #>$00000f,a
         asl     #$4,a,a
         add     x0,a
@@ -132,7 +97,7 @@ pkop_have_wave:
         move    a1,x:(r5+$52)
 
         ; fraction = phase & $fff.
-        move    x:(r5+$40),a
+        move    x:(r7+$0),a
         and     #>$000fff,a
         move    a1,x:(r5+$53)
 
@@ -144,100 +109,62 @@ pkop_have_wave:
         jsr     pkop_read_s16
         move    a1,x:(r5+$54)
 
-        ; second = packed signed16 wave[(local index+1)&$ff].
-        move    x:(r5+$52),a
-        add     #>$1,a
-        and     #>$0000ff,a
-        move    x:(r5+$59),x0
-        add     x0,a
-        move    a1,x0
-        jsr     pkop_read_s16
-        move    a1,x:(r5+$55)
+        ; Adjacent samples share the packed pair. Only local index255
+        ; wraps back to this wave's first sample and needs another division.
+        move x:(r5+$52),a
+        cmp #>$ff,a
+        beq pkon_wrap_next
+        jsr pkon_read_next
+        bra pkon_store_next
+pkon_wrap_next:
+        move x:(r5+$59),x0
+        jsr pkop_read_s16
+pkon_store_next:
+        move a1,x:(r5+$55)
 
-        ; delta = second - first, sign-extended to the two 16-bit limbs used
-        ; by the exact low32 multiplier.
-        move    x:(r5+$55),a
-        move    x:(r5+$54),x0
-        sub     x0,a
-        move    a1,x:(r5+$56)
-        move    a1,b
-        and     #>$00ffff,b
-        move    b1,x:(r5+$0)
-        move    #>$0,x0
-        tst     a
-        jpl     pkop_delta_sign_ready
-        move    #>$00ffff,x0
-pkop_delta_sign_ready:
-        move    x0,x:(r5+$1)
-        move    x:(r5+$53),a
-        move    a1,x:(r5+$2)
-        clr     a
-        move    a1,x:(r5+$3)
-        jsr     pkop_mul_low
-
-        ; interp = arithmeticShiftRight(low32(delta*fraction), 12).
-        move    x:(r5+$8),a
-        move    a1,x:(r5+$0)
-        move    x:(r5+$9),a
-        move    a1,x:(r5+$1)
-        move    #>$c,a
-        move    a1,x:(r5+$4)
-        jsr     pkop_asr
-        move    x:(r5+$8),a
-        move    a1,x:(r5+$57)
-        move    x:(r5+$9),a
-        move    a1,x:(r5+$58)
-
-        ; result = signed16(first + interp).
-        move    x:(r5+$54),a
-        move    a1,b
-        and     #>$00ffff,b
-        move    b1,x:(r5+$0)
-        move    #>$0,x0
-        tst     a
-        jpl     pkop_first_sign_ready
-        move    #>$00ffff,x0
-pkop_first_sign_ready:
-        move    x0,x:(r5+$1)
-        move    x:(r5+$57),a
-        move    a1,x:(r5+$2)
-        move    x:(r5+$58),a
-        move    a1,x:(r5+$3)
-        jsr     pkop_add
-        move    x:(r5+$8),a
-        and     #>$00ffff,a
-        move    a1,x:(r5+$48)
+        ; A signed17 delta times unsigned12 fraction fits signed32.
+        ; MPY's fractional alignment accounts for the extra right shift.
+        move x:(r5+$55),a
+        move x:(r5+$54),x0
+        sub x0,a
+        move a1,x0
+        move x:(r5+$53),y0
+        mpy y0,x0,a
+        asr #$d,a,a
+        move a0,a
+        move x:(r5+$54),x0
+        add x0,a
+        and #>$00ffff,a
+        move a1,x:(r5+$48)
         rts
+
+pkon_read_next:
+        move y1,a
+        tst a
+        beq pkop_read_r1
+        cmp #>$1,a
+        beq pkop_read_r2
+        move y:(r2+$2),a
+        and #>$00ffff,a
+        bra pkop_read_sign
 
 ; Input x0 = global sample index 0..1023. Return A1 = signed 24-bit sample.
 pkop_read_s16:
-        move    x0,a
-        move    a1,x:(r5+$18)           ; preserve n
-        move    #>$00aaab,y0
-        mpyuu   x0,y0,a
-        asr     #$1,a,a                 ; remove fractional multiply alignment
-        asr     #$10,a,a
-        move    a0,x1
-        move    x1,b
-        and     #>$00ffff,b
-        lsr     b
-        move    b1,x1                   ; q=floor(n/3)
-
-        ; r=n-3*q.
-        move    x1,b
-        asl     b
-        add     x1,b
-        move    b1,y0
-        move    x:(r5+$18),a
-        sub     y0,a
-        move    a1,y1
-
-        ; pair = Y:$07a5 + 2*q.
-        move    x1,b
-        asl     b
-        move    b1,n1
-        move    #>$0007a5,r1
-        lua     (r1+n1),r2
+        move x0,x:(r5+$18)
+        move #>$2aaaab,y0
+        mpyuu x0,y0,a
+        asr #$18,a,a
+        move a0,b
+        move b1,x1
+        asl b
+        move b1,n1
+        add x1,b
+        move b1,y0
+        move x:(r5+$18),a
+        sub y0,a
+        move a1,y1
+        move #>$0007a5,r1
+        lua (r1+n1),r2
 
         move    y1,a
         tst     a
@@ -265,9 +192,9 @@ pkop_read_r0:
         move    y:(r2),a
         and     #>$00ffff,a
 pkop_read_sign:
-        btst    #15,a1
-        jcc     pkop_read_done
-        sub     #>$010000,a
+        asl #$8,a,a
+        move a1,a
+        asr #$8,a,a
 pkop_read_done:
         rts
 
@@ -278,9 +205,9 @@ pkop_add:
         add     x0,a
         move    #>$0,y0
         btst    #16,a1
-        jcc     pkop_branch_add_no_carry
+        jcc     pkop_add_no_carry
         move    #>$1,y0
-pkop_branch_add_no_carry:
+pkop_add_no_carry:
         and     #>$00ffff,a
         move    a1,x:(r5+$8)
         move    x:(r5+$1),b

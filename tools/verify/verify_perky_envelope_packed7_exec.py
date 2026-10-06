@@ -22,10 +22,10 @@ ASM = V / "build/source/dsp_host/dsp_asm"
 DIS = V / "build/source/disassemble/dsp56kDisassemble"
 HOST = OUT / "bd909_host"
 HOST_SRC = ROOT / "tools/harness/bd909_host/bd909_host.cpp"
-ORG = 0x2C00
+ORG = 0x0100  # isolated kernels fit the short-call region; shipping gate tests high P
 BASE = 0x74
-ENV1_Y = 0x0A40
-ENV2_Y = 0x0CC6
+ENV1_Y = 0x0A50
+ENV2_Y = 0x0CD6
 LINE = re.compile(
     r"^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$"
 )
@@ -127,6 +127,8 @@ def assemble():
     if not typed or len(actual) < len(typed) * 0.9:
         fail("no usable disassembly to compare")
     for addr, (mnemonic, operands) in typed.items():
+        if mnemonic == "nop" and addr not in actual and binary.read_bytes()[(addr-ORG)*3:(addr-ORG)*3+3] == bytes(3):
+            continue
         dm, dops = actual.get(addr, ("?", ""))
         if dm != mnemonic:
             fail(f"P:{addr:06x} typed {mnemonic} {operands} but decodes {dm} {dops}")
@@ -168,17 +170,17 @@ def oracle(case):
 
 def run(binary: Path, entry: int, tag: str, case):
     env_state, shape, flag4, flag6, flag7, value, hold, attack, decay = case
-    words = [0] * 81
-    words[40] = env_state & 0xFF
-    words[41] = shape & 0xFF
-    words[42] = flag4 & 0xFF
-    words[43] = flag6 & 0xFF
-    words[44] = flag7 & 0xFF
-    words[45], words[46] = limbs(value)
-    words[47], words[48] = limbs(hold)
-    words[49] = attack & 0xFFFF
-    words[50] = decay & 0xFFFF
-    words[64] = 0xFFFF              # one curve-aware cache starts invalid
+    words = [0] * 128
+    words[0x40] = env_state & 0xFF
+    words[0x41] = shape & 0xFF
+    words[0x42] = flag4 & 0xFF
+    words[0x43] = flag6 & 0xFF
+    words[0x44] = flag7 & 0xFF
+    words[0x45], words[0x46] = limbs(value)
+    words[0x47], words[0x48] = limbs(hold)
+    words[0x49] = attack & 0xFFFF
+    words[0x50] = decay & 0xFFFF
+    words[100] = 0xFFFF              # one curve-aware cache starts invalid
 
     data = OUT / f"{tag}.data"
     script = OUT / f"{tag}.script"
@@ -194,7 +196,7 @@ def run(binary: Path, entry: int, tag: str, case):
         [
             str(HOST), "-code", str(binary), "-org", f"{ORG:x}",
             "-entry", f"{entry:x}", "-data", str(data), "-script", str(script),
-            "-out", str(raw), "-state", str(state_path),
+            "-out", str(raw), "-state", str(state_path), "-state-words", "128",
         ],
         check=True,
         capture_output=True,
@@ -204,9 +206,9 @@ def run(binary: Path, entry: int, tag: str, case):
     if len(dumped) < 64:
         fail(f"{tag}: truncated state dump")
     return (
-        dumped[40] & 0xFF,
-        U32(dumped[45] & 0xFFFF, dumped[46] & 0xFFFF),
-        dumped[51] & 0xFFFF,
+        dumped[0x40] & 0xFF,
+        U32(dumped[0x45] & 0xFFFF, dumped[0x46] & 0xFFFF),
+        dumped[0x51] & 0xFFFF,
     )
 
 

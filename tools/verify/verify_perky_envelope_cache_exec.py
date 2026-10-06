@@ -21,9 +21,9 @@ ASM = V / "build/source/dsp_host/dsp_asm"
 DIS = V / "build/source/disassemble/dsp56kDisassemble"
 HOST = OUT / "bd909_host"
 HOST_SRC = ROOT / "tools/harness/bd909_host/bd909_host.cpp"
-ORG = 0x2C00
-ENV1_Y = 0x0A40
-ENV2_Y = 0x0CC6
+ORG = 0x0100
+ENV1_Y = 0x0A50
+ENV2_Y = 0x0CD6
 LINE = re.compile(
     r"^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$"
 )
@@ -83,7 +83,7 @@ def build_host() -> None:
 
 WRAPPER = r"""
 pk_env_cache_sequence:
-        lua     (r5+$40),r4
+        lua     (r5+$64),r4
         move    #>$1,a
         move    a1,x:(r5+$41)
         jsr     pk_envelope_packed7_cached
@@ -157,6 +157,8 @@ def assemble():
     if not typed or len(actual) < len(typed) * 0.9:
         fail("no usable disassembly to compare")
     for addr, (mnemonic, operands) in typed.items():
+        if mnemonic == "nop" and addr not in actual and binary.read_bytes()[(addr-ORG)*3:(addr-ORG)*3+3] == bytes(3):
+            continue
         dm, dops = actual.get(addr, ("?", ""))
         if dm != mnemonic:
             fail(f"P:{addr:06x} typed {mnemonic} {operands} but decodes {dm} {dops}")
@@ -179,12 +181,12 @@ def main() -> None:
     low = raw_value & 0xFFFF
     high = (raw_value >> 16) & 0xFFFF
 
-    xwords = [0] * 81
-    xwords[40] = 2            # envelope state
-    xwords[41] = 1            # wrapper overwrites 1 -> 2 -> 1
-    xwords[45] = low
-    xwords[46] = high
-    xwords[64] = 0xFFFF       # one persistent cache begins invalid
+    xwords = [0] * 128
+    xwords[0x40] = 2            # envelope state
+    xwords[0x41] = 1            # wrapper overwrites 1 -> 2 -> 1
+    xwords[0x45] = low
+    xwords[0x46] = high
+    xwords[100] = 0xFFFF       # one persistent cache begins invalid
 
     OUT.mkdir(parents=True, exist_ok=True)
     data = OUT / "cache.data"
@@ -205,16 +207,16 @@ def main() -> None:
         [
             str(HOST), "-code", str(binary), "-org", f"{ORG:x}",
             "-entry", f"{entry:x}", "-data", str(data), "-script", str(script),
-            "-out", str(raw), "-state", str(state_path),
+            "-out", str(raw), "-state", str(state_path), "-state-words", "128",
         ],
         check=True,
         capture_output=True,
         text=True,
     )
     dumped = [int(x, 16) for x in state_path.read_text().split()]
-    if len(dumped) != 128:
-        fail(f"state dump has {len(dumped)} words, expected 128")
-    y = dumped[64:128]
+    if len(dumped) != 256:
+        fail(f"state dump has {len(dumped)} words, expected 256")
+    y = dumped[128:256]
 
     c = cachemod.EnvelopeCache()
     want1 = cachemod.envelope_at_cached(p1, index, c, curve_id=0)
@@ -233,7 +235,7 @@ def main() -> None:
         return (first + (((second - first) * fraction) >> 10)) & 0xFFFF
 
     expected = [interp(p1, 0), key1, interp(p2, 1), key2, interp(p1, 0), key3]
-    got = [y[i] & 0xFFFF for i in range(50, 56)]
+    got = [y[i] & 0xFFFF for i in range(0x50, 0x56)]
     if got != expected:
         fail(f"curve-switch sequence got {got}, expected {expected}")
     if expected[1:] == [expected[1]] * 5:

@@ -6,11 +6,11 @@ DSP payload. This pass appends two data records and returns replacement uploads
 for Octabam's established pre-boot loader:
 
 * X:0x3800 -- four compact voices + one 17-word cache each + shared RNG;
-* Y:0x0795 -- exact packed Noise/Tone waves/envelopes.
+* Y:0x07a5 -- exact packed Noise/Tone waves/envelopes.
 
 Both destinations are checked against every finalized upload record before a
 word is appended. The X interval lies in the Analog-BD-qualified private-X run;
-the Y interval is the hardware-measured free 0x0795..0x0fff range.
+the Y interval is the hardware-measured free 0x07a5..0x0fff range.
 
 Input ``table_dir`` is the output of ``tools/perky/build_noise_tone_payload.py``.
 Firmware-derived bytes remain an external build input; this file contains no
@@ -31,9 +31,9 @@ import ab_records  # noqa:E402
 
 X_BASE = 0x3800
 X_WORDS = 236
-Y_BASE = 0x0795
+Y_BASE = 0x07a5
 Y_END = 0x1000                 # exclusive: FX1 allocation begins here
-Y_WORDS = Y_END - Y_BASE       # 2,155 hardware-measured private words
+Y_WORDS = Y_END - Y_BASE       # 2,139 hardware-measured private words
 
 PRE = {
     "A": (0x40B00000, 0x40B80000),

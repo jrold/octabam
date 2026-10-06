@@ -13,9 +13,10 @@ It makes the five Octatrack controls audible for the synthetic canary while the
 real PĒRKONS v1.2.1 update/control law is still being ported; replacing that one
 piece later must not alter the qualified per-sample renderer.
 
-No synthesis state-transition or sample-math body is rewritten here. Every cut
-is guarded by exact marker/label counts so a source edit fails generation
-rather than silently moving a boundary.
+The shipping synthetic path uses native DSP arithmetic and direct compact
+state access. Standalone limb kernels remain independent oracle probes.
+Executable shipping gates require identical PCM, compact state and RNG; the
+cycle gate separately enforces the single-voice-per-core development budget.
 
 The generated source keeps ``@CONT@`` unresolved. build_bus applies the normal
 PERKY A/B continuation substitution after the one-shot canary wrapper swaps
@@ -229,17 +230,41 @@ def generate(layout_path: Path) -> str:
         )
 
     ids = wave_ids(layout)
+    if layout.get("synthetic") is not True or ids != [0x10000000, 0x10000200, 0x10000400, 0x10000600]:
+        die("native shipping fast path requires the qualified synthetic wave identities")
+    if layout.get("source_sha256", {}).get("envelope1.bin") != "8136fff8a23fc148c79bbc3a55927ff23cadeff8623adeef2d91e7d15fd4d33b":
+        die("native shipping fast path requires the qualified synthetic linear curve")
     chunks = []
     for name in PIECES:
         path = PERKY / name
         if not path.exists():
             die(f"missing {path}")
-        body = compact_piece(name, path.read_text())
+        if name in ("noise_tone_filter.asm", "noise_tone_mix.asm"):
+            body = (PERKY / name.replace(".asm", "_native.asm")).read_text()
+        elif name == "noise_tone_oscillator_packed.asm":
+            body = compact_piece(name, (PERKY / "noise_tone_oscillator_native.asm").read_text())
+        elif name == "noise_tone_envelope_packed7.asm":
+            body = compact_piece(name, (PERKY / "noise_tone_envelope_native7.asm").read_text())
+            if layout.get("source_sha256", {}).get("envelope1.bin") != "8136fff8a23fc148c79bbc3a55927ff23cadeff8623adeef2d91e7d15fd4d33b":
+                body = body.replace("bra     pken_linear", "bra     pken_unused_shape1")
+        elif name == "noise_tone_voice_xstate_glue.asm":
+            body = (PERKY / "noise_tone_voice_native_xstate.asm").read_text()
+        elif name == "noise_tone_envelope.asm":
+            body = (PERKY / "noise_tone_envelope_native.asm").read_text()
+        else:
+            body = compact_piece(name, path.read_text())
         chunks.append(f"; ===== BEGIN {name} =====\n" + body
                       + f"\n; ===== END {name} =====\n")
     src = "\n".join(chunks)
     src = relativize_local_conditionals(src)
     src = force_long_local_jsr(src)
+
+    # dsp_asm substitutes symbols by prefix. Reject ambiguous composed labels.
+    labels = re.findall(r"(?m)^([A-Za-z0-9_]+):", src)
+    for shorter in labels:
+        for longer in labels:
+            if shorter != longer and longer.startswith(shorter):
+                die(f"assembler label prefix collision: {shorter} / {longer}")
 
     # No local absolute conditional jump may survive into a high-P image.
     leftovers = _LOCAL_JUMP_RE.findall(src)

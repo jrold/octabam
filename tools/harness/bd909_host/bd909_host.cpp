@@ -42,13 +42,22 @@ const TWord SENTINEL = 0x03f000, PBLK = 0x000100, AUDIO = 0x000000, STATE = 0x00
 
 // Executed instructions, from the emulator's own counter: a hardware DO loop
 // runs to completion inside ONE execInterpreter() call (dsp_host's meter).
+bool cycleMeter = false;
 long call(DSP& dsp, TWord pc) {
     dsp.setPC(SENTINEL);
     dsp.jsr(pc);
     const uint64_t i0 = dsp.getInstructionCounter();
+    uint64_t modeledCycles = 0;
+    dsp.setHostStepped(cycleMeter);
     for (long i = 0; i < 20000000; ++i) {
-        if (dsp.getPC().toWord() == SENTINEL) return long(dsp.getInstructionCounter() - i0);
+        if (dsp.getPC().toWord() == SENTINEL) return long(cycleMeter ? modeledCycles : dsp.getInstructionCounter() - i0);
+        const auto before = dsp.getInstructionCounter();
+        const auto opPC = dsp.getPC().toWord();
         dsp.execInterpreter();
+        if (cycleMeter) {
+            modeledCycles += dsp.calcOpcodeCycles(opPC) * (dsp.getInstructionCounter() - before);
+            if (dsp.regs().sr.var & 0x8000) dsp.doLoopEnd();
+        }
     }
     std::cerr << "no return from " << std::hex << pc << " (pc=" << dsp.getPC().toWord() << ")\n";
     std::exit(3);
@@ -57,7 +66,7 @@ long call(DSP& dsp, TWord pc) {
 
 int main(int argc, char** argv) {
     std::string code, data, script, out, meterPath, statePath, inputPath;
-    TWord org = 0, entry = 0, init = 0; bool haveInit = false; int frames = 16;
+    TWord org = 0, entry = 0, init = 0; bool haveInit = false; int frames = 16; int stateWords = 64;
     for (int i = 1; i + 1 < argc; i += 2) {
         std::string k = argv[i], v = argv[i + 1];
         if (k == "-code") code = v;
@@ -68,7 +77,9 @@ int main(int argc, char** argv) {
         else if (k == "-script") script = v;
         else if (k == "-out") out = v;
         else if (k == "-meter") meterPath = v;
+        else if (k == "-cycle-meter") cycleMeter = std::atoi(v.c_str()) != 0;
         else if (k == "-frames") frames = std::atoi(v.c_str());
+        else if (k == "-state-words") stateWords = std::atoi(v.c_str());
         else if (k == "-state") statePath = v;   // X:STATE..+63 and Y:STATE..+63 after each block
         else if (k == "-input") inputPath = v;   // int32 LE samples, one per frame, into X:AUDIO (L and R)
         else { std::cerr << "unknown option " << k << "\n"; return 2; }
@@ -136,8 +147,8 @@ int main(int argc, char** argv) {
         }
         if (mf) mf << n << "\n";
         if (stf) {
-            for (int k = 0; k < 64; ++k) stf << std::hex << mem.get(MemArea_X, STATE + k) << ' ';
-            for (int k = 0; k < 64; ++k) stf << std::hex << mem.get(MemArea_Y, STATE + k) << ' ';
+            for (int k = 0; k < stateWords; ++k) stf << std::hex << mem.get(MemArea_X, STATE + k) << ' ';
+            for (int k = 0; k < stateWords; ++k) stf << std::hex << mem.get(MemArea_Y, STATE + k) << ' ';
             stf << "\n";
         }
         maxN = std::max(maxN, n); sum += n; ++block;

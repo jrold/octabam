@@ -5,7 +5,7 @@ This image-stage gate starts from the normal perky-probe image, generates the
 explicit synthetic Noise/Tone assets, builds the packed X/Y payload, runs the
 real preboot-loader post-processor, then independently proves:
 
-* both extended DSP uploads contain exact X:$3800/236 and Y:$0795/1975 records;
+* both extended DSP uploads contain exact X:$3800/236 and Y:$07a5/1975 records;
 * the loader's emitted preblob0/1 bytes are byte-identical to independently
   packed A/B extended uploads;
 * the final image redirects both DSP upload pointers to the PERKY preboot dsts;
@@ -173,7 +173,7 @@ def main() -> None:
 
     print(
         "PERKY table-loaded image: PASS "
-        "(A+B exact X:3800/236 + Y:0795/1975 uploads; preblobs exact; "
+        "(A+B exact X:3800/236 + Y:07a5/1975 uploads; preblobs exact; "
         "boot -> loader; DSP pointers -> extended uploads; append exact)"
     )
 

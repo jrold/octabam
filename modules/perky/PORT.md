@@ -93,6 +93,10 @@ At minimum the family needs:
 Remaining Octatrack source slots can stay blank until their original mapping is
 proven.
 
+The host oracle retains the original Noise/Tone mutable state size: `0x120`
+and noise/tone mix word: `0xf8`. The shipping renderer stores only its live
+fields in the 41-word compact DSP ABI, with a separate 17-word curve cache.
+
 ### DSP state
 
 The validated shared Noise / Tone renderer contains these major blocks:

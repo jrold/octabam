@@ -62,7 +62,8 @@ pk_probe_render:
         move.l  %a1,(CURSOR_PTR).l
 
         | Only the second half-render publishes the fixed per-track record.
-        cmpi.l  #16,16(%sp)
+        move.l  16(%sp),%d0
+        cmpi.l  #16,%d0
         bne.s   .done
 
         | record = BASE + (ping&1)*0xa80 + 336*track

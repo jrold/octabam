@@ -56,14 +56,19 @@ STOCK_SYX = ROOT / "downloads/extracted/OCTATRACK_OS1.40C.syx"
 EFT = ROOT / "vendor/elektron-firmware-tool/elektron-firmware-tool"
 MAKE_BIN = ROOT / "tools/build/make_bin.py"
 
-# Narrow first-hardware blockers. The two older wrapper-style complete-voice
-# exec gates remain in the tree, but are not first-canary blockers until their
-# harness wrappers are converted to forced-long (>label) JSR syntax as well.
+# First-hardware blockers execute the generated shipping renderer and seam.
+# Historical standalone wrappers are outside this canary pipeline.
 PREFLIGHTS = (
+    ("helper instruction identity", ROOT / "tools/verify/verify_perky_helper_dedupe.py"),
+    ("primitive DSP math/RNG/noise", ROOT / "tools/verify/verify_perky_math_exec.py"),
     ("full-machine declaration", ROOT / "tools/verify/verify_perky_machine_module.py"),
     ("five-control DSP mapper", ROOT / "tools/verify/verify_perky_control_mapper_exec.py"),
     ("exact synthetic renderer parity", ROOT / "tools/verify/verify_perky_synthetic_render.py"),
     ("generated complete synth source", ROOT / "tools/verify/verify_perky_synth_source_exec.py"),
+    ("controlled complete voice", ROOT / "tools/verify/verify_perky_controlled_voice_exec.py"),
+    ("all native linear-curve indices", ROOT / "tools/verify/verify_perky_native_linear_exec.py"),
+    ("realtime deadline and controls", ROOT / "tools/verify/verify_perky_realtime_budget.py"),
+    ("actual source seam", ROOT / "tools/verify/verify_perky_synth_seam_exec.py"),
 )
 
 
@@ -171,6 +176,9 @@ def wrap_flashable(mainos: Path, version: str) -> tuple[Path, Path, Path]:
 
 
 def build(work: Path, mainos: Path, *, build_number: int, version: str) -> None:
+    project = os.environ.get("OT_PROJECT")
+    if not project or not (Path(project) / "project.work").is_file():
+        die("set OT_PROJECT to a saved project: full project/transport gate is mandatory")
     run_preflights()
 
     source_dir = work / "synthetic-source"
@@ -255,17 +263,31 @@ def build(work: Path, mainos: Path, *, build_number: int, version: str) -> None:
         work=ROOT / "out/platform-perky-machine",
     )
 
+    subprocess.run(
+        [sys.executable, str(ROOT / "tools/verify/verify_perky_machine_boot.py"),
+         "--image", str(mainos), "--packed", str(packed_dir)],
+        cwd=ROOT, check=True,
+    )
+    port_env = os.environ.copy()
+    port_env["PERKY_SYNTH_IMAGE"] = str(mainos.resolve())
+    subprocess.run([sys.executable, str(ROOT / "tools/verify/verify_perky_synth_port.py")],
+                   cwd=ROOT, env=port_env, check=True)
     card, midi, manifest = wrap_flashable(mainos, version)
     manifest.write_text(
         "PERKY AUDIBLE SYNTHETIC HARDWARE CANARY\n"
         f"version={version}\n"
         f"build={build_number}\n"
         f"git={revision()}\n"
+        f"source_diff_sha256={hashlib.sha256(subprocess.check_output(['git', 'diff', 'HEAD'], cwd=ROOT)).hexdigest()}\n"
+        f"dsp_source_sha256={sha256(dsp_source)}\n"
         f"mainos={mainos.name} sha256={sha256(mainos)}\n"
         f"card={card.name} sha256={sha256(card)}\n"
         f"midi={midi.name} sha256={sha256(midi)}\n"
         "engine=011 NOISE/TONE\n"
         "controls=TUNE,DECAY,ENV,MIX,MODE\n"
+        "voice_limit=one PERKY track per DSP core (T1-T4; T5-T8), first selected track wins\n"
+        "test_fx=FX1 NONE; FX2 NONE\n"
+        "port=32000 frames, dirty memory, later trigs, admission guard\n"
         "provenance=SYNTHETIC DEVELOPMENT FIXTURE (NOT real PERKONS control/table data)\n"
     )
 
@@ -279,7 +301,7 @@ def build(work: Path, mainos: Path, *, build_number: int, version: str) -> None:
     print("  source UI  : TUNE / DECAY / ENV / MIX / MODE")
     print("  family     : 011 NOISE/TONE")
     print("  X init     : 236 words at X:$3800")
-    print("  Y tables   : 1975 words at Y:$0795")
+    print("  Y tables   : 1975 words at Y:$07a5")
     print("  status     : SYNTHETIC AUDIBLE CANARY; hardware not yet qualified")
     print()
     print("Next: follow remixes/test/perky-machine/README.md for the CF-card sound test.")

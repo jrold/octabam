@@ -40,10 +40,10 @@ def expect_fail(fn, text: str) -> None:
 def main() -> None:
     if (perky_image.X_BASE, perky_image.X_WORDS) != (0x3800, 236):
         raise AssertionError("private-X init geometry drifted from X:3800 + 236")
-    if perky_image.Y_BASE != 0x0795 or perky_image.Y_END != 0x1000:
-        raise AssertionError("private-Y interval drifted from hardware-measured 0x0795..0x0fff")
-    if perky_image.Y_WORDS != 2155:
-        raise AssertionError(f"private-Y capacity is {perky_image.Y_WORDS}, expected 2155")
+    if perky_image.Y_BASE != 0x07a5 or perky_image.Y_END != 0x1000:
+        raise AssertionError("private-Y interval drifted from hardware-measured 0x07a5..0x0fff")
+    if perky_image.Y_WORDS != 2139:
+        raise AssertionError(f"private-Y capacity is {perky_image.Y_WORDS}, expected 2139")
 
     with tempfile.TemporaryDirectory(prefix="perky-image-tables.") as td:
         td = Path(td)
@@ -58,13 +58,13 @@ def main() -> None:
             raise AssertionError(f"synthetic table payload has {len(y_words)} words, expected 1975")
         if len(x_words) != 236:
             raise AssertionError(f"synthetic X init has {len(x_words)} words, expected 236")
-        if perky_image.Y_BASE + len(y_words) - 1 != 0x0F4B:
+        if perky_image.Y_BASE + len(y_words) - 1 != 0x0F5B:
             raise AssertionError("synthetic table end address drifted")
-        if perky_image.Y_END - (perky_image.Y_BASE + len(y_words)) != 180:
+        if perky_image.Y_END - (perky_image.Y_BASE + len(y_words)) != 164:
             raise AssertionError("synthetic private-Y tail margin drifted")
 
         legal = [
-            (2, 0x0200, 0x0595, 0),   # Y ends at 0x0794
+            (2, 0x0200, 0x05A5, 0),   # Y ends at 0x07a4
             (2, 0x1000, 0x0C00, 0),   # FX1 Y begins after private gap
             (1, 0x3700, 0x0100, 0),   # X ends at 0x37ff
             (1, 0x38EC, 0x0014, 0),   # X gap before shared scratch at 0x3900
@@ -73,10 +73,10 @@ def main() -> None:
         perky_image._check_x_free(legal, "A")
 
         for record in (
-            (2, 0x0794, 2, 0),
-            (2, 0x0795, 1, 0),
+            (2, 0x07a4, 2, 0),
+            (2, 0x07a5, 1, 0),
             (2, 0x0800, 0x20, 0),
-            (2, 0x0F4B, 1, 0),
+            (2, 0x0F5B, 1, 0),
         ):
             expect_fail(
                 lambda record=record: perky_image._check_y_free([record], len(y_words), "A"),
@@ -95,7 +95,7 @@ def main() -> None:
             )
 
         # The still-free Y tail after the synthetic tables remains legal.
-        perky_image._check_y_free([(2, 0x0F4C, 0xB4, 0)], len(y_words), "B")
+        perky_image._check_y_free([(2, 0x0F5C, 0xA4, 0)], len(y_words), "B")
 
         # Corrupting the X-init hash must refuse before image integration.
         state_path = packed / "state_init.bin"
@@ -114,23 +114,23 @@ def main() -> None:
         layout_path = packed / "layout.json"
         layout_text = layout_path.read_text()
         try:
-            oversized = raw + bytes(181 * 3)
+            oversized = raw + bytes(165 * 3)
             (packed / "tables.bin").write_bytes(oversized)
             import hashlib, json
             meta = json.loads(layout_text)
-            meta["total_words"] = 2156
+            meta["total_words"] = 2140
             meta["total_bytes"] = len(oversized)
             meta["sha256"] = hashlib.sha256(oversized).hexdigest()
             layout_path.write_text(json.dumps(meta))
-            expect_fail(lambda: perky_image.load_tables(packed), "holds only 2155")
+            expect_fail(lambda: perky_image.load_tables(packed), "holds only 2139")
         finally:
             (packed / "tables.bin").write_bytes(raw)
             layout_path.write_text(layout_text)
 
     print(
         "PERKY image data policy: PASS "
-        "(X:3800..38eb = 236 init words; Y:0795..0fff = 2155 capacity; "
-        "synthetic Y ends 0f4b; overlap/hash/oversize refusals exercised)"
+        "(X:3800..38eb = 236 init words; Y:07a5..0fff = 2139 capacity; "
+        "synthetic Y ends 0f5b; overlap/hash/oversize refusals exercised)"
     )
 
 

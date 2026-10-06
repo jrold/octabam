@@ -3,7 +3,7 @@
 
 This is the source-seam ABI gate. It uses the same memory *shape* as shipping:
 41 compact words + one 17-word cache in X, shared RNG in X, one reusable
-64-word X scratch block, and all static tables in packed private Y.
+100-word X scratch block, and all static tables in packed private Y.
 
 The harness uses X:$0300 for the test voice and X:$0200 for scratch so its
 state dumper can inspect the result; the renderer itself receives those bases
@@ -39,9 +39,9 @@ FRAMES = 16
 SCRATCH_X = 0x0200
 VOICE_X = 0x0300
 RNG_X = 0x38E8
-WAVE_Y = 0x0795
-ENV1_Y = 0x0A40
-ENV2_Y = 0x0CC6
+WAVE_Y = 0x07a5
+ENV1_Y = 0x0A50
+ENV2_Y = 0x0CD6
 IDS = (0x11112222, 0x33334444, 0x55556666, 0x77778888)
 LINE = re.compile(
     r"^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$"
@@ -111,7 +111,7 @@ def packed_osc_source() -> str:
 
 
 PROBE = r"""
-pk_voice_xstate_probe:
+pk_xstate_probe_entry:
         move    #>$ffffff,m0
         move    #>$ffffff,m1
         move    #>$ffffff,m2
@@ -165,7 +165,9 @@ def assemble():
     src = OUT / "voice_xstate.asm"
     binary = OUT / "voice_xstate.bin"
     symbols = OUT / "voice_xstate.sym"
-    src.write_text(combined_source())
+    sys.path.insert(0, str(ROOT / "tools/perky"))
+    from build_noise_tone_synth_source import force_long_local_jsr, relativize_local_conditionals
+    src.write_text(force_long_local_jsr(relativize_local_conditionals(combined_source())))
     r = subprocess.run(
         [
             str(ASM), "-in", str(src), "-org", f"{ORG:x}",
@@ -181,9 +183,9 @@ def assemble():
         for q in (line.split() for line in symbols.read_text().splitlines())
         if len(q) == 2
     }
-    entry = labels.get("pk_voice_xstate_probe")
+    entry = labels.get("pk_xstate_probe_entry")
     if entry is None:
-        fail("assembler emitted no pk_voice_xstate_probe symbol")
+        fail("assembler emitted no pk_xstate_probe_entry symbol")
 
     d = subprocess.run(
         [str(DIS), "-in", str(binary), "-pc", f"{ORG:x}", "-le"],
@@ -194,7 +196,13 @@ def assemble():
     typed, actual = decoded(r.stdout), decoded(d.stdout)
     if not typed or len(actual) < len(typed) * 0.9:
         fail("no usable disassembly to compare")
+    encoded = binary.read_bytes()
     for addr, (mnemonic, operands) in typed.items():
+        # The disassembler suppresses NOP padding; verify its opcode directly.
+        if mnemonic == "nop" and addr not in actual:
+            offset = (addr - ORG) * 3
+            if encoded[offset:offset + 3] == bytes(3):
+                continue
         dm, dops = actual.get(addr, ("?", ""))
         if dm != mnemonic:
             fail(f"P:{addr:06x} typed {mnemonic} {operands} but decodes {dm} {dops}")
@@ -275,7 +283,7 @@ def make_voice(r: random.Random, case: int) -> compact.CompactVoice:
 
 def write_data(path: Path, voice: compact.CompactVoice, low: int, high: int,
                packed_waves, packed_env1, packed_env2) -> None:
-    scratch = [0] * 64
+    scratch = [0] * 100
     persistent = list(voice.words) + [0xFFFF] + [0] * 16
     if len(persistent) != 58:
         fail(f"persistent test voice is {len(persistent)} words, expected 58")
@@ -363,7 +371,7 @@ def main() -> None:
     pwords = binary.stat().st_size // 3
     print(
         "PERKY shipping X-state voice gate: OK "
-        f"(36 x {FRAMES}-sample blocks; 58-word voice + 64-word shared scratch; "
+        f"(36 x {FRAMES}-sample blocks; 58-word voice + 100-word shared scratch; "
         f"full packed Y; {pwords} P words; probe instructions/block min "
         f"{min(instruction_counts)}, mean {sum(instruction_counts)/len(instruction_counts):.1f}, "
         f"max {max(instruction_counts)})"

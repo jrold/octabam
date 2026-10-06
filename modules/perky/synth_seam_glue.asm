@@ -19,7 +19,7 @@
 ;   X:$38e8..$38eb       shared RNG
 ;   X:$38ec              source-seam event-offset save word
 ;   X:$3900..$3963       one shared 100-word render scratch block
-;   Y:$0795..            packed wave/envelope tables
+;   Y:$07a5..            packed wave/envelope tables
 ;
 ; x:$418 is stock's per-core track position: $00/$20/$40/$60. We map those
 ; directly to four 58-word voice blocks. A signed PERKY source consumes the
@@ -38,6 +38,14 @@
 
 pk_synth_source:
         move    a,x:>$20e               ; replay displaced stock instruction
+        ; One development voice per core. Reset on stock slot0 even when
+        ; that track is ordinary FLEX. No uninitialized word controls an address.
+        move    x:>$418,b
+        tst     b
+        bne     pks_frame_ready
+        clr     b
+        move    b1,x:>$38ed
+pks_frame_ready:
         move    x:>$209,r4              ; current track's source record
 
         move    #>$00504b,x0
@@ -58,6 +66,14 @@ pks_hit:
         move    x:>$20b,a
         add     #>$80,a
         move    a,x:>$20b
+
+        ; Additional PERKY tracks on this core produce silence, preserving
+        ; transport timing. The first signed track is admitted each frame.
+        move    x:>$38ed,a
+        tst     a
+        bne     pks_silence
+        move    #>$1,a
+        move    a1,x:>$38ed
 
         ; Resolve this core's track slot to one 58-word voice base.
         move    x:>$418,a
@@ -144,14 +160,31 @@ pks_render_full:
         bra     pks_continue
 
 pks_silence:
+        move    #>$ffffff,m0
         move    #$0,r0
         clr     a
-        do      #$20,pks_silence_done
+        do      #$20,pks_done_silence
         move    a1,x:(r0)+
-pks_silence_done:
+pks_done_silence:
         nop
 
 pks_continue:
+        ; Native mixer returns signed16 PCM. Align it to the stock signed24
+        ; source scale before AMP/FX (otherwise output is 48 dB too quiet).
+        move    #$0,r0
+        do      #$20,pks_scaled_output
+        move    x:(r0),a
+        asl     a
+        asl     a
+        asl     a
+        asl     a
+        asl     a
+        asl     a
+        asl     a
+        asl     a
+        move    a1,x:(r0)+
+pks_scaled_output:
+        nop
         move    #>$10,n7                ; stock AMP/FX source-stage contract
         move    ssh,x0                  ; discard seam JSR return
         jmp     @CONT@                  ; stock AMP -> FX1 -> FX2 -> packer

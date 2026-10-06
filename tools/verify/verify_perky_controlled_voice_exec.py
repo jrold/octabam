@@ -39,9 +39,10 @@ ORG = 0x5000
 FRAMES = 16
 VOICE_X = 0x0200
 SCRATCH_X = 0x0300
-EVENT_X = 0x0340
+EVENT_X = 0x0364
 RNG_X = 0x38E8
-TABLE_Y = 0x0795
+TABLE_Y = 0x07a5
+CYCLE_METER = False
 LINE = re.compile(
     r"^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$"
 )
@@ -105,7 +106,7 @@ pk_controlled_voice_exec:
         blt     pkcve_full
         cmp     #>$10,a
         bge     pkcve_full
-        move    a1,x:>$000340
+        move    a1,x:>$000364
         tst     a
         beq     pkcve_trigger
         move    a1,n7
@@ -120,7 +121,7 @@ pkcve_trigger:
         move    a1,x:(r6+$5)
 
         move    #>$f,a
-        move    x:>$000340,x0
+        move    x:>$000364,x0
         sub     x0,a
         tst     a
         beq     pkcve_finish
@@ -214,7 +215,7 @@ def build_source_and_assets() -> tuple[str, list[int], list[int]]:
     # The live seam is not entered by this harness, but the whole generated
     # image still has to assemble, so resolve its payload-A continuation.
     source = source.replace("@CONT@", "$000426")
-    return WRAPPER + "\n" + source, state, tables
+    return source_builder.force_long_local_jsr(WRAPPER) + "\n" + source, state, tables
 
 
 def assemble(source_text: str) -> tuple[Path, int]:
@@ -251,7 +252,12 @@ def assemble(source_text: str) -> tuple[Path, int]:
     typed, actual = decoded(r.stdout), decoded(d.stdout)
     if not typed or len(actual) < len(typed) * 0.9:
         fail("no usable disassembly to compare")
+    encoded = binary.read_bytes()
     for address, (mnemonic, operands) in typed.items():
+        if mnemonic == "nop" and address not in actual:
+            offset = (address - ORG) * 3
+            if encoded[offset:offset + 3] == bytes(3):
+                continue
         dm, dops = actual.get(address, ("?", ""))
         if dm != mnemonic:
             fail(
@@ -282,7 +288,7 @@ def write_data(path: Path, state_init: list[int], table_words: list[int]) -> lis
     visible = voice + [0] * 6
     path.write_text(
         f"X {VOICE_X:x} " + " ".join(f"{v:06x}" for v in visible) + "\n"
-        + f"X {SCRATCH_X:x} " + " ".join(["000000"] * 64) + "\n"
+        + f"X {SCRATCH_X:x} " + " ".join(["000000"] * 100) + "\n"
         + f"X {EVENT_X:x} 000000\n"
         + f"X {RNG_X:x} " + " ".join(f"{v:06x}" for v in rng) + "\n"
         + f"Y {TABLE_Y:x} " + " ".join(f"{v:06x}" for v in table_words) + "\n"
@@ -309,6 +315,7 @@ def run(binary: Path, entry: int, tag: str, state_init: list[int], table_words: 
             str(HOST), "-code", str(binary), "-org", f"{ORG:x}",
             "-entry", f"{entry:x}", "-data", str(data), "-script", str(script),
             "-out", str(raw), "-state", str(state), "-meter", str(meter),
+            "-cycle-meter", "1" if CYCLE_METER else "0",
             "-frames", str(FRAMES),
         ],
         check=True,
@@ -377,8 +384,13 @@ def main() -> None:
         binary, entry, "baseline", state_init, tables, [(baseline, 0)]
     )
     require_audible("baseline triggered block", base_audio[0])
-    if base_state[0][41] == 0xFFFF:
-        fail("baseline render left envelope cache invalid")
+    if base_state[0][41] != 0xFFFF:
+        fail("analytic synthetic curve unexpectedly modified the packed cache")
+    curved_init = list(state_init)
+    curved_init[2] = 2
+    _, curved_states, _ = run(binary, entry, "packed-curve-cache", curved_init, tables, [(baseline, 0)])
+    if curved_states[0][41] == 0xFFFF:
+        fail("packed curve2 render left its envelope cache invalid")
     final_rng = base_state[0][58:62]
     if final_rng == initial_rng:
         fail("baseline render did not advance shared RNG")
@@ -403,14 +415,14 @@ def main() -> None:
         ("ENV", knob_row(env=0), knob_row(env=127)),
         ("DECAY", knob_row(decay=0), knob_row(decay=127)),
     ):
-        low_script = [(lo, 0)] + [(lo, -1)] * 5
-        high_script = [(hi, 0)] + [(hi, -1)] * 5
+        low_script = [(lo, 0)] + [(lo, -1)] * 31
+        high_script = [(hi, 0)] + [(hi, -1)] * 31
         alo, slo, _ = run(binary, entry, f"{name.lower()}-lo-tail", state_init, tables, low_script)
         ahi, shi, _ = run(binary, entry, f"{name.lower()}-hi-tail", state_init, tables, high_script)
         require_different(name + " trajectory", alo, ahi)
         if name == "DECAY":
             # Larger DECAY knob maps to a smaller decrement, so after the same
-            # six blocks its envelope value must not be lower than the short
+            # 32 blocks its envelope value must not be lower than the short
             # setting. This checks the intended temporary mapping direction.
             short_value = u32(slo[-1], 6)
             long_value = u32(shi[-1], 6)

@@ -103,7 +103,7 @@ def main() -> None:
                 f"synthetic exact table footprint drifted to "
                 f"{report['combined']['realtime_table_y_words']} Y words"
             )
-        if report["combined"]["y_margin_words"] != 180:
+        if report["combined"]["y_margin_words"] != 164:
             raise AssertionError(
                 f"synthetic Y margin drifted to {report['combined']['y_margin_words']} words"
             )
@@ -112,7 +112,7 @@ def main() -> None:
                 "synthetic exact table plan no longer fits the measured private X/Y budget"
             )
 
-    print("PERKY synthetic fixture gate: OK -- state X=168, tables Y=1975, margin Y=180")
+    print("PERKY synthetic fixture gate: OK -- state X=168, tables Y=1975, margin Y=164")
 
 
 if __name__ == "__main__":

@@ -65,7 +65,7 @@ def main() -> None:
         "manifest lost the 236-word X-state claim",
     )
     expect(
-        ("x", 0x38EC, 1, "PERKY source event-offset staging") in ranges,
+        ("x", 0x38EC, 2, "PERKY source event-offset and admission staging") in ranges,
         "manifest lost the source event staging claim",
     )
     expect(
@@ -73,7 +73,7 @@ def main() -> None:
         "manifest lost the 100-word sparse scratch claim",
     )
     expect(
-        ("y", 0x0795, 0x1000 - 0x0795, "PERKY packed Noise/Tone tables") in ranges,
+        ("y", 0x07a5, 0x1000 - 0x07a5, "PERKY packed Noise/Tone tables") in ranges,
         "manifest lost the private-Y table claim",
     )
 
@@ -102,10 +102,10 @@ def main() -> None:
         "synthetic envelope 2 layout drifted",
     )
 
-    ybase = 0x0795
-    expect(ybase + 683 == 0x0A40, "env1 absolute Y base must be $0A40")
-    expect(ybase + 1329 == 0x0CC6, "env2 absolute Y base must be $0CC6")
-    expect(ybase + layout["total_words"] - 1 == 0x0F4B, "synthetic table payload must end at $0F4B")
+    ybase = 0x07a5
+    expect(ybase + 683 == 0x0A50, "env1 absolute Y base must be $0A50")
+    expect(ybase + 1329 == 0x0CD6, "env2 absolute Y base must be $0CD6")
+    expect(ybase + layout["total_words"] - 1 == 0x0F5B, "synthetic table payload must end at $0F5B")
 
     xi = layout["x_init"]
     expect(xi["base_word"] == 0x3800, "state-init metadata X base drifted")
@@ -131,7 +131,7 @@ def main() -> None:
         "PERKY ABI contract: PASS "
         "(4 x (41 voice + 17 cache) + 4 RNG = 236 X words at $3800; "
         "event $38EC; sparse scratch $3900..$3963; "
-        "1975 packed Y words at $0795..$0F4B; env bases $0A40/$0CC6)"
+        "1975 packed Y words at $07a5..$0F5B; env bases $0A50/$0CD6)"
     )
 
 

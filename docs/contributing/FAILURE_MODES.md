@@ -278,3 +278,21 @@ Each entry's full investigation: `git show 666b6154:docs/remixer/FAILURE_MODES.m
 - **Seen:** image 64, 25 Sep 2026, macOS recording all sixteen USB channels: four of five takes have one cluster of sample-step events 0.75-1.5 s after stream open, on several channels, none after 2 s (60 s, 60 s, 300 s, and 120 s under a 7,170-message/s USB-MIDI flood with panel work). Device counters (vendor request 0xc0/0x55): 0 underruns, 0 overruns, no bank-duplicate movement. Image 69 (24-bit, four packets queued at a 250 µs poll): still present, 0.51-0.76 s after open, only on the right channel of each pair, in runs 124-380 frames off phase.
 - **Cause:** open. Measured: short runs out of order (−11.6, +10.3, −41 frames off the tone's phase), long-window phase agrees to 0.1 frame, so nothing is lost or repeated. Candidates: the device's packet queue on the first primes after alt 1 (the controller's add-dTD tripwire, not modelled by the port's bench), or the host's stream start. 🟡 Right-only on image 69 points at the host's stream assembly: each USB frame carries a track's L and R in one packet. Likely octemu's "some crackles" (sox opens a fresh stream per run).
 - **Fix:** none. Workaround: discard the first two seconds of every take, or hold the stream open in a DAW. A stream held open across two recordings, or a sequence counter in the packets, decides the cause.
+
+## PERKY1 briefly sounded, then froze the sequencer — timing defect measured locally
+
+- **Seen:** user's Octatrack, 6 Oct 2026: brief sound, sequencer stops.
+- **Cause:** the generated limb renderer measures 79,000–84,000 nominal cycles
+  per 16-sample default block, exceeding the ~72,512-cycle hardware deadline
+  before stock audio work. This is a concrete defect; the exact hardware halt
+  PC is unavailable. The normal full emulator schedules instructions and did
+  not reproduce the stall even over 32,000 frames.
+- **Fix built:** PERKY2 native arithmetic/direct state, exact synthetic curve
+  specialization, and one admitted PERKY voice per core. Excess signed tracks
+  receive a cleared source block. FX NONE is the qualified development layout.
+- **Check:** independent PCM/state/RNG parity, `verify_perky_realtime_budget.py`
+  (2x decoded opcode cost plus the stock reserve), and mandatory project-loaded
+  `verify_perky_synth_port.py` with dirty memory and later trigs. On 6 Oct 2026,
+  the user reported that PERKY2 works on their Octatrack after the failed
+  PERKY1 test. No duration or extended stress results were supplied; emulator
+  timing remains a conservative local model, not a hardware burn sweep.

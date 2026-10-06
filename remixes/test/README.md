@@ -19,6 +19,9 @@ Each carries one module, or one combination, for that module's gates: `make chec
 | [`mods`](mods/README.md) | Every ColdFire mod in one image on the stock effects: MIDI SCENES, Octakit, the recorder fixes, REPITCH, USB MIDI + AUDIO (octatrick's three cannot join it). | port-gated |
 | [`mute-modes`](mute-modes/README.md) | stock effects with MUTE_MODES: PERSONALIZE > MUTE MODE (OT, OTFX, OTFX-T, DT-T). | `make check` |
 | [`octakit`](octakit/README.md) | Em's Octakit alone -- must reproduce her own build byte for byte. | `make check`: on hardware inside `ok-ms` |
+| [`perky-machine`](perky-machine/README.md) | Full PERKY Noise/Tone source-machine canary: chooser/signature/UI/control runtime plus packed DSP renderer; three stock reverbs intentionally omitted. | `make check`: development full PERKY Noise/Tone machine; emulator/hardware qualification pending |
+| [`perky-probe`](perky-probe/README.md) | FLEX source probe proving PK/Y1 transport and sample-offset DSP injection before AMP/FX. | `make check`: development canary; hardware flash pending |
+| [`perky-synth`](perky-synth/README.md) | PERKY Noise/Tone source canary using full packed X/Y state and the three-reverb donor region; stock reverbs intentionally omitted. | `make check`: development Noise/Tone synth canary; hardware flash pending |
 | [`plocks-p2`](plocks-p2/README.md) | Page-2 parameter locks (PLOCKS P2) and page-2 scene locks (SCENES P2), stock effects. | port-gated: verify_plocksp2 under the port |
 | [`quantize-live-rec-toggle`](quantize-live-rec-toggle/README.md) | stock effects with QUANTIZE_LIVE_REC_TOGGLE: QUANTIZE LIVE REC from [REC] + [PLAY]. | `make check` |
 | [`reload-from-project`](reload-from-project/README.md) | stock effects with RELOAD_FROM_PROJECT: reload one track's sequence from the card while the transport runs. | `make check` |

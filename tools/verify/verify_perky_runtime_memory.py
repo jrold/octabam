@@ -19,10 +19,10 @@ import noise_tone_compact as compact  # noqa:E402
 import noise_tone_envelope_cache as envcache  # noqa:E402
 
 PRIVATE_X_WORDS = 616
-PRIVATE_Y_WORDS = 2155
+PRIVATE_Y_WORDS = 2139
 VOICES_PER_CORE = 4
 RNG_WORDS = 4
-EVENT_STAGING_WORDS = 1
+EVENT_STAGING_WORDS = 2
 # The primitive probe ABI is sparse and reaches r5+$63.  $63 is hexadecimal,
 # so the shared block must contain offsets 0x00..0x63 = 100 words.
 SHARED_SCRATCH_WORDS = 0x64
@@ -41,17 +41,17 @@ def main() -> None:
         raise AssertionError(f"envelope cache drifted to {cache} words/voice")
     if persistent_x != 236:
         raise AssertionError(f"persistent X footprint drifted to {persistent_x} words/core")
-    if x_words != 337:
+    if x_words != 338:
         raise AssertionError(f"runtime X footprint incl seam/scratch drifted to {x_words} words/core")
     x_margin = PRIVATE_X_WORDS - x_words
-    if x_margin != 279:
+    if x_margin != 278:
         raise AssertionError(f"runtime X margin drifted to {x_margin} words")
 
     synthetic_y = SYNTHETIC_WAVE_Y + 2 * SYNTHETIC_ENVELOPE_Y_EACH
     if synthetic_y != 1975:
         raise AssertionError(f"synthetic packed Y footprint drifted to {synthetic_y}")
     y_margin = PRIVATE_Y_WORDS - synthetic_y
-    if y_margin != 180:
+    if y_margin != 164:
         raise AssertionError(f"synthetic packed Y margin drifted to {y_margin}")
 
     print(

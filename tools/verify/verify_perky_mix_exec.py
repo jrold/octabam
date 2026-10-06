@@ -24,7 +24,7 @@ ASM = V / 'build/source/dsp_host/dsp_asm'
 DIS = V / 'build/source/disassemble/dsp56kDisassemble'
 HOST = OUT / 'bd909_host'
 SRC = ROOT / 'tools/harness/bd909_host/bd909_host.cpp'
-ORG = 0x3000
+ORG = 0x0100  # isolated kernels fit the short-call region; shipping gate tests high P
 LINE = re.compile(
     r'^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$'
 )
@@ -144,13 +144,13 @@ def limbs(value: int) -> tuple[int, int]:
 
 def run(binary, entry, tag, case):
     mix, noise, osc1, osc2, amplitude, velocity = case
-    words = [0] * 64
-    words[40], words[41] = limbs(mix)
-    words[42] = noise & 0xFFFF
-    words[43] = osc1 & 0xFFFF
-    words[44] = osc2 & 0xFFFF
-    words[45] = amplitude & 0xFFFF
-    words[46] = velocity & 0xFF
+    words = [0] * 100
+    words[0x40], words[0x41] = limbs(mix)
+    words[0x42] = noise & 0xFFFF
+    words[0x43] = osc1 & 0xFFFF
+    words[0x44] = osc2 & 0xFFFF
+    words[0x45] = amplitude & 0xFFFF
+    words[0x46] = velocity & 0xFF
 
     data = OUT / f'{tag}.data'
     script = OUT / f'{tag}.script'
@@ -162,7 +162,7 @@ def run(binary, entry, tag, case):
         [
             str(HOST), '-code', str(binary), '-org', f'{ORG:x}',
             '-entry', f'{entry:x}', '-data', str(data), '-script', str(script),
-            '-out', str(raw), '-state', str(state_path),
+            '-out', str(raw), '-state', str(state_path), '-state-words', '100',
         ],
         check=True,
         capture_output=True,
@@ -172,8 +172,8 @@ def run(binary, entry, tag, case):
     if len(dumped) < 64:
         fail(f'{tag}: truncated state dump')
     return (
-        U32(dumped[48] & 0xFFFF, dumped[49] & 0xFFFF),
-        dumped[47] & 0xFFFF,
+        U32(dumped[0x48] & 0xFFFF, dumped[0x49] & 0xFFFF),
+        dumped[0x47] & 0xFFFF,
     )
 
 

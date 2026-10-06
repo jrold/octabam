@@ -57,8 +57,8 @@ if m.arena is None or m.arena.where != "bottom" or m.arena.pages != 242:
 ranges = {(r.space, r.start, r.length) for r in m.claims.dsp_ranges}
 for want in (
     ("x", 0x3800, 236),
-    ("x", 0x3900, 64),
-    ("y", 0x0795, 0x1000 - 0x0795),
+    ("x", 0x3900, 100),
+    ("y", 0x07a5, 0x1000 - 0x07a5),
 ):
     if want not in ranges:
         fail(f"missing DSP data claim {want!r}")
@@ -83,7 +83,7 @@ cf = (ROOT / "modules/perky/probe_cf.s").read_text()
 for token in (
     "0x80001c80", "0x80001c90", "0x0a80", "336",
     "0x46104d0c", "0x504b0000", "0x59310000",
-    "cmpi.l  #16,16(%sp)", "andi.l  #16,%d0", "ori.l   #1,%d1",
+    "move.l  16(%sp),%d0", "cmpi.l  #16,%d0", "andi.l  #16,%d0", "ori.l   #1,%d1",
 ):
     need(cf, token, "probe_cf.s")
 
@@ -126,7 +126,7 @@ if not image_tool.exists():
 image_text = image_tool.read_text()
 for token in (
     "X_BASE = 0x3800", "X_WORDS = 236",
-    "Y_BASE = 0x0795", "Y_END = 0x1000",
+    "Y_BASE = 0x07a5", "Y_END = 0x1000",
     "ot_record(1, X_BASE, x_words)",
     "ot_record(2, Y_BASE, y_words)",
 ):

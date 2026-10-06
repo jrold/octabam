@@ -18,7 +18,7 @@ ASM = V / 'build/source/dsp_host/dsp_asm'
 DIS = V / 'build/source/disassemble/dsp56kDisassemble'
 HOST = OUT / 'bd909_host'
 SRC = ROOT / 'tools/harness/bd909_host/bd909_host.cpp'
-ORG = 0x2400
+ORG = 0x0100  # isolated kernels fit the short-call region; shipping gate tests high P
 LINE = re.compile(
     r'^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$'
 )
@@ -122,12 +122,12 @@ def oracle(coeff: int, damping: int, first: int, velocity: int, sample: int):
 
 
 def run(binary, entry, tag, coeff, damping, first, velocity, sample):
-    words = [0] * 64
-    words[44] = coeff & 0xffff
-    words[45] = damping & 0xffff
-    words[46], words[47] = limbs(first)
-    words[50], words[51] = limbs(velocity)
-    words[52] = sample & 0xffff
+    words = [0] * 100
+    words[0x44] = coeff & 0xffff
+    words[0x45] = damping & 0xffff
+    words[0x46], words[0x47] = limbs(first)
+    words[0x50], words[0x51] = limbs(velocity)
+    words[0x52] = sample & 0xffff
 
     data = OUT / f'{tag}.data'
     script = OUT / f'{tag}.script'
@@ -140,7 +140,7 @@ def run(binary, entry, tag, coeff, damping, first, velocity, sample):
         [
             str(HOST), '-code', str(binary), '-org', f'{ORG:x}',
             '-entry', f'{entry:x}', '-data', str(data), '-script', str(script),
-            '-out', str(raw), '-state', str(state_path),
+            '-out', str(raw), '-state', str(state_path), '-state-words', '100',
         ],
         check=True,
         capture_output=True,
@@ -149,9 +149,9 @@ def run(binary, entry, tag, coeff, damping, first, velocity, sample):
     dumped = [int(x, 16) for x in state_path.read_text().split()]
     if len(dumped) < 64:
         fail(f'{tag}: truncated state dump')
-    first_got = U32(dumped[46] & 0xffff, dumped[47] & 0xffff)
-    second_got = U32(dumped[48] & 0xffff, dumped[49] & 0xffff)
-    velocity_got = U32(dumped[50] & 0xffff, dumped[51] & 0xffff)
+    first_got = U32(dumped[0x46] & 0xffff, dumped[0x47] & 0xffff)
+    second_got = U32(dumped[0x48] & 0xffff, dumped[0x49] & 0xffff)
+    velocity_got = U32(dumped[0x50] & 0xffff, dumped[0x51] & 0xffff)
     return first_got, second_got, velocity_got
 
 

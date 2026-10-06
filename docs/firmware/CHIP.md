@@ -169,7 +169,7 @@ core:
 | Y range | what | |
 |---|---|---|
 | `0x00000–0x00794` | system + loaded modules | ✅ |
-| `0x00795–0x00FFF` | free | ✅ |
+| `0x00795–0x00FFF` (A), `0x007A5–0x00FFF` (B) | free; stock B upload ends at `0x007A4` | ✅ upload records; common free range begins at `0x007A5` |
 | `0x01000–0x03FFF` | 4 × FX1 slots, 3,072 words each | ✅ |
 | `0x04000–0x0BFFF` | 2 × FX2 slots, 16,384 words each | ✅ |
 | `0x0C000–0x2FFFF` | absent (reads silence) | ✅ |

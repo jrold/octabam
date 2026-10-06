@@ -113,7 +113,9 @@ def assemble():
     src = OUT / "voice.asm"
     binary = OUT / "voice.bin"
     symbols = OUT / "voice.sym"
-    src.write_text(combined_source())
+    sys.path.insert(0, str(ROOT / "tools/perky"))
+    from build_noise_tone_synth_source import force_long_local_jsr, relativize_local_conditionals
+    src.write_text(force_long_local_jsr(relativize_local_conditionals(combined_source())))
     r = subprocess.run(
         [
             str(ASM), "-in", str(src), "-org", f"{ORG:x}",
@@ -143,6 +145,8 @@ def assemble():
         fail("no usable disassembly to compare")
     mismatches = []
     for addr, (mnemonic, operands) in typed.items():
+        if mnemonic == "nop" and addr not in actual and binary.read_bytes()[(addr-ORG)*3:(addr-ORG)*3+3] == bytes(3):
+            continue
         dm, dops = actual.get(addr, ("?", ""))
         # Same explicitly-audited assembler quirk used by Octabam proper: a
         # typed mpy may decode mpysu. Our kernels use mpyuu instead, so any

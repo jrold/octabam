@@ -12,8 +12,8 @@
 ; the current u16 bit-pattern to X:(r5+$41), increments the index, and writes
 ; the sign-extended sample to both channels at X:(r0)+.
 ;
-; Shipping table base: Y:$0795. The synthetic payload uses the identical
-; layout: its four concatenated 256-sample waves occupy Y:$0795..$0a3f.
+; Shipping table base: Y:$07a5. The synthetic payload uses the identical
+; layout: its four concatenated 256-sample waves occupy Y:$07a5..$0a4f.
 ;
 ; Division by 3 is exact for this range using
 ;   floor(n/3) = (n * $aaab) >> 17.
@@ -25,7 +25,8 @@ pk_wave_unpack_probe:
         move    x:(r5+$40),x0           ; n, 0..1023
         move    #>$00aaab,y0
         mpyuu   x0,y0,a
-        lsr     #$10,a,a
+        asr     #$1,a,a                 ; remove fractional multiply alignment
+        asr     #$10,a,a
         move    a0,x1
         move    x1,b
         and     #>$00ffff,b
@@ -41,11 +42,11 @@ pk_wave_unpack_probe:
         sub     y0,a
         move    a1,y1                   ; remainder 0..2
 
-        ; pair pointer = Y:$0795 + 2*q.
+        ; pair pointer = Y:$07a5 + 2*q.
         move    x1,b
         asl     b
         move    b1,n1
-        move    #>$000795,r1
+        move    #>$0007a5,r1
         lua     (r1+n1),r2
 
         move    y1,a
@@ -56,14 +57,14 @@ pk_wave_unpack_probe:
 
 pkw_r2:
         move    y:(r2+$1),a
-        lsr     #$8,a,a
+        lsr     #$8,a
         and     #>$00ffff,a
         move    a1,x:(r5+$41)
         bra     pkw_got
 
 pkw_r1:
         move    y:(r2),a
-        lsr     #$10,a,a
+        lsr     #$10,a
         and     #>$0000ff,a
         move    a1,x1
         move    y:(r2+$1),b

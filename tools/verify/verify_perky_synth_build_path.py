@@ -46,6 +46,7 @@ def main() -> None:
         fail(f"full donor budget is {sourcegen.FULL_DONOR_WORDS}, expected 2724")
     want_pieces = (
         "synth_seam_glue.asm",
+        "synthetic_control_map.asm",
         "noise_tone_voice_xstate_glue.asm",
         "noise_tone_math.asm",
         "noise_tone_filter.asm",

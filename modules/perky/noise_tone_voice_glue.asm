@@ -57,9 +57,9 @@ pk_voice_probe:
         move    a1,x:(r5+$47)
         move    y:(r5+$9),a
         move    a1,x:(r5+$48)
-        move    y:(r5+$10),a
+        move    y:(r5+$a),a
         move    a1,x:(r5+$49)
-        move    y:(r5+$11),a
+        move    y:(r5+$b),a
         move    a1,x:(r5+$50)
         jsr     pk_envelope_probe
         move    x:(r5+$40),a
@@ -69,144 +69,144 @@ pk_voice_probe:
         move    x:(r5+$46),a
         move    a1,y:(r5+$7)
         move    x:(r5+$51),a
-        move    a1,y:(r5+$45)           ; amplitude
+        move    a1,y:(r5+$2d)           ; amplitude
 
         ; ---- sample/hold noise + shared RNG -------------------------------
-        move    y:(r5+$41),a
+        move    y:(r5+$29),a
         move    a1,x:(r5+$0)
-        move    y:(r5+$42),a
+        move    y:(r5+$2a),a
         move    a1,x:(r5+$1)
-        move    y:(r5+$43),a
+        move    y:(r5+$2b),a
         move    a1,x:(r5+$2)
-        move    y:(r5+$44),a
+        move    y:(r5+$2c),a
         move    a1,x:(r5+$3)
-        move    y:(r5+$12),a
+        move    y:(r5+$c),a
         move    a1,x:(r5+$40)
-        move    y:(r5+$13),a
+        move    y:(r5+$d),a
         move    a1,x:(r5+$41)
-        move    y:(r5+$14),a
+        move    y:(r5+$e),a
         move    a1,x:(r5+$42)
         jsr     pk_noise_step
         move    x:(r5+$0),a
-        move    a1,y:(r5+$41)
+        move    a1,y:(r5+$29)
         move    x:(r5+$1),a
-        move    a1,y:(r5+$42)
+        move    a1,y:(r5+$2a)
         move    x:(r5+$2),a
-        move    a1,y:(r5+$43)
+        move    a1,y:(r5+$2b)
         move    x:(r5+$3),a
-        move    a1,y:(r5+$44)
+        move    a1,y:(r5+$2c)
         move    x:(r5+$40),a
-        move    a1,y:(r5+$12)
+        move    a1,y:(r5+$c)
         move    x:(r5+$42),a
-        move    a1,y:(r5+$14)
+        move    a1,y:(r5+$e)
         move    x:(r5+$12),a
-        move    a1,y:(r5+$46)           ; noise sample
+        move    a1,y:(r5+$2e)           ; noise sample
 
         ; ---- resonant noise filter, first pass ----------------------------
-        move    y:(r5+$16),a            ; coefficient
+        move    y:(r5+$10),a            ; coefficient
         move    a1,x:(r5+$44)
-        move    y:(r5+$15),a            ; damping
+        move    y:(r5+$f),a            ; damping
         move    a1,x:(r5+$45)
-        move    y:(r5+$17),a
+        move    y:(r5+$11),a
         move    a1,x:(r5+$46)
-        move    y:(r5+$18),a
+        move    y:(r5+$12),a
         move    a1,x:(r5+$47)
-        move    y:(r5+$19),a
+        move    y:(r5+$13),a
         move    a1,x:(r5+$48)
-        move    y:(r5+$20),a
+        move    y:(r5+$14),a
         move    a1,x:(r5+$49)
-        move    y:(r5+$21),a
+        move    y:(r5+$15),a
         move    a1,x:(r5+$50)
-        move    y:(r5+$22),a
+        move    y:(r5+$16),a
         move    a1,x:(r5+$51)
-        move    y:(r5+$46),a
+        move    y:(r5+$2e),a
         move    a1,x:(r5+$52)
         jsr     pk_filter_probe
         ; Firmware calls the exact same filter transition twice per sample.
         jsr     pk_filter_probe
         move    x:(r5+$46),a
-        move    a1,y:(r5+$17)
+        move    a1,y:(r5+$11)
         move    x:(r5+$47),a
-        move    a1,y:(r5+$18)
+        move    a1,y:(r5+$12)
         move    x:(r5+$48),a
-        move    a1,y:(r5+$19)
+        move    a1,y:(r5+$13)
         move    x:(r5+$49),a
-        move    a1,y:(r5+$20)
+        move    a1,y:(r5+$14)
         move    x:(r5+$50),a
-        move    a1,y:(r5+$21)
+        move    a1,y:(r5+$15)
         move    x:(r5+$51),a
-        move    a1,y:(r5+$22)
+        move    a1,y:(r5+$16)
 
         ; ---- oscillator 1: compact Y:23..30 -> probe X:40..47 -------------
-        move    y:(r5+$23),a
+        move    y:(r5+$17),a
         move    a1,x:(r5+$40)
-        move    y:(r5+$24),a
+        move    y:(r5+$18),a
         move    a1,x:(r5+$41)
-        move    y:(r5+$25),a
+        move    y:(r5+$19),a
         move    a1,x:(r5+$42)
-        move    y:(r5+$26),a
+        move    y:(r5+$1a),a
         move    a1,x:(r5+$43)
-        move    y:(r5+$27),a
+        move    y:(r5+$1b),a
         move    a1,x:(r5+$44)
-        move    y:(r5+$28),a
+        move    y:(r5+$1c),a
         move    a1,x:(r5+$45)
-        move    y:(r5+$29),a
+        move    y:(r5+$1d),a
         move    a1,x:(r5+$46)
-        move    y:(r5+$30),a
+        move    y:(r5+$1e),a
         move    a1,x:(r5+$47)
         jsr     pk_osc_probe
         move    x:(r5+$40),a
-        move    a1,y:(r5+$23)
+        move    a1,y:(r5+$17)
         move    x:(r5+$41),a
-        move    a1,y:(r5+$24)
+        move    a1,y:(r5+$18)
         move    x:(r5+$44),a
-        move    a1,y:(r5+$27)
+        move    a1,y:(r5+$1b)
         move    x:(r5+$45),a
-        move    a1,y:(r5+$28)
+        move    a1,y:(r5+$1c)
         move    x:(r5+$48),a
-        move    a1,y:(r5+$47)
+        move    a1,y:(r5+$2f)
 
         ; ---- oscillator 2 --------------------------------------------------
-        move    y:(r5+$31),a
+        move    y:(r5+$1f),a
         move    a1,x:(r5+$40)
-        move    y:(r5+$32),a
+        move    y:(r5+$20),a
         move    a1,x:(r5+$41)
-        move    y:(r5+$33),a
+        move    y:(r5+$21),a
         move    a1,x:(r5+$42)
-        move    y:(r5+$34),a
+        move    y:(r5+$22),a
         move    a1,x:(r5+$43)
-        move    y:(r5+$35),a
+        move    y:(r5+$23),a
         move    a1,x:(r5+$44)
-        move    y:(r5+$36),a
+        move    y:(r5+$24),a
         move    a1,x:(r5+$45)
-        move    y:(r5+$37),a
+        move    y:(r5+$25),a
         move    a1,x:(r5+$46)
-        move    y:(r5+$38),a
+        move    y:(r5+$26),a
         move    a1,x:(r5+$47)
         jsr     pk_osc_probe
         move    x:(r5+$40),a
-        move    a1,y:(r5+$31)
+        move    a1,y:(r5+$1f)
         move    x:(r5+$41),a
-        move    a1,y:(r5+$32)
+        move    a1,y:(r5+$20)
         move    x:(r5+$44),a
-        move    a1,y:(r5+$35)
+        move    a1,y:(r5+$23)
         move    x:(r5+$45),a
-        move    a1,y:(r5+$36)
+        move    a1,y:(r5+$24)
         move    x:(r5+$48),a
-        move    a1,y:(r5+$48)
+        move    a1,y:(r5+$30)
 
         ; ---- final mixer ---------------------------------------------------
-        move    y:(r5+$39),a
+        move    y:(r5+$27),a
         move    a1,x:(r5+$40)
-        move    y:(r5+$40),a
+        move    y:(r5+$28),a
         move    a1,x:(r5+$41)
-        move    y:(r5+$46),a
+        move    y:(r5+$2e),a
         move    a1,x:(r5+$42)
-        move    y:(r5+$47),a
+        move    y:(r5+$2f),a
         move    a1,x:(r5+$43)
-        move    y:(r5+$48),a
+        move    y:(r5+$30),a
         move    a1,x:(r5+$44)
-        move    y:(r5+$45),a
+        move    y:(r5+$2d),a
         move    a1,x:(r5+$45)
         move    y:(r5+$0),a
         move    a1,x:(r5+$46)

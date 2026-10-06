@@ -99,7 +99,7 @@ pko_have_table:
         move    x:(r5+$40),a
         move    a1,b
         and     #>$00f000,b
-        lsr     #$c,b,b
+        lsr     #$c,b
         move    b1,x0
         move    x:(r5+$41),a
         and     #>$00000f,a
@@ -200,9 +200,9 @@ pko_add:
         add     x0,a
         move    #>$0,y0
         btst    #16,a1
-        jcc     pko_add_no_carry
+        jcc     pko_branch_add_no_carry
         move    #>$1,y0
-pko_add_no_carry:
+pko_branch_add_no_carry:
         and     #>$00ffff,a
         move    a1,x:(r5+$8)
         move    x:(r5+$1),b
@@ -214,45 +214,35 @@ pko_add_no_carry:
         rts
 
 pko_asr:
-        move    x:(r5+$0),x1
-        move    x:(r5+$1),y0
-        move    y0,a
+        move    x:(r5+$1),a
         btst    #15,a1
-        jcc     pko_asr_sign_done
-        move    #>$010000,x0
-        sub     x0,a
-pko_asr_sign_done:
-        move    a1,y0
+        jcc     pko_shift_sign_ready
+        sub     #>$010000,a
+pko_shift_sign_ready:
+        move    x:(r5+$0),b
+        lsl     #$8,b
+        move    b1,a0
         move    x:(r5+$4),x0
-        move    #>$008000,y1
-        do      x0,pko_asr_loop_done
-        move    x1,b
-        lsr     b
-        move    b1,x1
-        move    y0,a
-        asr     a
-        add     y1,b ifcs
-        move    b1,x1
-        move    a1,y0
-pko_asr_loop_done:
-        nop
-        move    x1,a
-        and     #>$00ffff,a
-        move    a1,x:(r5+$8)
-        move    y0,b
+        asr     x0,a,a
+        move    a1,b
         and     #>$00ffff,b
         move    b1,x:(r5+$9)
+        move    a0,b
+        lsr     #$8,b
+        and     #>$00ffff,b
+        move    b1,x:(r5+$8)
         rts
 
 pko_mul_low:
         move    x:(r5+$0),x0
         move    x:(r5+$2),y0
         mpyuu   x0,y0,a
+        asr     #$1,a,a                 ; remove fractional multiply alignment
         move    a0,x1
         move    x1,b
         and     #>$00ffff,b
         move    b1,x:(r5+$8)
-        lsr     #$10,a,a
+        asr     #$10,a,a
         move    a0,x1
         move    x1,b
         and     #>$00ffff,b
@@ -261,6 +251,8 @@ pko_mul_low:
         move    x:(r5+$0),x0
         move    x:(r5+$3),y0
         mpyuu   x0,y0,a
+        asr     #$1,a,a                 ; remove fractional multiply alignment
+        move    a0,a
         and     #>$00ffff,a
         move    a1,x1
         move    y1,b
@@ -269,6 +261,8 @@ pko_mul_low:
         move    x:(r5+$1),x0
         move    x:(r5+$2),y0
         mpyuu   x0,y0,a
+        asr     #$1,a,a                 ; remove fractional multiply alignment
+        move    a0,a
         and     #>$00ffff,a
         move    a1,x1
         add     x1,b

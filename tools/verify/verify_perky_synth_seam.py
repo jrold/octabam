@@ -42,9 +42,9 @@ if m.dsp is None or m.dsp.asm != "modules/perky/probe_glue.asm":
 ranges = {(r.space, r.start, r.length, r.what) for r in m.claims.dsp_ranges}
 want_ranges = (
     ("x", 0x3800, 236, "PERKY compact voice state + envelope caches + RNG"),
-    ("x", 0x38EC, 1, "PERKY source event-offset staging"),
+    ("x", 0x38EC, 2, "PERKY source event-offset and admission staging"),
     ("x", 0x3900, 0x64, "PERKY shared sparse source-render scratch"),
-    ("y", 0x0795, 0x1000 - 0x0795, "PERKY packed Noise/Tone tables"),
+    ("y", 0x07a5, 0x1000 - 0x07a5, "PERKY packed Noise/Tone tables"),
 )
 for row in want_ranges:
     if row not in ranges:
@@ -129,7 +129,7 @@ if src.count("jsr     pk_voice_xstate") != 4:
 
 # Invalid x:$418 slots must clear all 32 stereo source words rather than touch
 # an unowned voice block.
-for token in ("pks_silence:", "do      #$20,pks_silence_done", "move    a1,x:(r0)+"):
+for token in ("pks_silence:", "do      #$20,pks_done_silence", "move    a1,x:(r0)+"):
     need(src, token)
 
 # Sanity: no hardcoded probe impulse remains in this synth seam.

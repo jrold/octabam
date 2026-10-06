@@ -10,16 +10,17 @@ must not be conflated:
 
 ## Measured private budget
 
-Octabam's hardware memory sweep pins the usable private-Y interval on **each DSP
-core** exactly:
+The hardware sweep bounds private Y below the FX1 arena. Stock upload records
+end at `$0794` on A and `$07a4` on B (see `docs/firmware/DSP.md` section 5).
+Use the intersection free on both cores:
 
 ```text
-Y:$0200..$0794   stock/static data ends here
-Y:$0795..$0fff   measured private gap: 2,155 words
+Y:$0200..$07a4   stock/static data ends here
+Y:$07a5..$0fff   measured private gap: 2,139 words
 Y:$1000..        FX1 instance arena begins here
 ```
 
-PERKY therefore treats **Y:$0795..$0FFF** as the only candidate table region;
+PERKY therefore treats **Y:$07a5..$0FFF** as the only candidate table region;
 it does not infer a larger hole from the boot payload's static records. Runtime
 FX allocations and host behaviour are part of the usable-memory boundary.
 
@@ -114,15 +115,15 @@ synthetic envelope 1              646 Y words
 synthetic envelope 2              646 Y words
                                   ----
 synthetic exact table total      1,975 Y words
-measured private-Y budget        2,155 Y words
-synthetic margin                   180 Y words
+measured private-Y budget        2,139 Y words
+synthetic margin                   164 Y words
 ```
 
 Placed at the measured base, that synthetic payload occupies exactly:
 
 ```text
-Y:$0795..$0f4b   1,975 packed table words
-Y:$0f4c..$0fff     180 words left untouched
+Y:$07a5..$0f5b   1,975 packed table words
+Y:$0f5c..$0fff     164 words left untouched
 ```
 
 `tools/build/perky_image.py` appends that Y record to both finalized DSP
@@ -134,7 +135,7 @@ actual delta widths and exact Y footprint.
 
 For reference, with 16-sample blocks an 8-bit-delta curve costs 726 words. Two
 8-bit curves plus the 683-word wave stream consume 2,135 Y words, leaving only
-20 words. The real curves therefore still need to pass the table analyzer
+4 words. The real curves therefore still need to pass the table analyzer
 before the packed format is admitted to a hardware image.
 
 ## ColdFire preboot scratch: 242 audio pages
@@ -191,7 +192,7 @@ python3 tools/perky/build_noise_tone_payload.py \
   --out out/perky/noise-tone-packed
 ```
 
-The analyzer must report that the exact tables fit Y:$0795..$0FFF under the
+The analyzer must report that the exact tables fit Y:$07a5..$0FFF under the
 realtime decode policy before the real table payload is admitted to a hardware
 image.
 
@@ -210,3 +211,11 @@ image.
 - Final integration of the optimized renderer behind the live `PK/Y1` source
   record. The active `perky-probe` remix remains the impulse canary until these
   qualification steps are satisfied.
+
+## PERKY2 realtime admission
+
+The synthetic native renderer reserves two words at X:$38EC..$38ED for the
+event offset and a per-block admission latch. Combined with 236 live-state
+words and 100 scratch words, total private X use is 338 of 616 words.
+Only one PERKY voice per core is admitted each block. The synthetic linear
+curve uses an exact analytic lookup; the second curve retains the packed cache.

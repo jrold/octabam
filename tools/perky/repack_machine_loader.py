@@ -32,6 +32,7 @@ from remix import arena, platform_build, runtime_build  # noqa:E402
 BASE = dsp_modmap.BASE
 PAGES = 242
 RESERVE = (arena.BASE, PAGES * arena.PAGE)
+RUNTIME_RESERVE = (RESERVE[0] + RESERVE[1], arena.PLATFORM_PAGES * arena.PAGE)
 REQUIRED_LAYOUT = ("base", "runtime_end", "stage", "stage_end", "ceiling", "size")
 
 
@@ -68,7 +69,8 @@ def _overlap(a: int, ae: int, b: int, be: int) -> bool:
 
 
 def verify_reservation(img: bytes | bytearray) -> None:
-    pokes = arena.pokes([("PERKY PROBE", "bottom", PAGES)])
+    pokes = arena.pokes([("PERKY PROBE", "bottom", PAGES),
+                         ("octabam platform", "bottom", arena.PLATFORM_PAGES)])
     if not pokes:
         die("arena helper returned no PERKY reservation writes")
     for address, _stock, written, note in pokes:
@@ -101,10 +103,10 @@ def load_runtime(platform_dir: Path) -> tuple[dict, bytes, dict]:
             f"platform loader is {layout.get('loader')!r}, expected "
             f"0x{platform_build.LOADER_AT:08x}"
         )
-    if layout["base"] != RESERVE[0] or layout["size"] != RESERVE[1]:
+    if layout["base"] != RUNTIME_RESERVE[0] or layout["size"] != RUNTIME_RESERVE[1]:
         die(
             f"runtime reserve {layout['base']:#x}+{layout['size']:#x} does not "
-            f"match PERKY {RESERVE[0]:#x}+{RESERVE[1]:#x}"
+            f"match platform {RUNTIME_RESERVE[0]:#x}+{RUNTIME_RESERVE[1]:#x}"
         )
     if layout["ceiling"] != layout["base"] + layout["size"]:
         die("platform layout ceiling is inconsistent with base+size")
@@ -153,10 +155,10 @@ def check_preboot_disjoint(layout: dict, pres: list[dict]) -> None:
         for role, length in (("dst", entry["rawlen"]), ("stage", len(entry["blob"]))):
             start = _cached(entry[role])
             end = start + length
-            if not layout["base"] <= start < end <= layout["ceiling"]:
+            if not RESERVE[0] <= start < end <= RESERVE[0] + RESERVE[1]:
                 die(
                     f"{entry['name']} {role} {start:#x}..{end:#x} lies outside "
-                    f"runtime reserve {layout['base']:#x}..{layout['ceiling']:#x}"
+                    f"PERKY reserve {RESERVE[0]:#x}..{RESERVE[0] + RESERVE[1]:#x}"
                 )
             for what, lo, hi in occupied:
                 if _overlap(start, end, lo, hi):
@@ -203,7 +205,7 @@ def build(image_path: Path, table_dir: Path, output: Path,
     append, symbols, boot, names = platform_build.build(
         [], [runtime_payload], work,
         preboot=pres,
-        preboot_reserve=(layout["base"], layout["size"]),
+        preboot_reserve=RESERVE,
     )
     if symbols:
         die("repacked loader unexpectedly produced linked runtime symbols")

@@ -37,8 +37,8 @@ Current synthetic memory canary under the <=15-add envelope decode policy:
 - envelope 1: 646 private Y words;
 - envelope 2: 646 private Y words;
 - exact table total: 1,975 private Y words;
-- measured private-Y budget used by the planner: 2,155 words;
-- synthetic margin: 180 words.
+- measured private-Y budget used by the planner: 2,139 words;
+- synthetic margin: 164 words.
 
 Those numbers prove the **layout strategy** can work for smoothly varying
 curves. They do not prove that the real PĒRKONS envelope tables have the same

@@ -31,6 +31,7 @@ from ab_fixture import prepare  # noqa:E402
 
 OUT = ROOT / "out/perky/synth-port"
 TRACKS = (1, 5)
+BLOCKED_TRACKS = (2, 3, 4, 6, 7, 8)
 DEFAULT_IMAGE = ROOT / "out/mainos_perky_synth.bin"
 SIGNIFICANT = 100
 MIN_SIGNIFICANT_SAMPLES = 16
@@ -57,11 +58,16 @@ def configure_fixture(project: str) -> Path:
         def mutate(data):
             for part in range(8):
                 base = otp.PART_BASE + part * otp.PART_STRIDE + 9
-                for track in (0, 4):
+                for track in range(8):
                     data[base + 0x22 + track] = 1  # FLEX transport donor
+                    data[base + 60 + 30 * track:base + 63 + 30 * track] = b"PK\x01"
+                    defaults = (64, 64, 64, 64, 0, 0, 0, 0, 0, 0, 0, 10) if track != 4 else (127, 127, 127, 0, 0, 0, 2, 0, 0, 0, 0, 10)
+                    for slot, value in enumerate(defaults):
+                        off = (0x2a if slot < 6 else 0x1da) + 30 * track + 6 + slot % 6
+                        data[base + off] = value
                     data[base + track] = 0         # FX1 NONE
                     data[base + 8 + track] = 0     # FX2 NONE
-            for track in (0, 4):
+            for track in range(8):
                 at = otp.trac_off(0, track)
                 data[at:at + 8] = (1).to_bytes(8, "big")  # one trig at step 0
 
@@ -109,12 +115,13 @@ def main() -> None:
         "--card", str(card),
         "--set", "OCTABAM",
         "--project", "RIG",
-        "--load-ms", "20000",
+        "--load-ms", "90000",
         "--sequencer",
         "--internal-clock",
         "--bank", "0",
-        "--frames", "260",
+        "--frames", "32000",
         "--dsp",
+        "--dsp-dirty", "123",
         "--main-level", "64",
         "--audio-out", str(basewav),
         "--block-dump", str(dump),
@@ -126,11 +133,29 @@ def main() -> None:
         subprocess.run(cmd, cwd=ROOT, check=True, timeout=600,
                        stdout=log, stderr=subprocess.STDOUT)
 
+    # Dirty stock control: the port leaves stock AMP/DC-filter state dirty.
+    # Run unmodified stock on the same card rather than accepting unexplained
+    # stereo differences or nonzero output from a rejected voice.
+    baseline_dump = OUT / 'stock-dirty.bin'
+    baseline_cmd = list(cmd)
+    baseline_cmd[baseline_cmd.index('--image') + 1] = str(ROOT / 'out/raw/section_3_MAIN_OS.bin')
+    baseline_cmd[baseline_cmd.index('--frames') + 1] = '2600'
+    baseline_cmd[baseline_cmd.index('--block-dump') + 1] = str(baseline_dump)
+    audio_at = baseline_cmd.index('--audio-out')
+    del baseline_cmd[audio_at:audio_at + 2]
+    with (OUT / 'stock-dirty.log').open('w') as log:
+        subprocess.run(baseline_cmd, cwd=ROOT, check=True, timeout=600,
+                       stdout=log, stderr=subprocess.STDOUT)
+    verify_outputs(log_path, dump, baseline_dump)
+
+
+def verify_outputs(log_path, dump, baseline_dump):
     log = log_path.read_text()
+    baseline = bd.classes(bd.read(baseline_dump))
     if "ILLEGAL" in log:
         fail("emulator hit ILLEGAL")
-    if not re.search(r"frames run\s*:\s*260", log):
-        fail("emulator did not complete all 260 frames")
+    if not re.search(r"frames run\s*:\s*32000", log):
+        fail("emulator did not complete all 32000 frames")
 
     classes = bd.classes(bd.read(dump))
     summaries = []
@@ -145,8 +170,15 @@ def main() -> None:
         right = rl.readback_audio(classes, track, True)
         if not left or not right:
             fail(f"T{track}/core {core}: no post-chain readback")
-        if left != right:
-            fail(f"T{track}/core {core}: mono synth source diverged L/R")
+        # Stock AMP/DC-filter state has dirty-memory startup tails and a
+        # small deterministic DC floor. Measure it with the SAME stock card.
+        bl = rl.readback_audio(baseline, track)
+        br = rl.readback_audio(baseline, track, True)
+        from statistics import median
+        bias = int(median(a - b for a, b in zip(bl[-1024:], br[-1024:])))
+        error = max(abs(a - b - bias) for a, b in zip(left[4096:], right[4096:]))
+        if error > 2:
+            fail(f"T{track}/core {core}: L/R residual {error} exceeds measured stock bias {bias} + 2 LSB rounding")
 
         significant = [sample for sample in left if abs(sample) > SIGNIFICANT]
         if len(significant) < MIN_SIGNIFICANT_SAMPLES:
@@ -167,12 +199,20 @@ def main() -> None:
             f"{distinct} distinct values, peak {peak}"
         )
 
+    # Every audio track carries PERKY in this fixture. The admission guard
+    # must keep the other six silent instead of overrunning either core.
+    for track in BLOCKED_TRACKS:
+        for right_channel in (False, True):
+            audio = rl.readback_audio(classes, track, right_channel)
+            stock_audio = rl.readback_audio(baseline, track, right_channel)
+            assert audio and audio[:len(stock_audio)] == stock_audio, f'T{track}: blocked voice differs from stock silence'
+            assert max(map(abs, audio[4096:])) <= max(map(abs, stock_audio[4096:])) + 2
+    live_events = re.findall(r'frame\s+(\d+) track [04] byte 0x10', log)
+    assert any(int(frame) > 1000 for frame in live_events), 'transport never reached a later trig'
     if len(summaries) != 2:
         fail("did not qualify both DSP cores")
-    print(
-        "PASS PERKY synth canary: both DSP cores received PK/Y1 trigs and "
-        "produced sustained varying stereo-matched post-chain audio"
-    )
+    print("PASS PERKY synth canary: both DSP cores, 32000 frames with dirty memory, "
+          "later trigs, varying stereo-matched post-chain audio, six excess voices silent")
 
 
 if __name__ == "__main__":

@@ -26,7 +26,7 @@ for s in (
     'move    #>$003100,r1',
     'and     #>$000fff,a',
     'and     #>$0000ff,a',
-    'lsr     #$c,b,b',
+    'lsr     #$c,b',
     'asl     #$4,a,a',
     'move    x:(r1+n1),a',
     'move    #>$c,a',

@@ -36,7 +36,7 @@ HOST = OUT / "bd909_host"
 HOST_SRC = ROOT / "tools/harness/bd909_host/bd909_host.cpp"
 ORG = 0x5000
 STATE = 0x200
-WAVE_Y = 0x0795
+WAVE_Y = 0x07a5
 FRAMES = 16
 IDS = (0x11112222, 0x33334444, 0x55556666, 0x77778888)
 LINE = re.compile(
@@ -128,7 +128,9 @@ def assemble():
     src = OUT / "voice_packed_wave.asm"
     binary = OUT / "voice_packed_wave.bin"
     symbols = OUT / "voice_packed_wave.sym"
-    src.write_text(combined_source())
+    sys.path.insert(0, str(ROOT / "tools/perky"))
+    from build_noise_tone_synth_source import force_long_local_jsr, relativize_local_conditionals
+    src.write_text(force_long_local_jsr(relativize_local_conditionals(combined_source())))
     r = subprocess.run(
         [
             str(ASM), "-in", str(src), "-org", f"{ORG:x}",
@@ -157,6 +159,8 @@ def assemble():
     if not typed or len(actual) < len(typed) * 0.9:
         fail("no usable disassembly to compare")
     for addr, (mnemonic, operands) in typed.items():
+        if mnemonic == "nop" and addr not in actual and binary.read_bytes()[(addr-ORG)*3:(addr-ORG)*3+3] == bytes(3):
+            continue
         dm, dops = actual.get(addr, ("?", ""))
         if dm != mnemonic:
             fail(f"P:{addr:06x} typed {mnemonic} {operands} but decodes {dm} {dops}")

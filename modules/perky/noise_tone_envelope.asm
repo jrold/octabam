@@ -34,11 +34,11 @@ pk_envelope_probe:
 pke_state0:
         move    x:(r5+$44),a
         tst     a
-        bne     pke_state0_start
+        bne     pke_start_state0
         move    x:(r5+$42),a
         tst     a
         beq     pke_output
-pke_state0_start:
+pke_start_state0:
         move    #>$1,a
         move    a1,x:(r5+$40)
         bra     pke_output
@@ -69,18 +69,18 @@ pke_state1:
         ; selects 3 (zero) or 4 (non-zero).
         move    x:(r5+$42),a
         tst     a
-        bne     pke_state1_release
+        bne     pke_release_state1
         move    x:(r5+$43),a
         tst     a
-        bne     pke_state1_release
+        bne     pke_release_state1
         move    #>$3,a
         move    a1,x:(r5+$40)
-        bra     pke_state1_clamp
-pke_state1_release:
+        bra     pke_clamp_state1
+pke_release_state1:
         move    #>$4,a
         move    a1,x:(r5+$40)
 
-pke_state1_clamp:
+pke_clamp_state1:
         ; Clamp only when value >= $00100000; $000fffff remains untouched.
         jsr     pke_value_ge_one
         move    x:(r5+$59),a
@@ -99,13 +99,13 @@ pke_state3:
         bne     pke_output
         move    x:(r5+$42),a
         tst     a
-        bne     pke_state3_release
+        bne     pke_release_state3
         move    x:(r5+$47),a
         move    x:(r5+$48),x0
         or      x0,a
         tst     a
         bne     pke_output
-pke_state3_release:
+pke_release_state3:
         move    #>$4,a
         move    a1,x:(r5+$40)
         bra     pke_output
@@ -113,12 +113,12 @@ pke_state3_release:
 pke_state4:
         move    x:(r5+$44),a
         tst     a
-        beq     pke_state4_decay
+        beq     pke_decay_state4
         move    #>$1,a
         move    a1,x:(r5+$40)
         bra     pke_output
 
-pke_state4_decay:
+pke_decay_state4:
         ; value -= decay decrement, modulo 2^32.
         move    x:(r5+$45),a
         move    a1,x:(r5+$0)
@@ -144,26 +144,26 @@ pke_state4_decay:
         move    a1,x:(r5+$46)
         move    x:(r5+$42),a
         tst     a
-        beq     pke_state4_idle
+        beq     pke_idle_state4
         move    #>$1,a
         move    a1,x:(r5+$40)
         bra     pke_output
-pke_state4_idle:
+pke_idle_state4:
         clr     a
         move    a1,x:(r5+$40)
 
 pke_output:
         move    x:(r5+$41),a
         cmp     #>$1,a
-        beq     pke_curve1
+        beq     pke_first_curve
         cmp     #>$2,a
-        beq     pke_curve2
+        beq     pke_second_curve
 
         ; Linear/default shape: (unsigned32(value) >> 4) & $ffff.
         move    x:(r5+$45),a
         move    a1,b
         and     #>$00fff0,b
-        lsr     #$4,b,b
+        lsr     #$4,b
         move    b1,x0
         move    x:(r5+$46),a
         and     #>$00000f,a
@@ -173,10 +173,10 @@ pke_output:
         move    a1,x:(r5+$51)
         rts
 
-pke_curve1:
+pke_first_curve:
         move    #>$003200,r1
         bra     pke_curve
-pke_curve2:
+pke_second_curve:
         move    #>$003a00,r1
 
 pke_curve:
@@ -184,7 +184,7 @@ pke_curve:
         move    x:(r5+$45),a
         move    a1,b
         and     #>$00fc00,b
-        lsr     #$a,b,b
+        lsr     #$a,b
         move    b1,x0
         move    x:(r5+$46),a
         and     #>$00001f,a
@@ -299,13 +299,14 @@ pke_value_le_zero:
         bra     pke_bool_true
 pke_le_zero_nonnegative:
         tst     a
-        bne     pke_bool_false
+        bne     pke_return_le_zero
         move    x:(r5+$45),a
         tst     a
-        bne     pke_bool_false
+        bne     pke_return_le_zero
 pke_bool_true:
         move    #>$1,b
         move    b1,x:(r5+$59)
+pke_return_le_zero:
         rts
 
 ; ---- exact two-limb helpers ------------------------------------------------
@@ -316,9 +317,9 @@ pke_add:
         add     x0,a
         move    #>$0,y0
         btst    #16,a1
-        jcc     pke_add_no_carry
+        jcc     pke_branch_add_no_carry
         move    #>$1,y0
-pke_add_no_carry:
+pke_branch_add_no_carry:
         and     #>$00ffff,a
         move    a1,x:(r5+$8)
         move    x:(r5+$1),b
@@ -334,9 +335,9 @@ pke_sub:
         move    x:(r5+$2),x0
         sub     x0,a
         move    #>$0,y0
-        jpl     pke_sub_no_borrow
+        jpl     pke_branch_sub_no_borrow
         move    #>$1,y0
-pke_sub_no_borrow:
+pke_branch_sub_no_borrow:
         and     #>$00ffff,a
         move    a1,x:(r5+$8)
         move    x:(r5+$1),b
@@ -348,45 +349,35 @@ pke_sub_no_borrow:
         rts
 
 pke_asr:
-        move    x:(r5+$0),x1
-        move    x:(r5+$1),y0
-        move    y0,a
+        move    x:(r5+$1),a
         btst    #15,a1
-        jcc     pke_asr_sign_done
-        move    #>$010000,x0
-        sub     x0,a
-pke_asr_sign_done:
-        move    a1,y0
+        jcc     pke_shift_sign_ready
+        sub     #>$010000,a
+pke_shift_sign_ready:
+        move    x:(r5+$0),b
+        lsl     #$8,b
+        move    b1,a0
         move    x:(r5+$4),x0
-        move    #>$008000,y1
-        do      x0,pke_asr_loop_done
-        move    x1,b
-        lsr     b
-        move    b1,x1
-        move    y0,a
-        asr     a
-        add     y1,b ifcs
-        move    b1,x1
-        move    a1,y0
-pke_asr_loop_done:
-        nop
-        move    x1,a
-        and     #>$00ffff,a
-        move    a1,x:(r5+$8)
-        move    y0,b
+        asr     x0,a,a
+        move    a1,b
         and     #>$00ffff,b
         move    b1,x:(r5+$9)
+        move    a0,b
+        lsr     #$8,b
+        and     #>$00ffff,b
+        move    b1,x:(r5+$8)
         rts
 
 pke_mul_low:
         move    x:(r5+$0),x0
         move    x:(r5+$2),y0
         mpyuu   x0,y0,a
+        asr     #$1,a,a                 ; remove fractional multiply alignment
         move    a0,x1
         move    x1,b
         and     #>$00ffff,b
         move    b1,x:(r5+$8)
-        lsr     #$10,a,a
+        asr     #$10,a,a
         move    a0,x1
         move    x1,b
         and     #>$00ffff,b
@@ -395,6 +386,8 @@ pke_mul_low:
         move    x:(r5+$0),x0
         move    x:(r5+$3),y0
         mpyuu   x0,y0,a
+        asr     #$1,a,a                 ; remove fractional multiply alignment
+        move    a0,a
         and     #>$00ffff,a
         move    a1,x1
         move    y1,b
@@ -403,6 +396,8 @@ pke_mul_low:
         move    x:(r5+$1),x0
         move    x:(r5+$2),y0
         mpyuu   x0,y0,a
+        asr     #$1,a,a                 ; remove fractional multiply alignment
+        move    a0,a
         and     #>$00ffff,a
         move    a1,x1
         add     x1,b

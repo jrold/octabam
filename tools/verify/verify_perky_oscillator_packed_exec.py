@@ -3,7 +3,7 @@
 
 This is the shipping-accessor version of verify_perky_oscillator_exec.py.  The
 DSP code reads all four synthetic 256-sample waves from the 683-word packed
-stream at Y:$0795, while the oracle reads the same values from ordinary byte
+stream at Y:$07a5, while the oracle reads the same values from ordinary byte
 arrays.  Phase mutation, strict wrap semantics, deferred table switching and
 the returned signed-16 sample must remain identical.
 """
@@ -28,8 +28,8 @@ ASM = V / "build/source/dsp_host/dsp_asm"
 DIS = V / "build/source/disassemble/dsp56kDisassemble"
 HOST = OUT / "bd909_host"
 HOST_SRC = ROOT / "tools/harness/bd909_host/bd909_host.cpp"
-ORG = 0x2800
-YBASE = 0x0795
+ORG = 0x0100  # isolated kernels fit the short-call region; shipping gate tests high P
+YBASE = 0x07a5
 BASE = 0x2C
 LINE = re.compile(
     r"^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$"
@@ -175,11 +175,11 @@ def oracle(phase: int, inc: int, current: int, nxt: int):
 
 
 def run(binary, entry, tag, phase, inc, current, nxt):
-    words = [0] * 64
-    words[40], words[41] = limbs(phase)
-    words[42], words[43] = limbs(inc)
-    words[44], words[45] = limbs(current)
-    words[46], words[47] = limbs(nxt)
+    words = [0] * 100
+    words[0x40], words[0x41] = limbs(phase)
+    words[0x42], words[0x43] = limbs(inc)
+    words[0x44], words[0x45] = limbs(current)
+    words[0x46], words[0x47] = limbs(nxt)
 
     data = OUT / f"{tag}.data"
     script = OUT / f"{tag}.script"
@@ -195,7 +195,7 @@ def run(binary, entry, tag, phase, inc, current, nxt):
         [
             str(HOST), "-code", str(binary), "-org", f"{ORG:x}",
             "-entry", f"{entry:x}", "-data", str(data), "-script", str(script),
-            "-out", str(raw), "-state", str(state_path),
+            "-out", str(raw), "-state", str(state_path), "-state-words", "100",
         ],
         check=True,
         capture_output=True,
@@ -205,9 +205,9 @@ def run(binary, entry, tag, phase, inc, current, nxt):
     if len(dumped) < 64:
         fail(f"{tag}: truncated state dump")
     return (
-        U32(dumped[40] & 0xFFFF, dumped[41] & 0xFFFF),
-        U32(dumped[44] & 0xFFFF, dumped[45] & 0xFFFF),
-        dumped[48] & 0xFFFF,
+        U32(dumped[0x40] & 0xFFFF, dumped[0x41] & 0xFFFF),
+        U32(dumped[0x44] & 0xFFFF, dumped[0x45] & 0xFFFF),
+        dumped[0x48] & 0xFFFF,
     )
 
 

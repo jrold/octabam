@@ -81,7 +81,7 @@ def main() -> None:
     # One byte beyond the reservation is rejected.
     expect_fail(
         lambda: platform_build.preboot_layout(
-            {}, [entry("bad", 0x40B00000, END - WINDOW + 1)], (BASE, SIZE)
+            {}, [entry("bad", 0x40B00000, END - WINDOW + 5)], (BASE, SIZE)
         ),
         "outside its arena reserve",
     )

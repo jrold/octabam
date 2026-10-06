@@ -48,9 +48,9 @@ MODULE = Module(
     arena=ArenaReserve(pages=242, where="bottom"),
     claims=Claims(dsp_ranges=(
         DspRange("x", 0x3800, 236, "PERKY compact voice state + envelope caches + RNG"),
-        DspRange("x", 0x38EC, 1, "PERKY source event-offset staging"),
+        DspRange("x", 0x38EC, 2, "PERKY source event-offset and admission staging"),
         DspRange("x", 0x3900, 0x64, "PERKY shared sparse source-render scratch"),
-        DspRange("y", 0x0795, 0x1000 - 0x0795, "PERKY packed Noise/Tone tables"),
+        DspRange("y", 0x07a5, 0x1000 - 0x07a5, "PERKY packed Noise/Tone tables"),
     )),
     dsp=DspSection(
         asm="modules/perky/probe_glue.asm",
