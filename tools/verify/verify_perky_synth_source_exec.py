@@ -25,13 +25,19 @@ def load_module(name: str, path: Path):
 fab = load_module("perky_synexec_fab", ROOT / "tools/perky/fabricate_noise_tone_fixtures.py")
 payload = load_module("perky_synexec_payload", ROOT / "tools/perky/build_noise_tone_payload.py")
 sourcegen = load_module("perky_synexec_source", ROOT / "tools/perky/build_noise_tone_synth_source.py")
+XSTATE_ABI_GATE = ROOT / "tools/verify/verify_perky_xstate_asm_layout.py"
 SHIPPING_GATE = ROOT / "tools/verify/verify_perky_shipping_voice_exec.py"
 
 
 def main() -> None:
+    # First pin the textual shipping ABI. This catches decimal compact-word
+    # numbers accidentally written as hexadecimal DSP displacements before the
+    # assembler or emulator can obscure the source of the failure.
+    subprocess.run([sys.executable, str(XSTATE_ABI_GATE)], cwd=ROOT, check=True)
+
     # This is the hardware boundary: do not merely prove that the generated
-    # source assembles. Execute the complete X-state renderer first and require
-    # exact PCM + all compact state + shared RNG parity against the Python oracle.
+    # source assembles. Execute the complete X-state renderer and require exact
+    # PCM + all compact state + shared RNG parity against the Python oracle.
     subprocess.run([sys.executable, str(SHIPPING_GATE)], cwd=ROOT, check=True)
 
     with tempfile.TemporaryDirectory(prefix="perky-synth-source-exec.") as td:
@@ -40,6 +46,8 @@ def main() -> None:
         fab.emit_tables(raw)
         payload.build(raw, packed)
         src = sourcegen.generate(packed / "layout.json")
+        if sourcegen._LOCAL_JUMP_RE.search(src):
+            raise AssertionError("generated synth retained a local absolute conditional jump")
         out = td / "perky_synth.asm"
         out.write_text(src)
         words = sourcegen.measure(src, out)
