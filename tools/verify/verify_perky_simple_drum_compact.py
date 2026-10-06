@@ -77,9 +77,12 @@ def fixture(r: random.Random) -> bytearray:
     put32(state, 0x3C, r.choice(WAVE_ADDRESSES))
     seed_envelope(state, 0x74, r)
     seed_envelope(state, 0xC4, r)
-    # Restrict to the directly indexed pitch domain until authentic prepared
-    # control captures qualify the extended firmware branch.
-    put16(state, 0xBA, r.randrange(0x1000))
+    # All raw 16-bit values are valid in the native lookup except 0x8000,
+    # whose signed-magnitude corner would address outside the 4096-entry table.
+    raw_pitch = r.randrange(0x10000)
+    if raw_pitch == 0x8000:
+        raw_pitch = 0x7FFF
+    put16(state, 0xBA, raw_pitch)
     put16(state, 0xEC, r.randrange(0x10000))
     return state
 
@@ -94,8 +97,15 @@ def main() -> None:
     waves, pitch, env1, env2 = tables()
     r = random.Random(0x5344524D)
     max_block = 0
+    extended_pitch_cases = 0
     for case in range(240):
         original = fixture(r)
+        raw_pitch = original[0xBA] | (original[0xBB] << 8)
+        signed_pitch = raw_pitch if raw_pitch < 0x8000 else raw_pitch - 0x10000
+        magnitude = signed_pitch if signed_pitch >= 0 else ((-raw_pitch) & 0xFFFF)
+        magnitude = magnitude if magnitude < 0x8000 else magnitude - 0x10000
+        if magnitude >= 0x1000:
+            extended_pitch_cases += 1
         cv = compact.CompactSimpleDrum.from_arm(original)
         if cv.apply_to_arm(original) != bytes(original):
             raise AssertionError(f"case {case}: compact import/export is not lossless")
@@ -130,7 +140,7 @@ def main() -> None:
     print(
         "PERKY Simple Drum compact: PASS "
         f"(34 words/voice, 240 randomized renders, blocks up to {max_block} samples, "
-        "prepared base-pitch path exact in direct-index domain)"
+        f"prepared base-pitch path exact; {extended_pitch_cases} extended-pitch cases)"
     )
 
 
