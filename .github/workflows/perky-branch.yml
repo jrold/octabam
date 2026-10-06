@@ -28,3 +28,4 @@ jobs:
       - run: python3 tools/verify/verify_perky_simple_drum_transport.py
       - run: python3 tools/verify/verify_perky_simple_drum_live.py
       - run: python3 tools/verify/verify_perky_simple_drum_compact.py
+      - run: python3 tools/verify/verify_perky_simple_drum_frequency_exec.py
