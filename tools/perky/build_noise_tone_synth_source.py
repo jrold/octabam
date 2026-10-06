@@ -75,16 +75,16 @@ def truncate_at(text: str, marker: str, where: str) -> str:
 
 
 def force_long_local_jsr(text: str) -> str:
-    """Force every internal PERKY JSR to the 2-word absolute form.
+    """Mark every internal PERKY call as an explicit two-word long JSR.
 
-    The generated synth is placed at P:$1000 and above, outside the 12-bit
-    short-JSR address range. Leaving ``jsr pk_*`` ambiguous makes dsp_asm size
-    it as a short call in pass 1 and then drift once the label resolves. The
-    Motorola syntax ``jsr >label`` pins the long form from pass 1 onward.
+    The generated synth lives at P:$1000+, outside the DSP56300 one-word
+    ``jsr xxx`` 12-bit absolute range. Octabam's dsp_asm therefore exposes the
+    explicit ``jsrl label`` pseudo-op, which always emits the real two-word
+    absolute JSR encoding without relying on pass-1 label guessing.
     """
     return re.sub(
-        r"(?m)^(\s*jsr\s+)(pk[A-Za-z0-9_]+)(\s*(?:;.*)?)$",
-        r"\1>\2\3",
+        r"(?m)^(\s*)jsr(\s+)(pk[A-Za-z0-9_]+)(\s*(?:;.*)?)$",
+        r"\1jsrl\2\3\4",
         text,
     )
 
@@ -212,8 +212,8 @@ def generate(layout_path: Path) -> str:
         die("generated source does not expose exactly one DspHook entry")
     if src.count("pk_synth_apply_controls:") != 1:
         die("generated source must contain exactly one synthetic control mapper")
-    if src.count("jsr     >pk_synth_apply_controls") != 1:
-        die("source seam must long-call the synthetic control mapper exactly once")
+    if not re.search(r"(?m)^\s*jsrl\s+pk_synth_apply_controls(?:\s|$)", src):
+        die("source seam must jsrl-call the synthetic control mapper")
 
     for label in ("pk_u32_add:", "pk_u32_sub:", "pk_u32_asr:", "pk_u32_mul_low:"):
         if src.count(label) != 1:
