@@ -90,6 +90,7 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_simple_drum_compact.py", remix_arg=False),
         Gate("tools/verify/verify_perky_simple_drum_control.py", remix_arg=False),
         Gate("tools/verify/verify_perky_simple_drum_tables.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_simple_drum_runtime_tables.py", remix_arg=False),
         Gate("tools/verify/verify_perky_simple_drum_transport.py", remix_arg=False),
         Gate("tools/verify/verify_perky_simple_drum_assets.py", remix_arg=False),
         Gate("tools/verify/verify_perky_simple_drum_state_analysis.py", remix_arg=False),
