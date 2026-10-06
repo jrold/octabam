@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
-"""Run the complete shipping X-state voice gate with explicit long PERKY calls.
+"""Run the complete shipping X-state voice gate with shipping control flow.
 
-The underlying gate predates Octabam's ``jsrl`` pseudo-op and concatenates
-several PERKY kernels at a high P origin.  Import it, rewrite every internal
-``jsr pk_*`` to ``jsrl pk_*`` exactly as the shipping source generator does,
-and then run its existing 36 x 16-sample PCM/state/RNG oracle comparison.
+The underlying gate predates Octabam's high-P composition rules and
+concatenates several PERKY kernels at P:$5000. Import it, apply the same two
+mechanical control-flow rewrites as the shipping source generator, and then run
+its existing 36 x 16-sample PCM/state/RNG oracle comparison:
+
+* local conditional Jcc-family jumps -> PC-relative Bcc-family branches;
+* internal PERKY JSRs -> explicit two-word ``jsrl`` calls.
+
+This keeps the executable qualification source byte-for-source equivalent in
+control-flow intent to what the real synth generator emits at P:$1000+.
 """
 from __future__ import annotations
 
@@ -39,7 +45,16 @@ _original_combined_source = base.combined_source
 
 
 def combined_source() -> str:
-    return sourcegen.force_long_local_jsr(_original_combined_source())
+    src = _original_combined_source()
+    src = sourcegen.relativize_local_conditionals(src)
+    src = sourcegen.force_long_local_jsr(src)
+    leftovers = sourcegen._LOCAL_JUMP_RE.findall(src)
+    if leftovers:
+        raise SystemExit(
+            "verify-perky-shipping-voice-exec: local absolute conditional "
+            f"jump survived rewrite: {leftovers!r}"
+        )
+    return src
 
 
 base.combined_source = combined_source
