@@ -31,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -73,6 +74,21 @@ def truncate_at(text: str, marker: str, where: str) -> str:
     return text.split(marker, 1)[0].rstrip() + "\n"
 
 
+def force_long_local_jsr(text: str) -> str:
+    """Force every internal PERKY JSR to the 2-word absolute form.
+
+    The generated synth is placed at P:$1000 and above, outside the 12-bit
+    short-JSR address range. Leaving ``jsr pk_*`` ambiguous makes dsp_asm size
+    it as a short call in pass 1 and then drift once the label resolves. The
+    Motorola syntax ``jsr >label`` pins the long form from pass 1 onward.
+    """
+    return re.sub(
+        r"(?m)^(\s*jsr\s+)(pk[A-Za-z0-9_]+)(\s*(?:;.*)?)$",
+        r"\1>\2\3",
+        text,
+    )
+
+
 def compact_piece(name: str, text: str) -> str:
     """Drop only standalone-probe helper duplicates from one source file."""
     if name == "noise_tone_filter.asm":
@@ -99,9 +115,6 @@ def compact_piece(name: str, text: str) -> str:
         return truncate_at(text, "; ---- exact two-limb helpers", name)
 
     if name == "noise_tone_envelope_packed7.asm":
-        # This wrapper intentionally calls the raw-envelope helper names so it
-        # can be concatenated with that standalone probe. In shipping source
-        # those helpers are replaced by the one shared math implementation.
         return redirect(text, {
             "pke_add": "pk_u32_add",
             "pke_asr": "pk_u32_asr",
@@ -126,8 +139,6 @@ def compact_piece(name: str, text: str) -> str:
         })
         add_label = "pk_u32_add:"
         clamp = "; Clamp signed32 +0/+1 to [-32768,32767]"
-        # The global name appears once here ONLY because the local pkm_add
-        # definition was renamed. Calls appear without a colon.
         exactly_once(text, add_label, name)
         exactly_once(text, clamp, name)
         start = text.index(add_label)
@@ -136,8 +147,6 @@ def compact_piece(name: str, text: str) -> str:
             die(f"{name}: helper/clamp boundaries reversed")
         return text[:start].rstrip() + "\n\n" + text[end:].rstrip() + "\n"
 
-    # Seam, synthetic control mapper, complete voice glue and
-    # noise_tone_math.asm carry no duplicate helper family to remove.
     return text
 
 
@@ -168,7 +177,6 @@ def generate(layout_path: Path) -> str:
 
     envs = layout.get("envelopes", [])
     widths = [item.get("delta_bits") for item in envs]
-    # Current assembly decoder is deliberately a synthetic 7-bit canary.
     if widths != [7, 7]:
         die(
             f"current synth canary decoder is qualified only for 7/7-bit "
@@ -185,6 +193,7 @@ def generate(layout_path: Path) -> str:
         chunks.append(f"; ===== BEGIN {name} =====\n" + body
                       + f"\n; ===== END {name} =====\n")
     src = "\n".join(chunks)
+    src = force_long_local_jsr(src)
 
     if src.count("pk_synth_source:") != 1:
         die("expected exactly one pk_synth_source label")
@@ -203,10 +212,9 @@ def generate(layout_path: Path) -> str:
         die("generated source does not expose exactly one DspHook entry")
     if src.count("pk_synth_apply_controls:") != 1:
         die("generated source must contain exactly one synthetic control mapper")
-    if src.count("jsr     pk_synth_apply_controls") != 1:
-        die("source seam must call the synthetic control mapper exactly once")
+    if src.count("jsr     >pk_synth_apply_controls") != 1:
+        die("source seam must long-call the synthetic control mapper exactly once")
 
-    # Dedupe invariants: one shared arithmetic definition, no local copies.
     for label in ("pk_u32_add:", "pk_u32_sub:", "pk_u32_asr:", "pk_u32_mul_low:"):
         if src.count(label) != 1:
             die(f"generated source expected one shared {label}, found {src.count(label)}")
@@ -227,7 +235,6 @@ def measure(source: str, out: Path) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     temp = out.with_suffix(".measure.asm")
     binary = out.with_suffix(".measure.bin")
-    # Size is independent of the payload-specific continuation value. Use A.
     temp.write_text(source.replace("@CONT@", "$000426"))
     r = subprocess.run(
         [str(ASM), "-in", str(temp), "-org", "1000", "-out", str(binary)],
