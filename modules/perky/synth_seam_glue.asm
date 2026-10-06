@@ -6,7 +6,7 @@
 ;
 ; It mirrors Analog BD's hardware-qualified seam:
 ;   A P:$0039c / B P:$001a2 replaces `move a,x:>$20e`
-;   stock continuation: @CONT@ (A $426 / B $221)
+;   stock continuation is A $426 / B $221 (build-time substituted below)
 ;
 ; PK/Y1 record:
 ;   w0 low16 $504b ('PK')
