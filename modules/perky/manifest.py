@@ -1,8 +1,8 @@
 """PERKY milestone-0 source canary.
 
-This is deliberately NOT the final PERKY machine yet.  In the isolated
+This is deliberately NOT the final PERKY machine yet. In the isolated
 ``perky-probe`` remix it replaces FLEX's source-render callback with a tiny
-record writer, then hooks the hardware-proven Analog-BD DSP source seam.  A
+record writer, then hooks the hardware-proven Analog-BD DSP source seam. A
 real trig must emerge as one +0.5 stereo impulse at the stock event offset and
 then continue through the stock AMP -> FX1 -> FX2 path.
 
@@ -92,6 +92,7 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_simple_drum_tables.py", remix_arg=False),
         Gate("tools/verify/verify_perky_simple_drum_runtime_tables.py", remix_arg=False),
         Gate("tools/verify/verify_perky_simple_drum_transport.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_simple_drum_live.py", remix_arg=False),
         Gate("tools/verify/verify_perky_simple_drum_assets.py", remix_arg=False),
         Gate("tools/verify/verify_perky_simple_drum_state_analysis.py", remix_arg=False),
         Gate("tools/verify/verify_perky_compact_packed.py", remix_arg=False),
