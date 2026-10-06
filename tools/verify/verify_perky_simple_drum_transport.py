@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Qualify the engine-003 Simple Drum PK/Y1 prepared-record transport.
 
-The transport is intentionally tested without committing firmware blobs.  The
-three hashes below are the authentic 128-value u16 sweeps captured from a fresh
-PĒRKONS v1.2.1 Simple Drum engine.  Driving the byte-record model through the
-same physical 0..127 controls must reproduce those hashes exactly.
+The transport is intentionally tested without committing firmware blobs. The
+hashes below are authentic 128-value u16 sweeps captured from a fresh PĒRKONS
+v1.2.1 Simple Drum engine. Driving the byte-record model through the same
+physical 0..127 controls must reproduce those hashes exactly.
 """
 from __future__ import annotations
 
@@ -54,6 +54,7 @@ def main() -> None:
         "pitch_decay": 99,
         "pitch_env_amount": 1023,
         "mode": 0,
+        "amp_gate": 0,
         "engine": transport.ENGINE_INDEX,
     }:
         raise AssertionError(f"Simple Drum midpoint record drifted: {midpoint!r}")
@@ -72,8 +73,20 @@ def main() -> None:
     if digest_u16(mix) != MIX_SHA256:
         raise AssertionError("transport MIX byte packing/cadence drifted")
 
+    # The original ARM update compares the smoothed DECAY control against the
+    # fixed wrapper threshold 4080. In the Octatrack 7-bit domain only 127
+    # crosses it; pin the complete sweep so this odd edge cannot be optimized
+    # away as an inferred property of the converted decay increment.
+    gates = []
+    for value in range(128):
+        state = transport.State.fresh()
+        decoded = transport.decode(state.prepare((64, value, 64, 64), 0, trigger=True))
+        gates.append(decoded["amp_gate"])
+    if gates != [0] * 127 + [1]:
+        raise AssertionError(f"authentic amplitude gate threshold drifted: {gates!r}")
+
     # A non-trigger render after the dirty preparation has exactly the first 16
-    # target updates; trigger() contributes the seventeenth update.  Pin that
+    # target updates; trigger() contributes the seventeenth update. Pin that
     # difference explicitly so the CF implementation cannot accidentally move
     # the trigger update to the wrong side of record preparation.
     no_hit = transport.State.fresh()
@@ -87,14 +100,14 @@ def main() -> None:
 
     # Big-endian u16 packing is deliberate: each adjacent byte pair is packed
     # into one CF long whose high/low halves become consecutive DSP words.
-    record = transport.State.fresh().prepare((0, 0, 0, 0), 2, trigger=True)
-    if record[8:] != bytes((2, 0, 0, transport.ENGINE_INDEX)):
+    record = transport.State.fresh().prepare((0, 127, 0, 0), 2, trigger=True)
+    if record[8:] != bytes((2, 1, 0, transport.ENGINE_INDEX)):
         raise AssertionError(f"record tail ABI drifted: {record[8:].hex()}")
 
     print(
         "PERKY Simple Drum transport: PASS "
         "(authentic 128-point TUNE/DECAY/ENV sweeps, MIX packing, "
-        "trigger cadence, midpoint and engine/mode ABI)"
+        "AMP gate threshold, trigger cadence, midpoint and engine/mode ABI)"
     )
 
 
