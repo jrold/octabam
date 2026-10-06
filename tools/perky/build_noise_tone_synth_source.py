@@ -52,6 +52,35 @@ PIECES = (
     "noise_tone_mix.asm",
 )
 
+# DSP56300 Jcc xxx is a 12-bit ABSOLUTE jump.  The composed synth lives above
+# P:$0fff, so local conditionals written naturally as ``jcc pk_label`` assemble
+# in low-origin standalone probes but become invalid in the shipping image.
+# Their Bcc counterparts are PC-relative and are the correct encoding for local
+# labels.  Keep this conversion mechanical and limited to PERKY-local symbols;
+# external absolute control flow such as ``jmp @CONT@`` is intentionally left
+# alone.
+LOCAL_CONDITIONAL_JUMPS = {
+    "jcc": "bcc",
+    "jcs": "bcs",
+    "jhs": "bhs",
+    "jlo": "blo",
+    "jeq": "beq",
+    "jne": "bne",
+    "jgt": "bgt",
+    "jlt": "blt",
+    "jge": "bge",
+    "jle": "ble",
+    "jmi": "bmi",
+    "jpl": "bpl",
+    "jvc": "bvc",
+    "jvs": "bvs",
+}
+_LOCAL_JUMP_RE = re.compile(
+    r"(?m)^(\s*)(jcc|jcs|jhs|jlo|jeq|jne|jgt|jlt|jge|jle|jmi|jpl|jvc|jvs)"
+    r"(\s+)(pk[A-Za-z0-9_]+)(\s*(?:;.*)?)$",
+    re.IGNORECASE,
+)
+
 
 def die(msg: str) -> "NoReturn":
     raise SystemExit("perky-synth-source: " + msg)
@@ -72,6 +101,22 @@ def redirect(text: str, mapping: dict[str, str]) -> str:
 def truncate_at(text: str, marker: str, where: str) -> str:
     exactly_once(text, marker, where)
     return text.split(marker, 1)[0].rstrip() + "\n"
+
+
+def relativize_local_conditionals(text: str) -> str:
+    """Encode PERKY-local conditional flow as PC-relative branches.
+
+    ``jXX label`` and ``bXX label`` have the same condition semantics, but the
+    former is a 12-bit absolute target on DSP56300.  Every target matched here
+    is an in-image PERKY label, so a relative branch is both smaller in intent
+    and valid regardless of the donor region's absolute P address.
+    """
+    def repl(match: re.Match[str]) -> str:
+        indent, mnemonic, spacing, label, tail = match.groups()
+        branch = LOCAL_CONDITIONAL_JUMPS[mnemonic.lower()]
+        return f"{indent}{branch}{spacing}{label}{tail}"
+
+    return _LOCAL_JUMP_RE.sub(repl, text)
 
 
 def force_long_local_jsr(text: str) -> str:
@@ -193,7 +238,13 @@ def generate(layout_path: Path) -> str:
         chunks.append(f"; ===== BEGIN {name} =====\n" + body
                       + f"\n; ===== END {name} =====\n")
     src = "\n".join(chunks)
+    src = relativize_local_conditionals(src)
     src = force_long_local_jsr(src)
+
+    # No local absolute conditional jump may survive into a high-P image.
+    leftovers = _LOCAL_JUMP_RE.findall(src)
+    if leftovers:
+        die(f"generated source still contains local absolute conditional jumps: {leftovers!r}")
 
     if src.count("pk_synth_source:") != 1:
         die("expected exactly one pk_synth_source label")
