@@ -49,7 +49,7 @@ MODULE = Module(
     claims=Claims(dsp_ranges=(
         DspRange("x", 0x3800, 236, "PERKY compact voice state + envelope caches + RNG"),
         DspRange("x", 0x38EC, 1, "PERKY source event-offset staging"),
-        DspRange("x", 0x3900, 64, "PERKY shared source-render scratch"),
+        DspRange("x", 0x3900, 0x64, "PERKY shared sparse source-render scratch"),
         DspRange("y", 0x0795, 0x1000 - 0x0795, "PERKY packed Noise/Tone tables"),
     )),
     dsp=DspSection(
