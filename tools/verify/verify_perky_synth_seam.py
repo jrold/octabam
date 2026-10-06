@@ -75,6 +75,16 @@ for token in (
 ):
     need(src, token)
 
+# @CONT@ is a build-time sentinel, not documentation.  The source generator
+# intentionally performs a simple whole-text substitution, so a second copy in
+# a comment would be substituted too and would make its exact-one guard fail.
+# Pin the sentinel to exactly one executable jump line forever.
+cont_lines = [line.strip() for line in src.splitlines() if "@CONT@" in line]
+if src.count("@CONT@") != 1 or len(cont_lines) != 1:
+    fail(f"expected exactly one @CONT@ sentinel, found {src.count('@CONT@')}: {cont_lines!r}")
+if not cont_lines[0].startswith("jmp     @CONT@"):
+    fail(f"@CONT@ sentinel must be the stock continuation jump, got {cont_lines[0]!r}")
+
 # The first draft saved the event in r5+$3f. The primitive scratch ABI reaches
 # all the way through r5+$63, so event staging must stay completely outside it.
 if "x:(r5+$3f)" in src or "x:(r5+$63)" in src and "38ec" not in src:
