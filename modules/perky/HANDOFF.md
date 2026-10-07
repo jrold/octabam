@@ -1,9 +1,10 @@
 # PERKY HW4 DSP optimization checkpoint, 7 October 2026
 
 Work remains on `perky-machines` in the isolated `perky-hw4-release` worktree.
-The four-engine source and the stronger realtime gate now pass. Full-image
-placement, boot and the 32000-frame four-track port are being run by the canonical
-release builder; hardware has not been flashed.
+The canonical release builder passed all six stages and produced the first
+qualified local HW4 updater. Full-image placement, byte-exact boot readback and
+the 32000-frame simultaneous four-track port all pass. Hardware has not been
+flashed; physical qualification remains pending.
 
 The HW4 specialization uses decoded wave/envelope tables, an exact odd frequency
 lookup, a base-65536 constant-MAC RNG recurrence, register-local oscillator
@@ -39,9 +40,41 @@ Y:$3900, below the boot clear at $3f00; Karplus' ring stays at $1600..$1dff.
 the exact optimization comparison before the hard realtime gate. All assets
 and original firmware bytes remain under ignored `out/`.
 
-Evidence: `out/perky-hw4-source-opt.log`,
+Evidence: `out/perky-hw4-source-opt2.log`,
 `out/perky/hw4-realtime-budget/report.json`, `out/perky/hw4-optimization/`,
-and the ongoing `out/perky-hw4-release-opt.log`.
+and `out/perky-hw4-release-final.log`.
+
+The port gate resolves track records within each 672-halfword bulk source
+upload, including local slot1. Stereo validation uses a separate 2600-frame run
+of the same image/card/dirty seed, activates each voice once, and requires the
+last 1024 samples to settle quietly before measuring the stock AMP/DC floor.
+The main 32000-frame run must match that measured bias within two LSB; the
+absolute stock offset is not assumed zero. All four tracks have varying audio
+and later pattern-loop retriggers.
+
+Qualified code commit: `721cf91b90a6`. Local ignored artifacts:
+
+- `out/OCTATRACK_PERKYH4.bin`: card updater, SHA256
+  `113f18a4d0f996c682ae7f3213a986ac9377e44f576e7f8204fe5ad0b842db8f`.
+- `out/OCTATRACK_OS1.40C_PERKYH4.syx`: MIDI updater, SHA256
+  `d9bebd18cf4f09d6bf9c8b5abb031f1eaa51cb32b001256bee63ccc6eecca127`.
+- `out/PERKYH4_PERKY_TEST.txt`: source/assets/image hashes, track map and gates.
+
+Use T1/T2/T5/T6 with FX slots empty for the first physical audition. Karplus
+controls are still frozen and this is still the reduced-FX, four-engine profile.
+No SysEx has been transmitted and no firmware bytes are committed.
+
+Final repository checks:
+
+- `make check REMIX=perky-hw4 OT_PROJECT=`: all runnable checks pass, 65 shared
+  module gates + two image gates, zero failures. Optional `.venv`/Textual and
+  probe-project checks are explicitly skipped; the actual four-voice project
+  audition passed separately in the canonical release run.
+- `scripts/refhash.sh check`: all 24 configurations, artifacts and reports are
+  bit-identical to the trusted pre-change baseline.
+- `git diff --check`: clean.
+
+Logs: `out/perky-hw4-check-final.log`, `out/perky-hw4-refhash-final.log`.
 
 The following checkpoint is historical and describes the blocker before these
 optimizations.
