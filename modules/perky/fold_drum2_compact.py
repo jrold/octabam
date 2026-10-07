@@ -230,7 +230,7 @@ class FoldDrum2:
             high = pitch_env >> 13
             factor = ((low13 + 0x2000) >> (13 - high)) - 1
             frequency = (
-                base + ((common_voice.words[PITCH_ENV_AMOUNT] * factor) >> 9)
+                base + ((common_voice.words[common.PITCH_ENV_AMOUNT] * factor) >> 9)
             ) & 0xFFFFFFFF
 
             # Copy envelope/control mutations back before oscillator helpers.
@@ -240,6 +240,9 @@ class FoldDrum2:
 
             fade = self.words[FADE]
             faded_amp = (amp - fade) & MASK16 if fade < amp else amp
+            # Native uses: if (fade < amplitude) amplitude -= fade.
+            if not (fade < amp):
+                faded_amp = amp
 
             first_osc = common._render_oscillator(first, waves)
             second_osc = common._render_oscillator(second, waves)
@@ -282,11 +285,11 @@ class FoldDrum2:
             )
             out.append(max(-32768, min(32767, sample)))
 
-        # Oscillator writes already hit self.words; preserve envelope/control
+        # oscillator writes already hit self.words; preserve envelope/control
         # mutations from the common helper without overwriting oscillator A.
         self.words[AMP_ENV:PITCH_ENV + common.ENV_WORDS] = (
             common_voice.words[AMP_ENV:PITCH_ENV + common.ENV_WORDS]
         )
         self.words[RAW_PITCH] = common_voice.words[RAW_PITCH]
-        self.words[PITCH_AMOUNT] = common_voice.words[PITCH_ENV_AMOUNT]
+        self.words[PITCH_AMOUNT] = common_voice.words[common.PITCH_ENV_AMOUNT]
         return out
