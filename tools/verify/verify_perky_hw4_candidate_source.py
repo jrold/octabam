@@ -6,6 +6,11 @@ fixtures and authentic v1.2.1 static assets.  The final full-image placer is
 authoritative for usable harvested P words; this gate proves the complete
 Fold1/Karplus/Fold2/Noise-Tone composition assembles, contains no label hazards,
 and fits inside the audition remix's 5,431-word gross stock-effect donor run.
+
+This is also the release choke point used by ``build_hw4_machine_canary.py``:
+a successful source gate must additionally pass the explicit stock-FX harvest
+audit and the two-voices-per-core realtime budget.  A failure in either gate is
+fatal; neither can degrade to a warning before firmware packaging.
 """
 from pathlib import Path
 import json
@@ -25,6 +30,14 @@ OUT = ROOT / 'out/perky/hw4-production-candidate'
 GROSS_HW4_DONOR = 5431
 FOLD2_PLAN = ROOT / 'out/perky/fold2-trigger-plan.json'
 KARPLUS_PLAN = ROOT / 'out/perky/karplus-trigger-plan.json'
+
+
+def run_release_gate(script: str) -> None:
+    path = ROOT / 'tools/verify' / script
+    if not path.exists():
+        raise AssertionError(f'missing mandatory HW4 release gate: {path}')
+    print('+ ' + ' '.join((sys.executable, str(path))), flush=True)
+    subprocess.run([sys.executable, str(path)], cwd=ROOT, check=True)
 
 
 def main():
@@ -130,6 +143,13 @@ def main():
     for row in extra:
         assert row['sha256'] and len(row['sha256']) == 64
         assert (OUT / row['file']).exists(), row['file']
+
+    # These are mandatory release gates.  The first confirms the reduced-FX
+    # remix really donates only the intended stock DSP spans.  The second runs
+    # the exact composed source under the DSP cycle model and fails if either
+    # physical two-voice core pairing exceeds the guarded 16-sample deadline.
+    run_release_gate('verify_perky_hw4_harvest.py')
+    run_release_gate('verify_perky_hw4_realtime_budget.py')
 
     print(
         f'PERKY HW4 four-engine composition: PASS '
