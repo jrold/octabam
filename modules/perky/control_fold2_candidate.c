@@ -52,6 +52,9 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
             ? (uint8_t)(fp[k] >> 8)
             : U8(0x80000810u + 72u * track + 0x20u + k - 6u);
     }
+    /* MODE is visible in main-page slot 4; mirror it into the established
+     * transport slot 6 so the Fold2 DSP ABI stays identical to other voices. */
+    p[6] = p[MODE_SLOT];
 
     {
         const unsigned count = end > start && end <= 16u ? end - start : 0u;
