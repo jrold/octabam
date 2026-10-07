@@ -1,3 +1,14 @@
+# Wavetable mapped-address candidate — 7 October 2026
+
+The complete renderer now executes with a constant-time direct packed bank:
+67,130 words including directory, 36,882 local Y words/core and 30,052 shared
+words loaded once. See [DSP_QUALIFICATION.md](DSP_QUALIFICATION.md) for actual
+candidate ranges, all-sample and full-renderer evidence. Tested maximum is
+19,861 modeled cycles/16. The smaller second-difference bank remains exact but
+its measured renderer misses exceed the full core deadline. This new candidate
+does not change PERKY4 uploads or claims; stock init, effect retirement, loading
+and the all-family persistent-state/ring ledger remain pending.
+
 # All-family candidate checkpoint — 7 October 2026
 
 All twelve renderer candidates now execute exactly against reference PCM and

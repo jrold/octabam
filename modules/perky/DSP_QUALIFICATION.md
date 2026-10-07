@@ -25,10 +25,10 @@ a measurement of that corpus, **not a worst-case bound**.
 | Family | Executed renderer evidence | Standalone P words | Largest measured 16-sample test path | Largest original-capture path |
 |---|---|---:|---:|---:|
 | Fold Drum 1 | 15 ARM + 400 native randomized blocks; PCM/state/RNG | 1,337 | 26,121; physical noise-hold subset 19,424 | See production seam gate |
-| Wavetable Drum V1 | Shared V1/V2: 18 ARM + 240 native blocks; all 49 assets, PCM/state | 841 | 19,435 | Not separately reported |
+| Wavetable Drum V1 | Shared V1/V2: 816 ARM/native blocks plus all 100,352 bank samples; mapped-address candidate, PCM/state | 871 including two probes | 19,861 | 19,773 |
 | Simple Drum | 240 native blocks; PCM/34-word state, all waves, retriggers/wraps | 766 | 13,913 | Production transport/seam separately qualified |
 | Fold Drum 2 | 15 ARM + 400 native randomized blocks; PCM/state/RNG, both deferred wave identities | 1,410 | 33,045 | 394,377 per **256** samples; no per-16 ceiling inferred |
-| Wavetable Drum V2 | Same shared renderer gate as V1 | 841 | 19,435 | Not separately reported |
+| Wavetable Drum V2 | Same shared renderer/storage gate as V1 | 871 including two probes | 19,861 | 19,773 |
 | Complex Drum | 288 consecutive DSP blocks from 18 ARM captures; PCM/42-word state | 833 | 33,007 | 33,007 |
 | Resonant Drums | Snare/bass: 176 blocks each, PCM/state/RNG; M3 shared Noise/Tone gate | 3,910 / 3,286 / 1,471 | 81,168 / 66,439 / 40,738 | 62,429 / 55,080 / 22,813 |
 | Slap | 336 blocks; PCM/state/every ring word/RNG after each block | 1,057 | 30,326 | 20,420 |
@@ -118,10 +118,10 @@ The preserved production PERKY2 sources are unchanged.
 2. Allocate persistent state, scratch, rings, shared code and all assets in one
    physical P/X/Y ledger. The 4,805-word Slap/classic-hat rings and 2,048-word
    Karplus ring need actual stock-FX reclamation and initialization changes.
-3. Integrate lossless Wavetable decoding into the renderer and measure cache
-   misses. Its full bank occupies 45,713 DSP words. Acoustic assets occupy
-   94,089 compressed words and require an actual DRAM/streaming design. Current
-   test sample/wave banks cross addresses absent on the physical Octatrack.
+3. Install and boot-qualify the constant-time Wavetable bank described below.
+   Acoustic assets occupy 94,089 compressed words and require an actual
+   DRAM/streaming design. Its test sample bank still crosses addresses absent
+   on the physical Octatrack.
 4. Add authentic production update/trigger/control transport for the remaining
    families, including Waveform2 and replacement of synthetic Noise/Tone.
    Original reference captures prove the render states supplied to the tests;
@@ -135,3 +135,43 @@ scope is retained; there is no new effect-removal approval request. The current
 one-voice-per-core guard stays in force until a new measured admission policy
 is qualified. See [MEMORY.md](MEMORY.md), [ENGINE_MATRIX.md](ENGINE_MATRIX.md)
 and [HANDOFF.md](HANDOFF.md) for the integrated-image checkpoint and constraints.
+
+## Wavetable storage continuation
+
+`verify_perky_wavetable_storage_exec.py --codec direct` now executes the complete
+Wavetable renderer through a per-asset physical-pointer directory. It compares
+816 consecutive ARM/native DSP blocks and every one of the 100,352 original
+asset samples. Exact stereo PCM/state passes; all tested 16-sample renderer
+paths are at most **19,861 modeled cycles** (original corpus 19,773). The 871 P
+words include a second sample-reader probe; the renderer-only probe was 850.
+The backend performs at most two direct packed reads per sample and needs no
+block cache.
+
+The direct bank uses **67,130 words**, including its 196-word directory. Its
+candidate map is Y:$07a5..$0868 for the directory, Y:$1000..$a011 for 27 assets
+(36,882 words per core), and shared Y:$38013..$3f576 for 22 assets (30,052 words
+loaded once). Allocation rejects overlap, absent memory and protected boot
+ranges. Y:$a020..$bfff is excluded from this table bank for later ring/state
+allocation. This is a mapped-address candidate, **not a firmware installation
+or a complete all-family persistent-ring ledger**. Stock init still clears the
+large bank; stock effects must be retired before those arenas are reusable.
+External-memory hardware latency and initialization/load ordering still need
+full-image/hardware gates.
+
+The smaller 45,713-word second-difference bank is bit-exact with two caches,
+but complete-renderer misses cost **74,893 original / 84,021 all-case cycles**.
+That exceeds the 72,512-cycle core deadline before stock continuation and rules
+out that backend for production at present. The prior 2,511-cycle sequential
+single-asset decoder figure was structurally blind to those renderer misses.
+The test also normalizes signed 24-bit shared-address cache tags before comparing
+them; without that, shared-window cache hits become silent extra misses.
+
+Reproduce both paths from the generated external assets/corpus:
+
+```bash
+python3 tools/verify/verify_perky_wavetable_storage_exec.py --codec direct
+python3 tools/verify/verify_perky_wavetable_storage_exec.py --codec second-difference32
+```
+
+These are explicit external-reference gates, not synthetic module gates. The
+second command verifies parity and reports timing; PASS does not mean realtime.

@@ -20,10 +20,10 @@ All twelve families now have executable DSP renderer candidates with original AR
 | Family | Slot / panel algorithm | MODE -> firmware | Native reference | Reference state / major assets | Octabam qualification |
 |---|---:|---:|---|---|---|
 | Fold Drum 1 | V1 / A1 | `1,2,0` | `NativeV121FoldDrums::renderFold1` | `0x0f4`; pitch + 2 envelopes + 2x256 waves + RNG | **PERKY4 full DSP/production transport/boot/sequencer locally qualified; physical test pending** |
-| Wavetable Drum V1 | V1 / A2 | `1,0,2` | `NativeV121WavetableDrum` | `0x150`; pitch + 2 envelopes + 49x2048 waveform assets | Candidate exact DSP PCM/state; production controls and physical asset placement pending |
+| Wavetable Drum V1 | V1 / A2 | `1,0,2` | `NativeV121WavetableDrum` | `0x150`; pitch + 2 envelopes + 49x2048 waveform assets | Exact DSP PCM/state and constant-time mapped-address asset candidate; production controls, installation/init and hardware pending |
 | Simple Drum | V1 / A3 | `1,0,2` | `NativeV121SimpleDrum` | `0x120`; pitch + 2 envelopes + 2x256 waves | **PERKY4 full DSP/production transport/boot/sequencer locally qualified; physical test pending** |
 | Fold Drum 2 | V2 / A1 | `1,2,0` | `NativeV121FoldDrums::renderFold2` | `0x134`; pitch + 2 envelopes + up to 4x256 waves + RNG | Exact ARM/native DSP PCM/state/RNG; timing and production integration pending |
-| Wavetable Drum V2 | V2 / A2 | `1,0,2` | `NativeV121WavetableDrum` | `0x150`; pitch + 2 envelopes + 49x2048 waveform assets | Candidate exact DSP PCM/state; production controls and physical asset placement pending |
+| Wavetable Drum V2 | V2 / A2 | `1,0,2` | `NativeV121WavetableDrum` | `0x150`; pitch + 2 envelopes + 49x2048 waveform assets | Exact DSP PCM/state and constant-time mapped-address asset candidate; production controls, installation/init and hardware pending |
 | Complex Drum | V2 / A3 | `1,0,2` | `NativeV121ComplexDrum` | `0x140`; pitch + 2 envelopes + up to 4x256 waves | **Exact DSP PCM/state for all 9 mode/corner cases, initial and continuation; timing and shipping integration pending** |
 | Resonant Drums | V3 / A1 | `1,0,2` | `NativeV121ResonantBass` / `NativeV121ResonantSnare` mode paths | `0x178` / `0x1d4`; 2 envelopes + 257-entry interpolation tables + RNG | Exact DSP snare/bass and original shared M3 PCM/state/RNG; timing and shipping integration pending |
 | Slap | V3 / A2 | `1,0,2` | `NativeV121Slap` | `0x2670`; 2 envelopes + large delay/state + RNG | Exact DSP/ARM PCM/state/full-ring/RNG; physical ring allocation and production controls pending |

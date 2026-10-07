@@ -12,6 +12,10 @@ confirmation only for the earlier PERKY2 Noise/Tone image. This branch does not
 emit a new twelve-family updater. Timing, physical asset/state/code placement,
 authentic control transport, full-image integration and hardware remain open.
 The user already authorized fewer stock effects for all twelve families.
+Wavetable now also has a constant-time mapped-address asset candidate: all
+100,352 samples and 816 ARM/native blocks pass; maximum 19,861 modeled cycles.
+The smaller cached bank takes 74,893 cycles on original renderer blocks and
+is not production-eligible. See the storage section of the current ledger.
 
 Worktree: `codex/perky-dsp-qualification`, based on `perky-machines` `48d1adc7`.
 Current floor: `make check REMIX=perky-machine OT_PROJECT=` passed all runnable
