@@ -37,12 +37,11 @@
 
 pk_noise_hat_classic_mode1:
         move    r6,a
-        move    a1,x:(r5+$66)           ; preserve classic state base
+        move    a1,x:(r5+$66)
 
-        ; Envelope runs before the outer sample/hold logic in the native path.
         lua     (r6+$52),r6
         jsr     pk_noise_hat_envelope
-        move    a1,x:(r5+$67)           ; amplitude u16
+        move    a1,x:(r5+$67)
         move    x:(r5+$66),r6
 
         ; ---- outer sample/hold ------------------------------------------------
@@ -50,17 +49,15 @@ pk_noise_hat_classic_mode1:
         and     #>$00ffff,a
         tst     a
         beq     pknhc1_outer_refresh
-
         sub     #>$1,a
         and     #>$00ffff,a
         move    a1,x:(r5+$70)
         move    x:(r5+$71),a
         and     #>$00ffff,a
-        move    a1,x:(r5+$68)           ; sample bit-pattern
+        move    a1,x:(r5+$68)
         bra     pknhc1_outer_ready
 
 pknhc1_outer_refresh:
-        ; Map compact 3-word renderNoise state into the existing primitive.
         move    x:(r6+$5d),a
         move    a1,x:(r5+$40)
         move    x:(r6+$5e),a
@@ -68,7 +65,6 @@ pknhc1_outer_refresh:
         move    x:(r6+$5f),a
         move    a1,x:(r5+$42)
 
-        ; Load persistent firmware-global RNG into the math primitive ABI.
         move    x:(r5+$72),a
         move    a1,x:(r5+$0)
         move    x:(r5+$73),a
@@ -79,7 +75,6 @@ pknhc1_outer_refresh:
         move    a1,x:(r5+$3)
         jsr     pk_noise_step
 
-        ; Publish inner noise state and (possibly advanced) global RNG.
         move    x:(r5+$40),a
         move    a1,x:(r6+$5d)
         move    x:(r5+$41),a
@@ -95,57 +90,55 @@ pknhc1_outer_refresh:
         move    x:(r5+$3),a
         move    a1,x:(r5+$75)
 
-        move    x:(r5+$12),a            ; renderNoise result u16 bit-pattern
+        move    x:(r5+$12),a
         and     #>$00ffff,a
         move    a1,x:(r5+$68)
-        move    a1,x:(r5+$71)           ; outer held sample
+        move    a1,x:(r5+$71)
         move    x:(r6+$6a),a
         and     #>$00ffff,a
-        move    a1,x:(r5+$70)           ; outer hold reload
+        move    a1,x:(r5+$70)
 
 pknhc1_outer_ready:
-        ; Filter input primitive expects the signed16 bit-pattern at scratch+61.
         move    x:(r5+$68),a
         move    a1,x:(r5+$61)
         lua     (r6+$60),r6
         jsr     pk_noise_hat_filter
-        jsr     pk_noise_hat_filter     ; native runs the same filter twice
+        jsr     pk_noise_hat_filter
         move    x:(r5+$66),r6
 
-        ; Choose first or second filter limb. Both are signed16-bounded and
-        ; stored as exact signed32 limbs; low word is sufficient after sign-ext.
-        move    x:(r6+$62),a            ; filter first low
-        move    x:(r6+$68),b            ; use-second flag
+        move    x:(r6+$62),a
+        move    x:(r6+$68),b
         tst     b
         beq     pknhc1_selected
-        move    x:(r6+$64),a            ; filter second low
+        move    x:(r6+$64),a
 pknhc1_selected:
         and     #>$00ffff,a
-        move    a1,x:(r5+$69)           ; selected signed16 bit-pattern
+        move    a1,x:(r5+$69)
 
-        move    x:(r6+$69),a            ; local mode1 mute
+        move    x:(r6+$69),a
         tst     a
         beq     pknhc1_mix
         clr     a
         rts
 
 pknhc1_mix:
-        ; ratio = u16(range) - 1 - u16(mix), represented as signed32 limbs.
+        ; ratio = u16(range) - 1 - u16(mix), as signed32 limbs.
         move    x:(r6+$6c),a
         and     #>$00ffff,a
         sub     #>$1,a
-        move    x:(r6+$6b),x0
-        and     #>$00ffff,x0
+        move    x:(r6+$6b),b
+        and     #>$00ffff,b
+        move    b1,x0
         sub     x0,a
         move    a1,b
         and     #>$00ffff,b
-        move    b1,x:(r5+$46)           ; ratio low
+        move    b1,x:(r5+$46)
         clr     b
         tst     a
         jpl     pknhc1_ratio_sign
         move    #>$00ffff,b
 pknhc1_ratio_sign:
-        move    b1,x:(r5+$47)           ; ratio high
+        move    b1,x:(r5+$47)
 
         ; product1 = low32(selected * ratio).
         move    x:(r5+$69),a
@@ -244,9 +237,7 @@ pknhc1_sample_sign:
         move    a1,x:(r5+$4)
         jsr     pk_u32_asr
 
-        ; Final native velocity helper saturates to [-32768, 32767].  Avoid
-        ; reconstructing arbitrary signed32 in a 24-bit data register: inspect
-        ; high/low limbs directly and sign-extend only the in-range int16 case.
+        ; Saturate signed32 limbs to native velocity() [-32768,32767].
         move    x:(r5+$9),a
         and     #>$00ffff,a
         tst     a
@@ -254,7 +245,9 @@ pknhc1_sample_sign:
         cmp     #>$00ffff,a
         beq     pknhc1_negative_high_ffff
         btst    #15,a1
-        jcs     pknhc1_sat_negative
+        jcc     pknhc1_sat_positive
+        bra     pknhc1_sat_negative
+pknhc1_sat_positive:
         move    #>$007fff,a
         rts
 
@@ -275,7 +268,6 @@ pknhc1_negative_high_ffff:
 pknhc1_sat_negative:
         move    #>$008000,a
 pknhc1_return_negative:
-        ; Sign-extend the 16-bit result into A1 for callers that use it as s24.
         asl     #$8,a,a
         move    a1,a
         asr     #$8,a,a
