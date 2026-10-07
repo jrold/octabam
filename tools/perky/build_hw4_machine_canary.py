@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
-"""Build the first static four-voice PĒRKONS hardware-audition firmware.
+"""Build the static four-voice PĒRKONS hardware-audition firmware.
 
-This is intentionally a conservative audition milestone, not the final PERKY
-architecture.  Four physical OT tracks are pinned to one authentic engine from
-each PĒRKONS hardware voice family:
+This remains a conservative audition milestone, not the final PERKY browser.
+Four physical OT tracks are pinned to one authentic engine from each PĒRKONS
+hardware voice family:
 
   T1 -> Fold Drum 1    (engine 0)
-  T2 -> Karplus        (engine 8; fixed authentic control state for audition 1)
+  T2 -> Karplus        (engine 8; LIVE TUNE/DECAY/EDGE/TWANG/MODE)
   T5 -> Fold Drum 2    (engine 3)
   T6 -> Noise / Tone   (engine 10)
 
 The dedicated ``perky-hw4`` remix temporarily harvests most stock DSP effects
-and reserves part of FX1 Y memory for Karplus.  No updater is emitted until the
-local ARM/DSP evidence gates, full-source assembler, normal Octabam full-image
-placer, boot/readback verifier and four-voice OT emulator port gate all pass.
-Nothing in this script flashes hardware and it never uses GitHub Actions/CI.
+and reserves part of FX1 Y memory for Karplus. Karplus now uses its exact
+v1.2.1 renderer/trigger contracts plus complete prepared-control lookup tables;
+OT p-lock control changes are endpoint-exact and immediate rather than hidden
+behind the PĒRKONS panel-rate smoother.
+
+No updater is emitted until the local ARM/DSP evidence gates, full-source
+assembler, normal Octabam full-image placer, boot/readback verifier and
+four-voice OT emulator port gate all pass. Nothing in this script flashes
+hardware and it never uses GitHub Actions/CI.
 """
 from __future__ import annotations
 
@@ -50,7 +55,7 @@ def run(script: str, *args: object, env: dict[str, str] | None = None) -> None:
 
 
 def qualify(firmware: Path, source: Path, reuse_fixtures: bool) -> None:
-    """Regenerate/verify the evidence needed by the four-engine composition."""
+    """Regenerate/verify evidence needed by the four-engine composition."""
     print('=== PERKY HW4 1/6: original-ARM / DSP evidence ===')
     fold2 = [
         '--firmware', firmware,
@@ -60,14 +65,27 @@ def qualify(firmware: Path, source: Path, reuse_fixtures: bool) -> None:
         fold2.append('--reuse-fixtures')
     run('tools/perky/qualify_fold2_trigger.py', *fold2)
 
-    # Fold2's driver regenerates the all-engine corpus unless --reuse-fixtures
-    # was requested.  Karplus uses that same pinned corpus.
-    run('tools/perky/analyze_karplus_trigger.py')
-    run('tools/verify/verify_perky_karplus_trigger_contract.py')
-    run('tools/verify/verify_perky_karplus_trigger_exec.py')
-    run('tools/verify/verify_perky_karplus_dsp_exec.py', '--firmware', firmware)
+    # Fold2 regenerates the shared all-engine corpus unless reuse was requested.
+    # Karplus qualification now includes first/active trigger, the mandatory
+    # original ARM update(), and exact renderer/ring/RNG parity.
+    run(
+        'tools/perky/qualify_karplus_trigger.py',
+        '--firmware', firmware,
+        '--source', source,
+    )
 
-    # Complete four-engine source: exact labels, private X/Y geometry and P size.
+    # Materialize the three complete 4096-entry functions consumed by the live
+    # HW4 Karplus DSP seam. They are derived locally from the same pinned image
+    # and authenticated state corpus; no firmware/table payload is committed.
+    run(
+        'tools/perky/build_karplus_control_tables.py',
+        '--firmware', firmware,
+        '--fixtures', ROOT / 'out/perky/engine-fixtures',
+        '--out', ROOT / 'out/perky/karplus-live-control',
+    )
+
+    # Complete four-engine source: labels, private X/Y geometry, live-control
+    # trigger ordering, DSP assembly, P size, harvest and realtime budget.
     run('tools/verify/verify_perky_hw4_candidate_source.py')
 
 
@@ -82,7 +100,7 @@ def build_module(work: Path, build_number: int):
         base.die('HW4 ColdFire generator produced no assembly')
 
     # The source gate assembled this exact builder output after resolving the
-    # stock continuation marker.  Reuse its measured word count in the manifest.
+    # stock continuation marker. Reuse its measured word count in the manifest.
     measured = work / 'candidate-full.bin'
     if not measured.exists() or measured.stat().st_size % 3:
         base.die('HW4 source gate produced no whole-word candidate-full.bin')
@@ -98,8 +116,8 @@ def build_module(work: Path, build_number: int):
     )
 
     # Start with the tracked probe claims, then enlarge/append only the ranges
-    # the HW4 source actually uses.  The normal build ledger still checks these
-    # against the finalized stock uploads and the reduced-FX remix.
+    # the HW4 source actually uses. The normal build ledger checks these against
+    # finalized stock uploads and the dedicated reduced-FX remix.
     ranges = []
     for r in full.claims.dsp_ranges:
         if r.space == 'x' and r.start == 0x38EC:
@@ -115,8 +133,10 @@ def build_module(work: Path, build_number: int):
                  'HW4 Fold2 frozen pre-trigger snapshot'),
         DspRange('x', memory.KARPLUS_SHADOW_BASE, memory.KARPLUS_SHADOW_WORDS,
                  'HW4 Karplus frozen pre-trigger snapshot'),
-        DspRange('y', memory.HW4_Y_BASE, memory.KARPLUS_RING_END - memory.HW4_Y_BASE,
-                 'HW4 audition Karplus envelopes + 2K ring (temporary FX1 arena)'),
+        DspRange(
+            'y', memory.HW4_Y_BASE, memory.HW4_Y_END - memory.HW4_Y_BASE,
+            'HW4 Karplus envelopes + 2K ring + live-control LUTs (temporary FX1 arena)',
+        ),
     ))
     full = dataclasses.replace(
         full,
@@ -147,7 +167,9 @@ def build_module(work: Path, build_number: int):
         'gross_reclaimed_p_words': 5431,
         'private_x_end_exclusive': memory.PRIVATE_X_END,
         'karplus_y_base': memory.HW4_Y_BASE,
-        'karplus_y_end_exclusive': memory.KARPLUS_RING_END,
+        'karplus_y_end_exclusive': memory.HW4_Y_END,
+        'karplus_control_lut_words_each': memory.KARPLUS_CONTROL_LUT_WORDS,
+        'karplus_y_free_before_boot_clear': memory.HW4_Y_BOOT_CLEAR - memory.HW4_Y_END,
         'dsp_ranges': [dataclasses.asdict(r) for r in ranges],
         'note': 'build_bus placer is authoritative after stock pinned-routine subtraction',
     }, indent=2) + '\n')
@@ -157,6 +179,9 @@ def build_module(work: Path, build_number: int):
 def package(work: Path, normal: Path, control_source: Path, pwords: int,
             build_number: int, version: str) -> None:
     print('=== PERKY HW4 4/6: loader + exact DSP boot payload verification ===')
+    # perky_image.load_extra_y_init is generic: every layout row is hash/range/
+    # overlap checked and becomes an OT Y-memory record. The HW4 layout now has
+    # six rows: two envelope curves, ring, and three live-control LUTs.
     base.repack_machine_loader.build(
         normal,
         work,
@@ -180,6 +205,7 @@ def package(work: Path, normal: Path, control_source: Path, pwords: int,
     print('=== PERKY HW4 6/6: card/MIDI firmware wrapper ===')
     card, midi, manifest = base.wrap_flashable(MAINOS, version)
     layout = json.loads((work / 'layout.json').read_text())
+    controls = layout['hw4_audition']['karplus_controls']
     manifest.write_text(
         'PERKY HW4 FOUR-VOICE HARDWARE AUDITION\n'
         f'version={version}\n'
@@ -188,11 +214,16 @@ def package(work: Path, normal: Path, control_source: Path, pwords: int,
         'tracks=T1 Fold Drum 1 (engine 0); T2 Karplus (engine 8); '
         'T5 Fold Drum 2 (engine 3); T6 Noise/Tone (engine 10)\n'
         'voice_topology=two PERKY voices per DSP core; T3/T4/T7/T8 ordinary/non-PERKY\n'
-        'karplus_controls=fixed authentic v1.2.1 captured middle-corner state for audition 1\n'
+        'karplus_controls=LIVE TUNE/DECAY/EDGE/TWANG/MODE; exact v1.2.1 prepared-state '
+        'functions; immediate OT p-lock transitions\n'
+        f'karplus_mode_map={controls["mode_map"]}\n'
+        f'karplus_gate_threshold={controls["gate_threshold"]}\n'
+        f'karplus_attack_rate={controls["attack_rate"]}\n'
         'fx_policy=temporary reduced-FX audition remix; FILTER + DELAY retained; '
         'most stock DSP FX harvested\n'
-        f'karplus_y=0x{memory.HW4_Y_BASE:04x}..0x{memory.KARPLUS_RING_END - 1:04x} '
-        '(temporary FX1 arena reservation)\n'
+        f'karplus_y=0x{memory.HW4_Y_BASE:04x}..0x{memory.HW4_Y_END - 1:04x} '
+        '(envelopes + ring + 3 live-control LUTs; temporary FX1 arena reservation)\n'
+        f'karplus_y_free_before_boot_clear={memory.HW4_Y_BOOT_CLEAR - memory.HW4_Y_END}\n'
         f'p_words={pwords}; gross_reclaimed_p_words=5431; full-image placer passed\n'
         f'dsp_source_sha256={base.sha256(work / "hw4-audition.asm")}\n'
         f'control_assembly_sha256={base.sha256(control_source)}\n'
@@ -200,8 +231,9 @@ def package(work: Path, normal: Path, control_source: Path, pwords: int,
         f'mainos={MAINOS.name} sha256={base.sha256(MAINOS)}\n'
         f'card={card.name} sha256={base.sha256(card)}\n'
         f'midi={midi.name} sha256={base.sha256(midi)}\n'
-        'gates=Fold2 ARM trigger/renderer; Karplus ARM trigger/renderer; HW4 full-source '
-        'assembler; stock-aware full-image placer; byte-exact boot uploads; 32000-frame '
+        'gates=Fold2 ARM trigger/renderer; Karplus ARM trigger/update/renderer; '
+        'Karplus live-control LUT/source contract; HW4 full-source assembler; '
+        'stock-aware full-image placer; byte-exact boot uploads; 32000-frame '
         'four-voice dirty-memory OT emulator\n'
         'status=LOCAL GATES PASSED; PHYSICAL OCTATRACK AUDITION PENDING\n'
         f'layout_engines={layout["hw4_audition"]["engines"]}\n'
@@ -214,6 +246,7 @@ def package(work: Path, normal: Path, control_source: Path, pwords: int,
     print(f'  test record: {manifest}')
     print(f'  DSP source : {pwords} P words')
     print('  map        : T1 Fold1 / T2 Karplus / T5 Fold2 / T6 Noise-Tone')
+    print('  Karplus    : LIVE TUNE / DECAY / EDGE / TWANG / MODE')
 
 
 def main() -> None:
