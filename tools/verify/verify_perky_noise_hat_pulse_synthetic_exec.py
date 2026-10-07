@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""CI-safe executable gate for the Noise Hat Pulse Stack DSP candidate.
+"""Local executable gate for the Noise Hat Pulse Stack DSP candidate.
 
-Exercises all 60 compact continuation words, both shaped envelope curves,
-phase wraps/local LCG, two filter passes, signed interpolation, velocity and
-final int16 saturation without requiring firmware-derived fixtures.
+Exercises all 59 compact continuation words, both shaped envelope curves,
+phase wraps/local LCG, the RNG-high/second-input alias, two filter passes,
+signed interpolation, velocity and final int16 saturation without requiring
+firmware-derived fixtures.
 """
 from __future__ import annotations
 
@@ -16,7 +17,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / 'modules/perky'), str(ROOT / 'tools/perky')]
 
-import noise_hat_compact as hats  # noqa:E402
+import noise_hat_pulse_compact as hats  # noqa:E402
 import resonator_compact as c  # noqa:E402
 import simple_drum_tables as tables  # noqa:E402
 from build_noise_tone_synth_source import (  # noqa:E402
@@ -118,8 +119,12 @@ def make_voice(seed: int) -> hats.NoiseHatPulseStack:
     else:
         set_u32(w, hats.PS_RANDOM_PHASE, rng.randrange(1 << 32))
         set_u32(w, hats.PS_RANDOM_INCREMENT, rng.randrange(1 << 32))
+
+    # ARM +0x136 is the high word of the u32 RNG at +0x134.  Do not create an
+    # independent second-input word here: doing so generates states the real
+    # renderer can never have and hides same-sample LCG/input coupling bugs.
     set_u32(w, hats.PS_RANDOM, rng.randrange(1 << 32))
-    w[hats.PS_SECOND_INPUT] = rng.randrange(0x10000)
+    assert hats.PS_SECOND_INPUT == hats.PS_RANDOM + 1
     w[hats.PS_MIX] = rng.randrange(0x10000)
     return hats.NoiseHatPulseStack(w)
 
@@ -248,7 +253,7 @@ def main() -> None:
 
     print(
         f'Noise Hat Pulse Stack synthetic DSP: PASS (96 cases / 1536 samples; '
-        f'shapes={shape_counts}; LCG-wrap cases={lcg_wrap_cases}; '
+        f'59 words; shapes={shape_counts}; LCG-wrap cases={lcg_wrap_cases}; '
         f'{binary.stat().st_size // 3} P words; worst {max(meters)} modeled cycles)'
     )
 
