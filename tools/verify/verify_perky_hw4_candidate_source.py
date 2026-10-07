@@ -46,7 +46,7 @@ def main():
     assert 'move    #>$0038ae,r6' not in source
 
     # All four authentic audition render paths plus the two exact Karplus
-    # trigger contracts must be present in the one source image.
+    # trigger contracts must be present in the one shipping-hook source image.
     for needle in (
         'pk_fold_voice:',
         'pk_fold2_voice:',
@@ -55,10 +55,11 @@ def main():
         'pk_karplus_voice:',
         'pk_karplus_trigger_first:',
         'pk_karplus_trigger_active:',
-        'pk_synth_source:',
+        'pk_probe_source:',
         'pks_continue:',
     ):
         assert needle in source, needle
+    assert 'pk_synth_source:' not in source, 'shipping generator must expose pk_probe_source hook'
 
     # The production record writer pins one hardware family to each physical
     # audition track so stale Part/browser bytes cannot change this test.
