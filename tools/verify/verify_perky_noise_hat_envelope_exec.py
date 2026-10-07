@@ -20,9 +20,13 @@ RESULT_OFF = 0x61
 ENV1_BASE = 0x09A5
 ENV2_BASE = 0x0C51
 
-sys.path.insert(0, str(PERKY))
+sys.path[:0] = [str(PERKY), str(ROOT / 'tools/perky')]
 import resonator_compact as c  # noqa:E402
 import simple_drum_tables as tables  # noqa:E402
+from build_noise_tone_synth_source import (  # noqa:E402
+    force_long_local_jsr,
+    relativize_local_conditionals,
+)
 
 
 def fail(message: str) -> None:
@@ -59,11 +63,12 @@ def assemble() -> tuple[Path, int]:
         'pk_noise_hat_envelope_probe:\n'
         f' move #>${STATE_BASE + ENV_BASE:x},r6\n'
         f' move #>${STATE_BASE:x},r5\n'
-        ' jsrl pk_noise_hat_envelope\n'
+        ' jsr pk_noise_hat_envelope\n'
         f' move a1,x:(r5+${RESULT_OFF:x})\n'
         ' rts\n'
         + (PERKY / 'noise_hat_envelope.asm').read_text()
     )
+    source = force_long_local_jsr(relativize_local_conditionals(source))
     asm = OUT / 'candidate.asm'
     binary = OUT / 'candidate.bin'
     symbols = OUT / 'candidate.sym'
