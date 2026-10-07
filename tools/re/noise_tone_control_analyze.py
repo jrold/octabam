@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Analyze all three original v1.2.1 Noise/Tone control modes.
 
-Input is emitted by ``perkybits-noise-tone-control-probe``.  Physical panel
-M1/M2/M3 are captured explicitly and mapped to firmware modes 1/0/2; firmware
-mode 1 is the separate Waveform2 renderer, while 0/2 use NoiseToneShared.
+Input is emitted by ``perkybits-noise-tone-control-probe``. Physical panel
+M1/M2/M3 are captured explicitly and mapped to firmware modes 1/0/2. M1 is the
+separate Waveform2 renderer/sub-object at 0x200036e4; M2/M3 use the shared
+Noise/Tone renderer/sub-object at 0x200034dc.
 
-This is state ownership evidence, not a curve fitter.  It identifies exactly
+This is state ownership evidence, not a curve fitter. It identifies exactly
 which 0x120-byte engine fields TUNE/DECAY/ENV/MIX own, how long update()
 smoothing continues to mutate them, trigger overlap, and optional pairwise
 cross-terms before Octabam replaces the synthetic PERKY2 control law.
@@ -19,16 +20,19 @@ from pathlib import Path
 import struct
 from typing import Iterable, NoReturn
 
-SCHEMA = "perkybits-noise-tone-control-v2"
+SCHEMA = "perkybits-noise-tone-control-v3"
 STATE_BYTES = 0x120
 PANEL_TO_FIRMWARE = (1, 0, 2)
+STATE_ADDRESSES = ("0x200036e4", "0x200034dc", "0x200034dc")
 PARAMETER_NAMES = ("TUNE", "DECAY", "ENV", "MIX")
 EXPECTED_ANCHORS = (
     0, 1, 512, 1024, 1536, 2047, 2048,
     2049, 2560, 3072, 3584, 4094, 4095,
 )
 
-# Descriptive only: ownership is always derived from the captured bytes.
+# Descriptive only: ownership is always derived from captured bytes. Some
+# offsets have different roles in Waveform2 vs shared state; the renderer name
+# and state address are retained in every report row to prevent conflation.
 KNOWN_REGIONS = (
     ("control history", 0x01C, 0x02C),
     ("oscillator/common pitch A", 0x02C, 0x040),
@@ -37,7 +41,7 @@ KNOWN_REGIONS = (
     ("resonant filter", 0x09C, 0x0B8),
     ("common prepared controls", 0x0BA, 0x0C4),
     ("shared renderer oscillator B", 0x0C4, 0x0DC),
-    ("Waveform2 oscillator", 0x0D4, 0x0EC),
+    ("Waveform2 reduction/oscillator", 0x0C8, 0x0EC),
     ("renderer mix/output control", 0x0F8, 0x100),
 )
 
@@ -119,6 +123,10 @@ def load(path: Path) -> tuple[dict, list[dict]]:
         die("unexpected Noise/Tone state size")
     if tuple(header.get("panel_mode_to_firmware", ())) != PANEL_TO_FIRMWARE:
         die("panel MODE mapping is not 1/0/2")
+    if header.get("waveform2_state_address") != STATE_ADDRESSES[0]:
+        die("Waveform2 state address drift")
+    if header.get("shared_state_address") != STATE_ADDRESSES[1]:
+        die("shared Noise/Tone state address drift")
     if not snapshots:
         die("no snapshots")
     return header, snapshots
@@ -136,6 +144,11 @@ def validate(records: list[dict]) -> None:
         firmware = int(record.get("firmware_mode", -1))
         if not 0 <= panel < 3 or firmware != PANEL_TO_FIRMWARE[panel]:
             die(f"snapshot {number}: MODE mapping drift")
+        if record.get("state_address") != STATE_ADDRESSES[panel]:
+            die(
+                f"snapshot {number}: M{panel + 1} state address "
+                f"{record.get('state_address')!r} != {STATE_ADDRESSES[panel]}"
+            )
 
 
 def control_groups(records: list[dict]) -> dict[tuple[int, int, int], dict[int, dict]]:
@@ -196,6 +209,7 @@ def analyze_controls(records: list[dict]):
             report[key] = {
                 "panel_mode": panel,
                 "firmware_mode": PANEL_TO_FIRMWARE[panel],
+                "state_address": STATE_ADDRESSES[panel],
                 "renderer": renderer,
                 "parameter": parameter,
                 "parameter_name": name,
@@ -209,7 +223,7 @@ def analyze_controls(records: list[dict]):
             }
             print(
                 f"M{panel + 1} / firmware {PANEL_TO_FIRMWARE[panel]} / "
-                f"{renderer} / {name}"
+                f"{renderer} @ {STATE_ADDRESSES[panel]} / {name}"
             )
             print(f"  settled state: {fmt(owned)}")
             print(f"  regions:       {', '.join(regions(owned)) or '(none)'}")
@@ -256,6 +270,7 @@ def analyze_triggers(records: list[dict], control_owned: set[int]) -> dict:
             out[key] = {
                 "panel_mode": panel,
                 "firmware_mode": PANEL_TO_FIRMWARE[panel],
+                "state_address": STATE_ADDRESSES[panel],
                 "sweep": sweep,
                 "values": values,
                 "state_offsets": sorted(state),
@@ -303,6 +318,7 @@ def analyze_pairwise(records: list[dict], controls: dict) -> dict:
                 key = f"m{panel}-p{a}p{b}"
                 out[key] = {
                     "panel_mode": panel,
+                    "state_address": STATE_ADDRESSES[panel],
                     "parameters": [a, b],
                     "parameter_names": [PARAMETER_NAMES[a], PARAMETER_NAMES[b]],
                     "records": count,
@@ -325,7 +341,10 @@ def main() -> None:
 
     header, records = load(args.probe)
     validate(records)
-    print(f"{len(records)} snapshots; control RAM and physical MODE map: PASS")
+    print(
+        f"{len(records)} snapshots; control RAM, physical MODE map and "
+        "mode-specific sub-object addresses: PASS"
+    )
     controls, ownership = analyze_controls(records)
     all_control = set().union(*ownership.values())
     triggers = analyze_triggers(records, all_control)
@@ -338,7 +357,7 @@ def main() -> None:
 
     if args.json:
         payload = {
-            "schema": "octabam.perky.noise-tone-control-analysis.v2",
+            "schema": "octabam.perky.noise-tone-control-analysis.v3",
             "source": str(args.probe),
             "header": header,
             "control": controls,
