@@ -56,9 +56,16 @@ def main():
         'cmp     #>$40,a',
         'HW4 has no per-core first-wins latch',
         "(out / 'hw4.asm').write_text(source)",
+        'import build_noise_tone_synth_source as noise',
+        'noise.force_long_local_jsr(noise.relativize_local_conditionals(source))',
     ):
         assert needle in builder, needle
-    assert 'move    a1,x:>$38ed' not in builder, 'HW4 builder must not reintroduce first-wins admission'
+
+    # The old first-wins instruction is expected to appear inside the literal
+    # replacement anchor; the generated-source gate, not this source-text gate,
+    # proves that it is absent from the emitted DSP program.
+    assert "source = once(source, old, new, 'HW4 two-slot admission')" in builder
+    assert "source = once(source, old_reset, new_reset, 'HW4 latch removal')" in builder
 
     print('PERKY HW4 profile: PASS')
     print('  DSP core tracks 1-4: T1=V1, T2=V3')
