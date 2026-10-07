@@ -39,7 +39,7 @@ pk_noise_hat_pulse_voice:
         sub     #>$3,a
         move    a1,x0
         move    #>$001555,y0
-        mpy     x0,y0,a
+        mpy     y0,x0,a
         asr     #$1,a,a                 ; remove fractional MPY alignment
         move    a0,a
         move    a1,x:(r5+$61)
@@ -88,7 +88,7 @@ pk_noise_hat_pulse_voice:
         move    x1,a
         sub     y1,a
         move    a1,x0                   ; delta
-        mpy     x0,y0,a
+        mpy     y0,x0,a
         asr     #$10,a,a                ; fractional MPY alignment + >>15
         move    a0,a
         add     y1,a
@@ -104,12 +104,19 @@ pk_noise_hat_pulse_voice:
         move    x:(r5+$63),x0
         mpysu   x0,y0,a
         asr     #$11,a,a                ; fractional MPY alignment + >>16
-        move    a0,x0
+        ; Native narrows the product to signed32 before shifting. Thus its
+        ; >>16 result is signed16 even when filtered * amplitude overflows.
+        move    a0,a
+        asl     #$8,a,a
+        move    a1,a
+        asr     #$8,a,a
+        move    a1,x0
 
         ; output = (value * velocity) >> 8.
         move    x:(r5+$60),r6
-        move    x:(r6+$0),y0
-        and     #>$0000ff,y0
+        move    x:(r6+$0),a
+        and     #>$0000ff,a
+        move    a1,y0
         mpysu   x0,y0,a
         asr     #$9,a,a                 ; fractional MPY alignment + >>8
         move    a0,a

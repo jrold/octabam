@@ -19,6 +19,8 @@ INPUT_OFF = 0x61
 
 sys.path.insert(0, str(PERKY))
 import noise_hat_compact as hats  # noqa:E402
+sys.path.insert(0, str(ROOT / 'tools/perky'))
+from build_noise_tone_synth_source import force_long_local_jsr, relativize_local_conditionals  # noqa:E402
 
 
 def fail(message: str) -> None:
@@ -63,13 +65,14 @@ def assemble() -> tuple[Path, int]:
 
     OUT.mkdir(parents=True, exist_ok=True)
     source = (
-        'pk_noise_hat_filter_probe:\n'
+        'pk_noise_hat_svf_probe:\n'
         f' move #>${STATE_BASE + FILTER_BASE:x},r6\n'
         f' move #>${STATE_BASE:x},r5\n'
         ' jsrl pk_noise_hat_filter\n'
         ' rts\n'
         + (PERKY / 'noise_hat_filter.asm').read_text()
     )
+    source = force_long_local_jsr(relativize_local_conditionals(source))
     asm = OUT / 'candidate.asm'
     binary = OUT / 'candidate.bin'
     symbols = OUT / 'candidate.sym'
@@ -86,9 +89,9 @@ def assemble() -> tuple[Path, int]:
         for p in map(str.split, symbols.read_text().splitlines())
         if len(p) == 2
     }
-    if 'pk_noise_hat_filter_probe' not in labels:
+    if 'pk_noise_hat_svf_probe' not in labels:
         fail('assembler emitted no probe symbol')
-    return binary, labels['pk_noise_hat_filter_probe']
+    return binary, labels['pk_noise_hat_svf_probe']
 
 
 def run(binary: Path, entry: int, tag: str,

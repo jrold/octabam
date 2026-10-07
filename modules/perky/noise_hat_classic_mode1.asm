@@ -35,11 +35,12 @@
 ; gain path: the two signed products can overflow signed32 when added, and the
 ; ARM code explicitly keeps only low32 before arithmetic shifts.
 
-pk_noise_hat_classic_mode1:
+pk_noise_hat_classic_inner1:
         move    r6,a
         move    a1,x:(r5+$66)
 
-        lua     (r6+$52),r6
+        move    #>$52,n6
+        move    (r6)+n6
         jsr     pk_noise_hat_envelope
         move    a1,x:(r5+$67)
         move    x:(r5+$66),r6
@@ -101,7 +102,8 @@ pknhc1_outer_refresh:
 pknhc1_outer_ready:
         move    x:(r5+$68),a
         move    a1,x:(r5+$61)
-        lua     (r6+$60),r6
+        move    #>$60,n6
+        move    (r6)+n6
         jsr     pk_noise_hat_filter
         jsr     pk_noise_hat_filter
         move    x:(r5+$66),r6
@@ -109,9 +111,9 @@ pknhc1_outer_ready:
         move    x:(r6+$62),a
         move    x:(r6+$68),b
         tst     b
-        beq     pknhc1_selected
+        beq     pknhc1_filter_chosen
         move    x:(r6+$64),a
-pknhc1_selected:
+pknhc1_filter_chosen:
         and     #>$00ffff,a
         move    a1,x:(r5+$69)
 

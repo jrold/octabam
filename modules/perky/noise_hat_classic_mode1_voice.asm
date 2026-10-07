@@ -8,7 +8,7 @@
 ;   n7 = sample count
 ;
 ; Dependencies:
-;   pk_noise_hat_classic_mode1
+;   pk_noise_hat_classic_inner1
 ;   pk_noise_hat_classic_delay
 ;
 ; This preserves the native wrapper's outer mute semantics: X:(state+0) skips
@@ -24,7 +24,7 @@ pk_noise_hat_classic_mode1_voice:
         tst     a
         bne     pknhc1v_muted
 
-        jsr     pk_noise_hat_classic_mode1
+        jsr     pk_noise_hat_classic_inner1
         and     #>$00ffff,a
         move    a1,x:(r5+$60)           ; delay input bit-pattern
         move    x:(r5+$76),r6

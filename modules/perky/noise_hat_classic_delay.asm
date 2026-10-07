@@ -38,18 +38,23 @@ pk_noise_hat_classic_delay:
 pknhcd_next_ready:
         move    a1,x:(r5+$66)           ; next index
 
-        lua     (r6+$6d),r1             ; delay pointer
-        lua     (r6+$72),r2             ; gain pointer
-        jsr     pknhcd_stage
-        jsr     pknhcd_stage
-        jsr     pknhcd_stage
-        jsr     pknhcd_stage
-        jsr     pknhcd_stage
+        move    r6,r1
+        move    #>$6d,n1
+        move    (r1)+n1                 ; delay pointer
+        move    r6,r2
+        move    #>$72,n2
+        move    (r2)+n2                 ; gain pointer
+        jsr     pknhcd_tap
+        jsr     pknhcd_tap
+        jsr     pknhcd_tap
+        jsr     pknhcd_tap
+        jsr     pknhcd_tap
 
         ; ring[nextIndex] = saturated stage; publish next index.
         move    x:(r5+$66),a
         move    a1,n3
-        lua     (r4+n3),r3
+        move    r4,r3
+        move    (r3)+n3
         move    x:(r5+$62),a
         and     #>$00ffff,a
         move    a1,y:(r3)
@@ -176,7 +181,7 @@ pknhcd_input_sign_ready:
 ; One of the five serial delay stages. r1/r2 post-increment through delay/gain
 ; arrays. X:(r5+$62) holds signed16 stage; X:(r5+$65) is the pre-write index.
 ; ---------------------------------------------------------------------------
-pknhcd_stage:
+pknhcd_tap:
         move    x:(r1)+,a
         and     #>$00ffff,a
         move    a1,x:(r5+$67)           ; delay
@@ -222,7 +227,8 @@ pknhcd_read_subtract:
         sub     x0,a
         move    a1,x:(r5+$69)
         move    a1,n3
-        lua     (r4+n3),r3
+        move    r4,r3
+        move    (r3)+n3
         move    y:(r3),a
         and     #>$00ffff,a
         move    a1,x:(r5+$6a)           ; delayed signed16 bit-pattern

@@ -15,42 +15,42 @@
 ;
 ; Dependencies: pk_noise_hat_filter, pk_noise_hat_envelope.
 
-pk_noise_hat_classic_mode0:
+pk_noise_hat_classic_inner0:
         clr     a
         move    a1,x:(r5+$60)
 
         lua     (r6+$0d),r7
-        jsr     pknhc0_pulse
+        jsr     pknhc0_oscillator
         move    x:(r5+$60),b
         add     b,a
         move    a1,x:(r5+$60)
 
         lua     (r6+$13),r7
-        jsr     pknhc0_pulse
+        jsr     pknhc0_oscillator
         move    x:(r5+$60),b
         add     b,a
         move    a1,x:(r5+$60)
 
         lua     (r6+$19),r7
-        jsr     pknhc0_pulse
+        jsr     pknhc0_oscillator
         move    x:(r5+$60),b
         add     b,a
         move    a1,x:(r5+$60)
 
         lua     (r6+$1f),r7
-        jsr     pknhc0_pulse
+        jsr     pknhc0_oscillator
         move    x:(r5+$60),b
         add     b,a
         move    a1,x:(r5+$60)
 
         lua     (r6+$25),r7
-        jsr     pknhc0_pulse
+        jsr     pknhc0_oscillator
         move    x:(r5+$60),b
         add     b,a
         move    a1,x:(r5+$60)
 
         lua     (r6+$2b),r7
-        jsr     pknhc0_pulse
+        jsr     pknhc0_oscillator
         move    x:(r5+$60),b
         add     b,a
         move    a1,x:(r5+$60)
@@ -130,7 +130,7 @@ pknhc0_done:
 ;   +0/+1 phase u32, +2/+3 increment u32, +4 width u16, +5 reload u16.
 ; Returns the exact contribution consumed by mode0: +1023 or -1024.
 ; ---------------------------------------------------------------------------
-pknhc0_pulse:
+pknhc0_oscillator:
         move    x:(r7+$0),a
         move    x:(r7+$2),x0
         add     x0,a

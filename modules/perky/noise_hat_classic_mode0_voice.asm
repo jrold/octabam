@@ -7,7 +7,7 @@
 ;   r0 = interleaved stereo output
 ;   n7 = sample count
 ;
-; Dependencies: pk_noise_hat_classic_mode0, pk_noise_hat_classic_delay.
+; Dependencies: pk_noise_hat_classic_inner0, pk_noise_hat_classic_delay.
 
 pk_noise_hat_classic_mode0_voice:
         move    r6,a
@@ -19,7 +19,7 @@ pk_noise_hat_classic_mode0_voice:
         tst     a
         bne     pknhc0v_muted
 
-        jsr     pk_noise_hat_classic_mode0
+        jsr     pk_noise_hat_classic_inner0
         and     #>$00ffff,a
         move    a1,x:(r5+$60)
         move    x:(r5+$76),r6
