@@ -10,8 +10,8 @@ inside the audition remix's 5,431-word gross stock-effect donor run.
 
 This is also the release choke point used by ``build_hw4_machine_canary.py``:
 a successful source gate must additionally pass the explicit stock-FX harvest
-audit and the two-voices-per-core realtime budget. A failure in either gate is
-fatal; neither can degrade to a warning before firmware packaging.
+audit, live Karplus audible-control A/B gate, and two-voices-per-core realtime
+budget. A failure in any gate is fatal before firmware packaging.
 """
 from pathlib import Path
 import json
@@ -244,11 +244,11 @@ def main():
     assert memory.HW4_Y_END == 0x3E01
     assert memory.HW4_Y_BOOT_CLEAR - memory.HW4_Y_END == 0xFF
 
-    # These are mandatory release gates. The first confirms the reduced-FX
-    # remix donates only intended stock DSP spans. The second runs the exact
-    # composed source under the DSP cycle model and fails if either physical
-    # two-voice core pairing exceeds the guarded 16-sample deadline.
+    # Mandatory release gates: reclaimed-stock audit, direct audible A/B for all
+    # five Karplus controls (including live no-retrigger changes), then exact
+    # composed-source cycle accounting for both two-voice DSP-core pairings.
     run_release_gate('verify_perky_hw4_harvest.py')
+    run_release_gate('verify_perky_karplus_live_control_exec.py')
     run_release_gate('verify_perky_hw4_realtime_budget.py')
 
     print(
@@ -257,6 +257,7 @@ def main():
     )
     print('  T1 Fold1 / T2 Karplus / T5 Fold2 / T6 Noise-Tone')
     print('  Karplus: live TUNE/DECAY/EDGE/TWANG/MODE; physical M1/M2/M3 -> 1/0/2')
+    print('  Karplus: every control passed fresh-trigger + live no-retrigger PCM A/B')
     print('  Karplus trigger order: trigger -> live-control restore -> render')
     print(
         f'  Karplus Y: env/ring/LUTs ${memory.KARPLUS_ENV1_BASE:04x}..'
