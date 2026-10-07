@@ -39,32 +39,40 @@ int main(int argc,char**argv){
  constexpr std::array<std::array<std::uint16_t,4>,3> corners={{{0,0,0,0},{2048,2048,2048,2048},{4095,4095,4095,4095}}};
  for(unsigned i=0;i<kPerkyEngines.size();++i)for(unsigned mode=0;mode<3;++mode)for(unsigned corner=0;corner<3;++corner){
   PerkonsM7 cpu;PerkonsVoices v(cpu);const auto& e=kPerkyEngines[i];
-  if(!cpu.load(fw,error)||!v.initialise(fw,error)||!v.setAlgorithm(e.slot,e.panelAlgorithm,error)||!v.setMode(e.slot,e.panelModeToFirmware[mode],error)||!v.setSoundParameters(e.slot,corners[corner],error)||!v.trigger(e.slot,error)){std::cerr<<error;return 4;}
-  v.setNativeDspEnabledForTesting(false);
+  if(!cpu.load(fw,error)||!v.initialise(fw,error)||!v.setAlgorithm(e.slot,e.panelAlgorithm,error)||!v.setMode(e.slot,e.panelModeToFirmware[mode],error)||!v.setSoundParameters(e.slot,corners[corner],error)){std::cerr<<error;return 4;}
   std::ostringstream tag;tag<<"engine-"<<i+1<<"-mode-"<<mode+1<<"-corner-"<<corner;
   auto dir=out/tag.str();std::filesystem::create_directories(dir);
   std::vector<std::uint8_t> ram(0x6000);
   auto address=wrappers[static_cast<unsigned>(e.slot)];
+  // Capture the exact original-firmware control state before trigger. The
+  // existing wrapper-window-before snapshot is after trigger + v1.2.1's
+  // mandatory post-trigger update. Their delta is therefore an executable
+  // trigger/retrigger oracle for every family, including hidden oscillator,
+  // envelope, delay and crossfade resets that are easy to miss by inspection.
   if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 5;}
+  save(dir/"wrapper-window-pre-trigger.bin",ram.data(),ram.size());
+  if(!v.trigger(e.slot,error)){std::cerr<<error;return 6;}
+  v.setNativeDspEnabledForTesting(false);
+  if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 7;}
   save(dir/"wrapper-window-before.bin",ram.data(),ram.size());
   std::int16_t pcm[256];
-  if(!v.renderInto(e.slot,pcm,256,error)){std::cerr<<error;return 6;}
+  if(!v.renderInto(e.slot,pcm,256,error)){std::cerr<<error;return 8;}
   save(dir/"arm-pcm.bin",pcm,sizeof(pcm));
-  if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 7;}
+  if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 9;}
   save(dir/"wrapper-window-after.bin",ram.data(),ram.size());
   // The original ARM block has now initialized any lazy random object.
   // Capture a second block with explicit RNG inputs for DSP parity.
   if(i==noiseHatIndex)saveNoiseHatHold(cpu,dir/"noise-hat-hold-continuation-before.bin",error);
   if(i==11)saveAcousticHold(cpu,dir/"acoustic-hold-continuation-before.bin",error);
   saveRng(cpu,dir/"rng-continuation-before.bin",error);
-  if(!v.renderInto(e.slot,pcm,256,error)){std::cerr<<error;return 8;}
+  if(!v.renderInto(e.slot,pcm,256,error)){std::cerr<<error;return 10;}
   save(dir/"arm-pcm-continuation.bin",pcm,sizeof(pcm));
-  if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 9;}
+  if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 11;}
   save(dir/"wrapper-window-continuation-after.bin",ram.data(),ram.size());
   if(i==noiseHatIndex)saveNoiseHatHold(cpu,dir/"noise-hat-hold-continuation-after.bin",error);
   if(i==11)saveAcousticHold(cpu,dir/"acoustic-hold-continuation-after.bin",error);
   saveRng(cpu,dir/"rng-continuation-after.bin",error);
   meta<<i+1<<'\t'<<mode+1<<'\t'<<corner<<'\t'<<e.name<<'\t'<<std::hex<<address<<std::dec<<'\t';for(auto x:corners[corner])meta<<x<<',';meta<<'\n';
  }
- std::cout<<"Original ARM family captures: PASS (12 families x 3 panel modes x 3 control corners; triggered pre/post RAM windows and 256 PCM samples)\n";
+ std::cout<<"Original ARM family captures: PASS (12 families x 3 panel modes x 3 control corners; pre-trigger, triggered pre/post RAM windows and 256 PCM samples)\n";
 }
