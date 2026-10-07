@@ -1,44 +1,25 @@
 ; PĒRKONS v1.2.1 Karplus production-form HW4 seam.
 ;
 ; Inputs on entry:
-;   r4 = prepared PK/Y1 source record (MODE is live; the four continuous sound
-;        controls remain frozen for this audition candidate; engine id is fixed
-;        by the HW4 CF profile)
+;   r4 = prepared PK/Y1 source record carrying live TUNE/DECAY/EDGE/TWANG/MODE
 ;   r6 = 58-word per-track overlay, first 32 words are exact Karplus state
 ;
 ; Memory owned by the HW4 audition profile:
 ;   X:$3900..$397f  shared 128-word renderer scratch
 ;   X:$39c4..$39e3  frozen pre-trigger snapshot for generated trigger plans
 ;   Y:$1600..$1dff  one 2,048-word Karplus delay ring
+;   Y:$1e00..$3e00  three exact prepared-control lookup tables
 ;   overlay +$20    has-triggered flag (outside the 32-word compact state)
 ;
 ; The exact first-trigger and active-retrigger routines are generated locally
-; from original v1.2.1 ARM snapshots.  The renderer itself is independently
-; native/ARM qualified.  MODE is transported live with the authentic physical
-; panel mapping M1/M2/M3 -> firmware 1/0/2.  EDGE / TWANG / TUNE / DECAY remain
-; frozen at an authentic middle-corner ARM fixture until their smoother/update
-; path is integrated.
+; from original v1.2.1 ARM snapshots. The renderer itself is independently
+; native/ARM qualified. Live TUNE/DECAY/EDGE/TWANG are applied only to the
+; compact fields proven owned by the original update() routine; MODE uses the
+; authentic physical-panel mapping M1/M2/M3 -> firmware 1/0/2.
 
 pks_karplus_entry:
         jsrl    pk_multi_karplus_init
-
-        ; Physical Octatrack MODE 0/1/2 follows PĒRKONS panel M1/M2/M3.
-        ; Karplus' firmware mode byte uses the catalog mapping 1/0/2.
-        move    x:(r4+$e),a
-        and     #>$ff,a
-        tst     a
-        beq     pkk_mode_panel0
-        cmp     #>$1,a
-        beq     pkk_mode_panel1
-        move    #>$2,a
-        bra     pkk_mode_ready
-pkk_mode_panel0:
-        move    #>$1,a
-        bra     pkk_mode_ready
-pkk_mode_panel1:
-        clr     a
-pkk_mode_ready:
-        move    a1,x:(r6+$2)
+        jsrl    pk_karplus_apply_controls
 
         move    #>$003900,r5
         move    #>$ffffff,m0
