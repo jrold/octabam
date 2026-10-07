@@ -4,6 +4,11 @@
 The x86-64 runner uses Rosetta on Apple Silicon because a 4-GB PAGEZERO in the
 Python/arm64 process prevents mapping the Octatrack address fixture. All memory
 is private and anonymous. Full ColdFire port execution is a separate gate.
+
+MODE is a UI/transport contract here as well as a renderer input: the physical
+source value lives in first-page slot 4, while pk_render mirrors it into legacy
+PK/Y1 byte 6 before family-specific preparation. This gate therefore catches a
+regression that would put MODE back on SRC page 2 or bypass p-lock staging.
 """
 from pathlib import Path
 import platform,random,subprocess,sys
@@ -18,9 +23,13 @@ def main():
     states=[model.State.fresh() for _ in range(8)];rng=random.Random(0x503003);rows=[];expected=[]
     for i in range(1024):
         t=i%8;raw=tuple(rng.choice([0,127,rng.randrange(128)]) for _ in range(4)) if i%16<8 else (64,64,64,64);mode=(i//8)%3;trig=i%4!=0
-        params=list(raw)+[0,0,mode,0,0,0,0,2]
+        # First SRC page is now TUNE/DECAY/P1/P2/MODE/---. Slot 6 is deliberately
+        # zero in the input fixture; only pk_render may mirror MODE there.
+        params=list(raw)+[mode,0,0,0,0,0,0,2]
         if i%33==0:
-            params[11]=10;want=bytes(params);states[t]=model.State.fresh()
+            params[11]=10
+            want=bytearray(params);want[6]=mode;want=bytes(want)
+            states[t]=model.State.fresh()
         else:want=states[t].prepare(raw,mode,trigger=trig)
         rows.append(bytes(params+[t,int(trig)]));expected.append(want)
     (OUT/'input').write_bytes(b''.join(rows))
@@ -28,5 +37,5 @@ def main():
     data=(OUT/'output').read_bytes();assert len(data)==len(rows)*12
     for i,want in enumerate(expected):
         got=data[i*12:(i+1)*12];assert got==want,(i,got.hex(),want.hex())
-    print(f'Production pk_render transport: PASS ({len(rows)} real writer calls; eight tracks, all modes, prepared values and unchanged Noise/Tone)')
+    print(f'Production pk_render transport: PASS ({len(rows)} real writer calls; MODE main-page slot 4 -> PK/Y1 slot 6; eight tracks, all modes, prepared values and unchanged Noise/Tone payload apart from the deliberate MODE mirror)')
 if __name__=='__main__':main()
