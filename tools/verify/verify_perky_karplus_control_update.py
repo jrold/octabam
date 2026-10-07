@@ -27,16 +27,16 @@ sys.path[:0] = [str(ROOT / "modules/perky"), str(ROOT / "tools/perky")]
 import karplus_control_update as control
 from extract_noise_tone_tables import find_m7, parse_container
 
-FIX = ROOT / "out/perky/engine-fixtures"
+DEFAULT_FIX = ROOT / "out/perky/engine-fixtures"
 FIRMWARE_SHA = "adcdbc4a2c660ffb6477f202211ae3cb70170bfe6ddfaecc3df0e4cb7db398c6"
 ENGINE = 9               # fixture schema uses one-based catalog identity
 OBJECT_OFFSET = 0x2908   # Voice-3 wrapper -> Karplus object
 OBJECT_SIZE = 0x10E0
 
 
-def checked(path: Path, manifest: dict) -> bytes:
+def checked(path: Path, fixtures: Path, manifest: dict) -> bytes:
     raw = path.read_bytes()
-    name = str(path.relative_to(FIX))
+    name = str(path.relative_to(fixtures))
     expected = manifest["files"].get(name)
     if expected is None:
         raise RuntimeError(f"fixture manifest does not name {name}")
@@ -58,16 +58,17 @@ def main() -> None:
             Path.home() / "Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
         )),
     )
-    parser.add_argument("--fixtures", type=Path, default=FIX)
+    parser.add_argument("--fixtures", type=Path, default=DEFAULT_FIX)
     args = parser.parse_args()
 
-    global FIX
-    FIX = args.fixtures.expanduser().resolve()
+    fixtures = args.fixtures.expanduser().resolve()
     firmware = args.firmware.expanduser().resolve()
     if not firmware.is_file():
         raise SystemExit(f"missing PĒRKONS v1.2.1 firmware: {firmware}")
-    if not (FIX / "manifest.json").is_file():
-        raise SystemExit(f"missing all-engine fixture manifest: {FIX / 'manifest.json'}")
+    if not (fixtures / "manifest.json").is_file():
+        raise SystemExit(
+            f"missing all-engine fixture manifest: {fixtures / 'manifest.json'}"
+        )
 
     blob = firmware.read_bytes()
     actual_sha = hashlib.sha256(blob).hexdigest()
@@ -77,7 +78,7 @@ def main() -> None:
             f"expected {FIRMWARE_SHA}, got {actual_sha}"
         )
 
-    manifest = json.loads((FIX / "manifest.json").read_text())
+    manifest = json.loads((fixtures / "manifest.json").read_text())
     if manifest.get("firmware_sha256") != FIRMWARE_SHA:
         raise RuntimeError("control-update fixture firmware drift")
 
@@ -88,7 +89,7 @@ def main() -> None:
     count = 0
     for mode in range(1, 4):
         for corner in range(3):
-            case = FIX / f"engine-{ENGINE}-mode-{mode}-corner-{corner}"
+            case = fixtures / f"engine-{ENGINE}-mode-{mode}-corner-{corner}"
             for pre_name, post_name in (
                 ("wrapper-window-trigger-only.bin", "wrapper-window-before.bin"),
                 ("wrapper-window-retrigger-only.bin", "wrapper-window-retrigger-before.bin"),
@@ -96,12 +97,12 @@ def main() -> None:
                 pre_path = case / pre_name
                 post_path = case / post_name
                 target_path = case / (pre_name + ".targets.bin")
-                before_window = checked(pre_path, manifest)
-                expected_window = checked(post_path, manifest)
-                target_raw = checked(target_path, manifest)
+                before_window = checked(pre_path, fixtures, manifest)
+                expected_window = checked(post_path, fixtures, manifest)
+                target_raw = checked(target_path, fixtures, manifest)
                 if len(target_raw) != 16:
                     raise AssertionError(
-                        f"{target_path.relative_to(FIX)} has {len(target_raw)} bytes, expected 16"
+                        f"{target_path.relative_to(fixtures)} has {len(target_raw)} bytes, expected 16"
                     )
 
                 before = before_window[OBJECT_OFFSET:OBJECT_OFFSET + OBJECT_SIZE]
