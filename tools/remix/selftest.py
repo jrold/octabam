@@ -771,7 +771,6 @@ def main():
              "transient": ("PLATE REV",),   # TRANSIENT runs in its words; the other 13 stay
              "euclid": ("SPATIALIZER", "FLANGER", "CHORUS", "COMB FILTER"),
              "perky-probe": ("SPRING REV",),  # the impulse donor retains PLATE/DARK
-             "perky-hw4": _rig[1:],  # HW4 retains FILTER + ColdFire DELAY
              "rig": _rig, "bottleservice": _rig}
     for _n in registry.remix_names():
         _r = registry.remix(_n)

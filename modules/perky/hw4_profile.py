@@ -6,12 +6,13 @@ while spreading two logical voices across each Octatrack DSP core.
 
 Global OT tracks are zero based here:
   T1 / track 0 -> PĒRKONS V1
-  T2 / track 1 -> PĒRKONS V4
+  T2 / track 1 -> PĒRKONS V3
   T5 / track 4 -> PĒRKONS V2
-  T6 / track 5 -> PĒRKONS V3
+  T6 / track 5 -> PĒRKONS V4
 
-Tracks 1-4 share one DSP and tracks 5-8 share the other. Measured HW4
-cycle costs pair V1+V4 and V2+V3 to fit the unchanged two-times model margin.
+Tracks 1-4 share one DSP and tracks 5-8 share the other.  Pairing V1+V3 and
+V2+V4 avoids deliberately stacking the two delay/noise-heavy hardware voice
+groups on the same core.
 """
 
 VOICE_ENGINES = {
@@ -23,9 +24,9 @@ VOICE_ENGINES = {
 
 TRACK_VOICE = {
     0: 1,  # OT T1, DSP local slot 0
-    1: 4,  # OT T2, DSP local slot 1
+    1: 3,  # OT T2, DSP local slot 1
     4: 2,  # OT T5, DSP local slot 0
-    5: 3,  # OT T6, DSP local slot 1
+    5: 4,  # OT T6, DSP local slot 1
 }
 
 # Names are kept here only as an audit/reference table.  A browser entry must

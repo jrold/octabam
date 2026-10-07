@@ -43,10 +43,6 @@ EVENT_X = 0x0364
 RNG_X = 0x38E8
 TABLE_Y = 0x07a5
 CYCLE_METER = False
-PROFILE = False
-STATE_BASE = 0x200
-YSTATE_BASE = 0x200
-STATE_WORDS = 64
 LINE = re.compile(
     r"^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$"
 )
@@ -321,9 +317,6 @@ def run(binary: Path, entry: int, tag: str, state_init: list[int], table_words: 
             "-out", str(raw), "-state", str(state), "-meter", str(meter),
             "-cycle-meter", "1" if CYCLE_METER else "0",
             "-frames", str(FRAMES),
-            "-state-base", f"{STATE_BASE:x}", "-ystate-base", f"{YSTATE_BASE:x}",
-            "-state-words", str(STATE_WORDS),
-            *(["-profile", str(OUT / f"{tag}.profile")] if PROFILE else []),
         ],
         check=True,
         capture_output=True,
@@ -344,9 +337,9 @@ def run(binary: Path, entry: int, tag: str, state_init: list[int], table_words: 
     state_rows: list[list[int]] = []
     for line in state.read_text().splitlines():
         row = [int(x, 16) & 0xFFFFFF for x in line.split()]
-        if len(row) != 2 * STATE_WORDS:
-            fail(f"{tag}: state row has {len(row)} words, expected {2 * STATE_WORDS}")
-        state_rows.append(row[:STATE_WORDS])
+        if len(row) != 128:
+            fail(f"{tag}: state row has {len(row)} words, expected 128")
+        state_rows.append(row[:64])
     if len(state_rows) != len(blocks):
         fail(f"{tag}: {len(state_rows)} state rows for {len(blocks)} blocks")
 

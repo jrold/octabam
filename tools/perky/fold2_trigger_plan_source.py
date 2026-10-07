@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 import json
 WORDS=51;PRIMARY=50
-PLAN_SCHEMA='octabam.perky.fold2-trigger-plan.v3';CONTRACT_SCHEMA='octabam.perky.fold2-trigger.v2'
+PLAN_SCHEMA='octabam.perky.fold2-trigger-plan.v2';CONTRACT_SCHEMA='octabam.perky.fold2-trigger.v1'
 
 def _fail(m):raise AssertionError('Fold2 trigger plan: '+m)
 def _u16(v,w):

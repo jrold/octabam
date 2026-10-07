@@ -7,12 +7,11 @@ DSP core and one fixed engine from each PĒRKONS hardware voice family.
 | OT track | PĒRKONS voice | First-audition engine |
 |---|---|---|
 | T1 | V1 | Fold Drum 1 |
-| T2 | V4 | Noise / Tone |
+| T2 | V3 | Karplus |
 | T5 | V2 | Fold Drum 2 |
-| T6 | V3 | Karplus |
+| T6 | V4 | Noise / Tone |
 
-T1/T2 share one DSP core; T5/T6 share the other. The pairings follow measured
-cycle costs after exact table/RNG/oscillator optimizations.  T3/T4/T7/T8 are not PERKY
+T1/T2 share one DSP core; T5/T6 share the other.  T3/T4/T7/T8 are not PERKY
 voices in this image.
 
 For this audition only, stock **FILTER** and **DELAY** are retained.  The other
@@ -47,21 +46,9 @@ Override them with `--firmware` / `--source` or `PERKONS_FIRMWARE` /
 
 The command runs the local Fold2 and Karplus ARM/DSP evidence chains, assembles
 the complete four-engine DSP program, builds the aggressive HW4 remix, injects
-private X/Y state including Karplus envelopes/ring at Y:$1000..$1dff
-and decoded synthesis tables at Y:$1e00..$3900, boots the image in the local
+private X/Y state including Karplus Y:$1000..$17ff, boots the image in the local
 emulator, and requires simultaneous varying audio from T1/T2/T5/T6.  It stops
 on the first failed gate.
-
-`build_hw4_machine.py` and `build_hw4_release.py` both delegate to
-`build_hw4_machine_canary.py`. Qualification, cycle measurement and packaging
-therefore consume the same `build_hw4_audition_candidate.py` composition.
-Use `--reuse-fixtures` to reuse hash-verified captures while rerunning every
-qualification gate; it does not skip qualification. The Karplus envelope tables
-occupy Y:$1000 and Y:$12ac, and its feedback ring occupies Y:$1600..$1dff.
-
-The current qualification evidence is recorded in
-[the PERKY handoff](../../../modules/perky/HANDOFF.md). A source checkpoint is
-not a packaged or qualified HW4 firmware.
 
 Only after all of those pass does it emit the flashable artifacts, normally:
 
@@ -81,10 +68,3 @@ trigs, and verify all four tracks can sound together.  Do not evaluate the
 missing algorithm browser yet; engine identity is pinned by track in this image.
 Start with both track FX slots empty.  FILTER and DELAY are the only stock effects
 expected to remain selectable in this audition profile.
-
-The optimization gate compares the composed program with its original generic
-kernels: exact PCM, every persistent voice/cache/trigger/RNG word, and all 2048
-Karplus ring words. The timing gate includes 34 control scenarios, all three
-modes and every trigger offset, then sums independent per-engine maxima using
-the unchanged factor-of-two model margin and measured stock reserve. A passing
-local gate still requires the physical four-track audition described above.

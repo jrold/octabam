@@ -20,7 +20,7 @@ def main():
     p = load(PROFILE)
     p.validate()
 
-    assert p.TRACK_VOICE == {0: 1, 1: 4, 4: 2, 5: 3}
+    assert p.TRACK_VOICE == {0: 1, 1: 3, 4: 2, 5: 4}
     assert p.VOICE_ENGINES == {
         1: (0, 1, 2),
         2: (3, 4, 5),
@@ -46,9 +46,9 @@ def main():
         '#include "control.c"',
         'track == 0u', 'track == 1u', 'track == 4u', 'track == 5u',
         'if (track == 0u) return 0u;',
-        'if (track == 1u) return 10u;',
+        'if (track == 1u) return 8u;',
         'if (track == 4u) return 3u;',
-        'if (track == 5u) return 8u;',
+        'if (track == 5u) return 10u;',
         'p[11] = (uint8_t)pk_hw4_engine(track);',
     ):
         assert needle in control, needle
@@ -69,9 +69,9 @@ def main():
     assert "source = once(source, old_reset, new_reset, 'HW4 latch removal')" in builder
 
     print('PERKY HW4 profile: PASS')
-    print('  DSP core tracks 1-4: T1=V1, T2=V4')
-    print('  DSP core tracks 5-8: T5=V2, T6=V3')
-    print('  audition engines pinned: T1 Fold1, T2 Noise/Tone, T5 Fold2, T6 Karplus')
+    print('  DSP core tracks 1-4: T1=V1, T2=V3')
+    print('  DSP core tracks 5-8: T5=V2, T6=V4')
+    print('  audition engines pinned: T1 Fold1, T2 Karplus, T5 Fold2, T6 Noise/Tone')
     print('  each logical voice retains exactly three hardware-family engine ids for later expansion')
 
 

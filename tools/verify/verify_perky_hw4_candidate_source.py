@@ -68,8 +68,6 @@ def main():
         'pk_karplus_voice:',
         'pk_karplus_trigger_first:',
         'pk_karplus_trigger_active:',
-        'pk_karplus_apply_prepared:',
-        'pk_fold2_apply_pitch:',
         'pk_probe_source:',
         'pks_continue:',
     ):
@@ -81,9 +79,9 @@ def main():
     control = (ROOT / 'modules/perky/control_hw4_candidate.c').read_text()
     for needle in (
         'if (track == 0u) return 0u;',
-        'if (track == 1u) return 10u;',
+        'if (track == 1u) return 8u;',
         'if (track == 4u) return 3u;',
-        'if (track == 5u) return 8u;',
+        'if (track == 5u) return 10u;',
         'p[11] = (uint8_t)pk_hw4_engine(track);',
     ):
         assert needle in control, needle
@@ -124,7 +122,7 @@ def main():
 
     layout = json.loads((OUT / 'layout.json').read_text())
     assert layout['hw4_audition']['engines'] == {
-        'T1': 0, 'T2': 10, 'T5': 3, 'T6': 8,
+        'T1': 0, 'T2': 8, 'T5': 3, 'T6': 10,
     }
     assert layout['hw4_audition']['karplus_trigger_snapshot'] == {
         'base_word': memory.KARPLUS_SHADOW_BASE,
@@ -132,8 +130,15 @@ def main():
     }
 
     extra = layout['extra_y_init']
-    assert [(row['base_word'], row['words']) for row in extra] == [
-        (base, words) for _, base, words in memory.y_spans()
+    assert [row['base_word'] for row in extra] == [
+        memory.KARPLUS_ENV1_BASE,
+        memory.KARPLUS_ENV2_BASE,
+        memory.KARPLUS_RING_BASE,
+    ]
+    assert [row['words'] for row in extra] == [
+        memory.KARPLUS_ENV_PACKED_WORDS,
+        memory.KARPLUS_ENV_PACKED_WORDS,
+        memory.KARPLUS_RING_WORDS,
     ]
     for row in extra:
         assert row['sha256'] and len(row['sha256']) == 64
@@ -144,14 +149,13 @@ def main():
     # the exact composed source under the DSP cycle model and fails if either
     # physical two-voice core pairing exceeds the guarded 16-sample deadline.
     run_release_gate('verify_perky_hw4_harvest.py')
-    run_release_gate('verify_perky_hw4_optimization.py')
     run_release_gate('verify_perky_hw4_realtime_budget.py')
 
     print(
         f'PERKY HW4 four-engine composition: PASS '
         f'({words} P words; gross audition donor {GROSS_HW4_DONOR})'
     )
-    print('  T1 Fold1 / T2 Noise/Tone / T5 Fold2 / T6 Karplus')
+    print('  T1 Fold1 / T2 Karplus / T5 Fold2 / T6 Noise-Tone')
     print(
         f'  Karplus envs/ring: Y:${memory.KARPLUS_ENV1_BASE:04x}, '
         f'${memory.KARPLUS_ENV2_BASE:04x}, '

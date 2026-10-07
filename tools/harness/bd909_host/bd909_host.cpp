@@ -23,7 +23,6 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
-#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -44,9 +43,6 @@ const TWord SENTINEL = 0x03f000, PBLK = 0x000100, AUDIO = 0x000000, STATE = 0x00
 // Executed instructions, from the emulator's own counter: a hardware DO loop
 // runs to completion inside ONE execInterpreter() call (dsp_host's meter).
 bool cycleMeter = false;
-bool profileEnabled = false;
-struct ProfileRow { uint64_t instructions = 0, cycles = 0; };
-std::map<TWord, ProfileRow> profile;
 long call(DSP& dsp, TWord pc) {
     dsp.setPC(SENTINEL);
     dsp.jsr(pc);
@@ -59,10 +55,7 @@ long call(DSP& dsp, TWord pc) {
         const auto opPC = dsp.getPC().toWord();
         dsp.execInterpreter();
         if (cycleMeter) {
-            const auto count = dsp.getInstructionCounter() - before;
-            const auto cycles = dsp.calcOpcodeCycles(opPC) * count;
-            modeledCycles += cycles;
-            if (profileEnabled) { profile[opPC].instructions += count; profile[opPC].cycles += cycles; }
+            modeledCycles += dsp.calcOpcodeCycles(opPC) * (dsp.getInstructionCounter() - before);
             if (dsp.regs().sr.var & 0x8000) dsp.doLoopEnd();
         }
     }
@@ -72,9 +65,8 @@ long call(DSP& dsp, TWord pc) {
 }
 
 int main(int argc, char** argv) {
-    std::string code, data, script, out, meterPath, statePath, inputPath, profilePath;
+    std::string code, data, script, out, meterPath, statePath, inputPath;
     TWord org = 0, entry = 0, init = 0; bool haveInit = false; int frames = 16; int stateWords = 64;
-    TWord stateBase = STATE, yStateBase = STATE;
     for (int i = 1; i + 1 < argc; i += 2) {
         std::string k = argv[i], v = argv[i + 1];
         if (k == "-code") code = v;
@@ -88,10 +80,7 @@ int main(int argc, char** argv) {
         else if (k == "-cycle-meter") cycleMeter = std::atoi(v.c_str()) != 0;
         else if (k == "-frames") frames = std::atoi(v.c_str());
         else if (k == "-state-words") stateWords = std::atoi(v.c_str());
-        else if (k == "-state-base") stateBase = std::strtoul(v.c_str(), nullptr, 16);
-        else if (k == "-ystate-base") yStateBase = std::strtoul(v.c_str(), nullptr, 16);
         else if (k == "-state") statePath = v;   // X:STATE..+63 and Y:STATE..+63 after each block
-        else if (k == "-profile") { profilePath = v; profileEnabled = true; }
         else if (k == "-input") inputPath = v;   // int32 LE samples, one per frame, into X:AUDIO (L and R)
         else { std::cerr << "unknown option " << k << "\n"; return 2; }
     }
@@ -99,7 +88,6 @@ int main(int argc, char** argv) {
         std::cerr << "usage: bd909_host -code gen.bin -org HEX -entry HEX [-init HEX] -data data.txt -script blocks.txt -out out.raw [-meter m.txt]\n";
         return 2;
     }
-    if (profileEnabled && !cycleMeter) { std::cerr << "-profile requires -cycle-meter 1\n"; return 2; }
     AllowAll validator;
     Memory mem(validator, 0x080000, 0x800000, 0x200000);
     Peripherals56362 px; Peripherals56367 py;
@@ -159,16 +147,11 @@ int main(int argc, char** argv) {
         }
         if (mf) mf << n << "\n";
         if (stf) {
-            for (int k = 0; k < stateWords; ++k) stf << std::hex << mem.get(MemArea_X, stateBase + k) << ' ';
-            for (int k = 0; k < stateWords; ++k) stf << std::hex << mem.get(MemArea_Y, yStateBase + k) << ' ';
+            for (int k = 0; k < stateWords; ++k) stf << std::hex << mem.get(MemArea_X, STATE + k) << ' ';
+            for (int k = 0; k < stateWords; ++k) stf << std::hex << mem.get(MemArea_Y, STATE + k) << ' ';
             stf << "\n";
         }
         maxN = std::max(maxN, n); sum += n; ++block;
-    }
-    if (profileEnabled) {
-        std::ofstream pf(profilePath);
-        if (!pf) { std::cerr << "cannot write profile " << profilePath << "\n"; return 2; }
-        for (const auto& [pc, row] : profile) pf << std::hex << pc << std::dec << " " << row.instructions << " " << row.cycles << "\n";
     }
     std::printf("blocks %ld  init %ld  max %ld instr/block (%.1f/sample)  mean %.1f/sample\n",
                 block, initInstr, maxN, double(maxN) / frames, double(sum) / std::max(1L, block) / frames);

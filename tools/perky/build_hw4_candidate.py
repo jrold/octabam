@@ -150,7 +150,7 @@ pks_voice_ready:
     out.mkdir(parents=True, exist_ok=True)
     (out / 'hw4.asm').write_text(source)
     print('HW4 DSP candidate: local slots 0+1 admitted on each core; slots 2+3 silent')
-    print('HW4 logical tracks: T1=V1, T2=V4, T5=V2, T6=V3')
+    print('HW4 logical tracks: T1=V1, T2=V3, T5=V2, T6=V4')
     print(f'HW4 X scratch/cache/Fold2 shadow: ${memory.SCRATCH_BASE:04x}..${memory.FOLD2_SHADOW_END-1:04x}')
     print('Browser remains unchanged; this builder emits no updater')
     return source, fold2_words

@@ -4,9 +4,9 @@
  * hardware voice so stale Part/browser bytes cannot make the test ambiguous.
  *
  *   OT T1 -> V1 -> engine  0 Fold Drum 1
- *   OT T2 -> V4 -> engine 10 Noise / Tone
+ *   OT T2 -> V3 -> engine  8 Karplus (fixed authentic ARM control state in DSP)
  *   OT T5 -> V2 -> engine  3 Fold Drum 2
- *   OT T6 -> V3 -> engine  8 Karplus (fixed authentic ARM control state in DSP)
+ *   OT T6 -> V4 -> engine 10 Noise / Tone
  *
  * The normal browser is intentionally not expanded.  This file changes the
  * outgoing PK/Y1 engine byte by track; it does not pretend the other eight
@@ -28,9 +28,9 @@ unsigned pk_admit_track(const volatile uint8_t *part, unsigned track)
 static unsigned pk_hw4_engine(unsigned track)
 {
     if (track == 0u) return 0u;   /* V1 Fold Drum 1 */
-    if (track == 1u) return 10u;   /* V4 Noise / Tone */
+    if (track == 1u) return 8u;   /* V3 Karplus */
     if (track == 4u) return 3u;   /* V2 Fold Drum 2 */
-    if (track == 5u) return 8u;  /* V3 Karplus */
+    if (track == 5u) return 10u;  /* V4 Noise / Tone */
     return 0xffu;
 }
 

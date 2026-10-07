@@ -32,9 +32,9 @@ MODE_MAP = (1, 2, 0)
 
 WRAPPER = r"""
 pk_controlled_voice_exec:
-        ; Prepared record bytes are loaded at X:$500..$50b.
-        ; r4=$4f8 therefore presents them to the seam at record offsets +8..+19.
-        move    #>$0004f8,r4
+        ; Host script words X:$100..$10b are the twelve PK/Y1 record bytes.
+        ; r4=$f8 therefore presents them to the seam at record offsets +8..+19.
+        move    #>$0000f8,r4
         move    #>$000200,r6
         jsr     pk_fold2_apply_controls
         rts
@@ -74,16 +74,14 @@ def main() -> None:
     c.build_host()
 
     seam = (PERKY / "fold_drum2_seam.asm").read_text()
-    source = c.source_builder.force_long_local_jsr(WRAPPER + "\n" + seam + (PERKY / "simple_drum_delta.asm").read_text())
+    source = c.source_builder.force_long_local_jsr(WRAPPER + "\n" + seam)
     binary, entry = c.assemble(source)
 
-    current_record = bytes(12)
     def write_data(path: Path, state_words: list[int], _tables: list[int]):
         if len(state_words) != VISIBLE_WORDS:
             raise AssertionError(("visible state size", len(state_words)))
         path.write_text(
             "X 100 " + " ".join(["000000"] * 13) + "\n"
-            + "X 500 " + " ".join(f"{v:06x}" for v in current_record) + "\n"
             + "X 200 " + " ".join(f"{v:06x}" for v in state_words) + "\n"
         )
         return []
@@ -113,10 +111,9 @@ def main() -> None:
     for case_index, (tag, record) in enumerate(records):
         if len(record) != 12:
             raise AssertionError((tag, "record size", len(record)))
-        current_record = record
         before = initial_state(case_index)
-        # The host script masks knobs to 7 bits; prepared bytes are supplied
-        # separately by write_data. The event is ignored here.
+        # The host accepts twelve script words plus one event word. Each record
+        # byte is written verbatim to X:$100..$10b; the event is ignored here.
         _audio, states, _ = c.run(
             binary, entry, tag, before, [], [(tuple(record), -1)]
         )

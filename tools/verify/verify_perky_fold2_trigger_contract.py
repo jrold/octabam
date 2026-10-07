@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Validate/compile the evidence-derived Fold Drum 2 trigger contract.
 
-The ARM delta stops before the mandatory post-trigger update. All raw trigger
-mutations must be exact across all 18 observations, optionally conditioned on pre-trigger
+The ARM delta includes trigger plus the mandatory post-trigger update. Words
+already written by pk_fold2_apply_controls are excluded. Remaining mutations
+must be exact across all 18 observations, optionally conditioned on pre-trigger
 PRIMARY so fixed OSC_A/OSC_B storage can represent inactive-oscillator reset
 and swap behavior.
 """
@@ -10,7 +11,7 @@ from pathlib import Path
 import argparse,json,sys
 R=Path(__file__).resolve().parents[2]; W=51; PRIMARY=50
 CONTRACT=R/'out/perky/fold2-trigger-contract.json'; PLAN=R/'out/perky/fold2-trigger-plan.json'
-CONTROL=set(); PHASES=('first_trigger','active_retrigger')
+CONTROL={14,20,31,32,33,42,44}; PHASES=('first_trigger','active_retrigger')
 
 def infer(cs,d):
  p=[c['pre'] for c in cs];q=[c['post'] for c in cs]
@@ -57,7 +58,7 @@ def main():
  # an interrupted, malformed or newly-unresolved run can never reuse stale law.
  if x.plan.exists():x.plan.unlink()
  if not x.contract.exists():print('Fold2 trigger contract missing; regenerate ARM fixtures first.',file=sys.stderr);raise SystemExit(2)
- c=json.loads(x.contract.read_text());assert c.get('schema')=='octabam.perky.fold2-trigger.v2' and c.get('compact_words')==W and c.get('engine_zero_based')==3
+ c=json.loads(x.contract.read_text());assert c.get('schema')=='octabam.perky.fold2-trigger.v1' and c.get('compact_words')==W and c.get('engine_zero_based')==3
  cs=[]
  for phase in PHASES:
   p=c[phase];assert len(p['cases'])==9;changed=set()
@@ -77,7 +78,7 @@ def main():
   msg='unresolved Fold2 trigger words: '+','.join(map(str,bad))
   if not x.allow_unresolved:raise RuntimeError(msg)
   print('Fold Drum 2 trigger contract: ANALYSIS ONLY\n'+msg+'\nNo shipping trigger plan emitted.');return
- plan={'schema':'octabam.perky.fold2-trigger-plan.v3','source_contract':c['schema'],'engine_zero_based':3,'compact_words':W,'primary_word':PRIMARY,'control_owned_words':sorted(CONTROL),'observations':18,'semantics':['all reads/conditions use pre-trigger state','mandatory post-trigger update has a separate complete-object oracle gate','DSP executable seam gate remains authoritative for write ordering'],'changed_words_all':changed,'trigger_changed_words':trig,'operations':ops}
+ plan={'schema':'octabam.perky.fold2-trigger-plan.v2','source_contract':c['schema'],'engine_zero_based':3,'compact_words':W,'primary_word':PRIMARY,'control_owned_words':sorted(CONTROL),'observations':18,'semantics':['all reads/conditions use pre-trigger state','control-owned words are applied by pk_fold2_apply_controls','DSP executable seam gate remains authoritative for write ordering'],'changed_words_all':changed,'trigger_changed_words':trig,'operations':ops}
  x.plan.parent.mkdir(parents=True,exist_ok=True);x.plan.write_text(json.dumps(plan,indent=2)+'\n')
  print(f"Fold Drum 2 trigger contract: PASS (18 ARM cases; {len(ops)} trigger writes; {sum(o['op']=='BY_PRIMARY' for o in ops)} PRIMARY-conditioned)")
  print('plan:',x.plan)

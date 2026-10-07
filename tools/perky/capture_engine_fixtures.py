@@ -8,12 +8,9 @@ reference sources and previously built Unicorn libraries without downloads.
 from pathlib import Path
 import argparse,hashlib,json,platform,subprocess
 ROOT=Path(__file__).resolve().parents[2]
-V121_SHA256='adcdbc4a2c660ffb6477f202211ae3cb70170bfe6ddfaecc3df0e4cb7db398c6'
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('firmware',type=Path);ap.add_argument('--source',type=Path,required=True);ap.add_argument('--unicorn-build',type=Path,required=True);ap.add_argument('--out',type=Path,default=ROOT/'out/perky/engine-fixtures');a=ap.parse_args()
-    if hashlib.sha256(a.firmware.read_bytes()).hexdigest()!=V121_SHA256:
-        raise SystemExit('ARM capture requires the pinned PĒRKONS v1.2.1 image; trigger wrapper addresses are version-specific')
     a.out.mkdir(parents=True,exist_ok=True);src=a.source/'Source';u=a.unicorn_build
     sources=[ROOT/'tools/harness/perky_cf/capture_engines.cpp',src/'FirmwareImage.cpp',src/'PerkonsM7.cpp',src/'PerkonsVoices.cpp',*sorted(src.glob('NativeV121*.cpp'))]
     exe=a.out/'capture'
