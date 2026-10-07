@@ -2,16 +2,18 @@
 """Report exact PĒRKONS v1.2.1 Fold Drum 2 trigger/retrigger mutations.
 
 This consumes the all-family capture corpus produced by
-``tools/perky/capture_engine_fixtures.py`` after the harness gained
-``wrapper-window-pre-trigger.bin``.  For each of the nine Voice-2/A1
-mode/control-corner cases it compares compact state immediately before the
-original ARM trigger with the state saved immediately after trigger plus the
-mandatory v1.2.1 post-trigger update.
+``tools/perky/capture_engine_fixtures.py`` after the harness gained both
+first-trigger and active-retrigger snapshots. For each of the nine Voice-2/A1
+mode/control-corner cases it reports:
 
-The report is evidence, not a shipping implementation.  It intentionally
-prints every compact word that changes in at least one case so the Octatrack
-seam can reproduce the original trigger law without guessing hidden envelope,
-oscillator, transient, crossfade, or primary-pointer state.
+* fresh control state -> first trigger + mandatory v1.2.1 post-trigger update;
+* state after 512 original-ARM samples -> active retrigger + the same update.
+
+The second delta is the critical one for Fold Drum 2 because its renderer owns
+two oscillators plus a crossfade/primary selector. The report is evidence, not
+a shipping implementation: it prints every compact word changed by the
+original ARM path so the Octatrack seam can reproduce the trigger law without
+guessing hidden envelope, oscillator, transient, crossfade, or selector state.
 """
 from __future__ import annotations
 
@@ -75,14 +77,43 @@ def _voice(path: Path) -> compact.FoldDrum2:
     return compact.FoldDrum2.from_arm(raw)
 
 
+def _fixture_error(path: Path) -> None:
+    print("Fold Drum 2 trigger analysis needs regenerated engine fixtures.",
+          file=sys.stderr)
+    print("The capture tool requires the same external firmware, PerkyBits",
+          file=sys.stderr)
+    print("source tree and Unicorn build arguments used for the existing",
+          file=sys.stderr)
+    print("local corpus. Re-run tools/perky/capture_engine_fixtures.py with",
+          file=sys.stderr)
+    print("those arguments, then run this analyzer again.", file=sys.stderr)
+    print(f"First missing file: {path}", file=sys.stderr)
+    raise SystemExit(2)
+
+
+def _load_cases(pre_name: str, post_name: str):
+    cases: list[tuple[str, compact.FoldDrum2, compact.FoldDrum2]] = []
+    for mode in range(3):
+        for corner in range(3):
+            case = FIX / f"engine-{ENGINE}-mode-{mode + 1}-corner-{corner}"
+            pre_path = case / pre_name
+            post_path = case / post_name
+            if not pre_path.exists():
+                _fixture_error(pre_path)
+            if not post_path.exists():
+                _fixture_error(post_path)
+            cases.append((f"m{mode + 1}/c{corner}",
+                          _voice(pre_path), _voice(post_path)))
+    return cases
+
+
 def _classify(pairs: list[tuple[int, int]], all_pre: list[list[int]], index: int) -> str:
     posts = [post for _pre, post in pairs]
     if len(set(posts)) == 1:
         return f"CONST 0x{posts[0]:04x}"
 
-    # Detect exact copies from another compact pre-trigger word.  Requiring
-    # all nine cases prevents coincidental one-case matches from being called
-    # a trigger rule.
+    # Detect exact copies from another compact pre-trigger word. Requiring all
+    # nine cases prevents a one-case coincidence from becoming a trigger rule.
     sources = []
     for source in range(compact.WORDS):
         if source == index:
@@ -97,44 +128,13 @@ def _classify(pairs: list[tuple[int, int]], all_pre: list[list[int]], index: int
         )
         return f"COPY pre[{rendered}]"
 
-    # Pointer selection is compacted to PRIMARY=0/1.  Calling out a strict
-    # toggle is especially useful for Fold2's dual-oscillator retrigger path.
     if all(post == (pre ^ 1) for pre, post in pairs):
         return "TOGGLE bit0"
 
     return "CASE-DEPENDENT"
 
 
-def main() -> None:
-    cases: list[tuple[str, compact.FoldDrum2, compact.FoldDrum2]] = []
-    missing: list[Path] = []
-
-    for mode in range(3):
-        for corner in range(3):
-            case = FIX / f"engine-{ENGINE}-mode-{mode + 1}-corner-{corner}"
-            pre_path = case / "wrapper-window-pre-trigger.bin"
-            post_path = case / "wrapper-window-before.bin"
-            for path in (pre_path, post_path):
-                if not path.exists():
-                    missing.append(path)
-            if pre_path.exists() and post_path.exists():
-                label = f"m{mode + 1}/c{corner}"
-                cases.append((label, _voice(pre_path), _voice(post_path)))
-
-    if missing:
-        unique = list(dict.fromkeys(missing))
-        print("Fold Drum 2 trigger analysis needs regenerated engine fixtures.",
-              file=sys.stderr)
-        print("The capture tool requires the same external firmware, PerkyBits",
-              file=sys.stderr)
-        print("source tree and Unicorn build arguments used for the existing",
-              file=sys.stderr)
-        print("local corpus. Re-run tools/perky/capture_engine_fixtures.py with",
-              file=sys.stderr)
-        print("those arguments, then run this analyzer again.", file=sys.stderr)
-        print(f"First missing file: {unique[0]}", file=sys.stderr)
-        raise SystemExit(2)
-
+def _report(title: str, cases) -> set[int]:
     if len(cases) != 9:
         raise RuntimeError(f"expected 9 Fold Drum 2 cases, got {len(cases)}")
 
@@ -150,8 +150,8 @@ def main() -> None:
         if any(before != after for before, after in pairs)
     }
 
-    print("Fold Drum 2 original ARM trigger delta")
-    print("======================================")
+    print(title)
+    print("=" * len(title))
     print(f"cases: {len(cases)}")
     print(f"changed compact words: {len(changed)} / {compact.WORDS}")
     print()
@@ -167,12 +167,40 @@ def main() -> None:
             in zip(cases, pairs)
         ))
 
-    # A compact machine-readable footer is convenient when turning the report
-    # into seam reset stores: each line is index:name:classification.
     print("\nTRIGGER_RULES")
     for index in sorted(changed):
         pairs = changed[index]
-        print(f"{index}:{NAMES.get(index, f'word[{index}]')}:{_classify(pairs, all_pre, index)}")
+        name = NAMES.get(index, f"word[{index}]")
+        print(f"{index}:{name}:{_classify(pairs, all_pre, index)}")
+    print()
+    return set(changed)
+
+
+def main() -> None:
+    first = _load_cases(
+        "wrapper-window-pre-trigger.bin",
+        "wrapper-window-before.bin",
+    )
+    retrigger = _load_cases(
+        "wrapper-window-retrigger-pre.bin",
+        "wrapper-window-retrigger-before.bin",
+    )
+
+    first_changed = _report(
+        "Fold Drum 2 original ARM first-trigger delta",
+        first,
+    )
+    retrigger_changed = _report(
+        "Fold Drum 2 original ARM active-retrigger delta",
+        retrigger,
+    )
+
+    only_active = sorted(retrigger_changed - first_changed)
+    only_first = sorted(first_changed - retrigger_changed)
+    print("DELTA_SET_COMPARISON")
+    print("active-only: " + (", ".join(map(str, only_active)) or "none"))
+    print("first-only: " + (", ".join(map(str, only_first)) or "none"))
+    print("shared: " + ", ".join(map(str, sorted(first_changed & retrigger_changed))))
 
 
 if __name__ == "__main__":
