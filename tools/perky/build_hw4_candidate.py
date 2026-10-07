@@ -19,6 +19,7 @@ sys.path.insert(0, str(ROOT / 'tools/perky'))
 
 import build_fold2_candidate as fold2
 import build_noise_tone_synth_source as noise
+import hw4_memory as memory
 import hw4_profile as profile
 
 OUT = ROOT / 'out/perky/hw4-candidate'
@@ -33,7 +34,17 @@ def once(source: str, old: str, new: str, what: str) -> str:
 
 def build(out: Path = OUT):
     profile.validate()
-    source, fold2_words = fold2.build(out)
+    memory.validate()
+
+    # Fold2's reusable hidden builder keeps the earlier PERKY4 shadow address.
+    # Override it only while composing HW4 so the older audition paths remain
+    # byte-for-byte untouched.
+    old_shadow = fold2.SHADOW_X
+    try:
+        fold2.SHADOW_X = memory.FOLD2_SHADOW_BASE
+        source, fold2_words = fold2.build(out)
+    finally:
+        fold2.SHADOW_X = old_shadow
 
     old = '''        ; Additional PERKY tracks on this core produce silence, preserving
         ; transport timing. The first signed track is admitted each frame.
@@ -99,6 +110,16 @@ pks_voice_ready:
 '''
     source = once(source, old_slots, new_slots, 'HW4 unreachable overlay slots')
 
+    # Karplus requires 128 words of shared scratch.  Move the Simple/Fold pitch
+    # decoder's persistent cache above that scratch; the HW4 image injector uses
+    # the same layout metadata when it seeds the cache tag.
+    source = once(
+        source,
+        '        move    #>$003964,r4',
+        f'        move    #>${memory.PITCH_CACHE_BASE:06x},r4',
+        'HW4 pitch-cache relocation',
+    )
+
     # Re-run the assembler-specific branch/JSR normalization after editing the
     # composed source.  Import this helper directly rather than relying on the
     # incidental nested import chain of the Fold2 builder.
@@ -107,6 +128,7 @@ pks_voice_ready:
     (out / 'hw4.asm').write_text(source)
     print('HW4 DSP candidate: local slots 0+1 admitted on each core; slots 2+3 silent')
     print('HW4 logical tracks: T1=V1, T2=V3, T5=V2, T6=V4')
+    print(f'HW4 X scratch/cache/Fold2 shadow: ${memory.SCRATCH_BASE:04x}..${memory.FOLD2_SHADOW_END-1:04x}')
     print('Browser remains unchanged; this builder emits no updater')
     return source, fold2_words
 
