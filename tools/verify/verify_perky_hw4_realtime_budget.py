@@ -2,15 +2,21 @@
 """Measure the final HW4 audition source with two voices per DSP core.
 
 This uses the exact composed shipping source, authentic boot assets and the same
-DSP56300 cycle model as the existing one-voice PERKY deadline gate.  Each of the
+DSP56300 cycle model as the existing one-voice PERKY deadline gate. Each of the
 four fixed audition engines runs a persistent 256-block sequence with first
-trigger, release tails and active retriggers at all 16 sample offsets.  The two
+trigger, release tails and active retriggers at all 16 sample offsets. The two
 tracks assigned to each core are then summed block-for-block.
+
+Karplus is fed the same full-width prepared PK/Y1 ABI as the real HW4 ColdFire
+writer (four 0x0800 middle controls plus physical MODE). This ensures the three
+live lookup-table decodes, TWANG mapping and trigger control restore are all in
+the measured source path; an obsolete four-raw-byte fixture would index outside
+the 4096-entry control tables and would not be a meaningful realtime proof.
 
 Hardware-safety rule is intentionally unchanged from the existing gate:
   2 * modeled PERKY source cycles + stock reserve <= 72,512 cycles / 16 samples
-where the stock reserve is the measured 1,410 cycles/sample.  The factor of two
-covers the emulator model's optimistic MOVE timings.  A failing gate blocks the
+where the stock reserve is the measured 1,410 cycles/sample. The factor of two
+covers the emulator model's optimistic MOVE timings. A failing gate blocks the
 HW4 firmware packager; it is not converted into a warning.
 """
 from __future__ import annotations
@@ -77,7 +83,20 @@ def prepared_records():
     fold1 = fold1_transport.State().prepare(raw, 0, trigger=True)
     fold2 = fold2_transport.State().prepare(raw, 0, trigger=True)
     noise = bytearray([64, 64, 64, 64, 0, 0, 0, 0, 0, 0, 0, 10])
-    karplus = bytearray([64, 64, 64, 64, 0, 0, 0, 0, 0, 0, 0, 8])
+
+    # Real control_hw4_candidate.c ABI for four middle Karplus controls:
+    # raw 64 -> prepared 2048 -> big-endian 0x0800. Physical MODE 1 exercises
+    # the M2 -> firmware-mode-0 branch, which includes both comparisons.
+    karplus = bytearray([
+        0x08, 0x00,  # TUNE
+        0x08, 0x00,  # DECAY
+        0x08, 0x00,  # EDGE
+        0x08, 0x00,  # TWANG
+        1,           # physical MODE M2
+        0,
+        0,
+        8,           # engine id
+    ])
     assert len(fold1) == len(fold2) == len(noise) == len(karplus) == 12
     return {0: list(fold1), 8: list(karplus), 3: list(fold2), 10: list(noise)}
 
@@ -103,6 +122,11 @@ def main():
     layout = json.loads((WORK / 'layout.json').read_text())
     extra_y = perky_image.load_extra_y_init(WORK, layout)
     extra_x = perky_image.extra_state_init(layout)
+    if len(extra_y) != 6:
+        raise AssertionError(
+            f'HW4 timing expected 6 extra Y assets (2 env + ring + 3 Karplus LUTs), '
+            f'got {len(extra_y)}'
+        )
 
     def write_data(path, _state, _tables):
         record_words = [0x504B, 0, 0x5931, 0, 0, 0, 0, 0] + list(RECORD)
@@ -148,13 +172,15 @@ def main():
     guarded0 = MODEL_MARGIN * worst0 + STOCK_RESERVED
 
     report = {
-        'schema': 'perky-hw4-realtime-budget-v1',
+        'schema': 'perky-hw4-realtime-budget-v2',
         'deadline_cycles_per_16': DEADLINE,
         'stock_reserved_cycles_per_16': STOCK_RESERVED,
         'stock_cycles_per_sample': STOCK_PER_SAMPLE,
         'model_margin': MODEL_MARGIN,
         'combined_modeled_source_budget_per_core': SOURCE_BUDGET,
         'blocks_per_engine': len(events),
+        'karplus_record': records[8],
+        'karplus_live_control_assets': len(extra_y),
         'engine_max_modeled': {str(k): max(v) for k, v in meters.items()},
         'core1_T1_fold1_T2_karplus': {
             'modeled_max': worst1,
@@ -180,6 +206,7 @@ def main():
         'PERKY HW4 realtime budget: PASS '
         f'(core1 {worst1} modeled -> {guarded1}/{DEADLINE} guarded; '
         f'core0 {worst0} modeled -> {guarded0}/{DEADLINE} guarded; '
+        'live Karplus LUT/control restore included; '
         '2x model margin + measured stock reserve)'
     )
 
