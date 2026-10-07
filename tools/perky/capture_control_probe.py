@@ -7,7 +7,7 @@ JSONL and reports are written only under ignored ``out/perky``.
 
 Examples::
 
-    python3 tools/perky/capture_control_probe.py noise-tone \
+    python3 tools/perky/capture_control_probe.py noise-tone --pairwise \
       --firmware ~/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img \
       --source ~/Downloads/perkybits
 
@@ -15,10 +15,12 @@ Examples::
       --firmware ~/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img \
       --source ~/Downloads/perkybits
 
-Noise/Tone expects the private PerkyBits ``octabam-control-probe`` work.
-Karplus expects ``codex/octabam-karplus-control-probe`` (or a descendant)
-containing ``smoke/KarplusControlProbe.cpp``.  This tool never clones, fetches,
-pushes, invokes GitHub Actions, or writes firmware bytes into Git.
+Both current probes expect the private PerkyBits
+``codex/octabam-karplus-control-probe`` work (or a descendant).  Noise/Tone v2
+captures all three physical panel modes, including the separate Waveform2 M1
+path; the historical shared-only probe remains untouched for reproducibility.
+This tool never clones, fetches, pushes, invokes GitHub Actions, or writes
+firmware bytes into Git.
 """
 from __future__ import annotations
 
@@ -35,9 +37,9 @@ OUT_ROOT = ROOT / "out/perky/control-probes"
 
 FAMILIES = {
     "noise-tone": {
-        "target": "perkybits-control-probe",
-        "source_marker": "ControlStateProbe.cpp",
-        "analyzer": ROOT / "tools/re/perky_control_analyze.py",
+        "target": "perkybits-noise-tone-control-probe",
+        "source_marker": "NoiseToneControlProbe.cpp",
+        "analyzer": ROOT / "tools/re/noise_tone_control_analyze.py",
         "stem": "noise-tone-control",
     },
     "karplus": {
@@ -101,7 +103,7 @@ def main() -> None:
     parser.add_argument(
         "--pairwise",
         action="store_true",
-        help="also capture pairwise control corners (supported by both probes)",
+        help="also capture pairwise control corners (recommended before shipping)",
     )
     parser.add_argument(
         "--clean",
@@ -122,14 +124,9 @@ def main() -> None:
     if not (source / "Source/PerkonsVoices.cpp").is_file():
         die(f"not a PerkyBits checkout: {source}")
     if not marker.is_file():
-        branch_hint = (
-            "octabam-control-probe"
-            if args.family == "noise-tone"
-            else "codex/octabam-karplus-control-probe"
-        )
         die(
-            f"{args.family} probe source missing: {marker}; "
-            f"check out the PerkyBits {branch_hint!r} work first"
+            f"{args.family} probe source missing: {marker}; check out the PerkyBits "
+            "'codex/octabam-karplus-control-probe' work first"
         )
     if not analyzer.is_file():
         die(f"missing Octabam analyzer: {analyzer}")
@@ -142,8 +139,6 @@ def main() -> None:
         else (OUT_ROOT / f"{args.family}-build").resolve()
     )
     if args.clean and build.exists():
-        # Constrain deletion to the explicitly selected build directory.  The
-        # evidence/output directory is not touched by --clean.
         shutil.rmtree(build)
     build.mkdir(parents=True, exist_ok=True)
 
