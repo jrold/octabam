@@ -19,7 +19,8 @@
 ;   state is X:r5+$40..+$47; n7 samples are rendered to stereo X:(r0)+.
 
 pk_simple_oscillator_probe:
-        lua     (r5+$40),r7
+        move    #>$40,n5
+        lua     (r5+n5),r7
         do      n7,pksdo_probe_done
         jsr     pk_simple_oscillator
         move    a1,x:(r0)+
@@ -93,6 +94,8 @@ pksdo_phase_ready:
         beq     pksdo_wave1
         cmp     #>$28a0,a
         beq     pksdo_wave2
+        cmp     #>$24a0,a
+        beq     pksdo_wave3
         bra     pksdo_unknown_wave
 pksdo_wave0:
         clr     a
@@ -104,6 +107,13 @@ pksdo_wave1:
         bra     pksdo_have_wave
 pksdo_wave2:
         move    #>$000200,a
+        move    a1,x:(r5+$59)
+        bra     pksdo_have_wave
+pksdo_wave3:
+        ; Complex Drum V2 also selects the neighboring 0x24a0 table. The
+        ; ordinary Simple Drum bank remains three tables; Complex's payload
+        ; appends this fourth table at ordinal 3.
+        move    #>$000300,a
         move    a1,x:(r5+$59)
         bra     pksdo_have_wave
 pksdo_unknown_wave:

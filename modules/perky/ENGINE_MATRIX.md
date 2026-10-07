@@ -10,6 +10,8 @@ an explicit gate.
 Reference revision used for this audit:
 `jrold/perkybits@605cfd05d9dcdc0d0caa955297556a26ea257f82`.
 
+All twelve families have original ARM mode/corner and continuation fixtures. That is oracle capture, not a shipping port. See [HANDOFF.md](HANDOFF.md) for PERKY4 gates and remaining all-family work.
+
 ## Mode mapping
 
 `MODE` below is physical panel M1/M2/M3 -> raw firmware mode. Do not substitute
@@ -17,12 +19,12 @@ Reference revision used for this audit:
 
 | Family | Slot / panel algorithm | MODE -> firmware | Native reference | Reference state / major assets | Octabam qualification |
 |---|---:|---:|---|---|---|
-| Fold Drum 1 | V1 / A1 | `1,2,0` | `NativeV121FoldDrums::renderFold1` | `0x0f4`; pitch + 2 envelopes + 2x256 waves + RNG | Audit only |
-| Wavetable Drum V1 | V1 / A2 | `1,0,2` | `NativeV121WavetableDrum` | `0x150`; pitch + 2 envelopes + up to 4x2048 waves | Audit only |
-| Simple Drum | V1 / A3 | `1,0,2` | `NativeV121SimpleDrum` | `0x120`; pitch + 2 envelopes + 2x256 waves | **34-word live compact parity gate; DSP/control integration pending** |
+| Fold Drum 1 | V1 / A1 | `1,2,0` | `NativeV121FoldDrums::renderFold1` | `0x0f4`; pitch + 2 envelopes + 2x256 waves + RNG | **PERKY4 full DSP/production transport/boot/sequencer locally qualified; physical test pending** |
+| Wavetable Drum V1 | V1 / A2 | `1,0,2` | `NativeV121WavetableDrum` | `0x150`; pitch + 2 envelopes + 49x2048 waveform assets | Candidate exact DSP PCM/state; production controls and physical asset placement pending |
+| Simple Drum | V1 / A3 | `1,0,2` | `NativeV121SimpleDrum` | `0x120`; pitch + 2 envelopes + 2x256 waves | **PERKY4 full DSP/production transport/boot/sequencer locally qualified; physical test pending** |
 | Fold Drum 2 | V2 / A1 | `1,2,0` | `NativeV121FoldDrums::renderFold2` | `0x134`; pitch + 2 envelopes + up to 4x256 waves + RNG | Audit only |
-| Wavetable Drum V2 | V2 / A2 | `1,0,2` | `NativeV121WavetableDrum` | `0x150`; pitch + 2 envelopes + up to 4x2048 waves | Audit only |
-| Complex Drum | V2 / A3 | `1,0,2` | `NativeV121ComplexDrum` | `0x140`; pitch + 2 envelopes + up to 4x256 waves | Audit only |
+| Wavetable Drum V2 | V2 / A2 | `1,0,2` | `NativeV121WavetableDrum` | `0x150`; pitch + 2 envelopes + 49x2048 waveform assets | Candidate exact DSP PCM/state; production controls and physical asset placement pending |
+| Complex Drum | V2 / A3 | `1,0,2` | `NativeV121ComplexDrum` | `0x140`; pitch + 2 envelopes + up to 4x256 waves | **Exact compact/native/ARM gate for all 9 mode/corner blocks; DSP translation and shipping integration pending** |
 | Resonant Drums | V3 / A1 | `1,0,2` | `NativeV121ResonantBass` / `NativeV121ResonantSnare` mode paths | `0x178` / `0x1d4`; 2 envelopes + 257-entry interpolation tables + RNG | Audit only |
 | Slap | V3 / A2 | `1,0,2` | `NativeV121Slap` | `0x2670`; 2 envelopes + large delay/state + RNG | Audit only; large-state family |
 | Karplus | V3 / A3 | `1,0,2` | `NativeV121Karplus` | `0x10e0`; 2 envelopes + large delay/state + RNG | Audit only; large-state family |

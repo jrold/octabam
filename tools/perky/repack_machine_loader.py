@@ -234,7 +234,7 @@ def build(image_path: Path, table_dir: Path, output: Path,
     print(f"  loader payloads: {', '.join(names)}")
     print(
         f"{output}: {len(final):,} bytes; "
-        f"X:{perky_image.X_BASE:04x}+{perky_image.X_WORDS}; "
+        f"X:{perky_image.X_BASE:04x}+{table_layout['x_init']['words']}; "
         f"Y:{perky_image.Y_BASE:04x}.."
         f"{perky_image.Y_BASE + table_layout['total_words'] - 1:04x}"
     )

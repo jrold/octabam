@@ -88,7 +88,7 @@ namespace ot
 		// runs from the emulator's poll cadence: accepts, reads lines, runs
 		// commands. Returns false if the socket could not be created.
 		bool listen(const std::string& _path);
-		bool listening() const { return m_listenFd >= 0; }
+		bool listening() const { return m_listenFd >= 0 || m_fd >= 0; }
 		// A host is present while a socket client is connected, or from the
 		// first direct `command()` (a test) until `closeClient()`.
 		bool connected() const { return m_fd >= 0 || m_hostPresent; }

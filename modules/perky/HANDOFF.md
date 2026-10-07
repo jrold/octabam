@@ -1,3 +1,60 @@
+# PERKY continuation — PERKY4 local qualification
+
+The user wants **all twelve PĒRKONS families working**, using local Git and local builds only. This objective remains unfinished. The latest retrieved branch base is `perky-machines` at `9b12c0ebd3301c2a691dc7e710da47be5ba64a90`. Current source changes are in a separate writable worktree; they have not yet been committed or pushed.
+
+## Current testable firmware
+
+**PERKY4 exposes authentic v1.2.1 `001 FOLD DRUM` and `003 SIMPLE DRUM`, alongside preserved synthetic PERKY2 `011 NOISE/TONE`.** New-engine hardware testing is pending. Noise/Tone's earlier physical success applies to PERKY2; PERKY4 regression is locally verified.
+
+Artifacts are local, excluded from Git:
+
+- `out/OCTATRACK_PERKY4.bin` — CF updater; checksum/container round-trip passed.
+- `out/OCTATRACK_OS1.40C_PERKY4.syx` — MIDI updater.
+- `out/PERKY4_PERKY_TEST.txt` — hashes and qualification status.
+- Copies and `PERKY4_TEST_GUIDE.md` are in the calling task's `outputs` directory.
+
+Select PERKY, then `003 SIMPLE DRUM`; test M1/M2/M3, TUNE/DECAY/ENV/MIX, sequencing/retriggering and live MODE changes. ENV means pitch-envelope decay; MIX means pitch-envelope amount for this family. Use FX1/FX2 NONE and retain the one-voice-per-core admission guard. Fold Drum uses FOLD/PENV; physical MODE is no transient / noise transient / pulse transient. Other nine families are not exposed.
+
+## Measured local evidence
+
+- `make check REMIX=perky-machine OT_PROJECT=`: all runnable checks passed; optional dependency/project skips were reported. This floor includes the three Simple Drum primitive execution gates; it does not replace full shipping gates.
+- `verify_perky_simple_drum_voice_exec.py`: complete DSP renderer, 240 native C++ reference blocks, exact PCM and all 34 live state words, velocity/mute, envelopes, retriggers, oscillator wraps and all waves.
+- `verify_perky_simple_drum_production_transport.py`: **actual production ColdFire `pk_render`**, 1,024 records, eight tracks, controls/modes and switching history.
+- `verify_perky_multi_seam_exec.py`: mixed shipping source, tagged host records, all slots/modes/trigger offsets, overlays, unsupported-engine silence and PERKY2 PCM/state regression. 13,878 cases/blocks; worst modeled path **22,633 cycles**, cap 23,040. Persistent Noise/Tone corner sweep is a timing check; its exact regression assertions are the independent first-block seam cases.
+- Final boot gate: both uploads and runtime read back exactly, loader/RTOS handoff succeeded.
+- Full production firmware sequencer gate: **each of three engines ran 32,000 frames**, dirty seed 123, repeated later triggers, both cores produced varying sustained post-AMP/FX audio; six excess voices matched an independently staged signed-source zero control.
+- Audibility excludes the first 4,096 samples, preventing dirty-memory startup noise from passing as synthesis. The zero control runs the same image with unsupported engine 99, retaining identical stock AMP/FX continuation. Ordinary FLEX does not always execute that continuation on startup.
+
+Final mixed memory: **2,680/2,724 P words**, **359/616 private X words**, **1,946/2,139 private Y words**. Four 58-word overlay slots and shared RNG remain at X:$3800; initialization extends through $38F1. Scratch is X:$3900..$3963, pitch cache X:$3964..$3974. Y:$07A5..$0F3E holds preserved Noise/Tone waves, three authentic Simple Drum waves, direct envelope samples, packed pitch basis and decoder padding.
+
+Additional PERKY4 evidence: Fold Drum matched 15 original ARM blocks and 400 randomized native blocks exactly (PCM, 40 live words and RNG). Its 160 physical noise-hold cases peaked at 19,424 modeled cycles; unconstrained states are not the production control domain. Production Fold transport passed 2,048 actual ColdFire calls. The Fold seam passed 3,684 cases/blocks, worst 20,467 modeled cycles. The full Simple/Noise gate also passed on the Fold composition, worst 22,639 cycles. Both CF and MIDI round-trips reproduced the emitted MAIN OS exactly. Full 24-case pre/post general-builder refhash matrix was bit-identical.
+
+## Bugs fixed during integration
+
+Incoming production DSP record words carry high tags (`$030000`). Dispatch must mask engine IDs to eight bits and byte preparation must mask each byte. Untagged-only harnesses missed this; the shipping seam gate now uses tagged inputs. Authentic trigger preserves oscillator phase/current wave and resets both envelope accumulators.
+
+The local emulator's P-memory write hook cleared opcode cache even for writes beyond allocated P. Bounds checking now matches Memory::dspWrite behavior; the same crash was reproduced with stock and old PERKY2 images. USB verification uses an inherited socketpair because sandbox listener binding is unavailable; protocol/enumeration/MSC checks still run.
+
+## All-family continuation
+
+Original ARM captures now cover **12 families × 3 panel modes × 3 control corners**. Each captures a triggered 256-sample block plus a continuation block with explicit RNG inputs/output and wrapper RAM windows. Windows are not engine object sizes. `capture_engine_fixtures.py` generates them from the user's external firmware/native source; no derived assets go in Git.
+
+Fold Drum 1 is now locally shipping-qualified in PERKY4, with physical testing pending. `build_fold_machine_canary.py` is its gated local builder. It keeps Simple Drum and Noise/Tone unchanged under exact regression gates.
+
+Wavetable V1/V2 candidate renderer passes 18 original ARM blocks plus 240 randomized native blocks: exact PCM and all 41 live words, all 49 waveform assets, 841 standalone P words, peak 19,435 modeled cycles per 16 samples. Its current primitive gate uses a logical Y bank that crosses absent physical Octatrack addresses; **this is not a shipping memory map or port**. SURF selects among 48 × 2,048-sample tables, plus the initial deferred-switch waveform, rather than just the corner snapshot tables.
+
+The address-independent Wavetable bank now has a host-tested lossless second-difference codec: 49 assets / 100,352 samples occupy 45,713 DSP words including directory and guards. The DSP decoder executes against every asset exactly, uses a 33-word cache, and measures at most 2,511 modeled cycles for a sequential 16-sample block. Random renderer cache misses and physical placement remain separate gates.
+
+Complex Drum now has an exact compact host model and a native/ARM execution gate: all nine original V2 A3 mode/corner blocks match PCM and final state. Its DSP56300 candidate now has the corrected base-frequency register preservation, pitch-factor register lifetime, accumulator alignment and initialized pitch-cache tag; all three MODE-1 blocks pass exact DSP PCM/state. MODE-2 reaches the deferred `0x24a0` wave correctly but still diverges at that fourth-table interpolation boundary. No Complex browser entry or shipping DSP dispatch has been enabled.
+
+The user explicitly selected **all 12 voices, accepting fewer stock effects**. Reclaim effect memory for the final design; do not ask again. Storage measurements and host codec round-trips alone do not establish DSP timing. Boot staging/bootstrap/mailbox ranges must survive; stock init clears local Y and shared RAM, so larger asset uploads need changed initialization or post-init loading. Shared P/X/Y aliases must have a single ledger. The final architecture is still under implementation.
+
+Remaining: integrate Wavetable production controls and lossless physical asset access; translate and execute-gate Fold Drum 2 and Complex Drum on DSP56300; then implement resonant modes, Slap, Karplus, Noise Hat and Acoustic Hats, and replace synthetic Noise/Tone controls/assets with authentic qualified behavior. Preserve the physically working Noise/Tone path during development. Never expose placeholder browser entries or claim reference capture equals a port.
+
+## Historical PERKY2 snapshot
+
+Everything below is the previous handoff, retained as historical evidence. Its “current”, “pending” and memory figures refer to PERKY2 or earlier work and are superseded above.
+
 # PERKY continuation handoff — 6 October 2026
 
 ## Current milestone and user goal

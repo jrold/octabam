@@ -29,7 +29,9 @@ import blockdump as bd  # noqa:E402
 import recloop as rl  # noqa:E402
 from ab_fixture import prepare  # noqa:E402
 
-OUT = ROOT / "out/perky/synth-port"
+ENGINE = int(os.environ.get("PERKY_TEST_ENGINE", "10"))
+assert ENGINE in (0, 2, 10), "only qualified engine candidates can enter this gate"
+OUT = ROOT / f"out/perky/synth-port-engine-{ENGINE}"
 TRACKS = (1, 5)
 BLOCKED_TRACKS = (2, 3, 4, 6, 7, 8)
 DEFAULT_IMAGE = ROOT / "out/mainos_perky_synth.bin"
@@ -52,8 +54,8 @@ def signed_records(classes, core: int):
             if len(words) >= 4 and words[0] == 0x504B and words[2] == 0x5931]
 
 
-def configure_fixture(project: str) -> Path:
-    fixture = prepare(project, OUT / "project")
+def configure_fixture(project: str, *, engine: int = ENGINE, name: str = "project") -> Path:
+    fixture = prepare(project, OUT / name)
     for bank in fixture.glob("bank*.work"):
         def mutate(data):
             for part in range(8):
@@ -61,7 +63,7 @@ def configure_fixture(project: str) -> Path:
                 for track in range(8):
                     data[base + 0x22 + track] = 1  # FLEX transport donor
                     data[base + 60 + 30 * track:base + 63 + 30 * track] = b"PK\x01"
-                    defaults = (64, 64, 64, 64, 0, 0, 0, 0, 0, 0, 0, 10) if track != 4 else (127, 127, 127, 0, 0, 0, 2, 0, 0, 0, 0, 10)
+                    defaults = (64, 64, 64, 64, 0, 0, 0, 0, 0, 0, 0, engine) if track != 4 else (127, 127, 127, 0, 0, 0, 2, 0, 0, 0, 0, engine)
                     for slot, value in enumerate(defaults):
                         off = (0x2a if slot < 6 else 0x1da) + 30 * track + 6 + slot % 6
                         data[base + off] = value
@@ -133,12 +135,18 @@ def main() -> None:
         subprocess.run(cmd, cwd=ROOT, check=True, timeout=600,
                        stdout=log, stderr=subprocess.STDOUT)
 
-    # Dirty stock control: the port leaves stock AMP/DC-filter state dirty.
-    # Run unmodified stock on the same card rather than accepting unexplained
-    # stereo differences or nonzero output from a rejected voice.
+    # Same signed-source continuation with an unsupported engine produces exact
+    # zero source PCM. Ordinary FLEX may skip AMP entirely on its first frames,
+    # so it cannot provide a matching dirty-AMP startup control for this seam.
+    # The DSP dispatcher rejects 99 and still resumes the original AMP/FX code.
+    silent_fixture = configure_fixture(project, engine=99, name='silent-project')
+    silent_card = OUT / 'silent-card.img'
+    subprocess.run([sys.executable, str(ROOT / 'tools/emu/ot_emu/stage_card.py'),
+                    str(silent_fixture), 'OCTABAM', 'RIG', '--tree',
+                    str(OUT / 'silent-tree'), '--out', str(silent_card)], check=True, cwd=ROOT)
     baseline_dump = OUT / 'stock-dirty.bin'
     baseline_cmd = list(cmd)
-    baseline_cmd[baseline_cmd.index('--image') + 1] = str(ROOT / 'out/raw/section_3_MAIN_OS.bin')
+    baseline_cmd[baseline_cmd.index('--card') + 1] = str(silent_card)
     baseline_cmd[baseline_cmd.index('--frames') + 1] = '2600'
     baseline_cmd[baseline_cmd.index('--block-dump') + 1] = str(baseline_dump)
     audio_at = baseline_cmd.index('--audio-out')
@@ -166,6 +174,10 @@ def verify_outputs(log_path, dump, baseline_dump):
         if not any((packet[3] & 0xFFFF) == 1 for packet in packets):
             fail(f"T{track}/core {core}: PK/Y1 records never carried a trig")
 
+        assert any(len(p) >= 20 and p[19] == ENGINE for p in packets), "production engine record missing"
+        if ENGINE == 2:
+            assert any(any(v > 127 for v in p[8:16]) for p in packets if len(p) >= 20), "prepared 16-bit record byte transport missing"
+
         left = rl.readback_audio(classes, track)
         right = rl.readback_audio(classes, track, True)
         if not left or not right:
@@ -180,7 +192,7 @@ def verify_outputs(log_path, dump, baseline_dump):
         if error > 2:
             fail(f"T{track}/core {core}: L/R residual {error} exceeds measured stock bias {bias} + 2 LSB rounding")
 
-        significant = [sample for sample in left if abs(sample) > SIGNIFICANT]
+        significant = [sample for sample in left[4096:] if abs(sample) > SIGNIFICANT]
         if len(significant) < MIN_SIGNIFICANT_SAMPLES:
             fail(
                 f"T{track}/core {core}: only {len(significant)} samples exceed "

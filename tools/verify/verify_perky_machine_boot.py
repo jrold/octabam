@@ -34,9 +34,11 @@ def main():
     xwords = perky_image.load_state_init(packed, meta)
     dumps = [(layout['base'], raw_runtime, 'runtime')]
     for index, tag in enumerate(('A', 'B')):
-        raw, _ = perky_image.extend_upload(normal, tag, ywords, xwords)
+        raw, _ = perky_image.extend_upload(normal, tag, ywords, xwords, perky_image.extra_state_init(meta))
         records = parse_upload(raw)
         exact_record(records, 1, perky_image.X_BASE, xwords, tag)
+        for base, values in perky_image.extra_state_init(meta):
+            exact_record(records, 1, base, values, tag)
         exact_record(records, 2, perky_image.Y_BASE, ywords, tag)
         expected_blob = (platform_build.SIGNATURE + runtime_build.PACKED_MAGIC
                          + len(raw).to_bytes(4, 'big')

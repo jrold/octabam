@@ -67,7 +67,7 @@ def _load_layout(table_dir: Path) -> dict:
         layout = json.loads(layout_path.read_text())
     except (OSError, json.JSONDecodeError) as exc:
         die(f"{layout_path}: {exc}")
-    if layout.get("schema") != "perky-noise-tone-dsp-tables-v1":
+    if layout.get("schema") not in ("perky-noise-tone-dsp-tables-v1", "perky-multi-dsp-tables-v1"):
         die(f"{layout_path}: unsupported schema {layout.get('schema')!r}")
     return layout
 
@@ -98,14 +98,15 @@ def load_state_init(table_dir: Path, layout: dict | None = None) -> list[int]:
         die("layout has no x_init metadata")
     if meta.get("base_word") != X_BASE:
         die(f"x_init base {meta.get('base_word')!r} != X:{X_BASE:04x}")
-    if meta.get("words") != X_WORDS:
-        die(f"x_init has {meta.get('words')!r} words, expected {X_WORDS}")
+    expected_words = 242 if layout["schema"] == "perky-multi-dsp-tables-v1" else X_WORDS
+    if meta.get("words") != expected_words:
+        die(f"x_init has {meta.get('words')!r} words, expected {expected_words}")
     path = table_dir / "state_init.bin"
     if not path.exists():
         die(f"{table_dir}: expected state_init.bin")
     words = read_words24(path)
-    if len(words) != X_WORDS:
-        die(f"state_init.bin has {len(words)} words, expected {X_WORDS}")
+    if len(words) != expected_words:
+        die(f"state_init.bin has {len(words)} words, expected {expected_words}")
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     if meta.get("sha256") != digest:
         die(f"state_init.bin sha256 {digest} != layout {meta.get('sha256')}")
@@ -139,19 +140,25 @@ def _check_x_free(records, tag: str) -> None:
 
 
 def extend_upload(img: bytes | bytearray, tag: str, y_words: list[int],
-                  x_words: list[int] | None = None) -> tuple[bytes, int]:
+                  x_words: list[int] | None = None,
+                  extra_x: list[tuple[int, list[int]]] | None = None) -> tuple[bytes, int]:
     """Return one payload upload with PERKY private-X/Y records inserted."""
     c = PAY[tag]
     records, term = ab_records.records(img, *c["payload"])
     _check_y_free(records, len(y_words), tag)
     if x_words is not None:
-        if len(x_words) != X_WORDS:
+        if len(x_words) not in (X_WORDS, 242):
             die(f"payload {tag}: X init is {len(x_words)} words, expected {X_WORDS}")
-        _check_x_free(records, tag)
+        _check_space_free(records, 1, X_BASE, len(x_words), tag, "state-init")
     p0 = c["payload"][0] - ab_records.BASE
     extra = b""
     if x_words is not None:
         extra += ab_records.ot_record(1, X_BASE, x_words)
+    for base, values in extra_x or []:
+        if base != 0x3964 or len(values) != 17:
+            die("unsupported extra X initialization geometry")
+        _check_space_free(records, 1, base, len(values), tag, "pitch-cache")
+        extra += ab_records.ot_record(1, base, values)
     extra += ab_records.ot_record(2, Y_BASE, y_words)
     raw = bytes(img[p0:term]) + extra + bytes(img[term:p0 + c["payload"][1]])
     return raw, term
@@ -165,7 +172,7 @@ def integrate(img: bytes | bytearray, table_dir: Path):
     x_words = load_state_init(table_dir, layout)
     pres, pokes, log = [], [], []
     for tag, c in PAY.items():
-        raw, _term = extend_upload(img, tag, y_words, x_words)
+        raw, _term = extend_upload(img, tag, y_words, x_words, extra_state_init(layout))
         packed = (
             runtime_build.PACKED_MAGIC
             + len(raw).to_bytes(4, "big")
@@ -192,10 +199,17 @@ def integrate(img: bytes | bytearray, table_dir: Path):
             f"DSP boot: payload {tag} reads PERKY's extended upload",
         ))
         log.append(
-            f"PERKY {tag}: X:{X_BASE:05x}..{X_BASE + X_WORDS - 1:05x} "
-            f"{X_WORDS} init words; Y:{Y_BASE:05x}..{Y_BASE + len(y_words) - 1:05x} "
+            f"PERKY {tag}: X:{X_BASE:05x}..{X_BASE + len(x_words) - 1:05x} "
+            f"{len(x_words)} init words; Y:{Y_BASE:05x}..{Y_BASE + len(y_words) - 1:05x} "
             f"{len(y_words)} packed table words; upload {len(raw):,} B, "
             f"packed {len(packed):,} B"
         )
 
     return pres, pokes, log, layout
+
+
+def extra_state_init(layout: dict) -> list[tuple[int, list[int]]]:
+    if layout["schema"] == "perky-multi-dsp-tables-v1":
+        # Cache tag must not accidentally match a dirty first-block index.
+        return [(0x3964, [0xffff] + [0] * 16)]
+    return []

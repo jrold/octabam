@@ -1,3 +1,17 @@
+# Current PERKY4 memory checkpoint
+
+Locally linked and boot-readback verified: 2,680 P words of 2,724; 359 private X words of 616; 1,946 private Y words of 2,139. See [HANDOFF.md](HANDOFF.md) for actual ranges, provenance and qualification limits. Simple Drum uses a shared 17-word control-rate pitch cache, three direct packed waves and direct amplitude-envelope samples. Noise/Tone retains its reachable shape-1 analytic lookup and original synthetic waves. Fold Drum 1 is locally integrated. The user authorized fewer stock effects to fit all twelve voices. Large delay/sample families still need explicit stock-memory claims and executed resource gates.
+
+## All-family memory work — approved, not yet shipped
+
+The user selected all twelve voices with fewer stock effects. Candidate reclaimed local Y arena is `$1000..$BFFF` (45,056 words/core). The 64K shared window is aliased P/X/Y across cores; assets and code must not independently claim it. Full Wavetable SURF requires 48 tables plus the initial waveform (49 × 2,048 signed16 samples). Acoustic closed/open/ride captures contain 10,101 / 86,400 / 129,553 signed16 samples. Lossless first-difference64 blocks measure 94,089 total words for the hats, including descriptors and guards. No realtime DSP decode gate or actual allocation is implied by these storage figures.
+
+Preserve shared bootstrap/upload staging: `$30000..$300AA`, `$31000..$31031`, `$32000..$32039`, `$38000..$38012`, and mailbox `$37F00..$37F0F`. The low 72 staging words remain live after boot. Stock core init clears local Y `$3F00..$BFFF` and shared `$30000..$3FFFF`; boot-loaded assets there will be destroyed unless initialization is changed or loading occurs afterward. Stock effects on every track must be prevented from reusing reclaimed arenas, including FX1/FX2 shared dispatch IDs. A proposed fit is not a final memory-map check.
+
+Wavetable candidate currently uses a logical large Y bank solely for exact renderer execution. That address range is not mapped on physical Octatrack hardware. Its storage decoder, control transport, dispatch integration and complete shipping build remain pending.
+
+The material below records earlier plans and constraints. “Current unresolved” entries there are historical and superseded by this checkpoint.
+
 # PERKY Noise/Tone memory plan
 
 The shared Noise/Tone renderer's first hard constraint is DSP data memory. This

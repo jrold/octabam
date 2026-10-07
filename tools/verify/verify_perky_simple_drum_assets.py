@@ -45,6 +45,11 @@ def main() -> None:
 
     place(ext.PITCH_ADDR, pitch)
     place(ext.ENVELOPE1_ADDR, env1)
+    # The two 2048-entry extraction windows overlap after the first 1025
+    # curve entries. Model the actual contiguous flash image in the fixture.
+    overlap = ext.ENVELOPE2_ADDR - ext.ENVELOPE1_ADDR
+    env1 = env1[:overlap] + env2[:len(env1) - overlap]
+    place(ext.ENVELOPE1_ADDR, env1)
     place(ext.ENVELOPE2_ADDR, env2)
     place(wave0_addr, wave0)
     place(wave1_addr, wave1)

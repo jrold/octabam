@@ -26,7 +26,12 @@ class Stall(Exception):
 
 
 class Bench:
-    def __init__(self, path, timeout=30.0):
+    def __init__(self, path=None, timeout=30.0, *, connected_socket=None):
+        self.timeout = timeout
+        self.buf = b""
+        if connected_socket is not None:
+            self.sock = connected_socket
+            return
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         deadline = time.time() + timeout
         while True:

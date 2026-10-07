@@ -22,16 +22,18 @@ sys.path.insert(0, str(PERKY))
 import simple_drum_control as control  # noqa: E402
 import simple_drum_runtime_tables as runtime  # noqa: E402
 
+# Source image SHA256 adcdbc4a2c660ffb6477f202211ae3cb70170bfe6ddfaecc3df0e4cb7db398c6.
+# Wave pins corrected against its direct M7 flash extraction and native C++ PCM/state.
 SOURCE_SHA256 = {
     "pitch.bin": "142684ed785eea7e2fe30a0b2db5fa710e2c4b6bb024226fcab46adb12ba3266",
     "envelope1.bin": "ca168bb45a7d175619eed89344d80ca8035e0fa817f825c5284a4d10082ebb40",
-    "wave_080222a0.bin": "9d428e3ea64085a85dd49fd85933132424f27ef681dce139a9b9ba7081a8d456",
-    "wave_080226a0.bin": "edd0fa4cc2cd2f6d727afdff455bb9d89ce3f6d7237a1c1a3ea9b376a7e29591",
-    "wave_080228a0.bin": "6fa576b19c8ec7c434ac8894c768678a567f646a09e6f928c12e467505da85a6",
+    "wave_080222a0.bin": "5a744b7d4b801d00a934203e47528cfa83d85457da9c7a2c29800b1cffe8ff39",
+    "wave_080226a0.bin": "3511b74fa21d0c3430b7e1ddb0bbd8d76b1fd0dbc2272dfb32867b0e5412e697",
+    "wave_080228a0.bin": "9cc8eeff587490a75dc669b0b9f462dd39d777061a9be6bf18658062909ece69",
 }
 
 EXPECTED_STREAM_SHA256 = {
-    "waves": "8e7f5721c02b925ae2a27f892db82d0c0c92106c1419315749f07dacdc697f60",
+    "waves": "91971eabda42938f157554f46e910e4967ee3d10f5c4c21c2a321d8351eb16d7",
     "envelope": "f6523d4a5d98cdd23d072174a12d30de0b21fd786920dbdc0388567613688f1e",
     "pitch_basis": "aa92e51555cd7ce7ca9b2a087716827c3dfd6d0dee2b63a109b7204319b2fc66",
 }

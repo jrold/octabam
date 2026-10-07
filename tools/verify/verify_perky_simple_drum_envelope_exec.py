@@ -121,6 +121,8 @@ def assemble() -> tuple[Path, int]:
     if not typed:
         fail("assembler listing contained no typed instructions")
     for address, mnemonic in typed.items():
+        if mnemonic == "nop" and address not in actual and binary.read_bytes()[(address-ORG)*3:(address-ORG)*3+3] == bytes(3):
+            continue
         if actual.get(address) != mnemonic:
             fail(f"P:{address:06x} typed {mnemonic}, decoded {actual.get(address)}")
     return binary, entry
@@ -141,7 +143,7 @@ def run_case(binary: Path, entry: int, tag: str, initial: list[int], table_words
     subprocess.run(
         [str(HOST), "-code", str(binary), "-org", f"{ORG:x}",
          "-entry", f"{entry:x}", "-data", str(data), "-script", str(script),
-         "-out", str(raw), "-state", str(state), "-frames", "16"],
+         "-out", str(raw), "-state", str(state), "-state-words", "100", "-frames", "16"],
         check=True, capture_output=True, text=True,
     )
     pcm = list(struct.unpack(f"<{raw.stat().st_size // 4}i", raw.read_bytes()))

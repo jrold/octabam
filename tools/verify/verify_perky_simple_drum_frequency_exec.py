@@ -91,6 +91,8 @@ def assemble() -> tuple[Path, int]:
     if not typed:
         fail("assembler listing contained no typed instructions")
     for address, mnemonic in typed.items():
+        if mnemonic == "nop" and address not in actual and binary.read_bytes()[(address-ORG)*3:(address-ORG)*3+3] == bytes(3):
+            continue
         if actual.get(address) != mnemonic:
             fail(f"P:{address:06x} typed {mnemonic}, decoded {actual.get(address)}")
     return binary, entry

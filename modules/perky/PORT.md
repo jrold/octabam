@@ -1,7 +1,6 @@
 # PERKY port architecture
 
-Current milestone: PERKY2 synthetic Noise/Tone hardware audio confirmed on
-6 Oct 2026. See [HANDOFF.md](HANDOFF.md) for the current implementation and
+Current milestone: PERKY4 authentic Fold Drum 1 / Simple Drum plus preserved synthetic Noise/Tone are locally qualified. New-engine hardware tests are pending; PERKY2 Noise/Tone physical audio was confirmed on 6 Oct 2026. See [HANDOFF.md](HANDOFF.md) for the current implementation and
 qualification limits; the sections below describe the target architecture.
 
 ## Reference/oracle

@@ -15,7 +15,8 @@
 ;   X:r5+$40..+$4a envelope state; renders n7 outputs to stereo X:(r0)+.
 
 pk_simple_envelope_probe:
-        lua     (r5+$40),r6
+        move    #>$40,n5
+        lua     (r5+n5),r6
         do      n7,pksde_probe_done
         jsr     pk_simple_envelope
         move    a1,x:(r0)+

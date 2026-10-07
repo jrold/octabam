@@ -545,6 +545,21 @@ namespace ot
 
 	bool UsbDevice::listen(const std::string& _path)
 	{
+		// A preconnected socketpair keeps the same bench protocol local without
+		// needing a filesystem listener (useful inside a restricted workspace).
+		if(_path.rfind("fd:", 0) == 0)
+		{
+			char* end = nullptr;
+			const long fd = std::strtol(_path.c_str() + 3, &end, 10);
+			if(!end || *end || end == _path.c_str() + 3 || fd < 0 || fd > 0x7fffffff)
+				return false;
+			m_fd = ::dup(static_cast<int>(fd));
+			if(m_fd < 0)
+				return false;
+			::fcntl(m_fd, F_SETFL, ::fcntl(m_fd, F_GETFL) | O_NONBLOCK);
+			m_sawClient = true;
+			return true;
+		}
 		m_listenFd = ::socket(AF_UNIX, SOCK_STREAM, 0);
 		if(m_listenFd < 0)
 			return false;
@@ -607,7 +622,7 @@ namespace ot
 
 	void UsbDevice::pollIo()
 	{
-		if(m_listenFd < 0)
+		if(m_listenFd < 0 && m_fd < 0)
 			return;
 		if(m_fd < 0)
 		{

@@ -21,6 +21,7 @@ and anything a real host does beyond these requests.
 import os
 import pathlib
 import re
+import socket
 import subprocess
 import sys
 import time
@@ -74,7 +75,8 @@ def main():
     IN_LAYOUT = {"USB AUDIO IN AB": 2, "USB AUDIO IN CD": 2, "USB AUDIO IN ABCD": 4}
     ain = next((k for k in IN_LAYOUT if k in remix.modules), None)   # + AudioStreaming 5, EP3 OUT (implicit feedback)
     in_ch = IN_LAYOUT[ain] if ain else 0
-    sock = f"/tmp/ot-usb-{os.getpid()}.sock"     # sun_path is 104 bytes on macOS; the scratch dirs are longer
+    host_socket, guest_socket = socket.socketpair()
+    sock = f"fd:{guest_socket.fileno()}"
     log = ROOT / "out/verify_usb.log"
     with open(log, "w") as lf:
         # --frame: the audio producer runs from the frame interrupt, which
@@ -82,7 +84,8 @@ def main():
         # tracks are silent, the stream is not).
         emu = subprocess.Popen([str(EMU), "--image", str(IMAGE), "--usb-host", sock, "--usb-hold-ms", "120000",
                                 "--watch-mem", f"{MIDI_FIFO_HEAD:#x},4"] + (["--frame"] if audio else []),
-                               cwd=ROOT, stdout=lf, stderr=subprocess.STDOUT)
+                               cwd=ROOT, stdout=lf, stderr=subprocess.STDOUT, pass_fds=(guest_socket.fileno(),))
+    guest_socket.close()
     fails = []
 
     def check(what, ok, detail=""):
@@ -91,7 +94,7 @@ def main():
             fails.append(what)
 
     try:
-        b = usb_host.Bench(sock, timeout=60.0)
+        b = usb_host.Bench(timeout=60.0, connected_socket=host_socket)
         dev, cfg = usb_host.enumerate_device(b, hs=True)
         vid, pid = dev[8] | dev[9] << 8, dev[10] | dev[11] << 8
         check("device descriptor: Elektron 1935:0002, USB 2.00", (vid, pid, dev[2], dev[3]) == (0x1935, 0x0002, 0x00, 0x02),

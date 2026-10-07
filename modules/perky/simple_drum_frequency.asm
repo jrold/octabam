@@ -67,7 +67,7 @@ pksf_z_ready:
         ; fractional part = trunc0(z * $3619f1 / 2^22).
         move    x1,x0
         move    #>$3619f1,y0
-        mpy     x0,y0,a
+        mpysu   x0,y0,a
         asr     #$17,a,a                ; product<<1 / 2^23 = floor(product/2^22)
         move    a0,a
 

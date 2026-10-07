@@ -18,6 +18,9 @@
 #define DESC_SIZE 0x1cau
 #define PERKY_ROW 5u
 #define DEFAULT_ENGINE 10u /* zero-based catalog index: Noise / Tone */
+#ifndef PK_FOLD_CANDIDATE
+#define PK_FOLD_CANDIDATE 0
+#endif
 #define MODEL_SLOT 11u     /* hidden persisted source parameter */
 #define MODE_FORMATTER 0x4003c718u /* stock stepped select: prints value+1 */
 #define MODE_WIDGET 0x40047424u    /* stock SPRING TYPE three-position ticks */
@@ -115,7 +118,6 @@ static void text(uint8_t *p, const char *s, unsigned n)
  */
 static uint32_t page_for(unsigned model)
 {
-    (void)model;
     if (!pk_desc_p)
     {
         const volatile uint8_t *src = (const volatile uint8_t *)0x400d3176u;
@@ -156,6 +158,15 @@ static uint32_t page_for(unsigned model)
         put32(desc + 0x1c6, 0x01001111u);
         pk_desc_p = (uint32_t)(uintptr_t)(desc + 0x38);
     }
+    text(desc + 0x41,
+#if PK_FOLD_CANDIDATE
+         model == 0u ? "FOLD DRUM" :
+#endif
+         model == 2u ? "SIMPLE DRUM" : "NOISE/TONE", 13);
+#if PK_FOLD_CANDIDATE
+    text(desc + 0x4e + 12, model == 0u ? "FOLD" : "ENV", 6);
+    text(desc + 0x4e + 18, model == 0u ? "PENV" : "MIX", 6);
+#endif
     return (uint32_t)(uintptr_t)(desc + 0x38);
 }
 
@@ -218,6 +229,84 @@ int pk_validate_part(uint8_t *part)
     return result;
 }
 
+/* Simple Drum transport: same preparation model as simple_drum_transport.py.
+ * Shared by production pk_render and the native executable transport gate. */
+typedef struct {
+    uint32_t prepared[4], targets[4];
+    uint8_t last[4], mode, valid, family;
+} PKSimpleControl;
+static PKSimpleControl simple_controls[8];
+static uint32_t simple_bank;
+static unsigned simple_part;
+static void simple_update(PKSimpleControl *s)
+{
+    for (unsigned i = 0; i < 4; ++i)
+        s->prepared[i] = (3u*s->targets[i] + 5u*s->prepared[i]) >> 3;
+}
+static unsigned simple_div(unsigned n, unsigned d)
+{
+    unsigned q=0, r=0;
+    for (unsigned i=20; i != 0; --i) {
+        r=(r<<1)|((n>>(i-1))&1u);
+        q<<=1;
+        if (r>=d) {r-=d; q|=1;}
+    }
+    return q;
+}
+static unsigned simple_rate(unsigned control, unsigned offset, unsigned scale)
+{
+    unsigned denominator=48u*(offset+1u)+((48u*(scale-1u)*control)>>12);
+    return simple_div(0xfffffu,denominator)&0xffffu;
+}
+static unsigned simple_time(unsigned value)
+{
+    unsigned q=0x7fffu+(value<<2), m=(q&0xfffu)+0x1000u, e=(q>>12)&15u;
+    unsigned t=e>11u ? (m<<(e-12u))&0xffffu : (m>>(12u-e))&0xffffu;
+    return ((((t-1u)>>1)&0x7fffu)-0x7fu)&0xffffu;
+}
+void pk_simple_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig)
+{
+    if (s->valid && s->family != p[11]) {
+        s->valid=0;
+        for(unsigned i=0;i<4;++i) s->prepared[i]=s->targets[i]=0;
+    }
+    s->family=p[11];
+    unsigned dirty=!s->valid, mode=p[6]>2u ? 2u : p[6];
+    for(unsigned i=0;i<4;++i) if(s->last[i]!=p[i]) dirty=1;
+    if(s->mode!=mode) dirty=1;
+    if(dirty) {
+        simple_update(s); simple_update(s);
+        for(unsigned i=0;i<4;++i) {
+            unsigned v=p[i]>127u ? 127u : p[i];
+            s->targets[i]=v==127u ? 4095u : v<<5;
+            s->last[i]=p[i];
+        }
+        for(unsigned i=0;i<16;++i) simple_update(s);
+        s->mode=(uint8_t)mode; s->valid=1;
+    }
+    if(trig) simple_update(s);
+    unsigned v[4]={s->prepared[0],simple_rate(simple_time(s->prepared[1]),50,5200),
+                   simple_rate(s->prepared[2],20,400),s->prepared[3]>>1};
+    for(unsigned i=0;i<4;++i){p[2*i]=(uint8_t)(v[i]>>8);p[2*i+1]=(uint8_t)v[i];}
+    p[8]=(uint8_t)mode; p[9]=(uint8_t)(s->prepared[1]>=4080u); p[10]=0; p[11]=2;
+}
+#if PK_FOLD_CANDIDATE
+/* Original Fold 1 init config: amplitude offset=50, scale=0x1c70.
+ * Unlike Simple Drum, P1/P2 are full prepared fold and pitch amounts.
+ */
+void pk_fold_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig)
+{
+    pk_simple_prepare(s,p,trig);
+    unsigned values[3]={simple_rate(simple_time(s->prepared[1]),50,7280),
+                        s->prepared[2],s->prepared[3]};
+    for(unsigned i=0;i<3;++i) {
+        p[2+2*i]=(uint8_t)(values[i]>>8);
+        p[3+2*i]=(uint8_t)values[i];
+    }
+    p[11]=0;
+}
+#endif
+
 /* Native source renderer ABI at 0x4000d430/0x4000d518. Milestone 0 does not
  * synthesize here: it reserves exactly FLEX's record span, then replaces the
  * fixed per-track record with PERKY magic + trigger flag + twelve source bytes.
@@ -255,6 +344,28 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
             volatile uint32_t *record = (volatile uint32_t *)(uintptr_t)
                 (0x80001c90u + (ping & 1u) * 0xa80u + 336u * track);
             const unsigned trig = (U8(0x46104d0cu + track) & 16u) != 0u;
+
+            const unsigned bank=U32(BANK), part=U8(PART_IDX)&3u;
+            if(simple_bank!=bank || simple_part!=part) {
+                for(unsigned t=0;t<8;++t) simple_controls[t].valid=0;
+                simple_bank=bank; simple_part=part;
+                for(unsigned t=0;t<8;++t)
+                    for(unsigned k=0;k<4;++k) {
+                        simple_controls[t].prepared[k]=0;
+                        simple_controls[t].targets[k]=0;
+                    }
+            }
+            if(p[11]==2u) pk_simple_prepare(&simple_controls[track],p,trig);
+#if PK_FOLD_CANDIDATE
+            else if(p[11]==0u) pk_fold_prepare(&simple_controls[track],p,trig);
+#endif
+            else {
+                simple_controls[track].valid=0;
+                for(unsigned k=0;k<4;++k) {
+                    simple_controls[track].prepared[k]=0;
+                    simple_controls[track].targets[k]=0;
+                }
+            }
 
             /* Transport splits each CF long high/low into DSP words: w0 sees
              * 'PK', w2 sees 'Y1', w3 sees the trigger flag.
@@ -306,8 +417,14 @@ void pk_engine_select(unsigned model)
     ((void (*)(void))0x4004d948u)();
 }
 
+static void engine_simple_drum(void) { pk_engine_select(2u); }
 static void engine_noise_tone(void) { pk_engine_select(DEFAULT_ENGINE); }
-static const char *const engine_labels[] = { "011 NOISE/TONE" };
+#if PK_FOLD_CANDIDATE
+static void engine_fold_drum(void) { pk_engine_select(0u); }
+static const char *const engine_labels[] = { "001 FOLD DRUM", "003 SIMPLE DRUM", "011 NOISE/TONE" };
+#else
+static const char *const engine_labels[] = { "003 SIMPLE DRUM", "011 NOISE/TONE" };
+#endif
 
 unsigned pk_engine_draw(void)
 {
@@ -335,7 +452,11 @@ unsigned pk_engine_draw(void)
 
 void pk_engine_open(void)
 {
-    static void (*const handlers[])(void) = { engine_noise_tone };
+#if PK_FOLD_CANDIDATE
+    static void (*const handlers[])(void) = { engine_fold_drum, engine_simple_drum, engine_noise_tone };
+#else
+    static void (*const handlers[])(void) = { engine_simple_drum, engine_noise_tone };
+#endif
     if (!pk_selected_source() || U32(0x460e5e30u))
         return;
 
@@ -345,7 +466,15 @@ void pk_engine_open(void)
 
     ((void (*)(uint32_t, unsigned, unsigned))0x4007ec60u)
         (0x460e5e38u, 6, sizeof(engine_labels) / sizeof(engine_labels[0]));
-    ((void (*)(uint32_t, unsigned))0x4007edb0u)(0x460e5e38u, 0);
+    ((void (*)(uint32_t, unsigned))0x4007edb0u)
+        (0x460e5e38u,
+#if PK_FOLD_CANDIDATE
+         part_base()[source_offset(engine_track, MODEL_SLOT)] == 0u ? 0u :
+         part_base()[source_offset(engine_track, MODEL_SLOT)] == 2u ? 1u : 2u
+#else
+         part_base()[source_offset(engine_track, MODEL_SLOT)] == 2u ? 0u : 1u
+#endif
+        );
     U32(0x460e5e28u) = (uint32_t)(uintptr_t)handlers;
     U32(0x460e5e2cu) = (uint32_t)(uintptr_t)engine_labels;
     U32(0x460e5e34u) = 0;
