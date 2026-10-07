@@ -18,6 +18,7 @@ sys.path.insert(0, str(ROOT / 'modules/perky'))
 sys.path.insert(0, str(ROOT / 'tools/perky'))
 
 import build_fold2_candidate as fold2
+import build_noise_tone_synth_source as noise
 import hw4_profile as profile
 
 OUT = ROOT / 'out/perky/hw4-candidate'
@@ -98,8 +99,10 @@ pks_voice_ready:
 '''
     source = once(source, old_slots, new_slots, 'HW4 unreachable overlay slots')
 
-    source = fold2.fold1.multi.source.noise.force_long_local_jsr(
-        fold2.fold1.multi.source.noise.relativize_local_conditionals(source))
+    # Re-run the assembler-specific branch/JSR normalization after editing the
+    # composed source.  Import this helper directly rather than relying on the
+    # incidental nested import chain of the Fold2 builder.
+    source = noise.force_long_local_jsr(noise.relativize_local_conditionals(source))
     out.mkdir(parents=True, exist_ok=True)
     (out / 'hw4.asm').write_text(source)
     print('HW4 DSP candidate: local slots 0+1 admitted on each core; slots 2+3 silent')
