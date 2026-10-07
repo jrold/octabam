@@ -2,7 +2,7 @@
 """Execute the actual HW4 Karplus live-control path and require audible deltas.
 
 This is the regression gate for the physical complaint that Karplus sounded like
-a short impulse and its knobs did not meaningfully change the sound.  It uses
+a short impulse and its knobs did not meaningfully change the sound. It uses
 the exact composed HW4 DSP source and the exact generated boot assets, enters at
 the production ``pk_probe_source`` seam, and feeds the same 12-word PK/Y1 payload
 ABI produced by ``control_hw4_candidate.c``.
@@ -15,7 +15,7 @@ For each of TUNE, DECAY, EDGE, TWANG and MODE the gate proves two things:
 
 The nonlinear TUNE/DECAY/EDGE transforms therefore exercise the three real
 4096-entry LUTs. TWANG exercises the exact prepared>>1 law. MODE exercises the
-physical M1/M2/M3 -> firmware 1/0/2 mapping.  The generated original first
+physical M1/M2/M3 -> firmware 1/0/2 mapping. The generated original first
 trigger runs before the live-control restore in the same source under test.
 """
 from __future__ import annotations
@@ -42,7 +42,9 @@ SLOT = 0x20                         # local slot 1 => physical OT T2 on DSP core
 BLOCKS = 48
 
 WRAPPER = r'''
-pk_karplus_live_exec:
+; Keep the entry label expected by verify_perky_controlled_voice_exec. The body
+; enters the real composed HW4 source seam, not the synthetic controlled voice.
+pk_controlled_voice_exec:
         ; The harness writes twelve PK/Y1 payload words at X:$100..$10b and
         ; event offset at X:$10c. Point r4 at $f8 so payload words are +8..+19.
         move    #>$0000f8,r4
@@ -204,10 +206,10 @@ def main() -> None:
         )
         different(name + ' fresh-trigger low/high', lo, hi)
 
-        # Same sounding history through block 7, then change exactly one axis
-        # without a new trigger. The two executions must diverge at/after that
-        # block, proving the live control is not only a trigger-time initializer.
-        change_at = 8
+        # Change early enough that even the shortest authentic Karplus cases are
+        # still sounding. The histories must match through block 1, then diverge
+        # on block 2 without a new trigger.
+        change_at = 2
         fixed_script = [(baseline, 0)] + [(baseline, -1)] * (BLOCKS - 1)
         changed_script = (
             [(baseline, 0)]
