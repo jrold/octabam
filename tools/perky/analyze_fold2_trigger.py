@@ -1,24 +1,30 @@
 #!/usr/bin/env python3
-"""Report exact PĒRKONS v1.2.1 Fold Drum 2 trigger/retrigger mutations.
+"""Derive the exact PĒRKONS v1.2.1 Fold Drum 2 trigger contract.
 
 This consumes the all-family capture corpus produced by
 ``tools/perky/capture_engine_fixtures.py`` after the harness gained both
 first-trigger and active-retrigger snapshots. For each of the nine Voice-2/A1
-mode/control-corner cases it reports:
+mode/control-corner cases it compares:
 
 * fresh control state -> first trigger + mandatory v1.2.1 post-trigger update;
 * state after 512 original-ARM samples -> active retrigger + the same update.
 
-The second delta is the critical one for Fold Drum 2 because its renderer owns
-two oscillators plus a crossfade/primary selector. The report is evidence, not
-a shipping implementation: it prints every compact word changed by the
-original ARM path so the Octatrack seam can reproduce the trigger law without
-guessing hidden envelope, oscillator, transient, crossfade, or selector state.
+Besides the human-readable report, this writes a normalized JSON contract to
+``out/perky/fold2-trigger-contract.json`` by default. Absolute ARM oscillator
+pointers are already represented by the compact model's PRIMARY selector bit,
+so the contract contains only portable 16-bit compact-state mutations.
+
+Rules are classified as CONST, COPY, TOGGLE, or CASES. CASES preserves every
+observed before/after pair instead of guessing a formula. The shipping DSP seam
+must therefore be derived from evidence even when the original ARM operation
+cannot yet be reduced to a simpler rule.
 """
 from __future__ import annotations
 
 from collections import defaultdict
 from pathlib import Path
+import argparse
+import json
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -26,7 +32,8 @@ sys.path.insert(0, str(ROOT / "modules/perky"))
 
 import fold_drum2_compact as compact
 
-FIX = ROOT / "out/perky/engine-fixtures"
+FIX_DEFAULT = ROOT / "out/perky/engine-fixtures"
+OUT_DEFAULT = ROOT / "out/perky/fold2-trigger-contract.json"
 ENGINE = 4  # one-based catalog number; Fold Drum 2 is zero-based family 3
 ARM_STATE_OFFSET = 0xC4
 ARM_STATE_SIZE = 0x134
@@ -91,11 +98,11 @@ def _fixture_error(path: Path) -> None:
     raise SystemExit(2)
 
 
-def _load_cases(pre_name: str, post_name: str):
+def _load_cases(fix: Path, pre_name: str, post_name: str):
     cases: list[tuple[str, compact.FoldDrum2, compact.FoldDrum2]] = []
     for mode in range(3):
         for corner in range(3):
-            case = FIX / f"engine-{ENGINE}-mode-{mode + 1}-corner-{corner}"
+            case = fix / f"engine-{ENGINE}-mode-{mode + 1}-corner-{corner}"
             pre_path = case / pre_name
             post_path = case / post_name
             if not pre_path.exists():
@@ -107,13 +114,12 @@ def _load_cases(pre_name: str, post_name: str):
     return cases
 
 
-def _classify(pairs: list[tuple[int, int]], all_pre: list[list[int]], index: int) -> str:
+def _rule(pairs: list[tuple[int, int]], all_pre: list[list[int]],
+          index: int, labels: list[str]) -> dict:
     posts = [post for _pre, post in pairs]
     if len(set(posts)) == 1:
-        return f"CONST 0x{posts[0]:04x}"
+        return {"kind": "CONST", "value": posts[0]}
 
-    # Detect exact copies from another compact pre-trigger word. Requiring all
-    # nine cases prevents a one-case coincidence from becoming a trigger rule.
     sources = []
     for source in range(compact.WORDS):
         if source == index:
@@ -122,31 +128,54 @@ def _classify(pairs: list[tuple[int, int]], all_pre: list[list[int]], index: int
                for case in range(len(pairs))):
             sources.append(source)
     if sources:
-        rendered = ", ".join(
-            f"{source}:{NAMES.get(source, f'word[{source}]')}"
-            for source in sources
-        )
-        return f"COPY pre[{rendered}]"
+        return {
+            "kind": "COPY",
+            "sources": [
+                {"index": source,
+                 "name": NAMES.get(source, f"word[{source}]")}
+                for source in sources
+            ],
+        }
 
     if all(post == (pre ^ 1) for pre, post in pairs):
-        return "TOGGLE bit0"
+        return {"kind": "TOGGLE", "mask": 1}
 
+    return {
+        "kind": "CASES",
+        "values": [
+            {"case": label, "before": before, "after": after}
+            for label, (before, after) in zip(labels, pairs)
+        ],
+    }
+
+
+def _rule_text(rule: dict) -> str:
+    kind = rule["kind"]
+    if kind == "CONST":
+        return f"CONST 0x{rule['value']:04x}"
+    if kind == "COPY":
+        rendered = ", ".join(
+            f"{source['index']}:{source['name']}" for source in rule["sources"]
+        )
+        return f"COPY pre[{rendered}]"
+    if kind == "TOGGLE":
+        return f"TOGGLE mask 0x{rule['mask']:04x}"
     return "CASE-DEPENDENT"
 
 
-def _report(title: str, cases) -> set[int]:
+def _analyze(title: str, cases) -> dict:
     if len(cases) != 9:
         raise RuntimeError(f"expected 9 Fold Drum 2 cases, got {len(cases)}")
 
+    labels = [label for label, _pre, _post in cases]
     all_pre = [pre.words for _label, pre, _post in cases]
-    changed: dict[int, list[tuple[int, int]]] = defaultdict(list)
+    by_word: dict[int, list[tuple[int, int]]] = defaultdict(list)
     for _label, pre, post in cases:
         for index, (before, after) in enumerate(zip(pre.words, post.words)):
-            changed[index].append((before, after))
+            by_word[index].append((before, after))
 
     changed = {
-        index: pairs
-        for index, pairs in changed.items()
+        index: pairs for index, pairs in by_word.items()
         if any(before != after for before, after in pairs)
     }
 
@@ -156,51 +185,106 @@ def _report(title: str, cases) -> set[int]:
     print(f"changed compact words: {len(changed)} / {compact.WORDS}")
     print()
 
+    words = []
     for index in sorted(changed):
         pairs = changed[index]
         name = NAMES.get(index, f"word[{index}]")
-        classification = _classify(pairs, all_pre, index)
-        print(f"{index:02d}  {name:<24} {classification}")
+        rule = _rule(pairs, all_pre, index, labels)
+        print(f"{index:02d}  {name:<24} {_rule_text(rule)}")
         print("    " + "  ".join(
             f"{label}: {before:04x}->{after:04x}"
             for (label, _pre, _post), (before, after)
             in zip(cases, pairs)
         ))
+        words.append({"index": index, "name": name, "rule": rule})
 
     print("\nTRIGGER_RULES")
-    for index in sorted(changed):
-        pairs = changed[index]
-        name = NAMES.get(index, f"word[{index}]")
-        print(f"{index}:{name}:{_classify(pairs, all_pre, index)}")
+    for word in words:
+        print(f"{word['index']}:{word['name']}:{_rule_text(word['rule'])}")
     print()
-    return set(changed)
+
+    # Preserve complete normalized states as a backstop. This makes the JSON a
+    # lossless compact-state oracle, not merely a best-effort rule classifier.
+    normalized_cases = []
+    for label, pre, post in cases:
+        normalized_cases.append({
+            "case": label,
+            "pre": pre.words,
+            "post": post.words,
+        })
+
+    return {
+        "title": title,
+        "case_count": len(cases),
+        "changed_indices": sorted(changed),
+        "words": words,
+        "cases": normalized_cases,
+    }
 
 
 def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--fixtures", type=Path, default=FIX_DEFAULT)
+    ap.add_argument("--json", type=Path, default=OUT_DEFAULT,
+                    help="machine-readable normalized trigger contract")
+    args = ap.parse_args()
+
     first = _load_cases(
+        args.fixtures,
         "wrapper-window-pre-trigger.bin",
         "wrapper-window-before.bin",
     )
     retrigger = _load_cases(
+        args.fixtures,
         "wrapper-window-retrigger-pre.bin",
         "wrapper-window-retrigger-before.bin",
     )
 
-    first_changed = _report(
+    first_contract = _analyze(
         "Fold Drum 2 original ARM first-trigger delta",
         first,
     )
-    retrigger_changed = _report(
+    retrigger_contract = _analyze(
         "Fold Drum 2 original ARM active-retrigger delta",
         retrigger,
     )
 
+    first_changed = set(first_contract["changed_indices"])
+    retrigger_changed = set(retrigger_contract["changed_indices"])
     only_active = sorted(retrigger_changed - first_changed)
     only_first = sorted(first_changed - retrigger_changed)
+    shared = sorted(first_changed & retrigger_changed)
+
     print("DELTA_SET_COMPARISON")
     print("active-only: " + (", ".join(map(str, only_active)) or "none"))
     print("first-only: " + (", ".join(map(str, only_first)) or "none"))
-    print("shared: " + ", ".join(map(str, sorted(first_changed & retrigger_changed))))
+    print("shared: " + ", ".join(map(str, shared)))
+
+    contract = {
+        "schema": "octabam.perky.fold2-trigger.v1",
+        "engine_zero_based": 3,
+        "engine_one_based": ENGINE,
+        "arm_state_offset": ARM_STATE_OFFSET,
+        "arm_state_size": ARM_STATE_SIZE,
+        "compact_words": compact.WORDS,
+        "notes": [
+            "Derived only from original v1.2.1 ARM before/after snapshots.",
+            "PRIMARY is a normalized oscillator selector, not an ARM pointer.",
+            "CASES rules are intentionally not generalized without evidence.",
+            "No firmware bytes or audio are embedded in this contract.",
+        ],
+        "first_trigger": first_contract,
+        "active_retrigger": retrigger_contract,
+        "comparison": {
+            "active_only": only_active,
+            "first_only": only_first,
+            "shared": shared,
+        },
+    }
+
+    args.json.parent.mkdir(parents=True, exist_ok=True)
+    args.json.write_text(json.dumps(contract, indent=2) + "\n")
+    print(f"contract: {args.json}")
 
 
 if __name__ == "__main__":
