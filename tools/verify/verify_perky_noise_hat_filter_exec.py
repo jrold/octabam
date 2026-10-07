@@ -66,7 +66,7 @@ def assemble() -> tuple[Path, int]:
         'pk_noise_hat_filter_probe:\n'
         f' move #>${STATE_BASE + FILTER_BASE:x},r6\n'
         f' move #>${STATE_BASE:x},r5\n'
-        ' jsr pk_noise_hat_filter\n'
+        ' jsrl pk_noise_hat_filter\n'
         ' rts\n'
         + (PERKY / 'noise_hat_filter.asm').read_text()
     )
