@@ -1,3 +1,104 @@
+# PERKY HW4 local release checkpoint, 7 October 2026
+
+Work continues on `perky-machines` in the isolated worktree
+`/Users/jrold/Downloads/octabam/.claude/worktrees/perky-hw4-release`.
+**No qualified HW4 updater has been produced.** The local dependencies exist;
+qualification is blocked by reproducible ARM trigger/control contract failures,
+not by a missing assembler, stock OS, project, or reference firmware.
+
+## Release-path repairs
+
+The documented `tools/perky/build_hw4_machine.py` previously packaged
+`build_hw4_karplus_candidate.py` (mode-2 state, ring at Y:$1000), while its
+source/timing gate qualified `build_hw4_audition_candidate.py` (mode-1 state,
+separate envelope tables and ring at Y:$1600). The packaged source therefore
+was not the measured source.
+
+Both documented and canonical release entry points now call
+`build_hw4_machine_canary.py`, which uses the qualified audition composition.
+The builder additionally compares the packaging source against the source
+actually assembled by the gate. FX harvest and two-voices/core timing remain
+mandatory through `verify_perky_hw4_candidate_source.py`. No qualification
+bypass is exposed. `--reuse-fixtures` verifies firmware, reference source and
+captured-file hashes, then reruns qualification. Shared authentic Fold assets
+are extracted before the renderer gates, including all four wave identities.
+
+The shared remix selftest now explicitly expects HW4's twelve harvested DSP
+FX, retaining FILTER and ColdFire DELAY. The generated test-remix index includes
+HW4. These repairs change no stable PERKY2 DSP or control source.
+
+## Local verification
+
+- `make emu-cf`: passed, emulator built inside this worktree.
+- Fresh original ARM capture: passed, 108 cases; 1,620 binary evidence files
+  verified against the capture manifest. Version-specific calls require the
+  pinned v1.2.1 SHA256 `adcdbc4a2c660ffb6477f202211ae3cb70170bfe6ddfaecc3df0e4cb7db398c6`.
+- `verify_perky_hw4_profile.py` and `verify_perky_hw4_harvest.py`: passed;
+  5,431 gross/placeable donor P words.
+- `make check REMIX=perky-hw4 OT_PROJECT=`: passed all runnable checks,
+  65 shared module gates and 2 image gates. Label/mode/hidden checks lack the
+  optional `.venv`; remixer UI lacks Textual; project/port checks were skipped.
+  This builds the tracked probe remix, not the dynamically upgraded four-engine
+  audition, whose release qualification remains blocked below.
+- `scripts/refhash.sh save` followed by `scripts/refhash.sh check`: all 24
+  configurations, artifacts and build reports bit-identical.
+- Entry-point identity, wrong-firmware rejection, changed-reference rejection,
+  documentation checks and `git diff --check`: passed.
+
+## Reproduced release blockers
+
+Run from the worktree:
+
+```sh
+OT_PROJECT='/Users/jrold/Documents/octatrack backup/##Scratch' \
+  python3 tools/perky/build_hw4_release.py --reuse-fixtures
+```
+
+This stops at `verify_perky_fold2_trigger_contract.py`:
+
+```text
+RuntimeError: unresolved Fold2 trigger words: 4
+```
+
+A separate `python3 tools/perky/qualify_karplus_trigger.py` stops at
+`verify_perky_karplus_trigger_contract.py`:
+
+```text
+RuntimeError: first_trigger: unresolved compact trigger words: 18,25,27
+```
+
+The capture harness now takes additional snapshots between the original ARM
+trigger and its mandatory control update, using the same v1.2.1 wrapper calls
+and preserving the historical post-update captures. Fresh captures cover all
+12 families × 3 modes × 3 corners. The split snapshots show:
+
+| Family / phase | Raw trigger mutations, compact indices | Subsequent update mutations |
+|---|---|---|
+| Fold2 first | 10,17,21,28,50 | 4,32,33,44 |
+| Fold2 active | 2,3,10,21,26,27,43,49,50 | 4,32,33,44 |
+| Karplus first | 3,10,26 | 18,25,27 |
+| Karplus active | 3,8,9,26,30 | 18 |
+
+The failed Fold2 word is oscillator A's increment low half (ARM object +$34).
+Karplus's failed words are filter damping (18), excitation target (25) and delay
+low half (27). They belong to the subsequent control update, whose arithmetic
+cannot be inferred by the trigger compiler's CONST/COPY/XOR/ADD16 rules.
+Do not exclude these words merely to make qualification green: Fold2's
+inactive oscillator can consume the update's frequency, and Karplus's state
+controls its feedback renderer.
+
+Next work is to derive and execute the update laws against these intermediate
+snapshots, qualify their ordering with the raw trigger and final shipping seam,
+then rerun composition, guarded timing, full-image placement, boot/readback,
+32,000-frame four-voice port and container round-trip checks. Until both
+contracts pass, timing, final memory placement and hardware packaging remain
+unqualified. No SysEx has been sent and no hardware has been flashed.
+
+Local evidence/logs live under `out/` and remain outside Git:
+`perky-hw4-release.log`, `perky-karplus-qualification.log`,
+`perky-capture-split.log`, `perky-hw4-check.log`, and
+`perky/hw4-trigger-partition.json`.
+
 # PERKY continuation — all-family renderer checkpoint, 7 October 2026
 
 All twelve families now have executable DSP candidates across their three modes.

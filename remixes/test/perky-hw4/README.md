@@ -46,9 +46,20 @@ Override them with `--firmware` / `--source` or `PERKONS_FIRMWARE` /
 
 The command runs the local Fold2 and Karplus ARM/DSP evidence chains, assembles
 the complete four-engine DSP program, builds the aggressive HW4 remix, injects
-private X/Y state including Karplus Y:$1000..$17ff, boots the image in the local
+private X/Y state including Karplus envelopes/ring at Y:$1000..$1dff, boots the image in the local
 emulator, and requires simultaneous varying audio from T1/T2/T5/T6.  It stops
 on the first failed gate.
+
+`build_hw4_machine.py` and `build_hw4_release.py` both delegate to
+`build_hw4_machine_canary.py`. Qualification, cycle measurement and packaging
+therefore consume the same `build_hw4_audition_candidate.py` composition.
+Use `--reuse-fixtures` to reuse hash-verified captures while rerunning every
+qualification gate; it does not skip qualification. The Karplus envelope tables
+occupy Y:$1000 and Y:$12ac, and its feedback ring occupies Y:$1600..$1dff.
+
+The current local qualification blocker is recorded in
+[the PERKY handoff](../../../modules/perky/HANDOFF.md). A source checkpoint is
+not a packaged or qualified HW4 firmware.
 
 Only after all of those pass does it emit the flashable artifacts, normally:
 

@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from pathlib import Path
 import argparse
+import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -67,6 +69,17 @@ def require(path: Path, description: str) -> Path:
     return path
 
 
+def prepare_assets(firmware: Path) -> None:
+    """Extract the shared Fold tables from this invocation's firmware."""
+    from extract_simple_drum_assets import extract
+
+    state = (FIX / 'engine-3-mode-1-corner-1/wrapper-window-before.bin').read_bytes()
+    state_path = ROOT / 'out/perky/hw4-simple-state.bin'
+    state_path.write_bytes(state[0xc4:0xc4 + 0x120])
+    extract(firmware, state_path, ROOT / 'out/perky/simple-drum-assets',
+            extra_waves=(0x080222a0, 0x080224a0, 0x080226a0, 0x080228a0))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--firmware", type=Path,
@@ -105,6 +118,18 @@ def main() -> None:
             str(firmware), "--source", str(source),
             "--unicorn-build", str(unicorn), "--out", str(FIX),
         ])
+
+    manifest = json.loads((FIX / 'manifest.json').read_text())
+    if manifest['firmware_sha256'] != hashlib.sha256(firmware.read_bytes()).hexdigest():
+        raise RuntimeError('ARM fixture firmware differs from the requested firmware')
+    for name, digest in manifest['source_sha256'].items():
+        path = ROOT / name if name.startswith('tools/') else source / name
+        if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+            raise RuntimeError(f'ARM fixture source has changed: {path}; recapture without --reuse-fixtures')
+    for name, digest in manifest['files'].items():
+        if hashlib.sha256((FIX / name).read_bytes()).hexdigest() != digest:
+            raise RuntimeError(f'ARM fixture differs from its capture manifest: {name}')
+    prepare_assets(firmware)
 
     run([
         sys.executable, "tools/perky/analyze_fold2_trigger.py",

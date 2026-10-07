@@ -49,7 +49,19 @@ int main(int argc,char**argv){
   // mandatory post-trigger update snapshot used by the existing DSP corpus.
   if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 5;}
   save(dir/"wrapper-window-pre-trigger.bin",ram.data(),ram.size());
-  if(!v.trigger(e.slot,error)){std::cerr<<error;return 6;}
+  // Split HW4's original Fold2/Karplus triggers from their control updates.
+  // PerkonsVoices::trigger combines both; the raw snapshot makes their state
+  // ownership observable instead of inferring a trigger from update writes.
+  // Addresses/objects are the v1.2.1 V2/V3 entries in profileV121.
+  auto trigger=[&](const char* name){
+   if(i!=3 && i!=8)return v.trigger(e.slot,error);
+   const auto function=i==3 ? 0x08025298u : 0x080253b0u;
+   if(!cpu.callThumbRealtime(function,{address,0,0,0},error))return false;
+   if(!cpu.readMemory(address,ram.data(),ram.size(),error))return false;
+   save(dir/name,ram.data(),ram.size());
+   return v.advanceControlSmoothing(e.slot,error,1);
+  };
+  if(!trigger("wrapper-window-trigger-only.bin")){std::cerr<<error;return 6;}
   v.setNativeDspEnabledForTesting(false);
   if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 7;}
   save(dir/"wrapper-window-before.bin",ram.data(),ram.size());
@@ -78,7 +90,7 @@ int main(int argc,char**argv){
   // first-trigger or continuation files change meaning.
   if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 12;}
   save(dir/"wrapper-window-retrigger-pre.bin",ram.data(),ram.size());
-  if(!v.trigger(e.slot,error)){std::cerr<<error;return 13;}
+  if(!trigger("wrapper-window-retrigger-only.bin")){std::cerr<<error;return 13;}
   if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 14;}
   save(dir/"wrapper-window-retrigger-before.bin",ram.data(),ram.size());
   if(i==noiseHatIndex)saveNoiseHatHold(cpu,dir/"noise-hat-hold-retrigger-before.bin",error);

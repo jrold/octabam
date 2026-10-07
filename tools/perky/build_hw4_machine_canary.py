@@ -65,7 +65,11 @@ def qualify(firmware: Path, source: Path, reuse_fixtures: bool) -> None:
     run('tools/perky/analyze_karplus_trigger.py')
     run('tools/verify/verify_perky_karplus_trigger_contract.py')
     run('tools/verify/verify_perky_karplus_trigger_exec.py')
-    run('tools/verify/verify_perky_karplus_dsp_exec.py', '--firmware', firmware)
+    reference_env = os.environ.copy()
+    reference_env['PERKYBITS_SOURCE'] = str(source / 'Source')
+    run('tools/verify/verify_perky_karplus_dsp_exec.py', '--firmware', firmware,
+        env=reference_env)
+    run('tools/verify/verify_perky_fold_regression.py')
 
     # Complete four-engine source: exact labels, private X/Y geometry and P size.
     run('tools/verify/verify_perky_hw4_candidate_source.py')
@@ -87,6 +91,9 @@ def build_module(work: Path, build_number: int):
     if not measured.exists() or measured.stat().st_size % 3:
         base.die('HW4 source gate produced no whole-word candidate-full.bin')
     pwords = measured.stat().st_size // 3
+    qualified = (work / 'candidate-full.asm').read_text()
+    if qualified != source.replace('@CONT@', '$000426'):
+        base.die('HW4 packaging source differs from the qualified composition')
 
     mods = base.registry.modules()
     key = 'PERKY PROBE'
@@ -201,7 +208,8 @@ def package(work: Path, normal: Path, control_source: Path, pwords: int,
         f'card={card.name} sha256={base.sha256(card)}\n'
         f'midi={midi.name} sha256={base.sha256(midi)}\n'
         'gates=Fold2 ARM trigger/renderer; Karplus ARM trigger/renderer; HW4 full-source '
-        'assembler; stock-aware full-image placer; byte-exact boot uploads; 32000-frame '
+        'assembler; FX harvest; two-voices/core realtime budget; '
+        'stock-aware full-image placer; byte-exact boot uploads; 32000-frame '
         'four-voice dirty-memory OT emulator\n'
         'status=LOCAL GATES PASSED; PHYSICAL OCTATRACK AUDITION PENDING\n'
         f'layout_engines={layout["hw4_audition"]["engines"]}\n'
@@ -223,8 +231,8 @@ def main() -> None:
     ap.add_argument('--source', type=Path,
                     default=Path(os.environ.get('PERKYBITS_ROOT', DEFAULT_SOURCE)))
     ap.add_argument('--reuse-fixtures', action='store_true')
-    ap.add_argument('--build', type=int, default=4)
-    ap.add_argument('--version', default=None)
+    ap.add_argument('--build', type=int, default=5)
+    ap.add_argument('--version', default='PERKYH4')
     args = ap.parse_args()
 
     firmware = args.firmware.expanduser().resolve()
