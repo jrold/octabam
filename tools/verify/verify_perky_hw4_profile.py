@@ -30,13 +30,11 @@ def main():
     assert p.DSP_GROUPS == {1: (0, 1), 0: (4, 5)}
     assert len(p.ENGINE_NAMES) == 12
 
-    # Four voices, exactly once, and exactly two admitted tracks on each core.
     assert set(p.TRACK_VOICE.values()) == {1, 2, 3, 4}
     assert all(len(tracks) == 2 for tracks in p.DSP_GROUPS.values())
     assert all(track % 4 in (0, 1) for track in p.TRACK_VOICE)
     assert all(not p.track_allowed(track) for track in (2, 3, 6, 7))
 
-    # Hardware confinement: every engine belongs to one and only one voice.
     memberships = {engine: [] for engine in range(12)}
     for voice, engines in p.VOICE_ENGINES.items():
         for engine in engines:
@@ -45,11 +43,17 @@ def main():
 
     control = CONTROL.read_text()
     for needle in (
+        '#include "control.c"',
         'track == 0u', 'track == 1u', 'track == 4u', 'track == 5u',
-        '#include "control_fold2_candidate.c"',
+        'if (track == 0u) return 0u;',
+        'if (track == 1u) return 8u;',
+        'if (track == 4u) return 3u;',
+        'if (track == 5u) return 10u;',
+        'p[11] = (uint8_t)pk_hw4_engine(track);',
     ):
         assert needle in control, needle
-    assert 'FOLD DRUM 2' not in control, 'HW4 wrapper must not expose an unqualified browser row'
+    assert '#include "control_fold2_candidate.c"' not in control
+    assert 'engine  8 Karplus' in control
 
     builder = BUILDER.read_text()
     for needle in (
@@ -61,16 +65,14 @@ def main():
     ):
         assert needle in builder, needle
 
-    # The old first-wins instruction is expected to appear inside the literal
-    # replacement anchor; the generated-source gate, not this source-text gate,
-    # proves that it is absent from the emitted DSP program.
     assert "source = once(source, old, new, 'HW4 two-slot admission')" in builder
     assert "source = once(source, old_reset, new_reset, 'HW4 latch removal')" in builder
 
     print('PERKY HW4 profile: PASS')
     print('  DSP core tracks 1-4: T1=V1, T2=V3')
     print('  DSP core tracks 5-8: T5=V2, T6=V4')
-    print('  each voice retains exactly three hardware-family engine ids')
+    print('  audition engines pinned: T1 Fold1, T2 Karplus, T5 Fold2, T6 Noise/Tone')
+    print('  each logical voice retains exactly three hardware-family engine ids for later expansion')
 
 
 if __name__ == '__main__':
