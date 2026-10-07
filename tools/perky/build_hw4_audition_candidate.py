@@ -1,28 +1,33 @@
 #!/usr/bin/env python3
-"""Compose the first four-voice HW4 hardware-audition DSP candidate.
+"""Compose the four-voice HW4 hardware-audition DSP candidate.
 
-Audition engines are deliberately one authentic family per logical PĒRKONS
-voice before we attempt the complete 12-algorithm browser:
+Audition engines remain one authentic family per logical PĒRKONS voice:
 
   T1 / V1 -> Fold Drum 1
   T2 / V3 -> Karplus
   T5 / V2 -> Fold Drum 2
   T6 / V4 -> Noise / Tone
 
-The HW4 ColdFire profile forces those engine ids.  Fold1/Fold2/Noise-Tone keep
-their existing production paths.  Karplus adds its exact renderer, separate
-ARM-derived first/active trigger plans, an authentic pre-trigger compact state,
-the two firmware envelope curves and one 2K delay ring.
+The HW4 ColdFire profile forces those engine ids. Fold1/Fold2 keep their
+qualified production paths. Karplus now combines its exact renderer, separate
+ARM-derived first/active trigger plans, authentic compact/ring state and live
+TUNE/DECAY/EDGE/TWANG/MODE transport. The nonlinear control transforms are
+complete 4096-entry tables generated from the recovered original v1.2.1 update
+law; control changes are endpoint-exact and immediate for Octatrack p-locks.
 
-This builder emits source/assets only.  It does not make a flashable updater;
-image placement and hardware gates remain separate and must consume the layout
-metadata written here.
+Noise/Tone is intentionally still identified as the remaining control-law
+qualification target; its all-three-mode external state probe is separate.
+
+This builder emits source/assets only. It does not by itself make a flashable
+updater; image placement and hardware gates consume the layout metadata here.
 """
 from __future__ import annotations
 
 from pathlib import Path
 import hashlib
 import json
+import os
+import shutil
 import struct
 import sys
 
@@ -30,6 +35,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / 'modules/perky'), str(ROOT / 'tools/perky')]
 
 import build_hw4_candidate as base
+import build_karplus_control_tables as karplus_controls
 import build_karplus_source as karplus_source
 import build_noise_tone_payload as packed
 import build_noise_tone_synth_source as synth
@@ -42,6 +48,7 @@ OUT = ROOT / 'out/perky/hw4-audition'
 PLAN = ROOT / 'out/perky/karplus-trigger-plan.json'
 FIX = ROOT / 'out/perky/engine-fixtures'
 ASSETS = ROOT / 'out/perky/simple-drum-assets'
+CONTROL_ASSETS = ROOT / 'out/perky/karplus-live-control'
 KARPLUS_CASE = FIX / 'engine-9-mode-1-corner-1'
 STATE_FILE = KARPLUS_CASE / 'wrapper-window-pre-trigger.bin'
 ARM_STATE_OFFSET = 0x2908
@@ -72,6 +79,55 @@ def authentic_karplus() -> karplus.Karplus:
     if len(raw) != ARM_STATE_SIZE:
         raise RuntimeError(f'{STATE_FILE}: short Karplus state slice')
     return karplus.Karplus.from_arm(raw)
+
+
+def ensure_control_assets() -> dict:
+    """Load or locally regenerate exact Karplus prepared-control LUTs."""
+    manifest_path = CONTROL_ASSETS / 'manifest.json'
+    if not manifest_path.exists():
+        firmware = Path(os.environ.get(
+            'PERKONS_FIRMWARE',
+            str(Path.home() / 'Downloads/perkons_both_v1.2.1-0-gbcccfd0.img'),
+        )).expanduser()
+        if not firmware.exists():
+            raise FileNotFoundError(
+                f'{manifest_path} missing and pinned firmware not found at {firmware}; '
+                'run tools/perky/build_karplus_control_tables.py --firmware <v1.2.1.img>'
+            )
+        karplus_controls.build(firmware, CONTROL_ASSETS, FIX)
+
+    report = json.loads(manifest_path.read_text())
+    if report.get('schema') != 'octabam.perky.karplus-live-control.v1':
+        raise RuntimeError('Karplus control-table manifest schema drift')
+    if report.get('mode_map') != [1, 0, 2]:
+        raise RuntimeError('Karplus physical MODE map drift')
+
+    expected = {
+        'tune-delay': memory.KARPLUS_TUNE_DELAY_BASE,
+        'decay-rate': memory.KARPLUS_DECAY_RATE_BASE,
+        'edge-coeff': memory.KARPLUS_EDGE_COEFF_BASE,
+    }
+    tables_by_name = {row['name']: row for row in report.get('tables', [])}
+    if set(tables_by_name) != set(expected):
+        raise RuntimeError(f'Karplus control-table set drift: {sorted(tables_by_name)}')
+    for name, base in expected.items():
+        row = tables_by_name[name]
+        if int(row['base_word']) != base:
+            raise RuntimeError(
+                f'Karplus {name} base ${int(row["base_word"]):04x} != ${base:04x}'
+            )
+        if int(row['words']) != memory.KARPLUS_CONTROL_LUT_WORDS:
+            raise RuntimeError(f'Karplus {name} packed-word geometry drift')
+        path = CONTROL_ASSETS / row['file']
+        raw = path.read_bytes()
+        if len(raw) != int(row['words']) * 3:
+            raise RuntimeError(f'Karplus {name} packed payload size drift')
+        if hashlib.sha256(raw).hexdigest() != row['sha256']:
+            raise RuntimeError(f'Karplus {name} payload hash drift')
+
+    if int(report.get('y_end_exclusive', -1)) != memory.HW4_Y_END:
+        raise RuntimeError('Karplus control-table Y end disagrees with HW4 memory plan')
+    return report
 
 
 def emit_init(words: list[int]) -> str:
@@ -109,6 +165,8 @@ def build(out: Path = OUT, assets: Path = ASSETS):
     memory.validate()
     _plan, plans = trigger.load_plan(PLAN)
     voice = authentic_karplus()
+    control_report = ensure_control_assets()
+    control_rows = {row['name']: row for row in control_report['tables']}
 
     for name in ('envelope1.bin', 'envelope2.bin'):
         if not (assets / name).exists():
@@ -133,7 +191,22 @@ def build(out: Path = OUT, assets: Path = ASSETS):
     ).replace(
         '#>$000c51,r1', f'#>${memory.KARPLUS_ENV2_BASE:06x},r1'
     )
+
+    control_source = (ROOT / 'modules/perky/karplus_control_seam.asm').read_text()
+    control_source = control_source.replace(
+        '@K_TUNE_LUT@', f'${memory.KARPLUS_TUNE_DELAY_BASE:06x}'
+    ).replace(
+        '@K_DECAY_LUT@', f'${memory.KARPLUS_DECAY_RATE_BASE:06x}'
+    ).replace(
+        '@K_EDGE_LUT@', f'${memory.KARPLUS_EDGE_COEFF_BASE:06x}'
+    ).replace(
+        '@K_GATE_THRESHOLD@', f'${int(control_report["gate_threshold"]):06x}'
+    )
+    if '@K_' in control_source:
+        raise RuntimeError('unresolved Karplus live-control source placeholder')
+
     source += '\n' + (ROOT / 'modules/perky/karplus_seam.asm').read_text()
+    source += '\n' + control_source
     source += '\n' + ksource
     source += '\n' + trigger.emit_routine(
         plans['first_trigger'],
@@ -170,6 +243,16 @@ def build(out: Path = OUT, assets: Path = ASSETS):
     if ring['words'] != memory.KARPLUS_RING_WORDS:
         raise RuntimeError(f'Karplus ring has {ring["words"]} words')
 
+    live_assets: list[dict] = []
+    for name in ('tune-delay', 'decay-rate', 'edge-coeff'):
+        row = dict(control_rows[name])
+        src = CONTROL_ASSETS / row['file']
+        dst = out / row['file']
+        shutil.copyfile(src, dst)
+        if hashlib.sha256(dst.read_bytes()).hexdigest() != row['sha256']:
+            raise RuntimeError(f'copied Karplus {name} payload hash drift')
+        live_assets.append(row)
+
     layout_path = out / 'layout.json'
     layout = json.loads(layout_path.read_text())
     layout['hw4_audition'] = {
@@ -181,6 +264,14 @@ def build(out: Path = OUT, assets: Path = ASSETS):
             'base_word': memory.KARPLUS_SHADOW_BASE,
             'words': memory.KARPLUS_SHADOW_WORDS,
         },
+        'karplus_controls': {
+            'status': 'live endpoint-exact prepared controls; immediate OT p-lock changes',
+            'parameters': ['TUNE', 'DECAY', 'EDGE', 'TWANG', 'MODE'],
+            'mode_map': control_report['mode_map'],
+            'gate_threshold': control_report['gate_threshold'],
+            'attack_rate': control_report['attack_rate'],
+            'transition_smoothing': 'not emulated; exact final state applied immediately',
+        },
     }
     layout['extra_y_init'] = [
         {'base_word': memory.KARPLUS_ENV1_BASE, **e1,
@@ -189,6 +280,12 @@ def build(out: Path = OUT, assets: Path = ASSETS):
          'purpose': 'Karplus envelope curve 2, direct packed u16'},
         {'base_word': memory.KARPLUS_RING_BASE, **ring,
          'purpose': 'Karplus authentic pre-trigger 2K delay ring'},
+        {'base_word': memory.KARPLUS_TUNE_DELAY_BASE, **live_assets[0],
+         'purpose': 'Karplus exact prepared TUNE -> delay lookup'},
+        {'base_word': memory.KARPLUS_DECAY_RATE_BASE, **live_assets[1],
+         'purpose': 'Karplus exact prepared DECAY -> envelope rate lookup'},
+        {'base_word': memory.KARPLUS_EDGE_COEFF_BASE, **live_assets[2],
+         'purpose': 'Karplus exact prepared EDGE -> filter coefficient lookup'},
     ]
     layout_path.write_text(json.dumps(layout, indent=2) + '\n')
 
@@ -198,7 +295,15 @@ def build(out: Path = OUT, assets: Path = ASSETS):
         f'env2 ${memory.KARPLUS_ENV2_BASE:04x}, '
         f'ring ${memory.KARPLUS_RING_BASE:04x}..${memory.KARPLUS_RING_END - 1:04x}'
     )
-    print('Karplus controls: authentic fixed middle-corner fixture for first audition')
+    print(
+        f'Karplus live controls: LUTs ${memory.KARPLUS_TUNE_DELAY_BASE:04x}..'
+        f'${memory.HW4_Y_END - 1:04x}; '
+        'TUNE/DECAY/EDGE/TWANG/MODE active; p-lock changes immediate'
+    )
+    print(
+        f'HW4 Y free before stock boot clear: '
+        f'{memory.HW4_Y_BOOT_CLEAR - memory.HW4_Y_END} words'
+    )
     return source, fold2_words
 
 
