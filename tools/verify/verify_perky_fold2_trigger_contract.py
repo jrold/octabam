@@ -53,6 +53,10 @@ def match(o,c,d):
 
 def main():
  a=argparse.ArgumentParser(description=__doc__);a.add_argument('--contract',type=Path,default=CONTRACT);a.add_argument('--plan',type=Path,default=PLAN);a.add_argument('--allow-unresolved',action='store_true');x=a.parse_args()
+ # A plan is valid only for the contract being checked in THIS invocation.
+ # Remove any prior success before reading/validating the new ARM evidence so
+ # an interrupted, malformed or newly-unresolved run can never reuse stale law.
+ if x.plan.exists():x.plan.unlink()
  if not x.contract.exists():print('Fold2 trigger contract missing; regenerate ARM fixtures first.',file=sys.stderr);raise SystemExit(2)
  c=json.loads(x.contract.read_text());assert c.get('schema')=='octabam.perky.fold2-trigger.v1' and c.get('compact_words')==W and c.get('engine_zero_based')==3
  cs=[]
