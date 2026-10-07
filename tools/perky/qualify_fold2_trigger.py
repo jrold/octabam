@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""Run the local evidence chain needed to finish Fold Drum 2.
+
+This is a developer-side driver only.  It does not use GitHub Actions or any
+network service.  It consumes the user's existing PĒRKONS v1.2.1 firmware,
+PerkyBits source tree and Unicorn build, regenerates the original-ARM corpus,
+derives/verifies the Fold2 trigger contract, then runs the existing Fold2
+control/renderer gates.
+
+Defaults intentionally match the known local checkout used for PerkyBits work:
+  firmware: ~/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img
+  source:   ~/Downloads/perkybits
+
+The Unicorn build is auto-discovered by locating the existing libunicorn.a
+beside libarm-softmmu.a and libunicorn-common.a under the PerkyBits tree.  No
+download or dependency installation is attempted.
+"""
+from __future__ import annotations
+
+from pathlib import Path
+import argparse
+import os
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_FIRMWARE = Path.home() / "Downloads/perkons_both_v1.2.1-0-gbcccfd0.img"
+DEFAULT_SOURCE = Path.home() / "Downloads/perkybits"
+FIX = ROOT / "out/perky/engine-fixtures"
+
+
+def run(argv: list[str], env=None) -> None:
+    print("+ " + " ".join(argv), flush=True)
+    subprocess.run(argv, check=True, cwd=ROOT, env=env)
+
+
+def find_unicorn_build(source: Path) -> Path:
+    explicit = os.environ.get("UNICORN_BUILD")
+    if explicit:
+        path = Path(explicit).expanduser().resolve()
+        if not path.exists():
+            raise FileNotFoundError(f"UNICORN_BUILD does not exist: {path}")
+        return path
+
+    matches = []
+    for lib in source.rglob("libunicorn.a"):
+        parent = lib.parent
+        if ((parent / "libarm-softmmu.a").exists()
+                and (parent / "libunicorn-common.a").exists()
+                and (parent.parent / "unicorn-src/include").exists()):
+            matches.append(parent)
+    if not matches:
+        raise FileNotFoundError(
+            "Could not find an existing Unicorn static build under PerkyBits. "
+            "Pass --unicorn-build or set UNICORN_BUILD."
+        )
+    # Prefer the newest existing build when old benchmark/build directories are
+    # both present.  This is only path discovery; capture_engine_fixtures.py
+    # still hashes all reference inputs into its manifest.
+    return max(matches, key=lambda p: (p / "libunicorn.a").stat().st_mtime_ns)
+
+
+def require(path: Path, description: str) -> Path:
+    path = path.expanduser().resolve()
+    if not path.exists():
+        raise FileNotFoundError(f"{description} does not exist: {path}")
+    return path
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--firmware", type=Path,
+                    default=Path(os.environ.get("PERKONS_FIRMWARE", DEFAULT_FIRMWARE)))
+    ap.add_argument("--source", type=Path,
+                    default=Path(os.environ.get("PERKYBITS_ROOT", DEFAULT_SOURCE)))
+    ap.add_argument("--unicorn-build", type=Path)
+    ap.add_argument(
+        "--reuse-fixtures", action="store_true",
+        help="do not recapture ARM fixtures; analyze the existing local corpus",
+    )
+    ap.add_argument(
+        "--analysis-only", action="store_true",
+        help="permit unresolved CASES/ambiguous trigger rules for inspection",
+    )
+    args = ap.parse_args()
+
+    source = require(args.source, "PerkyBits source tree")
+    firmware = require(args.firmware, "PĒRKONS v1.2.1 firmware")
+    unicorn = require(args.unicorn_build, "Unicorn build") \
+        if args.unicorn_build else find_unicorn_build(source)
+
+    if not (source / "Source/PerkonsVoices.cpp").exists():
+        raise FileNotFoundError(
+            f"not a PerkyBits checkout (missing Source/PerkonsVoices.cpp): {source}"
+        )
+
+    print(f"firmware:      {firmware}")
+    print(f"PerkyBits:     {source}")
+    print(f"Unicorn build: {unicorn}")
+    print()
+
+    if not args.reuse_fixtures:
+        run([
+            sys.executable, "tools/perky/capture_engine_fixtures.py",
+            str(firmware), "--source", str(source),
+            "--unicorn-build", str(unicorn), "--out", str(FIX),
+        ])
+
+    run([
+        sys.executable, "tools/perky/analyze_fold2_trigger.py",
+        "--fixtures", str(FIX),
+    ])
+
+    contract_cmd = [
+        sys.executable, "tools/verify/verify_perky_fold2_trigger_contract.py",
+    ]
+    if args.analysis_only:
+        contract_cmd.append("--allow-unresolved")
+    run(contract_cmd)
+
+    if args.analysis_only:
+        print(
+            "\nAnalysis-only run complete.  Renderer/control qualification is "
+            "skipped until the trigger contract is fully deterministic."
+        )
+        return
+
+    # These are all local executable/oracle gates.  Keep the order from cheap
+    # transport/control checks to full ARM/native DSP renderer parity.
+    env = os.environ.copy()
+    env["PERKYBITS_SOURCE"] = str(source / "Source")
+    for gate in (
+        "tools/verify/verify_perky_fold2_transport.py",
+        "tools/verify/verify_perky_fold2_seam_exec.py",
+        "tools/verify/verify_perky_fold2_compact.py",
+        "tools/verify/verify_perky_fold2_synthetic_exec.py",
+        "tools/verify/verify_perky_fold2_dsp_exec.py",
+    ):
+        run([sys.executable, gate], env=env)
+
+    print(
+        "\nFold Drum 2 evidence chain: PASS through trigger contract, "
+        "production transport/control seam, compact model and DSP renderer.\n"
+        "This does NOT claim browser/production trigger-seam integration or "
+        "Octatrack hardware qualification; those remain separate gates."
+    )
+
+
+if __name__ == "__main__":
+    main()
