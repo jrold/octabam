@@ -10,16 +10,23 @@
 ;   Y:$1600..$1dff  one 2,048-word Karplus delay ring
 ;   Y:$1e00..$3e00  three exact prepared-control lookup tables
 ;   overlay +$20    has-triggered flag (outside the 32-word compact state)
+;   overlay +$21..+$27 live-control shadow across generated trigger plans
 ;
 ; The exact first-trigger and active-retrigger routines are generated locally
 ; from original v1.2.1 ARM snapshots. The renderer itself is independently
 ; native/ARM qualified. Live TUNE/DECAY/EDGE/TWANG are applied only to the
 ; compact fields proven owned by the original update() routine; MODE uses the
 ; authentic physical-panel mapping M1/M2/M3 -> firmware 1/0/2.
+;
+; Original order is trigger -> update -> render. We apply the current control
+; surface at block entry, shadow its seven live compact words, and restore that
+; shadow immediately after a generated trigger/retrigger before the suffix is
+; rendered. This prevents captured trigger state from defeating live OT knobs.
 
 pks_karplus_entry:
         jsrl    pk_multi_karplus_init
         jsrl    pk_karplus_apply_controls
+        jsrl    pk_karplus_shadow_controls
 
         move    #>$003900,r5
         move    #>$ffffff,m0
@@ -32,7 +39,7 @@ pks_karplus_entry:
         move    #$0,r0
 
         ; Karplus' qualified noise helper keeps the four RNG limbs in the top
-        ; of its 128-word scratch ABI.  Import the common production RNG once;
+        ; of its 128-word scratch ABI. Import the common production RNG once;
         ; prefix/retrigger/suffix rendering then shares one continuous stream.
         move    x:>$38e8,a
         move    a1,x:(r5+$72)
@@ -43,7 +50,7 @@ pks_karplus_entry:
         move    x:>$38eb,a
         move    a1,x:(r5+$75)
 
-        ; Default to no trigger.  As in the Fold/Simple production seams, the
+        ; Default to no trigger. As in the Fold/Simple production seams, the
         ; PK/Y1 flag prevents a stale stock event offset from manufacturing one.
         move    #>$10,a
         move    a1,x:>$38ec
@@ -64,7 +71,7 @@ pkk_event_ready:
         tst     a
         beq     pkk_retrigger
 
-        ; Prefix [0,event) from the sounding pre-trigger state.
+        ; Prefix [0,event) from the already-current control state.
         move    a1,n7
         move    #>$001600,r4
         jsrl    pk_karplus_voice
@@ -82,6 +89,11 @@ pkk_retrigger:
 pkk_active_trigger:
         jsrl    pk_karplus_trigger_active
 pkk_trigger_done:
+        ; Original trigger is followed by update(). Generated plans may restore
+        ; captured compact words, so reassert the live OT-derived control shadow
+        ; before rendering the triggered suffix.
+        jsrl    pk_karplus_restore_controls
+
         ; Generated trigger routines use r5 for the frozen 32-word snapshot.
         ; Restore the renderer ABI without disturbing its scratch contents.
         move    #>$003900,r5
