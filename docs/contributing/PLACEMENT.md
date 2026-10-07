@@ -191,6 +191,28 @@ skipped claim's target as a link-time symbol.
   `Detour.subst_return`. Reproduced and fixed under the port with `ot_emu
   --call`; hardware pending. `modules/kits-reload/README.md`.
 
+## PERKY HW4 audition DSP arena
+
+The dynamically composed `perky-hw4` audition retains FILTER and the ColdFire
+DELAY, retiring the other stock DSP effects. Its module claims the entire
+local-Y range `$1000..$3900` on both cores: packed Karplus envelopes at `$1000`
+and `$12ac`, the unchanged 2048-word ring at `$1600..$1dff`, then decoded
+Simple/Fold waves (`$1e00..$20ff`), Simple pitch-envelope knots
+(`$2100..$24ff`), Noise/Tone waves (`$2500..$28ff`), its analytic curve
+(`$2900..$30ff`) and the exact odd frequency converter (`$3100..$3900`).
+These boot-loaded tables end below the stock clear at `$3f00`; they are private
+core memory, not the shared bus window. All bytes are generated from qualified
+local inputs under ignored `out/`. `modules/perky/hw4_memory.py` is the single
+geometry record; the image ledger, boot verifier and full-image port remain
+required. This reservation applies only to the reduced-FX audition remix.
+
+The optimized program is 3906 P words. T1 Fold1 + T2 Noise/Tone and T5 Fold2 +
+T6 Karplus use measured, balanced pairings. The mandatory timing gate sums each
+engine's independent worst block across 34 control scenarios, with the original
+2x model margin and 22560-cycle stock reserve. Kernel comparisons include all
+persistent X state and the complete Y ring; generic state dumps at X:$200 cannot
+prove HW4 state at X:$3800.
+
 ## Open
 
 - More than 10 MB is a bigger `PLATFORM_PAGES` (the ledger refuses below

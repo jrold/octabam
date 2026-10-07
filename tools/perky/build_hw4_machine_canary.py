@@ -6,9 +6,9 @@ architecture.  Four physical OT tracks are pinned to one authentic engine from
 each PĒRKONS hardware voice family:
 
   T1 -> Fold Drum 1    (engine 0)
-  T2 -> Karplus        (engine 8; fixed authentic control state for audition 1)
+  T2 -> Noise / Tone   (engine 10)
   T5 -> Fold Drum 2    (engine 3)
-  T6 -> Noise / Tone   (engine 10)
+  T6 -> Karplus        (engine 8; fixed authentic control state for audition 1)
 
 The dedicated ``perky-hw4`` remix temporarily harvests most stock DSP effects
 and reserves part of FX1 Y memory for Karplus.  No updater is emitted until the
@@ -123,8 +123,8 @@ def build_module(work: Path, build_number: int):
                  'HW4 Fold2 frozen pre-trigger snapshot'),
         DspRange('x', memory.KARPLUS_SHADOW_BASE, memory.KARPLUS_SHADOW_WORDS,
                  'HW4 Karplus frozen pre-trigger snapshot'),
-        DspRange('y', memory.HW4_Y_BASE, memory.KARPLUS_RING_END - memory.HW4_Y_BASE,
-                 'HW4 audition Karplus envelopes + 2K ring (temporary FX1 arena)'),
+        DspRange('y', memory.HW4_Y_BASE, memory.HW4_Y_END - memory.HW4_Y_BASE,
+                 'HW4 Karplus ring/envelopes + decoded synth tables (temporary FX1 arena)'),
     ))
     full = dataclasses.replace(
         full,
@@ -156,6 +156,7 @@ def build_module(work: Path, build_number: int):
         'private_x_end_exclusive': memory.PRIVATE_X_END,
         'karplus_y_base': memory.HW4_Y_BASE,
         'karplus_y_end_exclusive': memory.KARPLUS_RING_END,
+        'hw4_y_end_exclusive': memory.HW4_Y_END,
         'dsp_ranges': [dataclasses.asdict(r) for r in ranges],
         'note': 'build_bus placer is authoritative after stock pinned-routine subtraction',
     }, indent=2) + '\n')
@@ -193,14 +194,16 @@ def package(work: Path, normal: Path, control_source: Path, pwords: int,
         f'version={version}\n'
         f'build={build_number}\n'
         f'git={base.revision()}\n'
-        'tracks=T1 Fold Drum 1 (engine 0); T2 Karplus (engine 8); '
-        'T5 Fold Drum 2 (engine 3); T6 Noise/Tone (engine 10)\n'
+        'tracks=T1 Fold Drum 1 (engine 0); T2 Noise/Tone (engine 10); '
+        'T5 Fold Drum 2 (engine 3); T6 Karplus (engine 8)\n'
         'voice_topology=two PERKY voices per DSP core; T3/T4/T7/T8 ordinary/non-PERKY\n'
         'karplus_controls=fixed authentic v1.2.1 captured middle-corner state for audition 1\n'
         'fx_policy=temporary reduced-FX audition remix; FILTER + DELAY retained; '
         'most stock DSP FX harvested\n'
         f'karplus_y=0x{memory.HW4_Y_BASE:04x}..0x{memory.KARPLUS_RING_END - 1:04x} '
         '(temporary FX1 arena reservation)\n'
+        f'decoded_tables_y=0x{memory.SIMPLE_WAVES_BASE:04x}..0x{memory.HW4_Y_END-1:04x}\n'
+        f'timing_report_sha256={base.sha256(ROOT / "out/perky/hw4-realtime-budget/report.json")}\n'
         f'p_words={pwords}; gross_reclaimed_p_words=5431; full-image placer passed\n'
         f'dsp_source_sha256={base.sha256(work / "hw4-audition.asm")}\n'
         f'control_assembly_sha256={base.sha256(control_source)}\n'
@@ -209,7 +212,7 @@ def package(work: Path, normal: Path, control_source: Path, pwords: int,
         f'card={card.name} sha256={base.sha256(card)}\n'
         f'midi={midi.name} sha256={base.sha256(midi)}\n'
         'gates=Fold2 ARM trigger/renderer; Karplus ARM trigger/renderer; HW4 full-source '
-        'assembler; FX harvest; two-voices/core realtime budget; '
+        'assembler; exact HW4 optimization PCM/state/RNG/ring; FX harvest; two-voices/core realtime budget; '
         'stock-aware full-image placer; byte-exact boot uploads; 32000-frame '
         'four-voice dirty-memory OT emulator\n'
         'status=LOCAL GATES PASSED; PHYSICAL OCTATRACK AUDITION PENDING\n'
@@ -222,7 +225,7 @@ def package(work: Path, normal: Path, control_source: Path, pwords: int,
     print(f'  patched OS : {MAINOS}')
     print(f'  test record: {manifest}')
     print(f'  DSP source : {pwords} P words')
-    print('  map        : T1 Fold1 / T2 Karplus / T5 Fold2 / T6 Noise-Tone')
+    print('  map        : T1 Fold1 / T2 Noise/Tone / T5 Fold2 / T6 Karplus')
 
 
 def main() -> None:

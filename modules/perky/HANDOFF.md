@@ -1,3 +1,51 @@
+# PERKY HW4 DSP optimization checkpoint, 7 October 2026
+
+Work remains on `perky-machines` in the isolated `perky-hw4-release` worktree.
+The four-engine source and the stronger realtime gate now pass. Full-image
+placement, boot and the 32000-frame four-track port are being run by the canonical
+release builder; hardware has not been flashed.
+
+The HW4 specialization uses decoded wave/envelope tables, an exact odd frequency
+lookup, a base-65536 constant-MAC RNG recurrence, register-local oscillator
+interpolation, signed mixer scratch and once-per-call Fold2 oscillator pointers.
+Generic kernels and earlier shipping compositions remain unchanged. The complete
+source shrank from 4353 to **3906 P words**, inside the 5431-word donor.
+
+The physical map is now **T1 Fold1, T2 Noise/Tone, T5 Fold2, T6 Karplus**.
+Measured costs favor V1+V4 and V2+V3 over the earlier pairings. Karplus still has
+frozen authentic middle-corner controls; Noise/Tone preserves the PERKY2 profile.
+FILTER and the ColdFire DELAY are the only retained stock effects.
+
+`verify_perky_hw4_optimization.py` compares generic and optimized production
+sources across 34 startup/settled-control scenarios (all modes, corners and
+single-axis extremes), 256 blocks each, with every trigger offset. It checks
+exact PCM, all live voice/RNG/cache/trigger words and the complete Karplus ring.
+The old host dump at X:$200 was blind to HW4 state; optional dump-base arguments
+now capture X:$3800 and Y:$1600 without adding code to the measured renderer.
+The RNG additionally matches 2048 seeded/carry-boundary transitions.
+
+The timing gate runs **8704 blocks per engine**, summing independent maxima
+instead of correlated blocks. The original 2x model margin and 22560-cycle stock
+reserve remain unchanged:
+
+| Physical core | Independent modeled maximum | Guarded total | Deadline |
+|---|---:|---:|---:|
+| T1 Fold1 + T2 Noise/Tone | 24719 | 71998 | 72512 |
+| T5 Fold2 + T6 Karplus | 23965 | 70490 | 72512 |
+
+`hw4_memory.py` and the dynamic manifest claim all decoded tables through
+Y:$3900, below the boot clear at $3f00; Karplus' ring stays at $1600..$1dff.
+`docs/contributing/PLACEMENT.md` records each span. Source qualification includes
+the exact optimization comparison before the hard realtime gate. All assets
+and original firmware bytes remain under ignored `out/`.
+
+Evidence: `out/perky-hw4-source-opt.log`,
+`out/perky/hw4-realtime-budget/report.json`, `out/perky/hw4-optimization/`,
+and the ongoing `out/perky-hw4-release-opt.log`.
+
+The following checkpoint is historical and describes the blocker before these
+optimizations.
+
 # PERKY HW4 control/update checkpoint, 7 October 2026
 
 Work stays on `perky-machines` in

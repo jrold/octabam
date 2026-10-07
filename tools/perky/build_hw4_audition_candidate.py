@@ -5,9 +5,9 @@ Audition engines are deliberately one authentic family per logical PĒRKONS
 voice before we attempt the complete 12-algorithm browser:
 
   T1 / V1 -> Fold Drum 1
-  T2 / V3 -> Karplus
+  T2 / V4 -> Noise / Tone
   T5 / V2 -> Fold Drum 2
-  T6 / V4 -> Noise / Tone
+  T6 / V3 -> Karplus
 
 The HW4 ColdFire profile forces those engine ids.  Fold1/Fold2/Noise-Tone keep
 their existing production paths.  Karplus adds its exact renderer, separate
@@ -38,6 +38,7 @@ import karplus_compact as karplus
 import karplus_trigger_plan_source as trigger
 import karplus_prepared_update_source as control_update
 import simple_drum_tables as tables
+import hw4_optimized_source as optimized
 
 OUT = ROOT / 'out/perky/hw4-audition'
 PLAN = ROOT / 'out/perky/karplus-trigger-plan.json'
@@ -106,7 +107,7 @@ pkk_init_zero:
     return source
 
 
-def build(out: Path = OUT, assets: Path = ASSETS):
+def build(out: Path = OUT, assets: Path = ASSETS, *, optimize: bool = True):
     memory.validate()
     _plan, plans = trigger.load_plan(PLAN)
     voice = authentic_karplus()
@@ -156,9 +157,13 @@ def build(out: Path = OUT, assets: Path = ASSETS):
         prefix='kh4a',
     )
     source += '\n' + emit_init(voice.words)
-    source = synth.force_long_local_jsr(synth.relativize_local_conditionals(source))
-
     out.mkdir(parents=True, exist_ok=True)
+    layout_path = out / 'layout.json'
+    layout = json.loads(layout_path.read_text())
+    direct_tables = []
+    if optimize:
+        source, direct_tables = optimized.optimize(source, out, layout, words24)
+    source = synth.force_long_local_jsr(synth.relativize_local_conditionals(source))
     (out / 'hw4-audition.asm').write_text(source)
 
     env1 = list(struct.unpack('<1025H', (assets / 'envelope1.bin').read_bytes()[:2050]))
@@ -176,10 +181,8 @@ def build(out: Path = OUT, assets: Path = ASSETS):
     if ring['words'] != memory.KARPLUS_RING_WORDS:
         raise RuntimeError(f'Karplus ring has {ring["words"]} words')
 
-    layout_path = out / 'layout.json'
-    layout = json.loads(layout_path.read_text())
     layout['hw4_audition'] = {
-        'engines': {'T1': 0, 'T2': 8, 'T5': 3, 'T6': 10},
+        'engines': {'T1': 0, 'T2': 10, 'T5': 3, 'T6': 8},
         'karplus_fixture': str(STATE_FILE.relative_to(ROOT)),
         'karplus_state_words': karplus.WORDS,
         'karplus_triggered_overlay_word': memory.KARPLUS_TRIGGERED_WORD,
@@ -195,10 +198,10 @@ def build(out: Path = OUT, assets: Path = ASSETS):
          'purpose': 'Karplus envelope curve 2, direct packed u16'},
         {'base_word': memory.KARPLUS_RING_BASE, **ring,
          'purpose': 'Karplus authentic pre-trigger 2K delay ring'},
-    ]
+    ] + direct_tables
     layout_path.write_text(json.dumps(layout, indent=2) + '\n')
 
-    print('HW4 audition DSP: T1 Fold1; T2 Karplus; T5 Fold2; T6 Noise/Tone')
+    print('HW4 audition DSP: T1 Fold1; T2 Noise/Tone; T5 Fold2; T6 Karplus')
     print(
         f'Karplus Y: env1 ${memory.KARPLUS_ENV1_BASE:04x}, '
         f'env2 ${memory.KARPLUS_ENV2_BASE:04x}, '

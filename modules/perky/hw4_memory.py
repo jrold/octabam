@@ -6,11 +6,11 @@ HW4 needs Karplus' measured 128-word scratch ABI, so the cache and Fold2 trigger
 snapshot move upward together.  Karplus also gets a 32-word frozen pre-trigger
 snapshot in the remaining measured private-X window.
 
-For the first hardware audition only, Karplus owns a small slice of the stock
-FX1 Y arena below the stock boot clear boundary.  This is intentionally NOT a
+For the first hardware audition only, Karplus and decoded synth tables own
+Y:$1000..$3900 of the stock FX1 arena, below its boot clear at $3f00.  This is intentionally NOT a
 claim for the final PERKY architecture: the dedicated perky-hw4 remix removes
 buffer-backed stock FX from the audition configuration and the build manifest
-warns that the reclaimed Y range belongs to Karplus.
+warns that the reclaimed Y range belongs to the HW4 synth.
 """
 
 PRIVATE_X_BASE = 0x3800
@@ -58,6 +58,17 @@ KARPLUS_ENV2_BASE = KARPLUS_ENV1_BASE + KARPLUS_ENV_PACKED_WORDS
 KARPLUS_RING_BASE = 0x1600         # aligned after both packed envelope tables
 KARPLUS_RING_WORDS = 0x800
 KARPLUS_RING_END = KARPLUS_RING_BASE + KARPLUS_RING_WORDS
+SIMPLE_WAVES_BASE = KARPLUS_RING_END
+SIMPLE_WAVES_WORDS = 768
+SIMPLE_ENVELOPE_BASE = SIMPLE_WAVES_BASE + SIMPLE_WAVES_WORDS
+SIMPLE_ENVELOPE_WORDS = 1024
+NOISE_WAVES_BASE = SIMPLE_ENVELOPE_BASE + SIMPLE_ENVELOPE_WORDS
+NOISE_WAVES_WORDS = 1024
+NOISE_ENVELOPE_BASE = NOISE_WAVES_BASE + NOISE_WAVES_WORDS
+NOISE_ENVELOPE_WORDS = 2048
+SIMPLE_FREQUENCY_BASE = NOISE_ENVELOPE_BASE + NOISE_ENVELOPE_WORDS
+SIMPLE_FREQUENCY_WORDS = 2049
+HW4_Y_END = SIMPLE_FREQUENCY_BASE + SIMPLE_FREQUENCY_WORDS
 
 
 def spans():
@@ -79,6 +90,11 @@ def y_spans():
         ('karplus-envelope1', KARPLUS_ENV1_BASE, KARPLUS_ENV_PACKED_WORDS),
         ('karplus-envelope2', KARPLUS_ENV2_BASE, KARPLUS_ENV_PACKED_WORDS),
         ('karplus-ring', KARPLUS_RING_BASE, KARPLUS_RING_WORDS),
+        ('simple-waves', SIMPLE_WAVES_BASE, SIMPLE_WAVES_WORDS),
+        ('simple-envelope', SIMPLE_ENVELOPE_BASE, SIMPLE_ENVELOPE_WORDS),
+        ('noise-waves', NOISE_WAVES_BASE, NOISE_WAVES_WORDS),
+        ('noise-envelope', NOISE_ENVELOPE_BASE, NOISE_ENVELOPE_WORDS),
+        ('simple-frequency', SIMPLE_FREQUENCY_BASE, SIMPLE_FREQUENCY_WORDS),
     )
 
 
