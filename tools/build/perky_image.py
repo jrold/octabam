@@ -5,16 +5,15 @@ Generic ``build_bus.py`` has already placed PERKY's source hook/code in each
 DSP payload. This pass appends two data records and returns replacement uploads
 for Octabam's established pre-boot loader:
 
-* X:0x3800 -- four compact voices + one 17-word cache each + shared RNG;
+* X:0x3800 -- compact voice state / sideband initialization;
 * Y:0x07a5 -- exact packed Noise/Tone waves/envelopes.
 
 Both destinations are checked against every finalized upload record before a
 word is appended. The X interval lies in the Analog-BD-qualified private-X run;
 the Y interval is the hardware-measured free 0x07a5..0x0fff range.
 
-Input ``table_dir`` is the output of ``tools/perky/build_noise_tone_payload.py``.
-Firmware-derived bytes remain an external build input; this file contains no
-PĒRKONS table/state data.
+Input ``table_dir`` is generated under out/. Firmware-derived bytes remain an
+external build input; this file contains no PĒRKONS table/state data.
 """
 from __future__ import annotations
 
@@ -31,9 +30,10 @@ import ab_records  # noqa:E402
 
 X_BASE = 0x3800
 X_WORDS = 236
+PRIVATE_X_END = 0x3A68          # measured private-X ceiling, exclusive
 Y_BASE = 0x07a5
-Y_END = 0x1000                 # exclusive: FX1 allocation begins here
-Y_WORDS = Y_END - Y_BASE       # 2,139 hardware-measured private words
+Y_END = 0x1000                  # exclusive: FX1 allocation begins here
+Y_WORDS = Y_END - Y_BASE        # 2,139 hardware-measured private words
 
 PRE = {
     "A": (0x40B00000, 0x40B80000),
@@ -154,11 +154,20 @@ def extend_upload(img: bytes | bytearray, tag: str, y_words: list[int],
     extra = b""
     if x_words is not None:
         extra += ab_records.ot_record(1, X_BASE, x_words)
+    claimed = [(X_BASE, len(x_words))] if x_words is not None else []
     for base, values in extra_x or []:
-        if base != 0x3964 or len(values) != 17:
-            die("unsupported extra X initialization geometry")
+        if len(values) != 17:
+            die("unsupported extra X initialization geometry: expected 17-word cache")
+        if base < X_BASE or base + len(values) > PRIVATE_X_END:
+            die(
+                f"payload {tag}: extra X cache X:{base:04x}..{base+len(values)-1:04x} "
+                f"is outside measured private X:{X_BASE:04x}..{PRIVATE_X_END-1:04x}"
+            )
+        if any(_overlap(base, len(values), b, n) for b, n in claimed):
+            die(f"payload {tag}: extra X cache at X:{base:04x} overlaps another PERKY initializer")
         _check_space_free(records, 1, base, len(values), tag, "pitch-cache")
         extra += ab_records.ot_record(1, base, values)
+        claimed.append((base, len(values)))
     extra += ab_records.ot_record(2, Y_BASE, y_words)
     raw = bytes(img[p0:term]) + extra + bytes(img[term:p0 + c["payload"][1]])
     return raw, term
@@ -210,6 +219,12 @@ def integrate(img: bytes | bytearray, table_dir: Path):
 
 def extra_state_init(layout: dict) -> list[tuple[int, list[int]]]:
     if layout["schema"] == "perky-multi-dsp-tables-v1":
+        cache = layout.get("pitch_cache") or {}
+        base = int(cache.get("base_word", 0x3964))
+        words = int(cache.get("words", 17))
+        tag = int(cache.get("initial_tag", 0xffff)) & 0xffff
+        if words != 17:
+            die(f"pitch_cache declares {words} words; decoder ABI requires 17")
         # Cache tag must not accidentally match a dirty first-block index.
-        return [(0x3964, [0xffff] + [0] * 16)]
+        return [(base, [tag] + [0] * 16)]
     return []
