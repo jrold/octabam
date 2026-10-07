@@ -20,8 +20,14 @@
 ;   compact +$1b/+1c  32-bit delay distance
 ;   compact +$02  MODE (separate from ARM common-update ownership)
 ;
+; Overlay +$20 is the Karplus has-triggered bit. +$21..+$27 are private to
+; this HW4 profile and shadow the seven live words that a generated original
+; trigger plan is allowed to disturb. The seam snapshots them after applying
+; the current OT controls and restores them immediately after first/active
+; trigger, matching the original firmware's trigger -> update -> render order.
+;
 ; The three nonlinear functions are complete 4096-entry u16 tables generated
-; locally from the pinned original v1.2.1 update arithmetic.  They use the same
+; locally from the pinned original v1.2.1 update arithmetic. They use the same
 ; 3-u16-in-2-DSP-word packing already qualified for PERKY wave/table assets.
 ;
 ; Placeholders are resolved by build_hw4_audition_candidate.py:
@@ -31,7 +37,7 @@
 ;   @K_GATE_THRESHOLD@ authentic prepared DECAY gate threshold
 ;
 ; This first hardware live-control path is deliberately endpoint-exact and
-; immediate.  It does not emulate the ARM UI-rate transition smoother, so an OT
+; immediate. It does not emulate the ARM UI-rate transition smoother, so an OT
 ; p-lock reaches its exact final PĒRKONS control state without a hidden ramp.
 
 pk_karplus_apply_controls:
@@ -115,6 +121,46 @@ pkk_control_mode_ready:
         move    a1,x:(r6+$2)
         rts
 
+; Save the exact post-update control surface in spare words of this track's
+; 58-word HW4 overlay. Generated original trigger plans operate on the compact
+; first 32 words only, so +$21..+$27 survive the trigger.
+pk_karplus_shadow_controls:
+        move    x:(r6+$2),a
+        move    a1,x:(r6+$21)
+        move    x:(r6+$7),a
+        move    a1,x:(r6+$22)
+        move    x:(r6+$d),a
+        move    a1,x:(r6+$23)
+        move    x:(r6+$12),a
+        move    a1,x:(r6+$24)
+        move    x:(r6+$19),a
+        move    a1,x:(r6+$25)
+        move    x:(r6+$1b),a
+        move    a1,x:(r6+$26)
+        move    x:(r6+$1c),a
+        move    a1,x:(r6+$27)
+        rts
+
+; Original v1.2.1 runs update() after trigger/retrigger. Restore the exact
+; current OT-derived control surface after the generated trigger mutation and
+; before rendering the triggered suffix.
+pk_karplus_restore_controls:
+        move    x:(r6+$21),a
+        move    a1,x:(r6+$2)
+        move    x:(r6+$22),a
+        move    a1,x:(r6+$7)
+        move    x:(r6+$23),a
+        move    a1,x:(r6+$d)
+        move    x:(r6+$24),a
+        move    a1,x:(r6+$12)
+        move    x:(r6+$25),a
+        move    a1,x:(r6+$19)
+        move    x:(r6+$26),a
+        move    a1,x:(r6+$1b)
+        move    x:(r6+$27),a
+        move    a1,x:(r6+$1c)
+        rts
+
 ; Decode one packed u16 table entry.
 ;
 ; Input:
@@ -176,7 +222,8 @@ pkk_lut_r1:
         asl     #$8,b,b
         add     x1,b
         and     #>$00ffff,b
-        move    b1,a
+        move    b1,x0
+        move    x0,a
         rts
 
 pkk_lut_r0:
