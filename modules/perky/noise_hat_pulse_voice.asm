@@ -1,6 +1,6 @@
 ; PĒRKONS v1.2.1 Noise Hat / Pulse Stack DSP candidate.
 ;
-; Compact state is exactly 60 X words, matching noise_hat_compact.py:
+; Compact state is exactly 59 X words, matching noise_hat_pulse_compact.py:
 ;   +00        velocity u8
 ;   +01..+0b  common amplitude envelope (11 words)
 ;   +0c..+13  filter A (8 words)
@@ -10,8 +10,8 @@
 ;   +34/+35   local-LCG clock phase u32
 ;   +36/+37   local-LCG clock increment u32
 ;   +38/+39   local LCG state u32
-;   +3a        second filter input u16
-;   +3b        signed interpolation mix u16
+;   +39        second filter input u16 (aliases RNG high word, ARM +0x136)
+;   +3a        signed interpolation mix u16
 ;
 ; Voice ABI: r6=state, r5=scratch, n7=sample count, r0=stereo output.
 ; Dependencies:
@@ -57,8 +57,10 @@ pk_noise_hat_pulse_voice:
         asr     #$8,a,a
         move    a1,x:(r5+$63)
 
-        ; secondInput = u16(state+$3a) - $8000.
-        move    x:(r6+$3a),a
+        ; ARM +0x136 is the high half of the local u32 RNG at +0x134.
+        ; Therefore an LCG update performed above changes this input on the
+        ; same sample; there is deliberately no independent compact word.
+        move    x:(r6+$39),a
         and     #>$00ffff,a
         sub     #>$008000,a
         move    a1,x:(r5+$61)
@@ -76,7 +78,7 @@ pk_noise_hat_pulse_voice:
         move    a1,x1
 
         ; mix is a signed16. filtered = previous + ((mix * delta) >> 15).
-        move    x:(r6+$3b),a
+        move    x:(r6+$3a),a
         asl     #$8,a,a
         move    a1,a
         asr     #$8,a,a
