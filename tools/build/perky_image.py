@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
-"""PERKY Noise/Tone data injection into the two finalized OT DSP uploads.
+"""PERKY data injection into the two finalized OT DSP uploads.
 
 Generic ``build_bus.py`` has already placed PERKY's source hook/code in each
-DSP payload. This pass appends two data records and returns replacement uploads
-for Octabam's established pre-boot loader:
+DSP payload. This pass appends data records and returns replacement uploads for
+Octabam's established pre-boot loader:
 
 * X:0x3800 -- compact voice state / sideband initialization;
-* Y:0x07a5 -- exact packed Noise/Tone waves/envelopes.
+* Y:0x07a5 -- exact packed Noise/Tone/Simple static tables;
+* optional profile-declared X/Y initializers generated under ``out/``.
 
-Both destinations are checked against every finalized upload record before a
-word is appended. The X interval lies in the Analog-BD-qualified private-X run;
-the Y interval is the hardware-measured free 0x07a5..0x0fff range.
+The normal PERKY2/PERKY4 path remains restricted to the measured private gaps.
+The HW4 audition profile may additionally declare local Y initializers in
+$1000..$3eff: this lies in the stock FX1 arena but below the stock Y clear at
+$3f00.  Only the dedicated reduced-FX HW4 remix is allowed to rely on those
+records; this injector merely validates geometry/checksums and refuses overlap.
 
-Input ``table_dir`` is generated under out/. Firmware-derived bytes remain an
-external build input; this file contains no PĒRKONS table/state data.
+Firmware-derived bytes remain external build inputs; this file contains no
+PĒRKONS table/state data.
 """
 from __future__ import annotations
 
@@ -34,6 +37,8 @@ PRIVATE_X_END = 0x3A68          # measured private-X ceiling, exclusive
 Y_BASE = 0x07a5
 Y_END = 0x1000                  # exclusive: FX1 allocation begins here
 Y_WORDS = Y_END - Y_BASE        # 2,139 hardware-measured private words
+EXTRA_Y_BASE = 0x1000
+EXTRA_Y_END = 0x3F00            # exclusive: stock boot clear begins here
 
 PRE = {
     "A": (0x40B00000, 0x40B80000),
@@ -119,6 +124,52 @@ def _overlap(a: int, n: int, b: int, m: int) -> bool:
     return a < b + m and b < a + n
 
 
+def load_extra_y_init(table_dir: Path, layout: dict) -> list[tuple[int, list[int], str]]:
+    rows = layout.get("extra_y_init") or []
+    if not isinstance(rows, list):
+        die("extra_y_init must be a list")
+    out: list[tuple[int, list[int], str]] = []
+    claimed: list[tuple[int, int, str]] = []
+    for i, row in enumerate(rows):
+        if not isinstance(row, dict):
+            die(f"extra_y_init[{i}] is not an object")
+        try:
+            base = int(row["base_word"])
+            count = int(row["words"])
+            name = str(row["file"])
+            expected = str(row["sha256"])
+        except (KeyError, TypeError, ValueError) as exc:
+            die(f"extra_y_init[{i}] malformed: {exc}")
+        if Path(name).name != name:
+            die(f"extra_y_init[{i}] file must be a basename, got {name!r}")
+        if count <= 0:
+            die(f"extra_y_init[{i}] has non-positive word count {count}")
+        if base < EXTRA_Y_BASE or base + count > EXTRA_Y_END:
+            die(
+                f"extra_y_init[{i}] Y:{base:04x}..{base+count-1:04x} is outside "
+                f"audition arena Y:{EXTRA_Y_BASE:04x}..{EXTRA_Y_END-1:04x}"
+            )
+        path = table_dir / name
+        if not path.exists():
+            die(f"extra_y_init[{i}] missing {path}")
+        words = read_words24(path)
+        if len(words) != count:
+            die(f"extra_y_init[{i}] says {count} words, {path} has {len(words)}")
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        if digest != expected:
+            die(f"extra_y_init[{i}] {name} sha256 {digest} != {expected}")
+        purpose = str(row.get("purpose") or name)
+        for other_base, other_count, other_name in claimed:
+            if _overlap(base, count, other_base, other_count):
+                die(
+                    f"extra_y_init[{i}] {name} overlaps {other_name}: "
+                    f"Y:{base:04x}+{count} vs Y:{other_base:04x}+{other_count}"
+                )
+        claimed.append((base, count, name))
+        out.append((base, words, purpose))
+    return out
+
+
 def _check_space_free(records, space: int, base: int, words: int,
                       tag: str, what: str) -> None:
     for rec_space, address, count, _off in records:
@@ -141,8 +192,9 @@ def _check_x_free(records, tag: str) -> None:
 
 def extend_upload(img: bytes | bytearray, tag: str, y_words: list[int],
                   x_words: list[int] | None = None,
-                  extra_x: list[tuple[int, list[int]]] | None = None) -> tuple[bytes, int]:
-    """Return one payload upload with PERKY private-X/Y records inserted."""
+                  extra_x: list[tuple[int, list[int]]] | None = None,
+                  extra_y: list[tuple[int, list[int], str]] | None = None) -> tuple[bytes, int]:
+    """Return one payload upload with validated PERKY X/Y records inserted."""
     c = PAY[tag]
     records, term = ab_records.records(img, *c["payload"])
     _check_y_free(records, len(y_words), tag)
@@ -154,7 +206,7 @@ def extend_upload(img: bytes | bytearray, tag: str, y_words: list[int],
     extra = b""
     if x_words is not None:
         extra += ab_records.ot_record(1, X_BASE, x_words)
-    claimed = [(X_BASE, len(x_words))] if x_words is not None else []
+    claimed_x = [(X_BASE, len(x_words))] if x_words is not None else []
     for base, values in extra_x or []:
         if len(values) != 17:
             die("unsupported extra X initialization geometry: expected 17-word cache")
@@ -163,12 +215,17 @@ def extend_upload(img: bytes | bytearray, tag: str, y_words: list[int],
                 f"payload {tag}: extra X cache X:{base:04x}..{base+len(values)-1:04x} "
                 f"is outside measured private X:{X_BASE:04x}..{PRIVATE_X_END-1:04x}"
             )
-        if any(_overlap(base, len(values), b, n) for b, n in claimed):
+        if any(_overlap(base, len(values), b, n) for b, n in claimed_x):
             die(f"payload {tag}: extra X cache at X:{base:04x} overlaps another PERKY initializer")
         _check_space_free(records, 1, base, len(values), tag, "pitch-cache")
         extra += ab_records.ot_record(1, base, values)
-        claimed.append((base, len(values)))
+        claimed_x.append((base, len(values)))
+
     extra += ab_records.ot_record(2, Y_BASE, y_words)
+    for base, values, purpose in extra_y or []:
+        _check_space_free(records, 2, base, len(values), tag, purpose)
+        extra += ab_records.ot_record(2, base, values)
+
     raw = bytes(img[p0:term]) + extra + bytes(img[term:p0 + c["payload"][1]])
     return raw, term
 
@@ -179,23 +236,26 @@ def integrate(img: bytes | bytearray, table_dir: Path):
 
     y_words, layout = load_tables(table_dir)
     x_words = load_state_init(table_dir, layout)
+    extra_y = load_extra_y_init(table_dir, layout)
     pres, pokes, log = [], [], []
     for tag, c in PAY.items():
-        raw, _term = extend_upload(img, tag, y_words, x_words, extra_state_init(layout))
-        packed = (
+        raw, _term = extend_upload(
+            img, tag, y_words, x_words, extra_state_init(layout), extra_y
+        )
+        packed_blob = (
             runtime_build.PACKED_MAGIC
             + len(raw).to_bytes(4, "big")
             + runtime_build.pack(raw, platform_build.MAX_CANDIDATES)
         )
         dst, stage = PRE[tag]
-        if len(raw) > 0x40000 or 4 + len(packed) > 0x40000:
+        if len(raw) > 0x40000 or 4 + len(packed_blob) > 0x40000:
             die(
-                f"payload {tag}: upload {len(raw):,} B / packed {len(packed):,} B "
+                f"payload {tag}: upload {len(raw):,} B / packed {len(packed_blob):,} B "
                 "outgrows its 256 KiB preboot scratch"
             )
         pres.append(dict(
             name=f"perky payload {tag}",
-            blob=platform_build.SIGNATURE + packed,
+            blob=platform_build.SIGNATURE + packed_blob,
             stage=stage + ab_records.UNCACHED,
             dst=dst + ab_records.UNCACHED,
             rawlen=len(raw),
@@ -207,11 +267,17 @@ def integrate(img: bytes | bytearray, table_dir: Path):
             (dst + ab_records.UNCACHED).to_bytes(4, "big"),
             f"DSP boot: payload {tag} reads PERKY's extended upload",
         ))
+        extra_desc = ""
+        if extra_y:
+            extra_desc = "; extra Y " + ", ".join(
+                f"{purpose} ${base:04x}+{len(values)}"
+                for base, values, purpose in extra_y
+            )
         log.append(
             f"PERKY {tag}: X:{X_BASE:05x}..{X_BASE + len(x_words) - 1:05x} "
             f"{len(x_words)} init words; Y:{Y_BASE:05x}..{Y_BASE + len(y_words) - 1:05x} "
-            f"{len(y_words)} packed table words; upload {len(raw):,} B, "
-            f"packed {len(packed):,} B"
+            f"{len(y_words)} packed table words{extra_desc}; upload {len(raw):,} B, "
+            f"packed {len(packed_blob):,} B"
         )
 
     return pres, pokes, log, layout
