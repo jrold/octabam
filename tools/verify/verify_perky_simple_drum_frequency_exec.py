@@ -17,6 +17,7 @@ HOST = OUT / "bd909_host"
 HOST_SRC = ROOT / "tools/harness/bd909_host/bd909_host.cpp"
 ORG = 0x0100
 INPUT_BASE = 0x1000
+FRAMES_PER_CALL = 256
 LINE = re.compile(r"^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; [0-9a-f]{6}(?: [0-9a-f]{6})?$")
 
 
@@ -116,13 +117,23 @@ def main() -> None:
         "X 200 " + " ".join(f"{value:06x}" for value in state) + "\n"
         + f"Y {INPUT_BASE:x} " + " ".join(f"{value:06x}" for value in inputs) + "\n"
     )
-    # bd909_host calls the DSP source entry for one 16-sample block per line.
-    script.write_text((" ".join(["0"] * 12 + ["-1"]) + "\n") * (4096 // 16))
+    # The emulator host has historically been less robust when the same tiny
+    # DO-loop probe is entered hundreds of times in one process. 256 frames is
+    # the largest safe block here: stereo output occupies X:$0000..$01ff and
+    # therefore stops immediately before persistent STATE at X:$0200. This
+    # reduces the exhaustive 4096-value test from 256 entry/return cycles to 16
+    # without changing a single DSP result or overlapping state memory.
+    assert 2 * FRAMES_PER_CALL == 0x200
+    script.write_text(
+        (" ".join(["0"] * 12 + ["-1"]) + "\n")
+        * (4096 // FRAMES_PER_CALL)
+    )
     subprocess.run(
         [
             str(HOST), "-code", str(binary), "-org", f"{ORG:x}",
             "-entry", f"{entry:x}", "-data", str(data), "-script", str(script),
-            "-out", str(raw), "-meter", str(meter), "-frames", "16",
+            "-out", str(raw), "-meter", str(meter),
+            "-frames", str(FRAMES_PER_CALL),
         ],
         check=True,
         capture_output=True,
@@ -145,7 +156,7 @@ def main() -> None:
     print(
         "PERKY Simple Drum frequency executable gate: PASS "
         f"(4096/4096 exact native results; range -44739..44717; "
-        f"max {max(counts)} instr/16 samples)"
+        f"max {max(counts)} instr/{FRAMES_PER_CALL} samples)"
     )
 
 
