@@ -21,23 +21,24 @@
 #ifndef PK_FOLD_CANDIDATE
 #define PK_FOLD_CANDIDATE 0
 #endif
-#define MODEL_SLOT 11u     /* hidden persisted source parameter */
+#define MODE_SLOT 4u      /* visible main SRC-page MODE parameter */
+#define MODEL_SLOT 11u    /* hidden persisted source parameter */
 #define MODE_FORMATTER 0x4003c718u /* stock stepped select: prints value+1 */
 #define MODE_WIDGET 0x40047424u    /* stock SPRING TYPE three-position ticks */
 
 /* PERKY needs five visible source controls: TUNE, DECAY, P1, P2 and MODE.
- * Keep the engine-family selector in the known persisted parameter arena rather
- * than assuming a fourth byte after the proven three-byte PK/1 signature is
- * unused. Slot 11 is hidden from the page and browser-owned.
+ * MODE deliberately occupies main-page slot 4 so it is immediately accessible
+ * and p-lock/LFO delivery uses the same first-page staging as the four sound
+ * controls. The engine-family selector remains hidden in slot 11.
  */
 const uint8_t pk_defaults[12] = {
     64, /* TUNE  */
     64, /* DECAY */
     64, /* P1 / envelope amount */
     64, /* P2 / noise-tone mix */
-    0,
-    0,
     0,  /* MODE: waveform 1 */
+    0,
+    0,  /* legacy transport MODE slot; mirrored from slot 4 at render time */
     0,
     0,
     0,
@@ -122,8 +123,8 @@ static uint32_t page_for(unsigned model)
     {
         const volatile uint8_t *src = (const volatile uint8_t *)0x400d3176u;
         static const char *const names[12] = {
-            "TUNE", "DECAY", "ENV", "MIX", "---", "---",
-            "MODE", "---", "---", "---", "---", "---"
+            "TUNE", "DECAY", "ENV", "MIX", "MODE", "---",
+            "---", "---", "---", "---", "---", "---"
         };
 
         for (unsigned i = 0; i < DESC_SIZE; ++i)
@@ -140,13 +141,13 @@ static uint32_t page_for(unsigned model)
 
             if (i < 4u)
                 put32(desc + 0xd2 + 4u * i, 128);
-            else if (i == 6u)
+            else if (i == MODE_SLOT)
                 put32(desc + 0xd2 + 4u * i, 3);
             else
                 put32(desc + 0xd2 + 4u * i, 0);
 
-            put32(desc + 0x102 + 4u * i, i == 6u ? MODE_FORMATTER : 0);
-            put32(desc + 0x132 + 4u * i, i == 6u ? MODE_WIDGET : 0);
+            put32(desc + 0x102 + 4u * i, i == MODE_SLOT ? MODE_FORMATTER : 0);
+            put32(desc + 0x132 + 4u * i, i == MODE_SLOT ? MODE_WIDGET : 0);
             put32(desc + 0x162 + 4u * i, 0);
         }
 
@@ -155,7 +156,7 @@ static uint32_t page_for(unsigned model)
          * persisted but browser-owned and invisible to p-lock/LFO staging.
          */
         put32(desc + 0x1c2, 0x00000000u);
-        put32(desc + 0x1c6, 0x01001111u);
+        put32(desc + 0x1c6, 0x00011111u);
         pk_desc_p = (uint32_t)(uintptr_t)(desc + 0x38);
     }
     text(desc + 0x41,
@@ -333,6 +334,10 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
             ? (uint8_t)(fp[k] >> 8)
             : U8(0x80000810u + 72u * track + 0x20u + k - 6u);
     }
+    /* Preserve the established PK/Y1 ABI while sourcing MODE from main-page
+     * slot 4. This makes p-lock/LFO delivery immediate without forcing a DSP
+     * record-layout migration across the already-qualified renderers. */
+    p[6] = p[MODE_SLOT];
 
     {
         const unsigned count = end > start && end <= 16u ? end - start : 0u;
@@ -386,7 +391,7 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
 }
 
 /* Engine-family browser. Slot 11 is the persisted browser-owned model byte;
- * slot 6 remains the visible three-way MODE parameter.
+ * slot 4 is the visible main-page three-way MODE parameter.
  */
 static uint32_t engine_bank = 0;
 static unsigned engine_part = 0;
