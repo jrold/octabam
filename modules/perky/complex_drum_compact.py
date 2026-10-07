@@ -31,7 +31,7 @@ class CompactComplexDrum:
     words: list[int]
 
     def __post_init__(self):
-        if len(self.words) != WORDS: raise ValueError('Complex state must be 34 words')
+        if len(self.words) != WORDS: raise ValueError(f'Complex state must be {WORDS} words')
         self.words = [x & MASK16 for x in self.words]
 
     def u32(self, off): return self.words[off] | (self.words[off + 1] << 16)
@@ -56,8 +56,8 @@ class CompactComplexDrum:
         raw[6], raw[0xb8] = self.words[0] & 255, self.words[1] & 255
         for src, dst in ((MAIN_PHASE, 0x30), (MOD_PHASE, 0xc8)):
             for i in range(4): _put32(raw, dst + 4 * i, self.u32(src + 2 * i))
-        helper = simple.CompactSimpleDrum(self.words)
-        helper._copy_env_to_arm(raw, 0x74, AMP_ENV); helper._copy_env_to_arm(raw, 0xf8, PITCH_ENV)
+        simple.CompactSimpleDrum._copy_env_to_arm(self, raw, 0x74, AMP_ENV)
+        simple.CompactSimpleDrum._copy_env_to_arm(self, raw, 0xf8, PITCH_ENV)
         _put16(raw, 0xba, self.words[RAW_PITCH]); _put16(raw, 0x120, self.words[PITCH_AMOUNT])
         return bytes(raw)
 

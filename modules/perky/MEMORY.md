@@ -1,3 +1,22 @@
+# All-family candidate checkpoint — 7 October 2026
+
+All twelve renderer candidates now execute exactly against reference PCM and
+state. [DSP_QUALIFICATION.md](DSP_QUALIFICATION.md) records measured P sizes,
+cycle tests and physical-storage blockers. These test ABIs do not expand the
+PERKY4 claims below. Slap uses 40 X + 128 scratch + 4,805 Y ring words; Karplus
+uses 32 X + 128 scratch + 2,048 Y ring words. Resonant bass/snare use 88/101 X
+and 178/174 scratch words. Authentic Noise/Tone shared/Waveform2 use 41/25 X
+and 144/148 scratch words. Acoustic Hats uses 35 X + 242 scratch words and a
+qualification-only sample bank. Ring sizes are per instance; the production
+persistent-state/admission design is still required.
+
+Acoustic DSP sample access is not a physical storage backend. Its 4,905-word
+program and the Resonant candidates exceed the existing 2,724-word donor P
+region. The current four persistent overlay slots plus the largest new scratch
+span also need a new physical allocation. Firmware asset initialization,
+stock-effect reclamation and shared aliases require executed gates before any
+of these ranges become production claims.
+
 # Noise Hat candidate memory checkpoint — 7 October 2026
 
 The executable Noise Hat candidates use 121 hot X words + a 4,805-word external

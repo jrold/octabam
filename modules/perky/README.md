@@ -5,8 +5,8 @@ port of the twelve PerkyBits / PĒRKONS HD-01 engine families.
 
 **Status:** PERKY2 synthetic Noise/Tone audio works on the user's Octatrack
 (user confirmation, 6 Oct 2026). The native renderer, boot, timing and full
-sequencer gates pass. PERKY4 locally integrates Fold Drum 1 and Simple Drum; Noise Hat now has exact
-DSP candidate gates. All-family production integration, timing, physical memory
+sequencer gates pass. PERKY4 locally integrates Fold Drum 1 and Simple Drum; all twelve families now have exact
+DSP renderer candidate gates. All-family production integration, timing, physical memory
 placement and hardware qualification remain incomplete. Current timing-qualified layout:
 one PERKY per DSP core (T1–T4 / T5–T8), FX1/FX2 NONE on all tracks.
 
@@ -37,7 +37,9 @@ No Elektron firmware bytes, PĒRKONS firmware bytes, samples or extracted table
 blobs belong in this repository. Reference fixtures must be generated from the
 user's own inputs at development/test time.
 
-See [PORT.md](PORT.md) for the implementation plan and engine map.
+See [PORT.md](PORT.md) for the implementation plan and engine map, and
+[DSP_QUALIFICATION.md](DSP_QUALIFICATION.md) for current per-family evidence,
+cycle limits and production blockers.
 
 Noise Hat's three candidate DSP modes now have original ARM PCM/state execution
 gates. See [NOISE_HAT.md](NOISE_HAT.md) for measured resources and the outstanding

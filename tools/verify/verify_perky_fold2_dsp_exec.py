@@ -119,8 +119,10 @@ def assemble():
     ):
         text = (perky / f"simple_drum_{name}.asm").read_text()
         text = text[text.index("\n" + label + ":"):]
-        text = text.replace("#>$0009a5,r1", "#>$000c50,r1")
-        text = text.replace("#>$0007a5,r1", "#>$000a50,r1")
+        # Four waves occupy $07a5..$0a4f in the shared oscillator's identity
+        # order. Keep the envelope after them; the old fixture overlapped its
+        # fourth wave and never randomized either oscillator's wave identity.
+        text = text.replace("#>$0009a5,r1", "#>$000a50,r1")
         parts.append(text)
 
     parts += [
@@ -185,7 +187,7 @@ def assemble():
 
 def table_payload() -> str:
     wave_values = []
-    for address in (0x080222A0, 0x080224A0, 0x080226A0, 0x080228A0):
+    for address in (0x080222A0, 0x080226A0, 0x080228A0, 0x080224A0):
         wave_values.extend(struct.unpack(
             "<256H", (ASSETS / f"wave_{address:08x}.bin").read_bytes()
         ))
@@ -197,8 +199,8 @@ def table_payload() -> str:
         "<4096H", (ASSETS / "pitch.bin").read_bytes()
     )).words
     return (
-        "Y a50 " + " ".join(f"{v:06x}" for v in waves) + "\n"
-        + "Y c50 " + " ".join(f"{v:06x}" for v in env) + "\n"
+        "Y 7a5 " + " ".join(f"{v:06x}" for v in waves) + "\n"
+        + "Y a50 " + " ".join(f"{v:06x}" for v in env) + "\n"
         + "Y efb " + " ".join(f"{v:06x}" for v in pitch) + " 000000\n"
         + "X 3964 ffffff\n"
     )
@@ -331,6 +333,13 @@ def randomized_gate(binary: Path, entry: int):
         v.words[fold2.PRIMARY] = i & 1
         v.words[fold2.RAW_PITCH] = r.randrange(4096)
         v.words[fold2.PITCH_AMOUNT] = r.randrange(4096)
+        ids = (0x080222A0, 0x080224A0, 0x080226A0, 0x080228A0)
+        for osc in (fold2.OSC_A, fold2.OSC_B):
+            for offset in (4, 6):
+                address = r.choice(ids)
+                v.words[osc + offset:osc + offset + 2] = [address & 0xFFFF, address >> 16]
+            phase = r.choice((0, 0xFFFFF, 0x100000, 0x100001, 0xFFFFFFFF))
+            v.words[osc:osc + 2] = [phase & 0xFFFF, phase >> 16]
         rng = struct.pack("<II", r.getrandbits(32), r.getrandbits(32))
         cases.append((v.apply_to_arm(template), rng))
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Exact compact-state gate for engine 007 Resonant Drums modes M1/M2.
+"""Exact compact-state gate for engine 007 Resonant Drums, all three modes.
 
-M1 is NativeV121ResonantSnare, M2 is NativeV121ResonantBass.  The capture
+M1 is ResonantSnare, M2 is ResonantBass, M3 reuses Noise/Tone. The capture
 harness exposes explicit RNG state only for continuation blocks, so those are
 the authoritative ARM PCM/state/RNG comparisons.  Firmware-owned static tables
 are read directly from the user's v1.2.1 image and never committed.
@@ -18,6 +18,8 @@ sys.path[:0] = [str(ROOT / 'modules/perky'), str(ROOT / 'tools/perky')]
 
 import resonant_bass_compact as bass
 import resonant_snare_compact as snare
+import noise_tone_compact as noise_tone
+from noise_tone_word_model import WordRng
 from extract_noise_tone_tables import parse_container, find_m7
 
 FIX = ROOT / 'out/perky/engine-fixtures'
@@ -92,6 +94,28 @@ def gate_bass(t):
     return checked
 
 
+def gate_noise_tone(image, t):
+    e1, e2, _, _ = t
+    segment = find_m7(parse_container(image.read_bytes())[1])
+    for corner in range(3):
+        case = FIX / f'engine-7-mode-3-corner-{corner}'
+        # resolveRenderTarget: wrapper +$3b68, original routine $08025a14.
+        before = state(case, 'wrapper-window-after.bin', 0x3B68, 0x120)
+        voice = noise_tone.CompactVoice.from_arm(before)
+        rng = WordRng.from_ints(*struct.unpack('<II', (case / 'rng-continuation-before.bin').read_bytes()))
+        waves = {voice.u32(off).unsigned(): segment.read(voice.u32(off).unsigned(), 512)
+                 for off in (noise_tone.OSC1_CURRENT, noise_tone.OSC1_NEXT,
+                             noise_tone.OSC2_CURRENT, noise_tone.OSC2_NEXT)}
+        got = noise_tone.render_block(voice, 256, waves, rng, e1, e2)
+        want = list(struct.unpack('<256h', (case / 'arm-pcm-continuation.bin').read_bytes()))
+        assert got == want, ('noise/tone', corner, 'PCM')
+        after = state(case, 'wrapper-window-continuation-after.bin', 0x3B68, 0x120)
+        assert voice.words == noise_tone.CompactVoice.from_arm(after).words, ('noise/tone', corner, 'state')
+        assert struct.pack('<II', rng.low.unsigned(), rng.high.unsigned()) == (case / 'rng-continuation-after.bin').read_bytes(), ('noise/tone', corner, 'RNG')
+        assert noise_tone.CompactVoice.from_arm(voice.apply_to_arm(after)).words == voice.words
+    return 3
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('firmware', type=Path, help='PĒRKONS v1.2.1 firmware image/container')
@@ -99,7 +123,8 @@ def main():
     t = tables(a.firmware)
     sn = gate_snare(t)
     ba = gate_bass(t)
-    print(f'Resonant compact: PASS ({sn} snare + {ba} bass continuation blocks; exact PCM/state/RNG)')
+    nt = gate_noise_tone(a.firmware, t)
+    print(f'Resonant compact: PASS ({sn} snare + {ba} bass + {nt} noise/tone continuation blocks; exact PCM/state/RNG)')
 
 
 if __name__ == '__main__':

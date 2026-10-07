@@ -1,3 +1,27 @@
+# PERKY continuation — all-family renderer checkpoint, 7 October 2026
+
+All twelve families now have executable DSP candidates across their three modes.
+[DSP_QUALIFICATION.md](DSP_QUALIFICATION.md) is the current evidence/resource
+ledger; [ENGINE_MATRIX.md](ENGINE_MATRIX.md) records production status. Slap,
+Karplus, Resonant snare/bass, authentic Noise/Tone (including Waveform2), and
+Acoustic Hats now have complete PCM/state gates. Complex Drum's fourth-wave
+failure is fixed; Fold Drum 2's wave-identity/overlap blind spot is covered.
+
+The production milestone remains PERKY4's three exposed families, with physical
+confirmation only for the earlier PERKY2 Noise/Tone image. This branch does not
+emit a new twelve-family updater. Timing, physical asset/state/code placement,
+authentic control transport, full-image integration and hardware remain open.
+The user already authorized fewer stock effects for all twelve families.
+
+Worktree: `codex/perky-dsp-qualification`, based on `perky-machines` `48d1adc7`.
+Current floor: `make check REMIX=perky-machine OT_PROJECT=` passed all runnable
+checks, including 65 shared module gates and 2 image gates; project-dependent
+checks skipped because no `OT_PROJECT` was supplied. This does not replace the
+production full-image/sequencer gates or qualify a new updater.
+The following Noise Hat and PERKY4 entries are historical checkpoints; their
+integration evidence still applies, but their missing-renderer lists are
+superseded by the all-family ledger above.
+
 # PERKY continuation — Noise Hat DSP qualification, 7 October 2026
 
 Noise Hat M1/M2/M3 now execute against both compact oracles and original ARM
@@ -64,11 +88,11 @@ Wavetable V1/V2 candidate renderer passes 18 original ARM blocks plus 240 random
 
 The address-independent Wavetable bank now has a host-tested lossless second-difference codec: 49 assets / 100,352 samples occupy 45,713 DSP words including directory and guards. The DSP decoder executes against every asset exactly, uses a 33-word cache, and measures at most 2,511 modeled cycles for a sequential 16-sample block. Random renderer cache misses and physical placement remain separate gates.
 
-Complex Drum now has an exact compact host model and a native/ARM execution gate: all nine original V2 A3 mode/corner blocks match PCM and final state. Its DSP56300 candidate now has the corrected base-frequency register preservation, pitch-factor register lifetime, accumulator alignment and initialized pitch-cache tag; all three MODE-1 blocks pass exact DSP PCM/state. MODE-2 reaches the deferred `0x24a0` wave correctly but still diverges at that fourth-table interpolation boundary. No Complex browser entry or shipping DSP dispatch has been enabled.
+Complex Drum now has an exact compact host model and a native/ARM execution gate: all nine original V2 A3 mode/corner blocks match PCM and final state. Its DSP56300 candidate now passes all nine initial and continuation ARM cases (288 consecutive 16-sample blocks) after correcting the four-wave/envelope placement. No Complex browser entry or shipping DSP dispatch has been enabled.
 
 The user explicitly selected **all 12 voices, accepting fewer stock effects**. Reclaim effect memory for the final design; do not ask again. Storage measurements and host codec round-trips alone do not establish DSP timing. Boot staging/bootstrap/mailbox ranges must survive; stock init clears local Y and shared RAM, so larger asset uploads need changed initialization or post-init loading. Shared P/X/Y aliases must have a single ledger. The final architecture is still under implementation.
 
-Remaining: integrate Wavetable production controls and lossless physical asset access; translate and execute-gate Fold Drum 2 and Complex Drum on DSP56300; then implement resonant modes, Slap, Karplus, Noise Hat and Acoustic Hats, and replace synthetic Noise/Tone controls/assets with authentic qualified behavior. Preserve the physically working Noise/Tone path during development. Never expose placeholder browser entries or claim reference capture equals a port.
+Remaining: close timing and physical storage/code/state allocation, integrate production controls/transport and dispatcher behavior for the candidate families, and replace synthetic Noise/Tone controls/assets with authentic qualified behavior. Preserve the physically working Noise/Tone path during development. Never expose placeholder browser entries or claim reference capture equals a port.
 
 ## Historical PERKY2 snapshot
 

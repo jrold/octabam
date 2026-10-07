@@ -10,7 +10,7 @@ an explicit gate.
 Reference revision used for this audit:
 `jrold/perkybits@605cfd05d9dcdc0d0caa955297556a26ea257f82`.
 
-All twelve families have original ARM mode/corner and continuation fixtures. That is oracle capture, not a shipping port. See [HANDOFF.md](HANDOFF.md) for PERKY4 gates and remaining all-family work.
+All twelve families now have executable DSP renderer candidates with original ARM/native PCM and evolving-state gates across their three modes. This is renderer qualification, not a shipping port. See [DSP_QUALIFICATION.md](DSP_QUALIFICATION.md) for the measured all-family ledger and [HANDOFF.md](HANDOFF.md) for PERKY4 integration.
 
 ## Mode mapping
 
@@ -22,15 +22,15 @@ All twelve families have original ARM mode/corner and continuation fixtures. Tha
 | Fold Drum 1 | V1 / A1 | `1,2,0` | `NativeV121FoldDrums::renderFold1` | `0x0f4`; pitch + 2 envelopes + 2x256 waves + RNG | **PERKY4 full DSP/production transport/boot/sequencer locally qualified; physical test pending** |
 | Wavetable Drum V1 | V1 / A2 | `1,0,2` | `NativeV121WavetableDrum` | `0x150`; pitch + 2 envelopes + 49x2048 waveform assets | Candidate exact DSP PCM/state; production controls and physical asset placement pending |
 | Simple Drum | V1 / A3 | `1,0,2` | `NativeV121SimpleDrum` | `0x120`; pitch + 2 envelopes + 2x256 waves | **PERKY4 full DSP/production transport/boot/sequencer locally qualified; physical test pending** |
-| Fold Drum 2 | V2 / A1 | `1,2,0` | `NativeV121FoldDrums::renderFold2` | `0x134`; pitch + 2 envelopes + up to 4x256 waves + RNG | Audit only |
+| Fold Drum 2 | V2 / A1 | `1,2,0` | `NativeV121FoldDrums::renderFold2` | `0x134`; pitch + 2 envelopes + up to 4x256 waves + RNG | Exact ARM/native DSP PCM/state/RNG; timing and production integration pending |
 | Wavetable Drum V2 | V2 / A2 | `1,0,2` | `NativeV121WavetableDrum` | `0x150`; pitch + 2 envelopes + 49x2048 waveform assets | Candidate exact DSP PCM/state; production controls and physical asset placement pending |
-| Complex Drum | V2 / A3 | `1,0,2` | `NativeV121ComplexDrum` | `0x140`; pitch + 2 envelopes + up to 4x256 waves | **Exact compact/native/ARM gate for all 9 mode/corner blocks; DSP translation and shipping integration pending** |
-| Resonant Drums | V3 / A1 | `1,0,2` | `NativeV121ResonantBass` / `NativeV121ResonantSnare` mode paths | `0x178` / `0x1d4`; 2 envelopes + 257-entry interpolation tables + RNG | Audit only |
-| Slap | V3 / A2 | `1,0,2` | `NativeV121Slap` | `0x2670`; 2 envelopes + large delay/state + RNG | Audit only; large-state family |
-| Karplus | V3 / A3 | `1,0,2` | `NativeV121Karplus` | `0x10e0`; 2 envelopes + large delay/state + RNG | Audit only; large-state family |
+| Complex Drum | V2 / A3 | `1,0,2` | `NativeV121ComplexDrum` | `0x140`; pitch + 2 envelopes + up to 4x256 waves | **Exact DSP PCM/state for all 9 mode/corner cases, initial and continuation; timing and shipping integration pending** |
+| Resonant Drums | V3 / A1 | `1,0,2` | `NativeV121ResonantBass` / `NativeV121ResonantSnare` mode paths | `0x178` / `0x1d4`; 2 envelopes + 257-entry interpolation tables + RNG | Exact DSP snare/bass and original shared M3 PCM/state/RNG; timing and shipping integration pending |
+| Slap | V3 / A2 | `1,0,2` | `NativeV121Slap` | `0x2670`; 2 envelopes + large delay/state + RNG | Exact DSP/ARM PCM/state/full-ring/RNG; physical ring allocation and production controls pending |
+| Karplus | V3 / A3 | `1,0,2` | `NativeV121Karplus` | `0x10e0`; 2 envelopes + large delay/state + RNG | Exact DSP/ARM PCM/state/full-ring/RNG; physical ring allocation and production controls pending |
 | Noise Hat | V4 / A1 | `1,0,2` | `NativeV121NoiseHatClassic` / `NativeV121NoiseHatPulseStack` + wrapper modes | classic `0x2dd8`, pulse `0x160`; envelopes, filters/delays/pulse stack | **All three modes exact DSP/original ARM PCM/state/ring/hold/RNG; classic timing, physical placement and production integration pending** |
-| Noise / Tone | V4 / A2 | `1,0,2` | `NativeV121NoiseTone*` | `0x120`; pitch/envelopes/waves/filter/noise + RNG | **PERKY2 physical audio works; synthetic controls/tables remain** |
-| Acoustic Hats | V4 / A3 | `1,0,2` | `NativeV121AcousticHats` | `0x10c`; 2 envelopes + sample asset up to `0x40000` bytes | Audit only; external sample-data family |
+| Noise / Tone | V4 / A2 | `1,0,2` | `NativeV121NoiseTone*` | `0x120`; pitch/envelopes/waves/filter/noise + RNG | **PERKY2 physical audio works; authentic shared and Waveform2 DSP candidates now exact; production controls/assets remain synthetic** |
+| Acoustic Hats | V4 / A3 | `1,0,2` | `NativeV121AcousticHats` | `0x10c`; 2 envelopes + sample asset up to `0x40000` bytes | Exact DSP/ARM PCM/state/IEEE754 history/global hold; test-only sample bank; physical assets, code size, timing and controls pending |
 
 ## Shared-port clusters
 
@@ -98,8 +98,8 @@ Every family must clear these rows before it can be called hardware-qualified.
 
 ## Current next milestone
 
-Noise Hat's three DSP render paths now have executable original ARM gates.
-See [NOISE_HAT.md](NOISE_HAT.md) for the current measured checkpoint. Reduce
-classic timing cost, close the shared physical X/Y/P ledger and qualify authentic
-controls/dispatcher integration before exposing family 010. Other families'
-production status remains separate; retain the physically proven PERKY2 path.
+Complete production qualification and integration across the twelve renderer
+candidates: reachable-state timing, one physical memory ledger, lossless assets,
+authentic controls, full machine boot/sequencer gates, then hardware. See
+[DSP_QUALIFICATION.md](DSP_QUALIFICATION.md) for executable evidence and remaining
+work. Retain the physically proven PERKY2 path and one-voice-per-core guard.
