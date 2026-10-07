@@ -63,6 +63,9 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
             ? (uint8_t)(fp[k] >> 8)
             : U8(0x80000810u + 72u * track + 0x20u + k - 6u);
     }
+    /* MODE is now the fifth main SRC-page control. Keep the established PK/Y1
+     * record ABI by mirroring it into transport slot 6 before any preparation. */
+    p[6] = p[MODE_SLOT];
 
     /* Engine identity is structural for the first HW4 audition, not a stored
      * user choice.  This is the key guard against a stale browser/model byte.
