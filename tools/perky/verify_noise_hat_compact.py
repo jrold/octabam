@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / 'modules/perky'), str(ROOT / 'tools/perky')]
 
 import noise_hat_compact as hats
+import noise_hat_pulse_compact as pulse_hats
 from extract_noise_tone_tables import parse_container, find_m7
 
 FIX = ROOT / 'out/perky/engine-fixtures'
@@ -81,11 +82,11 @@ def main():
             ).read_bytes()
 
             if firmware_mode == 2:
-                voice = hats.NoiseHatPulseStack.from_arm(
+                voice = pulse_hats.NoiseHatPulseStack.from_arm(
                     pulse_state(case, 'wrapper-window-after.bin')
                 )
                 got = voice.render(256, envelope1, envelope2)
-                expected = hats.NoiseHatPulseStack.from_arm(
+                expected = pulse_hats.NoiseHatPulseStack.from_arm(
                     pulse_state(
                         case,
                         'wrapper-window-continuation-after.bin',
