@@ -74,6 +74,29 @@ def main():
         assert needle in source, needle
     assert 'pk_synth_source:' not in source, 'shipping generator must expose pk_probe_source hook'
 
+    # Karplus MODE is now live even while its four continuous controls remain
+    # frozen. Pin the authentic PĒRKONS panel M1/M2/M3 -> firmware 1/0/2 map in
+    # the actual composed DSP source so a future refactor cannot silently turn
+    # MODE back into a captured constant.
+    karplus_mode = (
+        'move    x:(r4+$e),a\n'
+        '        and     #>$ff,a\n'
+        '        tst     a\n'
+        '        beq     pkk_mode_panel0\n'
+        '        cmp     #>$1,a\n'
+        '        beq     pkk_mode_panel1\n'
+        '        move    #>$2,a\n'
+        '        bra     pkk_mode_ready\n'
+        'pkk_mode_panel0:\n'
+        '        move    #>$1,a\n'
+        '        bra     pkk_mode_ready\n'
+        'pkk_mode_panel1:\n'
+        '        clr     a\n'
+        'pkk_mode_ready:\n'
+        '        move    a1,x:(r6+$2)'
+    )
+    assert karplus_mode in source, 'Karplus live MODE 1/0/2 mapping missing'
+
     # The production record writer pins one hardware family to each physical
     # audition track so stale Part/browser bytes cannot change this test.
     control = (ROOT / 'modules/perky/control_hw4_candidate.c').read_text()
@@ -82,6 +105,7 @@ def main():
         'if (track == 1u) return 8u;',
         'if (track == 4u) return 3u;',
         'if (track == 5u) return 10u;',
+        'p[6] = p[MODE_SLOT];',
         'p[11] = (uint8_t)pk_hw4_engine(track);',
     ):
         assert needle in control, needle
@@ -156,6 +180,7 @@ def main():
         f'({words} P words; gross audition donor {GROSS_HW4_DONOR})'
     )
     print('  T1 Fold1 / T2 Karplus / T5 Fold2 / T6 Noise-Tone')
+    print('  Karplus MODE: live authentic M1/M2/M3 -> firmware 1/0/2')
     print(
         f'  Karplus envs/ring: Y:${memory.KARPLUS_ENV1_BASE:04x}, '
         f'${memory.KARPLUS_ENV2_BASE:04x}, '
