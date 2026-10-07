@@ -11,6 +11,7 @@ Engine-family restrictions remain a ColdFire/browser responsibility.  The DSP
 still rejects unsupported engine ids through the existing dispatcher.
 """
 from pathlib import Path
+import json
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -119,6 +120,28 @@ pks_voice_ready:
         f'        move    #>${memory.PITCH_CACHE_BASE:06x},r4',
         'HW4 pitch-cache relocation',
     )
+
+    # Keep the generated asset layout synchronized with the source relocation.
+    # perky_image.py consumes this metadata when adding the cache initializer to
+    # each finalized DSP upload.
+    layout_path = out / 'layout.json'
+    layout = json.loads(layout_path.read_text())
+    cache = dict(layout.get('pitch_cache') or {})
+    if int(cache.get('words', memory.PITCH_CACHE_WORDS)) != memory.PITCH_CACHE_WORDS:
+        raise RuntimeError('HW4 pitch-cache metadata has unexpected geometry')
+    cache.update(
+        base_word=memory.PITCH_CACHE_BASE,
+        words=memory.PITCH_CACHE_WORDS,
+        initial_tag=int(cache.get('initial_tag', 0xffff)),
+    )
+    layout['pitch_cache'] = cache
+    layout['hw4_private_x'] = {
+        'scratch_base': memory.SCRATCH_BASE,
+        'scratch_words': memory.SCRATCH_WORDS,
+        'fold2_shadow_base': memory.FOLD2_SHADOW_BASE,
+        'fold2_shadow_words': memory.FOLD2_SHADOW_WORDS,
+    }
+    layout_path.write_text(json.dumps(layout, indent=2) + '\n')
 
     # Re-run the assembler-specific branch/JSR normalization after editing the
     # composed source.  Import this helper directly rather than relying on the
