@@ -131,6 +131,8 @@ def main() -> None:
             raise RuntimeError(f'ARM fixture differs from its capture manifest: {name}')
     prepare_assets(firmware)
 
+    run([sys.executable, "tools/verify/verify_perky_hw4_control_update.py", "--firmware", str(firmware)])
+
     run([
         sys.executable, "tools/perky/analyze_fold2_trigger.py",
         "--fixtures", str(FIX),

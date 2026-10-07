@@ -40,12 +40,13 @@ def main():
  source='pk_controlled_voice_exec:\n'+f'        move #>${VOICE_X:06x},r6\n'+trigger.emit_routine(ops,label='pk_fold2_trigger',snapshot_reg='r5',snapshot_address=SNAPSHOT_X)+'pk_fold2_entry:\n        jsr pk_fold2_trigger\n        rts\n'
  # The assembler entry is the first label; make that wrapper actually call the shared routine.
  source=source.replace('pk_controlled_voice_exec:\n        move #>$000200,r6\npk_fold2_trigger:', 'pk_controlled_voice_exec:\n        move #>$000200,r6\n        jsr pk_fold2_trigger\n        rts\npk_fold2_trigger:',1)
- binary,entry=c.assemble(source)
+ binary,entry=c.assemble(c.source_builder.force_long_local_jsr(c.source_builder.relativize_local_conditionals(source)))
  def write_data(path,state_words,_tables):
   if len(state_words)!=VISIBLE:fail('bad visible state size')
   path.write_text('X 100 '+' '.join(['000000']*13)+'\n'+f'X {VOICE_X:x} '+' '.join(f'{v&0xffff:06x}' for v in state_words)+'\n'+f'X {SNAPSHOT_X:x} '+' '.join(['000000']*100)+'\n');return []
  c.write_data=write_data;record=tuple([0]*12)
  for tag,pre,want in rows:
+  tag=tag.replace("/", "-")
   initial=list(pre)+[0]*(VISIBLE-WORDS);_a,states,_r=c.run(binary,entry,tag,initial,[],[(record,-1)]);got=states[0][:WORDS]
   if got!=want:fail(f'{tag}: executable state mismatch')
   if states[0][WORDS:VISIBLE]!=[0]*(VISIBLE-WORDS):fail(f'{tag}: write escaped Fold2 allocation')

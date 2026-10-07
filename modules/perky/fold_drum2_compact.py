@@ -233,8 +233,9 @@ class FoldDrum2:
                 base + ((common_voice.words[common.PITCH_ENV_AMOUNT] * factor) >> 9)
             ) & 0xFFFFFFFF
 
-            # Copy envelope/control mutations back before oscillator helpers.
-            self.words[:34] = common_voice.words
+            # The common envelope view never advances oscillator A. Preserve
+            # both live oscillators while copying envelope/control mutations.
+            self.words[AMP_ENV:34] = common_voice.words[AMP_ENV:34]
             first, second = self._primary_views()
             common._set_oscillator_frequency(first, frequency)
 

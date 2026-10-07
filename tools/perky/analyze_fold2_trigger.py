@@ -6,8 +6,8 @@ This consumes the all-family capture corpus produced by
 first-trigger and active-retrigger snapshots. For each of the nine Voice-2/A1
 mode/control-corner cases it compares:
 
-* fresh control state -> first trigger + mandatory v1.2.1 post-trigger update;
-* state after 512 original-ARM samples -> active retrigger + the same update.
+* fresh control state -> first trigger, before the separate control update;
+* state after 512 original-ARM samples -> active retrigger, before update.
 
 Besides the human-readable report, this writes a normalized JSON contract to
 ``out/perky/fold2-trigger-contract.json`` by default. Absolute ARM oscillator
@@ -232,12 +232,12 @@ def main() -> None:
     first = _load_cases(
         args.fixtures,
         "wrapper-window-pre-trigger.bin",
-        "wrapper-window-before.bin",
+        "wrapper-window-trigger-only.bin",
     )
     retrigger = _load_cases(
         args.fixtures,
         "wrapper-window-retrigger-pre.bin",
-        "wrapper-window-retrigger-before.bin",
+        "wrapper-window-retrigger-only.bin",
     )
 
     first_contract = _analyze(
@@ -261,7 +261,7 @@ def main() -> None:
     print("shared: " + ", ".join(map(str, shared)))
 
     contract = {
-        "schema": "octabam.perky.fold2-trigger.v1",
+        "schema": "octabam.perky.fold2-trigger.v2",
         "engine_zero_based": 3,
         "engine_one_based": ENGINE,
         "arm_state_offset": ARM_STATE_OFFSET,
@@ -270,6 +270,7 @@ def main() -> None:
         "notes": [
             "Derived only from original v1.2.1 ARM before/after snapshots.",
             "PRIMARY is a normalized oscillator selector, not an ARM pointer.",
+            "Raw trigger only; mandatory update is separately checked against complete ARM objects.",
             "CASES rules are intentionally not generalized without evidence.",
             "No firmware bytes or audio are embedded in this contract.",
         ],

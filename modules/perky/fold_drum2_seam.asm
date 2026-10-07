@@ -89,3 +89,14 @@ pkf2_mode_ready:
         and     #>$1,a
         move    a1,x:(r6+$e)
         rts
+
+; Common update writes the direct u16 pitch-table entry to oscillator A's
+; 32-bit increment, even when B is primary. The renderer's frequency
+; conversion is a separate operation. r5 supplies shared decoder scratch;
+; this routine clobbers r1..r4, n1..n3, a/b and x/y data registers.
+pk_fold2_apply_pitch:
+        jsr     pk_simple_pitch_at
+        move    a1,x:(r6+$4)
+        clr     a
+        move    a1,x:(r6+$5)
+        rts

@@ -6,8 +6,8 @@ Consumes the existing all-engine ARM fixture corpus.  Karplus is Voice 3 / A3
 and is 0x10e0 bytes.  Every observation is normalized through the exact
 32-word compact renderer model plus its external 2,048-word ring.
 
-For the first HW4 audition we intentionally require trigger + mandatory
-post-trigger update to leave the delay ring untouched.  If any ring word changes,
+For the first HW4 audition the raw trigger must leave the delay ring untouched.
+The separate complete-object update gate also checks every ring byte.  If any ring word changes,
 the analyzer records the evidence and the compiler refuses to emit a shipping
 plan rather than guessing a bulk-ring operation.
 """
@@ -133,13 +133,13 @@ def main():
     ap.add_argument('--json', type=Path, default=OUT_DEFAULT)
     a = ap.parse_args()
 
-    first = _cases(a.fixtures, 'wrapper-window-pre-trigger.bin', 'wrapper-window-before.bin')
-    retrig = _cases(a.fixtures, 'wrapper-window-retrigger-pre.bin', 'wrapper-window-retrigger-before.bin')
+    first = _cases(a.fixtures, 'wrapper-window-pre-trigger.bin', 'wrapper-window-trigger-only.bin')
+    retrig = _cases(a.fixtures, 'wrapper-window-retrigger-pre.bin', 'wrapper-window-retrigger-only.bin')
     first_c = _phase('Karplus original ARM first-trigger delta', first)
     retrig_c = _phase('Karplus original ARM active-retrigger delta', retrig)
 
     contract = {
-        'schema': 'octabam.perky.karplus-trigger.v1',
+        'schema': 'octabam.perky.karplus-trigger.v2',
         'engine_zero_based': 8,
         'engine_one_based': ENGINE,
         'arm_state_offset': ARM_STATE_OFFSET,
@@ -150,7 +150,7 @@ def main():
         'active_retrigger': retrig_c,
         'notes': [
             'Derived from original v1.2.1 ARM snapshots only.',
-            'Each post snapshot includes the firmware mandatory update-after-trigger pass.',
+            'Raw trigger only; mandatory update has a separate complete-object oracle gate.',
             'The first HW4 shipping compiler requires the 2K Karplus ring to remain unchanged by trigger/update.',
         ],
     }

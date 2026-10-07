@@ -140,14 +140,14 @@ def main():
         print('Karplus trigger contract missing; run tools/perky/analyze_karplus_trigger.py first.', file=sys.stderr)
         raise SystemExit(2)
     contract = json.loads(a.contract.read_text())
-    assert contract.get('schema') == 'octabam.perky.karplus-trigger.v1'
+    assert contract.get('schema') == 'octabam.perky.karplus-trigger.v2'
     assert contract.get('engine_zero_based') == 8
     assert contract.get('compact_words') == WORDS
     assert contract.get('ring_words') == 0x800
 
     phases = {name: compile_phase(name, contract[name]) for name in PHASES}
     plan = {
-        'schema': 'octabam.perky.karplus-trigger-plan.v1',
+        'schema': 'octabam.perky.karplus-trigger-plan.v2',
         'source_contract': contract['schema'],
         'engine_zero_based': 8,
         'compact_words': WORDS,
@@ -157,7 +157,7 @@ def main():
         'semantics': [
             'all COPY/XOR/ADD reads use a frozen pre-trigger compact-state snapshot',
             'first trigger and active retrigger retain separate plans',
-            'post snapshots include the original mandatory update-after-trigger pass',
+            'post snapshots stop before the separately verified mandatory update',
         ],
         **phases,
     }

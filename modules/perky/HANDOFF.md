@@ -1,103 +1,101 @@
-# PERKY HW4 local release checkpoint, 7 October 2026
+# PERKY HW4 control/update checkpoint, 7 October 2026
 
-Work continues on `perky-machines` in the isolated worktree
+Work stays on `perky-machines` in
 `/Users/jrold/Downloads/octabam/.claude/worktrees/perky-hw4-release`.
-**No qualified HW4 updater has been produced.** The local dependencies exist;
-qualification is blocked by reproducible ARM trigger/control contract failures,
-not by a missing assembler, stock OS, project, or reference firmware.
+**No qualified HW4 updater has been produced.** The Fold2/Karplus trigger
+blockers are resolved; the actual four-engine source now reaches and fails the
+mandatory two-voices/core realtime gate. Packaging remains blocked.
 
-## Release-path repairs
+## Changes and evidence
 
-The documented `tools/perky/build_hw4_machine.py` previously packaged
-`build_hw4_karplus_candidate.py` (mode-2 state, ring at Y:$1000), while its
-source/timing gate qualified `build_hw4_audition_candidate.py` (mode-1 state,
-separate envelope tables and ring at Y:$1600). The packaged source therefore
-was not the measured source.
+The original ARM trigger and mandatory update are separate operations. The
+capture harness preserves historical post-update snapshots and now records the
+four actual external target words at each intermediate Fold2/Karplus snapshot.
+The fresh pinned v1.2.1 corpus has 108 cases and 1,656 hashed binary files.
 
-Both documented and canonical release entry points now call
-`build_hw4_machine_canary.py`, which uses the qualified audition composition.
-The builder additionally compares the packaging source against the source
-actually assembled by the gate. FX harvest and two-voices/core timing remain
-mandatory through `verify_perky_hw4_candidate_source.py`. No qualification
-bypass is exposed. `--reuse-fixtures` verifies firmware, reference source and
-captured-file hashes, then reruns qualification. Shared authentic Fold assets
-are extracted before the renderer gates, including all four wave identities.
+`modules/perky/hw4_control_update.py` reproduces common update 0x08024714,
+Fold2 update 0x08024e54 and Karplus update 0x08026aa8. The original firmware's
+pitch and twelve-note tables are supplied externally. The complete engine
+objects match byte for byte in all 36 first/active observations, including
+history, filter/envelopes, private fields and the full Karplus ring.
 
-The shared remix selftest now explicitly expects HW4's twelve harvested DSP
-FX, retaining FILTER and ColdFire DELAY. The generated test-remix index includes
-HW4. These repairs change no stable PERKY2 DSP or control source.
+The trigger contracts now explicitly describe the raw trigger (schema v2).
+Plans from the previous combined trigger/update contract cannot be loaded.
+Fold2 has eleven raw writes; Karplus has three first-trigger and five active
+writes. Their shared emitters execute exactly against all 18 observations per
+family. No control word is omitted to make a combined contract pass.
 
-## Local verification
+The candidate applies Fold2's direct pitch-table increment to oscillator A,
+even when B is primary, and initializes from a genuine pre-trigger state.
+The renderer's frequency converter remains a separate law. The compact model
+also preserves oscillator A between samples: its common envelope view had been
+copying stale A state over the live oscillator. The original/native state gate
+now passes, including 400 randomized blocks.
 
-- `make emu-cf`: passed, emulator built inside this worktree.
-- Fresh original ARM capture: passed, 108 cases; 1,620 binary evidence files
-  verified against the capture manifest. Version-specific calls require the
-  pinned v1.2.1 SHA256 `adcdbc4a2c660ffb6477f202211ae3cb70170bfe6ddfaecc3df0e4cb7db398c6`.
-- `verify_perky_hw4_profile.py` and `verify_perky_hw4_harvest.py`: passed;
-  5,431 gross/placeable donor P words.
-- `make check REMIX=perky-hw4 OT_PROJECT=`: passed all runnable checks,
-  65 shared module gates and 2 image gates. Label/mode/hidden checks lack the
-  optional `.venv`; remixer UI lacks Textual; project/port checks were skipped.
-  This builds the tracked probe remix, not the dynamically upgraded four-engine
-  audition, whose release qualification remains blocked below.
-- `scripts/refhash.sh save` followed by `scripts/refhash.sh check`: all 24
-  configurations, artifacts and build reports bit-identical.
-- Entry-point identity, wrong-firmware rejection, changed-reference rejection,
-  documentation checks and `git diff --check`: passed.
+Karplus retains the audition's **frozen middle-corner controls**. The generated
+update comes from the verified integer arithmetic and rejects unsettled control
+history or values that differ between first/active updates. Live Karplus controls
+remain a later transport task. The production initializer, raw trigger and
+prepared update use the same specialization as the executable gate.
 
-## Reproduced release blockers
+The combined DSP gate checks all compact words after raw trigger plus mandatory
+update for all 36 original observations, with allocation guards. Prepared bytes
+are supplied separately from the host's seven-bit knob script, preserving values
+128..255. The synthetic Fold2 gate now requests the same sixteen samples as its
+oracle and packs waves in the renderer's identity order.
 
-Run from the worktree:
+Both release entry points still use `build_hw4_machine_canary.py`; source identity,
+FX harvest, guarded timing, full-image placement, boot/readback and project port
+qualification remain required. There is no qualification bypass.
+
+## Measured release blocker
+
+The complete source assembles to **4,353 P words**, within the 5,431-word
+placeable donor run. The stock FX harvest audit passes. The first actual
+persistent 256-block timing run (first trigger, tails and active retriggers at
+all sixteen offsets) reports:
+
+| Physical core | Maximum modeled source cycles | 2x model + stock reserve | Limit |
+|---|---:|---:|---:|
+| T1 Fold1 + T2 Karplus | 26,995 | 76,550 | 72,512 |
+| T5 Fold2 + T6 Noise/Tone | 43,769 | 110,098 | 72,512 |
+
+Per-engine maxima are Fold1 14,979; Karplus 12,242; Fold2 21,770; Noise/Tone
+22,353. Each core's combined modeled allowance is 24,976, with the existing
+22,560-cycle stock reserve and factor-of-two model margin. **Do not reduce the
+margin/reserve to emit an updater.** Optimization with exact PCM/state/RNG gates
+is the next task. Merely swapping the two voice pairings cannot put both cores
+under the allowance.
+
+Commands from this worktree:
 
 ```sh
 OT_PROJECT='/Users/jrold/Documents/octatrack backup/##Scratch' \
   python3 tools/perky/build_hw4_release.py --reuse-fixtures
+python3 tools/verify/verify_perky_hw4_candidate_source.py
+python3 tools/verify/verify_perky_hw4_control_update.py
+python3 tools/verify/verify_perky_hw4_update_exec.py
 ```
 
-This stops at `verify_perky_fold2_trigger_contract.py`:
+The original trigger/update and renderer gates pass. Fold2: fifteen captured
+ARM blocks plus 400 native blocks; synthetic DSP: 36 cases; Karplus: 528
+consecutive exact PCM/state/full-ring/RNG blocks. Mixed Fold regression: 13,878
+exact cases, worst 22,639 modeled cycles within its separate 23,040 allowance.
+These do not qualify four simultaneous hardware voices. Final image placement,
+boot/readback and the 32,000-frame four-voice port are not reached while timing
+fails. No SysEx has been sent and no hardware has been flashed.
 
-```text
-RuntimeError: unresolved Fold2 trigger words: 4
-```
+`make check REMIX=perky-hw4 OT_PROJECT=` passed all runnable checks (65 shared
+module gates and two image gates). Optional environment/project skips are
+listed in `out/perky-hw4-check.log`.
 
-A separate `python3 tools/perky/qualify_karplus_trigger.py` stops at
-`verify_perky_karplus_trigger_contract.py`:
+`scripts/refhash.sh check` also passed: all 24 configurations, artifacts and
+build reports match the trusted pre-change baseline.
 
-```text
-RuntimeError: first_trigger: unresolved compact trigger words: 18,25,27
-```
-
-The capture harness now takes additional snapshots between the original ARM
-trigger and its mandatory control update, using the same v1.2.1 wrapper calls
-and preserving the historical post-update captures. Fresh captures cover all
-12 families × 3 modes × 3 corners. The split snapshots show:
-
-| Family / phase | Raw trigger mutations, compact indices | Subsequent update mutations |
-|---|---|---|
-| Fold2 first | 10,17,21,28,50 | 4,32,33,44 |
-| Fold2 active | 2,3,10,21,26,27,43,49,50 | 4,32,33,44 |
-| Karplus first | 3,10,26 | 18,25,27 |
-| Karplus active | 3,8,9,26,30 | 18 |
-
-The failed Fold2 word is oscillator A's increment low half (ARM object +$34).
-Karplus's failed words are filter damping (18), excitation target (25) and delay
-low half (27). They belong to the subsequent control update, whose arithmetic
-cannot be inferred by the trigger compiler's CONST/COPY/XOR/ADD16 rules.
-Do not exclude these words merely to make qualification green: Fold2's
-inactive oscillator can consume the update's frequency, and Karplus's state
-controls its feedback renderer.
-
-Next work is to derive and execute the update laws against these intermediate
-snapshots, qualify their ordering with the raw trigger and final shipping seam,
-then rerun composition, guarded timing, full-image placement, boot/readback,
-32,000-frame four-voice port and container round-trip checks. Until both
-contracts pass, timing, final memory placement and hardware packaging remain
-unqualified. No SysEx has been sent and no hardware has been flashed.
-
-Local evidence/logs live under `out/` and remain outside Git:
-`perky-hw4-release.log`, `perky-karplus-qualification.log`,
-`perky-capture-split.log`, `perky-hw4-check.log`, and
-`perky/hw4-trigger-partition.json`.
+Local evidence remains under ignored `out/`: `perky-hw4-release.log`,
+`perky-hw4-source.log`, `perky-hw4-update-exec.log`, and
+`perky/hw4-realtime-budget/report.json`. The tracked `perky-hw4` probe remix is
+a separate build from the dynamically composed audition.
 
 # PERKY continuation — all-family renderer checkpoint, 7 October 2026
 

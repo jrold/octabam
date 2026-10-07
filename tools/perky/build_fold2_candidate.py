@@ -64,6 +64,7 @@ def build(out:Path):
         move a1,x:>$38ec
 pkf2_event_ready:
         jsrl pk_simple_base
+        jsrl pk_fold2_apply_pitch
         move x:>$38ec,a
         cmp #>$10,a
         beq pkf2_full
@@ -74,6 +75,7 @@ pkf2_event_ready:
 pkf2_retrigger:
         jsrl pk_fold2_candidate_trigger
         move #>$3900,r5
+        jsrl pk_fold2_apply_pitch
         move #>$10,a
         move x:>$38ec,x0
         sub x0,a
@@ -91,7 +93,7 @@ pkf2_full:
     # original firmware state is committed.  Marker $d distinguishes Fold2
     # from Fold1's $c and the Simple/Noise overlays.
     case=FIX/'engine-4-mode-1-corner-0'
-    raw=(case/'wrapper-window-before.bin').read_bytes()[0xc4:0xc4+0x134]
+    raw=(case/'wrapper-window-pre-trigger.bin').read_bytes()[0xc4:0xc4+0x134]
     words=fold2.FoldDrum2.from_arm(raw).words
     init='''\npk_multi_fold2_init:
         move x:>$418,a

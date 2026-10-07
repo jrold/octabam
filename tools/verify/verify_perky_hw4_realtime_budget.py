@@ -74,8 +74,8 @@ def words24(path: Path) -> list[int]:
 
 def prepared_records():
     raw = (64, 64, 64, 64)
-    fold1 = fold1_transport.State().prepare(raw, 0, trigger=True)
-    fold2 = fold2_transport.State().prepare(raw, 0, trigger=True)
+    fold1 = fold1_transport.State.fresh().prepare(raw, 0, trigger=True)
+    fold2 = fold2_transport.State.fresh().prepare(raw, 0, trigger=True)
     noise = bytearray([64, 64, 64, 64, 0, 0, 0, 0, 0, 0, 0, 10])
     karplus = bytearray([64, 64, 64, 64, 0, 0, 0, 0, 0, 0, 0, 8])
     assert len(fold1) == len(fold2) == len(noise) == len(karplus) == 12

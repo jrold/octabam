@@ -6,8 +6,8 @@ import json
 
 WORDS = 32
 MODE = 2
-PLAN_SCHEMA = 'octabam.perky.karplus-trigger-plan.v1'
-CONTRACT_SCHEMA = 'octabam.perky.karplus-trigger.v1'
+PLAN_SCHEMA = 'octabam.perky.karplus-trigger-plan.v2'
+CONTRACT_SCHEMA = 'octabam.perky.karplus-trigger.v2'
 
 
 def fail(message):

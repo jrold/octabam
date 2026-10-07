@@ -70,6 +70,7 @@ def qualify(firmware: Path, source: Path, reuse_fixtures: bool) -> None:
     run('tools/verify/verify_perky_karplus_dsp_exec.py', '--firmware', firmware,
         env=reference_env)
     run('tools/verify/verify_perky_fold_regression.py')
+    run('tools/verify/verify_perky_hw4_update_exec.py', env=reference_env)
 
     # Complete four-engine source: exact labels, private X/Y geometry and P size.
     run('tools/verify/verify_perky_hw4_candidate_source.py')
@@ -251,6 +252,7 @@ def main() -> None:
             and not any(ch.isspace() for ch in version)):
         base.die('--version must be 1..10 ASCII non-whitespace characters')
 
+    os.environ["PERKONS_FIRMWARE"] = str(firmware)
     WORK.mkdir(parents=True, exist_ok=True)
     qualify(firmware, source, args.reuse_fixtures)
     normal, control_source, pwords = build_module(WORK, args.build)

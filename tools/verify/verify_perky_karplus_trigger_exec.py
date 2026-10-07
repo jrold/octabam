@@ -71,11 +71,11 @@ pkkt_active_entry:
 '''
     source += trigger.emit_routine(
         plans['first_trigger'], label='pk_karplus_trigger_first',
-        snapshot_reg='r5', snapshot_address=SNAPSHOT_X, prefix='ktf')
+        frozen='r5', snapshot_address=SNAPSHOT_X, prefix='ktf')
     source += trigger.emit_routine(
         plans['active_retrigger'], label='pk_karplus_trigger_active',
-        snapshot_reg='r5', snapshot_address=SNAPSHOT_X, prefix='kta')
-    binary, entry = host.assemble(source)
+        frozen='r5', snapshot_address=SNAPSHOT_X, prefix='kta')
+    binary, entry = host.assemble(host.source_builder.force_long_local_jsr(host.source_builder.relativize_local_conditionals(source)))
 
     phase_flag = 0
     def write_data(path, state_words, _tables):
@@ -91,6 +91,7 @@ pkkt_active_entry:
     host.write_data = write_data
     record = tuple([0] * 12)
     for tag, flag, pre, want in cases:
+        tag = tag.replace("/", "-")
         phase_flag = flag
         initial = list(pre) + [0] * (VISIBLE - WORDS)
         _audio, states, _rng = host.run(binary, entry, tag, initial, [], [(record, -1)])

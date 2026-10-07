@@ -14,6 +14,7 @@ sys.path[:0] = [str(ROOT / 'modules/perky'), str(ROOT / 'tools/perky')]
 import fold_drum2_compact as fold2
 import simple_drum_compact as simple
 import simple_drum_tables as packed
+import verify_perky_simple_drum_envelope_exec as envelope_gate
 from build_noise_tone_synth_source import force_long_local_jsr, relativize_local_conditionals
 
 OUT = ROOT / 'out/perky/fold-drum2-synthetic'
@@ -114,10 +115,12 @@ def assemble():
 
 
 def main():
+    envelope_gate.build_host()
     binary, entry = assemble()
     waves = make_waves()
     packed_waves = packed.pack_u16(
-        v for address in WAVE_IDS for v in struct.unpack('<256H', waves[address])
+        v for address in (0x080222A0, 0x080226A0, 0x080228A0, 0x080224A0)
+        for v in struct.unpack('<256H', waves[address])
     )
     wave_line = 'Y 7a5 ' + ' '.join(f'{v:06x}' for v in packed_waves) + '\n'
     script = OUT / 'case.script'
@@ -159,7 +162,7 @@ def main():
         subprocess.run([
             str(HOST), '-code', str(binary), '-org', '2800', '-entry', f'{entry:x}',
             '-data', str(data), '-script', str(script), '-out', str(pcm),
-            '-state', str(dump), '-state-words', '68', '-frames', '256',
+            '-state', str(dump), '-state-words', '68', '-frames', '16',
             '-meter', str(meter), '-cycle-meter', '1'
         ], check=True, capture_output=True)
         got = list(struct.unpack('<32i', pcm.read_bytes()))[::2]

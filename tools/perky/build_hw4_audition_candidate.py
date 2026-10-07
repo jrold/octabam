@@ -36,6 +36,7 @@ import build_noise_tone_synth_source as synth
 import hw4_memory as memory
 import karplus_compact as karplus
 import karplus_trigger_plan_source as trigger
+import karplus_prepared_update_source as control_update
 import simple_drum_tables as tables
 
 OUT = ROOT / 'out/perky/hw4-audition'
@@ -133,19 +134,24 @@ def build(out: Path = OUT, assets: Path = ASSETS):
     ).replace(
         '#>$000c51,r1', f'#>${memory.KARPLUS_ENV2_BASE:06x},r1'
     )
-    source += '\n' + (ROOT / 'modules/perky/karplus_seam.asm').read_text()
+    source += '\n' + control_update.emit_routine(control_update.prepared_values(KARPLUS_CASE))
+    # Keep the return branch near pks_continue; long negative BRA literals
+    # are not accepted by this assembler. Use the established relative form.
+    source = once(source, 'pks_fold2_entry:\n',
+                  (ROOT / 'modules/perky/karplus_seam.asm').read_text() + '\npks_fold2_entry:\n',
+                  'HW4 Karplus entry placement')
     source += '\n' + ksource
     source += '\n' + trigger.emit_routine(
         plans['first_trigger'],
         label='pk_karplus_trigger_first',
-        snapshot_reg='r5',
+        frozen='r5',
         snapshot_address=memory.KARPLUS_SHADOW_BASE,
         prefix='kh4f',
     )
     source += '\n' + trigger.emit_routine(
         plans['active_retrigger'],
         label='pk_karplus_trigger_active',
-        snapshot_reg='r5',
+        frozen='r5',
         snapshot_address=memory.KARPLUS_SHADOW_BASE,
         prefix='kh4a',
     )

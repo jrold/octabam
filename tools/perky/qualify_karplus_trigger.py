@@ -40,6 +40,7 @@ def main():
     if not (a.source.expanduser() / 'Source/PerkonsVoices.cpp').exists():
         raise SystemExit(f'missing PerkyBits source tree: {a.source.expanduser()}')
 
+    run('tools/verify/verify_perky_hw4_control_update.py', '--firmware', a.firmware.expanduser())
     run('tools/perky/analyze_karplus_trigger.py', '--fixtures', FIX)
     run('tools/verify/verify_perky_karplus_trigger_contract.py')
     run('tools/verify/verify_perky_karplus_trigger_exec.py')

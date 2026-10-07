@@ -19,6 +19,7 @@
 
 pks_karplus_entry:
         jsrl    pk_multi_karplus_init
+        jsrl    pk_karplus_apply_prepared
 
         move    #>$003900,r5
         move    #>$ffffff,m0
@@ -81,6 +82,7 @@ pkk_retrigger:
 pkk_active_trigger:
         jsrl    pk_karplus_trigger_active
 pkk_trigger_done:
+        jsrl    pk_karplus_apply_prepared
         ; Generated trigger routines use r5 for the frozen 32-word snapshot.
         ; Restore the renderer ABI without disturbing its scratch contents.
         move    #>$003900,r5

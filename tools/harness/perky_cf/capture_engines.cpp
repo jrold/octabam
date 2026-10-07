@@ -59,6 +59,16 @@ int main(int argc,char**argv){
    if(!cpu.callThumbRealtime(function,{address,0,0,0},error))return false;
    if(!cpu.readMemory(address,ram.data(),ram.size(),error))return false;
    save(dir/name,ram.data(),ram.size());
+   // Common update dereferences panel targets outside the wrapper window.
+   // Capture their actual values rather than deriving them from case names.
+   const auto engineOffset=i==3 ? 0xc4u : 0x2908u;
+   std::uint32_t targets[4]={};
+   for(unsigned knob=0;knob<4;++knob){
+    std::uint32_t pointer=0;
+    if(!cpu.readMemory(address+engineOffset+0xcu+4*knob,&pointer,4,error)||
+       !cpu.readMemory(pointer,&targets[knob],4,error))return false;
+   }
+   save(dir/(std::string(name)+".targets.bin"),targets,sizeof(targets));
    return v.advanceControlSmoothing(e.slot,error,1);
   };
   if(!trigger("wrapper-window-trigger-only.bin")){std::cerr<<error;return 6;}

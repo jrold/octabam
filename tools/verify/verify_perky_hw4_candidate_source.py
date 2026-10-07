@@ -68,6 +68,8 @@ def main():
         'pk_karplus_voice:',
         'pk_karplus_trigger_first:',
         'pk_karplus_trigger_active:',
+        'pk_karplus_apply_prepared:',
+        'pk_fold2_apply_pitch:',
         'pk_probe_source:',
         'pks_continue:',
     ):

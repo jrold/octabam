@@ -100,6 +100,21 @@ pksdd_cursor_ok:
 ; Control-rate base frequency, prepared pitch is restricted to 0..4095.
 ; Uses a separate global pitch cache after the shared scratch block.
 pk_simple_base:
+        jsr     pk_simple_pitch_at
+        move    a1,x0
+        move    #>$00bb80,y0
+        mpyuu   x0,y0,a
+        asr     #$15,a,a
+        move    a0,a
+        move    x:(r5+$60),r6
+        move    a1,x:(r6+$34)
+        clr     a
+        move    a1,x:(r6+$35)
+        rts
+
+; Direct pitch-table u16 result in A1, before the renderer frequency scale.
+; Same cache/scratch ABI as pk_simple_base; restores the voice pointer r6.
+pk_simple_pitch_at:
         move    r6,a
         move    a1,x:(r5+$60)
         move    x:(r6+$20),a
@@ -120,13 +135,5 @@ pk_simple_base:
         sub     x0,b
         move    b1,x0
         asr     x0,a,a
-        move    a1,x0
-        move    #>$00bb80,y0
-        mpyuu   x0,y0,a
-        asr     #$15,a,a
-        move    a0,a
         move    x:(r5+$60),r6
-        move    a1,x:(r6+$34)
-        clr     a
-        move    a1,x:(r6+$35)
         rts
