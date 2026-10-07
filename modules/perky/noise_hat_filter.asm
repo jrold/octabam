@@ -7,7 +7,7 @@
 ;   +4/+5 second s32 low16/high16 (bounded to +/-32767)
 ;   +6/+7 velocity s32 low16/high16 (bounded to +/-32767)
 ;
-; Input:  signed value in X:(r5+$61)
+; Input: signed16 bit-pattern in X:(r5+$61); the primitive sign-extends it.
 ; Output: updated compact state.  The implementation intentionally mirrors the
 ; ARM renderer's low32 multiply, negative-product rounding and clamps.  Because
 ; first/second/velocity are clamped to signed16 after every call, their live
@@ -34,8 +34,14 @@ pk_noise_hat_filter:
         asr     #$8,a,a
         move    a1,x0
 
-        ; Keep the signed input in r1 across the multiply sequence.
+        ; Keep the signed16 input in r1 across the multiply sequence.  Do the
+        ; sign extension here so standalone probes and shipping callers share
+        ; the same ABI and negative samples cannot be accidentally treated as
+        ; positive 24-bit values.
         move    x:(r5+$61),a
+        asl     #$8,a,a
+        move    a1,a
+        asr     #$8,a,a
         move    a1,r1
 
         ; product = low32(velocity * coefficient)
