@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """Run the local evidence chain needed to finish Fold Drum 2.
 
-This is a developer-side driver only.  It does not use GitHub Actions or any
-network service.  It consumes the user's existing PĒRKONS v1.2.1 firmware,
+This is a developer-side driver only. It does not use GitHub Actions or any
+network service. It consumes the user's existing PĒRKONS v1.2.1 firmware,
 PerkyBits source tree and Unicorn build, regenerates the original-ARM corpus,
-derives/verifies the Fold2 trigger contract, then runs the existing Fold2
-control/renderer gates.
+derives/verifies the Fold2 trigger contract, executes that trigger law on the
+DSP56300 host, then runs the existing Fold2 control/renderer gates.
 
 Defaults intentionally match the known local checkout used for PerkyBits work:
   firmware: ~/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img
   source:   ~/Downloads/perkybits
 
 The Unicorn build is auto-discovered by locating the existing libunicorn.a
-beside libarm-softmmu.a and libunicorn-common.a under the PerkyBits tree.  No
+beside libarm-softmmu.a and libunicorn-common.a under the PerkyBits tree. No
 download or dependency installation is attempted.
 """
 from __future__ import annotations
@@ -55,7 +55,7 @@ def find_unicorn_build(source: Path) -> Path:
             "Pass --unicorn-build or set UNICORN_BUILD."
         )
     # Prefer the newest existing build when old benchmark/build directories are
-    # both present.  This is only path discovery; capture_engine_fixtures.py
+    # both present. This is only path discovery; capture_engine_fixtures.py
     # still hashes all reference inputs into its manifest.
     return max(matches, key=lambda p: (p / "libunicorn.a").stat().st_mtime_ns)
 
@@ -80,7 +80,7 @@ def main() -> None:
     )
     ap.add_argument(
         "--analysis-only", action="store_true",
-        help="permit unresolved CASES/ambiguous trigger rules for inspection",
+        help="permit unresolved trigger rules for inspection; emit no usable plan",
     )
     args = ap.parse_args()
 
@@ -120,16 +120,18 @@ def main() -> None:
 
     if args.analysis_only:
         print(
-            "\nAnalysis-only run complete.  Renderer/control qualification is "
-            "skipped until the trigger contract is fully deterministic."
+            "\nAnalysis-only run complete. The previous trigger plan, if any, "
+            "was invalidated before this corpus was checked. DSP trigger and "
+            "renderer/control qualification are intentionally skipped."
         )
         return
 
-    # These are all local executable/oracle gates.  Keep the order from cheap
-    # transport/control checks to full ARM/native DSP renderer parity.
+    # The trigger law is first executed in isolation on the actual DSP56300
+    # emulator. Only then continue into transport/control/render qualification.
     env = os.environ.copy()
     env["PERKYBITS_SOURCE"] = str(source / "Source")
     for gate in (
+        "tools/verify/verify_perky_fold2_trigger_exec.py",
         "tools/verify/verify_perky_fold2_transport.py",
         "tools/verify/verify_perky_fold2_seam_exec.py",
         "tools/verify/verify_perky_fold2_compact.py",
@@ -139,10 +141,11 @@ def main() -> None:
         run([sys.executable, gate], env=env)
 
     print(
-        "\nFold Drum 2 evidence chain: PASS through trigger contract, "
-        "production transport/control seam, compact model and DSP renderer.\n"
-        "This does NOT claim browser/production trigger-seam integration or "
-        "Octatrack hardware qualification; those remain separate gates."
+        "\nFold Drum 2 evidence chain: PASS through original-ARM trigger contract, "
+        "executable DSP trigger law, production transport/control seam, compact "
+        "model and DSP renderer.\n"
+        "This still does NOT claim browser/production trigger-seam integration "
+        "or Octatrack hardware qualification; those remain separate gates."
     )
 
 
