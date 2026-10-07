@@ -31,82 +31,85 @@
 ;   pk_noise_step / pk_rng_step
 ;   pk_u32_add / pk_u32_asr / pk_u32_mul_low
 ;
-; The generic limb helpers are intentionally used for the post-filter mix and
-; gain path: the two signed products can overflow signed32 when added, and the
-; ARM code explicitly keeps only low32 before arithmetic shifts.
+; Integer products and partial products preserve native low32 overflow before
+; arithmetic shifts, including the signed25 intermediate in the mix path.
 
 pk_noise_hat_classic_inner1:
+        ; Rebase hot scratch so raw A0 stores use the stock one-word X form.
+        move    r5,a
+        add     #>$40,a
+        move    a1,r7
         move    r6,a
-        move    a1,x:(r5+$66)
+        move    a1,x:(r7+$26)
 
         move    #>$52,n6
         move    (r6)+n6
         jsr     pk_noise_hat_envelope
-        move    a1,x:(r5+$67)
-        move    x:(r5+$66),r6
+        move    a1,x:(r7+$27)
+        move    x:(r7+$26),r6
 
         ; ---- outer sample/hold ------------------------------------------------
-        move    x:(r5+$70),a
+        move    x:(r7+$30),a
         and     #>$00ffff,a
         tst     a
         beq     pknhc1_outer_refresh
         sub     #>$1,a
         and     #>$00ffff,a
-        move    a1,x:(r5+$70)
-        move    x:(r5+$71),a
+        move    a1,x:(r7+$30)
+        move    x:(r7+$31),a
         and     #>$00ffff,a
-        move    a1,x:(r5+$68)
+        move    a1,x:(r7+$28)
         bra     pknhc1_outer_ready
 
 pknhc1_outer_refresh:
         move    x:(r6+$5d),a
-        move    a1,x:(r5+$40)
+        move    a1,x:(r7+$0)
         move    x:(r6+$5e),a
-        move    a1,x:(r5+$41)
+        move    a1,x:(r7+$1)
         move    x:(r6+$5f),a
-        move    a1,x:(r5+$42)
+        move    a1,x:(r7+$2)
 
-        move    x:(r5+$72),a
+        move    x:(r7+$32),a
         move    a1,x:(r5+$0)
-        move    x:(r5+$73),a
+        move    x:(r7+$33),a
         move    a1,x:(r5+$1)
-        move    x:(r5+$74),a
+        move    x:(r7+$34),a
         move    a1,x:(r5+$2)
-        move    x:(r5+$75),a
+        move    x:(r7+$35),a
         move    a1,x:(r5+$3)
         jsr     pk_noise_step
 
-        move    x:(r5+$40),a
+        move    x:(r7+$0),a
         move    a1,x:(r6+$5d)
-        move    x:(r5+$41),a
+        move    x:(r7+$1),a
         move    a1,x:(r6+$5e)
-        move    x:(r5+$42),a
+        move    x:(r7+$2),a
         move    a1,x:(r6+$5f)
         move    x:(r5+$0),a
-        move    a1,x:(r5+$72)
+        move    a1,x:(r7+$32)
         move    x:(r5+$1),a
-        move    a1,x:(r5+$73)
+        move    a1,x:(r7+$33)
         move    x:(r5+$2),a
-        move    a1,x:(r5+$74)
+        move    a1,x:(r7+$34)
         move    x:(r5+$3),a
-        move    a1,x:(r5+$75)
+        move    a1,x:(r7+$35)
 
         move    x:(r5+$12),a
         and     #>$00ffff,a
-        move    a1,x:(r5+$68)
-        move    a1,x:(r5+$71)
+        move    a1,x:(r7+$28)
+        move    a1,x:(r7+$31)
         move    x:(r6+$6a),a
         and     #>$00ffff,a
-        move    a1,x:(r5+$70)
+        move    a1,x:(r7+$30)
 
 pknhc1_outer_ready:
-        move    x:(r5+$68),a
-        move    a1,x:(r5+$61)
+        move    x:(r7+$28),a
+        move    a1,x:(r7+$21)
         move    #>$60,n6
         move    (r6)+n6
         jsr     pk_noise_hat_filter
         jsr     pk_noise_hat_filter
-        move    x:(r5+$66),r6
+        move    x:(r7+$26),r6
 
         move    x:(r6+$62),a
         move    x:(r6+$68),b
@@ -115,7 +118,7 @@ pknhc1_outer_ready:
         move    x:(r6+$64),a
 pknhc1_filter_chosen:
         and     #>$00ffff,a
-        move    a1,x:(r5+$69)
+        move    a1,x:(r7+$29)
 
         move    x:(r6+$69),a
         tst     a
@@ -124,153 +127,67 @@ pknhc1_filter_chosen:
         rts
 
 pknhc1_mix:
-        ; ratio = u16(range) - 1 - u16(mix), as signed32 limbs.
+        ; ratio = unsigned16(range) - 1 - unsigned16(mix), signed17.
         move    x:(r6+$6c),a
-        and     #>$00ffff,a
         sub     #>$1,a
-        move    x:(r6+$6b),b
-        and     #>$00ffff,b
-        move    b1,x0
+        move    x:(r6+$6b),x0
         sub     x0,a
-        move    a1,b
-        and     #>$00ffff,b
-        move    b1,x:(r5+$46)
-        clr     b
-        tst     a
-        jpl     pknhc1_ratio_sign
-        move    #>$00ffff,b
-pknhc1_ratio_sign:
-        move    b1,x:(r5+$47)
-
-        ; product1 = low32(selected * ratio).
-        move    x:(r5+$69),a
-        and     #>$00ffff,a
-        move    a1,x:(r5+$0)
-        clr     b
-        btst    #15,a1
-        jcc     pknhc1_selected_sign
-        move    #>$00ffff,b
-pknhc1_selected_sign:
-        move    b1,x:(r5+$1)
-        move    x:(r5+$46),a
-        move    a1,x:(r5+$2)
-        move    x:(r5+$47),a
-        move    a1,x:(r5+$3)
-        jsr     pk_u32_mul_low
-        move    x:(r5+$8),a
-        move    a1,x:(r5+$43)
-        move    x:(r5+$9),a
-        move    a1,x:(r5+$44)
-
-        ; product2 = low32(u16(mix) * signed16(sample)).
-        move    x:(r6+$6b),a
-        and     #>$00ffff,a
-        move    a1,x:(r5+$0)
-        clr     a
-        move    a1,x:(r5+$1)
-        move    x:(r5+$68),a
-        and     #>$00ffff,a
-        move    a1,x:(r5+$2)
-        clr     b
-        btst    #15,a1
-        jcc     pknhc1_sample_sign
-        move    #>$00ffff,b
-pknhc1_sample_sign:
-        move    b1,x:(r5+$3)
-        jsr     pk_u32_mul_low
-        move    x:(r5+$8),a
-        move    a1,x:(r5+$45)
-        move    x:(r5+$9),a
-        move    a1,x:(r5+$46)
-
-        ; mixed = asr32(low32(product1 + product2), 7).
-        move    x:(r5+$43),a
-        move    a1,x:(r5+$0)
-        move    x:(r5+$44),a
-        move    a1,x:(r5+$1)
-        move    x:(r5+$45),a
-        move    a1,x:(r5+$2)
-        move    x:(r5+$46),a
-        move    a1,x:(r5+$3)
-        jsr     pk_u32_add
-        move    x:(r5+$8),a
-        move    a1,x:(r5+$0)
-        move    x:(r5+$9),a
-        move    a1,x:(r5+$1)
-        move    #>$7,a
-        move    a1,x:(r5+$4)
-        jsr     pk_u32_asr
-
-        ; mixed = asr32(low32(amplitude * mixed), 16).
-        move    x:(r5+$8),a
-        move    a1,x:(r5+$0)
-        move    x:(r5+$9),a
-        move    a1,x:(r5+$1)
-        move    x:(r5+$67),a
-        and     #>$00ffff,a
-        move    a1,x:(r5+$2)
-        clr     a
-        move    a1,x:(r5+$3)
-        jsr     pk_u32_mul_low
-        move    x:(r5+$8),a
-        move    a1,x:(r5+$0)
-        move    x:(r5+$9),a
-        move    a1,x:(r5+$1)
-        move    #>$10,a
-        move    a1,x:(r5+$4)
-        jsr     pk_u32_asr
-
-        ; output = asr32(low32(mixed * velocity_u8), 8).
-        move    x:(r5+$8),a
-        move    a1,x:(r5+$0)
-        move    x:(r5+$9),a
-        move    a1,x:(r5+$1)
-        move    x:(r6+$51),a
-        and     #>$0000ff,a
-        move    a1,x:(r5+$2)
-        clr     a
-        move    a1,x:(r5+$3)
-        jsr     pk_u32_mul_low
-        move    x:(r5+$8),a
-        move    a1,x:(r5+$0)
-        move    x:(r5+$9),a
-        move    a1,x:(r5+$1)
-        move    #>$8,a
-        move    a1,x:(r5+$4)
-        jsr     pk_u32_asr
-
-        ; Saturate signed32 limbs to native velocity() [-32768,32767].
-        move    x:(r5+$9),a
-        and     #>$00ffff,a
-        tst     a
-        beq     pknhc1_positive_high_zero
-        cmp     #>$00ffff,a
-        beq     pknhc1_negative_high_ffff
-        btst    #15,a1
-        jcc     pknhc1_sat_positive
-        bra     pknhc1_sat_negative
-pknhc1_sat_positive:
-        move    #>$007fff,a
-        rts
-
-pknhc1_positive_high_zero:
-        move    x:(r5+$8),a
-        and     #>$00ffff,a
-        cmp     #>$007fff,a
-        ble     pknhc1_return_positive
-        move    #>$007fff,a
-pknhc1_return_positive:
-        rts
-
-pknhc1_negative_high_ffff:
-        move    x:(r5+$8),a
-        and     #>$00ffff,a
-        cmp     #>$008000,a
-        bge     pknhc1_return_negative
-pknhc1_sat_negative:
-        move    #>$008000,a
-pknhc1_return_negative:
+        move    a1,y0
+        move    x:(r7+$29),a
         asl     #$8,a,a
         move    a1,a
         asr     #$8,a,a
+        move    a1,x0
+        mpy     y0,x0,a
+        asr     #$1,a,a
+        move    a0,x:(r7+$3)
+        move    a1,x:(r7+$4)
+
+        move    x:(r7+$28),a
+        asl     #$8,a,a
+        move    a1,a
+        asr     #$8,a,a
+        move    a1,x0
+        move    x:(r6+$6b),y0
+        mpy     y0,x0,a
+        asr     #$1,a,a
+        move    x:(r7+$4),b
+        move    x:(r7+$3),b0
+        add     b,a
+        ; Wrap the raw sum to signed32, then shift7 (native mixed value).
+        asl     #$18,a,a
+        asr     #$1f,a,a
+
+        ; (low32(mixed * amplitude) >>16) is signed16. Compute its bits
+        ; from two unsigned16 partial products, without dropping mixed's
+        ; 25th bit: high16 = low16(high16(lo*amp) + hi*amp).
+        move    a0,b
+        and     #>$00ffff,b
+        move    b1,x0                   ; mixed low16
+        asr     #$10,a,a
+        move    a0,b
+        and     #>$00ffff,b
+        move    b1,x1                   ; mixed high16
+        move    x:(r7+$27),y0
+        mpyuu   x0,y0,a
+        asr     #$11,a,a
+        move    a0,b                    ; upper16 of low partial product
+        move    x1,x0
+        mpyuu   x0,y0,a
+        asr     #$1,a,a
+        move    a0,a
+        add     b,a
+        and     #>$00ffff,a
+        asl     #$8,a,a
+        move    a1,a
+        asr     #$8,a,a
+        move    a1,x0
+
+        ; signed16 * velocity_u8 >>8 already fits the native int16 clamp.
+        move    x:(r6+$51),a
+        and     #>$0000ff,a
+        move    a1,y0
+        mpy     y0,x0,a
+        asr     #$9,a,a
+        move    a0,a
         rts

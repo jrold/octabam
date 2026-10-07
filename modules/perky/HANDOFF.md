@@ -1,3 +1,22 @@
+# PERKY continuation — Noise Hat DSP qualification, 7 October 2026
+
+Noise Hat M1/M2/M3 now execute against both compact oracles and original ARM
+captures with exact PCM/state/ring/hold/RNG. See [NOISE_HAT.md](NOISE_HAT.md)
+for commands, measured memory, cycle limits and pending production work.
+
+Work continues in `codex/perky-dsp-qualification`, based on `perky-machines`
+commit `48d1adc7`. The first executable parity checkpoint is `61ea925b`;
+subsequent optimization and gate registration are on this branch. No Noise Hat
+browser entry, production image or hardware qualification was added.
+
+Original ARM corpus maxima after optimization: M1 20,128, M2 32,092,
+M3 18,063 modeled cycles per 16 samples. M2 exceeds the 23,040 development
+allowance even on real captures; classic synthetic stress also exceeds it.
+Keep the one-voice-per-core guard and finish timing/placement before integration.
+
+The following PERKY4 checkpoint is historical; its standalone qualification
+remains useful, but its Noise Hat status and branch location are superseded above.
+
 # PERKY continuation — PERKY4 local qualification
 
 The user wants **all twelve PĒRKONS families working**, using local Git and local builds only. This objective remains unfinished. The latest retrieved branch base is `perky-machines` at `9b12c0ebd3301c2a691dc7e710da47be5ba64a90`. Current source changes are in a separate writable worktree; they have not yet been committed or pushed.

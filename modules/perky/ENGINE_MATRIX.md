@@ -28,7 +28,7 @@ All twelve families have original ARM mode/corner and continuation fixtures. Tha
 | Resonant Drums | V3 / A1 | `1,0,2` | `NativeV121ResonantBass` / `NativeV121ResonantSnare` mode paths | `0x178` / `0x1d4`; 2 envelopes + 257-entry interpolation tables + RNG | Audit only |
 | Slap | V3 / A2 | `1,0,2` | `NativeV121Slap` | `0x2670`; 2 envelopes + large delay/state + RNG | Audit only; large-state family |
 | Karplus | V3 / A3 | `1,0,2` | `NativeV121Karplus` | `0x10e0`; 2 envelopes + large delay/state + RNG | Audit only; large-state family |
-| Noise Hat | V4 / A1 | `1,0,2` | `NativeV121NoiseHatClassic` / `NativeV121NoiseHatPulseStack` + wrapper modes | classic `0x2dd8`, pulse `0x160`; envelopes, filters/delays/pulse stack | Audit only; split renderer/wrapper family |
+| Noise Hat | V4 / A1 | `1,0,2` | `NativeV121NoiseHatClassic` / `NativeV121NoiseHatPulseStack` + wrapper modes | classic `0x2dd8`, pulse `0x160`; envelopes, filters/delays/pulse stack | **All three modes exact DSP/original ARM PCM/state/ring/hold/RNG; classic timing, physical placement and production integration pending** |
 | Noise / Tone | V4 / A2 | `1,0,2` | `NativeV121NoiseTone*` | `0x120`; pitch/envelopes/waves/filter/noise + RNG | **PERKY2 physical audio works; synthetic controls/tables remain** |
 | Acoustic Hats | V4 / A3 | `1,0,2` | `NativeV121AcousticHats` | `0x10c`; 2 envelopes + sample asset up to `0x40000` bytes | Audit only; external sample-data family |
 
@@ -98,13 +98,8 @@ Every family must clear these rows before it can be called hardware-qualified.
 
 ## Current next milestone
 
-Finish **Simple Drum** before emitting another hardware image:
-
-1. capture authentic prepared state for panel M1/M2/M3 and control corners from
-   the PerkyBits v1.2.1 runtime;
-2. identify/hash its two required wave assets and common envelope/pitch data;
-3. add DSP56300 executable gates for the 34-word state, prepared pitch,
-   oscillator and two-envelope render path;
-4. integrate it behind engine browser family 003 while preserving PERKY2
-   Noise/Tone as a regression fixture;
-5. run full timing/boot/sequencer gates and only then produce a new build number.
+Noise Hat's three DSP render paths now have executable original ARM gates.
+See [NOISE_HAT.md](NOISE_HAT.md) for the current measured checkpoint. Reduce
+classic timing cost, close the shared physical X/Y/P ledger and qualify authentic
+controls/dispatcher integration before exposing family 010. Other families'
+production status remains separate; retain the physically proven PERKY2 path.

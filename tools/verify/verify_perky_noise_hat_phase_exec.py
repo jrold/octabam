@@ -27,6 +27,9 @@ from build_noise_tone_synth_source import (  # noqa:E402
 MASK32 = 0xffffffff
 
 
+from verify_perky_simple_drum_envelope_exec import build_host  # noqa:E402
+from perky_noise_hat_dsp_support import audit_source, audit_binary  # noqa:E402
+
 def fail(message: str) -> None:
     raise SystemExit('verify-perky-noise-hat-phase-exec: ' + message)
 
@@ -65,6 +68,7 @@ def oracle(words: list[int]) -> tuple[list[int], int]:
 
 
 def assemble() -> tuple[Path, int]:
+    build_host()
     missing = [p for p in (ASM, HOST) if not p.exists()]
     if missing:
         fail('run the existing PERKY setup/build gates first; missing '
@@ -87,6 +91,7 @@ def assemble() -> tuple[Path, int]:
         + phase + '\n' + math_helpers
     )
     source = force_long_local_jsr(relativize_local_conditionals(source))
+    audit_source(source)
     asm = OUT / 'candidate.asm'
     binary = OUT / 'candidate.bin'
     symbols = OUT / 'candidate.sym'
@@ -94,11 +99,12 @@ def assemble() -> tuple[Path, int]:
 
     result = subprocess.run(
         [str(ASM), '-in', str(asm), '-org', f'{ORG:x}',
-         '-out', str(binary), '-sym', str(symbols)],
+         '-out', str(binary), '-sym', str(symbols), '-list'],
         capture_output=True, text=True,
     )
     if result.returncode:
         fail('assembler failed:\n' + result.stdout[-4000:] + result.stderr[-2000:])
+    audit_binary(result.stdout, binary, ORG)
     labels = {
         p[0]: int(p[1], 16)
         for p in map(str.split, symbols.read_text().splitlines())

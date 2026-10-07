@@ -10,6 +10,7 @@ firmware-global RNG sideband.
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import random
 import struct
 import subprocess
@@ -37,8 +38,12 @@ SCRATCH_DUMP_OFF = SCRATCH - STATE
 ENV1_BASE = 0x2000
 ENV2_BASE = 0x2600
 FRAMES = 16
+BLOCKS = 4
 CASES_PER_MODE = 32
 
+
+from verify_perky_simple_drum_envelope_exec import build_host  # noqa:E402
+from perky_noise_hat_dsp_support import audit_source, audit_binary  # noqa:E402
 
 def fail(message: str) -> None:
     raise SystemExit('verify-perky-noise-hat-classic-synthetic-exec: ' + message)
@@ -131,6 +136,7 @@ def make_voice(mode: int, seed: int):
 
 
 def assemble(mode: int) -> tuple[Path, int]:
+    build_host()
     missing = [p for p in (ASM, HOST) if not p.exists()]
     if missing:
         fail('local DSP toolchain is missing: ' + ', '.join(map(str, missing)))
@@ -165,17 +171,19 @@ def assemble(mode: int) -> tuple[Path, int]:
     source = source.replace('#>$000c51,r1', f'#>${ENV2_BASE:06x},r1')
     source = force_long_local_jsr(relativize_local_conditionals(source))
 
+    audit_source(source)
     asm = OUT / f'mode{mode}.asm'
     binary = OUT / f'mode{mode}.bin'
     symbols = OUT / f'mode{mode}.sym'
     asm.write_text(source)
     result = subprocess.run(
         [str(ASM), '-in', str(asm), '-org', f'{ORG:x}',
-         '-out', str(binary), '-sym', str(symbols)],
+         '-out', str(binary), '-sym', str(symbols), '-list'],
         capture_output=True, text=True,
     )
     if result.returncode:
         fail(f'mode {mode} assembler failed:\n' + result.stdout[-6000:] + result.stderr[-3000:])
+    audit_binary(result.stdout, binary, ORG)
     labels = {
         p[0]: int(p[1], 16)
         for p in map(str.split, symbols.read_text().splitlines())
@@ -194,7 +202,7 @@ def main() -> None:
     env1, env2, env1_words, env2_words = make_envelopes()
     script = OUT / 'case.script'
     OUT.mkdir(parents=True, exist_ok=True)
-    script.write_text(' '.join(['0'] * 12 + ['-1']) + '\n')
+    script.write_text((' '.join(['0'] * 12 + ['-1']) + '\n') * BLOCKS)
 
     total_samples = 0
     worst = {0: 0, 1: 0}
@@ -206,7 +214,7 @@ def main() -> None:
                 list(voice.words), list(voice.ring), list(voice.hold)
             )
             expected_rng = list(global_rng)
-            want = expected.render(FRAMES, mode, env1, env2, expected_rng)
+            want = expected.render(FRAMES * BLOCKS, mode, env1, env2, expected_rng)
 
             # Host state dump starts at X/Y:$0200. Scratch lives at X:$1400,
             # still inside the 4,805-word dump span, so hold/RNG are observable.
@@ -242,12 +250,15 @@ def main() -> None:
                 fail(f'mode {mode} case {index}: host failed:\n'
                      + result.stdout[-2500:] + result.stderr[-2500:])
 
-            got = list(struct.unpack(f'<{2 * FRAMES}i', pcm.read_bytes()))[::2]
+            stereo = list(struct.unpack(f'<{2 * FRAMES * BLOCKS}i', pcm.read_bytes()))
+            got = stereo[::2]
+            if stereo[1::2] != got:
+                fail(f'mode {mode} case {index}: stereo channels differ')
             if got != want:
                 diffs = [(i, a, b) for i, (a, b) in enumerate(zip(got, want)) if a != b]
                 fail(f'mode {mode} case {index} PCM mismatch: {diffs[:8]}')
 
-            dumped = [int(v, 16) for v in dump.read_text().split()]
+            dumped = [int(v, 16) for v in dump.read_text().splitlines()[-1].split()]
             xdump = dumped[:hats.RING_LEN]
             ydump = dumped[hats.RING_LEN:2 * hats.RING_LEN]
             final_words = [v & 0xffff for v in xdump[:hats.CLASSIC_WORDS]]
@@ -268,9 +279,17 @@ def main() -> None:
                 if [rng0, rng1] != expected_rng:
                     fail(f'mode 1 case {index} RNG mismatch: {[rng0, rng1]} != {expected_rng}')
 
-            worst[mode] = max(worst[mode], int(meter.read_text().strip()))
-            total_samples += FRAMES
+            worst[mode] = max(worst[mode], max(map(int, meter.read_text().split())))
+            total_samples += FRAMES * BLOCKS
 
+    report = dict(pcm_samples=total_samples, continuation_blocks=2 * CASES_PER_MODE * BLOCKS,
+                  state_words=hats.CLASSIC_WORDS, ring_words=hats.RING_LEN,
+                  scratch_words=0x77, max_modeled_cycles=worst,
+                  development_block_allowance=23040,
+                  within_allowance={mode: cycles <= 23040 for mode, cycles in worst.items()},
+                  program_words={mode: (OUT / f'mode{mode}.bin').stat().st_size // 3 for mode in (0, 1)},
+                  hardware_qualified=False, production_integrated=False)
+    (OUT / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     print(
         'Noise Hat classic synthetic DSP: PASS '
         f'({total_samples} exact PCM samples; 121 X words + {hats.RING_LEN} Y-ring words/case; '

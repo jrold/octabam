@@ -9,6 +9,7 @@ firmware-derived fixtures.
 from __future__ import annotations
 
 from pathlib import Path
+import json
 import random
 import struct
 import subprocess
@@ -29,9 +30,14 @@ OUT = ROOT / 'out/perky/noise-hat-pulse-synthetic'
 ASM = ROOT / 'vendor/dsp56300/build/source/dsp_host/dsp_asm'
 HOST = ROOT / 'out/perky/simple-drum-envelope/bd909_host'
 ORG = 0x2800
+FRAMES = 16
+BLOCKS = 4
 ENV1_BASE = 0x09A5
 ENV2_BASE = 0x0C51
 
+
+from verify_perky_simple_drum_envelope_exec import build_host  # noqa:E402
+from perky_noise_hat_dsp_support import audit_source, audit_binary  # noqa:E402
 
 def fail(message: str) -> None:
     raise SystemExit('verify-perky-noise-hat-pulse-synthetic-exec: ' + message)
@@ -130,6 +136,7 @@ def make_voice(seed: int) -> hats.NoiseHatPulseStack:
 
 
 def assemble() -> tuple[Path, int]:
+    build_host()
     missing = [p for p in (ASM, HOST) if not p.exists()]
     if missing:
         fail('run the existing PERKY setup/build gates first; missing '
@@ -159,17 +166,19 @@ def assemble() -> tuple[Path, int]:
     source += math_helpers
     source = force_long_local_jsr(relativize_local_conditionals(source))
 
+    audit_source(source)
     asm = OUT / 'candidate.asm'
     binary = OUT / 'candidate.bin'
     symbols = OUT / 'candidate.sym'
     asm.write_text(source)
     result = subprocess.run(
         [str(ASM), '-in', str(asm), '-org', f'{ORG:x}',
-         '-out', str(binary), '-sym', str(symbols)],
+         '-out', str(binary), '-sym', str(symbols), '-list'],
         capture_output=True, text=True,
     )
     if result.returncode:
         fail('assembler failed:\n' + result.stdout[-5000:] + result.stderr[-2500:])
+    audit_binary(result.stdout, binary, ORG)
     labels = {
         p[0]: int(p[1], 16)
         for p in map(str.split, symbols.read_text().splitlines())
@@ -184,7 +193,7 @@ def main() -> None:
     binary, entry = assemble()
     env1, env2, env1_words, env2_words = make_envelopes()
     script = OUT / 'case.script'
-    script.write_text(' '.join(['0'] * 12 + ['-1']) + '\n')
+    script.write_text((' '.join(['0'] * 12 + ['-1']) + '\n') * BLOCKS)
 
     meters = []
     shape_counts = [0, 0, 0]
@@ -199,7 +208,7 @@ def main() -> None:
             lcg_wrap_cases += 1
 
         expected = hats.NoiseHatPulseStack(list(before))
-        want = expected.render(16, env1, env2)
+        want = expected.render(FRAMES * BLOCKS, env1, env2)
 
         data = OUT / 'case.data'
         data.write_text(
@@ -224,7 +233,10 @@ def main() -> None:
                 + result.stdout[-2500:] + result.stderr[-2500:]
             )
 
-        got = list(struct.unpack('<32i', pcm.read_bytes()))[::2]
+        stereo = list(struct.unpack(f'<{FRAMES * BLOCKS * 2}i', pcm.read_bytes()))
+        got = stereo[::2]
+        if stereo[1::2] != got:
+            fail(f'case {index}: stereo channels differ')
         if got != want:
             diffs = [
                 (i, actual, expected_sample)
@@ -235,7 +247,7 @@ def main() -> None:
 
         final = [
             int(x, 16) & 0xffff
-            for x in dump.read_text().split()[:hats.PULSE_STACK_WORDS]
+            for x in dump.read_text().splitlines()[-1].split()[:hats.PULSE_STACK_WORDS]
         ]
         if final != expected.words:
             diffs = [
@@ -244,15 +256,21 @@ def main() -> None:
                 if actual != expected_word
             ]
             fail(f'case {index} state mismatch: {diffs[:12]}')
-        meters.append(int(meter.read_text().strip()))
+        meters.append(max(map(int, meter.read_text().split())))
 
     if min(shape_counts) == 0:
         fail(f'not all envelope shapes were exercised: {shape_counts}')
     if lcg_wrap_cases == 0:
         fail('test corpus never exercised a local-LCG phase wrap')
 
+    report = dict(pcm_samples=96 * FRAMES * BLOCKS, continuation_blocks=96 * BLOCKS,
+                  state_words=hats.PULSE_STACK_WORDS, scratch_words=0x64,
+                  max_modeled_cycles=max(meters), program_words=binary.stat().st_size // 3,
+                  development_block_allowance=23040, within_allowance=max(meters) <= 23040,
+                  hardware_qualified=False, production_integrated=False)
+    (OUT / 'report.json').write_text(json.dumps(report, indent=2) + '\n')
     print(
-        f'Noise Hat Pulse Stack synthetic DSP: PASS (96 cases / 1536 samples; '
+        f'Noise Hat Pulse Stack synthetic DSP: PASS (96 cases / {96 * FRAMES * BLOCKS} samples; '
         f'59 words; shapes={shape_counts}; LCG-wrap cases={lcg_wrap_cases}; '
         f'{binary.stat().st_size // 3} P words; worst {max(meters)} modeled cycles)'
     )

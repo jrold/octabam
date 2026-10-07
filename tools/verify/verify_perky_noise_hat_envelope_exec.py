@@ -29,6 +29,9 @@ from build_noise_tone_synth_source import (  # noqa:E402
 )
 
 
+from verify_perky_simple_drum_envelope_exec import build_host  # noqa:E402
+from perky_noise_hat_dsp_support import audit_source, audit_binary  # noqa:E402
+
 def fail(message: str) -> None:
     raise SystemExit('verify-perky-noise-hat-envelope-exec: ' + message)
 
@@ -54,13 +57,14 @@ def oracle(before: list[int], env1: bytes, env2: bytes):
 
 
 def assemble() -> tuple[Path, int]:
+    build_host()
     missing = [p for p in (ASM, HOST) if not p.exists()]
     if missing:
         fail('run the existing PERKY setup/build gates first; missing '
              + ', '.join(map(str, missing)))
     OUT.mkdir(parents=True, exist_ok=True)
     source = (
-        'pk_noise_hat_envelope_probe:\n'
+        'pk_noise_hat_env_probe:\n'
         f' move #>${STATE_BASE + ENV_BASE:x},r6\n'
         f' move #>${STATE_BASE:x},r5\n'
         ' jsr pk_noise_hat_envelope\n'
@@ -69,25 +73,27 @@ def assemble() -> tuple[Path, int]:
         + (PERKY / 'noise_hat_envelope.asm').read_text()
     )
     source = force_long_local_jsr(relativize_local_conditionals(source))
+    audit_source(source)
     asm = OUT / 'candidate.asm'
     binary = OUT / 'candidate.bin'
     symbols = OUT / 'candidate.sym'
     asm.write_text(source)
     result = subprocess.run(
         [str(ASM), '-in', str(asm), '-org', f'{ORG:x}',
-         '-out', str(binary), '-sym', str(symbols)],
+         '-out', str(binary), '-sym', str(symbols), '-list'],
         capture_output=True, text=True,
     )
     if result.returncode:
         fail('assembler failed:\n' + result.stdout[-4000:] + result.stderr[-2000:])
+    audit_binary(result.stdout, binary, ORG)
     labels = {
         parts[0]: int(parts[1], 16)
         for parts in map(str.split, symbols.read_text().splitlines())
         if len(parts) == 2
     }
-    if 'pk_noise_hat_envelope_probe' not in labels:
+    if 'pk_noise_hat_env_probe' not in labels:
         fail('assembler emitted no envelope probe symbol')
-    return binary, labels['pk_noise_hat_envelope_probe']
+    return binary, labels['pk_noise_hat_env_probe']
 
 
 def run(binary: Path, entry: int, tag: str, before: list[int],

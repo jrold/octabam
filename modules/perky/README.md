@@ -5,8 +5,9 @@ port of the twelve PerkyBits / PĒRKONS HD-01 engine families.
 
 **Status:** PERKY2 synthetic Noise/Tone audio works on the user's Octatrack
 (user confirmation, 6 Oct 2026). The native renderer, boot, timing and full
-sequencer gates pass. Authentic tables/control conversion and the other eleven
-families remain to be ported and qualified. Current timing-qualified layout:
+sequencer gates pass. PERKY4 locally integrates Fold Drum 1 and Simple Drum; Noise Hat now has exact
+DSP candidate gates. All-family production integration, timing, physical memory
+placement and hardware qualification remain incomplete. Current timing-qualified layout:
 one PERKY per DSP core (T1–T4 / T5–T8), FX1/FX2 NONE on all tracks.
 
 The tracked `manifest.py` is an impulse probe. The full audible machine is
@@ -14,9 +15,8 @@ composed by `tools/perky/build_machine_canary.py`; use the full builder to test
 shipping behavior. See [HANDOFF.md](HANDOFF.md) for verified evidence, local
 paths, build steps, known limits, and continuation toward all twelve families.
 
-The first target is **Noise / Tone** (voice 4, panel algorithm 1). The goal of
-milestone 1 is not to land all twelve engines at once; it is to prove one
-complete source-machine path:
+The first milestone targeted **Noise / Tone** (voice 4, panel algorithm 2).
+It established the initial source-machine path:
 
 1. a `PERKY` row in the stock machine chooser;
 2. per-track signature and Part persistence without consuming a sample slot;
@@ -38,3 +38,8 @@ blobs belong in this repository. Reference fixtures must be generated from the
 user's own inputs at development/test time.
 
 See [PORT.md](PORT.md) for the implementation plan and engine map.
+
+Noise Hat's three candidate DSP modes now have original ARM PCM/state execution
+gates. See [NOISE_HAT.md](NOISE_HAT.md) for measured resources and the outstanding
+classic timing and production-integration gates. Family 010 remains unavailable
+in production images.

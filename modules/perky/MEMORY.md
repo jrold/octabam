@@ -1,3 +1,14 @@
+# Noise Hat candidate memory checkpoint — 7 October 2026
+
+The executable Noise Hat candidates use 121 hot X words + a 4,805-word external
+Y ring for classic modes, or 59 X words for Pulse Stack. Classic's scratch span
+is 119 words including its 2 hold + 4 RNG sideband limbs; Pulse Stack uses 100.
+These are measured test-ABI footprints, not production allocations. Standalone
+probe P sizes are 1,147 / 1,180 / 1,047 words for panel M1/M2/M3, including
+shared helpers. See [NOISE_HAT.md](NOISE_HAT.md) for executable evidence and
+cycle blockers. The common physical ledger and stock-FX reclamation remain open;
+this checkpoint does not expand the existing PERKY4 memory claims.
+
 # Current PERKY4 memory checkpoint
 
 Locally linked and boot-readback verified: 2,680 P words of 2,724; 359 private X words of 616; 1,946 private Y words of 2,139. See [HANDOFF.md](HANDOFF.md) for actual ranges, provenance and qualification limits. Simple Drum uses a shared 17-word control-rate pitch cache, three direct packed waves and direct amplitude-envelope samples. Noise/Tone retains its reachable shape-1 analytic lookup and original synthetic waves. Fold Drum 1 is locally integrated. The user authorized fewer stock effects to fit all twelve voices. Large delay/sample families still need explicit stock-memory claims and executed resource gates.
