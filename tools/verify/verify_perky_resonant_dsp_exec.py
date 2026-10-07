@@ -88,6 +88,16 @@ def synthetic(family, index):
         c.set_u32(w, base + c.DECAY_COUNT, r.choice((0, 1, 2, 0xFFFFFFFF)))
         c.set_u32(w, base + c.DECAY_SIGN, r.choice((0, 0x80000000, 0xFFFFFFFF, 32767)))
         c.set_u32(w, base + c.DECAY_MIN, r.randint(-65536, 65536))
+    if index >= 32:
+        # Exercise both sides of every bounded-path guard, including negative
+        # sign extension, unsigned low32 products, countdown zero/negative,
+        # and wide fallback values. These are not a production control domain.
+        for base in decays:
+            c.set_u32(w, base + c.DECAY_MUL, r.choice((0, 1, 4095, 0x7FFFFF, 0x800000, r.randrange(1 << 24))))
+            c.set_u32(w, base + c.DECAY_VALUE, r.choice((0, 1, 0xFFFF, 0x7FFFFF, 0x800000, r.randrange(1 << 24))))
+            c.set_u32(w, base + c.DECAY_SIGN, r.choice((0, -1, 32767, 65535, 0x3FFFFF, -0x400000, 0x400000, -0x400001, 0x80000000)))
+            c.set_u32(w, base + c.DECAY_COUNT, r.choice((0, 1, 2, 65535, 0xFFFFFFFF, 0xFFFF1234, 0xFFFEFFFF)))
+            c.set_u32(w, base + c.DECAY_MIN, r.choice((0, 65535, -1, r.randrange(65536))))
     if family == 'bass':
         w[bass.PITCH] = r.randrange(65536)
         c.set_u32(w, bass.RESONATOR_STATE, r.getrandbits(32))
@@ -115,7 +125,7 @@ def main():
         text, scratch = recipe.source(family)
         binary, entry = assemble(lambda: text, 'resonant_' + family, out)
         cases = []
-        for index in range(32):
+        for index in range(256):
             voice, rng = synthetic(family, index)
             _, worst = run(binary, entry, voice, rng, synthetic_tables, 4, f'{family} synthetic {index}', scratch, out)
             cases.append({'case': f'synthetic {index}', 'blocks': 4, 'worst_cycles': worst})

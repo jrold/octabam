@@ -30,7 +30,7 @@ a measurement of that corpus, **not a worst-case bound**.
 | Fold Drum 2 | 15 ARM + 400 native randomized blocks; PCM/state/RNG, both deferred wave identities | 1,410 | 33,045 | 394,377 per **256** samples; no per-16 ceiling inferred |
 | Wavetable Drum V2 | Same shared renderer/storage gate as V1 | 871 including two probes | 19,861 | 19,773 |
 | Complex Drum | 288 consecutive DSP blocks from 18 ARM captures; PCM/42-word state | 833 | 33,007 | 33,007 |
-| Resonant Drums | Snare/bass: 176 blocks each, PCM/state/RNG; M3 shared Noise/Tone gate | 3,910 / 3,286 / 1,471 | 81,168 / 66,439 / 40,738 | 62,429 / 55,080 / 22,813 |
+| Resonant Drums | Snare/bass: 1,072 blocks each, PCM/state/RNG; M3 shared Noise/Tone gate | 2,338 / 2,456 / 1,471 | 82,263 / 76,319 / 40,738 | 39,475 / 36,520 / 22,813 |
 | Slap | 336 blocks; PCM/state/every ring word/RNG after each block | 1,057 | 30,326 | 20,420 |
 | Karplus | 528 blocks; PCM/state/every ring word/RNG after each block | 1,068 | 33,526 | 16,312 |
 | Noise Hat | All three modes against original ARM, full ring/hold/RNG | 1,147 / 1,180 / 1,047 | 31,811 / 35,445 / 22,058 | 20,128 / 32,092 / 18,063 |
@@ -113,8 +113,9 @@ The preserved production PERKY2 sources are unchanged.
 ## Remaining production work
 
 1. Establish reachable control-state timing bounds and reduce over-budget
-   paths. Resonant and Acoustic code also exceed the current 2,724-word donor
-   program region before a multi-engine composition is attempted.
+   paths. Resonant standalone code now fits the current 2,724-word donor
+   region after sharing its cores; Acoustic still exceeds it. A complete
+   multi-engine composition remains unqualified.
 2. Allocate persistent state, scratch, rings, shared code and all assets in one
    physical P/X/Y ledger. The 4,805-word Slap/classic-hat rings and 2,048-word
    Karplus ring need actual stock-FX reclamation and initialization changes.
@@ -175,3 +176,28 @@ python3 tools/verify/verify_perky_wavetable_storage_exec.py --codec second-diffe
 
 These are explicit external-reference gates, not synthetic module gates. The
 second command verifies parity and reports timing; PASS does not mean realtime.
+
+## Resonant size/runtime continuation
+
+The exact decay and resonator bodies are now shared by every oscillator in a
+family. Guarded native DSP paths handle bounded values, with the original
+full32 two-limb path retained for every value outside those bounds. Both
+paths pass 1,072 consecutive blocks per family, including 256 synthetic
+initial states with boundary/fallback cases and all six original snare/bass
+mode/corner captures. PCM, every live word and RNG match after each block.
+
+Snare now occupies **2,338 P words / 176 scratch**, bass **2,456 P / 180
+scratch**; both standalone candidates fit the existing donor region. Largest
+original blocks fell from 62,429 / 55,080 to **39,475 / 36,520 modeled cycles**.
+That is still above the 23,040 development source allowance. Wider synthetic
+states reach 82,263 / 76,319 cycles; the fast path is not used to invent a
+reachable-state bound or relax admission.
+
+The resonator guard proves signed22 drive, signed16 position/velocity and
+unsigned16 cached coefficients/modulation. Modulated coefficients still fit
+signed24; every product explicitly wraps low32 before its signed shift. The
+decay guard proves positive signed24 multiplier/value, signed22 sign, unsigned16
+minimum and a representable countdown category. Its unsigned low32 product
+shift is normalized after masking, so stale accumulator extension/fractional
+bits cannot alter the next comparison. No original state, control law or
+rounding behavior is changed by these shortcuts.

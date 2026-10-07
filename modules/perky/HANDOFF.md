@@ -22,6 +22,9 @@ Current floor: `make check REMIX=perky-machine OT_PROJECT=` passed all runnable
 checks, including 65 shared module gates and 2 image gates; project-dependent
 checks skipped because no `OT_PROJECT` was supplied. This does not replace the
 production full-image/sequencer gates or qualify a new updater.
+Resonant shared cores now fit the donor region (2,456 bass / 2,338 snare P);
+1,072 blocks per family pass. Original block costs are 36,520 / 39,475 cycles,
+still above the source allowance. The full32 fallback remains exact.
 The following Noise Hat and PERKY4 entries are historical checkpoints; their
 integration evidence still applies, but their missing-renderer lists are
 superseded by the all-family ledger above.

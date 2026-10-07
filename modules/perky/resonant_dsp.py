@@ -1,7 +1,8 @@
 """Exact DSP source recipes for the v1.2.1 resonant bass/snare renderers.
 
-Each arithmetic operation preserves the ARM low32 result. The initial recipe
-uses the proven two-limb multiply kernel; timing qualification is independent.
+Each arithmetic operation preserves the ARM low32 result. Shared resonator/
+decay cores use guarded native-width paths with exact two-limb fallbacks;
+timing qualification is independent.
 No table bytes are embedded. Interpolation tables are direct u16 Y words.
 """
 from dsp_source_layout import center_scratch
@@ -11,15 +12,26 @@ from dsp_u32 import Emitter
 import resonator_compact as c
 import resonant_bass_compact as bass
 import resonant_snare_compact as snare
+import resonant_fast_dsp
 
 PERKY = Path(__file__).resolve().parent
 INTERP_A, INTERP_B = 0x3000, 0x3200
 
 
-
 def decay(e, base, output, *, sign_flip=True, constant=0):
-    s = lambda off: e.state(base + off)
+    e.emit(f'move #>${int(sign_flip):x},a', 'move a1,x:(r5+$76)',
+           f'move #>${constant:x},a', 'move a1,x:(r5+$77)',
+           'move r6,a', f'add #>${base:x},a', 'move a1,r6',
+           'jsr pk_resonant_decay', 'move x:(r5+$7e),r6')
+    e.assign(output, e.var('d_value'))
+
+
+def decay_core(e):
+    s = lambda off: e.state(off)
     value, count, sign, absolute = (e.var('d_' + name) for name in ('value', 'count', 'sign', 'abs'))
+    slow = e.label()
+    resonant_fast_dsp.decay(e, value, slow)
+    e.mark(slow)
     e.mul(value, s(c.DECAY_MUL), s(c.DECAY_VALUE))
     e.shift(value, value, 12, signed=False)
     minimum_ok = e.label()
@@ -38,27 +50,35 @@ def decay(e, base, output, *, sign_flip=True, constant=0):
     e.add(value, value, absolute)
     e.assign(s(c.DECAY_VALUE), value)
     e.mark(count_done)
-    if sign_flip:
-        positive = e.label()
-        e.compare(sign, 0, 'bge', positive)
-        e.sub(value, 0, value)
-        e.mark(positive)
-    if constant:
-        no_constant = e.label()
-        e.compare(count, 0, 'beq', no_constant)
-        e.add(value, value, constant)
-        e.mark(no_constant)
-    e.assign(output, value)
+    positive = e.label()
+    e.compare(('r5', 0x76, 16), 0, 'beq', positive)
+    e.compare(sign, 0, 'bge', positive)
+    e.sub(value, 0, value)
+    e.mark(positive)
+    no_constant = e.label()
+    e.compare(count, 0, 'beq', no_constant)
+    e.add(value, value, ('r5', 0x77, 16))
+    e.mark(no_constant)
 
 
 def resonator(e, base, input_value):
-    s = lambda off, width=32: e.state(base + off, width)
+    e.assign(e.var('r_input'), input_value)
+    e.emit('move r6,a', f'add #>${base:x},a', 'move a1,r6',
+           'jsr pk_resonant_core', 'move x:(r5+$7e),r6')
+    return e.state(base + c.RES_VELOCITY)
+
+
+def resonator_core(e, input_value):
+    s = lambda off, width=32: e.state(off, width)
     clean = e.label()
     e.compare(s(c.RES_DIRTY, 16), 0, 'beq', clean)
     e.interpolation(s(c.RES_COEFF_B), s(c.RES_PITCH_A, 16), INTERP_A)
     e.interpolation(s(c.RES_COEFF_A), s(c.RES_PITCH_B, 16), INTERP_B)
     e.assign(s(c.RES_DIRTY, 16), 0)
     e.mark(clean)
+    slow = e.label()
+    resonant_fast_dsp.emit(e, input_value, slow)
+    e.mark(slow)
     ca, cb, pos, vel, mod, scale, temp, filtered = (e.var('r_' + name) for name in
         ('ca', 'cb', 'pos', 'vel', 'mod', 'scale', 'temp', 'filtered'))
     e.assign(ca, s(c.RES_COEFF_A))
@@ -194,6 +214,12 @@ def source(family):
     e.emit('asl #$10,a,a', 'move a1,x:(r0)+', 'move a1,x:(r0)+')
     e.mark('pkr_samples_done')
     e.emit('nop', 'rts')
+    e.lines.append('pk_resonant_decay:')
+    decay_core(e)
+    e.emit('rts')
+    e.lines.append('pk_resonant_core:')
+    resonator_core(e, e.var('r_input'))
+    e.emit('rts')
     noise = '\npk_resonant_noise:' + (PERKY / 'slap_voice.asm').read_text().split('\npk_slap_noise:', 1)[1]
     noise = noise.replace('pkslv_noise_refresh', 'pkr_noise_refresh')
     fields = {'d': 'c', 'e': 'd', 'f': 'e'}
