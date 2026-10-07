@@ -3,9 +3,15 @@
 
 Requires OT_PROJECT and PERKY_HW4_IMAGE. Runs all four admitted tracks in one
 sequencer session and proves transport engine identity plus nontrivial stereo
-post-chain audio. This is an emulator/full-image gate, not a physical-hardware
-or sonic-parity claim; isolated native/ARM gates remain authoritative for each
-engine's exact renderer/trigger behavior.
+post-chain audio. T2/Karplus is deliberately configured with non-default
+TUNE/DECAY/EDGE/TWANG/MODE values and its production PK/Y1 record must contain
+the exact full-width prepared-control payload emitted by the real ColdFire
+writer. This closes the gap between isolated DSP control tests and the actual
+Octatrack Part/SRC-page path.
+
+This remains an emulator/full-image gate, not a physical-hardware sonic-parity
+claim; isolated native/ARM gates remain authoritative for exact original engine
+renderer/trigger/update arithmetic.
 """
 from pathlib import Path
 import os
@@ -26,10 +32,26 @@ OUT = ROOT / 'out/perky/hw4-port'
 FIXED = {0: 0, 1: 8, 4: 3, 5: 10}   # zero-based OT track -> engine id
 BLOCKED = tuple(track for track in range(8) if track not in FIXED)
 FRAMES = 32000
+KARPLUS_TRACK = 1
+KARPLUS_PANEL = (40, 96, 100, 88, 2)  # TUNE/DECAY/EDGE/TWANG/MODE
 
 
 def fail(message):
     raise AssertionError('PERKY HW4 port: ' + message)
+
+
+def prepared(raw):
+    raw &= 0x7f
+    return 4095 if raw == 127 else raw << 5
+
+
+def expected_karplus_payload():
+    payload = []
+    for raw in KARPLUS_PANEL[:4]:
+        value = prepared(raw)
+        payload.extend(((value >> 8) & 0xff, value & 0xff))
+    payload.extend((KARPLUS_PANEL[4], 0, 0, 8))
+    return tuple(payload)
 
 
 def record_addresses(track):
@@ -53,6 +75,11 @@ def configure(project):
                     params = [64, 64, 64, 64, 0, 0, 0, 0, 0, 0, 0, 0]
                     if track in FIXED:
                         params[11] = FIXED[track]
+                    if track == KARPLUS_TRACK:
+                        # MODE is main-page slot 4. These non-default values are
+                        # intentionally chosen so the captured production record
+                        # cannot accidentally match the old raw-byte/frozen path.
+                        params[0:5] = list(KARPLUS_PANEL)
                     for slot, value in enumerate(params):
                         off = (0x2a if slot < 6 else 0x1da) + 30 * track + 6 + slot % 6
                         data[base + off] = value
@@ -133,6 +160,19 @@ def verify(log_path, dump):
         if observed != [engine]:
             fail(f'T{track+1}: expected only engine {engine}, observed {observed}')
 
+        if track == KARPLUS_TRACK:
+            expected = expected_karplus_payload()
+            payloads = sorted({tuple(row[8:20]) for row in records if len(row) >= 20})
+            if payloads != [expected]:
+                fail(
+                    f'T2/Karplus prepared PK/Y1 payload {payloads!r}, '
+                    f'expected exactly {expected!r} from panel {KARPLUS_PANEL!r}'
+                )
+            print(
+                'PASS T2 Karplus transport: panel '
+                f'{KARPLUS_PANEL} -> prepared PK/Y1 {expected}'
+            )
+
         left = rl.readback_audio(classes, track + 1)
         right = rl.readback_audio(classes, track + 1, True)
         if not left or not right:
@@ -160,8 +200,8 @@ def verify(log_path, dump):
 
     print(
         'PERKY HW4 full-image port: PASS '
-        '(T1 Fold1, T2 Karplus, T5 Fold2, T6 Noise/Tone simultaneously; '
-        'two voices/core; T3/T4/T7/T8 not PERKY)'
+        '(T1 Fold1, T2 live-control Karplus, T5 Fold2, T6 Noise/Tone simultaneously; '
+        'T2 exact prepared record verified; two voices/core; T3/T4/T7/T8 not PERKY)'
     )
 
 
