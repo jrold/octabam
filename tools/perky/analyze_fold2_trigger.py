@@ -125,9 +125,13 @@ def main() -> None:
         unique = list(dict.fromkeys(missing))
         print("Fold Drum 2 trigger analysis needs regenerated engine fixtures.",
               file=sys.stderr)
-        print("Missing the new pre-trigger snapshots; regenerate with:",
+        print("The capture tool requires the same external firmware, PerkyBits",
               file=sys.stderr)
-        print("  python3 tools/perky/capture_engine_fixtures.py", file=sys.stderr)
+        print("source tree and Unicorn build arguments used for the existing",
+              file=sys.stderr)
+        print("local corpus. Re-run tools/perky/capture_engine_fixtures.py with",
+              file=sys.stderr)
+        print("those arguments, then run this analyzer again.", file=sys.stderr)
         print(f"First missing file: {unique[0]}", file=sys.stderr)
         raise SystemExit(2)
 
