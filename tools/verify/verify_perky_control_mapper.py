@@ -5,7 +5,7 @@ This gate deliberately does NOT bless the mapping as PĒRKONS-equivalent.  It
 only proves that the development full-machine path consumes the five published
 Octatrack controls, writes them into owned compact-voice fields, uses three
 real MODE wave pairs, and keeps the machine descriptor's MODE UI a proper
-three-position select.
+three-position select on the main SRC page.
 """
 from __future__ import annotations
 
@@ -49,8 +49,8 @@ def main() -> None:
     need(GEN, "force_long_local_jsr", "synth source generator")
     need(GEN, "jsrl", "synth source generator")
 
-    # Transport word -> published control. These are DSP words 8..19 created
-    # from the twelve bytes pk_render() packs into record[4..9].
+    # Transport word -> published control. MODE intentionally stays in the
+    # established PK/Y1 word 14; ColdFire now mirrors main-page slot 4 there.
     for token, name in (
         ("move    x:(r4+$8),a", "TUNE"),
         ("move    x:(r4+$9),b", "DECAY"),
@@ -110,22 +110,24 @@ def main() -> None:
             if f"x:(r6+${field})" not in chunk:
                 fail(f"MODE {mode} does not write compact wave field ${field}")
 
-    # Panel contract: five enabled controls only; MODE is count 3 and uses a
-    # stock stepped formatter + genuine 3-position widget.
+    # Panel contract: five enabled controls only. MODE must be main-page slot 4,
+    # p-lock/LFO published there, then mirrored to legacy transport slot 6.
     for token in (
-        "#define MODE_FORMATTER 0x4003c718u",
-        "#define MODE_WIDGET 0x40047424u",
-        "put32(desc + 0xd2 + 4u * i, 3);",
-        "put32(desc + 0x102 + 4u * i, i == 6u ? MODE_FORMATTER : 0);",
-        "put32(desc + 0x132 + 4u * i, i == 6u ? MODE_WIDGET : 0);",
+        "#define MODE_SLOT 4u",
+        '"TUNE", "DECAY", "ENV", "MIX", "MODE", "---"',
+        "else if (i == MODE_SLOT)",
+        "i == MODE_SLOT ? MODE_FORMATTER : 0",
+        "i == MODE_SLOT ? MODE_WIDGET : 0",
         "put32(desc + 0x1c2, 0x00000000u);",
-        "put32(desc + 0x1c6, 0x01001111u);",
+        "put32(desc + 0x1c6, 0x00011111u);",
+        "p[6] = p[MODE_SLOT];",
     ):
-        need(CONTROL, token, "PERKY descriptor")
+        need(CONTROL, token, "PERKY descriptor/transport")
 
     print(
         "PERKY synthetic five-control mapper: PASS "
-        "(TUNE/DECAY/ENV/MIX/MODE consumed; corrected compact-state offsets pinned; "
+        "(TUNE/DECAY/ENV/MIX/MODE consumed; MODE on main SRC slot 4 and mirrored "
+        "to stable DSP transport; corrected compact-state offsets pinned; "
         "3 distinct MODE wave pairs; descriptor exposes exactly five controls)"
     )
 
