@@ -44,11 +44,9 @@ int main(int argc,char**argv){
   auto dir=out/tag.str();std::filesystem::create_directories(dir);
   std::vector<std::uint8_t> ram(0x6000);
   auto address=wrappers[static_cast<unsigned>(e.slot)];
-  // Capture the exact original-firmware control state before trigger. The
-  // existing wrapper-window-before snapshot is after trigger + v1.2.1's
-  // mandatory post-trigger update. Their delta is therefore an executable
-  // trigger/retrigger oracle for every family, including hidden oscillator,
-  // envelope, delay and crossfade resets that are easy to miss by inspection.
+  // Capture the exact original-firmware control state before the first trigger.
+  // wrapper-window-before remains the historical post-trigger + v1.2.1
+  // mandatory post-trigger update snapshot used by the existing DSP corpus.
   if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 5;}
   save(dir/"wrapper-window-pre-trigger.bin",ram.data(),ram.size());
   if(!v.trigger(e.slot,error)){std::cerr<<error;return 6;}
@@ -72,7 +70,29 @@ int main(int argc,char**argv){
   if(i==noiseHatIndex)saveNoiseHatHold(cpu,dir/"noise-hat-hold-continuation-after.bin",error);
   if(i==11)saveAcousticHold(cpu,dir/"acoustic-hold-continuation-after.bin",error);
   saveRng(cpu,dir/"rng-continuation-after.bin",error);
+
+  // Exercise a real active retrigger after 512 rendered samples. This is the
+  // important oracle for engines whose trigger law depends on currently
+  // sounding state (Fold Drum 2's dual oscillators/crossfade in particular).
+  // It is appended after the historical captures so none of the existing
+  // first-trigger or continuation files change meaning.
+  if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 12;}
+  save(dir/"wrapper-window-retrigger-pre.bin",ram.data(),ram.size());
+  if(!v.trigger(e.slot,error)){std::cerr<<error;return 13;}
+  if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 14;}
+  save(dir/"wrapper-window-retrigger-before.bin",ram.data(),ram.size());
+  if(i==noiseHatIndex)saveNoiseHatHold(cpu,dir/"noise-hat-hold-retrigger-before.bin",error);
+  if(i==11)saveAcousticHold(cpu,dir/"acoustic-hold-retrigger-before.bin",error);
+  saveRng(cpu,dir/"rng-retrigger-before.bin",error);
+  if(!v.renderInto(e.slot,pcm,256,error)){std::cerr<<error;return 15;}
+  save(dir/"arm-pcm-retrigger.bin",pcm,sizeof(pcm));
+  if(!cpu.readMemory(address,ram.data(),ram.size(),error)){std::cerr<<error;return 16;}
+  save(dir/"wrapper-window-retrigger-after.bin",ram.data(),ram.size());
+  if(i==noiseHatIndex)saveNoiseHatHold(cpu,dir/"noise-hat-hold-retrigger-after.bin",error);
+  if(i==11)saveAcousticHold(cpu,dir/"acoustic-hold-retrigger-after.bin",error);
+  saveRng(cpu,dir/"rng-retrigger-after.bin",error);
+
   meta<<i+1<<'\t'<<mode+1<<'\t'<<corner<<'\t'<<e.name<<'\t'<<std::hex<<address<<std::dec<<'\t';for(auto x:corners[corner])meta<<x<<',';meta<<'\n';
  }
- std::cout<<"Original ARM family captures: PASS (12 families x 3 panel modes x 3 control corners; pre-trigger, triggered pre/post RAM windows and 256 PCM samples)\n";
+ std::cout<<"Original ARM family captures: PASS (12 families x 3 panel modes x 3 control corners; first-trigger, continuation and active-retrigger RAM/PCM evidence)\n";
 }
