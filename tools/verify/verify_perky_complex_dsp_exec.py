@@ -21,7 +21,14 @@ def assemble():
     source += (ROOT / 'modules/perky/complex_drum_voice.asm').read_text()
     for name, label in (('envelope', 'pk_simple_envelope'), ('frequency', 'pk_simple_frequency'), ('oscillator', 'pk_simple_oscillator')):
         text = (ROOT / f'modules/perky/simple_drum_{name}.asm').read_text()
-        source += text[text.index('\n' + label + ':'):]
+        text = text[text.index('\n' + label + ':'):]
+        if name == 'envelope':
+            # Four packed 256-sample Complex waves occupy Y:$07a5..$0a4f.
+            # Simple's envelope base at $09a5 would overwrite the fourth wave,
+            # exactly where MODE 2 deferred-switch cases diverged. Relocate the
+            # Complex candidate's envelope bank to the first free word, $0a50.
+            text = text.replace('#>$0009a5,r1', '#>$000a50,r1')
+        source += text
     source += (ROOT / 'modules/perky/simple_drum_delta.asm').read_text()
     asm = OUT / 'candidate.asm'; asm.write_text(force_long_local_jsr(relativize_local_conditionals(source)))
     binary = OUT / 'candidate.bin'; symbols = OUT / 'candidate.sym'
@@ -41,7 +48,7 @@ def data_file(path, state):
     path.write_text(
         'X 200 ' + ' '.join(f'{x:06x}' for x in state + [0] * 30) + '\n'
         + 'Y 7a5 ' + ' '.join(f'{x:06x}' for x in wave_words) + '\n'
-        + 'Y 9a5 ' + ' '.join(f'{x:06x}' for x in env) + '\n'
+        + 'Y a50 ' + ' '.join(f'{x:06x}' for x in env) + '\n'
         + 'Y efb ' + ' '.join(f'{x:06x}' for x in pitch) + '\n'
         + 'X 3964 ffffff\n')
 
