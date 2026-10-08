@@ -68,7 +68,9 @@ const uint8_t pk_defaults[12] = {
 static pk4_engine pk_final_engine;
 static uint32_t pk_final_bank;
 static uint8_t pk_final_part;
-static uint8_t pk_final_engine_ready;
+#define PK_FINAL_RUNTIME_COLD 0x504b434fu
+#define PK_FINAL_RUNTIME_READY 0x504b5244u
+static uint32_t pk_final_runtime_cookie = PK_FINAL_RUNTIME_COLD;
 
 static const pk4_assets pk_final_assets = {
     .pitch = pk_asset_pitch,
@@ -100,11 +102,12 @@ static void pk_final_reset_runtime_if_needed(void)
 {
     const uint32_t bank = U32(BANK);
     const uint8_t part = U8(PART_IDX) & 3u;
-    if (!pk_final_engine_ready || pk_final_bank != bank || pk_final_part != part) {
+    if (pk_final_runtime_cookie != PK_FINAL_RUNTIME_READY
+        || pk_final_bank != bank || pk_final_part != part) {
         pk4_init(&pk_final_engine, &pk_final_assets);
         pk_final_bank = bank;
         pk_final_part = part;
-        pk_final_engine_ready = 1u;
+        pk_final_runtime_cookie = PK_FINAL_RUNTIME_READY;
     }
 }
 
