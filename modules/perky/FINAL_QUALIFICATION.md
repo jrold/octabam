@@ -111,13 +111,14 @@ rate with mono duplicated to L/R.
 
 Result: **PASS**.
 
-### Shipping `pk_render()` integration
+### Shipping `pk_render()` integration — four simultaneous voices
 
 `tools/verify/verify_perky_cf_production_render.py` executes the actual shipping
 `control_cf_final.c` callback against a fixed-address Octatrack memory fixture,
 using the same hash-verified v1.2.1 assets as the production renderer.
 
-Result: **PASS — 4,096 events / 65,536 samples**.
+Result: **PASS — 1,024 simultaneous four-voice frames / 4,096 voice events /
+65,536 samples**.
 
 Coverage:
 
@@ -129,13 +130,15 @@ Coverage:
 | Voice 4 | 4,096 | 4,096 | 4,096 | 4,096 |
 
 For every voice/Algo pair all 16 possible event split offsets were exercised.
-The gate verifies the real SRC staging address, trigger byte, pre/post split,
-record cursor advancement, exact two-segment stock source-record bytes, and the
-fixed 160-byte total FLEX span for each 16-sample frame.
+Within each simulated Octatrack frame all four Perky tracks render sequentially
+through the same real source cursor. The gate verifies the real SRC staging
+address, trigger byte, pre/post split, exact two-segment stock source-record
+bytes, **160 bytes per voice**, and the exact **640-byte four-voice FLEX frame
+span**.
 
 This closes the integration chain as:
 
-`OT SRC staging -> shipping pk_render() -> event split -> stock FLEX record -> qualified Perky core -> PerkyBits PCM reference`.
+`OT SRC staging -> shipping pk_render() -> four simultaneous source voices -> event split -> stock FLEX records -> qualified Perky core -> PerkyBits PCM reference`.
 
 ## Stock FX qualification
 
