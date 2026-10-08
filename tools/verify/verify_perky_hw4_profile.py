@@ -45,15 +45,13 @@ def main():
     for needle in (
         '#include "control.c"',
         'track == 0u', 'track == 1u', 'track == 4u', 'track == 5u',
-        'if (track == 0u) return 0u;',
-        'if (track == 1u) return 8u;',
-        'if (track == 4u) return 3u;',
-        'if (track == 5u) return 10u;',
-        'p[11] = (uint8_t)pk_hw4_engine(track);',
+        'pk_hw4_src_to_transport(p);',
+        'p[11] == 0u', 'p[11] == 3u', 'p[11] == 8u', 'p[11] == 10u',
+        'MODE and ALGO are first-page source parameters',
     ):
         assert needle in control, needle
+    assert 'pk_hw4_engine' not in control
     assert '#include "control_fold2_candidate.c"' not in control
-    assert 'engine  8 Karplus' in control
 
     builder = BUILDER.read_text()
     for needle in (
@@ -71,8 +69,8 @@ def main():
     print('PERKY HW4 profile: PASS')
     print('  DSP core tracks 1-4: T1=V1, T2=V3')
     print('  DSP core tracks 5-8: T5=V2, T6=V4')
-    print('  audition engines pinned: T1 Fold1, T2 Karplus, T5 Fold2, T6 Noise/Tone')
-    print('  each logical voice retains exactly three hardware-family engine ids for later expansion')
+    print('  four PERKY tracks use per-trig MODE + ALGO from SRC E/F')
+    print('  no engine id is hard-wired by physical track; transport accepts catalog ids 0..11')
 
 
 if __name__ == '__main__':

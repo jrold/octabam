@@ -119,7 +119,7 @@ def main():
         'move    x:(r4+$8),a',   # TUNE
         'move    x:(r4+$a),a',   # DECAY
         'move    x:(r4+$c),a',   # EDGE
-        'move    x:(r4+$e),a',   # TWANG
+       'move    x:(r4+$e),a',   # TWANG
         'move    x:(r4+$10),a',  # MODE
         f'move    #>${memory.KARPLUS_TUNE_DELAY_BASE:06x},r1',
         f'move    #>${memory.KARPLUS_DECAY_RATE_BASE:06x},r1',
@@ -155,22 +155,25 @@ def main():
         assert save in source, f'Karplus shadow save missing {compact_word:x}->{shadow_word:x}'
         assert restore in source, f'Karplus shadow restore missing {shadow_word:x}->{compact_word:x}'
 
-    # The production record writer pins one hardware family to each physical
-    # audition track. Karplus receives four full prepared u16 controls and MODE,
-    # not the old four raw bytes/frozen state.
+    # Final Perky Machines control contract: physical tracks only define the
+    # four admitted HW4 slots. SRC E/F carry MODE/ALGO on every render call;
+    # engine identity is never hard-wired from the physical track number.
     control = (ROOT / 'modules/perky/control_hw4_candidate.c').read_text()
     for needle in (
-        'if (track == 0u) return 0u;',
-        'if (track == 1u) return 8u;',
-        'if (track == 4u) return 3u;',
-        'if (track == 5u) return 10u;',
+        '#define DECAY_SLOT 0u', '#define TUNE_SLOT 1u',
+        '#define FINAL_MODE_SLOT 4u', '#define ALGO_SLOT 5u',
+        '#define ALGO_COUNT 12u',
+        '"DECAY", "TUNE", "PAR1", "PAR2", "MODE", "ALGO"',
+        'put32(desc + 0x1c6, 0x00111111u);',
+        'pk_hw4_src_to_transport(p);',
+        'p[11] = algo;',
         'value == 127u ? 4095u : value << 5',
         'pk_hw4_karplus_prepare(p);',
         'p[8] = (uint8_t)mode;',
-        'p[11] = 8u;',
-        'p[11] = (uint8_t)pk_hw4_engine(track);',
+       'p[11] == 10u',
     ):
         assert needle in control, needle
+    assert 'pk_hw4_engine' not in control
 
     # The repo assembler performs simple symbol substitution. Exact duplicate
     # labels and prefix-related labels are therefore both fatal hazards.
@@ -237,9 +240,8 @@ def main():
         memory.KARPLUS_CONTROL_LUT_WORDS,
     ]
 
-    # The T6 audition payload follows Karplus contiguously in Y: one authentic
-    # Waveform2 table, both authentic envelopes, then the four-wave shared bank.
-    # The shared bank's ordinal order is renderer-qualified, not numeric address order.
+    # Authentic T6 static assets follow Karplus contiguously in the audition Y
+    # arena: Waveform2, envelope1, envelope2, then the qualified shared bank.
     noise = hw4['noise_tone']
     assert noise['status'].startswith('audition: authentic v1.2.1 shared wave PCM')
     assert noise['mode_map'] == [1, 0, 2]
@@ -267,7 +269,6 @@ def main():
         assert path.exists(), row['file']
         assert path.stat().st_size == row['words'] * 3, row['file']
 
-    # Karplus still ends at $1f02; T6 consumes only the remaining audition Y arena.
     assert memory.HW4_Y_END == 0x1F02
     assert noise['asset_end_exclusive'] == 0x324F
     assert memory.HW4_Y_BOOT_CLEAR - noise['asset_end_exclusive'] == 0x0CB1
