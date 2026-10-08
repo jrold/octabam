@@ -24,7 +24,9 @@ from extract_noise_tone_tables import ENVELOPE1_ADDR, ENVELOPE2_ADDR, find_m7, p
 
 FIRMWARE_SHA = "adcdbc4a2c660ffb6477f202211ae3cb70170bfe6ddfaecc3df0e4cb7db398c6"
 M1_WAVES = [0x080310E0]
-SHARED_WAVES = [0x080222A0, 0x080224A0, 0x080226A0, 0x080228A0]
+# Keep the shared bank in the renderer-qualified ordinal order, not numeric
+# address order: 22a0 -> 0, 26a0 -> 1, 28a0 -> 2, 24a0 -> 3.
+SHARED_WAVES = [0x080222A0, 0x080226A0, 0x080228A0, 0x080224A0]
 
 
 def build(firmware: Path, out: Path) -> dict:
