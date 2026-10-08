@@ -35,7 +35,7 @@ EXPECTED = {
     "tools/verify/perky4_control_pcm_diff.cpp": "90a485db69b5044a3bba1e8fb8ce937af90eb5786517f1fc7ea8fd185bd54361",
     "tools/verify/perky4_render_stress.cpp": "4492720f00fcdd1041af22485ba124b05f33d87063bcfffedb6eb3dba47660c5",
     "tools/verify/perky_cf_split_plock_timing.cpp": "60c5bc623b45ddfe8ca5bc381375dc450cf36abce24c69c20aed424d203440ac",
-    "tools/verify/perky_cf_production_render_diff.cpp": "1ecaa7ef41b324512586cc000090c219d19793ad953331839942b9f345f51f44",
+    "tools/verify/perky_cf_production_render_diff.cpp": "19d6ebf73c6bfc27ed9f9c52fcd70f81521e26ef3115a0c35a9ef05b4f4cd417",
     "tools/verify/verify_perky_cf_production_render.py": "d58406effcb6e30cd2001c4285b37e9b3f1c68396ed74a009f234e09422a9dbe",
 }
 
