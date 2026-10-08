@@ -122,9 +122,9 @@ def main():
     layout = json.loads((WORK / 'layout.json').read_text())
     extra_y = perky_image.load_extra_y_init(WORK, layout)
     extra_x = perky_image.extra_state_init(layout)
-    if len(extra_y) != 6:
+    if len(extra_y) != 10:
         raise AssertionError(
-            f'HW4 timing expected 6 extra Y assets (2 env + ring + 3 Karplus LUTs), '
+            f'HW4 timing expected 10 extra Y assets (6 Karplus + 4 T6), '
             f'got {len(extra_y)}'
         )
 
@@ -180,7 +180,9 @@ def main():
         'combined_modeled_source_budget_per_core': SOURCE_BUDGET,
         'blocks_per_engine': len(events),
         'karplus_record': records[8],
-        'karplus_live_control_assets': len(extra_y),
+        'extra_y_assets': len(extra_y),
+        'karplus_live_control_assets': 6,
+        'noise_tone_authentic_assets': 4,
         'engine_max_modeled': {str(k): max(v) for k, v in meters.items()},
         'core1_T1_fold1_T2_karplus': {
             'modeled_max': worst1,
