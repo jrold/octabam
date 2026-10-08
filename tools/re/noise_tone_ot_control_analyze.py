@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reduce the exact 128-position Noise/Tone ARM grid to renderer compact words.
 
-Input is emitted by PerkyBits ``perkybits-noise-tone-ot-control-probe``.  The
+Input is emitted by PerkyBits ``perkybits-noise-tone-ot-control-probe``. The
 probe runs original HD-01 v1.2.1 update() for every physical Octatrack value of
 TUNE/DECAY/ENV/MIX in all three PĒRKONS modes:
 
@@ -9,19 +9,15 @@ TUNE/DECAY/ENV/MIX in all three PĒRKONS modes:
 * M2 -> firmware mode 0 -> shared Noise/Tone state at 0x200034dc;
 * M3 -> firmware mode 2 -> shared Noise/Tone state at 0x200034dc.
 
-This analyzer does not fit curves.  It extracts only fields the independently
+This analyzer does not fit curves. It extracts only fields the independently
 qualified renderers actually read/mutate, then records the exact 128-entry value
-sequence for every compact word owned by each control.  That is the source data
-for the eventual small DSP control tables.
-
-The resulting JSON is evidence, not by itself a shipping qualification.  A
-pairwise/cross-term gate and executable DSP A/B test must still pass before the
-synthetic T6 control path can be removed.
+sequence for every compact word owned by each control. M1 uses the repository's
+single authoritative ``noise_tone_wave2_compact.NoiseToneWave2`` ABI rather
+than duplicating its field order here.
 """
 from __future__ import annotations
 
 import argparse
-from collections import defaultdict
 import json
 from pathlib import Path
 import struct
@@ -32,6 +28,8 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "modules/perky"))
 
 import noise_tone_compact as shared
+import noise_tone_wave2_compact as wave2
+import resonator_compact as rc
 
 SCHEMA = "perkybits-noise-tone-ot-control-v1"
 OUT_SCHEMA = "octabam.perky.noise-tone-ot-control-analysis.v1"
@@ -42,70 +40,79 @@ PARAMETERS = ("TUNE", "DECAY", "ENV", "MIX")
 BASELINE_OT = 64
 BASELINE_PREPARED = 2048
 
-# Compact Waveform2 ABI.  Keep this explicit and flat so the future DSP seam can
-# use immediate offsets exactly as the existing 41-word shared renderer does.
-W2_FIELDS = (
-    "VEL",
-    "BYPASS",
-    "ENV_STATE",
-    "ENV_SHAPE",
-    "ENV_FLAG4",
-    "ENV_FLAG6",
-    "ENV_TRIGGER",
-    "ENV_VALUE_LO",
-    "ENV_VALUE_HI",
-    "ENV_HOLD_LO",
-    "ENV_HOLD_HI",
-    "ENV_ATTACK",
-    "ENV_DECAY",
-    "PHASE_REDUCTION_LO",
-    "PHASE_REDUCTION_HI",
-    "OSC_PHASE_LO",
-    "OSC_PHASE_HI",
-    "OSC_INCREMENT_LO",
-    "OSC_INCREMENT_HI",
-    "OSC_PHASE_OFFSET_LO",
-    "OSC_PHASE_OFFSET_HI",
-    "OSC_CURRENT_LO",
-    "OSC_CURRENT_HI",
-    "OSC_NEXT_LO",
-    "OSC_NEXT_HI",
-)
 
-SHARED_NAMES = [f"WORD_{i}" for i in range(shared.WORDS_PER_VOICE)]
-for name in (
-    "VEL ENV_STATE ENV_SHAPE ENV_FLAG4 ENV_FLAG6 ENV_TRIGGER ENV_VALUE ENV_HOLD "
-    "ENV_ATTACK ENV_DECAY NOISE_COUNT NOISE_RELOAD NOISE_HELD FILTER_DAMPING "
-    "FILTER_COEFF FILTER_FIRST FILTER_SECOND FILTER_VELOCITY OSC1_PHASE "
-    "OSC1_INCREMENT OSC1_CURRENT OSC1_NEXT OSC2_PHASE OSC2_INCREMENT "
-    "OSC2_CURRENT OSC2_NEXT MIX"
-).split():
-    offset = getattr(shared, name)
-    SHARED_NAMES[offset] = name + ("_LO" if name in {
-        "ENV_VALUE", "ENV_HOLD", "FILTER_FIRST", "FILTER_SECOND",
-        "FILTER_VELOCITY", "OSC1_PHASE", "OSC1_INCREMENT", "OSC1_CURRENT",
-        "OSC1_NEXT", "OSC2_PHASE", "OSC2_INCREMENT", "OSC2_CURRENT",
-        "OSC2_NEXT", "MIX",
-    } else "")
-    if name in {
-        "ENV_VALUE", "ENV_HOLD", "FILTER_FIRST", "FILTER_SECOND",
-        "FILTER_VELOCITY", "OSC1_PHASE", "OSC1_INCREMENT", "OSC1_CURRENT",
-        "OSC1_NEXT", "OSC2_PHASE", "OSC2_INCREMENT", "OSC2_CURRENT",
-        "OSC2_NEXT", "MIX",
-    }:
-        SHARED_NAMES[offset + 1] = name + "_HI"
+def _word_names(words: int) -> list[str]:
+    return [f"WORD_{index}" for index in range(words)]
+
+
+def _name_u32(names: list[str], offset: int, stem: str) -> None:
+    names[offset] = stem + "_LO"
+    names[offset + 1] = stem + "_HI"
+
+
+W2_NAMES = _word_names(wave2.WORDS)
+W2_NAMES[wave2.VELOCITY] = "VEL"
+W2_NAMES[wave2.MUTE] = "BYPASS"
+for offset, name in (
+    (rc.ENV_STATE, "ENV_STATE"),
+    (rc.ENV_SHAPE, "ENV_SHAPE"),
+    (rc.ENV_FLAG4, "ENV_FLAG4"),
+    (rc.ENV_FLAG6, "ENV_FLAG6"),
+    (rc.ENV_TRIGGER, "ENV_TRIGGER"),
+    (rc.ENV_ATTACK, "ENV_ATTACK"),
+    (rc.ENV_DECAY, "ENV_DECAY"),
+):
+    W2_NAMES[wave2.ENV + offset] = name
+_name_u32(W2_NAMES, wave2.ENV + rc.ENV_VALUE, "ENV_VALUE")
+_name_u32(W2_NAMES, wave2.ENV + rc.ENV_HOLD, "ENV_HOLD")
+for offset, name in (
+    (wave2.PHASE, "OSC_PHASE"),
+    (wave2.INCREMENT, "OSC_INCREMENT"),
+    (wave2.OFFSET, "OSC_PHASE_OFFSET"),
+    (wave2.CURRENT, "OSC_CURRENT"),
+    (wave2.NEXT, "OSC_NEXT"),
+    (wave2.REDUCTION, "PHASE_REDUCTION"),
+):
+    _name_u32(W2_NAMES, offset, name)
+
+SHARED_NAMES = _word_names(shared.WORDS_PER_VOICE)
+for offset, name in (
+    (shared.VEL, "VEL"),
+    (shared.ENV_STATE, "ENV_STATE"),
+    (shared.ENV_SHAPE, "ENV_SHAPE"),
+    (shared.ENV_FLAG4, "ENV_FLAG4"),
+    (shared.ENV_FLAG6, "ENV_FLAG6"),
+    (shared.ENV_TRIGGER, "ENV_TRIGGER"),
+    (shared.ENV_ATTACK, "ENV_ATTACK"),
+    (shared.ENV_DECAY, "ENV_DECAY"),
+    (shared.NOISE_COUNT, "NOISE_COUNT"),
+    (shared.NOISE_RELOAD, "NOISE_RELOAD"),
+    (shared.NOISE_HELD, "NOISE_HELD"),
+    (shared.FILTER_DAMPING, "FILTER_DAMPING"),
+    (shared.FILTER_COEFF, "FILTER_COEFF"),
+):
+    SHARED_NAMES[offset] = name
+for offset, name in (
+    (shared.ENV_VALUE, "ENV_VALUE"),
+    (shared.ENV_HOLD, "ENV_HOLD"),
+    (shared.FILTER_FIRST, "FILTER_FIRST"),
+    (shared.FILTER_SECOND, "FILTER_SECOND"),
+    (shared.FILTER_VELOCITY, "FILTER_VELOCITY"),
+    (shared.OSC1_PHASE, "OSC1_PHASE"),
+    (shared.OSC1_INCREMENT, "OSC1_INCREMENT"),
+    (shared.OSC1_CURRENT, "OSC1_CURRENT"),
+    (shared.OSC1_NEXT, "OSC1_NEXT"),
+    (shared.OSC2_PHASE, "OSC2_PHASE"),
+    (shared.OSC2_INCREMENT, "OSC2_INCREMENT"),
+    (shared.OSC2_CURRENT, "OSC2_CURRENT"),
+    (shared.OSC2_NEXT, "OSC2_NEXT"),
+    (shared.MIX, "MIX"),
+):
+    _name_u32(SHARED_NAMES, offset, name)
 
 
 def die(message: str) -> NoReturn:
     raise SystemExit("noise-tone-ot-control-analyze: " + message)
-
-
-def u16(raw: bytes, offset: int) -> int:
-    return raw[offset] | (raw[offset + 1] << 8)
-
-
-def u32_words(raw: bytes, offset: int) -> tuple[int, int]:
-    return u16(raw, offset), u16(raw, offset + 2)
 
 
 def prepared(raw: int) -> int:
@@ -122,35 +129,10 @@ def decode_hex(record: dict, key: str, size: int) -> bytes:
     return value
 
 
-def waveform2_words(raw: bytes) -> list[int]:
-    if len(raw) != STATE_BYTES:
-        raise ValueError("Waveform2 ARM state geometry")
-    words: list[int] = [
-        raw[6],
-        raw[0xB8],
-        raw[0x74],
-        raw[0x75],
-        raw[0x78],
-        raw[0x7A],
-        raw[0x7B],
-    ]
-    words += list(u32_words(raw, 0x80))     # envelope value
-    words += list(u32_words(raw, 0x84))     # envelope hold
-    words += [u16(raw, 0x94), u16(raw, 0x96)]
-    words += list(u32_words(raw, 0xC8))     # phase reduction
-    words += list(u32_words(raw, 0xD8))     # phase
-    words += list(u32_words(raw, 0xDC))     # increment
-    words += list(u32_words(raw, 0xE0))     # phase offset
-    words += list(u32_words(raw, 0xE4))     # current wave address
-    words += list(u32_words(raw, 0xE8))     # next wave address
-    if len(words) != len(W2_FIELDS):
-        raise AssertionError(f"Waveform2 compact words {len(words)} != {len(W2_FIELDS)}")
-    return [value & 0xFFFF for value in words]
-
-
 def compact(panel: int, raw: bytes) -> tuple[list[str], list[int]]:
     if panel == 0:
-        return list(W2_FIELDS), waveform2_words(raw)
+        voice = wave2.NoiseToneWave2.from_arm(raw)
+        return W2_NAMES, list(voice.words)
     voice = shared.CompactVoice.from_arm(raw)
     return SHARED_NAMES, list(voice.words)
 
@@ -191,7 +173,6 @@ def validate(rows: list[dict]) -> dict[tuple[int, int, int], dict]:
     expected_count = 3 * 4 * 128
     if len(rows) != expected_count:
         die(f"expected {expected_count} snapshots, got {len(rows)}")
-
     grid: dict[tuple[int, int, int], dict] = {}
     for index, row in enumerate(rows):
         try:
@@ -210,8 +191,6 @@ def validate(rows: list[dict]) -> dict[tuple[int, int, int], dict]:
         if pvalue != prepared(ot):
             die(f"row {index}: prepared value {pvalue} != OT law {prepared(ot)}")
         controls = tuple(int(value) for value in row.get("controls", ()))
-        if len(controls) != 4:
-            die(f"row {index}: control tuple geometry")
         wanted = [BASELINE_PREPARED] * 4
         wanted[parameter] = pvalue
         if controls != tuple(wanted):
@@ -225,7 +204,6 @@ def validate(rows: list[dict]) -> dict[tuple[int, int, int], dict]:
         if key in grid:
             die(f"duplicate grid coordinate {key}")
         grid[key] = row
-
     if len(grid) != expected_count:
         die("grid is not complete")
     return grid
@@ -267,7 +245,6 @@ def main() -> None:
             "compact_names": names,
             "parameters": {},
         }
-
         print(
             f"M{panel + 1}: firmware {PANEL_TO_FIRMWARE[panel]} / {renderer} / "
             f"{len(baseline_words)} compact words"
@@ -296,7 +273,7 @@ def main() -> None:
                 str(word): [values[word] for values in all_words]
                 for word in owned_words
             }
-            parameter_result = {
+            panel_result["parameters"][pname] = {
                 "parameter": parameter,
                 "name": pname,
                 "owned_compact_words": owned_words,
@@ -304,13 +281,11 @@ def main() -> None:
                 "owned_arm_bytes": owned_bytes,
                 "tables_u16": tables,
             }
-            panel_result["parameters"][pname] = parameter_result
             print(
                 f"  {pname:5s}: compact "
-                + (", ".join(f"{w}:{names[w]}" for w in owned_words) or "(none)")
+                + (", ".join(f"{word}:{names[word]}" for word in owned_words) or "(none)")
                 + f"; ARM bytes={len(owned_bytes)}"
             )
-
         result["panels"][f"M{panel + 1}"] = panel_result
 
     if args.json:
@@ -320,7 +295,7 @@ def main() -> None:
 
     print(
         "Noise/Tone exact OT grid: PASS (1536 original-ARM settled states; "
-        "M1 Waveform2 + M2/M3 shared compact ownership extracted)"
+        "authoritative M1 Waveform2 + M2/M3 shared compact ownership extracted)"
     )
     print("status: evidence only; pairwise/trigger/executable gates still required")
 
