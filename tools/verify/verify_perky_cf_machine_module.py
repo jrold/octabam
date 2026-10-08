@@ -7,9 +7,11 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT / "tools"), str(ROOT / "tools/perky")]
+sys.path[:0] = [str(ROOT / "tools"), str(ROOT / "tools/perky"), str(ROOT / "modules/perky")]
 
 import perky_cf_machine_module
+import perky_cf_assets
+import generate_cf_final
 
 
 def load(path: Path):
@@ -47,9 +49,37 @@ def main() -> None:
     refs = {(r.addr, r.expect, r.unit, r.symbol) for r in final.symbol_refs}
     if (0x400D6438, 0x40004008, "pkcontrol", "pk_render") not in refs:
         raise AssertionError("FLEX render pointer is not final pk_render")
+
+    generated = tuple((label, name) for label, name in generate_cf_final.SOURCES)
+    expected_generated = (
+        ("pkcontrol", "control_cf_final.c"),
+        ("pkcore", "cf_perky4.c"),
+        ("pkfold", "cf_fold.c"),
+        ("pkkarplus", "cf_karplus.c"),
+        ("pknoise", "cf_noise_tone.c"),
+    )
+    if generated != expected_generated:
+        raise AssertionError(f"ColdFire generator units drifted: {generated!r}")
+
+    control = (ROOT / "modules/perky/control_cf_final.c").read_text()
+    asset_labels = tuple(row[0] for row in perky_cf_assets.ASSETS)
+    for label in asset_labels:
+        if f"extern const uint8_t {label}[];" not in control:
+            raise AssertionError(f"shipping control is missing asset extern {label}")
+    if len(asset_labels) != 9 or len(set(asset_labels)) != 9:
+        raise AssertionError(f"expected exactly nine unique firmware assets, got {asset_labels!r}")
+
+    asset_source = (ROOT / "modules/perky/cf_assets.s").read_text()
+    if '.include "remix.inc"' not in asset_source:
+        raise AssertionError("cf_assets.s no longer includes generated SHA-pinned remix.inc")
+
+    machine = (ROOT / "modules/perky/machine.s").read_text()
+    for shim in ("pk_stock_validate", "pk_stock_pool_open"):
+        if f".global {shim}" not in machine or f"{shim}:" not in machine:
+            raise AssertionError(f"machine.s is missing required final-control shim {shim}")
     print(
         "PERKY CF machine declaration: PASS "
-        "(7 DRAM CF units; build-time SHA-pinned assets; stock DSP section absent; "
+        "(7 DRAM CF units; generator/assets/shims closed; build-time SHA-pinned assets; stock DSP section absent; "
         "0 DSP ranges; 0 DSP preboot arena)"
     )
 
