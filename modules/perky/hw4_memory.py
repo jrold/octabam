@@ -15,9 +15,12 @@ exact for this port while using only 86 packed DSP words per function.
 
 T6 Noise/Tone uses the same 58-word overlay slot as the other audition voices.
 M1 needs only 25 words; M2/M3 use 41 state words plus the 17-word envelope cache
-and therefore fill the slot exactly. Two global words after Karplus' trigger
-snapshot track T6's current physical mode and first/active-trigger state; this
-keeps mode switching from stealing an overlay word used by the shared renderer.
+and therefore fill the slot exactly. Private global words after Karplus' trigger
+snapshot track T6's current physical mode, first/active-trigger state and the
+last four prepared controls. The control cache makes original update-derived
+state change-driven: live tables are applied only when a knob/MODE changes and
+are forced once after raw trigger/retrigger, rather than resetting evolving
+renderer state every 16-sample block.
 """
 
 PRIVATE_X_BASE = 0x3800
@@ -53,11 +56,15 @@ KARPLUS_SHADOW_WORDS = 32
 KARPLUS_SHADOW_END = KARPLUS_SHADOW_BASE + KARPLUS_SHADOW_WORDS
 KARPLUS_TRIGGERED_WORD = 32        # first spare word in the 58-word track overlay
 
-# T6 is one fixed HW4 hardware track. These two global words are therefore
-# sufficient on each DSP image and remain outside all renderer scratch/shadows.
+# T6 is one fixed HW4 hardware track. These global words are sufficient on each
+# DSP image and remain outside all renderer scratch/shadows.
 NOISE_TONE_MODE_X = KARPLUS_SHADOW_END
 NOISE_TONE_TRIGGERED_X = NOISE_TONE_MODE_X + 1
-NOISE_TONE_BOOKKEEPING_END = NOISE_TONE_TRIGGERED_X + 1
+NOISE_TONE_CONTROL_CACHE_BASE = NOISE_TONE_TRIGGERED_X + 1
+NOISE_TONE_CONTROL_CACHE_WORDS = 4
+NOISE_TONE_BOOKKEEPING_END = (
+    NOISE_TONE_CONTROL_CACHE_BASE + NOISE_TONE_CONTROL_CACHE_WORDS
+)
 
 # First-audition local-Y placement. Stock static uploads stop below $1000 and
 # the stock init clear begins at $3f00, so boot-loaded data here survives. The
@@ -95,6 +102,8 @@ def spans():
         ('karplus-shadow', KARPLUS_SHADOW_BASE, KARPLUS_SHADOW_WORDS),
         ('noise-tone-mode', NOISE_TONE_MODE_X, 1),
         ('noise-tone-triggered', NOISE_TONE_TRIGGERED_X, 1),
+        ('noise-tone-control-cache',
+         NOISE_TONE_CONTROL_CACHE_BASE, NOISE_TONE_CONTROL_CACHE_WORDS),
     )
 
 
@@ -130,6 +139,8 @@ def validate():
     assert KARPLUS_SHADOW_END == 0x39E4
     assert NOISE_TONE_MODE_X == 0x39E4
     assert NOISE_TONE_TRIGGERED_X == 0x39E5
+    assert NOISE_TONE_CONTROL_CACHE_BASE == 0x39E6
+    assert NOISE_TONE_BOOKKEEPING_END == 0x39EA
     assert NOISE_TONE_BOOKKEEPING_END <= PRIVATE_X_END
 
     yitems = y_spans()
