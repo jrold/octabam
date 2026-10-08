@@ -46,6 +46,11 @@ static void sign_track(uintptr_t part, unsigned track) {
     U8(part + 62u + 30u * track) = 1u;
 }
 
+static uintptr_t fixed_slot(unsigned track, unsigned ping) {
+    return 0x80001c90u + (uintptr_t)(ping & 1u) * 0xa80u
+         + (uintptr_t)336u * track;
+}
+
 static pk4_assets make_assets() {
     pk4_assets a{};
     a.pitch = pk_asset_pitch;
@@ -83,27 +88,40 @@ static bool stage_unchanged(const uint8_t src[6]) {
 static int one_event(pk4_engine &reference, unsigned voice, unsigned track,
                      const uint8_t src[6], uintptr_t cursor) {
     std::array<int16_t, 16> pcm{};
-    std::array<uint32_t, 36> expected{};
+    std::array<uint32_t, 4> expected_pre{};
+    std::array<uint32_t, 36> expected_post{};
     const auto engine = to_engine_src(src);
     if (!pk4_process_segment(&reference, voice, engine.data(), 1, 1, 255u, 45u,
                              pcm.data(), 16u))
         return 20;
-    if (pk4_encode_stock_segment(expected.data(), pcm.data(), 16u) != 36u)
+    if (pk4_encode_stock_segment(expected_pre.data(), pcm.data(), 0u) != 4u)
         return 21;
+    if (pk4_encode_stock_segment(expected_post.data(), pcm.data(), 16u) != 36u)
+        return 22;
 
     stage(src);
     U8(0x46104d0cu + track) = 16u;
     U32(0x80001c80u) = (uint32_t)cursor;
     std::memset((void *)cursor, 0xa5, 192u);
+    const uintptr_t slot = fixed_slot(track, 0u);
+    std::memset((void *)slot, 0xa5, 336u);
     if (pk_render(track, 0u, 0u, 16u) != 0)
-        return 22;
-    U8(0x46104d0cu + track) = 0u;
-    if (std::memcmp((void *)cursor, expected.data(), 36u * 4u))
         return 23;
-    if (U32(0x80001c80u) != cursor + 36u * 4u)
+    U8(0x46104d0cu + track) = 0u;
+    if (std::memcmp((void *)slot, expected_pre.data(), 4u * 4u))
         return 24;
-    if (!stage_unchanged(src))
+    if (std::memcmp((void *)(slot + 4u * 4u), expected_post.data(), 36u * 4u))
         return 25;
+    if (U32(0x80001c80u) != cursor + 40u * 4u)
+        return 26;
+    for (unsigned i = 0; i < 40u; ++i)
+        if (U32(cursor + 4u * i) != 0u)
+            return 27;
+    for (unsigned i = 160u; i < 336u; ++i)
+        if (U8(slot + i) != 0xa5u)
+            return 28;
+    if (!stage_unchanged(src))
+        return 29;
     return 0;
 }
 
@@ -210,7 +228,7 @@ int main() {
     }
     std::cout << "PERKY p-lock reversion: PASS " << cases << " voice/lock cases / "
               << events << " events / " << samples << " exact samples\n"
-              << "  default -> locked Algo/Mode -> default returned to reference PCM; "
-                 "shipping callback did not mutate staging or persistent SRC defaults\n";
+              << "  default -> locked Algo/Mode -> default returned to fixed-slot reference PCM; "
+                 "moving cursor stayed reservation-only; staging/persistent defaults unchanged\n";
     return 0;
 }
