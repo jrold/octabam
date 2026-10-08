@@ -110,7 +110,7 @@ int main(int argc, char** argv)
         const std::uint8_t* expected = fk.data() + pos;
         pos += bytes;
         std::uint8_t raw[4] = {64, 64, 64, 64};
-        raw[ctl] = (std::uint8_t)value;
+        raw[ctl] = (std::uint8_t)value; /* firmware order Tune,Decay,P1,P2 */
 
         pk4_engine e{};
         pk4_init(&e, &assets);
@@ -144,7 +144,8 @@ int main(int argc, char** argv)
             NativeV121FoldDrums::Fold2State s{};
             std::memcpy(s.data(), expected, bytes);
             NativeV121FoldDrums::RngState rng{rlo, rhi};
-            if (!NativeV121FoldDrums::renderFold2(s, 0x20000000u, ref.data(), samples_per_case, ft, rng)
+            if (!NativeV121FoldDrums::renderFold2(s, 0x20000000u, ref.data(),
+                                                  samples_per_case, ft, rng)
                 || !pk4_render(&e, 0, got.data(), samples_per_case)
                 || ref != got || std::memcmp(s.data(), track.fold2, bytes) != 0
                 || rng.low != track.rng_low || rng.high != track.rng_high)
@@ -171,7 +172,7 @@ int main(int argc, char** argv)
         const unsigned mode = ntx[pos], ctl = ntx[pos + 1], value = ntx[pos + 2];
         pos += 4;
         const std::uint8_t* expected = ntx.data() + pos;
-        pos += PK_CF_NT_STATE_BYTES + 8;
+        pos += PK_CF_NT_STATE_BYTES + 8; /* fixture RNG is not a control-state field */
         std::uint8_t raw[4] = {64, 64, 64, 64};
         raw[ctl] = (std::uint8_t)value;
 
@@ -194,7 +195,8 @@ int main(int argc, char** argv)
         if (mode == 0) {
             NativeV121NoiseToneWaveform2::State s{};
             std::memcpy(s.data(), expected, s.size());
-            if (!NativeV121NoiseToneWaveform2::renderBlock(s, ref.data(), samples_per_case,
+            if (!NativeV121NoiseToneWaveform2::renderBlock(
+                    s, ref.data(), samples_per_case,
                     m1, 0x080310e0u, m1, 0x080310e0u)
                 || !pk4_render(&e, 0, got.data(), samples_per_case)
                 || ref != got || std::memcmp(s.data(), track.nt_m1, s.size()) != 0
