@@ -142,7 +142,7 @@ def main() -> None:
         "production_pcm=196608 exact samples per Algo; 786432 total\n"
         "four_track_stress=16384 trigs / 262144 exact samples; zero cross-track mutation\n"
         "split_plock=2304 transitions / 36864 samples; exact event-boundary application\n"
-        "production_pk_render=4096 events / 65536 samples; all 4x4 voice/algo pairs and all 16 split offsets; 160-byte FLEX span exact\n"
+        "production_pk_render=1024 simultaneous four-voice frames / 4096 voice events / 65536 samples; all 4x4 voice/algo pairs and all 16 split offsets; 160 bytes/voice; 640-byte four-voice FLEX span exact\n"
         "stock_fx=all stock FX retained by remix; Perky module has zero DSP section/ranges/arena\n"
         "stock_dsp=156948 bootstrap/payload bytes required byte-identical by release gate\n"
         f"perkons_firmware_sha256={perky_cf_assets.FIRMWARE_SHA256}\n"
