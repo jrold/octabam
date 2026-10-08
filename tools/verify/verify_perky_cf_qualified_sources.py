@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""Pin the exact production/test sources behind the final Perky CF qualification.
+"""Pin the exact production/test sources behind the final Perky CF PCM qualification.
 
 The PCM counts are valid only for these bytes. Any change to the renderer,
 control path, asset extractor, module declaration, remix profile, or executable
 differential tests must deliberately refresh this manifest after rerunning the
 full qualification against the exact PĒRKONS v1.2.1 firmware.
+
+Packaging-only tooling is intentionally not pinned here: it cannot change the
+qualified renderer/control PCM. Packaging has separate codegen, linker and
+stock-DSP identity release gates.
 """
 from __future__ import annotations
 
@@ -43,7 +47,6 @@ EXPECTED = {
     "tools/verify/verify_perky_cf_machine_module.py": "a523367146f4040eac8d86ea0a65e3a16663e665c89ffaa767180ea9c8a68e10",
     "tools/verify/verify_perky_cf_final_remix.py": "6dea693ac33f252bf6c8b37c25f48597e64674986f5c8d80e02eee6f2a960e05",
     "tools/verify/verify_perky_stock_dsp_identity.py": "1bab1de6c609232b7f79d87ebcb347430ca48adbba97110e8ec75cca55045bd3",
-    "tools/perky/build_cf_final.py": "2cb36a96e83f08d9e054e982de360b7390c69293ee3e74d428b7e18ce3933af2",
 }
 
 
@@ -63,7 +66,7 @@ def main() -> None:
             failures.append(f"{rel}: {got} != {expected}")
     if failures:
         raise SystemExit("PERKY qualified-source identity: FAIL\n  " + "\n  ".join(failures))
-    print(f"PERKY qualified-source identity: PASS ({len(EXPECTED)} files byte-pinned to executed PCM qualification)")
+    print(f"PERKY qualified-source identity: PASS ({len(EXPECTED)} PCM/control files byte-pinned)")
 
 
 if __name__ == "__main__":
