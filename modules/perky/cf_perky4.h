@@ -54,10 +54,14 @@ typedef struct {
 
 void pk4_init(pk4_engine *engine, const pk4_assets *assets);
 
-/* SRC order is the locked Octatrack first page:
+/* Recovered synthesis-core ABI order is deliberately independent of the
+ * Octatrack page layout:
  *   decay, tune, param1, param2, mode, algo.
- * prepare_event applies any changed controls/mode/algorithm and, when trig != 0,
- * performs the authentic trigger + mandatory v1.2.1 update-after-trigger.
+ * The shipping control adapter remaps SRC A-F
+ *   TUNE, DECAY, ALGO, PRM1, PRM2, MODE
+ * into this ABI at the event boundary. prepare_event applies any changed
+ * controls/mode/algorithm and, when trig != 0, performs the authentic trigger
+ * plus mandatory v1.2.1 update-after-trigger.
  */
 int pk4_prepare_event(pk4_engine *engine, unsigned track,
                       uint8_t decay, uint8_t tune,
@@ -68,10 +72,11 @@ int pk4_prepare_event(pk4_engine *engine, unsigned track,
 int pk4_render(pk4_engine *engine, unsigned track,
                int16_t *destination, uint32_t sample_count);
 
-/* Process one stock source-render segment.  When event_boundary is false, the
- * currently active algorithm renders unchanged and src may be NULL.  When it
- * is true, SRC A..F are consumed before rendering, so per-trig Mode/Algo and
- * the four sound controls take effect exactly at the split point. */
+/* Process one stock source-render segment. When event_boundary is false, the
+ * currently active algorithm renders unchanged and src may be NULL. When it
+ * is true, src is in the recovered synthesis-core ABI order above; the
+ * shipping control adapter is responsible for remapping Octatrack SRC A-F.
+ */
 int pk4_process_segment(pk4_engine *engine, unsigned track,
                         const uint8_t src[6], int event_boundary, int trig,
                         uint8_t velocity, uint8_t note,
