@@ -38,8 +38,12 @@ EXPECTED = {
     "tools/verify/perky_cf_production_render_diff.cpp": "19d6ebf73c6bfc27ed9f9c52fcd70f81521e26ef3115a0c35a9ef05b4f4cd417",
     "tools/verify/verify_perky_cf_production_render.py": "d58406effcb6e30cd2001c4285b37e9b3f1c68396ed74a009f234e09422a9dbe",
     "tools/verify/verify_perky_cf_final.py": "4e68c05ebc00b4a7f7ecbe94476424ad86ffc1a7ef306bc0852217b0be2fc277",
+    "tools/verify/verify_perky_cf_final_control.py": "8f3a3f7021e11bae2edc6682fbcc55cf8b5387c30169110c589ef0f43dc4aaad",
+    "tools/verify/verify_perky_cf_freestanding.py": "5499198f777f7ccfde535661432722dd89b280f2130373a80dcd0db4a13399ef",
+    "tools/verify/verify_perky_cf_machine_module.py": "a523367146f4040eac8d86ea0a65e3a16663e665c89ffaa767180ea9c8a68e10",
+    "tools/verify/verify_perky_cf_final_remix.py": "6dea693ac33f252bf6c8b37c25f48597e64674986f5c8d80e02eee6f2a960e05",
     "tools/verify/verify_perky_stock_dsp_identity.py": "1bab1de6c609232b7f79d87ebcb347430ca48adbba97110e8ec75cca55045bd3",
-    "tools/perky/build_cf_final.py": "11ea97bf33c40417d19d802fadfbf5e47373f748f50ec66315fecaa109fd98d3",
+    "tools/perky/build_cf_final.py": "2cb36a96e83f08d9e054e982de360b7390c69293ee3e74d428b7e18ce3933af2",
 }
 
 
