@@ -32,4 +32,4 @@ date.
 
 | proposal | modules | requested by | stage |
 |---|---|---|---|
-| [radiohagen](radiohagen.md) | the delay and reverb bus, SPECTRUM, CHARACTER, MODULATION, RLEN PLEN, TUNER | radiohagen | 2: does not compose (RLEN PLEN's ROM cave does not fit) |
+| [radiohagen](radiohagen.md) | the delay and reverb bus, SPECTRUM, CHARACTER, MODULATION, RLEN PLEN, TUNER | radiohagen | 2: composes with PR #643 |
