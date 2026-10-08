@@ -27,7 +27,7 @@ EXPECTED = {
     'remixes/test/perky-cf-final/remix.py': '409443c6b4e27e37c488c779a8f50e7795448acc4e56e77acb31996377945c3b',
     'tools/build/bin_decode.py': 'd092430bf99d30d39c6fa81a186a746f0bfc5c6875636a03f48d800e59a05144',
     'tools/build/build_bus.py': 'f11a293f3bd8f042c772374912441427e8d48153a07194a93c13970db1c33532',
-    'tools/perky/build_cf_final.py': 'git:9f413e718ddb7830fb392f95f66815a521c805e4',
+    'tools/perky/build_cf_final.py': 'git:8b9cc3d20896b6c8fe46e03b7a3de6340766b064',
     'tools/perky/build_machine_canary.py': '3c1fc5155f64a3747ae80f59c2ebc41a7c68091f4c3b18450c64d7ed0106a609',
     'tools/perky/generate_cf_final_fixtures.py': 'e6176d75855543f9d9dbadf3da3a27fb3b06c3b45557bf119dfc0ff045fd7c5a',
     'tools/perky/perky_cf_assets.py': '90ccbdf0f7a8c86220f6b71cb2e105a9d1f868c65d35d8492e2e64b0e8d63a96',
@@ -56,6 +56,7 @@ EXPECTED = {
     'tools/verify/verify_perky_cf_runtime_reset.py': '7c902640c9e0633c58f3711a15f707f2acb7e2891758f2c612b07b0e07d21d04',
     'tools/verify/verify_perky_cf_stock_record_abi.py': '3d0b950962c295efca481e23bf61551a94ad00f37abd138964b2f9e09f46acf1',
     'tools/verify/verify_perky_final_wrappers.py': 'f1d48b7d88c9411e2680d7462ae31fdc62ae5276f270fef189a66cfe67f676fc',
+    'tools/verify/verify_perky_release_guards_selftest.py': '170e1093097273413415b667fd580249dcdba3eca1e294f9a2f76fd3eae6169d',
     'tools/verify/verify_perky_stock_dsp_identity.py': '1bab1de6c609232b7f79d87ebcb347430ca48adbba97110e8ec75cca55045bd3',
 }
 
