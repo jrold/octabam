@@ -4,7 +4,7 @@
 Consumes:
 
 * ``noise-tone-ot-control-analysis.json`` from the exact 128-position analyzer;
-* ``noise-tone-authentic/manifest.json`` from the authentic asset builder.
+* ``noise-tone-baselines/manifest.json`` from the authentic baseline builder.
 
 For every renderer compact word that changes when one OT control is swept, the
 builder stores the exact 128 u16 values. Identical maps are deduplicated across
@@ -33,12 +33,12 @@ import simple_drum_tables as packed_u16
 from build_noise_tone_payload import words24_bytes
 
 ANALYSIS_SCHEMA = "octabam.perky.noise-tone-ot-control-analysis.v1"
-ASSET_SCHEMA = "octabam.perky.noise-tone-authentic-assets.v1"
+BASELINE_SCHEMA = "octabam.perky.noise-tone-baselines.v1"
 OUT_SCHEMA = "octabam.perky.noise-tone-control-tables.v1"
 DEFAULT_ANALYSIS = (
     ROOT / "out/perky/control-probes/noise-tone-grid/noise-tone-ot-control-analysis.json"
 )
-DEFAULT_ASSETS = ROOT / "out/perky/noise-tone-authentic/manifest.json"
+DEFAULT_BASELINES = ROOT / "out/perky/noise-tone-baselines/manifest.json"
 DEFAULT_OUT = ROOT / "out/perky/noise-tone-live-control"
 PARAMETERS = ("TUNE", "DECAY", "ENV", "MIX")
 TABLE_ENTRIES = 128
@@ -74,20 +74,20 @@ def table_payload(values: list[int]) -> tuple[bytes, int]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--analysis", type=Path, default=DEFAULT_ANALYSIS)
-    parser.add_argument("--assets", type=Path, default=DEFAULT_ASSETS)
+    parser.add_argument("--baselines", type=Path, default=DEFAULT_BASELINES)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     args = parser.parse_args()
 
     memory.validate()
     analysis_path = args.analysis.expanduser().resolve()
-    assets_path = args.assets.expanduser().resolve()
+    baselines_path = args.baselines.expanduser().resolve()
     out = args.out.expanduser().resolve()
     analysis = load_json(analysis_path, ANALYSIS_SCHEMA)
-    assets = load_json(assets_path, ASSET_SCHEMA)
+    baselines = load_json(baselines_path, BASELINE_SCHEMA)
 
-    cursor = int(assets["asset_end_exclusive"])
+    cursor = int(baselines["end_exclusive"])
     if not memory.HW4_Y_END <= cursor <= memory.HW4_Y_BOOT_CLEAR:
-        die(f"authentic asset end Y:${cursor:04x} is outside HW4 Y arena")
+        die(f"authentic baseline end Y:${cursor:04x} is outside HW4 Y arena")
 
     # Build ownership first. A word controlled by two different knobs is not a
     # valid one-dimensional LUT even if the baseline-axis captures look sane.
@@ -166,15 +166,13 @@ def main() -> None:
         assignment["table_id"] = int(table["id"])
         assignment["base_word"] = int(table["base_word"])
 
-    # Refuse absurd table counts even if a future memory map happens to fit.
-    # It is a useful signal that the compact/control ownership model drifted.
     if len(tables) > 24:
         die(f"exact Noise/Tone control path needs {len(tables)} unique tables (>24)")
 
     report = {
         "schema": OUT_SCHEMA,
         "analysis": str(analysis_path),
-        "assets": str(assets_path),
+        "baselines": str(baselines_path),
         "mode_map": [1, 0, 2],
         "entries_per_table": TABLE_ENTRIES,
         "lookup_index": "prepared >> 5",
