@@ -146,7 +146,7 @@ def main() -> None:
     print("  SRC=A Decay,B Tune,C Param1,D Param2,E Mode,F Algo; all p-lock sequence/split gates passed")
     print("  supported Algo=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3)")
     print("  production control->PCM=196608 exact samples per Algo (786432 total)")
-    print("  production pk_render=4096 events / 65536 samples; all 4x4 voice/algo pairs and all 16 split offsets")
+    print("  production pk_render=1024 simultaneous four-voice frames / 4096 voice events / 65536 samples; all 4x4 voice/algo pairs and all 16 split offsets")
     print("  stock DSP module declaration=no DSP section/ranges/arena; stock source record transport exact")
 
 
