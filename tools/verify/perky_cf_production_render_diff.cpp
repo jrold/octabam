@@ -56,7 +56,8 @@ int main()
     constexpr uint32_t bank = 0x48000000u;
     constexpr uintptr_t part = bank + 0x8ed80u;
     constexpr uintptr_t cursor_base = 0x80010000u;
-    constexpr unsigned events = 4096u;
+    constexpr unsigned frames = 1024u;
+    constexpr unsigned events = frames * 4u;
     constexpr std::array<unsigned, 4> tracks = {0u, 1u, 4u, 5u};
 
     U32(0x46c82456u) = bank;
@@ -83,73 +84,82 @@ int main()
     std::array<std::array<uint16_t, 4>, 4> split_mask{};
     uint64_t samples = 0;
 
-    for (unsigned event = 0; event < events; ++event) {
-        const unsigned voice = event & 3u;
-        const unsigned track = tracks[voice];
-        const unsigned step = event >> 2;
-        const unsigned algo = (step + voice * 3u) & 3u;
-        const unsigned mode = (step * 2u + voice) % 3u;
-        const unsigned split = ((step >> 2) + voice * 3u + algo * 5u) & 15u;
-        const int trig = (event % 5u) != 0u;
-        const uint8_t src[6] = {
-            (uint8_t)((step * 17u + voice * 11u) & 127u),
-            (uint8_t)((step * 29u + voice * 7u) & 127u),
-            (uint8_t)((step * 43u + voice * 5u) & 127u),
-            (uint8_t)((step * 61u + voice * 3u) & 127u),
-            (uint8_t)mode,
-            (uint8_t)algo,
-        };
-
-        for (unsigned i = 0; i < 6u; ++i)
-            U16(0x80008000u + 2u * i) = (uint16_t)src[i] << 8;
-        U8(0x46104d0cu + track) = trig ? 16u : 0u;
+    for (unsigned frame = 0; frame < frames; ++frame) {
         U32(0x80001c80u) = cursor_base;
-        std::memset((void *)cursor_base, 0xa5, 256u);
+        std::memset((void *)cursor_base, 0xa5, 1024u);
 
-        std::array<int16_t, 16> pre{}, post{};
-        std::array<uint32_t, 36> expected_pre{}, expected_post{};
-        if (!pk4_process_segment(&reference, voice, nullptr, 0, trig,
-                                 255u, 45u, pre.data(), split))
-            return 3;
-        if (!pk4_process_segment(&reference, voice, src, 1, trig,
-                                 255u, 45u, post.data(), 16u - split))
-            return 4;
-        const uint32_t pre_longs =
-            pk4_encode_stock_segment(expected_pre.data(), pre.data(), split);
-        const uint32_t post_longs =
-            pk4_encode_stock_segment(expected_post.data(), post.data(), 16u - split);
+        for (unsigned voice = 0; voice < 4u; ++voice) {
+            const unsigned event = frame * 4u + voice;
+            const unsigned track = tracks[voice];
+            const unsigned step = frame;
+            const unsigned algo = (step + voice * 3u) & 3u;
+            const unsigned mode = (step * 2u + voice) % 3u;
+            const unsigned split = ((step >> 2) + voice * 3u + algo * 5u) & 15u;
+            const int trig = (event % 5u) != 0u;
+            const uint8_t src[6] = {
+                (uint8_t)((step * 17u + voice * 11u) & 127u),
+                (uint8_t)((step * 29u + voice * 7u) & 127u),
+                (uint8_t)((step * 43u + voice * 5u) & 127u),
+                (uint8_t)((step * 61u + voice * 3u) & 127u),
+                (uint8_t)mode,
+                (uint8_t)algo,
+            };
 
-        if (pk_render(track, event & 1u, 0u, split) != 0
-            || pk_render(track, event & 1u, split, 16u) != 0) {
-            std::cerr << "pk_render failed event=" << event << '\n';
-            return 5;
-        }
-        if (std::memcmp((void *)cursor_base, expected_pre.data(), pre_longs * 4u)) {
-            std::cerr << "pre record mismatch event=" << event
-                      << " track=" << track << " algo=" << algo
-                      << " mode=" << mode << " split=" << split << '\n';
-            return 10;
-        }
-        if (std::memcmp((void *)(cursor_base + pre_longs * 4u),
-                        expected_post.data(), post_longs * 4u)) {
-            std::cerr << "post record mismatch event=" << event
-                      << " track=" << track << " algo=" << algo
-                      << " mode=" << mode << " split=" << split << '\n';
-            return 11;
-        }
-        if (U32(0x80001c80u) != cursor_base + (pre_longs + post_longs) * 4u)
-            return 12;
-        if (pre_longs + post_longs != 40u)
-            return 13;
+            for (unsigned i = 0; i < 6u; ++i)
+                U16(0x80008000u + 2u * i) = (uint16_t)src[i] << 8;
+            U8(0x46104d0cu + track) = trig ? 16u : 0u;
+            const uintptr_t voice_cursor = U32(0x80001c80u);
 
-        matrix[voice][algo] += 16u;
-        split_mask[voice][algo] |= (uint16_t)(1u << split);
-        samples += 16u;
+            std::array<int16_t, 16> pre{}, post{};
+            std::array<uint32_t, 36> expected_pre{}, expected_post{};
+            if (!pk4_process_segment(&reference, voice, nullptr, 0, trig,
+                                     255u, 45u, pre.data(), split))
+                return 3;
+            if (!pk4_process_segment(&reference, voice, src, 1, trig,
+                                     255u, 45u, post.data(), 16u - split))
+                return 4;
+            const uint32_t pre_longs =
+                pk4_encode_stock_segment(expected_pre.data(), pre.data(), split);
+            const uint32_t post_longs =
+                pk4_encode_stock_segment(expected_post.data(), post.data(), 16u - split);
+
+            if (pk_render(track, event & 1u, 0u, split) != 0
+                || pk_render(track, event & 1u, split, 16u) != 0) {
+                std::cerr << "pk_render failed event=" << event << '\n';
+                return 5;
+            }
+            if (std::memcmp((void *)voice_cursor, expected_pre.data(), pre_longs * 4u)) {
+                std::cerr << "pre record mismatch event=" << event
+                          << " track=" << track << " algo=" << algo
+                          << " mode=" << mode << " split=" << split << '\n';
+                return 10;
+            }
+            if (std::memcmp((void *)(voice_cursor + pre_longs * 4u),
+                            expected_post.data(), post_longs * 4u)) {
+                std::cerr << "post record mismatch event=" << event
+                          << " track=" << track << " algo=" << algo
+                          << " mode=" << mode << " split=" << split << '\n';
+                return 11;
+            }
+            if (U32(0x80001c80u) != voice_cursor + (pre_longs + post_longs) * 4u)
+                return 12;
+            if (pre_longs + post_longs != 40u)
+                return 13;
+
+            matrix[voice][algo] += 16u;
+            split_mask[voice][algo] |= (uint16_t)(1u << split);
+            samples += 16u;
+        }
+        if (U32(0x80001c80u) != cursor_base + 4u * 160u) {
+            std::cerr << "four-voice frame span mismatch frame=" << frame << '\n';
+            return 14;
+        }
     }
 
-    std::cout << "PERKY production pk_render integration: PASS " << events
-              << " events / " << samples << " samples\n";
-    std::cout << "  exact two-segment stock records; 160-byte FLEX span preserved\n";
+    std::cout << "PERKY production pk_render integration: PASS " << frames
+              << " four-voice frames / " << events << " voice events / "
+              << samples << " samples\n";
+    std::cout << "  exact two-segment stock records; 160 bytes/voice and 640-byte four-voice frame span preserved\n";
     for (unsigned voice = 0; voice < 4u; ++voice) {
         std::cout << "  voice " << voice << ':';
         for (unsigned algo = 0; algo < 4u; ++algo) {
