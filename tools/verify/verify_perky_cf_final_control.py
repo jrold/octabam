@@ -21,6 +21,10 @@ required = (
     'case 4u: return 2;',
     'case 5u: return 3;',
     '"001 FOLD 1", "002 FOLD 2", "003 KARPLUS", "004 NOISE/TONE"',
+    'PK_FINAL_RUNTIME_COLD 0x504b434fu',
+    'PK_FINAL_RUNTIME_READY 0x504b5244u',
+    'pk_final_runtime_cookie != PK_FINAL_RUNTIME_READY',
+    'pk_final_runtime_cookie = PK_FINAL_RUNTIME_READY',
 )
 for needle in required:
     if needle not in s:
