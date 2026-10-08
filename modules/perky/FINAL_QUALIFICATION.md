@@ -42,12 +42,12 @@ The qualification extracts the exact pitch, chromatic, envelope and wave assets
 from that image and compares production ColdFire output to PerkyBits' native
 v1.2.1 reference renderers.
 
-`tools/verify/verify_perky_cf_qualified_sources.py` pins **33 PCM/control proof
+`tools/verify/verify_perky_cf_qualified_sources.py` pins **36 PCM/control proof
 files** by SHA-256, including the production renderers, shipping `pk_render()`
-path, top-level qualifier, runtime-reset and runtime-memory gates, source/FX
-architecture gates and stock-DSP identity checker. Packaging-only tooling such
-as the release builder and codegen audit is intentionally outside this PCM hash
-set and has its own release gates.
+path, top-level qualifier, stock-record ABI, p-lock reversion, runtime-reset and
+runtime-memory gates, source/FX architecture gates and stock-DSP identity
+checker. Packaging-only tooling such as the release builder and codegen audit is
+intentionally outside this PCM hash set and has its own release gates.
 
 Any pinned-source drift invalidates the PCM qualification until the complete
 suite is rerun and the manifest is deliberately refreshed.
@@ -115,6 +115,25 @@ rate with mono duplicated to L/R.
 - post-event segment renders from the new state.
 
 Result: **PASS**.
+
+### Non-sticky p-lock reversion
+
+`tools/verify/verify_perky_cf_plock_reversion.py` drives the actual shipping
+callback through **default -> locked Algo/Mode -> default** sequences.
+
+Result: **PASS — 44 voice/lock cases / 132 events / 2,112 exact samples**.
+The following unlocked/default trig returned to reference PCM after the locked
+trig, while `pk_render()` left both the staging values and persistent track SRC
+defaults unchanged.
+
+### Measured stock source-record ABI
+
+`tools/verify/verify_perky_cf_stock_record_abi.py` pins the production encoder
+to the hardware-measured FLEX source ABI: count/ring/rate/read-position header,
+unity-rate Q26 transport, and consecutive L/R sample lanes.
+
+Result: **PASS** for all **17** legal split positions; the two segments always
+total **40 longs / 160 bytes per voice**.
 
 ### Shipping `pk_render()` integration — four simultaneous voices
 
