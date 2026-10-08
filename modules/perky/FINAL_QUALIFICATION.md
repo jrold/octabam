@@ -42,12 +42,13 @@ The qualification extracts the exact pitch, chromatic, envelope and wave assets
 from that image and compares production ColdFire output to PerkyBits' native
 v1.2.1 reference renderers.
 
-`tools/verify/verify_perky_cf_qualified_sources.py` pins **36 PCM/control proof
+`tools/verify/verify_perky_cf_qualified_sources.py` pins **37 PCM/control proof
 files** by SHA-256, including the production renderers, shipping `pk_render()`
-path, top-level qualifier, stock-record ABI, p-lock reversion, runtime-reset and
-runtime-memory gates, source/FX architecture gates and stock-DSP identity
-checker. Packaging-only tooling such as the release builder and codegen audit is
-intentionally outside this PCM hash set and has its own release gates.
+path, top-level qualifier, hot-loop safety, stock-record ABI, p-lock reversion,
+runtime-reset and runtime-memory gates, source/FX architecture gates and the
+stock-DSP identity checker. Packaging-only tooling such as the release builder
+and codegen audit is intentionally outside this PCM hash set and has its own
+release gates.
 
 Any pinned-source drift invalidates the PCM qualification until the complete
 suite is rerun and the manifest is deliberately refreshed.
@@ -177,6 +178,16 @@ assets **22,552 bytes**, callback scratch <=256 bytes, and more than **10.4 MB**
 known margin in the platform DRAM reserve. A loaded non-zero `.data` cookie is
 required to force `pk4_init()` before the BSS-resident engine state is used.
 
+### ColdFire hot-loop safety
+
+`tools/verify/verify_perky_cf_hotloops.py` audits the production sample renderers
+for operations that would be especially dangerous on the MCF54455 audio path.
+
+Result: **PASS** — no renderer division/modulo, heap allocation or libc memory
+calls, and the optimized Noise/Tone renderer performs waveform lookup plus
+filter/noise setup outside its per-sample loop. Event-time control preparation
+is outside this hot-loop rule.
+
 ## Stock FX qualification
 
 Software architecture gates pass:
@@ -195,7 +206,8 @@ to remain byte-identical in the packaged MAIN OS.
 The release builder also cross-compiles the five ColdFire units and runs
 `tools/verify/verify_perky_cf_codegen.py`, which rejects compiler/libgcc/libc
 helper leakage, floating-point codegen and unexpected unresolved symbols before
-firmware linking.
+firmware linking. Its toolchain preflight requires a real `m68k-elf` target and
+successful `-mcpu=54455 -msoft-float` compilation before any release work begins.
 
 The packaged-image DSP identity check has **not** been executed in this sandbox
 because no m68k ColdFire cross-compiler can be imported here. The final release
