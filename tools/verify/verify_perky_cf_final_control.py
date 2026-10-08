@@ -20,6 +20,19 @@ required = (
     'engine_src[5] = src[PK_FINAL_ALGO]',
     'pk_final_trigger_latch[voice] = 1u',
     'trig = event_boundary && pk_final_trigger_latch[voice]',
+    'PK_FINAL_SLOT_BASE 0x80001c90u',
+    'PK_FINAL_SLOT_BYTES 336u',
+    'PK_FINAL_PING_BYTES 0xa80u',
+    'pk_final_fixed_slot(unsigned track, unsigned ping)',
+    'PK_FINAL_SLOT_BASE + (ping & 1u) * PK_FINAL_PING_BYTES',
+    '+ PK_FINAL_SLOT_BYTES * track',
+    'pk_final_frame_pcm[4][PK_FINAL_BLOCK_SAMPLES]',
+    'pk_final_frame_pcm[voice][start + i] = pcm[i]',
+    'cursor_longs = 4u + 2u * count',
+    'cursor[i] = 0u',
+    'record = pk_final_fixed_slot(track, ping)',
+    'record[pre_longs + i] = encoded[i]',
+    'pre_longs + post_longs != 40u',
     'pk_asset_pitch',
     'pk_asset_m1_wave',
     'case 0u: return 0;',
@@ -47,9 +60,17 @@ for bad in (
 if 'for (unsigned i = 0; i < 6u; ++i)' not in s or 'src[i] = (uint8_t)(fp[i] >> 8)' not in s:
     raise AssertionError('final event segment does not consume first-page A..F staging')
 
+# A regression to the old broken integration wrote the encoded PCM payload to
+# the moving source-builder cursor itself. The measured stock path uses that
+# cursor only to reserve span and commits the completed track record at the
+# fixed per-track/ping DMA slot. Reject direct encoded-payload cursor writes.
+if 'cursor[i] = encoded[i]' in s or 'cursor[i] = record[i]' in s:
+    raise AssertionError('encoded PCM leaked back onto moving cursor instead of fixed stock slot')
+
 print(
     'PERKY final CF control: PASS '
     '(SRC A-F=TUNE/DECAY/ALGO/PRM1/PRM2/MODE; four tracks; four Algos; '
     'split-event p-lock staging; trigger latched across callback halves; '
-    'cf_perky4 -> stock source record; redundant engine browser disabled)'
+    'moving cursor reservation + measured fixed track-slot PCM commit; '
+    'redundant engine browser disabled)'
 )
