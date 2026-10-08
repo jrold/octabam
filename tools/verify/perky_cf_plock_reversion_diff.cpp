@@ -61,6 +61,10 @@ static pk4_assets make_assets() {
     return a;
 }
 
+static std::array<uint8_t, 6> to_engine_src(const uint8_t page[6]) {
+    return {page[1], page[0], page[3], page[4], page[5], page[2]};
+}
+
 static void stage(const uint8_t src[6]) {
     constexpr uintptr_t stage_base = 0x80008000u;
     U32(0x800062a8u) = stage_base;
@@ -80,7 +84,8 @@ static int one_event(pk4_engine &reference, unsigned voice, unsigned track,
                      const uint8_t src[6], uintptr_t cursor) {
     std::array<int16_t, 16> pcm{};
     std::array<uint32_t, 36> expected{};
-    if (!pk4_process_segment(&reference, voice, src, 1, 1, 255u, 45u,
+    const auto engine = to_engine_src(src);
+    if (!pk4_process_segment(&reference, voice, engine.data(), 1, 1, 255u, 45u,
                              pcm.data(), 16u))
         return 20;
     if (pk4_encode_stock_segment(expected.data(), pcm.data(), 16u) != 36u)
@@ -92,6 +97,7 @@ static int one_event(pk4_engine &reference, unsigned voice, unsigned track,
     std::memset((void *)cursor, 0xa5, 192u);
     if (pk_render(track, 0u, 0u, 16u) != 0)
         return 22;
+    U8(0x46104d0cu + track) = 0u;
     if (std::memcmp((void *)cursor, expected.data(), 36u * 4u))
         return 23;
     if (U32(0x80001c80u) != cursor + 36u * 4u)
@@ -122,13 +128,14 @@ int main() {
         const unsigned track = tracks[voice];
         const uint8_t default_algo = (uint8_t)((voice + 1u) & 3u);
         const uint8_t default_mode = (uint8_t)((voice + 1u) % 3u);
+        /* Shipping page order: tune,decay,algo,p1,p2,mode. */
         const uint8_t defaults[6] = {
-            (uint8_t)(37u + voice * 9u),
             (uint8_t)(51u + voice * 7u),
+            (uint8_t)(37u + voice * 9u),
+            default_algo,
             (uint8_t)(65u + voice * 5u),
             (uint8_t)(79u + voice * 3u),
             default_mode,
-            default_algo,
         };
 
         for (unsigned locked_algo = 0; locked_algo < 4u; ++locked_algo) {
@@ -162,9 +169,9 @@ int main() {
                 uint8_t locked[6];
                 std::memcpy(locked, defaults, sizeof locked);
                 locked[0] ^= 0x1fu;
-                locked[2] ^= 0x35u;
-                locked[4] = (uint8_t)locked_mode;
-                locked[5] = (uint8_t)locked_algo;
+                locked[3] ^= 0x35u;
+                locked[2] = (uint8_t)locked_algo;
+                locked[5] = (uint8_t)locked_mode;
                 rc = one_event(reference, voice, track, locked, cursor);
                 if (rc) {
                     std::cerr << "locked failed voice=" << voice
