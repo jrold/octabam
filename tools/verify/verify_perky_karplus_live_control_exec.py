@@ -142,8 +142,8 @@ def main() -> None:
     layout = json.loads((WORK / 'layout.json').read_text())
     extra_y = perky_image.load_extra_y_init(WORK, layout)
     extra_x = perky_image.extra_state_init(layout)
-    if len(extra_y) != 6:
-        fail(f'expected six HW4 extra-Y assets, got {len(extra_y)}')
+    if len(extra_y) != 10:
+        fail(f'expected ten HW4 extra-Y assets (6 Karplus + 4 T6), got {len(extra_y)}')
     purposes = ' '.join(purpose.lower() for _base, _values, purpose in extra_y)
     for token in ('tune', 'decay', 'edge'):
         if token not in purposes:
@@ -252,7 +252,7 @@ def main() -> None:
     print(
         'PERKY Karplus live-control executable gate: PASS '
         '(TUNE/DECAY/EDGE/TWANG/MODE all alter actual composed DSP PCM on fresh '
-        'trigger and while already sounding; six HW4 Y assets loaded)'
+        'trigger and while already sounding; ten HW4 Y assets loaded)'
     )
 
 
