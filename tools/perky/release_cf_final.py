@@ -2,12 +2,12 @@
 """Guarded entry point for the final Perky Machines ColdFire release.
 
 This wrapper intentionally does not replace build_cf_final.py. It verifies the
-byte-pinned qualified source set, validates the automatic platform DRAM reserve
-and deterministic runtime memory/init contract, validates the ColdFire toolchain,
-generates and audits the exact assembly once, then invokes the qualified final
-builder. After the builder returns it proves both the stock DSP payload bytes
-and the ColdFire DSP uploader/boot path remain stock-identical, then audits the
-regenerated assembly again.
+byte-pinned qualified source set, validates the automatic platform DRAM reserve,
+deterministic runtime memory/init, and stock-DSP loader-continuation contracts,
+validates the ColdFire toolchain, generates and audits the exact assembly once,
+then invokes the qualified final builder. After the builder returns it proves
+both the stock DSP payload bytes and the ColdFire DSP uploader/boot path remain
+stock-identical, then audits the regenerated assembly again.
 """
 from __future__ import annotations
 
@@ -89,6 +89,7 @@ def main() -> None:
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_qualified_sources.py"])
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_platform_reserve.py"])
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_runtime_memory_final.py"])
+    run([sys.executable, ROOT / "tools/verify/verify_perky_cf_loader_contract.py"])
     toolchain_preflight()
 
     env = os.environ.copy()
