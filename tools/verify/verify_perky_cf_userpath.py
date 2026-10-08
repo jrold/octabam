@@ -8,9 +8,16 @@ sequencer and lets the normal source packer/DSP transport run.
 The fixture carries:
   * PERKY on T1/T2/T5/T6, one different Algo on each track;
   * ordinary FLEX controls on T3/T7 using a generated, staged 440 Hz sample;
-  * the same valid FLEX donor sample underneath the PERKY tracks, so the test
-    also detects accidental fall-through to stock FLEX by exact audio equality;
+  * PERKY's underlying FLEX slots pointed at each track's own recorder buffer
+    (R1/R2/R5/R6), not at the staged file sample. Recorder buffers are stock,
+    always-addressable FLEX objects and are the intended silent scheduling
+    donors for a sample-free synth machine;
   * repeated pattern trigs so startup-only success cannot pass.
+
+That donor distinction is intentional. A fresh PERKY machine must not depend on
+the user first loading a file sample into a FLEX slot. If the PERKY renderer is
+not actually reached, the empty recorder-buffer donor remains silent and this
+gate fails instead of accidentally passing on the test tone.
 
 The port currently has a documented dry-main gain limitation, so this gate uses
 the measured 84-word per-track source records captured by --block-dump. Those
@@ -51,6 +58,7 @@ SAMPLE_FRAMES = SR * 8
 SIGNIFICANT = 64
 MIN_SIGNIFICANT = 128
 MIN_DISTINCT = 32
+RECORDER_BASE = 128                 # FLEX object ids 128..135 are R1..R8
 
 
 def fail(message: str) -> "NoReturn":
@@ -65,15 +73,13 @@ def make_tone(path: pathlib.Path) -> None:
         w.setframerate(SR)
         frames = bytearray()
         for n in range(SAMPLE_FRAMES):
-            # Deliberately simple and deterministic; a PERKY track that falls
-            # through to stock FLEX will reproduce the same source stream as
-            # the control tracks and be rejected below.
             value = int(round(12000.0 * math.sin(2.0 * math.pi * 440.0 * n / SR)))
             frames += struct.pack("<hh", value, value)
         w.writeframes(frames)
 
 
 def install_sample_block(project: pathlib.Path) -> None:
+    """Install FLEX slot 1 only for the ordinary T3/T7 control tracks."""
     block = (
         "[SAMPLE]\r\n"
         "TYPE=FLEX\r\n"
@@ -102,8 +108,7 @@ def install_sample_block(project: pathlib.Path) -> None:
             at = raw.find(b"[STATES]")
         if at < 0:
             fail(f"{path.name}: no insertion point for sample slot")
-        raw = raw[:at] + block + raw[at:]
-        path.write_bytes(raw)
+        path.write_bytes(raw[:at] + block + raw[at:])
 
     # FLEX slot 1 marker record. An all-zero record is only a tiny default
     # slice; publish the real trim end so the stock control tracks sustain.
@@ -132,13 +137,15 @@ def configure_fixture(source: pathlib.Path, destination: pathlib.Path) -> pathli
                 file_base = otp.PART_BASE + part * otp.PART_STRIDE
                 live_base = file_base + 9
                 for track in range(8):
-                    # Every tested audio track is a normal FLEX donor at the
-                    # stock layer and points at the known staged sample.
-                    data[live_base + 0x22 + track] = 1
+                    data[live_base + 0x22 + track] = 1  # underlying stock FLEX
+                    # Ordinary tracks default to staged FLEX slot 1.
                     data[file_base + otp.SLOT_OFF + track * 5 + otp.SLOT_KIND["flex"]] = 0
                     data[live_base + 60 + 30 * track:live_base + 63 + 30 * track] = bytes(3)
 
                 for voice, track in enumerate(PERKY_INDEX):
+                    # PERKY must be schedulable without a file sample. Point the
+                    # hidden FLEX donor at that track's own recorder buffer.
+                    data[file_base + otp.SLOT_OFF + track * 5 + otp.SLOT_KIND["flex"]] = RECORDER_BASE + track
                     data[live_base + 60 + 30 * track:live_base + 63 + 30 * track] = b"PK\x01"
                     # Shipping SRC order: TUNE, DECAY, ALGO, PRM1, PRM2, MODE.
                     values = (64, 64, voice, 64, 64, voice % 3)
@@ -260,25 +267,12 @@ def main() -> None:
             fail(f"T{track + 1}: no later sequencer trig-state write observed (events={events[-8:]})")
 
     classes = bd.classes(bd.read(dump))
-    flex = {}
     for track in FLEX_TRACKS:
-        flex[track] = require_audio(classes, track, f"T{track} stock FLEX control")
+        require_audio(classes, track, f"T{track} stock FLEX control")
 
-    # Both stock controls use exactly the same sample/trigs. They need not have
-    # byte-identical startup tails, but each must prove ordinary FLEX still ran
-    # while all four PERKY renderers were active.
     perky = {}
     for voice, track in enumerate(PERKY_TRACKS):
         perky[track] = require_audio(classes, track, f"T{track} PERKY Algo {voice}")
-
-    # A broken PERKY signature/hook that silently falls through to stock FLEX
-    # would play the exact staged 440 Hz donor. Reject any long exact match to
-    # either stock control after startup.
-    for track, audio in perky.items():
-        for control_track, control in flex.items():
-            n = min(len(audio), len(control), 8192)
-            if n >= 2048 and audio[:n] == control[:n]:
-                fail(f"T{track}: PERKY source is exact stock FLEX T{control_track} fall-through")
 
     # Different Algos on all four voices must not collapse to one shared stream.
     tracks = list(PERKY_TRACKS)
@@ -291,10 +285,10 @@ def main() -> None:
     print("PERKY CF FULL USER PATH: PASS")
     print(f"  project load + real sequencer completed {args.frames} frames")
     print("  PERKY T1/T2/T5/T6 all emitted nonzero DSP-bound source PCM")
+    print("  PERKY tracks used their stock recorder buffers as silent FLEX donors")
     print("  Algos 0/1/2/3 exercised simultaneously and remained independent")
     print("  ordinary FLEX T3/T7 continued rendering the staged stock sample")
     print("  later sequencer trigs observed on all four PERKY tracks")
-    print("  no PERKY track fell through to the stock FLEX donor")
     print(f"  evidence: {log} / {dump}")
 
 
