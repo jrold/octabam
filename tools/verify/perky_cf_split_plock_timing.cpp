@@ -59,6 +59,8 @@ int main(int argc, char** argv) {
                 if(warm_g!=warm_r||std::memcmp(&got,&ref,sizeof(got))) return 12;
 
                 std::array<std::int16_t,16> pre_g{},pre_r{},post_g{},post_r{};
+                /* The incoming p-lock values are intentionally supplied to the
+                 * candidate pre-segment. event_boundary=0 MUST ignore them. */
                 if(!pk4_process_segment(&got,track,new_src,0,1,1,96,pre_g.data(),split)) return 20;
                 if(!pk4_render(&ref,track,pre_r.data(),split)) return 21;
                 if(pre_g!=pre_r||std::memcmp(&got,&ref,sizeof(got))) {
