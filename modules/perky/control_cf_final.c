@@ -48,6 +48,9 @@
 #define PK_FINAL_NOTE 45u
 #define PK_FINAL_VELOCITY 255u
 #define PK_FINAL_BLOCK_SAMPLES 16u
+#define PK_FINAL_SLOT_BYTES 336u
+#define PK_FINAL_PING_BYTES 0xa80u
+#define PK_FINAL_SLOT_BASE 0x80001c90u
 
 /* Generated at build time from the SHA-pinned user-supplied PĒRKONS v1.2.1 image. */
 extern const uint8_t pk_asset_pitch[];
@@ -69,6 +72,9 @@ static pk4_engine pk_final_engine;
 static uint32_t pk_final_bank;
 static uint8_t pk_final_part;
 static uint8_t pk_final_trigger_latch[4];
+static int16_t pk_final_frame_pcm[4][PK_FINAL_BLOCK_SAMPLES];
+static uint8_t pk_final_frame_started[4];
+static uint8_t pk_final_frame_ping[4];
 #define PK_FINAL_RUNTIME_COLD 0x504b434fu
 #define PK_FINAL_RUNTIME_READY 0x504b5244u
 static uint32_t pk_final_runtime_cookie = PK_FINAL_RUNTIME_COLD;
@@ -99,6 +105,13 @@ static int pk_final_voice_index(unsigned track)
     }
 }
 
+static volatile uint32_t *pk_final_fixed_slot(unsigned track, unsigned ping)
+{
+    return (volatile uint32_t *)(uintptr_t)
+        (PK_FINAL_SLOT_BASE + (ping & 1u) * PK_FINAL_PING_BYTES
+         + PK_FINAL_SLOT_BYTES * track);
+}
+
 static void pk_final_reset_runtime_if_needed(void)
 {
     const uint32_t bank = U32(BANK);
@@ -106,8 +119,13 @@ static void pk_final_reset_runtime_if_needed(void)
     if (pk_final_runtime_cookie != PK_FINAL_RUNTIME_READY
         || pk_final_bank != bank || pk_final_part != part) {
         pk4_init(&pk_final_engine, &pk_final_assets);
-        for (unsigned i = 0; i < 4u; ++i)
-            pk_final_trigger_latch[i] = 0u;
+        for (unsigned voice = 0; voice < 4u; ++voice) {
+            pk_final_trigger_latch[voice] = 0u;
+            pk_final_frame_started[voice] = 0u;
+            pk_final_frame_ping[voice] = 0u;
+            for (unsigned sample = 0; sample < PK_FINAL_BLOCK_SAMPLES; ++sample)
+                pk_final_frame_pcm[voice][sample] = 0;
+        }
         pk_final_bank = bank;
         pk_final_part = part;
         pk_final_runtime_cookie = PK_FINAL_RUNTIME_READY;
@@ -172,14 +190,13 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
     uint8_t src[6];
     uint8_t engine_src[6];
     int16_t pcm[PK_FINAL_BLOCK_SAMPLES];
-    uint32_t record[4u + 2u * PK_FINAL_BLOCK_SAMPLES];
-    uint32_t longs;
+    uint32_t encoded[4u + 2u * PK_FINAL_BLOCK_SAMPLES];
+    uint32_t cursor_longs;
     unsigned count;
     int voice;
     int trig;
     int event_boundary;
 
-    (void)ping;
     voice = pk_final_voice_index(track);
     if (track >= 8u || voice < 0 || !signed_track(part_base(), track))
         return ((int (*)(unsigned, unsigned, unsigned, unsigned))0x40004008u)
@@ -191,10 +208,38 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
     cursor = (volatile uint32_t *)(uintptr_t)U32(0x80001c80u);
     event_boundary = end == PK_FINAL_BLOCK_SAMPLES;
 
-    /* The first stock segment precedes the trig/event split. It must continue
-     * the already-active voice unchanged even though the staging buffer may
-     * already contain this trig's p-locks. Only the segment that ends at 16
-     * consumes A..F and triggers the newly selected Algo/Mode. */
+    pk_final_reset_runtime_if_needed();
+
+    /* The stock source packer owns a moving cursor while it constructs each
+     * 336-byte per-track DMA slot.  A renderer is called twice around the event
+     * split.  The proven ANALOG BD seam advances/reserves that moving cursor,
+     * but commits its completed record through the fixed per-track slot because
+     * the first callback of a newly-selected source may still have been stock
+     * FLEX.  Do the same here: render into a 16-sample frame cache, reserve the
+     * caller's cursor span on each callback, then atomically replace the first
+     * 160 bytes of the fixed slot when the boundary callback arrives. */
+    if (start == 0u) {
+        for (unsigned i = 0; i < PK_FINAL_BLOCK_SAMPLES; ++i)
+            pk_final_frame_pcm[voice][i] = 0;
+        pk_final_frame_started[voice] = 1u;
+        pk_final_frame_ping[voice] = (uint8_t)(ping & 1u);
+    } else if (event_boundary
+               && (!pk_final_frame_started[voice]
+                   || pk_final_frame_ping[voice] != (uint8_t)(ping & 1u))) {
+        /* First-hit handoff: the pre-event half may have been rendered by the
+         * stock FLEX function before the PK/1 signature became active.  The
+         * synth was silent before its first trigger, so make that unavailable
+         * prefix explicitly silent instead of reusing stale PCM. */
+        for (unsigned i = 0; i < start; ++i)
+            pk_final_frame_pcm[voice][i] = 0;
+        pk_final_frame_started[voice] = 1u;
+        pk_final_frame_ping[voice] = (uint8_t)(ping & 1u);
+    }
+
+    /* The first segment precedes the trig/event split. It must continue the
+     * already-active voice unchanged even though the staging buffer may already
+     * contain this trig's p-locks. Only the segment ending at 16 consumes A..F
+     * and triggers the newly selected Algo/Mode. */
     if (event_boundary) {
         fp = (volatile uint16_t *)(uintptr_t)U32(0x800062a8u);
         for (unsigned i = 0; i < 6u; ++i)
@@ -215,8 +260,6 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
         engine_src[5] = src[PK_FINAL_ALGO];
     }
 
-    pk_final_reset_runtime_if_needed();
-
     /* Real hardware may expose the stock trig bit during either half of the
      * split source callback. Latch any observation until the event-boundary
      * half consumes it, instead of requiring the bit to still be live at 16. */
@@ -232,15 +275,43 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
         for (unsigned i = 0; i < count; ++i)
             pcm[i] = 0;
     }
-    if (event_boundary)
-        pk_final_trigger_latch[voice] = 0u;
+    for (unsigned i = 0; i < count; ++i)
+        pk_final_frame_pcm[voice][start + i] = pcm[i];
 
-    longs = pk4_encode_stock_segment(record, pcm, count);
-    if (!longs)
-        return 0;
-    for (uint32_t i = 0; i < longs; ++i)
-        cursor[i] = record[i];
-    U32(0x80001c80u) = (uint32_t)(uintptr_t)(cursor + longs);
+    /* Preserve the exact stock cursor contract.  At unity rate each callback
+     * reserves one four-long header plus two longs per source sample.  The
+     * fixed-slot commit below is separate from cursor ownership. */
+    cursor_longs = 4u + 2u * count;
+    for (uint32_t i = 0; i < cursor_longs; ++i)
+        cursor[i] = 0u;
+    U32(0x80001c80u) = (uint32_t)(uintptr_t)(cursor + cursor_longs);
+
+    if (event_boundary) {
+        volatile uint32_t *record = pk_final_fixed_slot(track, ping);
+        const unsigned split = start;
+        uint32_t pre_longs = pk4_encode_stock_segment(
+            encoded, pk_final_frame_pcm[voice], split);
+        if (!pre_longs)
+            return 0;
+        for (uint32_t i = 0; i < pre_longs; ++i)
+            record[i] = encoded[i];
+
+        uint32_t post_longs = pk4_encode_stock_segment(
+            encoded, pk_final_frame_pcm[voice] + split,
+            PK_FINAL_BLOCK_SAMPLES - split);
+        if (!post_longs)
+            return 0;
+        for (uint32_t i = 0; i < post_longs; ++i)
+            record[pre_longs + i] = encoded[i];
+
+        /* Two unity-rate callbacks must occupy exactly 40 longs / 160 bytes.
+         * Leave the remaining 176 bytes of the stock 336-byte track slot alone. */
+        if (pre_longs + post_longs != 40u)
+            return 0;
+
+        pk_final_trigger_latch[voice] = 0u;
+        pk_final_frame_started[voice] = 0u;
+    }
 
     ++pk_render_calls;
     if (trig)
