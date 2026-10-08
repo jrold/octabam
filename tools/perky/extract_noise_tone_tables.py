@@ -35,6 +35,12 @@ WAVE_POINTER_OFFSETS = (0x38, 0x3C, 0xD0, 0xD4)
 M1_WAVE_POINTER_OFFSETS = (0xE4, 0xE8)
 M1_WAVE_BYTES = 2048 * 2
 
+# Statically verified in the original v1.2.1 M7 image. Keep this path pinned to
+# the exact image hash: these are firmware addresses, not a cross-version ABI.
+V121_IMAGE_SHA256 = "adcdbc4a2c660ffb6477f202211ae3cb70170bfe6ddfaecc3df0e4cb7db398c6"
+V121_SHARED_WAVE_ADDRESSES = (0x080222A0, 0x080224A0, 0x080226A0, 0x080228A0)
+V121_M1_WAVE_ADDRESSES = (0x080310E0,)
+
 
 @dataclass(frozen=True)
 class Segment:
@@ -198,8 +204,15 @@ def _sha256(data: bytes) -> str:
 
 def extract(image: Path, out_dir: Path, *, state_path: Path | None = None,
             extra_waves: Iterable[int] = (),
-            m1_state_path: Path | None = None) -> dict:
+            m1_state_path: Path | None = None,
+            v121_defaults: bool = False) -> dict:
     raw = image.read_bytes()
+    image_sha = _sha256(raw)
+    if v121_defaults and image_sha != V121_IMAGE_SHA256:
+        raise ValueError(
+            "--v121-defaults requires the pinned PĒRKONS v1.2.1 image; "
+            f"got sha256={image_sha}"
+        )
     product, segments = parse_container(raw)
     m7 = find_m7(segments)
 
@@ -221,6 +234,8 @@ def extract(image: Path, out_dir: Path, *, state_path: Path | None = None,
     emit("envelope2.bin", ENVELOPE2_ADDR, ENVELOPE_BYTES)
 
     waves = list(extra_waves)
+    if v121_defaults:
+        waves.extend(V121_SHARED_WAVE_ADDRESSES)
     state_sha = None
     if state_path is not None:
         state = state_path.read_bytes()
@@ -228,11 +243,11 @@ def extract(image: Path, out_dir: Path, *, state_path: Path | None = None,
         waves.extend(wave_addresses_from_state(state))
 
     m1_state_sha = None
-    m1_waves: list[int] = []
+    m1_waves: list[int] = list(V121_M1_WAVE_ADDRESSES) if v121_defaults else []
     if m1_state_path is not None:
         m1_state = m1_state_path.read_bytes()
         m1_state_sha = _sha256(m1_state)
-        m1_waves = m1_wave_addresses_from_state(m1_state)
+        m1_waves.extend(m1_wave_addresses_from_state(m1_state))
 
     # Different modes use different pointer offsets AND different table sizes.
     # Deduplicate by address, but reject contradictory sizes at one address.
@@ -251,7 +266,7 @@ def extract(image: Path, out_dir: Path, *, state_path: Path | None = None,
 
     manifest = {
         "source_image": image.name,
-        "source_sha256": _sha256(raw),
+        "source_sha256": image_sha,
         "product": product,
         "m7_load_address": f"0x{m7.load_address:08x}",
         "m7_bytes": len(m7.data),
@@ -281,13 +296,16 @@ def main() -> None:
                     help="prepared 0x120-byte shared Noise/Tone state; derives four wave pointers")
     ap.add_argument("--m1-state", type=Path,
                     help="prepared 0x120-byte M1 Waveform2 state; derives two 2048-sample wave pointers")
+    ap.add_argument("--v121-defaults", action="store_true",
+                    help="extract the statically verified original-v1.2.1 T6 wave bank (hash-pinned)")
     ap.add_argument("--wave", action="append", default=[], type=_parse_address,
                     help="extra/bring-up wave address (repeatable; decimal or 0xHEX)")
     ap.add_argument("--out", type=Path, default=Path("out/perky/noise-tone-tables"))
     args = ap.parse_args()
 
     manifest = extract(args.image, args.out, state_path=args.state,
-                       extra_waves=args.wave, m1_state_path=args.m1_state)
+                       extra_waves=args.wave, m1_state_path=args.m1_state,
+                       v121_defaults=args.v121_defaults)
     print(f"PĒRKONS product: {manifest['product'] or '(unnamed)'}")
     print(f"M7: {manifest['m7_bytes']} bytes @ {manifest['m7_load_address']}")
     for item in manifest["files"]:
