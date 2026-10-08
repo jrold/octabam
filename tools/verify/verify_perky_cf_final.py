@@ -132,6 +132,12 @@ def main() -> None:
     exe = compile_cpp("perky4_render_stress", work, objects, pb, native=True)
     run([exe, asset])
 
+    # Long-tail continuity: one trigger followed by 8192 samples in 16-sample
+    # blocks, across every voice/Algo/Mode and three control profiles. This
+    # catches state/RNG/envelope/ring drift that short trigger blocks can miss.
+    exe = compile_cpp("perky4_long_tail_diff", work, objects, pb, native=True)
+    run([exe, asset])
+
     # Exact stock-frame event split: old Algo/state before event, all six new
     # p-lock values become active only at/after the event boundary.
     exe = compile_cpp("perky_cf_split_plock_timing", work, objects, pb)
@@ -166,6 +172,7 @@ def main() -> None:
     print("  SRC=A Decay,B Tune,C Param1,D Param2,E Mode,F Algo; all p-lock sequence/split gates passed")
     print("  supported Algo=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3)")
     print("  production control->PCM=196608 exact samples per Algo (786432 total)")
+    print("  long-tail continuity=144 cases / 1179648 exact samples / 512 consecutive 16-sample blocks per case")
     print("  production pk_render=1024 simultaneous four-voice frames / 4096 voice events / 65536 samples; all 4x4 voice/algo pairs and all 16 split offsets")
     print("  p-lock reversion=44 voice/lock cases / 132 events / 2112 exact samples; default->lock->default non-sticky")
     print("  runtime reset=16 voice/algo cases across Part A0->A1->A0 and Bank A->B; exact cold PCM")
