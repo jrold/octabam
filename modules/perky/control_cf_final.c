@@ -1,7 +1,7 @@
 /* Final Perky Machines ColdFire source-machine integration.
  *
  * Locked SRC page:
- *   A DECAY / B TUNE / C PARAM1 / D PARAM2 / E MODE / F ALGO
+ *   A TUNE / B DECAY / C ALGO / D PRM1 / E PRM2 / F MODE
  *
  * Four independent voices live on OT tracks 1,2,5,6 (zero-based 0,1,4,5).
  * The native PĒRKONS renderers run on ColdFire and publish ordinary stock
@@ -38,12 +38,12 @@
 
 #include "cf_perky4.h"
 
-#define PK_FINAL_DECAY 0u
-#define PK_FINAL_TUNE 1u
-#define PK_FINAL_PARAM1 2u
-#define PK_FINAL_PARAM2 3u
-#define PK_FINAL_MODE 4u
-#define PK_FINAL_ALGO 5u
+#define PK_FINAL_TUNE 0u
+#define PK_FINAL_DECAY 1u
+#define PK_FINAL_ALGO 2u
+#define PK_FINAL_PARAM1 3u
+#define PK_FINAL_PARAM2 4u
+#define PK_FINAL_MODE 5u
 #define PK_FINAL_ALGO_COUNT 4u
 #define PK_FINAL_NOTE 45u
 #define PK_FINAL_VELOCITY 255u
@@ -61,13 +61,14 @@ extern const uint8_t pk_asset_wave2[];
 extern const uint8_t pk_asset_wave3[];
 
 const uint8_t pk_defaults[12] = {
-    64, 64, 64, 64, 0, 0,
+    64, 64, 0, 64, 64, 0,
     0, 0, 0, 0, 0, 0
 };
 
 static pk4_engine pk_final_engine;
 static uint32_t pk_final_bank;
 static uint8_t pk_final_part;
+static uint8_t pk_final_trigger_latch[4];
 #define PK_FINAL_RUNTIME_COLD 0x504b434fu
 #define PK_FINAL_RUNTIME_READY 0x504b5244u
 static uint32_t pk_final_runtime_cookie = PK_FINAL_RUNTIME_COLD;
@@ -105,6 +106,8 @@ static void pk_final_reset_runtime_if_needed(void)
     if (pk_final_runtime_cookie != PK_FINAL_RUNTIME_READY
         || pk_final_bank != bank || pk_final_part != part) {
         pk4_init(&pk_final_engine, &pk_final_assets);
+        for (unsigned i = 0; i < 4u; ++i)
+            pk_final_trigger_latch[i] = 0u;
         pk_final_bank = bank;
         pk_final_part = part;
         pk_final_runtime_cookie = PK_FINAL_RUNTIME_READY;
@@ -114,21 +117,28 @@ static void pk_final_reset_runtime_if_needed(void)
 static uint32_t pk_final_page(void)
 {
     static const char *const names[6] = {
-        "DECAY", "TUNE", "PAR1", "PAR2", "MODE", "ALGO"
+        "TUNE", "DECAY", "ALGO", "PRM1", "PRM2", "MODE"
     };
     (void)page_for_cf_legacy(DEFAULT_ENGINE);
     text(desc + 0x41, "PERKY MACH", 13);
     for (unsigned i = 0; i < 6u; ++i) {
+        uint32_t maximum = 128u;
+        uint32_t formatter = 0u;
+        uint32_t widget = 0u;
+        if (i == PK_FINAL_ALGO) {
+            maximum = PK_FINAL_ALGO_COUNT;
+            formatter = MODE_FORMATTER;
+        } else if (i == PK_FINAL_MODE) {
+            maximum = 3u;
+            formatter = MODE_FORMATTER;
+            widget = MODE_WIDGET;
+        }
         text(desc + 0x4e + 6u * i, names[i], 6);
         desc[0x96 + i] = pk_defaults[i];
         put32(desc + 0xa2 + 4u * i, 0);
-        put32(desc + 0xd2 + 4u * i,
-              i < PK_FINAL_MODE ? 128u
-              : (i == PK_FINAL_MODE ? 3u : PK_FINAL_ALGO_COUNT));
-        put32(desc + 0x102 + 4u * i,
-              i >= PK_FINAL_MODE ? MODE_FORMATTER : 0);
-        put32(desc + 0x132 + 4u * i,
-              i == PK_FINAL_MODE ? MODE_WIDGET : 0);
+        put32(desc + 0xd2 + 4u * i, maximum);
+        put32(desc + 0x102 + 4u * i, formatter);
+        put32(desc + 0x132 + 4u * i, widget);
         put32(desc + 0x162 + 4u * i, 0);
     }
     /* Publish exactly A..F to the normal source/p-lock staging path. */
@@ -160,6 +170,7 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
     volatile uint32_t *cursor;
     volatile uint16_t *fp;
     uint8_t src[6];
+    uint8_t engine_src[6];
     int16_t pcm[PK_FINAL_BLOCK_SAMPLES];
     uint32_t record[4u + 2u * PK_FINAL_BLOCK_SAMPLES];
     uint32_t longs;
@@ -192,18 +203,37 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
             src[PK_FINAL_MODE] = 2u;
         if (src[PK_FINAL_ALGO] >= PK_FINAL_ALGO_COUNT)
             src[PK_FINAL_ALGO] = 0u;
+
+        /* The synthesis core deliberately retains its recovered firmware
+         * argument order: decay,tune,p1,p2,mode,algo. Keep the Octatrack page
+         * order independent by remapping only at this adapter boundary. */
+        engine_src[0] = src[PK_FINAL_DECAY];
+        engine_src[1] = src[PK_FINAL_TUNE];
+        engine_src[2] = src[PK_FINAL_PARAM1];
+        engine_src[3] = src[PK_FINAL_PARAM2];
+        engine_src[4] = src[PK_FINAL_MODE];
+        engine_src[5] = src[PK_FINAL_ALGO];
     }
 
     pk_final_reset_runtime_if_needed();
-    trig = (U8(0x46104d0cu + track) & 16u) != 0u;
+
+    /* Real hardware may expose the stock trig bit during either half of the
+     * split source callback. Latch any observation until the event-boundary
+     * half consumes it, instead of requiring the bit to still be live at 16. */
+    if ((U8(0x46104d0cu + track) & 16u) != 0u)
+        pk_final_trigger_latch[voice] = 1u;
+    trig = event_boundary && pk_final_trigger_latch[voice];
+
     if (!pk4_process_segment(
             &pk_final_engine, (unsigned)voice,
-            event_boundary ? src : (const uint8_t *)0,
+            event_boundary ? engine_src : (const uint8_t *)0,
             event_boundary, trig, PK_FINAL_VELOCITY, PK_FINAL_NOTE,
             pcm, count)) {
         for (unsigned i = 0; i < count; ++i)
             pcm[i] = 0;
     }
+    if (event_boundary)
+        pk_final_trigger_latch[voice] = 0u;
 
     longs = pk4_encode_stock_segment(record, pcm, count);
     if (!longs)
@@ -213,116 +243,37 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
     U32(0x80001c80u) = (uint32_t)(uintptr_t)(cursor + longs);
 
     ++pk_render_calls;
-    if (trig && event_boundary)
+    if (trig)
         ++pk_hits;
     return 0;
 }
 
-/* Algo is already a first-page p-lockable source parameter. The optional
- * double-tap list is kept only as a convenience and writes that same slot. */
-static uint32_t pk_final_engine_bank;
-static unsigned pk_final_engine_part;
-static unsigned pk_final_engine_track;
-static const char *const pk_final_engine_labels[] = {
-    "001 FOLD 1", "002 FOLD 2", "003 KARPLUS", "004 NOISE/TONE"
-};
-
+/* ALGO is a first-class, p-lockable SRC parameter. The old PERKY four-item
+ * double-tap/right-arrow engine browser is intentionally disabled so there is
+ * only one Algo selection path. Keep these symbols because machine.s and the
+ * measured stock hook surface still reference them. */
 void pk_engine_select(unsigned algo)
 {
-    unsigned offset;
-    if (algo >= PK_FINAL_ALGO_COUNT
-        || U32(BANK) != pk_final_engine_bank
-        || (U8(PART_IDX) & 3u) != pk_final_engine_part
-        || U8(0x100b14ccu) != pk_final_engine_track
-        || !pk_selected_source())
-        return;
-    offset = source_offset(pk_final_engine_track, PK_FINAL_ALGO);
-    part_base()[offset] = (uint8_t)algo;
-    U8(0x100a4eceu + PART_STRIDE * pk_final_engine_part + offset) = (uint8_t)algo;
-    U8(pk_final_engine_bank + 0x95048u) |= (uint8_t)(1u << pk_final_engine_part);
-    U8(0x100b145eu) |= (uint8_t)(1u << pk_final_engine_part);
-    U32(pk_final_engine_bank + 0x9b332u) = 1u;
-    U32(0x100f8598u) = 1u;
-    ((void (*)(void))0x40027e00u)();
-    pk_ui_tick();
-    ((void (*)(void))0x4004d948u)();
+    (void)algo;
 }
-
-static void pk_final_algo0(void) { pk_engine_select(0u); }
-static void pk_final_algo1(void) { pk_engine_select(1u); }
-static void pk_final_algo2(void) { pk_engine_select(2u); }
-static void pk_final_algo3(void) { pk_engine_select(3u); }
 
 unsigned pk_engine_draw(void)
 {
-    const uint32_t window = U32(0x460e5e30u);
-    if (!window || U32(0x460e5e2cu) != (uint32_t)(uintptr_t)pk_final_engine_labels)
-        return 0u;
-    void *surface = (void *)(uintptr_t)(window + 0x24u);
-    ((void (*)(void *))0x4003567cu)(surface);
-    const int height = (int)U32(window + 0x28u);
-    for (unsigned row = 0; row < PK_FINAL_ALGO_COUNT; ++row) {
-        const int y = height - 23 - 7 * (int)row;
-        ((void (*)(uint32_t, void *, int, int, int, const char *))0x40012bd8u)
-            (0x400ba876u, surface, 5, y, -1, pk_final_engine_labels[row]);
-        if (row == U32(0x460e5e40u))
-            ((void (*)(void *, int, int, int, int, int))0x40012254u)
-                (surface, 3, y - 1, (int)U32(window + 0x24u) - 5, y + 5, -1);
-    }
-    U32(0x46c7c72cu) = 1u;
-    return 1u;
+    return 0u;
 }
 
 void pk_engine_open(void)
 {
-    static void (*const handlers[])(void) = {
-        pk_final_algo0, pk_final_algo1, pk_final_algo2, pk_final_algo3
-    };
-    if (!pk_selected_source() || U32(0x460e5e30u))
-        return;
-    pk_final_engine_bank = U32(BANK);
-    pk_final_engine_part = U8(PART_IDX) & 3u;
-    pk_final_engine_track = U8(0x100b14ccu);
-    ((void (*)(uint32_t, unsigned, unsigned))0x4007ec60u)
-        (0x460e5e38u, 6u, PK_FINAL_ALGO_COUNT);
-    ((void (*)(uint32_t, unsigned))0x4007edb0u)
-        (0x460e5e38u,
-         part_base()[source_offset(pk_final_engine_track, PK_FINAL_ALGO)]
-             % PK_FINAL_ALGO_COUNT);
-    U32(0x460e5e28u) = (uint32_t)(uintptr_t)handlers;
-    U32(0x460e5e2cu) = (uint32_t)(uintptr_t)pk_final_engine_labels;
-    U32(0x460e5e34u) = 0u;
-    {
-        const uint32_t window =
-            ((uint32_t (*)(int, int, int, int, int, uint32_t))0x4005829cu)
-                (110, 64, -1, 0, 1, 0x4006d754u);
-        U32(0x460e5e30u) = window;
-        if (!window)
-            return;
-        ((void (*)(uint32_t, const char *, unsigned))0x400570b8u)
-            (window, "\xab MACHINE:PERKY", 0u);
-        ((void (*)(uint32_t))0x40031494u)(0x400ce0c4u);
-        pk_engine_draw();
-    }
 }
 
 void pk_engine_left(void)
 {
-    if (!U32(0x460e5e30u)
-        || U32(0x460e5e2cu) != (uint32_t)(uintptr_t)pk_final_engine_labels)
-        return;
-    ((void (*)(void))0x4006d754u)();
-    pk_stock_pool_open();
-    ((void (*)(void))0x4007893cu)();
 }
 
 void pk_engine_right(unsigned key, unsigned value)
 {
     if (U32(0x460e70e0u) && !U32(0x460e739au)
-        && U32(0x460e738eu) == PERKY_ROW && pk_selected_source()) {
-        ((void (*)(void))0x400789e4u)();
-        pk_engine_open();
+        && U32(0x460e738eu) == PERKY_ROW && pk_selected_source())
         return;
-    }
     ((void (*)(unsigned, unsigned))0x4007909cu)(key, value);
 }
