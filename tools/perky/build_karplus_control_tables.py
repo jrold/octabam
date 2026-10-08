@@ -1,21 +1,26 @@
 #!/usr/bin/env python3
 """Generate exact v1.2.1 Karplus live-control lookup tables for HW4.
 
-The shipping DSP should not approximate the recovered ARM update law.  This
-builder derives three 4096-entry u16 functions from the user's pinned firmware
+The Octatrack exposes exactly 128 source-control positions. Its PERKY transport
+maps 0..126 to prepared ``raw << 5`` and 127 to 4095; therefore
+``prepared >> 5`` recovers exactly 0..127 for every reachable value. We only
+need truth tables for those 128 points, not all 4096 theoretical PĒRKONS target
+values.
+
+This builder derives three exact u16 functions from the user's pinned firmware
 and authenticated Karplus fixture:
 
-* prepared TUNE -> 2K-ring delay length;
-* prepared DECAY -> amplitude-envelope decay rate;
-* prepared EDGE -> resonant-filter coefficient.
+* OT TUNE position -> exact 2K-ring delay length;
+* OT DECAY position -> exact amplitude-envelope decay rate;
+* OT EDGE position -> exact resonant-filter coefficient.
 
-TWANG is exactly ``prepared >> 1`` and needs no table.  The amplitude attack
+TWANG is exactly ``prepared >> 1`` and needs no table. The amplitude attack
 rate and decay/gate threshold are constants from the authentic initialized
 Karplus object and are recorded in the manifest.
 
-Each u16 table uses Octabam's existing 3-samples-in-2-DSP-words packing.  Three
-4096-entry tables therefore cost 3 * 2731 = 8193 Y words.  No firmware/table
-bytes are committed; output lives under ignored ``out/perky``.
+Each 128-entry u16 table uses Octabam's existing 3-samples-in-2-DSP-words
+packing and costs only 86 Y words. No firmware/table bytes are committed;
+output lives under ignored ``out/perky``.
 """
 from __future__ import annotations
 
@@ -24,7 +29,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import struct
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -72,13 +76,23 @@ def authenticated_state(fixtures: Path) -> tuple[bytes, dict]:
     return state, manifest
 
 
+def prepared_for_ot(raw: int) -> int:
+    if not 0 <= raw < memory.KARPLUS_CONTROL_LUT_ENTRIES:
+        raise ValueError(raw)
+    return 4095 if raw == 127 else raw << 5
+
+
 def table_file(path: Path, values: list[int]) -> dict:
-    if len(values) != 4096 or any(not 0 <= value <= 0xFFFF for value in values):
-        raise ValueError("Karplus control table must be exactly 4096 u16 values")
+    if len(values) != memory.KARPLUS_CONTROL_LUT_ENTRIES:
+        raise ValueError(
+            f"Karplus OT table must have {memory.KARPLUS_CONTROL_LUT_ENTRIES} entries"
+        )
+    if any(not 0 <= value <= 0xFFFF for value in values):
+        raise ValueError("Karplus control table escaped u16")
     words = packed_u16.pack_u16(values)
     if len(words) != memory.KARPLUS_CONTROL_LUT_WORDS:
         raise AssertionError(
-            f"4096 u16 values packed to {len(words)} words, "
+            f"{len(values)} u16 values packed to {len(words)} words, "
             f"expected {memory.KARPLUS_CONTROL_LUT_WORDS}"
         )
     payload = words24_bytes(words)
@@ -89,7 +103,7 @@ def table_file(path: Path, values: list[int]) -> dict:
         "words": len(words),
         "sha256": hashlib.sha256(payload).hexdigest(),
         "first": values[0],
-        "middle": values[2048],
+        "middle": values[64],
         "last": values[-1],
     }
 
@@ -121,10 +135,13 @@ def build(firmware: Path, out: Path, fixtures: Path = FIX) -> dict:
     gate_threshold = update.u16(state, 8)
     attack_parameter = simple_control._time_parameter(update.u16(state, 0x0A))
     attack_rate = update._envelope_rate(state, 0x74, attack_parameter, False)
+    prepared = [prepared_for_ot(raw) for raw in range(128)]
+    if [value >> 5 for value in prepared] != list(range(128)):
+        raise AssertionError("prepared>>5 no longer recovers every OT source position")
 
     tune_delay = [
         update.karplus_delay(value, note, pitch, chromatic)
-        for value in range(4096)
+        for value in prepared
     ]
     decay_rate = [
         update._envelope_rate(
@@ -133,12 +150,10 @@ def build(firmware: Path, out: Path, fixtures: Path = FIX) -> dict:
             simple_control._time_parameter(value),
             True,
         )
-        for value in range(4096)
+        for value in prepared
     ]
-    edge_coeff = [update.karplus_coefficient(value) for value in range(4096)]
+    edge_coeff = [update.karplus_coefficient(value) for value in prepared]
 
-    # Delay is a 2K ring index distance.  All three functions are u16-valued and
-    # deterministic over the complete prepared-control domain.
     if max(tune_delay) > 0x800:
         raise AssertionError(f"Karplus delay exceeds ring: {max(tune_delay)}")
 
@@ -155,10 +170,12 @@ def build(firmware: Path, out: Path, fixtures: Path = FIX) -> dict:
         tables.append(info)
 
     report = {
-        "schema": "octabam.perky.karplus-live-control.v1",
+        "schema": "octabam.perky.karplus-live-control.v2",
         "firmware_sha256": image_sha,
         "fixture": str((fixtures / CASE.relative_to(FIX) / STATE_FILE.name)),
-        "prepared_domain": [0, 4095],
+        "ot_domain": [0, 127],
+        "ot_to_prepared": "0..126 => raw<<5; 127 => 4095",
+        "lookup_index": "prepared >> 5",
         "note": note,
         "gate_threshold": gate_threshold,
         "attack_rate": attack_rate,
@@ -172,15 +189,15 @@ def build(firmware: Path, out: Path, fixtures: Path = FIX) -> dict:
     }
     (out / "manifest.json").write_text(json.dumps(report, indent=2) + "\n")
 
-    print("Karplus live-control tables: generated")
+    print("Karplus exact OT-domain live-control tables: generated")
     for table in tables:
         print(
-            f"  {table['name']:10s}: Y:${table['base_word']:04x} "
-            f"{table['words']} words"
+            f"  {table['name']:10s}: {table['entries']} entries, "
+            f"Y:${table['base_word']:04x}, {table['words']} words"
         )
     print(
         f"  end Y:${memory.HW4_Y_END:04x}; "
-        f"{memory.HW4_Y_BOOT_CLEAR - memory.HW4_Y_END} words before boot clear"
+        f"{memory.HW4_Y_BOOT_CLEAR - memory.HW4_Y_END} words free before boot clear"
     )
     print(f"  attack={attack_rate} gate-threshold={gate_threshold} note={note}")
     return report
