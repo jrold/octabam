@@ -82,6 +82,7 @@ def main() -> None:
     # Static/final-architecture gates first.
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_final_control.py"])
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_freestanding.py"])
+    run([sys.executable, ROOT / "tools/verify/verify_perky_cf_runtime_memory_final.py"])
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_machine_module.py"])
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_final_remix.py"])
     # Directly verifies full firmware hash + every embedded asset hash.
