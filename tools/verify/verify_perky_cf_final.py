@@ -133,11 +133,20 @@ def main() -> None:
     exe = compile_cpp("perky_cf_split_plock_timing", work, objects, pb)
     run([exe, asset])
 
+    # Execute the actual shipping pk_render callback against a fixed-address
+    # Octatrack memory fixture. This proves staging, split timing, cursor/span
+    # accounting and stock FLEX record bytes around every event offset.
+    run([
+        sys.executable, ROOT / "tools/verify/verify_perky_cf_production_render.py",
+        asset, "--work", work / "production-render",
+    ])
+
     print("PERKY CF FINAL QUALIFICATION: PASS")
     print("  tracks=4 independent (Octatrack T1/T2/T5/T6)")
     print("  SRC=A Decay,B Tune,C Param1,D Param2,E Mode,F Algo; all p-lock sequence/split gates passed")
     print("  supported Algo=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3)")
     print("  production control->PCM=196608 exact samples per Algo (786432 total)")
+    print("  production pk_render=4096 events / 65536 samples; all 4x4 voice/algo pairs and all 16 split offsets")
     print("  stock DSP module declaration=no DSP section/ranges/arena; stock source record transport exact")
 
 
