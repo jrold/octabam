@@ -34,6 +34,18 @@ def main() -> None:
         raise AssertionError("DSP preboot arena must not survive ColdFire-only design")
     if final.kind.value != "cf_patch":
         raise AssertionError(f"final kind is {final.kind}")
+    if final.cf_patches:
+        raise AssertionError(f"final Perky Machines must carry zero direct CF patch blocks: {final.cf_patches!r}")
+
+    dsp_lo, dsp_hi = 0x400E21E0, 0x401086F4
+    touched = []
+    for row in (*final.detours, *final.pokes, *final.symbol_refs):
+        addr = getattr(row, "site", getattr(row, "addr", None))
+        if addr is not None and dsp_lo <= addr < dsp_hi:
+            touched.append((type(row).__name__, addr))
+    if touched:
+        raise AssertionError(f"final CPU patch surface touches stock DSP bootstrap/payload span: {touched!r}")
+
     got = [(x.label, x.source, x.dram, x.include is not None) for x in final.linked]
     want = [
         ("pkmachine", "modules/perky/machine.s", True, False),
@@ -79,7 +91,7 @@ def main() -> None:
             raise AssertionError(f"machine.s is missing required final-control shim {shim}")
     print(
         "PERKY CF machine declaration: PASS "
-        "(7 DRAM CF units; generator/assets/shims closed; build-time SHA-pinned assets; stock DSP section absent; "
+        "(7 DRAM CF units; generator/assets/shims closed; no CPU writes in stock DSP span; build-time SHA-pinned assets; stock DSP section absent; "
         "0 DSP ranges; 0 DSP preboot arena)"
     )
 
