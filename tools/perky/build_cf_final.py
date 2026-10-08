@@ -29,7 +29,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "tools"), str(ROOT / "tools/perky"), str(ROOT / "tools/build"), str(ROOT / "modules/perky")]
-from remix import registry  # noqa:E402
+from remix import registry, dsp_ranges  # noqa:E402
 import generate_cf_final  # noqa:E402
 import perky_cf_assets  # noqa:E402
 import perky_cf_machine_module  # noqa:E402
@@ -87,6 +87,47 @@ def source_git_commit() -> str:
         ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True,
     )
     return result.stdout.strip() if result.returncode == 0 else "unknown"
+
+
+def require_dsp_pristine_release(final, selected) -> None:
+    """Prove the final CF-only remix may leave stock's DSP mailbox operands stock.
+
+    General Octabam DSP remixes relocate the stock core mailbox from 0x38000 to
+    0x37f00 and widen payload B's boot clear around it (six P-word operands in
+    dsp_ranges.STOCK_PATCHES).  Perky CF owns no DSP state/code/bus at all, so
+    applying those historical remap pokes would violate the final requirement
+    that the complete stock DSP bootstrap/payload remain byte-identical.
+
+    This guard intentionally errs closed: if Perky ever grows a DSP section,
+    range, private-Y claim, FX2-buffer claim, arena, or bus participant, the
+    release refuses rather than silently suppressing the stock remap.
+    """
+    claims = final.claims
+    final_dirty = (
+        final.dsp is not None
+        or final.arena is not None
+        or claims is None
+        or bool(claims.dsp_ranges)
+        or bool(claims.reserved_private_y)
+        or bool(claims.owns_fx2_buffers)
+        or dsp_ranges.bus_member(final)
+    )
+    selected_dirty = any(
+        m.dsp is not None
+        or dsp_ranges.bus_member(m)
+        or (m.claims is not None and (
+            m.claims.dsp_ranges
+            or m.claims.reserved_private_y
+            or m.claims.owns_fx2_buffers
+        ))
+        for m in selected
+        if not m.is_stock
+    )
+    if final_dirty or selected_dirty:
+        die(
+            "perky-cf-final is no longer DSP-pristine; refusing to suppress "
+            "Octabam's historical DSP mailbox relocation"
+        )
 
 
 def main() -> None:
@@ -151,12 +192,21 @@ def main() -> None:
     original = mods[key]
     final = perky_cf_machine_module.build(original, generated_dir=generated_rel)
     old_remix, old_build = os.environ.get("REMIX"), os.environ.get("BUILD")
+    saved_stock_patches = dsp_ranges.STOCK_PATCHES
     try:
         mods[key] = final
         os.environ["REMIX"] = "perky-cf-final"
         os.environ["BUILD"] = str(args.build)
+        selected_remix = registry.remix("perky-cf-final")
+        selected = [mods[k] for k in selected_remix.modules]
+        require_dsp_pristine_release(final, selected)
+        # Final Perky is deliberately outside the DSP.  Do not apply Octabam's
+        # six legacy DSP mailbox/boot remap operands to an otherwise stock DSP
+        # image; stage 5 below proves the entire span remains byte-identical.
+        dsp_ranges.STOCK_PATCHES = ()
         runpy.run_path(str(ROOT / "tools/build/build_bus.py"), run_name="__main__")
     finally:
+        dsp_ranges.STOCK_PATCHES = saved_stock_patches
         mods[key] = original
         if old_remix is None:
             os.environ.pop("REMIX", None)
