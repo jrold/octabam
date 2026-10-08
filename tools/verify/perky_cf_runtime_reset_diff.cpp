@@ -57,13 +57,19 @@ static pk4_assets make_assets() {
     return a;
 }
 
+static std::array<uint8_t, 6> to_engine_src(const uint8_t page[6]) {
+    return {page[1], page[0], page[3], page[4], page[5], page[2]};
+}
+
 static bool render_reference(const pk4_assets &assets, unsigned voice,
-                             const uint8_t src[6], int trig,
+                             const uint8_t page_src[6], int trig,
                              std::array<uint32_t, 40> &out) {
     pk4_engine e{};
     pk4_init(&e, &assets);
+    const auto engine_src = to_engine_src(page_src);
     std::array<int16_t, 16> pcm{};
-    if (!pk4_process_segment(&e, voice, src, 1, trig, 255u, 45u, pcm.data(), 16u))
+    if (!pk4_process_segment(&e, voice, engine_src.data(), 1, trig,
+                             255u, 45u, pcm.data(), 16u))
         return false;
     return pk4_encode_stock_segment(out.data(), pcm.data(), 16u) == 36u;
 }
@@ -83,9 +89,10 @@ static int first_event(const pk4_assets &assets, uint32_t bank, unsigned part_id
     std::array<uint32_t, 40> expected{};
     if (!render_reference(assets, voice, src, 1, expected)) return 30;
     if (pk_render(track, 0u, 0u, 16u) != 0) return 31;
+    U8(0x46104d0cu + track) = 0u;
     if (std::memcmp((void *)cursor_base, expected.data(), 36u * 4u)) {
         std::cerr << "cold-reset PCM mismatch part=" << part_idx
-                  << " voice=" << voice << " algo=" << (unsigned)src[5] << '\n';
+                  << " voice=" << voice << " algo=" << (unsigned)src[2] << '\n';
         return 32;
     }
     if (U32(0x80001c80u) != cursor_base + 36u * 4u) return 33;
@@ -114,22 +121,25 @@ int main() {
     for (unsigned voice = 0; voice < 4u; ++voice) {
         const unsigned track = tracks[voice];
         for (unsigned algo = 0; algo < 4u; ++algo) {
+            /* Shipping page order: tune,decay,algo,p1,p2,mode. */
             uint8_t src[6] = {
-                (uint8_t)(17u + voice * 19u + algo),
                 (uint8_t)(31u + voice * 13u + algo * 3u),
+                (uint8_t)(17u + voice * 19u + algo),
+                (uint8_t)algo,
                 (uint8_t)(47u + voice * 7u + algo * 5u),
                 (uint8_t)(61u + voice * 5u + algo * 7u),
                 (uint8_t)((voice + algo) % 3u),
-                (uint8_t)algo,
             };
 
             // Establish and dirty Part 0 runtime with two events.
             int rc = first_event(assets, bank_a, 0u, track, voice, src, cursor);
             if (rc) return rc;
-            src[0] ^= 0x3fu; src[2] ^= 0x55u;
+            src[0] ^= 0x3fu; src[3] ^= 0x55u;
             for (unsigned i=0;i<6;i++) U16(0x80008000u + i*2u)=(uint16_t)src[i]<<8;
+            U8(0x46104d0cu + track)=16u;
             U32(0x80001c80u)=cursor;
             if (pk_render(track,0u,0u,16u)!=0) return 40;
+            U8(0x46104d0cu + track)=0u;
 
             // A Part switch must start from a fresh four-voice runtime.
             src[0] ^= 0x12u; src[1] ^= 0x29u;
@@ -137,12 +147,12 @@ int main() {
             if (rc) return rc;
 
             // Switching back also cold-resets; no state from Part 1 or old Part 0 leaks.
-            src[2] ^= 0x21u; src[3] ^= 0x37u;
+            src[3] ^= 0x21u; src[4] ^= 0x37u;
             rc = first_event(assets, bank_a, 0u, track, voice, src, cursor);
             if (rc) return rc;
 
             // Bank change is the same invariant.
-            src[0] ^= 0x0fu; src[3] ^= 0x1bu;
+            src[0] ^= 0x0fu; src[4] ^= 0x1bu;
             rc = first_event(assets, bank_b, 0u, track, voice, src, cursor);
             if (rc) return rc;
             ++cases;
