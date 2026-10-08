@@ -38,6 +38,7 @@ echo "  version : $VERSION"
 echo "  build   : $BUILD"
 
 python3 tools/verify/verify_perky_cf_qualified_sources.py
+python3 tools/verify/verify_perky_release_guards_selftest.py
 
 exec python3 tools/perky/build_cf_final.py \
   --firmware "$PERKONS_FIRMWARE" \
