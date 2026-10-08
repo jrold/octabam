@@ -47,6 +47,12 @@ static void sign_track(uintptr_t part, unsigned track)
     U8(part + 62u + 30u * track) = 1u;
 }
 
+static uintptr_t fixed_slot(unsigned track, unsigned ping)
+{
+    return 0x80001c90u + (uintptr_t)(ping & 1u) * 0xa80u
+         + (uintptr_t)336u * track;
+}
+
 int main()
 {
     map_region(0x10000000u, 0x00200000u);
@@ -88,11 +94,12 @@ int main()
 
     for (unsigned frame = 0; frame < frames; ++frame) {
         U32(0x80001c80u) = cursor_base;
-        std::memset((void *)cursor_base, 0xa5, 1024u);
+        std::memset((void *)cursor_base, 0xa5, 4096u);
 
         for (unsigned voice = 0; voice < 4u; ++voice) {
             const unsigned event = frame * 4u + voice;
             const unsigned track = tracks[voice];
+            const unsigned ping = event & 1u;
             const unsigned step = frame;
             const unsigned algo = (step + voice * 3u) & 3u;
             const unsigned mode = (step * 2u + voice) % 3u;
@@ -117,7 +124,10 @@ int main()
 
             for (unsigned i = 0; i < 6u; ++i)
                 U16(0x80008000u + 2u * i) = (uint16_t)page_src[i] << 8;
+
             const uintptr_t voice_cursor = U32(0x80001c80u);
+            const uintptr_t slot = fixed_slot(track, ping);
+            std::memset((void *)slot, 0xa5, 336u);
 
             std::array<int16_t, 16> pre{}, post{};
             std::array<uint32_t, 36> expected_pre{}, expected_post{};
@@ -131,20 +141,22 @@ int main()
                 pk4_encode_stock_segment(expected_pre.data(), pre.data(), split);
             const uint32_t post_longs =
                 pk4_encode_stock_segment(expected_post.data(), post.data(), 16u - split);
+            if (pre_longs + post_longs != 40u)
+                return 5;
 
             /* Exercise both hardware timing possibilities. For a triggered event
              * the stock flag is visible during exactly one callback half. */
             U8(0x46104d0cu + track) =
                 (trig && trigger_on_first_half) ? 16u : 0u;
-            if (pk_render(track, event & 1u, 0u, split) != 0) {
+            if (pk_render(track, ping, 0u, split) != 0) {
                 std::cerr << "pk_render pre failed event=" << event << '\n';
-                return 5;
+                return 6;
             }
             U8(0x46104d0cu + track) =
                 (trig && !trigger_on_first_half) ? 16u : 0u;
-            if (pk_render(track, event & 1u, split, 16u) != 0) {
+            if (pk_render(track, ping, split, 16u) != 0) {
                 std::cerr << "pk_render post failed event=" << event << '\n';
-                return 6;
+                return 7;
             }
             U8(0x46104d0cu + track) = 0u;
 
@@ -154,23 +166,43 @@ int main()
                 else
                     ++boundary_trigger_cases;
             }
-            if (std::memcmp((void *)voice_cursor, expected_pre.data(), pre_longs * 4u)) {
-                std::cerr << "pre record mismatch event=" << event
-                          << " track=" << track << " algo=" << algo
-                          << " mode=" << mode << " split=" << split << '\n';
+
+            /* The moving builder cursor is reservation only. It deliberately
+             * lives nowhere near the track's DMA slot in this fixture, so a
+             * renderer that merely appends PCM to the cursor cannot pass. */
+            const uint32_t cursor_longs = pre_longs + post_longs;
+            if (U32(0x80001c80u) != voice_cursor + cursor_longs * 4u) {
+                std::cerr << "cursor span mismatch event=" << event << '\n';
                 return 10;
             }
-            if (std::memcmp((void *)(voice_cursor + pre_longs * 4u),
-                            expected_post.data(), post_longs * 4u)) {
-                std::cerr << "post record mismatch event=" << event
+            for (uint32_t i = 0; i < cursor_longs; ++i) {
+                if (U32(voice_cursor + i * 4u) != 0u) {
+                    std::cerr << "moving cursor payload not reserved/zero event="
+                              << event << " long=" << i << '\n';
+                    return 11;
+                }
+            }
+
+            if (std::memcmp((void *)slot, expected_pre.data(), pre_longs * 4u)) {
+                std::cerr << "fixed-slot pre mismatch event=" << event
                           << " track=" << track << " algo=" << algo
                           << " mode=" << mode << " split=" << split << '\n';
-                return 11;
-            }
-            if (U32(0x80001c80u) != voice_cursor + (pre_longs + post_longs) * 4u)
                 return 12;
-            if (pre_longs + post_longs != 40u)
+            }
+            if (std::memcmp((void *)(slot + pre_longs * 4u),
+                            expected_post.data(), post_longs * 4u)) {
+                std::cerr << "fixed-slot post mismatch event=" << event
+                          << " track=" << track << " algo=" << algo
+                          << " mode=" << mode << " split=" << split << '\n';
                 return 13;
+            }
+            for (size_t i = 160u; i < 336u; ++i) {
+                if (*(const uint8_t *)(slot + i) != 0xa5u) {
+                    std::cerr << "fixed-slot tail clobber event=" << event
+                              << " tail+" << (i - 160u) << '\n';
+                    return 14;
+                }
+            }
 
             matrix[voice][algo] += 16u;
             split_mask[voice][algo] |= (uint16_t)(1u << split);
@@ -178,20 +210,21 @@ int main()
         }
         if (U32(0x80001c80u) != cursor_base + 4u * 160u) {
             std::cerr << "four-voice frame span mismatch frame=" << frame << '\n';
-            return 14;
+            return 15;
         }
     }
 
     if (!early_trigger_cases || !boundary_trigger_cases) {
         std::cerr << "trigger-half coverage failure early=" << early_trigger_cases
                   << " boundary=" << boundary_trigger_cases << '\n';
-        return 15;
+        return 16;
     }
 
     std::cout << "PERKY production pk_render integration: PASS " << frames
               << " four-voice frames / " << events << " voice events / "
               << samples << " samples\n";
-    std::cout << "  exact two-segment stock records; 160 bytes/voice and 640-byte four-voice frame span preserved\n";
+    std::cout << "  exact two-segment PCM committed to measured fixed track slot; moving cursor is reservation-only\n";
+    std::cout << "  160-byte source payload exact; trailing 176/336 bytes untouched\n";
     std::cout << "  trigger latch covered " << early_trigger_cases
               << " first-half-only and " << boundary_trigger_cases
               << " boundary-half-only triggered events\n";
