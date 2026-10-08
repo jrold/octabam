@@ -37,7 +37,7 @@ EXPECTED = {
     'tools/verify/perky_cf_production_render_diff.cpp': '19d6ebf73c6bfc27ed9f9c52fcd70f81521e26ef3115a0c35a9ef05b4f4cd417',
     'tools/verify/perky_cf_runtime_reset_diff.cpp': 'f0cbb4b0616a202ac5bee9520dc7d31993ba75acc4aedeb9a23280b7eb1f6278',
     'tools/verify/perky_cf_split_plock_timing.cpp': '60c5bc623b45ddfe8ca5bc381375dc450cf36abce24c69c20aed424d203440ac',
-    'tools/verify/verify_perky_cf_final.py': '605d2dfab7151cd0901919e4a31a7f974c69353495e4eb5d804c2678e6400443',
+    'tools/verify/verify_perky_cf_final.py': '89015684d397fcaf591112a461c00901eb85c6254de572a03ee91fe9e7a60bb4',
     'tools/verify/verify_perky_cf_final_control.py': '9e0dcdfb9da07ccaa65e0e50865315fc8a66c92e104f55cd1d3fa971d407602c',
     'tools/verify/verify_perky_cf_final_remix.py': '6dea693ac33f252bf6c8b37c25f48597e64674986f5c8d80e02eee6f2a960e05',
     'tools/verify/verify_perky_cf_freestanding.py': '5499198f777f7ccfde535661432722dd89b280f2130373a80dcd0db4a13399ef',
@@ -45,6 +45,7 @@ EXPECTED = {
     'tools/verify/verify_perky_cf_production_render.py': 'd58406effcb6e30cd2001c4285b37e9b3f1c68396ed74a009f234e09422a9dbe',
     'tools/verify/verify_perky_cf_runtime_memory_final.py': 'a3490feab654f26ca4bb7bb22bacacb8e9b0855fe57277493f05f27177876f8f',
     'tools/verify/verify_perky_cf_runtime_reset.py': '7c902640c9e0633c58f3711a15f707f2acb7e2891758f2c612b07b0e07d21d04',
+    'tools/verify/verify_perky_cf_stock_record_abi.py': '3d0b950962c295efca481e23bf61551a94ad00f37abd138964b2f9e09f46acf1',
     'tools/verify/verify_perky_stock_dsp_identity.py': '1bab1de6c609232b7f79d87ebcb347430ca48adbba97110e8ec75cca55045bd3',
 }
 
