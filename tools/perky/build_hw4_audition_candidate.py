@@ -39,6 +39,7 @@ import build_karplus_control_tables as karplus_controls
 import build_karplus_source as karplus_source
 import build_noise_tone_payload as packed
 import build_noise_tone_synth_source as synth
+import build_noise_tone_v121_static_assets as nt_static
 import hw4_memory as memory
 import karplus_compact as karplus
 import karplus_trigger_plan_source as trigger
@@ -49,6 +50,7 @@ PLAN = ROOT / 'out/perky/karplus-trigger-plan.json'
 FIX = ROOT / 'out/perky/engine-fixtures'
 ASSETS = ROOT / 'out/perky/simple-drum-assets'
 CONTROL_ASSETS = ROOT / 'out/perky/karplus-live-control'
+NOISE_TONE_ASSETS = ROOT / 'out/perky/noise-tone-v121-static'
 KARPLUS_CASE = FIX / 'engine-9-mode-1-corner-1'
 STATE_FILE = KARPLUS_CASE / 'wrapper-window-pre-trigger.bin'
 ARM_STATE_OFFSET = 0x2908
@@ -174,12 +176,42 @@ pkk_init_zero:
     return source
 
 
+def ensure_noise_tone_assets() -> dict:
+    """Build the hash-pinned original-v1.2.1 T6 table pack locally."""
+    firmware = Path(os.environ.get(
+        'PERKONS_FIRMWARE',
+        str(Path.home() / 'Downloads/perkons_both_v1.2.1-0-gbcccfd0.img'),
+    )).expanduser()
+    if not firmware.exists():
+        raise FileNotFoundError(
+            f'pinned PĒRKONS v1.2.1 firmware not found at {firmware}; set PERKONS_FIRMWARE'
+        )
+    report = nt_static.build(firmware, NOISE_TONE_ASSETS)
+    if report.get('schema') != 'octabam.perky.noise-tone-v121-static-assets.v1':
+        raise RuntimeError('Noise/Tone static asset schema drift')
+    if report.get('mode_map') != [1, 0, 2]:
+        raise RuntimeError('Noise/Tone physical mode map drift')
+    assets = report.get('assets', [])
+    if not assets or int(assets[0]['base_word']) != memory.HW4_Y_END:
+        raise RuntimeError('Noise/Tone assets do not start immediately after Karplus Y')
+    shared = next((row for row in assets if row.get('name') == 'shared-waves'), None)
+    if shared is None:
+        raise RuntimeError('Noise/Tone shared wave bank missing')
+    expected = ['0x080222a0', '0x080226a0', '0x080228a0', '0x080224a0']
+    got = [row['address'] for row in shared.get('identities', [])]
+    if got != expected:
+        raise RuntimeError(f'Noise/Tone qualified wave ordinal drift: {got!r}')
+    return report
+
+
 def build(out: Path = OUT, assets: Path = ASSETS):
     memory.validate()
     _plan, plans = trigger.load_plan(PLAN)
     voice = authentic_karplus()
     control_report = ensure_control_assets()
     control_rows = {row['name']: row for row in control_report['tables']}
+    noise_report = ensure_noise_tone_assets()
+    noise_rows = {row['name']: row for row in noise_report['assets']}
 
     for name in ('envelope1.bin', 'envelope2.bin'):
         if not (assets / name).exists():
@@ -188,6 +220,19 @@ def build(out: Path = OUT, assets: Path = ASSETS):
             )
 
     source, fold2_words = base.build(out)
+
+    # First hardware-audition T6 step: keep the already qualified synthetic
+    # control/envelope state machine, but feed its oscillator the authentic
+    # v1.2.1 four-wave bank in the renderer's qualified ordinal order.  This
+    # makes the oscillator PCM table data real without pretending the current
+    # controls/envelope are yet the original update law.
+    shared_base = int(noise_rows['shared-waves']['base_word'])
+    source = once(
+        source,
+        '        move #>$0007a5,r1',
+        f'        move #>${shared_base:06x},r1',
+        'HW4 T6 authentic shared-wave Y relocation',
+    )
 
     source = once(
         source,
@@ -287,6 +332,15 @@ def build(out: Path = OUT, assets: Path = ASSETS):
             'attack_rate': control_report['attack_rate'],
             'transition_smoothing': 'not emulated; exact final state applied immediately',
         },
+        'noise_tone': {
+            'status': 'audition: authentic v1.2.1 shared wave PCM; provisional controls/envelope',
+            'firmware_sha256': noise_report['firmware_sha256'],
+            'mode_map': noise_report['mode_map'],
+            'shared_wave_base': int(noise_rows['shared-waves']['base_word']),
+            'shared_wave_words': int(noise_rows['shared-waves']['words']),
+            'shared_wave_sha256': noise_rows['shared-waves']['sha256'],
+            'asset_end_exclusive': int(noise_report['asset_end_exclusive']),
+        },
     }
     layout['extra_y_init'] = [
         {'base_word': memory.KARPLUS_ENV1_BASE, **e1,
@@ -302,6 +356,19 @@ def build(out: Path = OUT, assets: Path = ASSETS):
         {'base_word': memory.KARPLUS_EDGE_COEFF_BASE, **live_assets[2],
          'purpose': 'Karplus exact OT EDGE -> filter coefficient lookup'},
     ]
+    for row in noise_report['assets']:
+        src = NOISE_TONE_ASSETS / row['file']
+        dst = out / row['file']
+        shutil.copyfile(src, dst)
+        if hashlib.sha256(dst.read_bytes()).hexdigest() != row['sha256']:
+            raise RuntimeError(f'copied Noise/Tone {row["name"]} payload hash drift')
+        layout['extra_y_init'].append({
+            'base_word': int(row['base_word']),
+            'file': row['file'],
+            'words': int(row['words']),
+            'sha256': row['sha256'],
+            'purpose': f'Noise/Tone v1.2.1 {row["name"]}',
+        })
     layout_path.write_text(json.dumps(layout, indent=2) + '\n')
 
     print('HW4 audition DSP: T1 Fold1; T2 Karplus; T5 Fold2; T6 Noise/Tone')
@@ -317,8 +384,12 @@ def build(out: Path = OUT, assets: Path = ASSETS):
         'TUNE/DECAY/EDGE/TWANG/MODE active'
     )
     print(
-        f'HW4 Y free before stock boot clear: '
-        f'{memory.HW4_Y_BOOT_CLEAR - memory.HW4_Y_END} words'
+        f'T6 authentic shared wave bank: Y:${int(noise_rows["shared-waves"]["base_word"]):04x}; '
+        f'sha256={noise_rows["shared-waves"]["sha256"]}'
+    )
+    print(
+        f'HW4 Y free after T6 static assets: '
+        f'{memory.HW4_Y_BOOT_CLEAR - int(noise_report["asset_end_exclusive"])} words'
     )
     return source, fold2_words
 
