@@ -11,7 +11,9 @@ Release path:
 
 No GitHub Actions/CI are used. PĒRKONS firmware bytes are never tracked; the
 DRAM asset unit is emitted at link time from PERKONS_FIRMWARE after full-image
-and per-table SHA verification.
+and per-table SHA verification. The final p-lock/source-record transport is
+covered by verify_perky_cf_final.py, so no saved OT project is required merely
+to package this ColdFire-only architecture.
 """
 from __future__ import annotations
 
@@ -68,12 +70,10 @@ def main() -> None:
         die("set PERKONS_FIRMWARE or pass --firmware with exact PĒRKONS v1.2.1")
     if not (perkybits / "Source/NativeV121FoldDrums.cpp").is_file():
         die("set PERKYBITS_ROOT or pass --perkybits with the PerkyBits checkout")
-    project = os.environ.get("OT_PROJECT")
-    if not project or not (Path(project).expanduser() / "project.work").is_file():
-        die("set OT_PROJECT to a saved Octatrack project; project/transport gate is mandatory")
     if not shutil.which("m68k-elf-gcc"):
         die("m68k-elf-gcc is required for the final ColdFire build")
 
+    # The include callback reads this exact path later while build_bus links the DRAM unit.
     os.environ["PERKONS_FIRMWARE"] = str(firmware)
     os.environ["PERKYBITS_ROOT"] = str(perkybits)
     args.work.mkdir(parents=True, exist_ok=True)
@@ -90,6 +90,9 @@ def main() -> None:
     generated = args.work / "generated"
     generate_cf_final.generate(generated)
     generated_rel = wrapper.repo_relative(generated)
+
+    # Force the asset verification once before entering the linker too; asset_inc
+    # verifies again when the tracked cf_assets.s includes remix.inc.
     perky_cf_assets.extract(firmware)
 
     print("=== PERKY CF final 3/6: build all-stock-FX remix ===")
