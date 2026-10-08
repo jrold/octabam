@@ -2,6 +2,7 @@
 """Build the final four-track ColdFire-only Perky Machines firmware.
 
 Release path:
+  0. self-test the stock-DSP and wrapper corruption guards;
   1. run the complete production control/PCM/p-lock qualification suite;
   2. cross-compile the freestanding ColdFire Perky sources;
   3. audit generated ColdFire assembly/object linkage;
@@ -140,7 +141,7 @@ def main() -> None:
     ap.add_argument(
         "--perkybits", type=Path,
         default=Path(os.environ.get("PERKYBITS_ROOT", "")),
-        help="PerkyBits checkout containing Source/NativeV121*.cpp",
+        help="PerkyBits checkout containing Source/NativeV121FoldDrums.cpp",
     )
     ap.add_argument("--build", type=int, default=6)
     ap.add_argument("--version", default="PK4CF1")
@@ -153,13 +154,17 @@ def main() -> None:
         die("set PERKONS_FIRMWARE or pass --firmware with exact PĒRKONS v1.2.1")
     if not (perkybits / "Source/NativeV121FoldDrums.cpp").is_file():
         die("set PERKYBITS_ROOT or pass --perkybits with the PerkyBits checkout")
+
+    args.work.mkdir(parents=True, exist_ok=True)
+    print("=== PERKY CF final preflight: release guards corruption self-test ===")
+    run([sys.executable, ROOT / "tools/verify/verify_perky_release_guards_selftest.py"])
+
     toolchain_version = toolchain_preflight()
     source_commit = source_git_commit()
 
     # The include callback reads this exact path later while build_bus links the DRAM unit.
     os.environ["PERKONS_FIRMWARE"] = str(firmware)
     os.environ["PERKYBITS_ROOT"] = str(perkybits)
-    args.work.mkdir(parents=True, exist_ok=True)
 
     print("=== PERKY CF final 1/8: executable production qualification ===")
     run([
