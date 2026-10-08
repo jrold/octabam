@@ -244,16 +244,20 @@ def main() -> None:
     if not dump.is_file() or dump.stat().st_size == 0:
         fail("emulator produced no DSP transport block dump")
 
-    # The port's trig logger prints real sequencer events. Require late events
-    # on both core groups so a one-frame/startup-only success cannot pass.
+    # The port's live-nibble logger records the full per-track state byte. A
+    # real trig changes it, but its exact high/low flags are firmware state and
+    # are not fixed at 0x10. Require later writes on every PERKY track rather
+    # than baking an incidental byte value into the user-path gate.
     seen = {t: [] for t in PERKY_INDEX}
-    for match in re.finditer(r"frame\s+(\d+)\s+track\s+(\d+)\s+byte\s+0x10", text):
+    for match in re.finditer(
+        r"frame\s+(-?\d+)\s+track\s+(\d+)\s+byte\s+0x[0-9a-fA-F]+", text
+    ):
         frame, track = map(int, match.groups())
-        if track in seen:
+        if track in seen and frame >= 0:
             seen[track].append(frame)
     for track, events in seen.items():
         if not events or max(events) <= 1000:
-            fail(f"T{track + 1}: no later sequencer trig observed (events={events[-8:]})")
+            fail(f"T{track + 1}: no later sequencer trig-state write observed (events={events[-8:]})")
 
     classes = bd.classes(bd.read(dump))
     flex = {}
