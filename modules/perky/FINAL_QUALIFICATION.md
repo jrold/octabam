@@ -43,9 +43,11 @@ The qualification uses the exact extracted pitch, chromatic, envelope and wave
 assets from that image and compares production ColdFire output to PerkyBits'
 native v1.2.1 reference renderers.
 
-`tools/verify/verify_perky_cf_qualified_sources.py` pins 24 production and test
-files by SHA-256. Any source drift invalidates this qualification until the full
-suite is rerun and the manifest is deliberately refreshed.
+`tools/verify/verify_perky_cf_qualified_sources.py` pins 27 production, test and
+release-path files by SHA-256, including the shipping `pk_render()` integration
+harness, top-level final qualifier, packaged-image stock-DSP identity gate and
+final release builder. Any source drift invalidates this qualification until the
+full suite is rerun and the manifest is deliberately refreshed.
 
 ## Executed results
 
