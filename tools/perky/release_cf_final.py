@@ -4,8 +4,9 @@
 This wrapper intentionally does not replace build_cf_final.py. It verifies the
 byte-pinned qualified source set, validates the automatic platform DRAM reserve,
 validates the ColdFire toolchain, generates and audits the exact assembly once,
-then invokes the qualified final builder. After the builder returns it audits
-the regenerated assembly again.
+then invokes the qualified final builder. After the builder returns it proves
+both the stock DSP payload bytes and the ColdFire DSP uploader/boot path remain
+stock-identical, then audits the regenerated assembly again.
 """
 from __future__ import annotations
 
@@ -19,6 +20,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 TOOLCHAIN = ("m68k-elf-gcc", "m68k-elf-as", "m68k-elf-ld", "m68k-elf-objcopy", "m68k-elf-nm")
+STOCK_MAIN = ROOT / "out/raw/section_3_MAIN_OS.bin"
+FINAL_MAIN = ROOT / "out/mainos_bus.bin"
 
 
 def die(msg: str) -> "NoReturn":
@@ -108,6 +111,11 @@ def main() -> None:
         "--version", args.version,
         "--work", work,
     ], env=env)
+
+    if not STOCK_MAIN.is_file() or not FINAL_MAIN.is_file():
+        die("final builder did not leave stock/candidate MAIN OS images for release proof")
+    run([sys.executable, ROOT / "tools/verify/verify_perky_stock_dsp_identity.py", STOCK_MAIN, FINAL_MAIN], env=env)
+    run([sys.executable, ROOT / "tools/verify/verify_perky_stock_dsp_boot_path.py", STOCK_MAIN, FINAL_MAIN], env=env)
 
     after = hashes(generated)
     if before != after:
