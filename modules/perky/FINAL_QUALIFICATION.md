@@ -42,13 +42,12 @@ The qualification extracts the exact pitch, chromatic, envelope and wave assets
 from that image and compares production ColdFire output to PerkyBits' native
 v1.2.1 reference renderers.
 
-`tools/verify/verify_perky_cf_qualified_sources.py` pins **37 PCM/control proof
-files** by SHA-256, including the production renderers, shipping `pk_render()`
-path, top-level qualifier, hot-loop safety, stock-record ABI, p-lock reversion,
-runtime-reset and runtime-memory gates, source/FX architecture gates and the
-stock-DSP identity checker. Packaging-only tooling such as the release builder
-and codegen audit is intentionally outside this PCM hash set and has its own
-release gates.
+`tools/verify/verify_perky_cf_qualified_sources.py` pins **39 production,
+qualification and release files** by SHA-256, including the production renderers,
+shipping `pk_render()` path, top-level qualifier, hot-loop safety, stock-record
+ABI, p-lock reversion, runtime-reset and runtime-memory gates, source/FX
+architecture gates, stock-DSP identity checker, final release builder and
+ColdFire codegen/linkage audit.
 
 Any pinned-source drift invalidates the PCM qualification until the complete
 suite is rerun and the manifest is deliberately refreshed.
