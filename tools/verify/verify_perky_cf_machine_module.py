@@ -88,9 +88,27 @@ def main() -> None:
     for shim in ("pk_stock_validate", "pk_stock_pool_open"):
         if f".global {shim}" not in machine or f"{shim}:" not in machine:
             raise AssertionError(f"machine.s is missing required final-control shim {shim}")
+
+    # A PERKY synth does not require a file sample, but the stock FLEX voice
+    # scheduler still requires a valid source object. Selecting PERKY must seed
+    # the track's own recorder buffer (FLEX slots 129..136, zero-based 128..135)
+    # in both the live Part and its SRAM mirror before the stock FLEX commit.
+    donor_contract = (
+        ".equ    FLEX_SLOT_OFF, 0x2ca",
+        ".equ    FLEX_SLOT_KIND, 1",
+        ".equ    RECORDER_BASE, 128",
+        "move.b  %d2,FLEX_SLOT_OFF+FLEX_SLOT_KIND(%a0,%d3.l)",
+        "addi.l  #SRAM_PART+FLEX_SLOT_OFF+FLEX_SLOT_KIND,%d2",
+        "addi.l  #RECORDER_BASE,%d2",
+    )
+    for needle in donor_contract:
+        if needle not in machine:
+            raise AssertionError(f"sample-free PERKY recorder-donor contract missing: {needle}")
+
     print(
         "PERKY CF machine declaration: PASS "
-        "(7 DRAM CF units; generator/assets/shims closed; no CPU writes in stock DSP span; build-time SHA-pinned assets; stock DSP section absent; "
+        "(7 DRAM CF units; generator/assets/shims closed; sample-free recorder donor live+SRAM; "
+        "no CPU writes in stock DSP span; build-time SHA-pinned assets; stock DSP section absent; "
         "0 DSP ranges; 0 DSP preboot arena)"
     )
 
