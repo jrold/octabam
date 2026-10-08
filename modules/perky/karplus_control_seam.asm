@@ -26,22 +26,25 @@
 ; the current OT controls and restores them immediately after first/active
 ; trigger, matching the original firmware's trigger -> update -> render order.
 ;
-; The three nonlinear functions are complete 4096-entry u16 tables generated
-; locally from the pinned original v1.2.1 update arithmetic. They use the same
-; 3-u16-in-2-DSP-word packing already qualified for PERKY wave/table assets.
+; The three nonlinear functions are exact 128-entry u16 tables over the entire
+; Octatrack source-control domain. ColdFire maps raw 0..126 -> raw<<5 and
+; 127 -> 4095, so prepared>>5 recovers the original 0..127 OT knob position
+; exactly. Each function therefore needs only 86 packed DSP words while losing
+; no state reachable from the Octatrack. Packing is the already-qualified
+; 3-u16-in-2-DSP-word ABI used by other PERKY assets.
 ;
 ; Placeholders are resolved by build_hw4_audition_candidate.py:
-;   @K_TUNE_LUT@       Y base, TUNE prepared -> delay
-;   @K_DECAY_LUT@      Y base, DECAY prepared -> envelope decrement
-;   @K_EDGE_LUT@       Y base, EDGE prepared -> filter coefficient
+;   @K_TUNE_LUT@       Y base, OT TUNE position -> exact delay
+;   @K_DECAY_LUT@      Y base, OT DECAY position -> exact envelope decrement
+;   @K_EDGE_LUT@       Y base, OT EDGE position -> exact filter coefficient
 ;   @K_GATE_THRESHOLD@ authentic prepared DECAY gate threshold
 ;
-; This first hardware live-control path is deliberately endpoint-exact and
-; immediate. It does not emulate the ARM UI-rate transition smoother, so an OT
-; p-lock reaches its exact final PĒRKONS control state without a hidden ramp.
+; This hardware live-control path is endpoint-exact and immediate. It does not
+; emulate the ARM UI-rate transition smoother, so an OT p-lock reaches its exact
+; final PĒRKONS control state without a hidden ramp.
 
 pk_karplus_apply_controls:
-        ; TUNE -> exact 2K delay-ring distance.
+        ; TUNE prepared value -> OT position -> exact 2K delay-ring distance.
         move    x:(r4+$8),a
         and     #>$ff,a
         asl     #$8,a,a
@@ -49,6 +52,7 @@ pk_karplus_apply_controls:
         and     #>$ff,b
         move    b1,x0
         add     x0,a
+        lsr     #$5,a,a
         move    a1,n1
         move    #>@K_TUNE_LUT@,r1
         jsrl    pk_karplus_lut_u16
@@ -57,7 +61,8 @@ pk_karplus_apply_controls:
         move    a1,x:(r6+$1c)
 
         ; DECAY controls both the amplitude-envelope decrement and the original
-        ; gate/hold condition (threshold <= prepared DECAY).
+        ; gate/hold condition (threshold <= prepared DECAY). Save the full
+        ; prepared word for that comparison while n1 receives prepared>>5.
         move    x:(r4+$a),a
         and     #>$ff,a
         asl     #$8,a,a
@@ -65,7 +70,10 @@ pk_karplus_apply_controls:
         and     #>$ff,b
         move    b1,x0
         add     x0,a
+        move    a1,x1
+        lsr     #$5,a,a
         move    a1,n1
+        move    x1,a
         cmp     #>@K_GATE_THRESHOLD@,a
         blt     pkk_control_gate_off
         move    #>$1,a
@@ -79,7 +87,7 @@ pkk_control_gate_ready:
         jsrl    pk_karplus_lut_u16
         move    a1,x:(r6+$d)
 
-        ; EDGE -> exact resonant-filter coefficient.
+        ; EDGE prepared value -> OT position -> exact filter coefficient.
         move    x:(r4+$c),a
         and     #>$ff,a
         asl     #$8,a,a
@@ -87,6 +95,7 @@ pkk_control_gate_ready:
         and     #>$ff,b
         move    b1,x0
         add     x0,a
+        lsr     #$5,a,a
         move    a1,n1
         move    #>@K_EDGE_LUT@,r1
         jsrl    pk_karplus_lut_u16
@@ -164,7 +173,7 @@ pk_karplus_restore_controls:
 ; Decode one packed u16 table entry.
 ;
 ; Input:
-;   n1 = entry index 0..4095
+;   n1 = OT entry index 0..127
 ;   r1 = Y-memory packed table base
 ; Output:
 ;   a1 = decoded unsigned 16-bit value
