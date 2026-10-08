@@ -1,6 +1,6 @@
 # Perky Machines — final four-algorithm software qualification
 
-Date: 2026-10-07
+Date: 2026-10-08
 
 This checkpoint covers the locked four-voice milestone implemented by the
 ColdFire source-machine architecture. It is intentionally separate from physical
@@ -43,7 +43,7 @@ The qualification uses the exact extracted pitch, chromatic, envelope and wave
 assets from that image and compares production ColdFire output to PerkyBits'
 native v1.2.1 reference renderers.
 
-`tools/verify/verify_perky_cf_qualified_sources.py` pins 22 production and test
+`tools/verify/verify_perky_cf_qualified_sources.py` pins 24 production and test
 files by SHA-256. Any source drift invalidates this qualification until the full
 suite is rerun and the manifest is deliberately refreshed.
 
@@ -110,6 +110,32 @@ rate with mono duplicated to L/R.
 - post-event segment renders from the new state.
 
 Result: **PASS**.
+
+### Shipping `pk_render()` integration
+
+`tools/verify/verify_perky_cf_production_render.py` executes the actual shipping
+`control_cf_final.c` callback against a fixed-address Octatrack memory fixture,
+using the same hash-verified v1.2.1 assets as the production renderer.
+
+Result: **PASS — 4,096 events / 65,536 samples**.
+
+Coverage:
+
+| Voice | Fold1 | Fold2 | Karplus | Noise/Tone |
+| --- | ---: | ---: | ---: | ---: |
+| Voice 1 | 4,096 | 4,096 | 4,096 | 4,096 |
+| Voice 2 | 4,096 | 4,096 | 4,096 | 4,096 |
+| Voice 3 | 4,096 | 4,096 | 4,096 | 4,096 |
+| Voice 4 | 4,096 | 4,096 | 4,096 | 4,096 |
+
+For every voice/Algo pair all 16 possible event split offsets were exercised.
+The gate verifies the real SRC staging address, trigger byte, pre/post split,
+record cursor advancement, exact two-segment stock source-record bytes, and the
+fixed 160-byte total FLEX span for each 16-sample frame.
+
+This closes the integration chain as:
+
+`OT SRC staging -> shipping pk_render() -> event split -> stock FLEX record -> qualified Perky core -> PerkyBits PCM reference`.
 
 ## Stock FX qualification
 
