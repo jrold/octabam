@@ -20,16 +20,19 @@ EXPECTED = {
     'modules/perky/control_cf_final.c': '73241ce22fb5392d038d4458dcaa6b47be3ba9f37f80c2a3e4894c6a7088d8c3',
     'modules/perky/fold_control_update.py': '4dc83fbff2f3f84ab8da953e986f2f8523a917c74a87e409f32fb5d15a014bdf',
     'modules/perky/karplus_control_state.py': '8ad77698da197533015b74e0f308829f5f188c966adf481c34b783f7447db736',
+    'modules/perky/karplus_control_update.py': '74415d3cc5d2162e65fac63df89994dbdaf3271588dbac471df9122fe02b4d36',
     'modules/perky/noise_tone_control_update.py': 'dffd08a4a93710d684778a7372498d9b80ab0b3c3502ccf46db5eecb6e7578cc',
+    'modules/perky/simple_drum_control.py': 'df108a857d49ec679e4355f7def9a4a7dd76fcc0056aee31a65e4c6f66e676f3',
     'modules/perky/generate_cf_final.py': '4c02d2da5e14a7e7a34f78c378729e83f383dc88c0cdd66bc9f94cc0da9245b9',
     'remixes/test/perky-cf-final/remix.py': '409443c6b4e27e37c488c779a8f50e7795448acc4e56e77acb31996377945c3b',
     'tools/build/bin_decode.py': 'd092430bf99d30d39c6fa81a186a746f0bfc5c6875636a03f48d800e59a05144',
-    'tools/perky/build_cf_final.py': '07621f447a41e0c567ee6f3eed819b38343d1886428213ef8b91d21ee21dbd0a',
+    'tools/build/build_bus.py': 'f11a293f3bd8f042c772374912441427e8d48153a07194a93c13970db1c33532',
+    'tools/perky/build_cf_final.py': 'git:9f413e718ddb7830fb392f95f66815a521c805e4',
     'tools/perky/build_machine_canary.py': '3c1fc5155f64a3747ae80f59c2ebc41a7c68091f4c3b18450c64d7ed0106a609',
     'tools/perky/generate_cf_final_fixtures.py': 'e6176d75855543f9d9dbadf3da3a27fb3b06c3b45557bf119dfc0ff045fd7c5a',
     'tools/perky/perky_cf_assets.py': '90ccbdf0f7a8c86220f6b71cb2e105a9d1f868c65d35d8492e2e64b0e8d63a96',
     'tools/perky/perky_cf_machine_module.py': '1244a1cb4dc5dd14d935f1e3b59a1ce409f1f2b6dbde8d7b22bd00942b1afcab',
-    'tools/verify/perky4_control_pcm_diff.cpp': '90a485db69b5044a3bba1e8fb8ce937af90eb578651f1fc7ea8fd185bd54361',
+    'tools/verify/perky4_control_pcm_diff.cpp': '90a485db69b5044a3bba1e8fb8ce937af90eb5786517f1fc7ea8fd185bd54361',
     'tools/verify/perky4_long_tail_diff.cpp': '40319eb8b6e3624f6c74c31e035de5241ccb0dd07ae27b0ee2231c7c4171d2b1',
     'tools/verify/perky4_nt_state_diff.cpp': '39422f49285837d60c834179b937cefb87e5b67f54e0c626d1be4efbf57001f9',
     'tools/verify/perky4_render_stress.cpp': '4492720f00fcdd1041af22485ba124b05f33d87063bcfffedb6eb3dba47660c5',
@@ -56,15 +59,19 @@ EXPECTED = {
     'tools/verify/verify_perky_stock_dsp_identity.py': '1bab1de6c609232b7f79d87ebcb347430ca48adbba97110e8ec75cca55045bd3',
 }
 
-def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def file_digest(path: Path, expected: str) -> str:
+    data = path.read_bytes()
+    if expected.startswith('git:'):
+        header = b'blob ' + str(len(data)).encode() + b'\0'
+        return 'git:' + hashlib.sha1(header + data).hexdigest()
+    return hashlib.sha256(data).hexdigest()
 
 def main() -> None:
     failures=[]
     for rel, expected in EXPECTED.items():
         path=ROOT/rel
         if not path.is_file(): failures.append(f"{rel}: missing"); continue
-        got=sha256(path)
+        got=file_digest(path, expected)
         if got != expected: failures.append(f"{rel}: {got} != {expected}")
     if failures: raise SystemExit("PERKY qualified-source identity: FAIL\n  " + "\n  ".join(failures))
     print(f"PERKY qualified-source identity: PASS ({len(EXPECTED)} files byte-pinned to executed PCM qualification)")
