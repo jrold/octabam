@@ -57,6 +57,12 @@ def toolchain_preflight() -> str:
         ["m68k-elf-gcc", "-dumpfullversion"], cwd=ROOT, check=True,
         capture_output=True, text=True,
     ).stdout.strip()
+    machine = subprocess.run(
+        ["m68k-elf-gcc", "-dumpmachine"], cwd=ROOT, check=True,
+        capture_output=True, text=True,
+    ).stdout.strip()
+    if machine != "m68k-elf":
+        die(f"m68k-elf-gcc reports unexpected target {machine!r}; expected 'm68k-elf'")
     probe = subprocess.run(
         [
             "m68k-elf-gcc", "-mcpu=54455", "-msoft-float", "-O2",
@@ -71,7 +77,7 @@ def toolchain_preflight() -> str:
             "m68k-elf-gcc exists but cannot compile -mcpu=54455/-msoft-float: "
             + probe.stderr.strip()
         )
-    print(f"PERKY CF toolchain preflight: PASS (m68k-elf-gcc {version}; ColdFire 54455)")
+    print(f"PERKY CF toolchain preflight: PASS (m68k-elf-gcc {version}; target={machine}; ColdFire 54455)")
     return version
 
 
@@ -174,9 +180,9 @@ def main() -> None:
         "algos=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3)\n"
         "production_pcm=196608 exact samples per Algo; 786432 total\n"
         "four_track_stress=16384 trigs / 262144 exact samples; zero cross-track mutation\n"
+        "production_pk_render=1024 simultaneous four-voice frames / 4096 voice events / 65536 exact samples\n"
+        "runtime_reset=16 voice/algo cases across Part A0->A1->A0 and Bank A->B; exact cold PCM\n"
         "split_plock=2304 transitions / 36864 samples; exact event-boundary application\n"
-        "production_pk_render=1024 simultaneous four-voice frames / 4096 voice events / 65536 samples; all 4x4 voice/algo pairs and all 16 split offsets; 160 bytes/voice; 640-byte four-voice FLEX span exact\n"
-        "codegen_audit=generated assembly/opcodes/runtime helpers/object linkage passed before firmware link\n"
         "stock_fx=all stock FX retained by remix; Perky module has zero DSP section/ranges/arena\n"
         "stock_dsp=156948 bootstrap/payload bytes required byte-identical by release gate\n"
         f"perkons_firmware_sha256={perky_cf_assets.FIRMWARE_SHA256}\n"
