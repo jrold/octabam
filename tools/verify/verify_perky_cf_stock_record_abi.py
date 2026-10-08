@@ -25,7 +25,7 @@ def main() -> None:
         if needle not in measured:
             raise AssertionError(f"measured FLEX ABI reference drifted: missing {needle!r}")
 
-    # Pin the production encoder to that exact stock layout. Source count is
+    # Pin the production encoder to that exact stock layout.  Source count is
     # placed in the high 24-bit transport lane, Q26 unity is 0x04000000, and
     # mono is duplicated into consecutive L/R sample longs.
     compact = re.sub(r"\s+", "", core)
