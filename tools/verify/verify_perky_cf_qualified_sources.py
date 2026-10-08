@@ -20,7 +20,7 @@ EXPECTED = {
     "modules/perky/cf_karplus.h": "8c311ecfa6e2eb9fe2b57c2af05a524419f44f61a002f0b94afe6ca404cd9d70",
     "modules/perky/cf_noise_tone.c": "8280e80b86bea5e6cecbe058c186c69b6f0e4c5c6141dd162c9f2dc89dca1ccc",
     "modules/perky/cf_noise_tone.h": "9cbf001ccbdedb4ee25cd6ec88d8d804ac442a070b1f3ac4c26470c113417d45",
-    "modules/perky/cf_perky4.c": "2e51ce5b6fc29cd492c6fcbfd27c58419ef7a84fa18ea42e306dffa6f4351bde",
+    "modules/perky/cf_perky4.c": "5ad2e3072c7632ebfb3a3d016e1175986c02493d7e88207384117b3c2dc1b737",
     "modules/perky/cf_perky4.h": "ba3d7ab037cdb1537278796e321384322779a91ca977f40cd16f0198190f8805",
     "modules/perky/control_cf_final.c": "e0c0c70fd9549468feae8d732a2d1cdcc6b6cca17801372bd49d26dcd5883a67",
     "modules/perky/cf_assets.s": "3d3d2fbf2421450e27712106c5c52dd554ab3d34df04099243b8dfef14654ca8",
