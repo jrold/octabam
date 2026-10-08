@@ -219,7 +219,8 @@ def main():
     assert 'immediate' in controls['transition_smoothing']
 
     extra = layout['extra_y_init']
-    assert [row['base_word'] for row in extra] == [
+    karplus_extra = extra[:6]
+    assert [row['base_word'] for row in karplus_extra] == [
         memory.KARPLUS_ENV1_BASE,
         memory.KARPLUS_ENV2_BASE,
         memory.KARPLUS_RING_BASE,
@@ -227,7 +228,7 @@ def main():
         memory.KARPLUS_DECAY_RATE_BASE,
         memory.KARPLUS_EDGE_COEFF_BASE,
     ]
-    assert [row['words'] for row in extra] == [
+    assert [row['words'] for row in karplus_extra] == [
         memory.KARPLUS_ENV_PACKED_WORDS,
         memory.KARPLUS_ENV_PACKED_WORDS,
         memory.KARPLUS_RING_WORDS,
@@ -235,16 +236,41 @@ def main():
         memory.KARPLUS_CONTROL_LUT_WORDS,
         memory.KARPLUS_CONTROL_LUT_WORDS,
     ]
+
+    # The T6 audition payload follows Karplus contiguously in Y: one authentic
+    # Waveform2 table, both authentic envelopes, then the four-wave shared bank.
+    # The shared bank's ordinal order is renderer-qualified, not numeric address order.
+    noise = hw4['noise_tone']
+    assert noise['status'].startswith('audition: authentic v1.2.1 shared wave PCM')
+    assert noise['mode_map'] == [1, 0, 2]
+    noise_extra = extra[6:]
+    assert [row['purpose'] for row in noise_extra] == [
+        'Noise/Tone v1.2.1 waveform2-waves',
+        'Noise/Tone v1.2.1 envelope1',
+        'Noise/Tone v1.2.1 envelope2',
+        'Noise/Tone v1.2.1 shared-waves',
+    ]
+    assert len(noise_extra) == 4
+    cursor = memory.HW4_Y_END
+    for row in noise_extra:
+        assert row['base_word'] == cursor, (row['file'], row['base_word'], cursor)
+        cursor += row['words']
+    assert cursor == noise['asset_end_exclusive']
+    assert noise['shared_wave_base'] == noise_extra[-1]['base_word']
+    assert noise['shared_wave_words'] == noise_extra[-1]['words']
+    assert noise['shared_wave_sha256'] == noise_extra[-1]['sha256']
+    assert cursor <= memory.HW4_Y_BOOT_CLEAR
+
     for row in extra:
         assert row['sha256'] and len(row['sha256']) == 64
         path = OUT / row['file']
         assert path.exists(), row['file']
         assert path.stat().st_size == row['words'] * 3, row['file']
 
-    # Compact 128-position Karplus LUTs replaced the former full-domain tables.
-    # Validate the active memory contract instead of the obsolete $3e01 layout.
+    # Karplus still ends at $1f02; T6 consumes only the remaining audition Y arena.
     assert memory.HW4_Y_END == 0x1F02
-    assert memory.HW4_Y_BOOT_CLEAR - memory.HW4_Y_END == 0x1FFE
+    assert noise['asset_end_exclusive'] == 0x324F
+    assert memory.HW4_Y_BOOT_CLEAR - noise['asset_end_exclusive'] == 0x0CB1
 
     # Mandatory release gates: reclaimed-stock audit, direct audible A/B for all
     # five Karplus controls (including live no-retrigger changes), then exact
@@ -264,7 +290,8 @@ def main():
     print(
         f'  Karplus Y: env/ring/LUTs ${memory.KARPLUS_ENV1_BASE:04x}..'
         f'${memory.HW4_Y_END - 1:04x}; '
-        f'{memory.HW4_Y_BOOT_CLEAR - memory.HW4_Y_END} words free before boot clear'
+        f'T6 assets extend to ${noise["asset_end_exclusive"] - 1:04x}; '
+        f'{memory.HW4_Y_BOOT_CLEAR - noise["asset_end_exclusive"]} words free before boot clear'
     )
     print('  actual stock-pinned donor fit remains a full-image placer gate')
 
