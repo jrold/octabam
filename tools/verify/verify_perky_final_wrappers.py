@@ -90,6 +90,7 @@ def main() -> None:
     ap.add_argument("--card", type=Path, required=True)
     ap.add_argument("--midi", type=Path, required=True)
     ap.add_argument("--eft", type=Path, required=True)
+    ap.add_argument("--version", required=True)
     ap.add_argument("--work", type=Path, default=ROOT / "out/perky/cf-final/wrapper-verify")
     args = ap.parse_args()
 
@@ -102,6 +103,18 @@ def main() -> None:
     emitted = args.elek.read_bytes()
     if not emitted.startswith(b"ELEK"):
         raise SystemExit("PERKY wrapper round-trip: emitted container does not start ELEK")
+    if not (1 <= len(args.version) <= 10 and args.version.isascii()
+            and not any(ch.isspace() for ch in args.version)):
+        raise SystemExit("PERKY wrapper round-trip: version must be 1..10 ASCII non-whitespace characters")
+    if len(emitted) < 18:
+        raise SystemExit("PERKY wrapper round-trip: ELEK container is too short for version field")
+    want_version = args.version.rjust(10, " ").encode("ascii")
+    got_version = emitted[0x08:0x12]
+    if got_version != want_version:
+        raise SystemExit(
+            "PERKY wrapper round-trip: ELEK version field mismatch "
+            f"{got_version!r} != {want_version!r}"
+        )
     card_elek, seed = decode_card(args.card)
     if card_elek != emitted:
         raise SystemExit(
@@ -112,7 +125,7 @@ def main() -> None:
     extracted = extract_midi_main(args.eft, args.midi, args.work, mainos)
     print(
         "PERKY final wrapper round-trip: PASS\n"
-        f"  card: ELUP checksum valid; seed=0x{seed:08x}; ELEK={len(emitted):,} B exact\n"
+        f"  card: ELUP checksum valid; seed=0x{seed:08x}; ELEK={len(emitted):,} B exact; version={args.version}\n"
         f"  MIDI: section 3 -> {extracted.name}; MAIN OS={len(mainos):,} B exact\n"
         f"  MAIN OS sha256={sha256_bytes(mainos)}"
     )
