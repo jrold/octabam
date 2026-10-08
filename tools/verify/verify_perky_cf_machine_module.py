@@ -45,7 +45,6 @@ def main() -> None:
             touched.append((type(row).__name__, addr))
     if touched:
         raise AssertionError(f"final CPU patch surface touches stock DSP bootstrap/payload span: {touched!r}")
-
     got = [(x.label, x.source, x.dram, x.include is not None) for x in final.linked]
     want = [
         ("pkmachine", "modules/perky/machine.s", True, False),
