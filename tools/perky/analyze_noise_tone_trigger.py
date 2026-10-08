@@ -12,7 +12,8 @@ Each case compares:
 
 The output keeps complete compact pre/post states for all 18 observations and
 classifies simple per-word rules without inventing formulas for case-dependent
-mutations.
+mutations. Compact conversion is shared with the exact OT-grid analyzer so M1
+field ordering has one repository authority.
 """
 from __future__ import annotations
 
@@ -25,7 +26,6 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "modules/perky"), str(ROOT / "tools/re")]
 
-import noise_tone_compact as shared
 import noise_tone_ot_control_analyze as ot_grid
 
 FIX_DEFAULT = ROOT / "out/perky/engine-fixtures"
@@ -40,13 +40,6 @@ def die(message: str) -> "NoReturn":
     raise SystemExit("analyze-noise-tone-trigger: " + message)
 
 
-def names_words(panel: int, raw: bytes) -> tuple[list[str], list[int]]:
-    if panel == 0:
-        return list(ot_grid.W2_FIELDS), ot_grid.waveform2_words(raw)
-    voice = shared.CompactVoice.from_arm(raw)
-    return list(ot_grid.SHARED_NAMES), list(voice.words)
-
-
 def compact_state(path: Path, panel: int) -> tuple[list[str], list[int]]:
     if not path.is_file():
         die(
@@ -58,7 +51,7 @@ def compact_state(path: Path, panel: int) -> tuple[list[str], list[int]]:
     raw = blob[offset:offset + ARM_STATE_SIZE]
     if len(raw) != ARM_STATE_SIZE:
         die(f"{path}: short state at wrapper +0x{offset:x}")
-    return names_words(panel, raw)
+    return ot_grid.compact(panel, raw)
 
 
 def cases(fixtures: Path, pre_name: str, post_name: str) -> dict[int, list[dict]]:
@@ -125,13 +118,11 @@ def phase(title: str, grouped: dict[int, list[dict]]) -> dict:
         ]
         words = []
         for index in changed:
-            rule = classify(by_word[index], all_pre, index)
             words.append({
                 "index": index,
                 "name": names[index],
-                "rule": rule,
+                "rule": classify(by_word[index], all_pre, index),
             })
-
         print(
             f"M{panel + 1} {RENDERERS[panel]}: "
             f"{len(changed)}/{len(names)} compact words changed -> {changed}"
