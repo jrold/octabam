@@ -241,8 +241,10 @@ def main():
         assert path.exists(), row['file']
         assert path.stat().st_size == row['words'] * 3, row['file']
 
-    assert memory.HW4_Y_END == 0x3E01
-    assert memory.HW4_Y_BOOT_CLEAR - memory.HW4_Y_END == 0xFF
+    # Compact 128-position Karplus LUTs replaced the former full-domain tables.
+    # Validate the active memory contract instead of the obsolete $3e01 layout.
+    assert memory.HW4_Y_END == 0x1F02
+    assert memory.HW4_Y_BOOT_CLEAR - memory.HW4_Y_END == 0x1FFE
 
     # Mandatory release gates: reclaimed-stock audit, direct audible A/B for all
     # five Karplus controls (including live no-retrigger changes), then exact
