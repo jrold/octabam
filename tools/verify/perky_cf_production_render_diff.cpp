@@ -83,6 +83,8 @@ int main()
     std::array<std::array<uint64_t, 4>, 4> matrix{};
     std::array<std::array<uint16_t, 4>, 4> split_mask{};
     uint64_t samples = 0;
+    uint64_t early_trigger_cases = 0;
+    uint64_t boundary_trigger_cases = 0;
 
     for (unsigned frame = 0; frame < frames; ++frame) {
         U32(0x80001c80u) = cursor_base;
@@ -96,7 +98,10 @@ int main()
             const unsigned mode = (step * 2u + voice) % 3u;
             const unsigned split = ((step >> 2) + voice * 3u + algo * 5u) & 15u;
             const int trig = (event % 5u) != 0u;
-            const uint8_t src[6] = {
+            const bool trigger_on_first_half = (event & 1u) == 0u;
+
+            /* The recovered engine ABI stays decay,tune,p1,p2,mode,algo. */
+            const uint8_t engine_src[6] = {
                 (uint8_t)((step * 17u + voice * 11u) & 127u),
                 (uint8_t)((step * 29u + voice * 7u) & 127u),
                 (uint8_t)((step * 43u + voice * 5u) & 127u),
@@ -104,10 +109,14 @@ int main()
                 (uint8_t)mode,
                 (uint8_t)algo,
             };
+            /* Shipping Octatrack SRC order is tune,decay,algo,p1,p2,mode. */
+            const uint8_t page_src[6] = {
+                engine_src[1], engine_src[0], engine_src[5],
+                engine_src[2], engine_src[3], engine_src[4],
+            };
 
             for (unsigned i = 0; i < 6u; ++i)
-                U16(0x80008000u + 2u * i) = (uint16_t)src[i] << 8;
-            U8(0x46104d0cu + track) = trig ? 16u : 0u;
+                U16(0x80008000u + 2u * i) = (uint16_t)page_src[i] << 8;
             const uintptr_t voice_cursor = U32(0x80001c80u);
 
             std::array<int16_t, 16> pre{}, post{};
@@ -115,7 +124,7 @@ int main()
             if (!pk4_process_segment(&reference, voice, nullptr, 0, trig,
                                      255u, 45u, pre.data(), split))
                 return 3;
-            if (!pk4_process_segment(&reference, voice, src, 1, trig,
+            if (!pk4_process_segment(&reference, voice, engine_src, 1, trig,
                                      255u, 45u, post.data(), 16u - split))
                 return 4;
             const uint32_t pre_longs =
@@ -123,10 +132,27 @@ int main()
             const uint32_t post_longs =
                 pk4_encode_stock_segment(expected_post.data(), post.data(), 16u - split);
 
-            if (pk_render(track, event & 1u, 0u, split) != 0
-                || pk_render(track, event & 1u, split, 16u) != 0) {
-                std::cerr << "pk_render failed event=" << event << '\n';
+            /* Exercise both hardware timing possibilities. For a triggered event
+             * the stock flag is visible during exactly one callback half. */
+            U8(0x46104d0cu + track) =
+                (trig && trigger_on_first_half) ? 16u : 0u;
+            if (pk_render(track, event & 1u, 0u, split) != 0) {
+                std::cerr << "pk_render pre failed event=" << event << '\n';
                 return 5;
+            }
+            U8(0x46104d0cu + track) =
+                (trig && !trigger_on_first_half) ? 16u : 0u;
+            if (pk_render(track, event & 1u, split, 16u) != 0) {
+                std::cerr << "pk_render post failed event=" << event << '\n';
+                return 6;
+            }
+            U8(0x46104d0cu + track) = 0u;
+
+            if (trig) {
+                if (trigger_on_first_half)
+                    ++early_trigger_cases;
+                else
+                    ++boundary_trigger_cases;
             }
             if (std::memcmp((void *)voice_cursor, expected_pre.data(), pre_longs * 4u)) {
                 std::cerr << "pre record mismatch event=" << event
@@ -156,10 +182,19 @@ int main()
         }
     }
 
+    if (!early_trigger_cases || !boundary_trigger_cases) {
+        std::cerr << "trigger-half coverage failure early=" << early_trigger_cases
+                  << " boundary=" << boundary_trigger_cases << '\n';
+        return 15;
+    }
+
     std::cout << "PERKY production pk_render integration: PASS " << frames
               << " four-voice frames / " << events << " voice events / "
               << samples << " samples\n";
     std::cout << "  exact two-segment stock records; 160 bytes/voice and 640-byte four-voice frame span preserved\n";
+    std::cout << "  trigger latch covered " << early_trigger_cases
+              << " first-half-only and " << boundary_trigger_cases
+              << " boundary-half-only triggered events\n";
     for (unsigned voice = 0; voice < 4u; ++voice) {
         std::cout << "  voice " << voice << ':';
         for (unsigned algo = 0; algo < 4u; ++algo) {
