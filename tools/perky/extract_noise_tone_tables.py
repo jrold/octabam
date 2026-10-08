@@ -38,7 +38,7 @@ M1_WAVE_BYTES = 2048 * 2
 # Statically verified in the original v1.2.1 M7 image. Keep this path pinned to
 # the exact image hash: these are firmware addresses, not a cross-version ABI.
 V121_IMAGE_SHA256 = "adcdbc4a2c660ffb6477f202211ae3cb70170bfe6ddfaecc3df0e4cb7db398c6"
-V121_SHARED_WAVE_ADDRESSES = (0x080222A0, 0x080224A0, 0x080226A0, 0x080228A0)
+V121_SHARED_WAVE_ADDRESSES = (0x080222A0, 0x080226A0, 0x080228A0, 0x080224A0)
 V121_M1_WAVE_ADDRESSES = (0x080310E0,)
 
 
