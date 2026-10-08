@@ -76,11 +76,15 @@ def main() -> None:
     if not shutil.which("gcc") or not shutil.which("g++"):
         raise SystemExit("gcc/g++ required")
 
+    # Pin exact production/test bytes before accepting historical PCM counts.
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_qualified_sources.py"])
+
+    # Static/final-architecture gates first.
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_final_control.py"])
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_freestanding.py"])
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_machine_module.py"])
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_final_remix.py"])
+    # Directly verifies full firmware hash + every embedded asset hash.
     os.environ["PERKONS_FIRMWARE"] = str(args.firmware.resolve())
     run([sys.executable, ROOT / "tools/perky/perky_cf_assets.py"])
 
@@ -88,6 +92,8 @@ def main() -> None:
     asset = generated["assets"]
     fdir = generated["fixture_dir"]
 
+    # The actual callback must at least compile as strict freestanding C on host;
+    # the release builder separately cross-compiles it with m68k-elf-gcc.
     run([
         "gcc", "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror",
         "-I", ROOT / "modules/perky", "-fsyntax-only",
@@ -104,28 +110,41 @@ def main() -> None:
         ])
         objects.append(obj)
 
+    # Exhaustive production state preparation against recovered original ARM laws.
     exe = compile_cpp("perky4_state_diff", work, objects, pb)
     run([exe, fdir / "fold_karp_control_fixtures.bin", asset])
     exe = compile_cpp("perky4_nt_state_diff", work, objects, pb)
     run([exe, fdir / "nt_control_fixtures.bin", asset])
 
+    # Dynamic four-track p-lock sequence, including Algo and Mode every event.
     exe = compile_cpp("perky4_sequence_diff", work, objects, pb)
     run([exe, fdir / "perky4_sequence.bin", asset])
 
+    # This is the headline end-to-end PCM gate: production pk4_prepare_event ->
+    # production renderer versus PerkyBits native renderer for every OT position.
     exe = compile_cpp("perky4_control_pcm_diff", work, objects, pb, native=True)
     run([exe, asset, fdir])
 
+    # Mixed-algorithm four-track rendering and source-record round-trip.
     exe = compile_cpp("perky4_render_stress", work, objects, pb, native=True)
     run([exe, asset])
 
+    # Exact stock-frame event split: old Algo/state before event, all six new
+    # p-lock values become active only at/after the event boundary.
     exe = compile_cpp("perky_cf_split_plock_timing", work, objects, pb)
     run([exe, asset])
 
+    # Execute the actual shipping pk_render callback against a fixed-address
+    # Octatrack memory fixture. This proves staging, split timing, cursor/span
+    # accounting and stock FLEX record bytes around every event offset.
     run([
         sys.executable, ROOT / "tools/verify/verify_perky_cf_production_render.py",
         asset, "--work", work / "production-render",
     ])
 
+    # Runtime state is global to the ColdFire patch but must never leak across
+    # Parts/Banks. Exercise the actual shipping callback through A0->A1->A0 and
+    # Bank A->B and compare every first event to a freshly initialized oracle.
     run([
         sys.executable, ROOT / "tools/verify/verify_perky_cf_runtime_reset.py",
         asset, "--work", work / "runtime-reset",
