@@ -7,11 +7,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CORE = ROOT / "modules/perky/cf_perky4.c"
+CONTROL = ROOT / "modules/perky/control_cf_final.c"
 MEASURED = ROOT / "modules/analog-bassdrum/control.c"
 
 
 def main() -> None:
     core = CORE.read_text()
+    control = CONTROL.read_text()
     measured = MEASURED.read_text()
 
     # ANALOG BD is the hardware-measured source-machine reference in this tree.
@@ -20,12 +22,14 @@ def main() -> None:
         "Every track is rendered twice per",
         "the second call has end=16",
         "cursor+4+2*n",
+        "0x80001c90u+(ping&1)*0xa80u+336u*track",
+        "Use the packer's fixed slot, not that second call's cursor.",
     )
     for needle in measured_needles:
         if needle not in measured:
             raise AssertionError(f"measured FLEX ABI reference drifted: missing {needle!r}")
 
-    # Pin the production encoder to that exact stock layout.  Source count is
+    # Pin the production encoder to that exact stock layout. Source count is
     # placed in the high 24-bit transport lane, Q26 unity is 0x04000000, and
     # mono is duplicated into consecutive L/R sample longs.
     compact = re.sub(r"\s+", "", core)
@@ -43,6 +47,28 @@ def main() -> None:
         if needle not in compact:
             raise AssertionError(f"Perky stock-record encoder drifted: missing {needle!r}")
 
+    # The final adapter must follow the measured packer ownership model:
+    # reserve the moving cursor, then commit the complete record to the fixed
+    # 336-byte track slot selected by ping + track. This is the integration
+    # detail the earlier fake-memory test got wrong.
+    control_needles = (
+        "#define PK_FINAL_SLOT_BASE 0x80001c90u",
+        "#define PK_FINAL_SLOT_BYTES 336u",
+        "#define PK_FINAL_PING_BYTES 0xa80u",
+        "PK_FINAL_SLOT_BASE + (ping & 1u) * PK_FINAL_PING_BYTES",
+        "+ PK_FINAL_SLOT_BYTES * track",
+        "cursor_longs = 4u + 2u * count",
+        "cursor[i] = 0u",
+        "record = pk_final_fixed_slot(track, ping)",
+        "record[pre_longs + i] = encoded[i]",
+        "pre_longs + post_longs != 40u",
+    )
+    for needle in control_needles:
+        if needle not in control:
+            raise AssertionError(f"Perky fixed-slot transport drifted: missing {needle!r}")
+    if "cursor[i] = encoded[i]" in control or "cursor[i] = record[i]" in control:
+        raise AssertionError("Perky encoded PCM must not be written to the moving cursor")
+
     # Algebraic span check for all legal stock source segments. Two segments
     # around a trig split must always total 40 longs = 160 bytes per voice.
     for split in range(17):
@@ -53,7 +79,8 @@ def main() -> None:
 
     print(
         "PERKY stock source-record ABI: PASS "
-        "(measured FLEX header/rate/sample lanes; all 17 split positions = 160 B/voice)"
+        "(measured FLEX header/rate/sample lanes; moving cursor reservation; "
+        "fixed ping/track DMA-slot commit; all 17 split positions = 160 B/voice)"
     )
 
 
