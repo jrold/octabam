@@ -75,6 +75,9 @@ def main() -> None:
     if not shutil.which("gcc") or not shutil.which("g++"):
         raise SystemExit("gcc/g++ required")
 
+    # Pin exact production/test bytes before accepting historical PCM counts.
+    run([sys.executable, ROOT / "tools/verify/verify_perky_cf_qualified_sources.py"])
+
     # Static/final-architecture gates first.
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_final_control.py"])
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_freestanding.py"])
