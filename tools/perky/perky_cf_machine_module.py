@@ -67,7 +67,7 @@ def build(original, *, generated_dir: str = "out/perky/cf-final"):
             "four-track PCM/control/source-record gates required"
         ),
         doc=(
-            "Four-track Perky Machines: Decay/Tune/Param1/Param2/Mode/Algo on "
+            "Four-track Perky Machines: Tune/Decay/Algo/Prm1/Prm2/Mode on "
             "SRC A-F; ColdFire synthesis into stock source/AMP/FX1/FX2 chain."
         ),
         pressure_blocker=(
