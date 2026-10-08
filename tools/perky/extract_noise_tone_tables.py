@@ -32,6 +32,8 @@ ENVELOPE_BYTES = 2048 * 2
 ENVELOPE1_ADDR = 0x08022EA0
 ENVELOPE2_ADDR = 0x080236A2
 WAVE_POINTER_OFFSETS = (0x38, 0x3C, 0xD0, 0xD4)
+M1_WAVE_POINTER_OFFSETS = (0xE4, 0xE8)
+M1_WAVE_BYTES = 2048 * 2
 
 
 @dataclass(frozen=True)
@@ -183,12 +185,20 @@ def wave_addresses_from_state(state: bytes) -> list[int]:
     return [_le32(state, offset) for offset in WAVE_POINTER_OFFSETS]
 
 
+def m1_wave_addresses_from_state(state: bytes) -> list[int]:
+    """Original M1 Waveform2 current/next table pointers, not M2/M3 pointers."""
+    if len(state) != STATE_BYTES:
+        raise ValueError(f"Noise/Tone M1 state must be exactly 0x{STATE_BYTES:x} bytes")
+    return [_le32(state, offset) for offset in M1_WAVE_POINTER_OFFSETS]
+
+
 def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
 def extract(image: Path, out_dir: Path, *, state_path: Path | None = None,
-            extra_waves: Iterable[int] = ()) -> dict:
+            extra_waves: Iterable[int] = (),
+            m1_state_path: Path | None = None) -> dict:
     raw = image.read_bytes()
     product, segments = parse_container(raw)
     m7 = find_m7(segments)
@@ -217,12 +227,27 @@ def extract(image: Path, out_dir: Path, *, state_path: Path | None = None,
         state_sha = _sha256(state)
         waves.extend(wave_addresses_from_state(state))
 
-    # Preserve first-seen order while collapsing current/next duplicates.
+    m1_state_sha = None
+    m1_waves: list[int] = []
+    if m1_state_path is not None:
+        m1_state = m1_state_path.read_bytes()
+        m1_state_sha = _sha256(m1_state)
+        m1_waves = m1_wave_addresses_from_state(m1_state)
+
+    # Different modes use different pointer offsets AND different table sizes.
+    # Deduplicate by address, but reject contradictory sizes at one address.
     unique_waves = list(dict.fromkeys(int(a) & 0xFFFFFFFF for a in waves))
-    for address in unique_waves:
+    unique_m1_waves = list(dict.fromkeys(int(a) & 0xFFFFFFFF for a in m1_waves))
+    for address in unique_waves + unique_m1_waves:
         if address == 0:
             raise ValueError("Noise/Tone state contains a null wave pointer")
+    overlap = set(unique_waves) & set(unique_m1_waves)
+    if overlap:
+        raise ValueError(f"M1 and M2/M3 wave pointers overlap with incompatible lengths: {sorted(overlap)}")
+    for address in unique_waves:
         emit(f"wave_{address:08x}.bin", address, WAVE_BYTES)
+    for address in unique_m1_waves:
+        emit(f"m1_wave_{address:08x}.bin", address, M1_WAVE_BYTES)
 
     manifest = {
         "source_image": image.name,
@@ -233,6 +258,9 @@ def extract(image: Path, out_dir: Path, *, state_path: Path | None = None,
         "state_file": state_path.name if state_path is not None else None,
         "state_sha256": state_sha,
         "wave_addresses": [f"0x{x:08x}" for x in unique_waves],
+        "m1_state_file": m1_state_path.name if m1_state_path is not None else None,
+        "m1_state_sha256": m1_state_sha,
+        "m1_wave_addresses": [f"0x{x:08x}" for x in unique_m1_waves],
         "files": files,
     }
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
@@ -251,13 +279,15 @@ def main() -> None:
     ap.add_argument("image", type=Path, help="PĒRKONS firmware update obtained by the user")
     ap.add_argument("--state", type=Path,
                     help="prepared 0x120-byte shared Noise/Tone state; derives four wave pointers")
+    ap.add_argument("--m1-state", type=Path,
+                    help="prepared 0x120-byte M1 Waveform2 state; derives two 2048-sample wave pointers")
     ap.add_argument("--wave", action="append", default=[], type=_parse_address,
                     help="extra/bring-up wave address (repeatable; decimal or 0xHEX)")
     ap.add_argument("--out", type=Path, default=Path("out/perky/noise-tone-tables"))
     args = ap.parse_args()
 
     manifest = extract(args.image, args.out, state_path=args.state,
-                       extra_waves=args.wave)
+                       extra_waves=args.wave, m1_state_path=args.m1_state)
     print(f"PĒRKONS product: {manifest['product'] or '(unnamed)'}")
     print(f"M7: {manifest['m7_bytes']} bytes @ {manifest['m7_load_address']}")
     for item in manifest["files"]:
