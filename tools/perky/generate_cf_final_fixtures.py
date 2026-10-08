@@ -55,7 +55,7 @@ def write_control_fixtures(assets: Path, out: Path) -> tuple[int, int]:
             for mode in range(3):
                 for ctl in range(4):
                     for value in range(128):
-                        vals = [64] * 4
+                        vals = [64] * 4  # firmware order Tune,Decay,P1,P2
                         vals[ctl] = value
                         if engine == 0:
                             state = fold.fresh_fold1(mode)
@@ -105,6 +105,7 @@ class SequenceTrack:
 
     def prepare(self, algo: int, mode: int, src: tuple[int, int, int, int],
                 track: int, pitch: bytes, chrom: bytes) -> bytearray:
+        # SRC is Decay,Tune,P1,P2; recovered firmware order is Tune,Decay,P1,P2.
         raw = (src[1], src[0], src[2], src[3])
         if algo == 0:
             if algo not in self.states:
@@ -129,6 +130,7 @@ class SequenceTrack:
                 self.controls[algo] = karp.ControlState()
             self.controls[algo].prepare(self.states[algo], raw, mode, pitch, chrom, trig=True)
             return self.states[algo]
+        # Noise/Tone maintains independent state for physical M1 and shared M2/M3.
         if 3 not in self.states:
             self.states[3] = nt.fresh_state(0)
             self.controls[3] = nt.ControlState()
