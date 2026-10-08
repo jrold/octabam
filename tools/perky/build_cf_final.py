@@ -6,17 +6,20 @@ Release path:
   1. run the complete production control/PCM/p-lock qualification suite;
   2. cross-compile the freestanding ColdFire Perky sources;
   3. audit generated ColdFire assembly/object linkage;
-  4. dynamically replace tracked PERKY PROBE with the ColdFire-only declaration;
-  5. build the dedicated perky-cf-final remix containing every stock FX;
+  4. dynamically replace tracked PERKY PROBE with the ColdFire-only declaration
+     and build the dedicated perky-cf-final remix containing every stock FX;
+  5. boot that exact built image in ot_emu with a real staged project/card and
+     require the full PERKY + stock FLEX sequencer user path to pass;
   6. prove the complete stock DSP bootstrap+payload span is byte-identical;
-  7. wrap the resulting MAIN OS as card and MIDI firmware;
-  8. round-trip both wrappers and write the release manifest.
+  7. only now wrap the MAIN OS as card and MIDI firmware;
+  8. round-trip both wrappers;
+  9. write the release manifest.
 
 No GitHub Actions/CI are used. PĒRKONS firmware bytes are never tracked; the
 DRAM asset unit is emitted at link time from PERKONS_FIRMWARE after full-image
-and per-table SHA verification. The final p-lock/source-record transport is
-covered by verify_perky_cf_final.py, so no saved OT project is required merely
-to package this ColdFire-only architecture.
+and per-table SHA verification. A flashable artifact is not emitted unless both
+the bit/exact PCM qualification and the whole-machine emulator user-path gate
+pass in this same build invocation.
 """
 from __future__ import annotations
 
@@ -39,6 +42,8 @@ import build_machine_canary as wrapper  # noqa:E402
 WORK = ROOT / "out/perky/cf-final"
 STOCK_MAIN = ROOT / "out/raw/section_3_MAIN_OS.bin"
 FINAL_MAIN = ROOT / "out/mainos_bus.bin"
+EMU = ROOT / "out/emu/ot_emu"
+EMU_PY = ROOT / ".venv/bin/python3"
 TOOLCHAIN = ("m68k-elf-gcc", "m68k-elf-as", "m68k-elf-ld", "m68k-elf-objcopy", "m68k-elf-nm")
 
 
@@ -95,13 +100,9 @@ def require_dsp_pristine_release(final, selected) -> None:
 
     General Octabam DSP remixes relocate the stock core mailbox from 0x38000 to
     0x37f00 and widen payload B's boot clear around it (six P-word operands in
-    dsp_ranges.STOCK_PATCHES).  Perky CF owns no DSP state/code/bus at all, so
+    dsp_ranges.STOCK_PATCHES). Perky CF owns no DSP state/code/bus at all, so
     applying those historical remap pokes would violate the final requirement
     that the complete stock DSP bootstrap/payload remain byte-identical.
-
-    This guard intentionally errs closed: if Perky ever grows a DSP section,
-    range, private-Y claim, FX2-buffer claim, arena, or bus participant, the
-    release refuses rather than silently suppressing the stock remap.
     """
     claims = final.claims
     final_dirty = (
@@ -143,6 +144,11 @@ def main() -> None:
         default=Path(os.environ.get("PERKYBITS_ROOT", "")),
         help="PerkyBits checkout containing Source/NativeV121FoldDrums.cpp",
     )
+    ap.add_argument(
+        "--project", type=Path,
+        default=Path(os.environ.get("OT_PROJECT", "")),
+        help="real Octatrack project used only as the owned base for the emulator gate",
+    )
     ap.add_argument("--build", type=int, default=6)
     ap.add_argument("--version", default="PK4CF1")
     ap.add_argument("--work", type=Path, default=WORK)
@@ -150,10 +156,17 @@ def main() -> None:
 
     firmware = args.firmware.expanduser().resolve()
     perkybits = args.perkybits.expanduser().resolve()
+    project = args.project.expanduser().resolve()
     if not firmware.is_file():
         die("set PERKONS_FIRMWARE or pass --firmware with exact PĒRKONS v1.2.1")
     if not (perkybits / "Source/NativeV121FoldDrums.cpp").is_file():
         die("set PERKYBITS_ROOT or pass --perkybits with the PerkyBits checkout")
+    if not (project / "project.work").is_file():
+        die("set OT_PROJECT or pass --project with a real Octatrack project")
+    if not EMU.is_file():
+        die(f"missing {EMU}; run `make emu-cf` before building flashable PERKY firmware")
+    if not EMU_PY.is_file():
+        die(f"missing {EMU_PY}; run `make emu-setup` before building flashable PERKY firmware")
 
     args.work.mkdir(parents=True, exist_ok=True)
     print("=== PERKY CF final preflight: release guards corruption self-test ===")
@@ -166,7 +179,7 @@ def main() -> None:
     os.environ["PERKONS_FIRMWARE"] = str(firmware)
     os.environ["PERKYBITS_ROOT"] = str(perkybits)
 
-    print("=== PERKY CF final 1/8: executable production qualification ===")
+    print("=== PERKY CF final 1/9: executable bit/exact PCM + control qualification ===")
     run([
         sys.executable, ROOT / "tools/verify/verify_perky_cf_final.py",
         "--firmware", firmware,
@@ -174,12 +187,12 @@ def main() -> None:
         "--work", args.work / "qualification",
     ])
 
-    print("=== PERKY CF final 2/8: cross-compile freestanding ColdFire units ===")
+    print("=== PERKY CF final 2/9: cross-compile freestanding ColdFire units ===")
     generated = args.work / "generated"
     generate_cf_final.generate(generated)
     generated_rel = wrapper.repo_relative(generated)
 
-    print("=== PERKY CF final 3/8: audit generated ColdFire code/linkage ===")
+    print("=== PERKY CF final 3/9: audit generated ColdFire code/linkage ===")
     run([
         sys.executable, ROOT / "tools/verify/verify_perky_cf_codegen.py",
         generated,
@@ -189,7 +202,7 @@ def main() -> None:
     # verifies again when the tracked cf_assets.s includes remix.inc.
     perky_cf_assets.extract(firmware)
 
-    print("=== PERKY CF final 4/8: build all-stock-FX remix ===")
+    print("=== PERKY CF final 4/9: build all-stock-FX remix ===")
     mods = registry.modules()
     key = "PERKY PROBE"
     if key not in mods:
@@ -205,9 +218,9 @@ def main() -> None:
         selected_remix = registry.remix("perky-cf-final")
         selected = [mods[k] for k in selected_remix.modules]
         require_dsp_pristine_release(final, selected)
-        # Final Perky is deliberately outside the DSP.  Do not apply Octabam's
+        # Final Perky is deliberately outside the DSP. Do not apply Octabam's
         # six legacy DSP mailbox/boot remap operands to an otherwise stock DSP
-        # image; stage 5 below proves the entire span remains byte-identical.
+        # image; stage 6 below proves the entire span remains byte-identical.
         dsp_ranges.STOCK_PATCHES = ()
         runpy.run_path(str(ROOT / "tools/build/build_bus.py"), run_name="__main__")
     finally:
@@ -227,17 +240,25 @@ def main() -> None:
     if not STOCK_MAIN.is_file():
         die("decoded stock MAIN OS is missing after build_bus")
 
-    print("=== PERKY CF final 5/8: prove stock DSP is byte-identical ===")
+    print("=== PERKY CF final 5/9: whole-machine Octatrack emulator user path ===")
+    run([
+        sys.executable, ROOT / "tools/verify/verify_perky_cf_userpath.py",
+        "--image", FINAL_MAIN,
+        "--project", project,
+        "--work", args.work / "userpath",
+    ])
+
+    print("=== PERKY CF final 6/9: prove stock DSP is byte-identical ===")
     run([
         sys.executable, ROOT / "tools/verify/verify_perky_stock_dsp_identity.py",
         STOCK_MAIN, FINAL_MAIN,
     ])
 
-    print("=== PERKY CF final 6/8: card/MIDI firmware wrapper ===")
+    print("=== PERKY CF final 7/9: card/MIDI firmware wrapper ===")
     card, midi, manifest = wrapper.wrap_flashable(FINAL_MAIN, args.version)
     elek = wrapper.firmware_paths(args.version)[0]
 
-    print("=== PERKY CF final 7/8: round-trip card/MIDI wrappers ===")
+    print("=== PERKY CF final 8/9: round-trip card/MIDI wrappers ===")
     run([
         sys.executable, ROOT / "tools/verify/verify_perky_final_wrappers.py",
         "--mainos", FINAL_MAIN,
@@ -248,17 +269,19 @@ def main() -> None:
         "--work", args.work / "wrapper-verify",
     ])
 
-    print("=== PERKY CF final 8/8: release manifest ===")
+    print("=== PERKY CF final 9/9: release manifest ===")
     manifest.write_text(
         "PERKY MACHINES FINAL FOUR-ALGORITHM COLDFIRE BUILD\n"
         "tracks=T1,T2,T5,T6 independent\n"
-        "src=A:Decay,B:Tune,C:Param1,D:Param2,E:Mode,F:Algo; all six p-lockable\n"
+        "src=A:Tune,B:Decay,C:Algo,D:Prm1,E:Prm2,F:Mode; all six p-lockable\n"
         "algos=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3)\n"
         "production_pcm=196608 exact samples per Algo; 786432 total\n"
         "four_track_stress=16384 trigs / 262144 exact samples; zero cross-track mutation\n"
         "production_pk_render=1024 simultaneous four-voice frames / 4096 voice events / 65536 exact samples\n"
+        "fixed_slot_transport=two-segment source PCM committed to measured 336-byte stock track slot\n"
         "runtime_reset=16 voice/algo cases across Part A0->A1->A0 and Bank A->B; exact cold PCM\n"
         "split_plock=2304 transitions / 36864 samples; exact event-boundary application\n"
+        "emulator_user_path=real project load + sequencer + T1/T2/T5/T6 PERKY + T3/T7 stock FLEX required PASS\n"
         "stock_fx=all stock FX retained by remix; Perky module has zero DSP section/ranges/arena\n"
         "stock_dsp=156948 bootstrap/payload bytes required byte-identical by release gate\n"
         "wrapper_roundtrip=card ELUP -> emitted ELEK exact; MIDI section 3 -> final MAIN OS exact\n"
@@ -271,6 +294,8 @@ def main() -> None:
         f"midi_sha256={wrapper.sha256(midi)}\n"
     )
     print("PERKY CF FINAL BUILD: PASS")
+    print("  PCM qualification : PASS")
+    print("  emulator user path: PASS")
     print("  card :", card)
     print("  MIDI :", midi)
     print("  notes:", manifest)
