@@ -42,12 +42,12 @@ The qualification extracts the exact pitch, chromatic, envelope and wave assets
 from that image and compares production ColdFire output to PerkyBits' native
 v1.2.1 reference renderers.
 
-`tools/verify/verify_perky_cf_qualified_sources.py` pins **32 PCM/control proof
+`tools/verify/verify_perky_cf_qualified_sources.py` pins **33 PCM/control proof
 files** by SHA-256, including the production renderers, shipping `pk_render()`
-path, top-level qualifier, runtime-reset harness, source/FX architecture gates
-and stock-DSP identity checker. Packaging-only tooling such as the release
-builder and codegen audit is intentionally outside this PCM hash set and has its
-own release gates.
+path, top-level qualifier, runtime-reset and runtime-memory gates, source/FX
+architecture gates and stock-DSP identity checker. Packaging-only tooling such
+as the release builder and codegen audit is intentionally outside this PCM hash
+set and has its own release gates.
 
 Any pinned-source drift invalidates the PCM qualification until the complete
 suite is rerun and the manifest is deliberately refreshed.
@@ -146,6 +146,17 @@ callback across **Part A0 -> A1 -> A0** and **Bank A -> B** transitions.
 
 Result: **PASS — 16 voice/Algo cases**. Every transition restarts from exact
 cold-reference PCM, with no state leakage between Parts or Banks.
+
+### ColdFire runtime memory/init
+
+`tools/verify/verify_perky_cf_runtime_memory_final.py` prices the exact 32-bit
+ColdFire state layout and enforces deterministic startup despite the Octabam DRAM
+loader not clearing `.bss`.
+
+Result: **PASS** — four-track engine state **22,324 bytes**, authentic firmware
+assets **22,552 bytes**, callback scratch <=256 bytes, and more than **10.4 MB**
+known margin in the platform DRAM reserve. A loaded non-zero `.data` cookie is
+required to force `pk4_init()` before the BSS-resident engine state is used.
 
 ## Stock FX qualification
 
