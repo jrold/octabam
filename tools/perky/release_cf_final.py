@@ -2,9 +2,10 @@
 """Guarded entry point for the final Perky Machines ColdFire release.
 
 This wrapper intentionally does not replace build_cf_final.py. It verifies the
-byte-pinned qualified source set, validates the ColdFire toolchain, generates
-and audits the exact assembly once, then invokes the qualified final builder.
-After the builder returns it audits the regenerated assembly again.
+byte-pinned qualified source set, validates the automatic platform DRAM reserve,
+validates the ColdFire toolchain, generates and audits the exact assembly once,
+then invokes the qualified final builder. After the builder returns it audits
+the regenerated assembly again.
 """
 from __future__ import annotations
 
@@ -82,6 +83,7 @@ def main() -> None:
         die(f"not a PerkyBits checkout: {perkybits}")
 
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_qualified_sources.py"])
+    run([sys.executable, ROOT / "tools/verify/verify_perky_cf_platform_reserve.py"])
     toolchain_preflight()
 
     env = os.environ.copy()
