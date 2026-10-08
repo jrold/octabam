@@ -81,6 +81,13 @@ def toolchain_preflight() -> str:
     return version
 
 
+def source_git_commit() -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True,
+    )
+    return result.stdout.strip() if result.returncode == 0 else "unknown"
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
@@ -104,7 +111,8 @@ def main() -> None:
         die("set PERKONS_FIRMWARE or pass --firmware with exact PĒRKONS v1.2.1")
     if not (perkybits / "Source/NativeV121FoldDrums.cpp").is_file():
         die("set PERKYBITS_ROOT or pass --perkybits with the PerkyBits checkout")
-    toolchain_preflight()
+    toolchain_version = toolchain_preflight()
+    source_commit = source_git_commit()
 
     # The include callback reads this exact path later while build_bus links the DRAM unit.
     os.environ["PERKONS_FIRMWARE"] = str(firmware)
@@ -185,6 +193,9 @@ def main() -> None:
         "split_plock=2304 transitions / 36864 samples; exact event-boundary application\n"
         "stock_fx=all stock FX retained by remix; Perky module has zero DSP section/ranges/arena\n"
         "stock_dsp=156948 bootstrap/payload bytes required byte-identical by release gate\n"
+        f"source_git_commit={source_commit}\n"
+        f"m68k_elf_gcc_version={toolchain_version}\n"
+        f"qualification_manifest_sha256={wrapper.sha256(ROOT / 'tools/verify/verify_perky_cf_qualified_sources.py')}\n"
         f"perkons_firmware_sha256={perky_cf_assets.FIRMWARE_SHA256}\n"
         f"mainos_sha256={wrapper.sha256(FINAL_MAIN)}\n"
         f"card_sha256={wrapper.sha256(card)}\n"
