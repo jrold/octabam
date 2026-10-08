@@ -13,9 +13,11 @@ the stock boot-clear boundary. The exact live-control lookup tables cover the
 0..127 for every reachable OT position. A 128-entry table is therefore fully
 exact for this port while using only 86 packed DSP words per function.
 
-This intentionally leaves most of the temporary FX1 Y arena free for authentic
-Noise/Tone Waveform2 tables. It is still not a claim on the final PERKY memory
-architecture; the dedicated reduced-FX HW4 remix owns this audition arena.
+T6 Noise/Tone uses the same 58-word overlay slot as the other audition voices.
+M1 needs only 25 words; M2/M3 use 41 state words plus the 17-word envelope cache
+and therefore fill the slot exactly. Two global words after Karplus' trigger
+snapshot track T6's current physical mode and first/active-trigger state; this
+keeps mode switching from stealing an overlay word used by the shared renderer.
 """
 
 PRIVATE_X_BASE = 0x3800
@@ -51,6 +53,12 @@ KARPLUS_SHADOW_WORDS = 32
 KARPLUS_SHADOW_END = KARPLUS_SHADOW_BASE + KARPLUS_SHADOW_WORDS
 KARPLUS_TRIGGERED_WORD = 32        # first spare word in the 58-word track overlay
 
+# T6 is one fixed HW4 hardware track. These two global words are therefore
+# sufficient on each DSP image and remain outside all renderer scratch/shadows.
+NOISE_TONE_MODE_X = KARPLUS_SHADOW_END
+NOISE_TONE_TRIGGERED_X = NOISE_TONE_MODE_X + 1
+NOISE_TONE_BOOKKEEPING_END = NOISE_TONE_TRIGGERED_X + 1
+
 # First-audition local-Y placement. Stock static uploads stop below $1000 and
 # the stock init clear begins at $3f00, so boot-loaded data here survives. The
 # price is the FX1 instance arena; the perky-hw4 remix intentionally retires the
@@ -85,6 +93,8 @@ def spans():
         ('pitch-cache', PITCH_CACHE_BASE, PITCH_CACHE_WORDS),
         ('fold2-shadow', FOLD2_SHADOW_BASE, FOLD2_SHADOW_WORDS),
         ('karplus-shadow', KARPLUS_SHADOW_BASE, KARPLUS_SHADOW_WORDS),
+        ('noise-tone-mode', NOISE_TONE_MODE_X, 1),
+        ('noise-tone-triggered', NOISE_TONE_TRIGGERED_X, 1),
     )
 
 
@@ -118,6 +128,9 @@ def validate():
     assert FOLD2_SHADOW_END == 0x39C4
     assert KARPLUS_SHADOW_BASE == 0x39C4
     assert KARPLUS_SHADOW_END == 0x39E4
+    assert NOISE_TONE_MODE_X == 0x39E4
+    assert NOISE_TONE_TRIGGERED_X == 0x39E5
+    assert NOISE_TONE_BOOKKEEPING_END <= PRIVATE_X_END
 
     yitems = y_spans()
     for name, base, words in yitems:
