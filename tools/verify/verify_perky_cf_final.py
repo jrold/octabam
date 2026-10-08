@@ -144,6 +144,14 @@ def main() -> None:
         asset, "--work", work / "production-render",
     ])
 
+    # One-step locks must not become new track defaults. Drive the real shipping
+    # callback through default -> locked Algo/Mode -> default and prove both PCM
+    # reversion and non-mutation of staged/persistent source parameters.
+    run([
+        sys.executable, ROOT / "tools/verify/verify_perky_cf_plock_reversion.py",
+        asset, "--work", work / "plock-reversion",
+    ])
+
     # Runtime state is global to the ColdFire patch but must never leak across
     # Parts/Banks. Exercise the actual shipping callback through A0->A1->A0 and
     # Bank A->B and compare every first event to a freshly initialized oracle.
@@ -158,6 +166,7 @@ def main() -> None:
     print("  supported Algo=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3)")
     print("  production control->PCM=196608 exact samples per Algo (786432 total)")
     print("  production pk_render=1024 simultaneous four-voice frames / 4096 voice events / 65536 samples; all 4x4 voice/algo pairs and all 16 split offsets")
+    print("  p-lock reversion=44 voice/lock cases / 132 events / 2112 exact samples; default->lock->default non-sticky")
     print("  runtime reset=16 voice/algo cases across Part A0->A1->A0 and Bank A->B; exact cold PCM")
     print("  stock DSP module declaration=no DSP section/ranges/arena; stock source record transport exact")
 
