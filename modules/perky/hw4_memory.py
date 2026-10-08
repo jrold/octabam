@@ -3,15 +3,19 @@
 The earlier PERKY4 profile reserved a 100-word renderer scratch block at X:$3900
 and placed the 17-word Simple Drum pitch cache immediately after it at $3964.
 HW4 needs Karplus' measured 128-word scratch ABI, so the cache and Fold2 trigger
-snapshot move upward together.  Karplus also gets a 32-word frozen pre-trigger
+snapshot move upward together. Karplus also gets a 32-word frozen pre-trigger
 snapshot in the remaining measured private-X window.
 
-For the hardware audition, reclaimed local Y carries Karplus' two envelope
-curves, 2K feedback ring, and three exact prepared-control lookup tables.  The
-control tables occupy the formerly unused $1e00..$3e00 tail and end 255 words
-below the stock boot-clear boundary at $3f00.  This is intentionally NOT a claim
-for the final PERKY architecture: the dedicated perky-hw4 remix retires the
-buffer-backed stock FX whose arena is borrowed here.
+For the hardware audition, Karplus owns a slice of the stock FX1 Y arena below
+the stock boot-clear boundary. The exact live-control lookup tables cover the
+*Octatrack domain*, not all 4096 theoretical PĒRKONS target values: OT raw
+0..126 maps to prepared raw<<5 and 127 maps to 4095, so prepared>>5 is exactly
+0..127 for every reachable OT position. A 128-entry table is therefore fully
+exact for this port while using only 86 packed DSP words per function.
+
+This intentionally leaves most of the temporary FX1 Y arena free for authentic
+Noise/Tone Waveform2 tables. It is still not a claim on the final PERKY memory
+architecture; the dedicated reduced-FX HW4 remix owns this audition arena.
 """
 
 PRIVATE_X_BASE = 0x3800
@@ -47,8 +51,8 @@ KARPLUS_SHADOW_WORDS = 32
 KARPLUS_SHADOW_END = KARPLUS_SHADOW_BASE + KARPLUS_SHADOW_WORDS
 KARPLUS_TRIGGERED_WORD = 32        # first spare word in the 58-word track overlay
 
-# First-audition local-Y placement.  Stock static uploads stop below $1000 and
-# the stock init clear begins at $3f00, so boot-loaded data here survives.  The
+# First-audition local-Y placement. Stock static uploads stop below $1000 and
+# the stock init clear begins at $3f00, so boot-loaded data here survives. The
 # price is the FX1 instance arena; the perky-hw4 remix intentionally retires the
 # buffer-backed effects for this test image.
 HW4_Y_BASE = 0x1000
@@ -60,11 +64,10 @@ KARPLUS_RING_BASE = 0x1600         # aligned after both packed envelope tables
 KARPLUS_RING_WORDS = 0x800
 KARPLUS_RING_END = KARPLUS_RING_BASE + KARPLUS_RING_WORDS
 
-# Exact live-control functions.  4096 u16 values pack three-in-two into 2731
-# DSP words.  Three tables fit almost exactly in the remaining pre-clear arena:
-# $1e00 + 3*2731 = $3e01, leaving $00ff words before $3f00.
-KARPLUS_CONTROL_LUT_ENTRIES = 4096
-KARPLUS_CONTROL_LUT_WORDS = 2731
+# Exact OT-reachable Karplus control functions. 128 u16 values packed three
+# samples into two 24-bit DSP words -> ceil(128 * 16 / 24) = 86 words.
+KARPLUS_CONTROL_LUT_ENTRIES = 128
+KARPLUS_CONTROL_LUT_WORDS = 86
 KARPLUS_TUNE_DELAY_BASE = KARPLUS_RING_END
 KARPLUS_DECAY_RATE_BASE = KARPLUS_TUNE_DELAY_BASE + KARPLUS_CONTROL_LUT_WORDS
 KARPLUS_EDGE_COEFF_BASE = KARPLUS_DECAY_RATE_BASE + KARPLUS_CONTROL_LUT_WORDS
@@ -124,11 +127,13 @@ def validate():
     _validate_disjoint(yitems)
     assert KARPLUS_ENV2_BASE + KARPLUS_ENV_PACKED_WORDS <= KARPLUS_RING_BASE
     assert KARPLUS_RING_END == 0x1E00
+    assert KARPLUS_CONTROL_LUT_ENTRIES == 128
+    assert KARPLUS_CONTROL_LUT_WORDS == 86
     assert KARPLUS_TUNE_DELAY_BASE == 0x1E00
-    assert KARPLUS_DECAY_RATE_BASE == 0x28AB
-    assert KARPLUS_EDGE_COEFF_BASE == 0x3356
-    assert HW4_Y_END == 0x3E01
-    assert HW4_Y_BOOT_CLEAR - HW4_Y_END == 0xFF
+    assert KARPLUS_DECAY_RATE_BASE == 0x1E56
+    assert KARPLUS_EDGE_COEFF_BASE == 0x1EAC
+    assert HW4_Y_END == 0x1F02
+    assert HW4_Y_BOOT_CLEAR - HW4_Y_END == 0x1FFE
 
 
 validate()
