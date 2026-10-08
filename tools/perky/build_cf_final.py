@@ -26,7 +26,7 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT / "tools"), str(ROOT / "tools/perky"), str(ROOT / "tools/build")]
+sys.path[:0] = [str(ROOT / "tools"), str(ROOT / "tools/perky"), str(ROOT / "tools/build"), str(ROOT / "modules/perky")]
 from remix import registry  # noqa:E402
 import generate_cf_final  # noqa:E402
 import perky_cf_assets  # noqa:E402
@@ -36,6 +36,7 @@ import build_machine_canary as wrapper  # noqa:E402
 WORK = ROOT / "out/perky/cf-final"
 STOCK_MAIN = ROOT / "out/raw/section_3_MAIN_OS.bin"
 FINAL_MAIN = ROOT / "out/mainos_bus.bin"
+TOOLCHAIN = ("m68k-elf-gcc", "m68k-elf-as", "m68k-elf-ld", "m68k-elf-objcopy", "m68k-elf-nm")
 
 
 def die(message: str) -> "NoReturn":
@@ -45,6 +46,32 @@ def die(message: str) -> "NoReturn":
 def run(cmd) -> None:
     print("+ " + " ".join(map(str, cmd)), flush=True)
     subprocess.run(list(map(str, cmd)), cwd=ROOT, check=True)
+
+
+def toolchain_preflight() -> str:
+    missing = [name for name in TOOLCHAIN if not shutil.which(name)]
+    if missing:
+        die("missing ColdFire toolchain: " + ", ".join(missing))
+    version = subprocess.run(
+        ["m68k-elf-gcc", "-dumpfullversion"], cwd=ROOT, check=True,
+        capture_output=True, text=True,
+    ).stdout.strip()
+    probe = subprocess.run(
+        [
+            "m68k-elf-gcc", "-mcpu=54455", "-msoft-float", "-O2",
+            "-ffreestanding", "-fno-builtin", "-x", "c", "-S", "-",
+            "-o", "/dev/null",
+        ],
+        cwd=ROOT, input="int perky_cf_toolchain_probe(void){return 0;}\n",
+        text=True, capture_output=True,
+    )
+    if probe.returncode:
+        die(
+            "m68k-elf-gcc exists but cannot compile -mcpu=54455/-msoft-float: "
+            + probe.stderr.strip()
+        )
+    print(f"PERKY CF toolchain preflight: PASS (m68k-elf-gcc {version}; ColdFire 54455)")
+    return version
 
 
 def main() -> None:
@@ -70,8 +97,7 @@ def main() -> None:
         die("set PERKONS_FIRMWARE or pass --firmware with exact PĒRKONS v1.2.1")
     if not (perkybits / "Source/NativeV121FoldDrums.cpp").is_file():
         die("set PERKYBITS_ROOT or pass --perkybits with the PerkyBits checkout")
-    if not shutil.which("m68k-elf-gcc"):
-        die("m68k-elf-gcc is required for the final ColdFire build")
+    toolchain_preflight()
 
     # The include callback reads this exact path later while build_bus links the DRAM unit.
     os.environ["PERKONS_FIRMWARE"] = str(firmware)
