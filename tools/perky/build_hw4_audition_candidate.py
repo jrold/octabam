@@ -9,14 +9,14 @@ Audition engines remain one authentic family per logical PĒRKONS voice:
   T6 / V4 -> Noise / Tone
 
 The HW4 ColdFire profile forces those engine ids. Fold1/Fold2 keep their
-qualified production paths. Karplus now combines its exact renderer, separate
+qualified production paths. Karplus combines its exact renderer, separate
 ARM-derived first/active trigger plans, authentic compact/ring state and live
-TUNE/DECAY/EDGE/TWANG/MODE transport. The nonlinear control transforms are
-complete 4096-entry tables generated from the recovered original v1.2.1 update
-law; control changes are endpoint-exact and immediate for Octatrack p-locks.
+TUNE/DECAY/EDGE/TWANG/MODE transport. Its nonlinear transforms are exact
+128-position Octatrack-domain tables generated from the recovered original
+v1.2.1 update law; control changes are endpoint-exact and immediate for p-locks.
 
-Noise/Tone is intentionally still identified as the remaining control-law
-qualification target; its all-three-mode external state probe is separate.
+Noise/Tone is the remaining control/asset transport target. Its authentic
+shared and Waveform2 renderers are already separately ARM-qualified.
 
 This builder emits source/assets only. It does not by itself make a flashable
 updater; image placement and hardware gates consume the layout metadata here.
@@ -81,26 +81,37 @@ def authentic_karplus() -> karplus.Karplus:
     return karplus.Karplus.from_arm(raw)
 
 
+def _regenerate_control_assets() -> None:
+    firmware = Path(os.environ.get(
+        'PERKONS_FIRMWARE',
+        str(Path.home() / 'Downloads/perkons_both_v1.2.1-0-gbcccfd0.img'),
+    )).expanduser()
+    if not firmware.exists():
+        raise FileNotFoundError(
+            f'pinned firmware not found at {firmware}; run '
+            'tools/perky/build_karplus_control_tables.py --firmware <v1.2.1.img>'
+        )
+    karplus_controls.build(firmware, CONTROL_ASSETS, FIX)
+
+
 def ensure_control_assets() -> dict:
-    """Load or locally regenerate exact Karplus prepared-control LUTs."""
+    """Load or locally regenerate exact OT-domain Karplus control LUTs."""
     manifest_path = CONTROL_ASSETS / 'manifest.json'
     if not manifest_path.exists():
-        firmware = Path(os.environ.get(
-            'PERKONS_FIRMWARE',
-            str(Path.home() / 'Downloads/perkons_both_v1.2.1-0-gbcccfd0.img'),
-        )).expanduser()
-        if not firmware.exists():
-            raise FileNotFoundError(
-                f'{manifest_path} missing and pinned firmware not found at {firmware}; '
-                'run tools/perky/build_karplus_control_tables.py --firmware <v1.2.1.img>'
-            )
-        karplus_controls.build(firmware, CONTROL_ASSETS, FIX)
+        _regenerate_control_assets()
 
     report = json.loads(manifest_path.read_text())
-    if report.get('schema') != 'octabam.perky.karplus-live-control.v1':
+    if report.get('schema') != 'octabam.perky.karplus-live-control.v2':
+        # An older local v1 manifest is expected after the 4096->128 compaction.
+        # Regenerate from pinned evidence rather than asking the user to clean out/.
+        _regenerate_control_assets()
+        report = json.loads(manifest_path.read_text())
+    if report.get('schema') != 'octabam.perky.karplus-live-control.v2':
         raise RuntimeError('Karplus control-table manifest schema drift')
     if report.get('mode_map') != [1, 0, 2]:
         raise RuntimeError('Karplus physical MODE map drift')
+    if report.get('lookup_index') != 'prepared >> 5':
+        raise RuntimeError('Karplus OT-domain lookup-index contract drift')
 
     expected = {
         'tune-delay': memory.KARPLUS_TUNE_DELAY_BASE,
@@ -116,6 +127,8 @@ def ensure_control_assets() -> dict:
             raise RuntimeError(
                 f'Karplus {name} base ${int(row["base_word"]):04x} != ${base:04x}'
             )
+        if int(row['entries']) != memory.KARPLUS_CONTROL_LUT_ENTRIES:
+            raise RuntimeError(f'Karplus {name} entry-count drift')
         if int(row['words']) != memory.KARPLUS_CONTROL_LUT_WORDS:
             raise RuntimeError(f'Karplus {name} packed-word geometry drift')
         path = CONTROL_ASSETS / row['file']
@@ -265,9 +278,11 @@ def build(out: Path = OUT, assets: Path = ASSETS):
             'words': memory.KARPLUS_SHADOW_WORDS,
         },
         'karplus_controls': {
-            'status': 'live endpoint-exact prepared controls; immediate OT p-lock changes',
+            'status': 'live exact OT-domain controls; immediate p-lock changes',
             'parameters': ['TUNE', 'DECAY', 'EDGE', 'TWANG', 'MODE'],
             'mode_map': control_report['mode_map'],
+            'lookup_entries': memory.KARPLUS_CONTROL_LUT_ENTRIES,
+            'lookup_index': control_report['lookup_index'],
             'gate_threshold': control_report['gate_threshold'],
             'attack_rate': control_report['attack_rate'],
             'transition_smoothing': 'not emulated; exact final state applied immediately',
@@ -281,11 +296,11 @@ def build(out: Path = OUT, assets: Path = ASSETS):
         {'base_word': memory.KARPLUS_RING_BASE, **ring,
          'purpose': 'Karplus authentic pre-trigger 2K delay ring'},
         {'base_word': memory.KARPLUS_TUNE_DELAY_BASE, **live_assets[0],
-         'purpose': 'Karplus exact prepared TUNE -> delay lookup'},
+         'purpose': 'Karplus exact OT TUNE -> delay lookup'},
         {'base_word': memory.KARPLUS_DECAY_RATE_BASE, **live_assets[1],
-         'purpose': 'Karplus exact prepared DECAY -> envelope rate lookup'},
+         'purpose': 'Karplus exact OT DECAY -> envelope rate lookup'},
         {'base_word': memory.KARPLUS_EDGE_COEFF_BASE, **live_assets[2],
-         'purpose': 'Karplus exact prepared EDGE -> filter coefficient lookup'},
+         'purpose': 'Karplus exact OT EDGE -> filter coefficient lookup'},
     ]
     layout_path.write_text(json.dumps(layout, indent=2) + '\n')
 
@@ -296,9 +311,10 @@ def build(out: Path = OUT, assets: Path = ASSETS):
         f'ring ${memory.KARPLUS_RING_BASE:04x}..${memory.KARPLUS_RING_END - 1:04x}'
     )
     print(
-        f'Karplus live controls: LUTs ${memory.KARPLUS_TUNE_DELAY_BASE:04x}..'
+        f'Karplus exact OT-domain LUTs: ${memory.KARPLUS_TUNE_DELAY_BASE:04x}..'
         f'${memory.HW4_Y_END - 1:04x}; '
-        'TUNE/DECAY/EDGE/TWANG/MODE active; p-lock changes immediate'
+        f'{memory.KARPLUS_CONTROL_LUT_ENTRIES} entries each; '
+        'TUNE/DECAY/EDGE/TWANG/MODE active'
     )
     print(
         f'HW4 Y free before stock boot clear: '
