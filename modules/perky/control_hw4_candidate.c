@@ -8,7 +8,7 @@
  *   OT T5 -> V2 -> engine  3 Fold Drum 2
  *   OT T6 -> V4 -> engine 10 Noise / Tone
  *
- * The normal browser is intentionally not expanded.  This file changes the
+ * The normal browser is intentionally not expanded. This file changes the
  * outgoing PK/Y1 engine byte by track; it does not pretend the other eight
  * production paths are ready.
  */
@@ -41,30 +41,28 @@ static void pk_hw4_fold2_prepare(PKSimpleControl *s, uint8_t *p,
     p[11] = 3u;
 }
 
-/* HW4 Karplus live-control transport.
+/* HW4 full-resolution live-control transport for Karplus and Noise/Tone.
  *
- * The Octatrack publishes four 0..127 source controls.  Map those onto the
+ * The Octatrack publishes four 0..127 source controls. Map those onto the
  * PĒRKONS prepared-control domain exactly at both endpoints, matching the
  * already-qualified Simple/Fold transport:
  *
  *     0..126 -> value << 5
  *     127    -> 4095
  *
- * The original Karplus ARM update() is already qualified independently.  The
- * DSP-side live-control seam consumes these four 12-bit prepared values and
- * applies the exact steady-state functions for TUNE/DECAY/EDGE/TWANG.  Control
- * transition smoothing is deliberately not hidden here: this first hardware
- * path is endpoint-exact and immediate, which is also the useful behavior for
- * Octatrack p-locks.
+ * The DSP-side Karplus and authentic Noise/Tone seams consume four full u16
+ * prepared values plus physical MODE. Transition smoothing is deliberately not
+ * hidden here: this hardware profile is endpoint-exact and immediate, which is
+ * also the useful behavior for Octatrack p-locks.
  *
- * PK/Y1 payload after this routine:
- *   +08/+09 TUNE   prepared u16
- *   +0a/+0b DECAY  prepared u16
- *   +0c/+0d EDGE   prepared u16
- *   +0e/+0f TWANG  prepared u16
- *   +10      MODE  physical panel index 0/1/2
+ * PK/Y1 payload after either full-resolution prepare routine:
+ *   +08/+09 control 1 prepared u16 (TUNE)
+ *   +0a/+0b control 2 prepared u16 (DECAY)
+ *   +0c/+0d control 3 prepared u16 (EDGE for Karplus, ENV for Noise/Tone)
+ *   +0e/+0f control 4 prepared u16 (TWANG for Karplus, MIX for Noise/Tone)
+ *   +10      MODE physical panel index 0/1/2
  *   +11      spare (0)
- *   +12      engine id 8 lives in p[11] / record packing word 9 low byte
+ *   +12      engine id lives in p[11] / record packing word 9 low byte
  */
 static unsigned pk_hw4_target(unsigned value)
 {
@@ -72,7 +70,7 @@ static unsigned pk_hw4_target(unsigned value)
     return value == 127u ? 4095u : value << 5;
 }
 
-static void pk_hw4_karplus_prepare(uint8_t *p)
+static void pk_hw4_full_prepare(uint8_t *p, unsigned engine)
 {
     const unsigned mode = p[MODE_SLOT] > 2u ? 2u : p[MODE_SLOT];
     const unsigned raw[4] = { p[0], p[1], p[2], p[3] };
@@ -87,7 +85,17 @@ static void pk_hw4_karplus_prepare(uint8_t *p)
     p[8] = (uint8_t)mode;
     p[9] = 0;
     p[10] = 0;
-    p[11] = 8u;
+    p[11] = (uint8_t)engine;
+}
+
+static void pk_hw4_karplus_prepare(uint8_t *p)
+{
+    pk_hw4_full_prepare(p, 8u);
+}
+
+static void pk_hw4_noise_tone_prepare(uint8_t *p)
+{
+    pk_hw4_full_prepare(p, 10u);
 }
 
 int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
@@ -112,15 +120,14 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
             ? (uint8_t)(fp[k] >> 8)
             : U8(0x80000810u + 72u * track + 0x20u + k - 6u);
     }
-    /* MODE is now the fifth main SRC-page control. Keep the established PK/Y1
-     * record ABI for the older Fold/Noise paths by mirroring it into slot 6.
-     * Karplus immediately repacks slot 6/7 as its full-width TWANG value and
-     * carries MODE in byte 8 instead.
+    /* MODE is the fifth main SRC-page control. Keep the established PK/Y1 ABI
+     * for Fold by mirroring it into slot 6 first. Karplus and Noise/Tone then
+     * repack slot 6/7 as their fourth full-width control and carry MODE in byte 8.
      */
     p[6] = p[MODE_SLOT];
 
     /* Engine identity is structural for the first HW4 audition, not a stored
-     * user choice.  This is the key guard against a stale browser/model byte.
+     * user choice. This guards against stale browser/model bytes.
      */
     p[11] = (uint8_t)pk_hw4_engine(track);
 
@@ -159,11 +166,13 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
                 simple_controls[track].valid = 0;
                 pk_hw4_karplus_prepare(p);
             }
+            else if (p[11] == 10u)
+            {
+                simple_controls[track].valid = 0;
+                pk_hw4_noise_tone_prepare(p);
+            }
             else
             {
-                /* Noise/Tone still consumes the raw source controls while its
-                 * original all-three-mode update law is being qualified.
-                 */
                 simple_controls[track].valid = 0;
                 for (unsigned k = 0; k < 4u; ++k)
                 {
