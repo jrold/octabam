@@ -8,7 +8,8 @@ Release path:
   4. dynamically replace tracked PERKY PROBE with the ColdFire-only declaration;
   5. build the dedicated perky-cf-final remix containing every stock FX;
   6. prove the complete stock DSP bootstrap+payload span is byte-identical;
-  7. wrap the resulting MAIN OS as card and MIDI firmware.
+  7. wrap the resulting MAIN OS as card and MIDI firmware;
+  8. round-trip both wrappers and write the release manifest.
 
 No GitHub Actions/CI are used. PĒRKONS firmware bytes are never tracked; the
 DRAM asset unit is emitted at link time from PERKONS_FIRMWARE after full-image
@@ -119,7 +120,7 @@ def main() -> None:
     os.environ["PERKYBITS_ROOT"] = str(perkybits)
     args.work.mkdir(parents=True, exist_ok=True)
 
-    print("=== PERKY CF final 1/7: executable production qualification ===")
+    print("=== PERKY CF final 1/8: executable production qualification ===")
     run([
         sys.executable, ROOT / "tools/verify/verify_perky_cf_final.py",
         "--firmware", firmware,
@@ -127,12 +128,12 @@ def main() -> None:
         "--work", args.work / "qualification",
     ])
 
-    print("=== PERKY CF final 2/7: cross-compile freestanding ColdFire units ===")
+    print("=== PERKY CF final 2/8: cross-compile freestanding ColdFire units ===")
     generated = args.work / "generated"
     generate_cf_final.generate(generated)
     generated_rel = wrapper.repo_relative(generated)
 
-    print("=== PERKY CF final 3/7: audit generated ColdFire code/linkage ===")
+    print("=== PERKY CF final 3/8: audit generated ColdFire code/linkage ===")
     run([
         sys.executable, ROOT / "tools/verify/verify_perky_cf_codegen.py",
         generated,
@@ -142,7 +143,7 @@ def main() -> None:
     # verifies again when the tracked cf_assets.s includes remix.inc.
     perky_cf_assets.extract(firmware)
 
-    print("=== PERKY CF final 4/7: build all-stock-FX remix ===")
+    print("=== PERKY CF final 4/8: build all-stock-FX remix ===")
     mods = registry.modules()
     key = "PERKY PROBE"
     if key not in mods:
@@ -171,16 +172,28 @@ def main() -> None:
     if not STOCK_MAIN.is_file():
         die("decoded stock MAIN OS is missing after build_bus")
 
-    print("=== PERKY CF final 5/7: prove stock DSP is byte-identical ===")
+    print("=== PERKY CF final 5/8: prove stock DSP is byte-identical ===")
     run([
         sys.executable, ROOT / "tools/verify/verify_perky_stock_dsp_identity.py",
         STOCK_MAIN, FINAL_MAIN,
     ])
 
-    print("=== PERKY CF final 6/7: card/MIDI firmware wrapper ===")
+    print("=== PERKY CF final 6/8: card/MIDI firmware wrapper ===")
     card, midi, manifest = wrapper.wrap_flashable(FINAL_MAIN, args.version)
+    elek = wrapper.firmware_paths(args.version)[0]
 
-    print("=== PERKY CF final 7/7: release manifest ===")
+    print("=== PERKY CF final 7/8: round-trip card/MIDI wrappers ===")
+    run([
+        sys.executable, ROOT / "tools/verify/verify_perky_final_wrappers.py",
+        "--mainos", FINAL_MAIN,
+        "--elek", elek,
+        "--card", card,
+        "--midi", midi,
+        "--eft", wrapper.EFT,
+        "--work", args.work / "wrapper-verify",
+    ])
+
+    print("=== PERKY CF final 8/8: release manifest ===")
     manifest.write_text(
         "PERKY MACHINES FINAL FOUR-ALGORITHM COLDFIRE BUILD\n"
         "tracks=T1,T2,T5,T6 independent\n"
@@ -193,6 +206,7 @@ def main() -> None:
         "split_plock=2304 transitions / 36864 samples; exact event-boundary application\n"
         "stock_fx=all stock FX retained by remix; Perky module has zero DSP section/ranges/arena\n"
         "stock_dsp=156948 bootstrap/payload bytes required byte-identical by release gate\n"
+        "wrapper_roundtrip=card ELUP -> emitted ELEK exact; MIDI section 3 -> final MAIN OS exact\n"
         f"source_git_commit={source_commit}\n"
         f"m68k_elf_gcc_version={toolchain_version}\n"
         f"qualification_manifest_sha256={wrapper.sha256(ROOT / 'tools/verify/verify_perky_cf_qualified_sources.py')}\n"
