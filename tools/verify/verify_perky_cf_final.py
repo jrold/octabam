@@ -11,6 +11,7 @@ module declaration.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import os
 import shutil
 import subprocess
@@ -29,6 +30,17 @@ NATIVE_CPP = (
     "NativeV121NoiseTone.cpp",
     "NativeV121NoiseToneShared.cpp",
 )
+
+PERKYBITS_REFERENCE_SHA256 = {
+    "NativeV121FoldDrums.cpp": "117a729f5853a14935a44557128cf729dae499b34c09f83b77bf74b4d72ac8a3",
+    "NativeV121FoldDrums.h": "d3a465ed849944359de1d885a302f5cab7c8274b6dd0166a241a214806add31f",
+    "NativeV121Karplus.cpp": "21337cebe408504d2d76b7083d731b614ee080fa6f8bbe9f657e95de9da09a88",
+    "NativeV121Karplus.h": "642ff2231f08e06aca1aafe9ebe208e8ce3661144f89307050ec3a8983c383e5",
+    "NativeV121NoiseTone.cpp": "7e6f99b6e439d10d9eb14ed9ebd1d353b332c966729891fa4840bdfc391f1a7b",
+    "NativeV121NoiseTone.h": "91b91c3564000616f169e38480d7b7d0adc40bed641f0b7e5337ca1f6fc1df00",
+    "NativeV121NoiseToneShared.cpp": "042f152f2ad99561365bc59557629836c129d56043dd02fd29150b338eb6fcd0",
+    "NativeV121NoiseToneShared.h": "100b77d349baf806913c89c8afd65b4f418e4fb75841fd1252c3b88d8f878b46",
+}
 
 
 def run(cmd, cwd=ROOT) -> None:
@@ -73,6 +85,16 @@ def main() -> None:
     work.mkdir(parents=True, exist_ok=True)
     if not (pb / "Source/NativeV121FoldDrums.cpp").is_file():
         raise SystemExit(f"not a PerkyBits checkout: {pb}")
+    for name, expected in PERKYBITS_REFERENCE_SHA256.items():
+        path = pb / "Source" / name
+        if not path.is_file():
+            raise SystemExit(f"missing pinned PerkyBits reference source: {path}")
+        got = hashlib.sha256(path.read_bytes()).hexdigest()
+        if got != expected:
+            raise SystemExit(
+                f"PerkyBits reference drift: {name} sha256={got}, expected={expected}"
+            )
+    print(f"PERKY PerkyBits reference identity: PASS ({len(PERKYBITS_REFERENCE_SHA256)} files)")
     if not shutil.which("gcc") or not shutil.which("g++"):
         raise SystemExit("gcc/g++ required")
 
