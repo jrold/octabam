@@ -105,6 +105,7 @@ int main() {
     constexpr std::array<unsigned,4> tracks={0u,1u,4u,5u};
     const auto assets = make_assets();
 
+    // Sign the four Perky tracks in two Parts of bank A and one Part of bank B.
     for (unsigned pi : {0u,1u})
         for (unsigned t : tracks) sign_track(bank_a + part_off + pi * part_stride, t);
     for (unsigned t : tracks) sign_track(bank_b + part_off, t);
@@ -122,6 +123,7 @@ int main() {
                 (uint8_t)algo,
             };
 
+            // Establish and dirty Part 0 runtime with two events.
             int rc = first_event(assets, bank_a, 0u, track, voice, src, cursor);
             if (rc) return rc;
             src[0] ^= 0x3fu; src[2] ^= 0x55u;
@@ -129,14 +131,17 @@ int main() {
             U32(0x80001c80u)=cursor;
             if (pk_render(track,0u,0u,16u)!=0) return 40;
 
+            // A Part switch must start from a fresh four-voice runtime.
             src[0] ^= 0x12u; src[1] ^= 0x29u;
             rc = first_event(assets, bank_a, 1u, track, voice, src, cursor);
             if (rc) return rc;
 
+            // Switching back also cold-resets; no state from Part 1 or old Part 0 leaks.
             src[2] ^= 0x21u; src[3] ^= 0x37u;
             rc = first_event(assets, bank_a, 0u, track, voice, src, cursor);
             if (rc) return rc;
 
+            // Bank change is the same invariant.
             src[0] ^= 0x0fu; src[3] ^= 0x1bu;
             rc = first_event(assets, bank_b, 0u, track, voice, src, cursor);
             if (rc) return rc;
