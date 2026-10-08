@@ -106,12 +106,6 @@ def main() -> None:
     ap.add_argument("--work", type=Path, default=WORK)
     args = ap.parse_args()
 
-    if not 0 <= args.build <= 99:
-        die("--build must be 0..99")
-    if not (1 <= len(args.version) <= 10 and args.version.isascii()
-            and not any(ch.isspace() for ch in args.version)):
-        die("--version must be 1..10 ASCII non-whitespace characters")
-
     firmware = args.firmware.expanduser().resolve()
     perkybits = args.perkybits.expanduser().resolve()
     if not firmware.is_file():
@@ -196,15 +190,12 @@ def main() -> None:
         "--card", card,
         "--midi", midi,
         "--eft", wrapper.EFT,
-        "--version", args.version,
         "--work", args.work / "wrapper-verify",
     ])
 
     print("=== PERKY CF final 8/8: release manifest ===")
     manifest.write_text(
         "PERKY MACHINES FINAL FOUR-ALGORITHM COLDFIRE BUILD\n"
-        f"build={args.build}\n"
-        f"version={args.version}\n"
         "tracks=T1,T2,T5,T6 independent\n"
         "src=A:Decay,B:Tune,C:Param1,D:Param2,E:Mode,F:Algo; all six p-lockable\n"
         "algos=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3)\n"
@@ -215,7 +206,7 @@ def main() -> None:
         "split_plock=2304 transitions / 36864 samples; exact event-boundary application\n"
         "stock_fx=all stock FX retained by remix; Perky module has zero DSP section/ranges/arena\n"
         "stock_dsp=156948 bootstrap/payload bytes required byte-identical by release gate\n"
-        "wrapper_roundtrip=card ELUP -> emitted ELEK exact; MIDI section 3 -> final MAIN OS exact; version field exact\n"
+        "wrapper_roundtrip=card ELUP -> emitted ELEK exact; MIDI section 3 -> final MAIN OS exact\n"
         f"source_git_commit={source_commit}\n"
         f"m68k_elf_gcc_version={toolchain_version}\n"
         f"qualification_manifest_sha256={wrapper.sha256(ROOT / 'tools/verify/verify_perky_cf_qualified_sources.py')}\n"
