@@ -86,6 +86,17 @@ def main() -> None:
     ])
     run([exe])
 
+    # Measured stock packer slot: 336 bytes/track. The source callback owns
+    # exactly the first 160 bytes and must leave the trailing 176 untouched.
+    slot_exe = work / "perky_cf_stock_slot_diff"
+    run([
+        "c++", *arch, "-std=c++20", "-O2", "-Wall", "-Wextra", "-Werror",
+        "-I", ROOT / "modules/perky",
+        ROOT / "tools/verify/perky_cf_stock_slot_diff.cpp",
+        *objects, *link, "-o", slot_exe,
+    ])
+    run([slot_exe])
+
 
 if __name__ == "__main__":
     main()
