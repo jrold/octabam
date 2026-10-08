@@ -1,19 +1,23 @@
 #!/usr/bin/env python3
-"""Derive exact v1.2.1 Noise/Tone first-trigger/retrigger compact contracts.
+"""Derive exact v1.2.1 Noise/Tone raw first-trigger/retrigger compact contracts.
 
 Consumes the existing all-engine ARM fixture corpus. Noise/Tone is engine 11
 (one-based) on Voice 4. Physical M1 uses the separate Waveform2 object at
 wrapper +0x2b8c; physical M2/M3 use the shared Noise/Tone object at +0x2984.
 
-Each case compares:
+Each case compares only the original raw trigger mutation:
 
-* fresh prepared state -> trigger + mandatory original post-trigger update;
-* state after 512 original samples -> active retrigger + mandatory update.
+* fresh prepared state -> trigger-only state;
+* state after 512 original samples -> active-retrigger-only state.
 
-The output keeps complete compact pre/post states for all 18 observations and
-classifies simple per-word rules without inventing formulas for case-dependent
-mutations. Compact conversion is shared with the exact OT-grid analyzer so M1
-field ordering has one repository authority.
+The mandatory firmware update() that normally follows trigger is deliberately
+NOT folded into this contract. HW4 uses the same architecture as Karplus:
+raw original trigger -> reapply current endpoint-exact live OT controls -> render.
+That prevents a retrigger fixture from snapping p-locked controls back to the
+captured corner used to derive the trigger delta.
+
+Compact conversion is shared with the exact OT-grid analyzer so M1 field
+ordering has one repository authority.
 """
 from __future__ import annotations
 
@@ -153,15 +157,15 @@ def main() -> None:
     first = cases(
         args.fixtures,
         "wrapper-window-pre-trigger.bin",
-        "wrapper-window-before.bin",
+        "wrapper-window-trigger-only.bin",
     )
     active = cases(
         args.fixtures,
         "wrapper-window-retrigger-pre.bin",
-        "wrapper-window-retrigger-before.bin",
+        "wrapper-window-retrigger-only.bin",
     )
-    first_contract = phase("Noise/Tone original ARM first-trigger delta", first)
-    active_contract = phase("Noise/Tone original ARM active-retrigger delta", active)
+    first_contract = phase("Noise/Tone original ARM raw first-trigger delta", first)
+    active_contract = phase("Noise/Tone original ARM raw active-retrigger delta", active)
 
     comparison = {}
     for panel in ("M1", "M2", "M3"):
@@ -183,6 +187,7 @@ def main() -> None:
         "engine_zero_based": 10,
         "engine_one_based": ENGINE,
         "mode_map": [1, 0, 2],
+        "trigger_scope": "raw trigger only; live controls reapplied after trigger",
         "arm_state_offsets": {
             "M1": ARM_OFFSETS[0], "M2": ARM_OFFSETS[1], "M3": ARM_OFFSETS[2]
         },
@@ -190,8 +195,9 @@ def main() -> None:
         "active_retrigger": active_contract,
         "comparison": comparison,
         "notes": [
-            "Derived only from original v1.2.1 ARM fixture snapshots.",
-            "Post snapshots include the firmware mandatory update-after-trigger pass.",
+            "Derived only from original v1.2.1 ARM trigger-only fixture snapshots.",
+            "Mandatory firmware update() is intentionally separate from this contract.",
+            "HW4 reapplies current exact OT-domain controls immediately after raw trigger.",
             "M1 and M2/M3 intentionally use different compact renderer ABIs.",
             "CASES rules remain un-generalized until a deterministic compiler can prove them.",
         ],
