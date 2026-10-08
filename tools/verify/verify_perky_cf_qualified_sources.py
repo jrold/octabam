@@ -51,6 +51,7 @@ EXPECTED = {
     'tools/verify/verify_perky_cf_runtime_memory_final.py': 'a3490feab654f26ca4bb7bb22bacacb8e9b0855fe57277493f05f27177876f8f',
     'tools/verify/verify_perky_cf_runtime_reset.py': '7c902640c9e0633c58f3711a15f707f2acb7e2891758f2c612b07b0e07d21d04',
     'tools/verify/verify_perky_cf_stock_record_abi.py': '3d0b950962c295efca481e23bf61551a94ad00f37abd138964b2f9e09f46acf1',
+    'tools/verify/verify_perky_final_wrappers.py': 'f1d48b7d88c9411e2680d7462ae31fdc62ae5276f270fef189a66cfe67f676fc',
     'tools/verify/verify_perky_stock_dsp_identity.py': '1bab1de6c609232b7f79d87ebcb347430ca48adbba97110e8ec75cca55045bd3',
 }
 
