@@ -1,26 +1,28 @@
 #!/usr/bin/env python3
-"""Build/run the local PerkyBits v1.2.1 control probes and analyze their state.
+"""Build/run local PerkyBits v1.2.1 control probes and analyze their state.
 
-This is an external-evidence driver, not a normal Octabam gate.  The user's
+This is an external-evidence driver, not a normal Octabam gate. The user's
 PĒRKONS firmware and PerkyBits checkout remain outside this repository; probe
 JSONL and reports are written only under ignored ``out/perky``.
 
-Examples::
+Useful Noise/Tone sequence::
 
+    # detailed smoothing/trigger/pairwise evidence
     python3 tools/perky/capture_control_probe.py noise-tone --pairwise \
       --firmware ~/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img \
       --source ~/Downloads/perkybits
 
-    python3 tools/perky/capture_control_probe.py karplus --pairwise \
+    # exact settled value at every one of the 128 Octatrack knob positions
+    python3 tools/perky/capture_control_probe.py noise-tone-grid \
       --firmware ~/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img \
       --source ~/Downloads/perkybits
 
-Both current probes expect the private PerkyBits
-``codex/octabam-karplus-control-probe`` work (or a descendant).  Noise/Tone v2
-captures all three physical panel modes, including the separate Waveform2 M1
-path; the historical shared-only probe remains untouched for reproducibility.
-This tool never clones, fetches, pushes, invokes GitHub Actions, or writes
-firmware bytes into Git.
+Karplus remains available through ``karplus --pairwise``.
+
+All current probes expect the private PerkyBits
+``codex/octabam-karplus-control-probe`` work (or a descendant). This tool never
+clones, fetches, pushes, invokes GitHub Actions, or writes firmware bytes into
+Git.
 """
 from __future__ import annotations
 
@@ -31,6 +33,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+from typing import NoReturn
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT_ROOT = ROOT / "out/perky/control-probes"
@@ -41,17 +44,26 @@ FAMILIES = {
         "source_marker": "NoiseToneControlProbe.cpp",
         "analyzer": ROOT / "tools/re/noise_tone_control_analyze.py",
         "stem": "noise-tone-control",
+        "supports_pairwise": True,
+    },
+    "noise-tone-grid": {
+        "target": "perkybits-noise-tone-ot-control-probe",
+        "source_marker": "NoiseToneOtControlProbe.cpp",
+        "analyzer": ROOT / "tools/re/noise_tone_ot_control_analyze.py",
+        "stem": "noise-tone-ot-control",
+        "supports_pairwise": False,
     },
     "karplus": {
         "target": "perkybits-karplus-control-probe",
         "source_marker": "KarplusControlProbe.cpp",
         "analyzer": ROOT / "tools/re/karplus_control_analyze.py",
         "stem": "karplus-control",
+        "supports_pairwise": True,
     },
 }
 
 
-def die(message: str) -> "NoReturn":
+def die(message: str) -> NoReturn:
     raise SystemExit("capture-control-probe: " + message)
 
 
@@ -61,7 +73,6 @@ def run(command: list[str], *, cwd: Path | None = None) -> None:
 
 
 def executable(build: Path, target: str) -> Path:
-    """Find a CMake-built probe without assuming one generator layout."""
     names = (target, target + ".exe")
     candidates = [build / name for name in names]
     for config in ("Release", "RelWithDebInfo", "Debug"):
@@ -103,7 +114,7 @@ def main() -> None:
     parser.add_argument(
         "--pairwise",
         action="store_true",
-        help="also capture pairwise control corners (recommended before shipping)",
+        help="also capture pairwise corners when the selected probe supports them",
     )
     parser.add_argument(
         "--clean",
@@ -113,6 +124,9 @@ def main() -> None:
     args = parser.parse_args()
 
     spec = FAMILIES[args.family]
+    if args.pairwise and not spec["supports_pairwise"]:
+        die(f"{args.family} is an exact single-axis grid and does not accept --pairwise")
+
     firmware = args.firmware.expanduser().resolve()
     source = args.source.expanduser().resolve()
     smoke = source / "smoke"
@@ -183,8 +197,8 @@ def main() -> None:
         "shipping_qualification": False,
         "note": (
             "External original-v1.2.1 control evidence only; do not enable a "
-            "shipping control path until an executable Octabam transport/update "
-            "gate consumes and reproduces this evidence."
+            "shipping control path until executable Octabam transport/update "
+            "gates consume and reproduce this evidence."
         ),
     }
     manifest_path = out / "capture.json"
