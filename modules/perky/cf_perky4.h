@@ -18,12 +18,12 @@ enum {
 };
 
 typedef struct {
-    const uint8_t *pitch;
-    const uint8_t *chromatic;
-    const uint8_t *envelope1;
-    const uint8_t *envelope2;
+    const uint8_t *pitch;      /* 4096 little-endian u16 */
+    const uint8_t *chromatic;  /* 12 little-endian u16 */
+    const uint8_t *envelope1;  /* 2048 little-endian u16 */
+    const uint8_t *envelope2;  /* 2048 little-endian u16 */
     pk_cf_fold_wave_view waves[4];
-    const uint8_t *m1_wave;
+    const uint8_t *m1_wave;    /* 2048 little-endian s16 */
     uint32_t m1_wave_address;
 } pk4_assets;
 
@@ -53,20 +53,38 @@ typedef struct {
 } pk4_engine;
 
 void pk4_init(pk4_engine *engine, const pk4_assets *assets);
+
+/* SRC order is the locked Octatrack first page:
+ *   decay, tune, param1, param2, mode, algo.
+ * prepare_event applies any changed controls/mode/algorithm and, when trig != 0,
+ * performs the authentic trigger + mandatory v1.2.1 update-after-trigger.
+ */
 int pk4_prepare_event(pk4_engine *engine, unsigned track,
                       uint8_t decay, uint8_t tune,
                       uint8_t param1, uint8_t param2,
                       uint8_t mode, uint8_t algo,
                       uint8_t velocity, uint8_t note, int trig);
+
 int pk4_render(pk4_engine *engine, unsigned track,
                int16_t *destination, uint32_t sample_count);
+
+/* Process one stock source-render segment.  When event_boundary is false, the
+ * currently active algorithm renders unchanged and src may be NULL.  When it
+ * is true, SRC A..F are consumed before rendering, so per-trig Mode/Algo and
+ * the four sound controls take effect exactly at the split point. */
 int pk4_process_segment(pk4_engine *engine, unsigned track,
                         const uint8_t src[6], int event_boundary, int trig,
                         uint8_t velocity, uint8_t note,
                         int16_t *destination, uint32_t sample_count);
+
+/* Encode one stock Octatrack unity-rate source segment. Mono is duplicated L/R.
+ * ColdFire long -> DSP transport uses each long's high 24 bits.
+ * Returns 4 + 2*sample_count longs, or 0 on invalid input/count.
+ */
 uint32_t pk4_encode_stock_segment(uint32_t *destination,
                                   const int16_t *mono,
                                   uint32_t sample_count);
+
 #ifdef __cplusplus
 }
 #endif
