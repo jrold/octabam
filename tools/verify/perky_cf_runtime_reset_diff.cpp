@@ -42,6 +42,11 @@ static void sign_track(uintptr_t part, unsigned track) {
     U8(part + 62u + 30u * track) = 1u;
 }
 
+static uintptr_t fixed_slot(unsigned track, unsigned ping) {
+    return 0x80001c90u + (uintptr_t)(ping & 1u) * 0xa80u
+         + (uintptr_t)336u * track;
+}
+
 static pk4_assets make_assets() {
     pk4_assets a{};
     a.pitch = pk_asset_pitch;
@@ -68,10 +73,18 @@ static bool render_reference(const pk4_assets &assets, unsigned voice,
     pk4_init(&e, &assets);
     const auto engine_src = to_engine_src(page_src);
     std::array<int16_t, 16> pcm{};
+    std::array<uint32_t, 4> pre{};
+    std::array<uint32_t, 36> post{};
     if (!pk4_process_segment(&e, voice, engine_src.data(), 1, trig,
                              255u, 45u, pcm.data(), 16u))
         return false;
-    return pk4_encode_stock_segment(out.data(), pcm.data(), 16u) == 36u;
+    if (pk4_encode_stock_segment(pre.data(), pcm.data(), 0u) != 4u)
+        return false;
+    if (pk4_encode_stock_segment(post.data(), pcm.data(), 16u) != 36u)
+        return false;
+    std::memcpy(out.data(), pre.data(), 4u * sizeof(uint32_t));
+    std::memcpy(out.data() + 4u, post.data(), 36u * sizeof(uint32_t));
+    return true;
 }
 
 static int first_event(const pk4_assets &assets, uint32_t bank, unsigned part_idx,
@@ -85,17 +98,23 @@ static int first_event(const pk4_assets &assets, uint32_t bank, unsigned part_id
     U8(0x46104d0cu + track) = 16u;
     U32(0x80001c80u) = (uint32_t)cursor_base;
     std::memset((void *)cursor_base, 0xa5, 256u);
+    const uintptr_t slot = fixed_slot(track, 0u);
+    std::memset((void *)slot, 0xa5, 336u);
 
     std::array<uint32_t, 40> expected{};
     if (!render_reference(assets, voice, src, 1, expected)) return 30;
     if (pk_render(track, 0u, 0u, 16u) != 0) return 31;
     U8(0x46104d0cu + track) = 0u;
-    if (std::memcmp((void *)cursor_base, expected.data(), 36u * 4u)) {
-        std::cerr << "cold-reset PCM mismatch part=" << part_idx
+    if (std::memcmp((void *)slot, expected.data(), 40u * 4u)) {
+        std::cerr << "cold-reset fixed-slot PCM mismatch part=" << part_idx
                   << " voice=" << voice << " algo=" << (unsigned)src[2] << '\n';
         return 32;
     }
-    if (U32(0x80001c80u) != cursor_base + 36u * 4u) return 33;
+    if (U32(0x80001c80u) != cursor_base + 40u * 4u) return 33;
+    for (unsigned i = 0; i < 40u; ++i)
+        if (U32(cursor_base + i * 4u) != 0u) return 34;
+    for (unsigned i = 160u; i < 336u; ++i)
+        if (U8(slot + i) != 0xa5u) return 35;
     return 0;
 }
 
@@ -138,6 +157,8 @@ int main() {
             for (unsigned i=0;i<6;i++) U16(0x80008000u + i*2u)=(uint16_t)src[i]<<8;
             U8(0x46104d0cu + track)=16u;
             U32(0x80001c80u)=cursor;
+            std::memset((void *)cursor, 0xa5, 256u);
+            std::memset((void *)fixed_slot(track, 0u), 0xa5, 336u);
             if (pk_render(track,0u,0u,16u)!=0) return 40;
             U8(0x46104d0cu + track)=0u;
 
@@ -161,6 +182,7 @@ int main() {
 
     std::cout << "PERKY production runtime reset: PASS " << cases
               << " voice/algo cases across Part A0->A1->A0 and Bank A->B\n"
-              << "  every bank/part transition restarts from exact cold reference PCM; no cross-Part/Bank state leakage\n";
+              << "  every bank/part transition restarts from exact cold fixed-slot PCM; "
+                 "moving cursor remains reservation-only; no cross-Part/Bank leakage\n";
     return 0;
 }
