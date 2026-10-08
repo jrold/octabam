@@ -14,8 +14,10 @@ It extracts:
 * M2/M3 shared renderer: every reachable 256-sample wave table;
 * the two fixed 2048-entry v1.2.1 envelope curves used by the shared renderer.
 
-All u16 samples are packed losslessly three samples into two DSP56300 Y words.
-No firmware bytes or generated asset binaries are committed to Git.
+Waves use the existing 3*u16 -> 2*DSP-word packing. Envelope curves use the
+repository's exact 16-sample-block anchor/delta codec with a per-curve signed
+width chosen from the real v1.2.1 values. No firmware bytes or generated asset
+binaries are committed to Git.
 """
 from __future__ import annotations
 
@@ -33,6 +35,7 @@ sys.path[:0] = [str(ROOT / "modules/perky"), str(ROOT / "tools/perky"), str(ROOT
 
 import hw4_memory as memory
 import noise_tone_ot_control_analyze as grid_analyze
+import noise_tone_tables as nt_tables
 import simple_drum_tables as packed_u16
 from build_noise_tone_payload import words24_bytes
 from extract_noise_tone_tables import (
@@ -111,6 +114,7 @@ def emit_group(out: Path, name: str, m7, addresses: list[int], samples: int) -> 
     return {
         "name": name,
         "file": path.name,
+        "codec": "u16-lsb-3-samples-2-dsp-words",
         "table_samples": samples,
         "tables": len(addresses),
         "total_samples": len(values),
@@ -123,15 +127,26 @@ def emit_group(out: Path, name: str, m7, addresses: list[int], samples: int) -> 
 def emit_envelope(out: Path, name: str, m7, address: int) -> dict:
     raw = m7.read(address, ENVELOPE_BYTES)
     values = u16_values(raw)
-    payload, words = packed_blob(values)
+    if len(values) != nt_tables.ENVELOPE_SAMPLES:
+        raise AssertionError("envelope extraction geometry")
+    packed = nt_tables.pack_envelope(values)
+    payload = words24_bytes(list(packed.words))
     path = out / f"{name}.bin"
     path.write_bytes(payload)
+    # Prove the codec immediately rather than trusting only construction.
+    if nt_tables.unpack_envelope(packed) != values:
+        raise AssertionError(f"{name}: packed envelope round-trip mismatch")
     return {
         "name": name,
         "file": path.name,
+        "codec": "u16-anchor-plus-signed-fixed-width-deltas",
         "address": f"0x{address:08x}",
         "samples": len(values),
-        "words": words,
+        "block": packed.block,
+        "delta_bits": packed.delta_bits,
+        "block_bits": 16 + (packed.block - 1) * packed.delta_bits,
+        "max_adds": packed.max_adds,
+        "words": len(packed.words),
         "source_sha256": hashlib.sha256(raw).hexdigest(),
         "sha256": hashlib.sha256(payload).hexdigest(),
     }
@@ -159,10 +174,6 @@ def build(firmware: Path, grid_path: Path, out: Path) -> dict:
         die("no Waveform2 wave identities found")
     if not shared_addresses:
         die("no shared Noise/Tone wave identities found")
-
-    # Current renderer qualification expects at most two 2048-wave identities
-    # for M1 and four 256-wave identities for the shared path. Refuse to hide a
-    # newly discovered reachable identity behind a memory approximation.
     if len(m1_addresses) > 2:
         die(f"Waveform2 exposes {len(m1_addresses)} reachable waves, expected <=2")
     if len(shared_addresses) > 4:
@@ -177,8 +188,6 @@ def build(firmware: Path, grid_path: Path, out: Path) -> dict:
     envelope2 = emit_envelope(out, "envelope2", m7, ENVELOPE2_ADDR)
     shared_waves = emit_group(out, "shared-waves", m7, shared_addresses, SHARED_SAMPLES)
 
-    # Place after compact Karplus. Actual counts are derived from captures, but
-    # the maximum qualified identity counts still fit comfortably below $3f00.
     cursor = memory.HW4_Y_END
     assets = []
     for item in (waveform2, envelope1, envelope2, shared_waves):
@@ -208,9 +217,12 @@ def build(firmware: Path, grid_path: Path, out: Path) -> dict:
 
     print("Authentic Noise/Tone assets: generated")
     for item in assets:
+        detail = ""
+        if item.get("codec", "").startswith("u16-anchor"):
+            detail = f", delta={item['delta_bits']} bits"
         print(
             f"  {item['name']:16s}: Y:${item['base_word']:04x}, "
-            f"{item['words']} words"
+            f"{item['words']} words{detail}"
         )
     print(
         f"  end Y:${cursor:04x}; "
