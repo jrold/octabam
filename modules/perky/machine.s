@@ -27,6 +27,9 @@
         .equ    FLEX_P, 0x400d31ae
         .equ    PAGE2_GAP, 0x1da - 0x2a
         .equ    PB_TABLE, 0x400d5f38
+        .equ    FLEX_SLOT_OFF, 0x2ca
+        .equ    FLEX_SLOT_KIND, 1
+        .equ    RECORDER_BASE, 128
 
 pk_sig_check:
         lea     -8(%sp),%sp
@@ -60,8 +63,32 @@ pk_sig_check:
 | source bytes from pk_defaults, including hidden model slot 11. Reselecting an
 | existing PERKY track preserves its sound, MODE and family.
 pk_sig_write:
-        lea     -16(%sp),%sp
-        movem.l %d0-%d2/%a1,(%sp)
+        lea     -20(%sp),%sp
+        movem.l %d0-%d3/%a1,(%sp)
+
+| PERKY is sample-free, but the stock FLEX scheduler still needs a valid source
+| object in the Part before it will create/call a FLEX voice. Point each PERKY
+| track at its own recorder buffer (FLEX slots 129..136, stored zero-based as
+| 128..135). The custom renderer replaces that silent donor PCM completely.
+| Mirror the byte into the SRAM Part exactly like the PK/1 signature so a fresh
+| project remains schedulable after reload/power-cycle without a file sample.
+        tst.l   %d1
+        beq.s   .sw_donor_done
+        move.l  %d0,%d3
+        mulu.w  #5,%d3
+        move.l  %d0,%d2
+        addi.l  #RECORDER_BASE,%d2
+        move.b  %d2,FLEX_SLOT_OFF+FLEX_SLOT_KIND(%a0,%d3.l)
+        move.l  %a0,%d2
+        sub.l   (BANK_PTR).l,%d2
+        subi.l  #PART_OFF,%d2
+        addi.l  #SRAM_PART+FLEX_SLOT_OFF+FLEX_SLOT_KIND,%d2
+        add.l   %d3,%d2
+        movea.l %d2,%a1
+        move.l  %d0,%d2
+        addi.l  #RECORDER_BASE,%d2
+        move.b  %d2,(%a1)
+.sw_donor_done:
         mulu.w  #30,%d0
         lea     SIG_OFF(%a0,%d0.l),%a1
         bsr.s   .sw_one
@@ -72,8 +99,8 @@ pk_sig_write:
         add.l   %d0,%d2
         movea.l %d2,%a1
         bsr.s   .sw_one
-        movem.l (%sp),%d0-%d2/%a1
-        lea     16(%sp),%sp
+        movem.l (%sp),%d0-%d3/%a1
+        lea     20(%sp),%sp
         rts
 .sw_one:
         tst.l   %d1
