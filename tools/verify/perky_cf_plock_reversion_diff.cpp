@@ -136,6 +136,7 @@ int main() {
                 if (locked_algo == default_algo && locked_mode == default_mode)
                     continue;
 
+                /* Alternate bank every case so the shipping global runtime starts cold. */
                 const uint32_t bank = (cases & 1u) ? bank_b : bank_a;
                 const uintptr_t part = bank + part_off;
                 U32(0x46c82456u) = bank;
