@@ -92,6 +92,10 @@ def qualify(firmware: Path, source: Path, reuse_fixtures: bool) -> None:
 def build_module(work: Path, build_number: int):
     print('=== PERKY HW4 2/6: compose DSP + ColdFire sources ===')
     source, _fold2_words = candidate.build(work)
+    layout = json.loads((work / 'layout.json').read_text())
+    t6_y_end = int(layout['hw4_audition']['noise_tone']['asset_end_exclusive'])
+    if not memory.HW4_Y_END < t6_y_end <= memory.HW4_Y_BOOT_CLEAR:
+        base.die(f'bad HW4 T6 Y end: 0x{t6_y_end:04x}')
     control_source = work / 'control.s'
     control_input = ROOT / 'modules/perky/control_hw4_candidate.c'
     control_gen = base.load_module('perky_hw4_control_gen', ROOT / 'modules/perky/generate.py')
@@ -134,8 +138,8 @@ def build_module(work: Path, build_number: int):
         DspRange('x', memory.KARPLUS_SHADOW_BASE, memory.KARPLUS_SHADOW_WORDS,
                  'HW4 Karplus frozen pre-trigger snapshot'),
         DspRange(
-            'y', memory.HW4_Y_BASE, memory.HW4_Y_END - memory.HW4_Y_BASE,
-            'HW4 Karplus envelopes + 2K ring + live-control LUTs (temporary FX1 arena)',
+            'y', memory.HW4_Y_BASE, t6_y_end - memory.HW4_Y_BASE,
+            'HW4 Karplus state/LUTs + authentic T6 audition assets (temporary FX1 arena)',
         ),
     ))
     full = dataclasses.replace(
@@ -169,7 +173,9 @@ def build_module(work: Path, build_number: int):
         'karplus_y_base': memory.HW4_Y_BASE,
         'karplus_y_end_exclusive': memory.HW4_Y_END,
         'karplus_control_lut_words_each': memory.KARPLUS_CONTROL_LUT_WORDS,
-        'karplus_y_free_before_boot_clear': memory.HW4_Y_BOOT_CLEAR - memory.HW4_Y_END,
+        'karplus_y_free_before_t6': t6_y_end - memory.HW4_Y_END,
+        't6_y_end_exclusive': t6_y_end,
+        'y_free_before_boot_clear': memory.HW4_Y_BOOT_CLEAR - t6_y_end,
         'dsp_ranges': [dataclasses.asdict(r) for r in ranges],
         'note': 'build_bus placer is authoritative after stock pinned-routine subtraction',
     }, indent=2) + '\n')
@@ -181,7 +187,7 @@ def package(work: Path, normal: Path, control_source: Path, pwords: int,
     print('=== PERKY HW4 4/6: loader + exact DSP boot payload verification ===')
     # perky_image.load_extra_y_init is generic: every layout row is hash/range/
     # overlap checked and becomes an OT Y-memory record. The HW4 layout now has
-    # six rows: two envelope curves, ring, and three live-control LUTs.
+    # Karplus rows plus the hash-pinned authentic T6 Waveform2/envelope/shared-wave rows.
     base.repack_machine_loader.build(
         normal,
         work,
@@ -206,6 +212,7 @@ def package(work: Path, normal: Path, control_source: Path, pwords: int,
     card, midi, manifest = base.wrap_flashable(MAINOS, version)
     layout = json.loads((work / 'layout.json').read_text())
     controls = layout['hw4_audition']['karplus_controls']
+    noise = layout['hw4_audition']['noise_tone']
     manifest.write_text(
         'PERKY HW4 FOUR-VOICE HARDWARE AUDITION\n'
         f'version={version}\n'
@@ -223,7 +230,9 @@ def package(work: Path, normal: Path, control_source: Path, pwords: int,
         'most stock DSP FX harvested\n'
         f'karplus_y=0x{memory.HW4_Y_BASE:04x}..0x{memory.HW4_Y_END - 1:04x} '
         '(envelopes + ring + 3 live-control LUTs; temporary FX1 arena reservation)\n'
-        f'karplus_y_free_before_boot_clear={memory.HW4_Y_BOOT_CLEAR - memory.HW4_Y_END}\n'
+        f't6_shared_wave_base=0x{noise["shared_wave_base"]:04x} sha256={noise["shared_wave_sha256"]}\n'
+        f't6_asset_end_exclusive=0x{noise["asset_end_exclusive"]:04x}\n'
+        f'y_free_before_boot_clear={memory.HW4_Y_BOOT_CLEAR - noise["asset_end_exclusive"]}\n'
         f'p_words={pwords}; gross_reclaimed_p_words=5431; full-image placer passed\n'
         f'dsp_source_sha256={base.sha256(work / "hw4-audition.asm")}\n'
         f'control_assembly_sha256={base.sha256(control_source)}\n'
@@ -232,7 +241,7 @@ def package(work: Path, normal: Path, control_source: Path, pwords: int,
         f'card={card.name} sha256={base.sha256(card)}\n'
         f'midi={midi.name} sha256={base.sha256(midi)}\n'
         'gates=Fold2 ARM trigger/renderer; Karplus ARM trigger/update/renderer; '
-        'Karplus live-control LUT/source contract; HW4 full-source assembler; '
+        'Karplus live-control LUT/source contract; authentic T6 firmware-asset hash/order gate; HW4 full-source assembler; '
         'stock-aware full-image placer; byte-exact boot uploads; 32000-frame '
         'four-voice dirty-memory OT emulator\n'
         'status=LOCAL GATES PASSED; PHYSICAL OCTATRACK AUDITION PENDING\n'
