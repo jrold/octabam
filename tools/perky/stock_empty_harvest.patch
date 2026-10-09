@@ -1,0 +1,15 @@
+diff --git a/tools/remix/stock.py b/tools/remix/stock.py
+index 8982e3c..5cb0eca 100644
+--- a/tools/remix/stock.py
++++ b/tools/remix/stock.py
+@@ -591,8 +591,10 @@ def pinned(payload: str, harvest) -> tuple[tuple[int, int, str, str], ...]:
+     """(P address, words, owner, callers) for each run of harvested words
+     that code outside the harvest still reaches. The placer skips them."""
+-    sp = p_spans(payload)
+     harvest = set(harvest)
++    if not harvest:
++        return ()
++    sp = p_spans(payload)
+     owner = {w: k for k in harvest if k in sp
+              for w in range(sp[k][0], sp[k][0] + sp[k][1])}
+     by_word: dict[int, set[str]] = {}
