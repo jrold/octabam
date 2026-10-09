@@ -103,8 +103,12 @@ static int first_event(const pk4_assets &assets, uint32_t bank, unsigned part_id
 
     std::array<uint32_t, 40> expected{};
     if (!render_reference(assets, voice, src, 1, expected)) return 30;
-    if (pk_render(track, 0u, 0u, 16u) != 0) return 31;
+    /* Model the actual stock zero-split source path: a zero-sample pre-event
+     * callback followed by the 16-sample event callback. Keep the trigger only
+     * on the first half to exercise the production cross-half trigger latch. */
+    if (pk_render(track, 0u, 0u, 0u) != 0) return 31;
     U8(0x46104d0cu + track) = 0u;
+    if (pk_render(track, 0u, 0u, 16u) != 0) return 31;
     if (std::memcmp((void *)slot, expected.data(), 40u * 4u)) {
         std::cerr << "cold-reset fixed-slot PCM mismatch part=" << part_idx
                   << " voice=" << voice << " algo=" << (unsigned)src[2] << '\n';
@@ -159,8 +163,9 @@ int main() {
             U32(0x80001c80u)=cursor;
             std::memset((void *)cursor, 0xa5, 256u);
             std::memset((void *)fixed_slot(track, 0u), 0xa5, 336u);
-            if (pk_render(track,0u,0u,16u)!=0) return 40;
+            if (pk_render(track,0u,0u,0u)!=0) return 40;
             U8(0x46104d0cu + track)=0u;
+            if (pk_render(track,0u,0u,16u)!=0) return 40;
 
             // A Part switch must start from a fresh four-voice runtime.
             src[0] ^= 0x12u; src[1] ^= 0x29u;
