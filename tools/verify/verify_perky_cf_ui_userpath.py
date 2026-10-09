@@ -78,7 +78,10 @@ def write_script(path: pathlib.Path) -> None:
         events += key(0x20, 0.25, 0.25)
     events += key(0x31)  # YES: commit PERKY
     events += key(0x32)  # leave SRC SETUP
-    events += key(0x3f)  # PLAY
+    # PLAY is key-matrix row 0x25 bit 0 (KEYMAP.md "0x25.0 play"), i.e. live
+    # code 0x28. 0x3f is row 0x27 bit 7 -- an encoder push, which never starts
+    # the transport, so this gate could not have passed before.
+    events += key(0x28)  # PLAY
     events += [(6.0, "quit")]
 
     elapsed = 0

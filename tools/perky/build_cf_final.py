@@ -74,7 +74,7 @@ def toolchain_preflight() -> str:
         [
             "m68k-elf-gcc", "-mcpu=54455", "-msoft-float", "-O2",
             "-ffreestanding", "-fno-builtin", "-x", "c", "-S", "-",
-            "-o", "/dev/null",
+            "-o", os.devnull,
         ],
         cwd=ROOT, input="int perky_cf_toolchain_probe(void){return 0;}\n",
         text=True, capture_output=True,
@@ -248,6 +248,26 @@ def main() -> None:
         "--work", args.work / "userpath",
     ])
 
+    print("=== PERKY CF final 5b/9: ColdFire real-time frame budget ===")
+    run([
+        sys.executable, ROOT / "tools/verify/verify_perky_cf_realtime_budget.py",
+        "--image", FINAL_MAIN,
+        "--project", project,
+        "--work", args.work / "cf-budget",
+    ])
+
+    # The pre-written fixture above manufactures an already-PERKY Part, so it
+    # cannot see a broken machine chooser/commit path. This gate starts T1 as
+    # ordinary FLEX and drives the real stock panel to select PERKY, then
+    # requires nonzero source audio: the check that caught the shipped bug.
+    print("=== PERKY CF final 5c/9: real-panel machine selection ===")
+    run([
+        sys.executable, ROOT / "tools/verify/verify_perky_cf_ui_userpath.py",
+        "--image", FINAL_MAIN,
+        "--project", project,
+        "--work", args.work / "ui-userpath",
+    ])
+
     print("=== PERKY CF final 6/9: prove stock DSP is byte-identical ===")
     run([
         sys.executable, ROOT / "tools/verify/verify_perky_stock_dsp_identity.py",
@@ -266,6 +286,7 @@ def main() -> None:
         "--card", card,
         "--midi", midi,
         "--eft", wrapper.EFT,
+        "--version", args.version,
         "--work", args.work / "wrapper-verify",
     ])
 

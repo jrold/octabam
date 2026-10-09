@@ -22,6 +22,11 @@ namespace ot
 {
 	inline constexpr double g_sampleHz = 44100.0;
 	inline constexpr double g_framePeriod = 16.0;		// samples per DSP frame interrupt
+	// The main CPU's clock (docs/firmware/CHIP.md: MCF54454VR266, 266 MHz). The
+	// per-frame real-time budget is one 16-sample frame period at this clock;
+	// ot_emu's --cf-frame-budget-us compares the ColdFire's measured cycles
+	// against it, the check the lock-step model otherwise cannot make.
+	inline constexpr double g_cfClockHz = 266.0e6;
 
 	// ---- PIT ---------------------------------------------------------------
 	// MCF5445x programmable interval timer. PCSR +0, PMR +2, PCNTR +4.

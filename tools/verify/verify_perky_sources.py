@@ -36,11 +36,15 @@ def main() -> None:
     require(machine, r"cmpi\.b\s+#1", "signature version")
     reject(machine, r"3\(%a1\)", "unproven fourth signature byte")
 
-    # Engine family is persisted in a known source-parameter byte; MODE remains
-    # slot 6 and therefore independently p-lockable/LFO-addressable.
+    # Engine family is persisted in a known source-parameter byte; MODE lives on
+    # the main SRC page at slot 4 (TUNE/DECAY/P1/P2/MODE = the five visible
+    # controls) so p-lock/LFO delivery uses the same first-page staging. It is
+    # mirrored into the established PK/Y1 record slot 6 at render time.
     require(control, r"#define\s+MODEL_SLOT\s+11u", "model slot 11")
-    require(control, r"i\s*==\s*6u", "MODE descriptor slot")
-    require(control, r"0x01001111u", "five-control enable bitmap")
+    require(control, r"#define\s+MODE_SLOT\s+4u", "main-page MODE slot 4")
+    require(control, r"i\s*==\s*MODE_SLOT", "MODE descriptor slot")
+    require(control, r"p\[6\]\s*=\s*p\[MODE_SLOT\]", "PK/Y1 MODE mirror to slot 6")
+    require(control, r"0x00011111u", "five-control enable bitmap")
     require(machine, r"slot 6.*MODE", "MODE plumbing comment")
 
     # ColdFire record and DSP signature must agree on both 16-bit halves.

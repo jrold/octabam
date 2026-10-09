@@ -5,7 +5,7 @@ Uses a logical large Y bank in the primitive host. That bank crosses absent
 Octatrack address ranges: this gate does NOT qualify a shipping placement.
 """
 from pathlib import Path
-import importlib.util,random,re,struct,subprocess,sys
+import importlib.util,os,random,re,struct,subprocess,sys
 ROOT=Path(__file__).resolve().parents[2];sys.path[:0]=[str(ROOT/'modules/perky'),str(ROOT/'tools/perky')]
 import wavetable_drum_compact as compact
 import simple_drum_tables as packed
@@ -59,7 +59,7 @@ def main():
                 case=ROOT/f'out/perky/engine-fixtures/engine-{engine}-mode-{mode}-corner-{corner}'
                 raw=(case/'wrapper-window-before.bin').read_bytes()[offset:offset+0x150];after=(case/'wrapper-window-after.bin').read_bytes()[offset:offset+0x150]
                 got,state,_=execute(raw,256);want=list(struct.unpack('<256h',(case/'arm-pcm.bin').read_bytes()));assert got==want,(engine,mode,corner,'original PCM',[(i,a,b) for i,(a,b) in enumerate(zip(got,want)) if a!=b][:5]);assert state==compact.WavetableDrum.from_arm(after).words,(engine,mode,corner,'original state')
-    native=Path('/Users/jrold/Downloads/perkybits/Source');runner=OUT/'native.cpp';runner.write_text(NATIVE.replace('IDS',','.join(hex(i) for i in ids)));exe=OUT/'native'
+    native=(Path(os.environ.get('PERKYBITS_SOURCE','/Users/jrold/Downloads/perkybits'))/'Source');runner=OUT/'native.cpp';runner.write_text(NATIVE.replace('IDS',','.join(hex(i) for i in ids)));exe=OUT/'native'
     subprocess.run(['c++','-std=c++20','-O2','-I'+str(native),str(runner),str(native/'NativeV121Wavetable.cpp'),'-o',str(exe)],check=True,capture_output=True)
     template=(ROOT/'out/perky/engine-fixtures/engine-2-mode-1-corner-1/wrapper-window-before.bin').read_bytes()[0x2e8:0x2e8+0x150];rng=random.Random(0x5754);cases=[]
     for i in range(240):

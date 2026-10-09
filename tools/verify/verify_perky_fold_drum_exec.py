@@ -5,7 +5,7 @@ Covers all transient modes including original RNG continuation. Production
 controls and shipping integration remain separate requirements.
 """
 from pathlib import Path
-import importlib.util, random, struct, subprocess, sys
+import importlib.util, os, random, struct, subprocess, sys
 ROOT=Path(__file__).resolve().parents[2]
 sys.path[:0]=[str(ROOT/'modules/perky'),str(ROOT/'tools/perky')]
 import fold_drum_compact as fold
@@ -67,7 +67,7 @@ def main():
                 got_rng=tuple(int(v,16)&0xffff for v in dump.read_text().split()[64:68])
                 assert got_rng==struct.unpack('<4H',(case/'rng-continuation-after.bin').read_bytes()),(mode,corner,got_rng)
             meters.append(int(meter.read_text().strip()))
-    native=Path('/Users/jrold/Downloads/perkybits/Source');runner=OUT/'native.cpp';runner.write_text(NATIVE_RUNNER);exe=OUT/'native'
+    native=(Path(os.environ.get('PERKYBITS_SOURCE','/Users/jrold/Downloads/perkybits'))/'Source');runner=OUT/'native.cpp';runner.write_text(NATIVE_RUNNER);exe=OUT/'native'
     subprocess.run(['c++','-std=c++20','-O2','-I'+str(native),str(runner),str(native/'NativeV121FoldDrums.cpp'),'-o',str(exe)],check=True,capture_output=True)
     randomizer=random.Random(0xf01d);cases=[]
     template=(ROOT/'out/perky/engine-fixtures/engine-1-mode-2-corner-1/wrapper-window-before.bin').read_bytes()[0xc4:0xc4+0xf4]

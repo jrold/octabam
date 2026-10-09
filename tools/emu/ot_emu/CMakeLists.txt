@@ -129,6 +129,24 @@ add_subdirectory("${OT_VENDOR}/mc68k" "${CMAKE_CURRENT_BINARY_DIR}/mc68k")
 # build and links only the library (O8, 8 Sep 2026).
 add_subdirectory("${OT_VENDOR}/dsp56300/source" "${CMAKE_CURRENT_BINARY_DIR}/dsp56300" EXCLUDE_FROM_ALL)
 
+# Native-Windows host portability. The shims under test-artifacts/compat supply
+# the headers MinGW lacks (sys/mman.h, poll.h, dlfcn.h, sys/wait.h,
+# sys/socket.h, sys/un.h) and one force-include header for the handful of POSIX
+# names the host code uses (fsync, pwrite, ftruncate, gmtime_r, localtime_r,
+# O_CLOEXEC). Applied only to this directory's targets: the vendored mc68k and
+# dsp56300 cores are added above and already build on Windows. OCTABAM_WIN_COMPAT
+# is set by the local Windows build to the compat directory path.
+if(WIN32 AND DEFINED ENV{OCTABAM_WIN_COMPAT})
+	set(OCTABAM_WIN_COMPAT "$ENV{OCTABAM_WIN_COMPAT}")
+	include_directories("${OCTABAM_WIN_COMPAT}")
+	# Force-include the shim header into C++ translation units only: some test
+	# targets compile vendored C (e.g. Tape Echo's cpu.c) that must not see it.
+	add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:-include>")
+	add_compile_options("$<$<COMPILE_LANGUAGE:CXX>:${OCTABAM_WIN_COMPAT}/octabam_win.h>")
+	# usb.cpp references the Winsock socket calls; link the export library.
+	link_libraries(ws2_32)
+endif()
+
 add_library(ot_machine STATIC machine.cpp machine.h v4e.cpp v4e.h periph.cpp periph.h card.cpp card.h rtos.cpp rtos.h dsp.cpp dsp.h usb.cpp usb.h)
 target_include_directories(ot_machine PUBLIC "${OT_VENDOR}" "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(ot_machine PUBLIC "${OT_VENDOR}/dsp56300/source")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Exact Complex Drum host/native gate for the V2 common-oscillator cluster."""
 from pathlib import Path
-import struct, subprocess, sys
+import os, struct, subprocess, sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'modules/perky'))
 import complex_drum_compact as compact
@@ -9,7 +9,8 @@ import complex_drum_compact as compact
 FIX = ROOT / 'out/perky/engine-fixtures'
 ASSET = ROOT / 'out/perky/simple-drum-assets'
 OUT = ROOT / 'out/perky/complex-drum'
-NATIVE = Path('/Users/jrold/Downloads/perkybits/Source')
+NATIVE = (Path(os.environ.get('PERKYBITS_SOURCE', '/Users/jrold/Downloads/perkybits'))
+          / 'Source')
 
 RUNNER = r'''
 #include "NativeV121ComplexDrum.h"

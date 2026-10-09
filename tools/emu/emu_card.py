@@ -275,7 +275,9 @@ def stage_project(project, set_name, name, tree="out/_stage_tree",
         if p.is_file() and not p.name.startswith("._") and p.suffix.lower() not in (".wav", ".ot"):
             shutil.copy2(p, dst / p.name)
     for spec in audio:
-        f, rel = spec.split(":", 1)
+        # rsplit: the '<src>:<card path>' source may itself contain a colon on
+        # Windows (a drive letter), while the card-relative path never does.
+        f, rel = spec.rsplit(":", 1)
         f = pathlib.Path(f).expanduser()
         out = tree / set_name / rel
         out.parent.mkdir(parents=True, exist_ok=True)

@@ -771,6 +771,15 @@ def main():
              "transient": ("PLATE REV",),   # TRANSIENT runs in its words; the other 13 stay
              "euclid": ("SPATIALIZER", "FLANGER", "CHORUS", "COMB FILTER"),
              "perky-probe": ("SPRING REV",),  # the impulse donor retains PLATE/DARK
+             # perky-cf-final lists all fourteen stock effects (the target keeps
+             # every stock FX), so it harvests nothing.
+             "perky-cf-final": (),
+             # perky-hw4 is an audition profile that keeps only stock FILTER and
+             # DELAY and deliberately harvests the other twelve stock DSP FX for
+             # four-voice synth code/data qualification.
+             "perky-hw4": ("SPATIALIZER", "EQUALIZER", "PHASER", "FLANGER", "CHORUS",
+                           "PLATE REV", "SPRING REV", "DARK REV", "COMPRESSOR",
+                           "LO-FI", "DJ EQ", "COMB FILTER"),
              "rig": _rig, "bottleservice": _rig}
     for _n in registry.remix_names():
         _r = registry.remix(_n)

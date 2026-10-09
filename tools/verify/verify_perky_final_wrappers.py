@@ -67,8 +67,16 @@ def extract_midi_main(eft: Path, midi: Path, work: Path, expected: bytes) -> Pat
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
+    # The real elektron-firmware-tool is a native image and is run directly. The
+    # release-guards self-test passes a synthetic #! script as --eft, which
+    # Windows cannot exec directly, so run any shebang tool through the current
+    # interpreter. On POSIX this is equivalent and on Windows it is the only way.
+    cmd = [str(eft), "-i", str(midi), "-d", "3", "-o", str(out)]
+    with open(eft, "rb") as fh:
+        if fh.read(2) == b"#!":
+            cmd = [sys.executable, *cmd]
     subprocess.run(
-        [str(eft), "-i", str(midi), "-d", "3", "-o", str(out)],
+        cmd,
         cwd=ROOT,
         check=True,
     )

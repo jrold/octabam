@@ -1,8 +1,8 @@
 diff --git a/main.c b/main.c
-index 89c0b80..4226246 100644
+index 89c0b80..f039041 100644
 --- a/main.c
 +++ b/main.c
-@@ -584,7 +584,12 @@ static int set_version(uint8_t *c, container_type ct, const char *ver){
+@@ -584,12 +584,25 @@ static int set_version(uint8_t *c, container_type ct, const char *ver){
          if(voff<0) return -1;
          for(fend=voff; fend<ELE3_COUNT_OFF && (is_alnum(c[fend])||c[fend]=='.'||c[fend]==' '); fend++);
      } else if(ct==CT_ELEK){
@@ -16,7 +16,21 @@ index 89c0b80..4226246 100644
          for(fend=voff; fend<ELEK_SECT_OFF && (is_alnum(c[fend])||c[fend]=='.'||c[fend]==' '); fend++);
      } else return -2;                                   /* pre-ELE version is in section-gap metadata */
      int cap=fend-voff, nl=(int)strlen(ver);
-@@ -694,6 +699,13 @@ static int cmd_build(const char *in_syx, const char *out_syx, override *ovs, int
+     if(nl>cap) return -3;
+-    for(int i=0;i<cap;i++) c[voff+i] = (i<nl) ? (uint8_t)ver[i] : ' ';
++    if(ct==CT_ELEK){
++        /* The Octatrack version field is right-justified: the display area is
++         * space-padded on the LEFT so the alphanumeric version ends at the
++         * field's last cell (ELEK_SECT_OFF-1). */
++        int pad=cap-nl;
++        for(int i=0;i<cap;i++) c[voff+i] = (i<pad) ? ' ' : (uint8_t)ver[i-pad];
++    } else {
++        for(int i=0;i<cap;i++) c[voff+i] = (i<nl) ? (uint8_t)ver[i] : ' ';
++    }
+     return 0;
+ }
+ 
+@@ -694,6 +707,13 @@ static int cmd_build(const char *in_syx, const char *out_syx, override *ovs, int
      }
      printf("  container             : %zu -> %zu bytes\n", fw.bin.declared_size, nclen);
  

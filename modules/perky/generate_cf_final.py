@@ -19,7 +19,10 @@ ROOT = HERE.parents[1]
 FLAGS = [
     "-mcpu=54455",
     "-msoft-float",
-    "-O2",
+    "-O3",
+    "-finline-functions",
+    "-finline-limit=3000",
+    "-funroll-loops",
     "-ffreestanding",
     "-fno-builtin",
     "-fno-common",

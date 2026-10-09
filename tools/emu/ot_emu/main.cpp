@@ -1210,6 +1210,8 @@ int main(int _argc, char** _argv)
 	bool bootLogo = false;		// let the boot logo run its 2.8 s on DTIM3 (Rtos::Quirks::skipBootLogo off)
 	bool sequencer = false;		// M6c: load, start the transport, run the sequencer for real
 	int frames = 400;			// with --sequencer: DSP frames to run after the transport start
+	double cfFrameBudgetUs = 0.0;	// --cf-frame-budget-us: fail the run when the ColdFire's per-16-sample-frame cost exceeds this many microseconds (0 = off)
+	bool cfOverBudget = false;	// set when --cf-frame-budget-us is exceeded
 	int pokeTrig = 0;			// with --sequencer: set a trig on track 1 at this step (1-64)
 	bool internalClock = false;	// with --sequencer: clear CLOCK RECEIVE
 	int bankOverride = -1;		// with --sequencer: switch to this bank (default: the file's saved bank)
@@ -1297,6 +1299,7 @@ int main(int _argc, char** _argv)
 		else if(a == "--sequencer")				sequencer = true;
 		// --sequencer needs a mounted card and a loaded project: it implies both.
 		else if(a == "--frames" && i + 1 < _argc)	frames = std::atoi(_argv[++i]);
+		else if(a == "--cf-frame-budget-us" && i + 1 < _argc)	cfFrameBudgetUs = std::atof(_argv[++i]);
 		else if(a == "--poke-trig" && i + 1 < _argc)	pokeTrig = std::atoi(_argv[++i]);
 		else if(a == "--internal-clock")			internalClock = true;
 		else if(a == "--bank" && i + 1 < _argc)		bankOverride = std::atoi(_argv[++i]);
@@ -2483,6 +2486,7 @@ int main(int _argc, char** _argv)
 						rtos.midiIn(act.bytes);
 				}
 				const auto instr0 = m.instructions();
+				const auto cyc0 = static_cast<uint64_t>(m.getCycles());
 				if(profile)
 					m.clearProfile();		// the whole-run table below then covers the frames alone
 				const auto wall0 = std::chrono::steady_clock::now();
@@ -2495,6 +2499,27 @@ int main(int _argc, char** _argv)
 					ran > 0 ? static_cast<double>(m.instructions() - instr0) / ran : 0.0, ot::g_framePeriod,
 					wall, static_cast<double>(m.instructions() - instr0) / wall / 1e6,
 					ran > 0 ? wall / (ran * ot::g_framePeriod / ot::g_sampleHz) : 0.0);
+				// The ColdFire's real-time budget: the hardware must fit one
+				// 16-sample frame's work into one frame period (362.8 us at
+				// 266 MHz). The lock-step model runs faster than real time and
+				// cannot see an overrun, so this is the check that catches one.
+				{
+					const auto cyc = static_cast<uint64_t>(m.getCycles()) - cyc0;
+					const double perFrame = ran > 0 ? static_cast<double>(cyc) / ran : 0.0;
+					const double us = perFrame / ot::g_cfClockHz * 1e6;
+					std::printf("cf budget  : %llu ColdFire cycles over the frames (%.0f per frame of %g samples = %.1f us at %.0f MHz)\n",
+						static_cast<unsigned long long>(cyc), perFrame, ot::g_framePeriod, us, ot::g_cfClockHz / 1e6);
+					if(cfFrameBudgetUs > 0.0)
+					{
+						const bool over = us > cfFrameBudgetUs;
+						std::printf("             budget %.1f us/frame (one %g-sample frame at %g Hz): %s (%.1f%% of the frame; headroom %.1f us)\n",
+							cfFrameBudgetUs, ot::g_framePeriod, ot::g_sampleHz, over ? "OVER" : "PASS",
+							cfFrameBudgetUs > 0.0 ? us / cfFrameBudgetUs * 100.0 : 0.0,
+							cfFrameBudgetUs - us);
+						if(over)
+							cfOverBudget = true;
+					}
+				}
 				if(!midiFile.empty())
 					std::printf("midi in    : %zu byte(s) still queued at the end (0 = the firmware took them all)\n", rtos.midiPending());
 				if(!midiOut.empty())
@@ -3044,5 +3069,5 @@ int main(int _argc, char** _argv)
 		}
 	}
 
-	return stop == ot::Machine::Stop::Handoff ? 0 : 1;
+	return (stop == ot::Machine::Stop::Handoff && !cfOverBudget) ? 0 : 1;
 }
