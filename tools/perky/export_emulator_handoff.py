@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
-"""Build and export the exact bytes/dependencies needed for remote ot_emu qualification.
+"""Export the exact local bytes/dependencies needed for remote ot_emu qualification.
 
-This is NOT a release builder and it never emits/labels flashable firmware as
-qualified. It exists only for environments that can inspect GitHub but cannot
-clone Octabam's ignored third-party emulator/toolchain dependencies.
+This is NOT a release builder and does not ask the operator to run the emulator
+or repeat the long PCM differential. It exists only because some execution
+sandboxes cannot clone Octabam's ignored third-party emulator dependencies or
+run the macOS m68k cross-toolchain.
 
 On the already-provisioned Octabam Mac it:
-  1. runs the normal production PCM qualification and ColdFire image build;
-  2. deliberately stops immediately before the normal whole-machine ot_emu gate;
-  3. verifies the resulting MAIN image still has stock DSP bytes;
+  1. verifies the production source files are the exact byte-pinned set that
+     already passed the PerkyBits PCM qualification;
+  2. cross-compiles/links the current ColdFire PERKY MAIN image;
+  3. verifies the complete stock DSP bootstrap/payload remains byte-identical;
   4. packages that exact MAIN image, stock MAIN image, generated ColdFire
-     assembly, the real Octatrack project files, and the pinned/apply-patched
+     assembly, real Octatrack project files, and the pinned/apply-patched
      mc68k + dsp56300 source trees (including asmjit).
 
-The receiving environment can then build its own native ot_emu and conduct all
-whole-machine tests against the exact MAIN bytes produced here. No GitHub
-Actions/CI are involved.
+The receiving environment then builds its own native ot_emu and performs the
+whole-machine four-voice and real-panel user-path tests. No GitHub Actions/CI
+are involved, and this exporter never creates a flashable card/MIDI wrapper.
 """
 from __future__ import annotations
 
@@ -24,17 +26,19 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import runpy
 import subprocess
 import sys
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "tools/perky"))
+sys.path[:0] = [
+    str(ROOT / "tools"),
+    str(ROOT / "tools/perky"),
+    str(ROOT / "tools/build"),
+    str(ROOT / "modules/perky"),
+]
 import build_cf_final as base  # noqa:E402
-
-
-class ExportBoundary(RuntimeError):
-    pass
 
 
 def sha256(path: Path) -> str:
@@ -78,10 +82,6 @@ def main() -> None:
         )),
     )
     ap.add_argument(
-        "--perkybits", type=Path,
-        default=Path(os.environ.get("PERKYBITS_ROOT", Path.home() / "Downloads/perkybits")),
-    )
-    ap.add_argument(
         "--project", type=Path,
         default=Path(os.environ.get(
             "OT_PROJECT", Path.home() / "Documents/octatrack backup/##Scratch"
@@ -93,12 +93,9 @@ def main() -> None:
     args = ap.parse_args()
 
     firmware = args.firmware.expanduser().resolve()
-    perkybits = args.perkybits.expanduser().resolve()
     project = args.project.expanduser().resolve()
     if not firmware.is_file():
         raise SystemExit(f"PERKY handoff export: missing PĒRKONS firmware: {firmware}")
-    if not (perkybits / "Source/NativeV121FoldDrums.cpp").is_file():
-        raise SystemExit(f"PERKY handoff export: missing PerkyBits checkout: {perkybits}")
     if not (project / "project.work").is_file():
         raise SystemExit(f"PERKY handoff export: missing Octatrack project: {project}")
 
@@ -110,76 +107,85 @@ def main() -> None:
     if not (ROOT / "vendor/dsp56300/source/asmjit").is_dir():
         raise SystemExit("PERKY handoff export: dsp56300 asmjit submodule is missing")
 
-    # Re-pin and re-apply Octabam's exact emulator dependency revisions first.
+    # Re-pin/re-apply Octabam's exact emulator dependency revisions first.
     subprocess.run(
         [str(ROOT / "scripts/vendor.sh"), "mc68k", "dsp56300"], cwd=ROOT, check=True
     )
 
-    original_run = base.run
-    original_emu = base.EMU
-    original_emu_py = base.EMU_PY
-    original_argv = sys.argv[:]
+    if not base.STOCK_MAIN.is_file():
+        raise SystemExit(
+            "PERKY handoff export: missing out/raw/section_3_MAIN_OS.bin; run make recon"
+        )
 
-    # This helper intentionally stops before whole-machine emulation, so do not
-    # make an already-built emulator a prerequisite for merely exporting bytes.
-    base.EMU = Path(__file__).resolve()
-    base.EMU_PY = Path(sys.executable).resolve()
+    print("=== PERKY handoff 1/6: verify PCM-qualified source identity ===")
+    base.run([sys.executable, ROOT / "tools/verify/verify_perky_cf_qualified_sources.py"])
 
-    def export_run(cmd) -> None:
-        values = list(map(str, cmd))
-        if any(v.endswith("tools/verify/verify_perky_cf_userpath.py") for v in values):
-            print("=== PERKY handoff export: production MAIN complete; stop before ot_emu ===")
-            raise ExportBoundary()
-        original_run(cmd)
+    print("=== PERKY handoff 2/6: ColdFire toolchain preflight ===")
+    toolchain_version = base.toolchain_preflight()
+    os.environ["PERKONS_FIRMWARE"] = str(firmware)
 
-    base.run = export_run
-    sys.argv = [
-        str(ROOT / "tools/perky/build_cf_final.py"),
-        "--firmware", str(firmware),
-        "--perkybits", str(perkybits),
-        "--project", str(project),
-        "--build", str(args.build),
-        "--version", args.version,
-    ]
+    work = ROOT / "out/perky/cf-final"
+    generated = work / "generated"
+    work.mkdir(parents=True, exist_ok=True)
+
+    print("=== PERKY handoff 3/6: generate/audit ColdFire units ===")
+    base.generate_cf_final.generate(generated)
+    generated_rel = base.wrapper.repo_relative(generated)
+    base.run([
+        sys.executable, ROOT / "tools/verify/verify_perky_cf_codegen.py", generated,
+    ])
+    base.perky_cf_assets.extract(firmware)
+
+    print("=== PERKY handoff 4/6: build exact all-stock-FX MAIN image ===")
+    mods = base.registry.modules()
+    key = "PERKY PROBE"
+    if key not in mods:
+        raise SystemExit("PERKY handoff export: tracked PERKY PROBE module is missing")
+    original = mods[key]
+    final = base.perky_cf_machine_module.build(original, generated_dir=generated_rel)
+    old_remix, old_build = os.environ.get("REMIX"), os.environ.get("BUILD")
+    saved_stock_patches = base.dsp_ranges.STOCK_PATCHES
     try:
-        try:
-            base.main()
-        except ExportBoundary:
-            pass
+        mods[key] = final
+        os.environ["REMIX"] = "perky-cf-final"
+        os.environ["BUILD"] = str(args.build)
+        selected_remix = base.registry.remix("perky-cf-final")
+        selected = [mods[k] for k in selected_remix.modules]
+        base.require_dsp_pristine_release(final, selected)
+        base.dsp_ranges.STOCK_PATCHES = ()
+        runpy.run_path(str(ROOT / "tools/build/build_bus.py"), run_name="__main__")
     finally:
-        base.run = original_run
-        base.EMU = original_emu
-        base.EMU_PY = original_emu_py
-        sys.argv = original_argv
+        base.dsp_ranges.STOCK_PATCHES = saved_stock_patches
+        mods[key] = original
+        if old_remix is None:
+            os.environ.pop("REMIX", None)
+        else:
+            os.environ["REMIX"] = old_remix
+        if old_build is None:
+            os.environ.pop("BUILD", None)
+        else:
+            os.environ["BUILD"] = old_build
 
-    final_main = ROOT / "out/mainos_bus.bin"
-    stock_main = ROOT / "out/raw/section_3_MAIN_OS.bin"
-    generated = ROOT / "out/perky/cf-final/generated"
-    if not final_main.is_file():
-        raise SystemExit("PERKY handoff export: production builder did not create out/mainos_bus.bin")
-    if not stock_main.is_file():
-        raise SystemExit("PERKY handoff export: missing stock decoded MAIN image")
-    if not generated.is_dir():
-        raise SystemExit("PERKY handoff export: missing generated ColdFire units")
+    if not base.FINAL_MAIN.is_file():
+        raise SystemExit("PERKY handoff export: build did not create out/mainos_bus.bin")
 
-    # Stage 6 normally runs after the emulator gate. It is safe and useful to
-    # run it here before moving the bytes to another host.
-    original_run([
+    print("=== PERKY handoff 5/6: prove stock DSP identity ===")
+    base.run([
         sys.executable,
         ROOT / "tools/verify/verify_perky_stock_dsp_identity.py",
-        stock_main,
-        final_main,
+        base.STOCK_MAIN,
+        base.FINAL_MAIN,
     ])
 
     commit = subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=ROOT,
         check=True, capture_output=True, text=True,
     ).stdout.strip()
-    name = args.out or (ROOT / "out" / f"PERKY_EMULATOR_HANDOFF_{commit[:8]}.zip")
-    name = name.expanduser().resolve()
-    name.parent.mkdir(parents=True, exist_ok=True)
-    if name.exists():
-        name.unlink()
+    out = args.out or (ROOT / "out" / f"PERKY_EMULATOR_HANDOFF_{commit[:8]}.zip")
+    out = out.expanduser().resolve()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    if out.exists():
+        out.unlink()
 
     project_files = sorted(
         p for p in project.iterdir()
@@ -194,18 +200,20 @@ def main() -> None:
         "branch": "perky-machines",
         "version": args.version,
         "build": args.build,
-        "mainos_sha256": sha256(final_main),
-        "stock_main_sha256": sha256(stock_main),
+        "mainos_sha256": sha256(base.FINAL_MAIN),
+        "stock_main_sha256": sha256(base.STOCK_MAIN),
         "perkons_firmware_sha256": sha256(firmware),
         "mc68k_head": git_head(ROOT / "vendor/mc68k"),
         "dsp56300_head": git_head(ROOT / "vendor/dsp56300"),
+        "m68k_elf_gcc_version": toolchain_version,
         "project_file_count": len(project_files),
     }
 
-    with zipfile.ZipFile(name, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as z:
+    print("=== PERKY handoff 6/6: package emulator inputs ===")
+    with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as z:
         z.writestr("HANDOFF.json", json.dumps(meta, indent=2, sort_keys=True) + "\n")
-        z.write(final_main, "image/mainos_bus.bin")
-        z.write(stock_main, "image/section_3_MAIN_OS.bin")
+        z.write(base.FINAL_MAIN, "image/mainos_bus.bin")
+        z.write(base.STOCK_MAIN, "image/section_3_MAIN_OS.bin")
         for p in project_files:
             z.write(p, f"project/{p.name}")
         add_tree(z, generated, "generated")
@@ -218,7 +226,7 @@ def main() -> None:
     print(f"  mc68k files   : {mc_count}")
     print(f"  dsp56300 files: {dsp_count}")
     print(f"  project files : {len(project_files)}")
-    print(f"  bundle        : {name}")
+    print(f"  bundle        : {out}")
     print("  NOTE: bundle is intentionally unqualified for hardware until ot_emu gates pass")
 
 
