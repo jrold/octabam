@@ -1,0 +1,48 @@
+diff --git a/Musashi/m68kconf.h b/Musashi/m68kconf.h
+index 9fecdda..2153022 100644
+--- a/Musashi/m68kconf.h
++++ b/Musashi/m68kconf.h
+@@ -173,7 +173,7 @@
+  * access a word or longword at an odd address.
+  * NOTE: This is only emulated properly for 68000 mode.
+  */
+-#define M68K_EMULATE_ADDRESS_ERROR  OPT_OFF
++#define M68K_EMULATE_ADDRESS_ERROR  OPT_ON
+ 
+ /* Disable handling of bus errors. We do not expect them to happen and they cost performance, therefore removed */
+ #define M68K_SUPPORT_BUS_ERROR OPT_OFF
+diff --git a/Musashi/m68kcpu.h b/Musashi/m68kcpu.h
+index 71627d5..0e47fad 100644
+--- a/Musashi/m68kcpu.h
++++ b/Musashi/m68kcpu.h
+@@ -616,7 +616,7 @@ extern sigjmp_buf m68ki_aerr_trap;
+ 		{ \
+ 			if (m68ki_remaining_cycles > 0) \
+ 				m68ki_remaining_cycles = 0; \
+-			return m68ki_initial_cycles; \
++			return m68ki_cpu->m68ki_initial_cycles; \
+ 		} \
+ 	}
+ 
+@@ -633,18 +633,18 @@ extern jmp_buf m68ki_aerr_trap;
+ 	#define m68ki_set_address_error_trap() \
+ 		if(setjmp(m68ki_aerr_trap) != 0) \
+ 		{ \
+-			m68ki_exception_address_error(); \
++			m68ki_exception_address_error(m68ki_cpu); \
+ 			if(CPU_STOPPED) \
+ 			{ \
+ 				SET_CYCLES(0); \
+-				return m68ki_initial_cycles; \
++				return m68ki_cpu->m68ki_initial_cycles; \
+ 			} \
+ 			/* ensure we don't re-enter execution loop after an
+ 			   address error if there's no more cycles remaining */ \
+ 			if(GET_CYCLES() <= 0) \
+ 			{ \
+ 				/* return how many clocks we used */ \
+-				return m68ki_initial_cycles - GET_CYCLES(); \
++				return m68ki_cpu->m68ki_initial_cycles - GET_CYCLES(); \
+ 			} \
+ 		}
+ 

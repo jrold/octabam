@@ -136,8 +136,12 @@ add_subdirectory("${OT_VENDOR}/dsp56300/source" "${CMAKE_CURRENT_BINARY_DIR}/dsp
 # O_CLOEXEC). Applied only to this directory's targets: the vendored mc68k and
 # dsp56300 cores are added above and already build on Windows. OCTABAM_WIN_COMPAT
 # is set by the local Windows build to the compat directory path.
-if(WIN32 AND DEFINED ENV{OCTABAM_WIN_COMPAT})
-	set(OCTABAM_WIN_COMPAT "$ENV{OCTABAM_WIN_COMPAT}")
+if(WIN32)
+	if(DEFINED ENV{OCTABAM_WIN_COMPAT})
+		set(OCTABAM_WIN_COMPAT "$ENV{OCTABAM_WIN_COMPAT}")
+	else()
+		set(OCTABAM_WIN_COMPAT "${CMAKE_CURRENT_SOURCE_DIR}/win_compat")
+	endif()
 	include_directories("${OCTABAM_WIN_COMPAT}")
 	# Force-include the shim header into C++ translation units only: some test
 	# targets compile vendored C (e.g. Tape Echo's cpu.c) that must not see it.

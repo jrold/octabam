@@ -71,6 +71,11 @@ apply_patch() {
 
 vendor_mc68k() {
   pin_checkout vendor/mc68k https://github.com/joelanders/mc68k-md-mm "$MC68K_PIN"
+  # octabam: turn ColdFire address-error emulation ON (Musashi ships it OFF) and
+  # fix the fork's renamed cycle member so it compiles. A real ColdFire faults on
+  # odd-address word/long access; the emulator must too, or a hardware-only fault
+  # reads as success. tools/patches/mc68k-win.patch.
+  apply_patch vendor/mc68k "$(pwd)/tools/patches/mc68k-win.patch"
 }
 
 # Two local changes are needed to reproduce this build:

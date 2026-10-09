@@ -1,5 +1,5 @@
 diff --git a/source/CMakeLists.txt b/source/CMakeLists.txt
-index da7612b..944719a 100644
+index da7612bd..944719a8 100644
 --- a/source/CMakeLists.txt
 +++ b/source/CMakeLists.txt
 @@ -57,3 +57,5 @@ if(DSP56300_DEBUGGER)
@@ -8,8 +8,79 @@ index da7612b..944719a 100644
  endif()
 +
 +add_subdirectory(dsp_host)
+diff --git a/source/dsp56kBase/CMakeLists.txt b/source/dsp56kBase/CMakeLists.txt
+index 3c97cb28..72c18efd 100644
+--- a/source/dsp56kBase/CMakeLists.txt
++++ b/source/dsp56kBase/CMakeLists.txt
+@@ -26,16 +26,17 @@ win8sync.cpp win8sync.h
+ target_sources(dsp56kBase PRIVATE ${SOURCES})
+ source_group("source" FILES ${SOURCES})
+ 
+-# Profiler integrations, see profiler.cpp. vtuneSdk is only added for these platforms, Superluminal is Windows only.
+-if(WIN32 OR (UNIX AND NOT APPLE))
++# Profiler integrations, see profiler.cpp.
++# octabam local Windows portability: the repo's verify scripts link only
++# dsp56kEmu/dsp56kBase/asmjit, so a Windows build must not pull in the
++# vtuneSdk/Superluminal profiling symbols (they are pure host instrumentation
++# and do not affect DSP behaviour). Enable them only on Linux as upstream does
++# for Apple-adjacent builds.
++if(UNIX AND NOT APPLE)
+ 	target_link_libraries(dsp56kBase PRIVATE vtuneSdk)
+ 	target_compile_definitions(dsp56kBase PRIVATE DSP56K_USE_VTUNE_JIT_PROFILING_API)
+ endif()
+ 
+-if(WIN32)
+-	target_compile_definitions(dsp56kBase PRIVATE DSP56K_USE_SUPERLUMINAL_PROFILING_API)
+-endif()
+-
+ if(MSVC)
+ 	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /constexpr:steps10000000")
+ elseif(UNIX AND NOT APPLE)
+diff --git a/source/dsp56kBase/threadtools.cpp b/source/dsp56kBase/threadtools.cpp
+index da83b38b..1d143f7d 100644
+--- a/source/dsp56kBase/threadtools.cpp
++++ b/source/dsp56kBase/threadtools.cpp
+@@ -49,6 +49,7 @@ namespace dsp56k
+ 		info.dwThreadID = dwThreadID;
+ 		info.dwFlags = 0;
+ 
++#if defined(_MSC_VER)
+ 		__try  // NOLINT(clang-diagnostic-language-extension-token)
+ 		{
+ 			RaiseException( MS_VC_EXCEPTION, 0, sizeof(info)/sizeof(ULONG_PTR), reinterpret_cast<ULONG_PTR*>(&info) );
+@@ -56,6 +57,14 @@ namespace dsp56k
+ 		__except(EXCEPTION_EXECUTE_HANDLER)
+ 		{
+ 		}
++#else
++		// MinGW/gcc has no MSVC SEH __try/__except. The MSVC thread-name
++		// convention is consumed only by a debugger attached to RaiseException,
++		// so on a gcc build we skip it entirely (a bare RaiseException would be
++		// an unhandled SEH exception). Local octabam Windows-portability shim;
++		// it does not change any DSP behaviour.
++		(void) info;
++#endif
+ 	}
+ 
+ 	// SetThreadDescription is Win10 1607+. Load it dynamically so we stay compatible with Win7.
+diff --git a/source/dsp56kEmu/CMakeLists.txt b/source/dsp56kEmu/CMakeLists.txt
+index 537fad93..b41af9b6 100644
+--- a/source/dsp56kEmu/CMakeLists.txt
++++ b/source/dsp56kEmu/CMakeLists.txt
+@@ -106,7 +106,10 @@ target_sources(dsp56kEmu PRIVATE ${SOURCES} ${SOURCES_JIT} ${SOURCES_VTUNE})
+ source_group("source" FILES ${SOURCES})
+ source_group("source\\jit" FILES ${SOURCES_JIT})
+ 
+-if(WIN32 OR (UNIX AND NOT APPLE))
++# octabam local Windows portability: skip the vtuneSdk profiling dependency on
++# Windows so the repo's verify scripts, which link only the three core archives,
++# resolve. Host instrumentation only; DSP behaviour is unchanged.
++if(UNIX AND NOT APPLE)
+ 	target_link_libraries(dsp56kEmu PUBLIC vtuneSdk)
+ 	target_compile_definitions(dsp56kEmu PRIVATE DSP56K_USE_VTUNE_JIT_PROFILING_API)
+ endif()
 diff --git a/source/dsp56kEmu/agu.h b/source/dsp56kEmu/agu.h
-index ac3853c..5acf878 100644
+index ac3853c1..5acf8785 100644
 --- a/source/dsp56kEmu/agu.h
 +++ b/source/dsp56kEmu/agu.h
 @@ -45,20 +45,27 @@ namespace dsp56k
@@ -52,7 +123,7 @@ index ac3853c..5acf878 100644
  				if constexpr(add)
  				{
 diff --git a/source/dsp56kEmu/assembler.cpp b/source/dsp56kEmu/assembler.cpp
-index 1a22ced..c3202cf 100644
+index 1a22cedf..c3202cfe 100644
 --- a/source/dsp56kEmu/assembler.cpp
 +++ b/source/dsp56kEmu/assembler.cpp
 @@ -2289,6 +2289,36 @@ namespace dsp56k
@@ -93,7 +164,7 @@ index 1a22ced..c3202cf 100644
  				setFieldValue(word, inst, Field_DDDDDD, dd);
  				setFieldValue(word, inst, Field_W, write ? 1 : 0);
 diff --git a/source/dsp56kEmu/dma.cpp b/source/dsp56kEmu/dma.cpp
-index 44fca43..2ee6696 100644
+index 44fca439..2ee66968 100644
 --- a/source/dsp56kEmu/dma.cpp
 +++ b/source/dsp56kEmu/dma.cpp
 @@ -9,6 +9,7 @@
@@ -301,7 +372,7 @@ index 44fca43..2ee6696 100644
  		auto& channels = m_requestTargets[static_cast<uint32_t>(src)];
  
 diff --git a/source/dsp56kEmu/dma.h b/source/dsp56kEmu/dma.h
-index c4b0c4b..9544a0d 100644
+index c4b0c4bd..9544a0d7 100644
 --- a/source/dsp56kEmu/dma.h
 +++ b/source/dsp56kEmu/dma.h
 @@ -10,6 +10,8 @@ namespace dsp56k
@@ -351,7 +422,7 @@ index c4b0c4b..9544a0d 100644
  		void removeTriggerTarget(const DmaChannel* _channel);
  
 diff --git a/source/dsp56kEmu/dsp.cpp b/source/dsp56kEmu/dsp.cpp
-index 5f023c0..1b07b71 100644
+index 5f023c01..1b07b71b 100644
 --- a/source/dsp56kEmu/dsp.cpp
 +++ b/source/dsp56kEmu/dsp.cpp
 @@ -180,7 +180,18 @@ namespace dsp56k
@@ -451,7 +522,7 @@ index 5f023c0..1b07b71 100644
  	// exec_do_end
  	//
 diff --git a/source/dsp56kEmu/dsp.h b/source/dsp56kEmu/dsp.h
-index e53ecd4..2fdec18 100644
+index e53ecd45..2fdec18f 100644
 --- a/source/dsp56kEmu/dsp.h
 +++ b/source/dsp56kEmu/dsp.h
 @@ -1,6 +1,7 @@
@@ -544,7 +615,7 @@ index e53ecd4..2fdec18 100644
  
  		void	traceOp							();
 diff --git a/source/dsp56kEmu/esai.cpp b/source/dsp56kEmu/esai.cpp
-index ff461c3..07f79bb 100644
+index ff461c30..07f79bb1 100644
 --- a/source/dsp56kEmu/esai.cpp
 +++ b/source/dsp56kEmu/esai.cpp
 @@ -17,6 +17,8 @@ namespace dsp56k
@@ -566,7 +637,7 @@ index ff461c3..07f79bb 100644
  		m_tcr = _val;
  		if(tem != getEnabledTransmitters())
 diff --git a/source/dsp56kEmu/hdi08.cpp b/source/dsp56kEmu/hdi08.cpp
-index fad20d3..9f6b737 100644
+index fad20d3e..9f6b7375 100644
 --- a/source/dsp56kEmu/hdi08.cpp
 +++ b/source/dsp56kEmu/hdi08.cpp
 @@ -66,8 +66,40 @@ namespace dsp56k
@@ -682,7 +753,7 @@ index fad20d3..9f6b737 100644
  			// A DSP that writes faster than the host reads overwrites its own word, exactly as the hardware
  			// does. Only a different word is worth a line: a program that answers the same value in a loop
 diff --git a/source/dsp56kEmu/hdi08.h b/source/dsp56kEmu/hdi08.h
-index e9852de..b613509 100644
+index e9852de1..b6135093 100644
 --- a/source/dsp56kEmu/hdi08.h
 +++ b/source/dsp56kEmu/hdi08.h
 @@ -64,6 +64,7 @@ namespace dsp56k
@@ -776,7 +847,7 @@ index e9852de..b613509 100644
  		std::atomic<int32_t> m_pendingHostFlags01{-1};	// pulse latch: UC/queue thread sets, DSP thread reads+clears
  
 diff --git a/source/dsp56kEmu/jit.h b/source/dsp56kEmu/jit.h
-index 0bd2195..43a2c0e 100644
+index 0bd21956..43a2c0e7 100644
 --- a/source/dsp56kEmu/jit.h
 +++ b/source/dsp56kEmu/jit.h
 @@ -76,6 +76,17 @@ namespace dsp56k
@@ -798,7 +869,7 @@ index 0bd2195..43a2c0e 100644
  		void recreate(TWord _pc);
  
 diff --git a/source/dsp56kEmu/jitblock.cpp b/source/dsp56kEmu/jitblock.cpp
-index 2074e46..c3710f5 100644
+index 2074e467..c3710f5c 100644
 --- a/source/dsp56kEmu/jitblock.cpp
 +++ b/source/dsp56kEmu/jitblock.cpp
 @@ -542,6 +542,7 @@ namespace dsp56k
@@ -810,7 +881,7 @@ index 2074e46..c3710f5 100644
  			ops.emit(opPC, opA, opB);
  			if (m_config.splitOpsByNops)	m_asm.nop();
 diff --git a/source/dsp56kEmu/jitblock.h b/source/dsp56kEmu/jitblock.h
-index 22ca87c..8fc4a1d 100644
+index 22ca87cf..8fc4a1d3 100644
 --- a/source/dsp56kEmu/jitblock.h
 +++ b/source/dsp56kEmu/jitblock.h
 @@ -66,6 +66,7 @@ namespace dsp56k
@@ -830,7 +901,7 @@ index 22ca87c..8fc4a1d 100644
  
  		JitConfig m_config;
 diff --git a/source/dsp56kEmu/jitdspregs.cpp b/source/dsp56kEmu/jitdspregs.cpp
-index 52b8021..175c980 100644
+index 52b80219..175c9801 100644
 --- a/source/dsp56kEmu/jitdspregs.cpp
 +++ b/source/dsp56kEmu/jitdspregs.cpp
 @@ -137,7 +137,18 @@ namespace dsp56k
@@ -854,7 +925,7 @@ index 52b8021..175c980 100644
  			const auto m = dspReg - DspM0;
  
 diff --git a/source/dsp56kEmu/jitmem.cpp b/source/dsp56kEmu/jitmem.cpp
-index d86df77..57d5fa8 100644
+index d86df772..57d5fa83 100644
 --- a/source/dsp56kEmu/jitmem.cpp
 +++ b/source/dsp56kEmu/jitmem.cpp
 @@ -667,9 +667,22 @@ namespace dsp56k
@@ -899,7 +970,7 @@ index d86df77..57d5fa8 100644
  		const FuncArg r1(m_block, 1);
  		const FuncArg r2(m_block, 2);
 diff --git a/source/dsp56kEmu/jitmem.h b/source/dsp56kEmu/jitmem.h
-index 0306a05..38cdbd1 100644
+index 0306a05c..38cdbd17 100644
 --- a/source/dsp56kEmu/jitmem.h
 +++ b/source/dsp56kEmu/jitmem.h
 @@ -117,6 +117,7 @@ namespace dsp56k
@@ -911,7 +982,7 @@ index 0306a05..38cdbd1 100644
  		void readPeriph(DspValue& _dst, EMemArea _area, const DspValue& _offset, Instruction _inst) const;
  
 diff --git a/source/dsp56kEmu/memory.cpp b/source/dsp56kEmu/memory.cpp
-index 14cf3ae..05ddd92 100644
+index 14cf3ae7..05ddd92c 100644
 --- a/source/dsp56kEmu/memory.cpp
 +++ b/source/dsp56kEmu/memory.cpp
 @@ -145,6 +145,17 @@ namespace dsp56k
@@ -958,7 +1029,7 @@ index 14cf3ae..05ddd92 100644
  		_wordB = p[_offset+1];
  
 diff --git a/source/dsp56kEmu/memory.h b/source/dsp56kEmu/memory.h
-index 567d068..8ea2123 100644
+index 567d0684..8ea21235 100644
 --- a/source/dsp56kEmu/memory.h
 +++ b/source/dsp56kEmu/memory.h
 @@ -1,5 +1,7 @@
@@ -1018,7 +1089,7 @@ index 567d068..8ea2123 100644
  		{
  			switch (_area)
 diff --git a/source/dsp56kEmu/peripherals.cpp b/source/dsp56kEmu/peripherals.cpp
-index 20d687f..aac49ea 100644
+index 20d687fb..aac49eae 100644
 --- a/source/dsp56kEmu/peripherals.cpp
 +++ b/source/dsp56kEmu/peripherals.cpp
 @@ -811,6 +811,12 @@ namespace dsp56k
@@ -1044,7 +1115,7 @@ index 20d687f..aac49ea 100644
  		}
  		if (_addr != 0xffffd5)
 diff --git a/source/dsp56kEmu/peripherals.h b/source/dsp56kEmu/peripherals.h
-index 73e89ae..92bf2fe 100644
+index 73e89aed..92bf2fe2 100644
 --- a/source/dsp56kEmu/peripherals.h
 +++ b/source/dsp56kEmu/peripherals.h
 @@ -1,5 +1,7 @@
@@ -1079,7 +1150,7 @@ index 73e89ae..92bf2fe 100644
  	};
  }
 diff --git a/source/dsp56kEmu/unittests.cpp b/source/dsp56kEmu/unittests.cpp
-index e43b9cf..e753855 100644
+index e43b9cf4..e7538550 100644
 --- a/source/dsp56kEmu/unittests.cpp
 +++ b/source/dsp56kEmu/unittests.cpp
 @@ -610,6 +610,55 @@ namespace dsp56k
