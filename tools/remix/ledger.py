@@ -158,8 +158,7 @@ def check(selected) -> list[str]:
     for m in selected:
         for need in getattr(m, "requires", ()):
             if need not in keys:
-                problems.append(f"{m.name} requires {need} in the remix (its overrides "
-                                f"leave a site with nothing at it otherwise)")
+                problems.append(f"{m.name} requires {need} in the remix")
 
     # ---- declared conflicts (Module.conflicts) ------------------------------
     by_key = {m.key: m for m in selected}
