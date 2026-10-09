@@ -38,3 +38,6 @@
 [submodule "modules/sidechain-compressor/upstream"]
 	path = modules/sidechain-compressor/upstream
 	url = https://github.com/Zac-Kyoti/octatrack-kyoti-fw
+[submodule "modules/repitch-repeat98-kyoti/upstream"]
+	path = modules/repitch-repeat98-kyoti/upstream
+	url = https://github.com/Zac-Kyoti/octatrack-kyoti-fw

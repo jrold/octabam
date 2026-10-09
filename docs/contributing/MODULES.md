@@ -503,7 +503,9 @@ dsp=DspSection(
   displaced instruction. `site` is one P address for every payload, or
   `{"A": addr, "B": addr}` naming exactly the section's payloads when the
   stock code sits at a different address on each (the payloads are linked
-  separately). A section with hooks and no `MenuEntry` is placed on
+  separately). `stock` is one word pair, or `{"A": (w0, w1), "B": (w0, w1)}`
+  with a per-payload `site` when the words themselves differ (a `do` or
+  branch target inside the instruction). A section with hooks and no `MenuEntry` is placed on
   `payloads` only and takes no dispatch entry: USB AUDIO IN's RX inject at
   the frame head, P:0x88, on payload A. The ledger refuses two hooks whose
   two-word spans share a word on one payload.

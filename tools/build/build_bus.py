@@ -2980,10 +2980,11 @@ hostquit:
                 # replays the displaced instruction (schema.DspHook)
                 _hs = _h.site_on(tag)
                 _got = (rdw_p_at(_hs), rdw_p_at(_hs + 1))
-                if _got != tuple(_h.stock):
+                _want = _h.stock_on(tag)
+                if _got != _want:
                     sys.exit(f"payload {tag}: {name}'s hook site P:0x{_hs:05x} holds "
                              f"{_got[0]:06x} {_got[1]:06x}, not stock "
-                             f"{_h.stock[0]:06x} {_h.stock[1]:06x}; refusing")
+                             f"{_want[0]:06x} {_want[1]:06x}; refusing")
                 wrw_p_at(_hs, 0x0BF080)
                 wrw_p_at(_hs + 1, _syms[_h.label])
                 print(f"  {'HOOK':13} P:0x{_hs:05x} -> {name} {_h.label} "

@@ -376,7 +376,10 @@ class DspHook:
     # the stock code sits at a different address on each (the two payloads
     # are linked separately; AGENTS.md "payload-relative addresses").
     site: int | Mapping[str, int]
-    stock: tuple[int, int]                     # its two words, as the image has them
+    # its two words, as the image has them: one pair for every payload, or
+    # {"A": (w0, w1), "B": (w0, w1)} when they differ (a branch or loop
+    # target inside the instruction: each payload's own address)
+    stock: tuple[int, int] | Mapping[str, tuple[int, int]]
     label: str                                 # the section's entry for this site
     note: str = ""
 
@@ -386,10 +389,20 @@ class DspHook:
             if not self.site or set(self.site) - {"A", "B"}:
                 raise ValueError(f"DspHook {self.label!r}: site keys are payload "
                                  f"tags A/B, got {sorted(self.site)}")
+        if isinstance(self.stock, Mapping):
+            object.__setattr__(self, "stock", MappingProxyType(
+                {k: tuple(v) for k, v in self.stock.items()}))
+            if not isinstance(self.site, Mapping) or set(self.stock) != set(self.site):
+                raise ValueError(f"DspHook {self.label!r}: per-payload stock words "
+                                 f"need a per-payload site naming the same payloads")
 
     def site_on(self, payload: str) -> int:
         """The hook's P address on one payload."""
         return self.site[payload] if isinstance(self.site, Mapping) else self.site
+
+    def stock_on(self, payload: str) -> tuple[int, int]:
+        """The two stock words at the hook's site on one payload."""
+        return tuple(self.stock[payload] if isinstance(self.stock, Mapping) else self.stock)
 
 
 @dataclass(frozen=True)

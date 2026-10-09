@@ -28,6 +28,7 @@ Each carries one module, or one combination, for that module's gates: `make chec
 | [`rec-trig-mute`](rec-trig-mute/README.md) | stock effects with REC_TRIG_MUTE: [TRACK]+[NO]/[YES] mute/unmute recorder trigs. | `make check` |
 | [`reload-from-project`](reload-from-project/README.md) | stock effects with RELOAD_FROM_PROJECT: reload one track's sequence from the card while the transport runs. | `make check` |
 | [`repitch`](repitch/README.md) | stock effects with variable-speed REPITCH in the TSTR selector. | on hardware: MKII, unit undetermined, 16 Sep 2026 (OCTABAM81) |
+| [`repitch-repeat98-kyoti`](repitch-repeat98-kyoti/README.md) | stock effects with REPITCH_REPEAT98_KYOTI: RPCH / RPS9 / RPSP and QUAN; SPRING REV gives up its words: its P run for the DSP kernel, its own X data for the two table blocks (#603). | `make check` |
 | [`rig`](rig/README.md) | bottleservice's delay and reverb bus and FX1 stations, without USB, Octakit or the scene modules: the fixture of the CC MAP, Character and one-aux gates. | `make check` |
 | [`sidechain-compressor`](sidechain-compressor/README.md) | stock effects with SIDECHAIN_COMPRESSOR in COMPRESSOR's row: KEY, KFLT, KGN and MON on page 2. | `make check` |
 | [`sos-capture`](sos-capture/README.md) | recorder fixes + USB MIDI + USB AUDIO OUT TRACKS + USB CROSSBAR + USB AUDIO IN AB (stock effects minus SPATIALIZER). | port-gated: `make check` under the port; not on hardware in this form |

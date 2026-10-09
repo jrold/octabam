@@ -452,6 +452,25 @@ def main():
     except ValueError:
         print("  [PASS] a six-character parameter name is refused")
 
+    # ---- DspHook.stock per payload: a loop or branch target inside the -----
+    # displaced instruction differs per payload (REPITCH_REPEAT98_KYOTI's boot
+    # hook, `do b,LA` at A P:0x46 / B P:0x47)
+    _hk = DspHook({"A": 0x46, "B": 0x47},
+                  {"A": (0x06cf00, 0x000049), "B": (0x06cf00, 0x00004a)}, "t")
+    _one = DspHook(0x88, (0x627000, 0x000204), "t")
+    try:
+        DspHook(0x46, {"A": (0x06cf00, 0x000049), "B": (0x06cf00, 0x00004a)}, "t")
+        _refused = False
+    except ValueError:
+        _refused = True
+    if (_hk.stock_on("A") == (0x06cf00, 0x000049) and _hk.stock_on("B") == (0x06cf00, 0x00004a)
+            and _one.stock_on("A") == _one.stock_on("B") == (0x627000, 0x000204) and _refused):
+        print("  [PASS] DspHook.stock per payload (and refused without a per-payload site)")
+    else:
+        bad += 1
+        print(f"  [FAIL] DspHook.stock per payload: {_hk.stock_on('A')}, {_hk.stock_on('B')}, "
+              f"{_one.stock_on('A')}, refused {_refused}")
+
     # ---- Param.active = None: the donor's enable nibble ------------------
     # Only on a MenuEntry(stock_dsp=True) clone; elsewhere None is not drawn.
     _donor = (0x13311111, 0x00001111)      # slots 0-11 drawn, links on 4-6
@@ -843,6 +862,7 @@ def main():
              "usb-out-main-cue": (), "usb-out-main": (), "usb-midi": (), "stems": (),     # stock effects + ColdFire modules, no DSP words
              "repitch": (), "plocks-p2": (), "kits": (), "analog-bassdrum": ("SPRING REV",),
              "sidechain-compressor": ("SPRING REV",), "kyoti-mute-sidechain": ("SPRING REV",),   # its DSP section in SPRING's words
+             "repitch-repeat98-kyoti": ("SPRING REV",),   # its kernel in SPRING's P run, its tables in SPRING's X data (#603)
              # Zac Kyoti's ColdFire modules on the stock effects, no DSP words
              **{_k: () for _k in ("direct-jump-kyoti", "batch-bugfixes", "reload-from-project",
                                   "quantize-live-rec-toggle", "erase-empty-trigless-locks",
