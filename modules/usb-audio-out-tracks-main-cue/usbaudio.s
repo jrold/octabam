@@ -343,9 +343,12 @@ audio_getiface_shim:
 | running, the kick re-primed EP3 IN before the device was configured, the
 | next SET_INTERFACE took .Lep3_same, and GET_INTERFACE answered 1.
 | Both shims record the alt 0 request, the way audio_setiface_shim does for
-| alt 0, and the frame ISR tears EP3 down. The ISR prologue has saved
-| d0-d2/a0-a4 (the epilogue at 0x4001e98e restores them); a2 is live in the
-| session-end path (0x4001e93a, used at 0x4001e974) and is not touched.
+| alt 0, and the frame ISR tears EP3 down. Both sites are USB MIDI's as
+| well (usbmidi_rx_reset_shim, usbmidi_rx_sessend_shim: EP2 down); this
+| module overrides those detours and calls usbmidi_rx_bus_end itself. The
+| ISR prologue has saved d0-d2/a0-a4 (the epilogue at 0x4001e98e restores
+| them); a2 is live in the session-end path (0x4001e93a, used at
+| 0x4001e974) and is not touched.
 |
 | Reset: displaced jsr %pc@(0x4001d6b8); moveq #64,%d0 (6 bytes); the next
 | instruction is 0x4001e922.
@@ -353,6 +356,7 @@ audio_getiface_shim:
 audio_reset_shim:
     jsr     0x4001d6b8              | displaced
     bsr     audio_alt0_request
+    jsr     usbmidi_rx_bus_end      | USB MIDI's detour at this site, which this one overrides
     moveq   #64,%d0                 | displaced: USBSTS.URI, written back at 0x4001e922
     jmp     0x4001e922
 
@@ -362,6 +366,7 @@ audio_reset_shim:
     .global audio_sessend_shim
 audio_sessend_shim:
     bsr     audio_alt0_request
+    jsr     usbmidi_rx_bus_end      | USB MIDI's detour at this site, which this one overrides
     movel   0xfc0b0140,%d0          | displaced
     jmp     0x4001e958
 

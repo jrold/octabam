@@ -74,6 +74,11 @@ class Bench:
     def unplug(self):
         self.cmd("unplug", "ok")
 
+    def plug(self):
+        """The cable back in after unplug(): session valid again (the stock
+        ISR's session start). The host's reset and enumeration follow."""
+        self.cmd("plug", "ok")
+
     def speed(self, hs):
         self.cmd(f"speed {'hs' if hs else 'fs'}", "ok")
 

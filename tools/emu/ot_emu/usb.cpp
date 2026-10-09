@@ -101,6 +101,12 @@ namespace ot
 				usbTrace(m_stats.sofs, "unplug acknowledged");
 				reply("ok\n");
 			}
+			else if((val & OTGSC_BSVIS) && m_plugUnacked)
+			{
+				m_plugUnacked = false;
+				usbTrace(m_stats.sofs, "plug acknowledged");
+				reply("ok\n");
+			}
 			if((val & OTGSC_BSVIE) && !(old & OTGSC_BSVIE))
 				m_otgscIs |= OTGSC_BSVIS;
 			return;
@@ -383,7 +389,7 @@ namespace ot
 
 	bool UsbDevice::benchBusy() const
 	{
-		if(m_request || m_resetPending || m_resetUnacked || m_unplugUnacked)
+		if(m_request || m_resetPending || m_resetUnacked || m_unplugUnacked || m_plugUnacked)
 			return true;
 		for(int ep = 0; ep < g_endpoints; ++ep)
 			if(m_in[ep].pending || m_out[ep].pending)
@@ -559,6 +565,20 @@ namespace ot
 			// takes as session end (USBCMD.RS cleared, USBINTR = 0).
 			m_sessionEnded = true;
 			m_unplugUnacked = true;
+			m_otgscIs |= OTGSC_BSVIS;
+		}
+		else if(l.rfind("plug", 0) == 0)
+		{
+			// The cable back in after an `unplug`: B-session valid returns
+			// and BSVIS latches again, which the stock ISR takes as a new
+			// session (the path the boot's BSVIE enable edge reaches). The
+			// controller's registers are not reset here: whatever the
+			// session-end path left (ENDPTSTAT included) is what the guest
+			// finds, as on silicon, where nothing but software or a bus
+			// reset touches them. A real host then resets the bus and
+			// enumerates; the bench sends `reset` itself.
+			m_sessionEnded = false;
+			m_plugUnacked = true;
 			m_otgscIs |= OTGSC_BSVIS;
 		}
 		else if(l.rfind("speed ", 0) == 0)

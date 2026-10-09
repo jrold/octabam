@@ -349,9 +349,16 @@ cushion zero, no anchor), and GET_INTERFACE(4) answered 1. Both shims clear
 `usbaudio_alt` (and USB AUDIO IN's `in_alt` when `USB_IN`); the frame ISR
 tears EP3 down. They are in every USB AUDIO OUT variant's `DETOURS` and
 displace one instruction pair each (`jsr 0x4001d6b8; moveq #64,%d0`, and
-`movel 0xfc0b0140,%d0`). Port only. On the session-end path the frame ISR's
-`audio_ep3_flush` runs with USBCMD.RS already clear; the port's flush
-completes at once, so that case is unmeasured.
+`movel 0xfc0b0140,%d0`). USB MIDI hooks the same two sites to take EP2
+down (`usbmidi_rx_reset_shim`, `usbmidi_rx_sessend_shim`); this module
+overrides those detours and its shims call `usbmidi_rx_bus_end` after the
+alt 0 request (`modules/usb-midi/README.md`, "Bus reset and session end").
+Ignorato's MKII ran these shims in OCTABAM21 (9 Oct 2026): USB MIDI transmit
+came back after each of three replugs on macOS and Windows 10, which is the
+`usbmidi_rx_bus_end` call. The alt 0 request itself is measured under the
+port only. On the session-end path the frame ISR's `audio_ep3_flush` runs
+with USBCMD.RS already clear; the port's flush completes at once, so that
+case is unmeasured.
 
 ## Ground
 
@@ -360,6 +367,6 @@ completes at once, so that case is unmeasured.
 | code | DRAM unit `usbaudio` |
 | rings | 1,024 × 80 B (20 channels) + 1,024 × 8 B (stereo sum), the unit's data |
 | DMA memory | `aud_dtds` + `aud_bufs`, 4 × 32 B + 4 × 960 B, through the uncached alias (+`0x08000000`) |
-| hooks | `0x4001e91c` bus reset (USBSTS.URI handler), `0x4001e952` session end (OTGSC.BSVIS), `0x4001dd04` SET_INTERFACE, `0x4001d824` GET_INTERFACE, `0x4001de64` class requests, `0x4001d4b2` EP0 page fix, `0x4000d9a0` producer, `0x4001e606` USB ISR (USB MIDI's, overridden) |
+| hooks | `0x4001e91c` bus reset (USBSTS.URI handler), `0x4001e952` session end (OTGSC.BSVIS) (both USB MIDI's, overridden), `0x4001dd04` SET_INTERFACE, `0x4001d824` GET_INTERFACE, `0x4001de64` class requests, `0x4001d4b2` EP0 page fix, `0x4000d9a0` producer, `0x4001e606` USB ISR (USB MIDI's, overridden) |
 | poke | `0x400e2004` device class → `ef 02 01` |
 | descriptors | USB MIDI's `usbmidi_cfg` unit, generated with the audio function when this module is in the remix |

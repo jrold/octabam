@@ -582,6 +582,30 @@ int main()
 		check("SOF interrupts once the guest enables SRE", u.irq());
 	}
 
+	// ---- USB unplug / plug: B-session valid drops and returns, BSVIS
+	// latching each time; each command is answered once the guest
+	// acknowledges BSVIS (its session-end or session-start handling done).
+	{
+		auto rd = [](uint32_t) { return uint8_t(0); };
+		auto wr = [](uint32_t, uint8_t) {};
+		ot::UsbDevice u(rd, wr);
+		using U = ot::UsbDevice;
+		std::vector<std::string> acks;
+		auto ack = [&](const std::string& s) { acks.push_back(s); };
+		u.write(U::R_OTGSC, 4, U::OTGSC_BSVIE, false);
+		u.write(U::R_OTGSC, 4, U::OTGSC_BSVIE | U::OTGSC_BSVIS, false);
+		u.command("unplug", ack);
+		check("unplug: B-session no longer valid, BSVIS latched", !(u.read(U::R_OTGSC, 4) & U::OTGSC_BSV) && u.irq());
+		check("unplug: not answered before the guest acknowledges", acks.empty());
+		u.write(U::R_OTGSC, 4, U::OTGSC_BSVIE | U::OTGSC_BSVIS, false);
+		check("unplug: answered ok on the acknowledge", acks.size() == 1 && acks[0] == "ok\n" && !u.irq());
+		u.command("plug", ack);
+		check("plug: B-session valid again, BSVIS latched", (u.read(U::R_OTGSC, 4) & U::OTGSC_BSV) && u.irq());
+		check("plug: not answered before the guest acknowledges", acks.size() == 1);
+		u.write(U::R_OTGSC, 4, U::OTGSC_BSVIE | U::OTGSC_BSVIS, false);
+		check("plug: answered ok on the acknowledge", acks.size() == 2 && acks[1] == "ok\n" && !u.irq());
+	}
+
 	// ---- the MKII panel's replies (periph.h MkiiPanel, docs/firmware/PANEL.md)
 	{
 		ot::Uart uart("UART@fc064000", 0xfc064000);

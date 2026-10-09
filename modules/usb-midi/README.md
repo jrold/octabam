@@ -103,6 +103,65 @@ build number and which of the three were checked are not recorded.
   256 fs (11.2896 MHz). The port counts DTCN0 at that rate (`rtos.h`);
   before this change it held at 0 and no MIDI clock tempo ran under the port.
 
+## Bus reset and session end (9 Oct 2026)
+
+Measured on a unit (Ignorato's MKII, OCTABAM14 = a test remix with this module,
+USB AUDIO OUT TRACKS MAIN CUE and USB CROSSBAR; 7-9 Oct 2026): unit-to-host
+USB MIDI works on the first connection after the unit boots and stops for
+good after the cable is unplugged and plugged back in, on macOS (M1) and two
+Windows 10 PCs (Intel, ASMedia and AMD xHCI); only a power cycle brings it
+back. On Windows a USBPcap capture shows the host's 16 bulk IN reads on
+`0x82` never completing. A bus reset with the cable left in (libusb
+re-enumeration on macOS) does not do it. Host-to-unit MIDI is unaffected.
+
+Read from `usbmidi.s`: `usbmidi_up` is set at SET_CONFIGURATION and never
+cleared, and `usbmidi_tx_busy` is cleared only by an EP2 IN completion or by
+SET_CONFIGURATION. The unit is mains powered, so both outlive a cable pull.
+
+Under the port (`verify_usbmidi_replug`, the `usb-midi` remix; `ot_emu`'s
+new `plug` command brings the session back after `unplug`), on this module
+before the change:
+
+- after a pull with EP2 IN idle, the next clock byte primes EP2 IN while
+  USBCMD.RS is clear (the controller stopped, nobody to read it);
+- the clock bytes queued while unplugged go out after the next
+  SET_CONFIGURATION, ahead of the new session's first message;
+- a bus reset with the cable in shows neither, which matches the unit.
+
+The port does not hang: its prime re-reads the queue head every time, a
+flush cancels anything, and it has no data toggles or NAK timing. How
+silicon then loses EP2 IN for good is inferred, not measured: a prime the
+controller has not taken is not cancelled by a flush, and the dormant
+EP2_INIT at SET_CONFIGURATION rewrites the queue head of an endpoint that
+may still be primed (the ChipIdea hazard `usbaudio.s` already guards EP3
+against).
+
+`usbmidi_rx.s` now takes EP2 down on a bus reset (`0x4001e91c`, the
+USBSTS.URI handler) and on session end (`0x4001e952`, OTGSC.BSVIS, before
+the stock code clears USBCMD.RS), and again at SET_CONFIGURATION before
+EP2_INIT: `usbmidi_up` and `usbmidi_tx_busy` cleared, the queued bytes
+dropped, both EP2 directions flushed (wait for ENDPTPRIME, flush, repeat
+while ENDPTSTAT shows a bit, every wait bounded), both overlay tokens
+cleared, any EP2 completion dropped. The two sites are USB AUDIO's too:
+with a USB AUDIO OUT module in the remix its `audio_reset_shim` and
+`audio_sessend_shim` override these detours and call `usbmidi_rx_bus_end`.
+After the change all 21 of `verify_usbmidi_replug`'s checks pass (five fail
+before).
+
+On a unit (Ignorato's MKII, 9 Oct 2026, image OCTABAM21 = the OCTABAM14
+test remix plus this change; MIDI clock send on, the host only listening,
+the unit sends clock about 48 times a second while stopped). Each run: a
+power cycle with the cable in, then three unplug and replug cycles in the
+same port:
+
+| host | before (OCTABAM14) | after (OCTABAM21) |
+|---|---|---|
+| Mac mini M1, macOS 26.4.1, CoreMIDI | power cycle: 720 clocks in 15 s; replugs: 0, 0, 0, 0 (four in a row) | power cycle and all three replugs: 720 clocks in 15 s each |
+| Lenovo laptop, Windows 10 22H2, AMD USB 3.1 xHCI, in-box driver | power cycle: 720; replug: 0 (2 of 2 each) | power cycle and all three replugs: 720 each |
+
+Not measured on a unit: host-to-unit MIDI after a replug (port only), many
+replugs, host sleep and wake, a hub.
+
 ## On the unit
 
 Image 64, `usb-audio`, Sam's MKII, 25 Sep 2026:
@@ -133,6 +192,14 @@ The `usb-midi` remix (this module on the stock effects) has not been flashed.
 - `verify_usbmidi_rx` (image stage): the four packets of "Receive path",
   parsed bytes compared with sent bytes, and each packet accepted whole by
   the dTD. Five of its nine checks fail on the code before this change.
+- `verify_usbmidi_replug` (image stage): the first connection, four cable
+  pulls (two with a clock transfer in flight, two idle), each followed by
+  `plug`, a reset and an enumeration, and a bus reset with the cable in; a
+  note-on and a clock byte must arrive on EP2 IN after each, nothing queued
+  for the old session may go out, EP2 IN must not be primed between a
+  session end and the next SET_CONFIGURATION, and EP2 OUT must still
+  deliver. Five of its checks fail on the code before the bus-reset and
+  session-end shims.
 - `verify_usbmidi_clock` (image stage): DIN clock, then USB clock at two
   other rates, under `--interactive` with each byte handed over at a known
   sample; `0x80001818` within 1% of the tick spacing's BPM × 24 after each
@@ -158,8 +225,8 @@ primitives, reached by nothing, and no receive decoder. The module:
   a 256-byte accumulator behind one transfer; a message that would
   overflow it is counted in `usbmidi_tx_drops`, never sent corrupt.
 
-Seven detours, four descriptor-pointer rewrites, no pokes. The `usbmidi`
-unit is his file verbatim (two of the detours reach `usbmidi_rx` first), and the build proves it: every build re-links
+Nine detours, four descriptor-pointer rewrites, no pokes. The `usbmidi`
+unit is his file verbatim (two of the detours reach `usbmidi_rx` first, and two more, bus reset and session end, are `usbmidi_rx`'s own), and the build proves it: every build re-links
 it at his zone address `0x400d24f0` and compares with the 1,124-byte blob
 his `usb-midi.py` produced from our stock bytes (`Linked.reference`, the
 port-is-a-proof rule). The clamps are a second unit (`clamp.s`, his
@@ -171,6 +238,6 @@ usb-audio.s shims reading `cfg_len`).
 |---|---|
 | code + queues | DRAM units `usbmidi` (1,124 B, his bytes), `usbmidi_rx` and `usbmidi_clamp` in the platform reserve |
 | descriptors | DRAM unit `usbmidi_cfg` (4 × 124 B, or 4 × 250 B with a USB AUDIO module) |
-| hooks | `0x4001d9ca` `0x4001daec` `0x4001e606` `0x40010bc8` `0x400108b0` `0x4001d858` `0x4001d896` |
+| hooks | `0x4001d9ca` `0x4001daec` `0x4001e606` `0x40010bc8` `0x400108b0` `0x4001d858` `0x4001d896` `0x4001e91c` `0x4001e952` (the last two overridden by a USB AUDIO OUT module, which calls `usbmidi_rx_bus_end`) |
 | pointer rewrites | the responder's four `pea` operands `0x4001d882` `0x4001d88a` `0x4001d8c0` `0x4001d8c8` |
 | firmware memory it uses | the firmware's own EP2 dQHs, dTDs and buffers (`0x4ec94900..`, `0x4ecc8000`, `0x4ecc9000`; the RX buffer's 4 KB page has no other reference in the image) |
