@@ -54,7 +54,7 @@ EXPECTED = {
     'tools/verify/verify_perky_cf_plock_reversion.py': 'f872da3d15427c644bf6ec9d40c5925d7859189fe862f76070de78ac88e984fc',
     'tools/verify/verify_perky_cf_production_render.py': '81e14ffeb0fec3073f9727f577a9238e7c61f662640d6565928713c1b1589121',
     'tools/verify/verify_perky_cf_runtime_memory_final.py': 'a3490feab654f26ca4bb7bb22bacacb8e9b0855fe57277493f05f27177876f8f',
-    'tools/verify/verify_perky_cf_runtime_reset.py': '7c902640c9e0633c58f3711a15f707f2acb7bb22bacacb8e9b0855fe57277493f05f27177876f8f',
+    'tools/verify/verify_perky_cf_runtime_reset.py': '7c902640c9e0633c58f3711a15f707f2acb7e2891758f2c612b07b0e07d21d04',
     'tools/verify/verify_perky_cf_stock_record_abi.py': 'git:a37c45bfd380f18dbd6033d23e138a1d638ceb10',
     'tools/verify/verify_perky_cf_userpath.py': 'git:36c271285d42ef166bd041f015b5f91882d9f31c',
     'tools/verify/verify_perky_final_wrappers.py': 'f1d48b7d88c9411e2680d7462ae31fdc62ae5276f270fef189a66cfe67f676fc',
