@@ -41,7 +41,7 @@ EXPECTED = {
     'tools/verify/perky4_state_diff.cpp': '90bcd64afb7833e12f2e31325c47db3ae94a3990d5cd6cb2b24b1592a75975eb',
     'tools/verify/perky_cf_plock_reversion_diff.cpp': 'git:2434333c1a8e74d79c2ce270201b6c19d6ab6ac2',
     'tools/verify/perky_cf_production_render_diff.cpp': 'git:b6f6ebd0d51468f90b51e465698283d26fd71ab4',
-    'tools/verify/perky_cf_runtime_reset_diff.cpp': 'git:8c03e006983508cc18a8d3ca378ad79c1a4aa06d',
+    'tools/verify/perky_cf_runtime_reset_diff.cpp': 'git:c9a53b5050ac434b51f6166f445d290045588a90',
     'tools/verify/perky_cf_split_plock_timing.cpp': '60c5bc623b45ddfe8ca5bc381375dc450cf36abce24c69c20aed424d203440ac',
     'tools/verify/perky_cf_stock_slot_diff.cpp': '52cb58960c2e8bf9461775f92f21359d507e3eb453d0136a86a1976ed679d1c9',
     'tools/verify/verify_perky_cf_codegen.py': '4c20c436ab01876a9c57da1c589341d18c80c7295a9bf8465390d933733cc076',
