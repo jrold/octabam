@@ -23,6 +23,7 @@ Each module's own page has the technical detail and the measurements.
 | | [RLEN PLEN](../../../modules/rlen-plen/README.md) | RLEN value PLEN: one loop of the track's pattern, so TRIG ONE + QREC PLEN records the next pass and stops |
 | Machines | [REPITCH](../../../modules/repitch/README.md) (repeat98) | TSTR REPITCH: a track follows the project tempo by playback speed, like a turntable |
 | Fixes | [LOFI AMF FIX](../../../modules/lofi-amf-fix/README.md) (Bryan T) | stock LO-FI's AMF knob no longer jumps the pitch backwards |
+| | [BATCH_BUGFIXES](../../../modules/batch-bugfixes/README.md) (Zac Kyoti; DIRECT_JUMP_KYOTI requires it) | three stock fixes: the MIDI Plays-Free trig stall, the empty-pattern LED, the Part-change carryover |
 | USB | [USB MIDI](../../../modules/usb-midi/README.md), [USB AUDIO OUT TRACKS MAIN CUE](../../../modules/usb-audio-out-tracks-main-cue/README.md) (markandrus, [octemu](https://github.com/markandrus/octemu)) | a class-compliant MIDI port mirroring the DIN ports, and a 20-channel 24-bit audio input on the computer: the tracks, MAIN and CUE |
 
 The fourteen stock FX2 effects are listed, so the chooser is stock's.

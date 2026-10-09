@@ -6,7 +6,7 @@ REMIX = Remix(
     name="kyoti-mute-jump",
     family="mods", proof=Proof.CHECK, proof_note="",
     doc="stock effects with MUTE_MODES and DIRECT_JUMP_KYOTI together.",
-    modules=("MUTE_MODES", "DIRECT_JUMP_KYOTI",
+    modules=("MUTE_MODES", "DIRECT_JUMP_KYOTI", "BATCH_BUGFIXES",
              "FILTER", "EQUALIZER", "DJ EQ", "PHASER", "FLANGER",
              "CHORUS", "SPATIALIZER", "COMB FILTER", "COMPRESSOR", "LO-FI",
              "DELAY", "PLATE REV", "SPRING REV", "DARK REV"),

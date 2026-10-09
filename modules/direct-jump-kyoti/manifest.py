@@ -1,7 +1,7 @@
 """DIRECT_JUMP_KYOTI -- an immediate pattern change, toggled with [PTN] + [YES] (OFF at every power-on): a cued pattern takes over on the next step, locked to the master clock.
 
 Source: `upstream/` is Zac Kyoti's repository (Zac-Kyoti/octatrack-kyoti-fw,
-submodule, pinned to `77f132f`). The declaration is
+submodule, pinned to `329b801`). The declaration is
 `upstream/octabam-modules/direct-jump-kyoti/manifest.py`: one DRAM unit (`patch_directjump_v7.s`) on the pattern landing, the [PTN] release and the [PTN]-layer YES record, each re-linked and
 compared with the author's own bytes (`reference`) every build. Its source
 paths are derived from its own directory, so it is executed here from the
