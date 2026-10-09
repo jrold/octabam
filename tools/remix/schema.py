@@ -713,10 +713,11 @@ class Claims:
     fx1_only: bool = False
     # BYTES OF THE PART WINDOW a module stores its own data in: (offset from
     # the window's base 0x8ed80, length, what). The window (0x18b2 bytes a
-    # part) is dense; the one run known free is 0x90492..0x905b2 (midisc's
-    # 144-byte freeze twin then its 144-byte sparse blob, hardware since
-    # 1.40MIDISC8). SCENES P2's pool is the same 144 bytes as the sparse
-    # blob, so the ledger refuses the pair by name.
+    # part) is dense and has no run known free: 0x90492..0x905b2, which
+    # MIDI SCENES (freeze twin, then sparse blob) and SCENES P2 (the sparse
+    # blob's 144 bytes) claim, is the LFO designer records of audio and MIDI
+    # tracks 2-8 (docs/firmware/PARTS.md section 9). The ledger refuses an
+    # overlap between two modules.
     part_window: tuple[tuple[int, int, str], ...] = ()
     # ON-CHIP SRAM a module's DMA engine reads or writes: (address, length,
     # what). 32 KB at 0x80000000; stock's highest static use ends at

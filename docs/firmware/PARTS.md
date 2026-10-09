@@ -159,14 +159,32 @@ entries (`0x40090504`, `0x400905d4`, `0x400909d8`, `0x400917c8`,
 and reads `B + 0x905b2 + …`: the apply-part copy `0x400092e0..0x40009328`
 (`n` = WAVE − 11), the designer editor and operations (`0x40038212`,
 `0x40038308`, `0x400384de`, `0x40038eea`, …) and the LFO paste/undo
-(`0x400278dc`, `0x40027a00`). `Claims.part_window` records
-`0x90492..0x905b2` as "the one run known free" (MIDI SCENES' 144-byte
-freeze twin and 144-byte sparse blob, SCENES P2's pool). By these
-addresses that run is Part 1's audio designer records 2–8, its MIDI
-designer records and the bytes at `+0x1832`. Not measured: whether an
-LFO design on track 2–8 and a MIDI SCENES or SCENES P2 write meet on the
-unit. To find out: a designed LFO on T2, then a MIDI scene lock, under
-the port with a write watch on `B + 0x90492`.
+(`0x400278dc`, `0x40027a00`).
+
+✅ The run `0x90492..0x905b2` (Part `+0x1712..+0x1832`) that MIDI SCENES
+and SCENES P2 store in is LFO designer data (measured 10 Oct 2026, stock
+image under the port, a copy of OCTABAM89_setgate with T2 LFO1 WAVE = 12
+and the bytes `11..20` at Part `+0x1712` in every Part record: after the
+load the engine's LFO shape table held `11..20` at `0x800013b8`, T2 LFO1's
+slot of `0x80001388 + 16·(3t + lfo)`):
+
+| Part offset | stock | written by |
+|---|---|---|
+| `+0x1712..+0x1782` | audio LFO designs, tracks 2–8 | MIDI SCENES' freeze twin, on Part Save when the sparse blob carries `MS` |
+| `+0x1782..+0x1792` | 0 in every census file (below) | MIDI SCENES' freeze twin |
+| `+0x1792..+0x17a2` | MIDI LFO design, track 1 | MIDI SCENES' freeze twin |
+| `+0x17a2..+0x1812` | MIDI LFO designs, tracks 2–8 | MIDI SCENES' sparse blob (`MS`); SCENES P2's pool (`P2`, from the first page-2 scene lock) |
+| `+0x1812..+0x1832` | not located | the same |
+
+Census of the Part tail across 1,536 bank files (12,288 Part records) on
+this machine: `+0x1662..+0x1702` is `0xff` in all but a few bytes,
+`+0x1782..+0x1792` is 0 in every record, `+0x1812..+0x1832` is one of
+three patterns, `+0x1832..+0x18b2` is 0 in most records, and stock reads
+`+0x1832`. The Part has no 144-byte run known free. A zero in a census is
+not a measurement of use.
+
+Not measured: the designer editor's writes landing on the module bytes
+(📖 from the addresses above); on the unit.
 
 ## 10. KITS
 

@@ -81,6 +81,10 @@ by him on his own unit.
 
 ## Open
 
+- His freeze twin and sparse blob (Part `+0x1712..+0x1832`) are the
+  LFO designer records of audio and MIDI tracks 2–8 (measured under the
+  port, 10 Oct 2026; `docs/firmware/PARTS.md` section 9,
+  `docs/contributing/FAILURE_MODES.md`).
 - The apply_part entry (`0x40009094`) stays stock since his 1.40MSCN6 (his
   earlier wrapper hung project load on hardware). Beside KITS (since 6 Oct
   2026) his Part save and reload hooks run on the stock routines; a LOAD

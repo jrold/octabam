@@ -90,6 +90,9 @@ position.
   and by KITS's Kit loads and saves (whole Parts), so the pool travels
   with the part. midisc's MIDI-track lock blob lives at the same offset:
   `Claims.part_window` makes the ledger refuse the pair.
+  Stock keeps the LFO designs of MIDI tracks 2–8 in these bytes
+  (`docs/firmware/PARTS.md` section 9, measured under the port 10 Oct
+  2026).
 - **The frame pass** (`frame_hook`, at the join after the stock morph,
   `0x4000cf40`). Per track: the current key `(bank, part, scene A, scene
   B)` (bank/part from `0x8000182a[t]` / `0x80001832[t]`, the selectors from

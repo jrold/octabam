@@ -458,3 +458,9 @@ Entries from here to the end of the file (5 Oct 2026) were recorded in other doc
 - **Seen:** erreye's MK1, 7 Oct 2026, a generic 3 m USB A-B cable straight into a Mac: entering DISK MODE, the first MSC bulk IN (EP 0x81) fails with a transaction error, then babble errors and 0 bytes; macOS resets the device about every 0.4 s; then every EP0 request times out and the unit is frozen. The same on OCTABAM3 (no USB CROSSBAR), OCTABAM4 and a BCR-only build.
 - **Cause:** the cable. A generic 2 m cable mounts DISK MODE (32 GB FAT32) with 0 errors on OCTABAM3 and OCTABAM4. 🟡 The MK1 (or this unit) is at the edge of the signal budget.
 - **Fix:** a shorter or better cable, straight into the computer. Try one before treating a USB freeze as a firmware hang.
+
+## An LFO design on tracks 2–8 changes after a MIDI scene lock or a page-2 scene lock (MIDI SCENES, SCENES P2) ✅ measured under the port, 🔴 open
+
+- **Seen:** not reported on a unit. Found 10 Oct 2026 while checking whether PLOCKS P2 and MIDI SCENES can share a remix (radiohagen, Discord, 9 Oct 2026).
+- **Cause:** both modules store their data at Part `+0x1712..+0x1832`, which stock uses for the LFO designer records of audio tracks 2–8 and MIDI tracks 2–8 (`docs/firmware/PARTS.md` section 9, measured under the port). MIDI SCENES writes its sparse blob (`+0x17a2`) once a Part holds MIDI scene locks and its freeze twin (`+0x1712`) on Part Save; SCENES P2 writes its pool (`+0x17a2`) from the first page-2 scene lock. A track whose LFO WAVE is a designed shape (12–18 for T2–T8) then plays the module's bytes as its shape; the module reads a design the editor wrote as its own data.
+- **Fix:** open. SCENES P2's pool moves out of the Part. MIDI SCENES' storage is its author's. To find out: on a unit, a designed LFO on T2 before and after a MIDI scene lock and a Part Save.
