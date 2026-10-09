@@ -105,9 +105,16 @@ static int one_event(pk4_engine &reference, unsigned voice, unsigned track,
     std::memset((void *)cursor, 0xa5, 192u);
     const uintptr_t slot = fixed_slot(track, 0u);
     std::memset((void *)slot, 0xa5, 336u);
-    if (pk_render(track, 0u, 0u, 16u) != 0)
+
+    /* The stock source path invokes both halves even when the event split is
+     * zero: first a zero-sample pre-event callback, then the 16-sample event
+     * callback. Keep the trigger visible only in the first half so this also
+     * proves the shipping trigger latch survives across callback halves. */
+    if (pk_render(track, 0u, 0u, 0u) != 0)
         return 23;
     U8(0x46104d0cu + track) = 0u;
+    if (pk_render(track, 0u, 0u, 16u) != 0)
+        return 23;
     if (std::memcmp((void *)slot, expected_pre.data(), 4u * 4u))
         return 24;
     if (std::memcmp((void *)(slot + 4u * 4u), expected_post.data(), 36u * 4u))
