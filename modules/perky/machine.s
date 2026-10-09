@@ -78,7 +78,8 @@ pk_sig_write:
         mulu.w  #5,%d3
         move.l  %d0,%d2
         addi.l  #RECORDER_BASE,%d2
-        move.b  %d2,FLEX_SLOT_OFF+FLEX_SLOT_KIND(%a0,%d3.l)
+        lea     FLEX_SLOT_OFF+FLEX_SLOT_KIND(%a0),%a1
+        move.b  %d2,(%a1,%d3.l)
         move.l  %a0,%d2
         sub.l   (BANK_PTR).l,%d2
         subi.l  #PART_OFF,%d2

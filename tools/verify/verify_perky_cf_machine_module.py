@@ -97,7 +97,8 @@ def main() -> None:
         ".equ    FLEX_SLOT_OFF, 0x2ca",
         ".equ    FLEX_SLOT_KIND, 1",
         ".equ    RECORDER_BASE, 128",
-        "move.b  %d2,FLEX_SLOT_OFF+FLEX_SLOT_KIND(%a0,%d3.l)",
+        "lea     FLEX_SLOT_OFF+FLEX_SLOT_KIND(%a0),%a1",
+        "move.b  %d2,(%a1,%d3.l)",
         "addi.l  #SRAM_PART+FLEX_SLOT_OFF+FLEX_SLOT_KIND,%d2",
         "addi.l  #RECORDER_BASE,%d2",
     )
