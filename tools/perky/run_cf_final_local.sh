@@ -2,10 +2,12 @@
 set -euo pipefail
 
 # Local-only, fail-closed PERKY Machines release runner.
-# No GitHub Actions/CI.  This script deliberately builds and executes the real
-# Octabam emulator on the operator's machine, then delegates to
-# build_cf_final.py, which refuses to emit flashable firmware until both the
-# PerkyBits bit/exact PCM qualification and the full ot_emu user-path gate pass.
+# No GitHub Actions/CI. This script deliberately builds and executes the real
+# Octabam emulator on the operator's machine, then delegates to the strict
+# release entry point. A flashable wrapper is refused unless all of these pass:
+#   * bit/exact PerkyBits PCM qualification;
+#   * long four-voice ot_emu sequencer + stock FLEX regression;
+#   * real MKII panel selection from ordinary FLEX -> PERKY + audible T1 PCM.
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
@@ -18,7 +20,7 @@ fail() {
 branch="$(git branch --show-current)"
 [[ "$branch" == "perky-machines" ]] || fail "must run on perky-machines (current: ${branch:-DETACHED})"
 
-# Do not qualify bytes different from the checked-in branch.  Ignore untracked
+# Do not qualify bytes different from the checked-in branch. Ignore untracked
 # build/output files; tracked edits would make the Git commit in the release
 # manifest lie about what was actually built.
 if ! git diff --quiet || ! git diff --cached --quiet; then
@@ -47,7 +49,7 @@ echo "  PerkyBits: $PERKYBITS_ROOT ($(git -C "$PERKYBITS_ROOT" rev-parse --short
 echo "  project: $OT_PROJECT"
 echo "  version: $VERSION / build $BUILD_NO"
 
-# The user's established Octabam setup already has these in normal use.  Keep
+# The user's established Octabam setup already has these in normal use. Keep
 # the runner self-healing for a cleaned checkout without ever invoking cloud CI.
 if ! command -v m68k-elf-gcc >/dev/null 2>&1; then
   echo "== ColdFire toolchain missing; running local setup =="
@@ -73,13 +75,13 @@ echo "== Pin Octatrack emulator cores locally =="
 scripts/vendor.sh mc68k dsp56300
 
 # Always rebuild the actual whole-machine emulator from current source/vendor
-# bytes.  Do not reuse a mystery binary from an older PERKY experiment.
+# bytes. Do not reuse a mystery binary from an older PERKY experiment.
 echo "== Build real Octatrack emulator =="
 cmake --fresh -B out/emu -S tools/emu/ot_emu -DCMAKE_OSX_ARCHITECTURES="$(uname -m)"
 cmake --build out/emu -j8
 [[ -x out/emu/ot_emu ]] || fail "ot_emu build did not produce out/emu/ot_emu"
 
-# Gate the emulator itself before trusting it with PERKY.  These are Octabam's
+# Gate the emulator itself before trusting it with PERKY. These are Octabam's
 # CPU/EMAC/peripheral/RTOS/DSP-upload contracts, run locally (never Actions).
 echo "== Qualify emulator core =="
 ctest --test-dir out/emu --output-on-failure -R '^(emac|periph|rtos|dsp)$'
@@ -87,9 +89,9 @@ ctest --test-dir out/emu --output-on-failure -R '^(emac|periph|rtos|dsp)$'
 mkdir -p out/perky/cf-final
 LOG="out/perky/cf-final/release-${VERSION}.log"
 
-echo "== Run fail-closed PERKY PCM + whole-machine release =="
+echo "== Run strict PERKY PCM + four-voice + real-panel whole-machine release =="
 set +e
-.venv/bin/python3 tools/perky/build_cf_final.py \
+.venv/bin/python3 tools/perky/build_cf_final_strict.py \
   --firmware "$PERKONS_FIRMWARE" \
   --perkybits "$PERKYBITS_ROOT" \
   --project "$OT_PROJECT" \
@@ -105,9 +107,11 @@ if [[ $rc -ne 0 ]]; then
   exit "$rc"
 fi
 
-grep -q '^PERKY CF FINAL BUILD: PASS$' "$LOG" || fail "builder exited 0 without final PASS marker"
+grep -q '^PERKY CF FINAL BUILD: PASS$' "$LOG" || fail "base builder exited 0 without final PASS marker"
 grep -q '^  PCM qualification : PASS$' "$LOG" || fail "missing PCM PASS marker"
-grep -q '^  emulator user path: PASS$' "$LOG" || fail "missing ot_emu user-path PASS marker"
+grep -q '^  emulator user path: PASS$' "$LOG" || fail "missing four-voice ot_emu PASS marker"
+grep -q '^PERKY CF REAL PANEL USER PATH: PASS$' "$LOG" || fail "missing real-panel ot_emu PASS marker"
+grep -q '^PERKY CF STRICT RELEASE: PASS$' "$LOG" || fail "missing strict release PASS marker"
 
 echo
 echo "============================================================"
