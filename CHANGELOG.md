@@ -35,10 +35,12 @@ Remixes
 - Twelve `usb-io-<out>-<in>` test remixes and `usb-out-main`; USB remixes named by direction (`usb-full` → `usb-out-tracks`, `usb-lean` → `usb-out-tracks-main-cue`, `usb-master` → `usb-out-master`, `usb-mc` → `usb-out-main-cue`) (28 Sep).
 - `remixes/test/` holds the one-module carriers; `mods` moved there, `restock` removed (28–30 Sep).
 - `octatrick` carries SYNTH MACHINE, SCALE QUANTIZER, DIRECT JUMP, TUNER, USB MIDI, USB AUDIO OUT TRACKS MAIN CUE and USB AUDIO IN ABCD + USB CROSSBAR on the stock effects less SPATIALIZER (its payload-A words hold the IN inject); `octatrick-usb` folded into it and removed (Tim Hastie, 29 Sep, #526).
+- `remixes/test/scenes-midisc`: MIDI SCENES + KITS + SCENES P2 + PLOCKS P2 on the stock effects (10 Oct, port only).
 - bottleservice carries PLOCKS P2 (3 Oct, #555).
 - Removed: `bamsep26` (bottleservice is its superset), `mutables`, `nimbus`, `hello`, `hello-dram` (27 Sep).
 
 Modules
+- SCENES P2: page-2 scene locks move from the 144-byte pool at Part `+0x17a2` (stock's LFO designs of MIDI tracks 2–8) to bytes 30 and 31 of the stock scene block, eight a scene; stock scene copy, paste, undo and clear carry them; builds beside MIDI SCENES. Locks saved by earlier images are not read (10 Oct, port only).
 - STEM REC: MAIN MENU > STEMS records every track to the card while the sequencer plays, one 16-bit stereo file per track, streamed, up to 60 min (Yves Rosius, 26-30 Sep).
 - STEM REC, piece 5: every track after its fader (its share of MAIN, from core 0's own gain arithmetic redone in the frame hook), MAIN, CUE and the inputs AB/CD as sources (stereo or mono), 24-bit files, an 8 MiB ring; the menu's labels keep moving when the card falls behind (Yves Rosius, 1-4 Oct).
 - KITS (new): 256 Kits per project through the stock Part slots: each pattern's Kit is copied into a slot nothing plays before the pattern is scheduled; LOAD/SAVE KIT on the stock list menu with Octakit's key map, UNDO KIT, list copy/paste/clear/undo, AUTOSAVE and KEEP LEVELS, the pattern clipboard carrying the Kit, FUNC+PASTE+PART, PTN+FUNC+RIGHT, PTN+FUNC+TRIG; kits.work/kits.strd, migration of the stock Parts, import of Octakit's kits3a/b.work; no `illegal` (6 Oct, port: `verify_kits`, 89 checks; on the unit in image A6).

@@ -30,6 +30,7 @@ Each carries one module, or one combination, for that module's gates: `make chec
 | [`repitch`](repitch/README.md) | stock effects with variable-speed REPITCH in the TSTR selector. | on hardware: MKII, unit undetermined, 16 Sep 2026 (OCTABAM81) |
 | [`repitch-repeat98-kyoti`](repitch-repeat98-kyoti/README.md) | stock effects with REPITCH_REPEAT98_KYOTI: RPCH / RPS9 / RPSP and QUAN; SPRING REV gives up its words: its P run for the DSP kernel, its own X data for the two table blocks (#603). | `make check` |
 | [`rig`](rig/README.md) | bottleservice's delay and reverb bus and FX1 stations, without USB, Octakit or the scene modules: the fixture of the CC MAP, Character and one-aux gates. | `make check` |
+| [`scenes-midisc`](scenes-midisc/README.md) | MIDI SCENES + KITS + page-2 scene locks (SCENES P2) + page-2 parameter locks (PLOCKS P2), stock effects. | port-gated: verify_scenesp2 and verify_plocksp2 under the port |
 | [`sidechain-compressor`](sidechain-compressor/README.md) | stock effects with SIDECHAIN_COMPRESSOR in COMPRESSOR's row: KEY, KFLT, KGN and MON on page 2. | `make check` |
 | [`sos-capture`](sos-capture/README.md) | recorder fixes + USB MIDI + USB AUDIO OUT TRACKS + USB CROSSBAR + USB AUDIO IN AB (stock effects minus SPATIALIZER). | port-gated: `make check` under the port; not on hardware in this form |
 | [`stems`](stems/README.md) | STEM REC on the stock effects: multitrack recording to the card, each track, MAIN, CUE and the inputs as separate WAV files. | on hardware: Yves's MKII, 6 Oct 2026 (STEMS3) |

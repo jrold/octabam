@@ -860,7 +860,7 @@ def main():
     _want = {"mods": (), "ok-ms": (), "usb-out-tracks-main-cue": (), "usb-out-tracks": (), "usb-out-master": (),
              "usb-out-tracks-post": (),
              "usb-out-main-cue": (), "usb-out-main": (), "usb-midi": (), "stems": (),     # stock effects + ColdFire modules, no DSP words
-             "repitch": (), "plocks-p2": (), "kits": (), "analog-bassdrum": ("SPRING REV",),
+             "repitch": (), "plocks-p2": (), "scenes-midisc": (), "kits": (), "analog-bassdrum": ("SPRING REV",),
              "sidechain-compressor": ("SPRING REV",), "kyoti-mute-sidechain": ("SPRING REV",),   # its DSP section in SPRING's words
              "repitch-repeat98-kyoti": ("SPRING REV",),   # its kernel in SPRING's P run, its tables in SPRING's X data (#603)
              # Zac Kyoti's ColdFire modules on the stock effects, no DSP words
