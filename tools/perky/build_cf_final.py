@@ -198,6 +198,12 @@ def main() -> None:
         generated,
     ])
 
+    print("=== PERKY CF final 3b/9: odd-address word/long audit ===")
+    run([
+        sys.executable, ROOT / "tools/verify/verify_perky_cf_odd_access.py",
+        "--generated", generated,
+    ])
+
     # Force the asset verification once before entering the linker too; asset_inc
     # verifies again when the tracked cf_assets.s includes remix.inc.
     perky_cf_assets.extract(firmware)

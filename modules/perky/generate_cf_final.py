@@ -27,6 +27,12 @@ FLAGS = [
     "-fno-builtin",
     "-fno-common",
     "-fno-jump-tables",
+    # A real ColdFire raises an address error on an odd-address word/long
+    # access, but GCC's store-merging pass fuses two adjacent byte stores
+    # (e.g. active_algo/active_mode at an odd struct offset) into one move.w at
+    # an odd address -- which faults on silicon and is invisible to the
+    # emulator. tools/verify/verify_perky_cf_odd_access.py audits for it.
+    "-fno-store-merging",
     "-fno-asynchronous-unwind-tables",
     "-fno-ident",
     "-fomit-frame-pointer",
