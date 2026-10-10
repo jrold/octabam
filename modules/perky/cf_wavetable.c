@@ -94,16 +94,19 @@ int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
      * comparisons and a bank index for nothing. */
     uint32_t a_cur=0xffffffffu,a_nc=0xffffffffu,a_sec=0xffffffffu,a_ns=0xffffffffu;
     const uint8_t*wc=0,*wn=0,*sc=0,*sn=0;
+    /* Block invariants: nothing inside the loop writes either of these. */
+    uint32_t pe_amount,half_rate;
     if(!s||!d||!t||!t->pitch||!t->base_wave||!t->bank)return 0;
+    pe_amount=r16(s,0xec);half_rate=(s[0x128]==1u)?1u:0u;
     base=(uint32_t)mullo(pitch(r16(s,0xba),t->pitch),0xbb80u)>>20;
     for(i=0;i<n;i++){
         const uint16_t amp=env(s,0x74,t);
         const uint16_t pe=env(s,0xc4,t);
         const uint32_t lo=(uint32_t)pe&0x1fffu,sh=13u-(uint32_t)(pe>>13);
         const int32_t factor=(int32_t)(((lo+0x2000u)>>sh)-1u);
-        uint32_t frequency=base+(((uint32_t)r16(s,0xec)*(uint32_t)factor)>>9);
+        uint32_t frequency=base+((pe_amount*(uint32_t)factor)>>9);
         uint32_t phase,index,following,fraction,cur,sec,nc,ns;
-        if(s[0x128]==1u)frequency>>=1;
+        if(half_rate)frequency>>=1;
         wt_set_frequency(s,frequency);
         phase=r32(s,0xf4)+r32(s,0xf8);
         if(s32(phase)>0x100000){

@@ -144,7 +144,8 @@ Numbers in this file are the vendored core's cycle model. The project's own
 
 A review proposed five optimisations. All five were checked against the code
 and the shipped image; four were implemented. The four-voice fixture moved
-266.1 -> 263.3 us/frame, and every bit-exactness gate still passes (24/25; the
+266.1 -> 261.8 us/frame (the budget gate's own run; the staged comparison used
+for the per-item numbers ends at 262.4), and every bit-exactness gate still passes (24/25; the
 budget gate is the one that does not). The measurements matter more than the
 list, so each verdict carries its number.
 

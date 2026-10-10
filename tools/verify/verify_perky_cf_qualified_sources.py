@@ -19,7 +19,7 @@ EXPECTED = {
     'modules/perky/cf_resonant.h': 'a11636313ff7e8c2e9bf9d6ad6f40439056a46adbabc103ae843e7f69465834f',
     'modules/perky/cf_noise_hat.c': '0ea0f8830b240947cae6c8cbd9c69ced014704cba70099f30ec40164d5f04eb8',
     'modules/perky/cf_noise_hat.h': 'bcdb9999fe511ede8ec4fc991d2a42fd84288e4b9512d22604d6acb5d7d9287b',
-'modules/perky/cf_wavetable.c': 'e7e9d46c5781e0c0634c44f003cf0a8e151d490a005fd81da8403477f43acc8a',
+'modules/perky/cf_wavetable.c': 'ad9867fe35b8755421e78e757bf9da451401c77617080ec069a1ccfd8bcfb131',
     'modules/perky/cf_wavetable.h': '71845d1551c844e270a71456ba4f779aa4f698df9e9eb403b08105ddc1bcbffe',
 'modules/perky/cf_acoustic_hats.c': 'b097e7220708c930a5fe3efaf4513994756a97c8bad53410bf07b0a8026249e0',
     'modules/perky/cf_acoustic_hats.h': 'f75c74baf820c14c290574e52eebcb6949f96acc86df13aef4a04ccad19b6bfc',
