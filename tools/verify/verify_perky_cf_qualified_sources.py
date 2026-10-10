@@ -77,6 +77,8 @@ EXPECTED = {
     'modules/perky/cf_simple_drum.h': '9a535090d2bd3f13cb5f360a74824658321a23330c48a7e92115a646b0631e53',
     'tools/verify/perky_cf_simple_drum_diff.cpp': 'dba75d4c5e34605c1af1eb7513c186593d9bfadabc0f4184eb9550f590b41f2e',
     'tools/verify/verify_perky_cf_simple_drum_dsp.py': '42f2594de2c1eb049e2b4c024be2d0611997c11a0ee24e7f1ec4502656b55e47',
+    'tools/harness/perky_cf/capture_control_sweep.cpp': 'ed463a776e8c7a87920d7bd0d268b5dc262f6872ea5872eaaa673ba7f8e60e83',
+    'modules/perky/CONTROL_RECOVERY.md': 'a2acc55596a8d37b16bad9f45b50433af6ea7e9aa8e87f3940e0d57f51353063',
     'tools/verify/verify_perky_cf_realtime_budget.py': 'cf367ad63013aca914433ec3224f4504e0473e48a3fcf5a386a98c1d372eb0db',
     'tools/verify/verify_perky_release_guards_selftest.py': '170e1093097273413415b667fd580249dcdba3eca1e294f9a2f76fd3eae6169d',
     'tools/verify/verify_perky_stock_dsp_identity.py': '1bab1de6c609232b7f79d87ebcb347430ca48adbba97110e8ec75cca55045bd3',
