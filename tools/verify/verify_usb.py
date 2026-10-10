@@ -14,9 +14,15 @@ over EP1. The firmware's own USB stack answers every step, so this checks:
   * no primed queue head was left uninitialised (the defect that crashed a
     unit under octemu's USB-audio payload).
 
-SKIPs when the port is not built (`make emu-cf`). What this cannot see:
-timing (the port serialises the host's polls against the frame interrupt)
-and anything a real host does beyond these requests.
+SKIPs when the port is not built (`make emu-cf`), and when the port is a
+native-Windows binary, where the bench cannot be wired up at all: it hands the
+port the guest end of a socketpair as an inherited *file descriptor*
+(`pass_fds`, POSIX fork/exec only -- a PE child gets no such fd, whether the
+python is native or MSYS/Cygwin), and the port's fallback AF_UNIX listener is
+not exercisable there either -- the Windows shims stub `poll()` and `fcntl()`
+out (`tools/emu/ot_emu/win_compat/`, "Limits" in `tools/emu/README.md`). What
+this cannot see: timing (the port serialises the host's polls against the frame
+interrupt) and anything a real host does beyond these requests.
 """
 import os
 import pathlib
@@ -86,7 +92,25 @@ def post_g_default():
     return usb_post_model.target(0x6c00, 0x7f00, man.xlv_table())
 
 
+def emulator_is_windows_pe(path):
+    """The bench hands the port a socketpair *file descriptor*. That survives
+    fork/exec on a POSIX host and cannot survive into a PE child: MSYS's or
+    Cygwin's fd table is not the child's, and the run dies with a reset
+    connection (measured 10 Oct 2026). The PE header is the honest test --
+    `os.name` is "posix" under MSYS, so it does not tell us."""
+    try:
+        return path.read_bytes()[:2] == b"MZ"
+    except OSError:
+        return False
+
+
 def main():
+    if emulator_is_windows_pe(EMU):
+        print(f"  [SKIP] verify_usb: the port is a native-Windows binary ({EMU.name}), and the "
+              "bench passes its socketpair end as an inherited file descriptor, which a PE child "
+              "cannot receive (pass_fds is POSIX fork/exec; the AF_UNIX fallback listener is not "
+              "usable under the Windows shims). Run this gate on macOS or Linux.")
+        return 0
     if not EMU.is_file():
         print("  [SKIP] verify_usb: the port is not built (make emu-cf)")
         return 0

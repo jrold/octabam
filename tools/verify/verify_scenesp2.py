@@ -43,6 +43,7 @@ import argparse, os, pathlib, shutil, subprocess, sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1])); import toolpath  # noqa: E402,F401
 from remix import registry  # noqa: E402
+import port_scenarios  # noqa: E402  (tools/harness)
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 EMU = ROOT / "out/emu/ot_emu"
@@ -113,6 +114,8 @@ def main():
         print(f"  [ -- ] verify_scenesp2: {a.remix} carries no SCENES P2"); return 0
     if not a.project:
         print("  [SKIP] verify_scenesp2: no project (OT_PROJECT=<dir> or --project)"); return 0
+    if not port_scenarios.fork_capable(EMU):
+        print(port_scenarios.skip_line("verify_scenesp2", EMU)); return 0
     if not EMU.is_file():
         print("  [SKIP] verify_scenesp2: no port binary (make emu-cf)"); return 0
     pdir = pathlib.Path(a.project).expanduser()

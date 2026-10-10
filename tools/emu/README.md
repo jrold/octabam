@@ -307,6 +307,20 @@ tools/harness/usb_host.py /tmp/ot-usb.sock audio 3 2.0 capture.pcm 4
 - **Limits.**
   - The port serialises the host's polls, the frame interrupt and the eDMA,
     so it cannot show timing races.
+  - Every `--usb-host` gate needs a POSIX host. The bench hands the port the
+    guest end of a `socketpair` as an inherited *file descriptor*, and a PE
+    child cannot receive one: under the Windows shims the run dies with a
+    reset connection (`os.name` is `posix` under MSYS-Cygwin, so the platform
+    is not the test -- the port's PE header is). The port's fallback AF_UNIX
+    listener is not usable there either: `win_compat/poll.h` and
+    `octabam_win.h` stub `poll()` and `fcntl()` out. `verify_usb` SKIPs with
+    that reason on such a host; run it on macOS or Linux.
+  - `--scenario` needs `fork`. The mode forks one child per scenario so every
+    child starts from the same loaded machine, and `win_compat/sys/wait.h`
+    stubs `fork()` to -1, so a native-Windows port prints `scenario   : fork
+    failed for K` per scenario and exits 127. `verify_kits`,
+    `verify_plocksp2` and `verify_scenesp2` SKIP there
+    (`tools/harness/port_scenarios.py`); the fork path is untouched on POSIX.
   - octemu's card-loaded payload does not install here. It hooks
     `fs_card_detect_poll` (`0x4003f174`), which the port's direct mount
     never runs. The `usb-*` modules carry that code on octabam's loader

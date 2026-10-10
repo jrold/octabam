@@ -124,6 +124,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1])); import toolpath  # noqa: E402,F401
 from remix import registry  # noqa: E402
+import port_scenarios  # noqa: E402  (tools/harness)
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 EMU = ROOT / "out/emu/ot_emu"
@@ -240,6 +241,8 @@ def main():
         print(f"  [ -- ] verify_kits: {a.remix} carries no KITS"); return 0
     if not a.project:
         print("  [SKIP] verify_kits: no project (OT_PROJECT=<dir> or --project)"); return 0
+    if not port_scenarios.fork_capable(EMU):
+        print(port_scenarios.skip_line("verify_kits", EMU)); return 0
     if not EMU.is_file():
         print("  [SKIP] verify_kits: no port binary (make emu-cf)"); return 0
     pdir = pathlib.Path(a.project).expanduser()
