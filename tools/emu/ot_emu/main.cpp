@@ -3113,7 +3113,7 @@ int main(int _argc, char** _argv)
 		std::vector<std::pair<uint32_t, uint64_t>> kb(byKb.begin(), byKb.end());
 		std::sort(kb.begin(), kb.end(), [](const auto& _a, const auto& _b){ return _a.second > _b.second; });
 		std::printf("by 1 KB of code (%llu samples in all):\n", static_cast<unsigned long long>(total));
-		for(size_t i = 0; i < kb.size() && i < 16; ++i)
+		for(size_t i = 0; i < kb.size() && i < 64; ++i)
 			std::printf("   %#08x..  %8llu  %5.1f%%\n", kb[i].first, static_cast<unsigned long long>(kb[i].second),
 				100.0 * static_cast<double>(kb[i].second) / static_cast<double>(total ? total : 1));
 	}

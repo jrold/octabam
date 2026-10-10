@@ -3193,6 +3193,14 @@ hostquit:
     elif DEV:
         note = ("   *** DEV BUILD -- local render only, DO NOT FLASH "
                 "(CHORUS is overwritten). ***")
+    if os.environ.get("OT_DUMP_SYMBOLS"):
+        # Diagnostic: the resolved address of every linked symbol, so an
+        # emulator --profile bucket can be attributed to a function.
+        dump = pathlib.Path(os.environ["OT_DUMP_SYMBOLS"])
+        dump.parent.mkdir(parents=True, exist_ok=True)
+        dump.write_text("".join(
+            f"{v:08x} {k}\n" for k, v in sorted(_exports.items(), key=lambda kv: kv[1])))
+        print(f"  symbols: {len(_exports)} written to {dump}")
     print(f"\n{out}: {len(img):,} bytes, {d} changed" + note)
 
     if DEV:

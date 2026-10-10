@@ -33,10 +33,10 @@
 #define NH_IDX      (NH_DL+0x259Eu)
 #define NH_DELAY_MIX 0x2DD4u
 
-static uint16_t r16(const uint8_t*p,size_t o){return (uint16_t)p[o]|(uint16_t)((uint16_t)p[o+1]<<8);}
-static uint32_t r32(const uint8_t*p,size_t o){return (uint32_t)p[o]|((uint32_t)p[o+1]<<8)|((uint32_t)p[o+2]<<16)|((uint32_t)p[o+3]<<24);}
-static void w16(uint8_t*p,size_t o,uint16_t v){p[o]=(uint8_t)v;p[o+1]=(uint8_t)(v>>8);}
-static void w32(uint8_t*p,size_t o,uint32_t v){p[o]=(uint8_t)v;p[o+1]=(uint8_t)(v>>8);p[o+2]=(uint8_t)(v>>16);p[o+3]=(uint8_t)(v>>24);}
+static uint16_t r16(const uint8_t*p,size_t o){return pk_cf_ld16(p,o);}
+static uint32_t r32(const uint8_t*p,size_t o){return pk_cf_ld32(p,o);}
+static void w16(uint8_t*p,size_t o,uint16_t v){pk_cf_st16(p,o,v);}
+static void w32(uint8_t*p,size_t o,uint32_t v){pk_cf_st32(p,o,v);}
 static int16_t s16(uint16_t u){return (u&0x8000u)?(int16_t)(-1-(int16_t)(uint16_t)~u):(int16_t)u;}
 static int32_t s32(uint32_t u){return (u&0x80000000u)?-1-(int32_t)~u:(int32_t)u;}
 static uint32_t u32(int32_t s){return s>=0?(uint32_t)s:~(uint32_t)(-1-s);}

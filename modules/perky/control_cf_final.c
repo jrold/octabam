@@ -183,6 +183,19 @@ static void pk_final_reset_runtime_if_needed(void)
     }
 }
 
+/* The 119 KB pk4_init used to run on the first render, i.e. inside the frame
+ * handler, where it cost roughly 4 ms of ColdFire time -- an order of
+ * magnitude past the 362.8 us frame the unit's own 0x4000aae0 guard test
+ * allows, and the reason a freshly loaded PERKY bank stalled the transport on
+ * its first step.  The UI tick runs in the UI task, outside the frame, so
+ * prime the engine there exactly the way the boot-time PCM decode is primed,
+ * and leave the one-cookie guard on the audio path for the case where a
+ * render gets there first (or a bank/part change has not been seen yet). */
+static void pk_final_ensure_runtime(void)
+{
+    pk_final_reset_runtime_if_needed();
+}
+
 /* The ALGO row is PER-VOICE.  T1..T4 are PĒRKONS voices V1..V4 and each
  * track's ALGO knob ranges over only its own family (see cf_perky4.h), so the
  * descriptor's ALGO maximum is (re)published on every call -- the descriptor
@@ -242,6 +255,7 @@ void pk_ui_tick(void)
     /* Boot-time, in the UI task: decode the PCM assets out of the PKR1 stream
      * once, long before a render can need them. */
     pk_final_ensure_pcm();
+    pk_final_ensure_runtime();
     /* 0x100b14cc is the stock "current track" byte the legacy builder used. */
     U32(0x400d5f38u + PERKY_ROW * 4u) = pk_final_page((unsigned)U8(0x100b14ccu) & 7u);
 }

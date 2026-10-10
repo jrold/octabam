@@ -7,10 +7,10 @@
 #define PK4_M1_WAVE_DEFAULT 0x080310e0u
 #define U32_MASK 0xffffffffu
 
-static uint16_t r16(const uint8_t *p, size_t o){return (uint16_t)p[o]|(uint16_t)((uint16_t)p[o+1]<<8);}
-static uint32_t r32(const uint8_t *p, size_t o){return (uint32_t)p[o]|((uint32_t)p[o+1]<<8)|((uint32_t)p[o+2]<<16)|((uint32_t)p[o+3]<<24);}
-static void w16(uint8_t *p,size_t o,uint16_t v){p[o]=(uint8_t)v;p[o+1]=(uint8_t)(v>>8);}
-static void w32(uint8_t *p,size_t o,uint32_t v){p[o]=(uint8_t)v;p[o+1]=(uint8_t)(v>>8);p[o+2]=(uint8_t)(v>>16);p[o+3]=(uint8_t)(v>>24);}
+static uint16_t r16(const uint8_t *p, size_t o){return pk_cf_ld16(p,o);}
+static uint32_t r32(const uint8_t *p, size_t o){return pk_cf_ld32(p,o);}
+static void w16(uint8_t *p,size_t o,uint16_t v){pk_cf_st16(p,o,v);}
+static void w32(uint8_t *p,size_t o,uint32_t v){pk_cf_st32(p,o,v);}
 static int16_t s16(uint16_t v){return (v&0x8000u)?(int16_t)(-1-(int16_t)(uint16_t)~v):(int16_t)v;}
 static int32_t s32(uint32_t v){return (v&0x80000000u)?-1-(int32_t)~v:(int32_t)v;}
 static uint32_t clamp12s(int32_t v){if(v<0)return 0;if(v>4095)return 4095;return (uint32_t)v;}
@@ -441,7 +441,13 @@ static void prepare_nh(pk4_control*c,uint8_t*s,const uint8_t raw[4],uint8_t mode
  * tools/verify/perky4_resonant_e2e.cpp, which reproduces a cold start
  * bit-exactly). Starting the port from the same value makes its first block
  * match the unit instead of an arbitrary stream. */
-void pk4_init(pk4_engine*e,const pk4_assets*a){unsigned i;uint8_t*z;if(!e)return;z=(uint8_t*)e;for(i=0;i<sizeof(*e);++i)z[i]=0;e->assets=a;for(i=0;i<PK4_TRACK_COUNT;i++){e->tracks[i].rng_low=1u;e->tracks[i].rng_high=0u;e->tracks[i].active_algo=0xff;e->tracks[i].active_mode=0xff;}}
+/* The engine is 4-byte aligned and a whole number of longs long, so clear it a
+ * long at a time.  The byte-at-a-time loop this replaces cost ~28 model cycles
+ * per long on ColdFire and the 119 KB clear was around 4 ms -- longer than a
+ * whole 362.8 us frame, which is what stalled the unit on the first render.
+ * (control_cf_final.c now also runs this from the UI tick rather than the
+ * audio callback.) */
+void pk4_init(pk4_engine*e,const pk4_assets*a){typedef uint32_t __attribute__((may_alias)) u32a;unsigned i;u32a*z;if(!e)return;z=(u32a*)(void*)e;for(i=0;i<sizeof(*e)/sizeof(uint32_t);++i)z[i]=0u;e->assets=a;for(i=0;i<PK4_TRACK_COUNT;i++){e->tracks[i].rng_low=1u;e->tracks[i].rng_high=0u;e->tracks[i].active_algo=0xff;e->tracks[i].active_mode=0xff;}}
 /* Simple Drum: the same common smoother and prepared-word slots as Fold (0x1C/0x20/0x24/0x28), but the firmware's own cadence -- seventeen passes reach the prepared word the engine-3 captures carry (2046 for panel 64, 4092 for panel 127), so a dirty+trig event runs two passes, commits, then fifteen more, and one more update after the trigger. */
 /* Complex Drum: the same common smoother and prepared-word slots as Simple
  * Drum, with this family's own recovered laws (CONTROL_RECOVERY.md). */
