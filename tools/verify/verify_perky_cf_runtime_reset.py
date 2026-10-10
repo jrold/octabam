@@ -8,7 +8,7 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-PRODUCTION = ("cf_fold", "cf_karplus", "cf_noise_tone", "cf_perky4", "control_cf_final")
+PRODUCTION = ("cf_fold", "cf_karplus", "cf_noise_tone", "cf_perky4", "cf_resonant", "cf_noise_hat", "control_cf_final")
 ASSETS = (
     ("pk_asset_pitch", "pitch.bin"),
     ("pk_asset_chromatic", "chromatic.bin"),
@@ -19,6 +19,8 @@ ASSETS = (
     ("pk_asset_wave1", "w1.bin"),
     ("pk_asset_wave2", "w2.bin"),
     ("pk_asset_wave3", "w3.bin"),
+    ("pk_asset_res_interp_a", "interp_a.bin"),
+    ("pk_asset_res_interp_b", "interp_b.bin"),
 )
 
 

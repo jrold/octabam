@@ -289,6 +289,14 @@ namespace ot
 			uint32_t v = 0;
 			if(m_coproc->read(_addr, _size, v))
 			{
+				// OT_DEADLINE_TRACE: what the firmware reads out of the host
+				// port. The frame handler's bank-id read (0x4000aafa, seen as
+				// pc 0x4000ab00) is the one the range check at 0x4000ab38
+				// either passes or halts on -- this is how "is the id ever
+				// stale?" is answered.
+				static const bool dlT = [] { const char* e = std::getenv("OT_DEADLINE_TRACE"); return e && *e && *e != '0'; }();
+				if(dlT && _addr == 0x2000001c)
+					std::fprintf(stderr, "dltrace hportr pc=%08x size=%u -> %04x\n", pc(), _size, v);
 				if(m_periphTraceOn && m_periphTrace.size() < 300000)
 					m_periphTrace.push_back({'R', pc(), _addr, _size, v});
 				return v;

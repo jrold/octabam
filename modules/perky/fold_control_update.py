@@ -31,6 +31,15 @@ def _time(v:int)->int: return control._time_parameter(v)
 
 def _init_common(size:int)->bytearray:
     b=bytearray(size)
+    # Object+8 is the amplitude-envelope sustain threshold, 0x0FF0. It is NOT
+    # written by common_init (0x080246ac); the original voice-default pass
+    # (0x080277a6, base 0x200001e0 + 0x16C) stores it once and common_init
+    # leaves it alone. common_update (0x08024714) then computes
+    # obj[0x7B] = (u16(obj+8) <= decay). With it left at zero the comparison is
+    # always true and the envelope never releases (dead DECAY, drone, +level).
+    # Authentic check: every wrapper capture in out/perky/engine-fixtures has
+    # engine+8 == 0x0FF0. See docs/PK4_OBJ8_SUSTAIN.md.
+    p16(b,8,0x0ff0)
     # Common cVoice init 0x080246ac.
     p32(b,0x38,DEFAULT_WAVE); p32(b,0x3c,DEFAULT_WAVE)
     p32(b,0x58,SIMPLE_OSC_RENDER)

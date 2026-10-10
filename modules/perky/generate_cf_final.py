@@ -48,6 +48,8 @@ SOURCES = (
     ("pkfold", "cf_fold.c"),
     ("pkkarplus", "cf_karplus.c"),
     ("pknoise", "cf_noise_tone.c"),
+    ("pkresonant", "cf_resonant.c"),
+    ("pknoisehat", "cf_noise_hat.c"),
 )
 
 # With the production source deliberately written in native 32-bit arithmetic,

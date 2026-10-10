@@ -16,6 +16,11 @@ def _rate(offset,scale,param):
 
 def fresh_state(panel_mode:int,*,velocity:int=255,note:int=45)->bytearray:
     b=bytearray(0x10e0)
+    # Object+8 = amplitude-envelope sustain threshold 0x0FF0, set once by the
+    # original voice-default pass (0x080277a6) and never touched by init. Gates
+    # obj[0x7B] in common_update and the release flag at 0x10DC. See
+    # docs/PK4_OBJ8_SUSTAIN.md.
+    p16(b,8,0x0ff0)
     b[5]=PANEL_TO_FIRMWARE[max(0,min(2,int(panel_mode)))]
     b[6]=max(1,min(255,int(velocity))); b[7]=max(0,min(127,int(note)))
     p32(b,0x38,DEFAULT_WAVE);p32(b,0x3c,DEFAULT_WAVE);p32(b,0x58,SIMPLE_OSC_RENDER)

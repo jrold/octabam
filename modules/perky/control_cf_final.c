@@ -44,7 +44,9 @@
 #define PK_FINAL_PARAM1 3u
 #define PK_FINAL_PARAM2 4u
 #define PK_FINAL_MODE 5u
-#define PK_FINAL_ALGO_COUNT 4u
+/* Machine families exposed by the ALGO control: 0 Fold1, 1 Fold2, 2 Karplus,
+ * 3 Noise/Tone, 4 Resonant Drums. */
+#define PK_FINAL_ALGO_COUNT 6u
 #define PK_FINAL_NOTE 45u
 #define PK_FINAL_VELOCITY 255u
 #define PK_FINAL_BLOCK_SAMPLES 16u
@@ -62,6 +64,8 @@ extern const uint8_t pk_asset_wave0[];
 extern const uint8_t pk_asset_wave1[];
 extern const uint8_t pk_asset_wave2[];
 extern const uint8_t pk_asset_wave3[];
+extern const uint8_t pk_asset_res_interp_a[];
+extern const uint8_t pk_asset_res_interp_b[];
 
 const uint8_t pk_defaults[12] = {
     64, 64, 0, 64, 64, 0,
@@ -91,6 +95,8 @@ static const pk4_assets pk_final_assets = {
         {0x080228a0u, pk_asset_wave3},
     },
     .m1_wave = pk_asset_m1_wave,
+    .res_interp_a = pk_asset_res_interp_a,
+    .res_interp_b = pk_asset_res_interp_b,
     .m1_wave_address = 0x080310e0u,
 };
 
@@ -223,13 +229,28 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
             pk_final_frame_pcm[voice][i] = 0;
         pk_final_frame_started[voice] = 1u;
         pk_final_frame_ping[voice] = (uint8_t)(ping & 1u);
-    } else if (event_boundary
-               && (!pk_final_frame_started[voice]
-                   || pk_final_frame_ping[voice] != (uint8_t)(ping & 1u))) {
+    } else if (event_boundary && !pk_final_frame_started[voice]) {
         /* First-hit handoff: the pre-event half may have been rendered by the
          * stock FLEX function before the PK/1 signature became active.  The
          * synth was silent before its first trigger, so make that unavailable
-         * prefix explicitly silent instead of reusing stale PCM. */
+         * prefix explicitly silent instead of reusing stale PCM.
+         *
+         * ⚠️ THE GUARD IS `!started` ALONE -- DO NOT COMPARE `ping` HERE.
+         * Measured on the emulator 9 Oct 2026 (--watch-pc 0x40abc67a, the
+         * stock's two source callbacks per 16-sample frame): the stock passes
+         * (track,ping,start,end) = (0,P,0,split) and (0,P^1,split,16) -- the
+         * ping bit FLIPS BETWEEN THE TWO HALVES OF THE SAME FRAME.  The old
+         * `|| pk_final_frame_ping[voice] != (ping & 1u)` therefore fired on
+         * EVERY split frame and zeroed frame_pcm[0..split), throwing away the
+         * pre-event half the first callback had just rendered.  `split` is the
+         * trig's sample offset inside the frame (measured 0,3,5,8,11,13 for
+         * trigs at steps 1/7/11 at 120 BPM, held until the next trig), so the
+         * hardware symptom was "first hit good, later hits thinner and quieter,
+         * snaps back when the song reaches a 16-aligned trig" -- i.e. silence
+         * blanked over `split` of every 16 samples.  The first callback always
+         * arrives with start==0, so `!started` still catches the real FLEX
+         * handoff and needs no ping term.  A regression gate pins this:
+         * tools/verify/verify_perky_cf_seq_drift.py. */
         for (unsigned i = 0; i < start; ++i)
             pk_final_frame_pcm[voice][i] = 0;
         pk_final_frame_started[voice] = 1u;

@@ -23,7 +23,8 @@ sys.path[:0] = [str(ROOT / "tools/perky")]
 import generate_cf_final_fixtures as fixtures  # noqa:E402
 import perky_cf_assets  # noqa:E402
 
-PRODUCTION_C = ("cf_fold", "cf_karplus", "cf_noise_tone", "cf_perky4")
+PRODUCTION_C = ("cf_fold", "cf_karplus", "cf_noise_tone", "cf_perky4",
+                "cf_resonant", "cf_noise_hat")
 NATIVE_CPP = (
     "NativeV121FoldDrums.cpp",
     "NativeV121Karplus.cpp",
@@ -154,6 +155,16 @@ def main() -> None:
     exe = compile_cpp("perky4_render_stress", work, objects, pb, native=True)
     run([exe, asset])
 
+    # Every panel control must be audible on every Algo/Mode. This is the gate
+    # for the "dead knob" class: it sweeps all 128 OT positions of TUNE, DECAY,
+    # PARAM1 and PARAM2 through the production renderer and requires each to
+    # change the PCM (and MODE to change the render). It caught the obj+8
+    # stuck-sustain bug, which silenced DECAY on all 12 Algo/Mode combinations.
+    run([
+        sys.executable, ROOT / "tools/verify/verify_perky_cf_param_coverage.py",
+        "--firmware", args.firmware.resolve(), "--work", work / "param-coverage",
+    ])
+
     # Long-tail continuity: one trigger followed by 8192 samples in 16-sample
     # blocks, across every voice/Algo/Mode and three control profiles. This
     # catches state/RNG/envelope/ring drift that short trigger blocks can miss.
@@ -192,9 +203,12 @@ def main() -> None:
     print("PERKY CF FINAL QUALIFICATION: PASS")
     print("  tracks=4 independent (Octatrack T1/T2/T5/T6)")
     print("  SRC=A Decay,B Tune,C Param1,D Param2,E Mode,F Algo; all p-lock sequence/split gates passed")
-    print("  supported Algo=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3)")
+    print("  supported Algo=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3),"
+          "ResonantDrums(M1 snare/M2 bass/M3 noise-tone),"
+          "NoiseHat(M1 white/M2 metallic/M3 pulse stack)")
     print("  production control->PCM=196608 exact samples per Algo (786432 total)")
     print("  long-tail continuity=144 cases / 1179648 exact samples / 512 consecutive 16-sample blocks per case")
+    print("  parameter coverage=6 algos x 3 modes x 4 controls x 128 OT positions, all audible")
     print("  production pk_render=1024 simultaneous four-voice frames / 4096 voice events / 65536 samples; all 4x4 voice/algo pairs and all 16 split offsets")
     print("  p-lock reversion=44 voice/lock cases / 132 events / 2112 exact samples; default->lock->default non-sticky")
     print("  runtime reset=16 voice/algo cases across Part A0->A1->A0 and Bank A->B; exact cold PCM")

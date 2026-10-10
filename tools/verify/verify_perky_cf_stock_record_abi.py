@@ -34,7 +34,13 @@ def main() -> None:
     # mono is duplicated into consecutive L/R sample longs.
     compact = re.sub(r"\s+", "", core)
     required = (
-        "d[0]=n<<8;",
+        # ⚠️ The count lives in the header's LOW byte too (10 Oct 2026): a
+        # stock FLEX record's header long 4 is 0x00001010 for a 16-sample
+        # segment. d[0]=n<<8 alone (0x00001000) made the stock chain play
+        # NOTHING -- the track's post-FX2 read-back was zero on the unit and in
+        # the port. The earlier needle here came from ANALOG BD, which writes a
+        # magic word in that long instead of a stock header.
+        "d[0]=(n<<8)|n;",
         "d[1]=0;",
         "d[2]=0x04000000u;",
         "d[3]=0;",

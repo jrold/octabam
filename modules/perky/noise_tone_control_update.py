@@ -82,6 +82,10 @@ def fresh_state(panel_mode: int, *, velocity: int = 255, note: int = 45) -> byte
     panel_mode = max(0, min(2, int(panel_mode)))
     fw = PANEL_TO_FIRMWARE[panel_mode]
     raw = bytearray(0x120)
+    # Object+8 = amplitude-envelope sustain threshold 0x0FF0, set once by the
+    # original voice-default pass (0x080277a6) and never touched by init. Gates
+    # obj[0x7B] in common_update. See docs/PK4_OBJ8_SUSTAIN.md.
+    put16(raw, 8, 0x0FF0)
     raw[5] = fw
     raw[6] = max(1, min(255, int(velocity)))
     raw[7] = max(0, min(127, int(note)))

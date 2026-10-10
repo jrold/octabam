@@ -31,6 +31,9 @@ ASSETS = (
     ("pk_asset_wave2",      0x080226A0,  512, "3511b74fa21d0c3430b7e1ddb0bbd8d76b1fd0dbc2272dfb32867b0e5412e697"),
     ("pk_asset_wave3",      0x080228A0,  512, "9cc8eeff587490a75dc669b0b9f462dd39d777061a9be6bf18658062909ece69"),
     ("pk_asset_m1_wave",    0x080310E0, 4096, "9b8d2fbf72195a55a915225d355b89337cf26fb13dead58a4573d5fb37e3e17a"),
+    # Resonant Drums' two 257-entry interpolation tables.
+    ("pk_asset_res_interp_a", 0x0803237C, 514, "005cdcef1e936228a92e8b513872bbffd3435cc81882c8d0fbd939e4630b16a7"),
+    ("pk_asset_res_interp_b", 0x08032178, 514, "5fa9df6f7f2a46a70716329ea966ea931b0460a1a2c8afb93f7d36bc5a180e72"),
 )
 
 

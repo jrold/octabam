@@ -274,6 +274,19 @@ def main() -> None:
         "--work", args.work / "ui-userpath",
     ])
 
+    # The gates above only require NONZERO PERKY audio; they cannot see a build
+    # that keeps every hit but degrades them one after another. This one drives
+    # the real sequencer with the bench pattern (trigs 1/7/11) and fails if the
+    # per-frame source record loses its pre-event half (the 9 Oct 2026
+    # "first hit good, later hits thinner" bug) or if six hits stop being level.
+    print("=== PERKY CF final 5d/9: sequencer hit-over-hit drift ===")
+    run([
+        sys.executable, ROOT / "tools/verify/verify_perky_cf_seq_drift.py",
+        "--image", FINAL_MAIN,
+        "--project", project,
+        "--work", args.work / "seq-drift",
+    ])
+
     print("=== PERKY CF final 6/9: prove stock DSP is byte-identical ===")
     run([
         sys.executable, ROOT / "tools/verify/verify_perky_stock_dsp_identity.py",

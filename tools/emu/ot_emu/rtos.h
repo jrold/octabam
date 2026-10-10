@@ -49,6 +49,11 @@ namespace ot
 	inline constexpr uint32_t g_mainTcb   = 0x46c7ae84;
 	inline constexpr uint32_t g_bootTcb   = 0x46c7ae30;		// the context the first trap saves
 	inline constexpr uint32_t g_handoff   = 0x40000e46;		// the boot's trap #0
+	// The frame handler's own overrun guard (0x4000aae0..0x4000aae8): it is
+	// set for the whole host-port/eDMA exchange (0x4000ab32) and cleared on
+	// the way out (0x4000d9a0); a frame edge that arrives while it is set runs
+	// `halt`. See Rtos::setFrameDeadline.
+	inline constexpr uint32_t g_frameGuard = 0x46104d4e;
 
 	inline constexpr uint32_t g_kernelPost    = 0x40000c3c;	// post(queue, msg): never blocks
 	inline constexpr uint32_t g_sysQueue      = 0x460d17ae;	// the sys task's command queue
@@ -491,6 +496,64 @@ namespace ot
 		uint64_t dtim1Fired() const { return m_dtim[1].fired(); }	// the UI tick (#424)
 		uint64_t frameCount() const { return m_frameCount; }
 		bool framePending() const { return m_framePending; }
+		// -- the ColdFire real-time frame deadline (the hardware stall) -------
+		// The ColdFire has to finish one 16-sample frame's exchange before the
+		// DSP's next frame boundary. The vendored core prices each instruction
+		// with cache hits and zero-wait-state operand accesses, so it prices
+		// the frame BELOW hardware; `_hwFactor` is the model-to-hardware cycle
+		// calibration taken from the project's own hardware reading
+		// (`modules/cfmeter/README.md`: the stock frame prices at 126 us in the
+		// model against 213.5 us on the unit, ~1.7x).
+		//
+		// ✅ WHAT THE FIRMWARE DOES ABOUT IT, measured from the image 9 Oct
+		// 2026: the frame handler at 0x4000aad0 opens with
+		//
+		//     4000aae0  tstl 0x46104d4e
+		//     4000aae6  beqs 0x4000aaee
+		//     4000aae8  halt
+		//
+		// a re-entrancy guard it sets at 0x4000ab32 and clears on the way out
+		// at 0x4000d9a0. So the unit's overrun detector is the firmware's own:
+		// a frame EDGE that arrives while the previous frame is still in its
+		// exchange runs `halt`, and the sequencer stops advancing. That is the
+		// "briefly sounds, then the sequencer stalls" report.
+		//
+		// This model therefore does NOT decide anything: it gives the emulated
+		// machine the real-time edge the hardware gives it -- when the frame
+		// handler is still running after the calibrated frame period, the next
+		// edge is delivered anyway -- and lets that guard do the halting. The
+		// port's lock-step clock cannot produce the overrun by itself, which is
+		// why this has to be asked for. 0 (the default) leaves the model as it
+		// was.
+		void setFrameDeadline(double _hwFactor);
+		// -- the real-time (cycle-driven) sample clock ------------------------
+		// ⚠️ THE LOCK-STEP CLOCK IS THE REASON A FRAME OVERRUN HAS NO
+		// CONSEQUENCE TO OBSERVE. `m_sample += 1/m_ips` per instruction makes
+		// the frame period 16*m_ips INSTRUCTIONS whatever the ColdFire's work
+		// costs, so the machine can never be late -- and the DSPs, whose clock
+		// is the same one, slow down with it.
+		//
+		// With this on, a sample is what it is on the unit: `_hwFactor` scaled
+		// ColdFire cycles at 266 MHz over the audio rate (g_cfClockHz/
+		// g_sampleHz = 6032 cycles). The frame period is then genuinely
+		// 96,505 cycles, the DSP keeps ITS cadence in real time, and a frame
+		// handler that costs more than a frame leaves the ColdFire behind --
+		// which is what the unit does. `_hwFactor` is the same model-to-
+		// hardware calibration --cf-frame-deadline takes (1.7x measured).
+		// OFF by default: with it on, the captures are functional, not
+		// byte-identical, so it is a diagnostic and never a gate.
+		void setCycleClock(double _hwFactor);
+		bool cycleClockOn() const { return m_cycleClock; }
+		bool frameDeadlineArmed() const { return m_deadlineArmed; }
+		double frameDeadlineHwFactor() const { return m_deadlineHwFactor; }
+		// 1 once the model has delivered a late frame edge (the overrun).
+		uint64_t frameDeadlineEdges() const { return m_deadlineEdges; }
+		uint64_t frameDeadlineEdgeFrame() const { return m_deadlineEdgeFrame; }
+		// The frame handler's calibrated age in us when the edge was delivered.
+		double frameDeadlineEdgeUs() const { return m_deadlineEdgeUs; }
+		// 1 once the emulated CPU is in the stopped state -- the firmware's own
+		// `halt`, i.e. the stall itself.
+		bool firmwareHalted() const { return m_firmwareHalted; }
 		const Intc& intc0() const { return m_intc0; }
 		const Intc& intc1() const { return m_intc1; }
 		uint64_t edmaStarted() const { return m_edma.started(); }
@@ -755,6 +818,20 @@ namespace ot
 		bool m_dspEdgeLatched = false;	// the DSP wrote its bank id while the frame clock was off (it waits at P:0x97 for the host to take it)
 		double m_nextFrame = g_framePeriod;
 		uint64_t m_frameCount = 0;
+		// -- the frame deadline (see setFrameDeadline) ----------------------
+		bool m_deadlineArmed = false;
+		double m_deadlineHwFactor = 1.0;
+		uint64_t m_deadlineFrameStartCycles = 0;	// the CF's cycles at the last frame ack
+		uint64_t m_deadlineEdges = 0;				// late edges delivered (0 or 1)
+		uint64_t m_deadlineEdgeFrame = 0;
+		double m_deadlineEdgeUs = 0.0;
+		bool m_deadlineEdgeThisFrame = false;		// one late edge per frame
+		bool m_firmwareHalted = false;
+		// -- the cycle-driven sample clock (see setCycleClock) ----------------
+		bool m_cycleClock = false;
+		double m_cycleClockF = 1.0;
+		uint64_t m_cyclesLast = 0;
+		void advanceSample();
 		size_t m_seeded = 0;
 		std::string m_why;
 		Quirks m_quirks;

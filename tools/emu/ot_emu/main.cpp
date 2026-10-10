@@ -1212,12 +1212,17 @@ int main(int _argc, char** _argv)
 	int frames = 400;			// with --sequencer: DSP frames to run after the transport start
 	double cfFrameBudgetUs = 0.0;	// --cf-frame-budget-us: fail the run when the ColdFire's per-16-sample-frame cost exceeds this many microseconds (0 = off)
 	bool cfOverBudget = false;	// set when --cf-frame-budget-us is exceeded
+	double cfFrameDeadline = 0.0;	// --cf-frame-deadline F: model the unit's real-time frame deadline; F is the model-to-hardware cycle factor (0 = off)
+	double cfCycleClock = 0.0;	// --cf-cycles-clock F: drive the audio clock from ColdFire cycles (x F) instead of a fixed instructions/sample -- the diagnostic that lets the ColdFire fall behind (0 = off)
+	bool cfDeadlineHit = false;	// set when the deadline model stops the run (the unit's stall)
+	bool deadlineStopEnabled = false;	// the frames loop's stop predicate reads it
 	int pokeTrig = 0;			// with --sequencer: set a trig on track 1 at this step (1-64)
 	bool internalClock = false;	// with --sequencer: clear CLOCK RECEIVE
 	int bankOverride = -1;		// with --sequencer: switch to this bank (default: the file's saved bank)
 	std::string m6cGolden;		// the M6c facts as JSON (oracle.sh byte-compares them)
 	std::string watchMem;		// ADDR,LEN -- log every write into that range (route A's own flag)
 	std::string watchRead;		// ADDR,LEN -- log the first 64 data READS of that range, with the reading PC
+	std::string readLog;		// --read-log FILE: with --watch-read, every read to FILE (sample pc addr size val)
 	std::string watchPc;		// comma-separated addresses -- log registers there (route A's own flag)
 	bool namesEarly = false;	// write the SET/PROJECT names BEFORE the mount -- see O7b
 	std::string hostPortLog;	// every write into the DSP host-port window -> FILE (O8)
@@ -1300,12 +1305,15 @@ int main(int _argc, char** _argv)
 		// --sequencer needs a mounted card and a loaded project: it implies both.
 		else if(a == "--frames" && i + 1 < _argc)	frames = std::atoi(_argv[++i]);
 		else if(a == "--cf-frame-budget-us" && i + 1 < _argc)	cfFrameBudgetUs = std::atof(_argv[++i]);
+		else if(a == "--cf-frame-deadline" && i + 1 < _argc)	cfFrameDeadline = std::atof(_argv[++i]);
+		else if(a == "--cf-cycles-clock" && i + 1 < _argc)	cfCycleClock = std::atof(_argv[++i]);
 		else if(a == "--poke-trig" && i + 1 < _argc)	pokeTrig = std::atoi(_argv[++i]);
 		else if(a == "--internal-clock")			internalClock = true;
 		else if(a == "--bank" && i + 1 < _argc)		bankOverride = std::atoi(_argv[++i]);
 		else if(a == "--m6c-golden" && i + 1 < _argc)	m6cGolden = _argv[++i];
 		else if(a == "--watch-mem" && i + 1 < _argc)	watchMem = _argv[++i];
 		else if(a == "--watch-read" && i + 1 < _argc)	watchRead = _argv[++i];
+		else if(a == "--read-log" && i + 1 < _argc)	readLog = _argv[++i];
 		else if(a == "--watch-pc" && i + 1 < _argc)	watchPc = _argv[++i];
 		else if(a == "--names-early")			namesEarly = true;
 		else if(a == "--hostport-log" && i + 1 < _argc)	hostPortLog = _argv[++i];
@@ -1371,6 +1379,7 @@ int main(int _argc, char** _argv)
 			"              [--live-script FILE]                              '<emulated ms> key|enc|pot|midi|quit ...' lines, transport stopped, no wall-clock pacing\n"
 			"              [--no-post]                                       no LOAD PROJECT post: the firmware's own power-up load\n"
 			"              [--cs1-in FILE]                                   CS1 (0x10000000) from FILE before the boot: a power cycle with an earlier --mem-dump 0x10000000,0x100000\n"
+			"              [--cf-frame-budget-us US] [--cf-frame-deadline F]  the ColdFire's real-time frame budget (a report) and its frame DEADLINE (models the unit's stall: the calibrated frame cost must fit the 362.8 us frame, F = the model-to-hardware cycle factor; --dsp --sequencer)\n"
 			"              [--scenario \"LOG ARGS...\"]... [--scenario-jobs N]  load once, fork one child per scenario (stdout to LOG, ARGS its post-load options)\n");
 			return false;
 		}
@@ -1387,8 +1396,20 @@ int main(int _argc, char** _argv)
 		// The batch modes keep the lockstep interpreter (their reports and
 		// captures are byte-identical across builds, the oracle's contract);
 		// the rt mode's audio is functional, not byte-identical.
-		std::printf("dsp-rt     : cannot start the real-time mode: --dsp-rt needs --interactive (the batch keeps the lockstep interpreter)\n");
-		return 2;
+		// O24 (9 Oct 2026): allowed WITH --sequencer, deliberately. The
+		// lock-step interpreter paces the whole machine off the ColdFire's
+		// instruction stream, so the ColdFire can never be late and a frame
+		// overrun has no consequence to observe; the rt workers put the DSPs
+		// on their own clock, which is the only way the port can show one.
+		// Nothing of the batch's default path changes -- the flag is opt-in,
+		// and a run that uses it is a DIAGNOSTIC, not a gate (its captures
+		// are functional, not byte-identical).
+		if(!sequencer)
+		{
+			std::printf("dsp-rt     : cannot start the real-time mode: --dsp-rt needs --interactive, or --sequencer for the diagnostic batch run\n");
+			return 2;
+		}
+		std::printf("dsp-rt     : DIAGNOSTIC batch run (--sequencer): the cores run on their own worker threads, so the captures are functional, not byte-identical -- never a gate\n");
 	}
 	if(interactive && !mainLevelGiven)
 		mainLevel = 64;			// the batch never posts it unless asked (byte-identical reports); the pipe wants audible voices
@@ -1777,14 +1798,26 @@ int main(int _argc, char** _argv)
 			const auto wl = comma == std::string::npos ? 4u
 				: static_cast<uint32_t>(std::strtoul(watchRead.c_str() + comma + 1, nullptr, 0));
 			auto* const n = new int(0);
-			m.addReadWatch(wa, wa + wl - 1, [n](const uint32_t _addr, const uint8_t _size, const uint32_t _val, const uint32_t _pc)
+			if(readLog.empty())
+				m.addReadWatch(wa, wa + wl - 1, [n](const uint32_t _addr, const uint8_t _size, const uint32_t _val, const uint32_t _pc)
+				{
+					if(*n < 64)
+						std::printf("   read%u 0x%08x -> 0x%0*x at pc 0x%08x\n", _size, _addr, _size * 2, _val, _pc);
+					else if(*n == 64)
+						std::printf("   ... (more reads not listed)\n");
+					++*n;
+				});
+			else
 			{
-				if(*n < 64)
-					std::printf("   read%u 0x%08x -> 0x%0*x at pc 0x%08x\n", _size, _addr, _size * 2, _val, _pc);
-				else if(*n == 64)
-					std::printf("   ... (more reads not listed)\n");
-				++*n;
-			});
+				// --read-log FILE: every watched read, with the sample clock,
+				// so a staged page can be reconstructed per frame.
+				auto* const out = new std::ofstream(readLog);
+				m.addReadWatch(wa, wa + wl - 1, [out, &rtos](const uint32_t _addr, const uint8_t _size, const uint32_t _val, const uint32_t _pc)
+				{
+					*out << rtos.sample() << ' ' << std::hex << _pc << ' ' << _addr << ' '
+					     << static_cast<unsigned>(_size) << ' ' << _val << std::dec << '\n';
+				});
+			}
 			std::printf("watch-read : %#x..%#x\n", wa, wa + wl - 1);
 		}
 		if(!watchMem.empty())
@@ -2436,6 +2469,7 @@ int main(int _argc, char** _argv)
 				// start returned, which is what the cold tool calls frame 0:
 				// the two reports compare directly.
 				const auto frame0 = rtos.frameCount() + 1;
+				const auto sampleAtStart = rtos.sample();
 				const auto midiTx0 = rtos.serialTx0().size();	// MIDI OUT bytes before the transport start
 				const auto ticks0 = rtos.ticks();
 				const auto ackTail = rtos.acks().size();
@@ -2443,6 +2477,21 @@ int main(int _argc, char** _argv)
 					rtos.armPcRingNow(pcRing);
 				const auto target = frame0 + static_cast<uint64_t>(frames);
 				const auto budgetMs = frames * ot::g_framePeriod / ot::g_sampleHz * 1000.0 * 5 + 2000.0;
+				// The real-time frame deadline (see Rtos::setFrameDeadline).
+				// Armed from the transport start so the measurement begins at
+				// a frame boundary; the model is otherwise untouched.
+				if(cfFrameDeadline > 0.0)
+				{
+					rtos.setFrameDeadline(cfFrameDeadline);
+					std::printf("frame dline: on, model x%.2f against a %.1f us frame -- a miss stops the run\n",
+						cfFrameDeadline, ot::g_framePeriod / ot::g_sampleHz * 1e6);
+				}
+				if(cfCycleClock > 0.0)
+				{
+					rtos.setCycleClock(cfCycleClock);
+					std::printf("cycle clock: on, x%.2f -- one sample is %.0f ColdFire cycles at %.0f MHz; the ColdFire can now be late (DIAGNOSTIC: captures are not byte-identical)\n",
+						cfCycleClock, ot::g_cfClockHz / ot::g_sampleHz, ot::g_cfClockHz / 1e6);
+				}
 				// Timed actions while the sequencer runs -- a panel edit
 				// (--call-at) or MIDI IN bytes (--midi): the frame engine
 				// keeps going underneath them, as on the unit.
@@ -2490,7 +2539,8 @@ int main(int _argc, char** _argv)
 				if(profile)
 					m.clearProfile();		// the whole-run table below then covers the frames alone
 				const auto wall0 = std::chrono::steady_clock::now();
-				const auto rs2 = rtos.runUntil(livePath.empty() ? budgetMs : 1e15, [&] { return rtos.frameCount() >= target || live.quit; },
+				const auto rs2 = rtos.runUntil(livePath.empty() ? budgetMs : 1e15,
+					[&] { return rtos.frameCount() >= target || live.quit; },
 					ot::Rtos::Changes::OnEvent);	// O15e: the ack hook wakes; the live poll wakes too
 				const auto wall = std::chrono::duration<double>(std::chrono::steady_clock::now() - wall0).count();
 				const auto ran = rtos.frameCount() > frame0 ? static_cast<double>(rtos.frameCount() - frame0) : 0.0;
@@ -2520,6 +2570,32 @@ int main(int _argc, char** _argv)
 							cfOverBudget = true;
 					}
 				}
+				if(rtos.frameDeadlineEdges() != 0)
+				{
+					// THE OVERRUN: the model handed the machine the frame edge
+					// the hardware would have sent. What happens next is the
+					// firmware's own business.
+					std::printf("cf overrun : the frame handler was still in its exchange %.1f us after the frame began (a %.1f us frame, model x%.2f) -- the next edge was delivered\n",
+						rtos.frameDeadlineEdgeUs(), ot::g_framePeriod / ot::g_sampleHz * 1e6, cfFrameDeadline);
+				}
+				if(rtos.cycleClockOn() && ran > 0.0)
+				{
+					// THE DEFICIT. With the audio clock on ColdFire cycles, the
+					// frames stop being 16 samples of the ColdFire's own time:
+					// the gap is exactly how far behind the unit's real-time
+					// frame clock the ColdFire now is.
+					const double perFrame = (rtos.sample() - sampleAtStart) / ran;
+					std::printf("cf deficit : the frames took %.2f samples each against the %.0f-sample frame"
+						" (%.1f%% slow; the audio clock is the crystal and does not wait)\n",
+						perFrame, ot::g_framePeriod, (perFrame / ot::g_framePeriod - 1.0) * 100.0);
+				}
+				if(rtos.firmwareHalted())
+				{
+					// THE STALL, from the firmware itself: 0x4000aae0.
+					cfDeadlineHit = true;
+					std::printf("cf stall   : the FIRMWARE halted at frame %llu -- its own frame-handler guard (0x46104d4e) was still set when the next frame edge arrived\n",
+						static_cast<unsigned long long>(rtos.frameDeadlineEdgeFrame() - frame0 + 1));
+				}
 				if(!midiFile.empty())
 					std::printf("midi in    : %zu byte(s) still queued at the end (0 = the firmware took them all)\n", rtos.midiPending());
 				if(!midiOut.empty())
@@ -2535,7 +2611,7 @@ int main(int _argc, char** _argv)
 					"(re-selected through the load's own last step)\n", seq.first, seq.second);
 				std::printf("frames run : %llu since transport start (target %d), run ended %s%s%s\n",
 					static_cast<unsigned long long>(rtos.frameCount() - frame0), frames,
-					g_seqStop[static_cast<int>(rs2)],
+					cfDeadlineHit ? "STALL" : g_seqStop[static_cast<int>(rs2)],
 					rs2 == ot::Rtos::Stop::Gate ? "" : " -- ", rs2 == ot::Rtos::Stop::Gate ? "" : rtos.why().c_str());
 				// ⚠️ THREE CAUSES, ONE SYMPTOM. A frame that never arrives is a
 				// masked source, a source installed at level 0, or a line that
@@ -3069,5 +3145,5 @@ int main(int _argc, char** _argv)
 		}
 	}
 
-	return (stop == ot::Machine::Stop::Handoff && !cfOverBudget) ? 0 : 1;
+	return (stop == ot::Machine::Stop::Handoff && !cfOverBudget && !cfDeadlineHit) ? 0 : 1;
 }

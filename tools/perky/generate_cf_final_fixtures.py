@@ -19,6 +19,11 @@ import fold_control_update as fold  # noqa:E402
 import karplus_control_state as karp  # noqa:E402
 import noise_tone_control_update as nt  # noqa:E402
 import perky_cf_assets  # noqa:E402
+from extract_noise_tone_tables import find_m7, parse_container  # noqa:E402
+
+# Resonant Drums' two 257-entry interpolation tables.
+INTERP_A = (0x0803237C, 514)
+INTERP_B = (0x08032178, 514)
 
 FILENAMES = {
     "pk_asset_pitch": "pitch.bin",
@@ -26,6 +31,8 @@ FILENAMES = {
     "pk_asset_envelope1": "envelope1.bin",
     "pk_asset_envelope2": "envelope2.bin",
     "pk_asset_m1_wave": "m1.bin",
+    "pk_asset_res_interp_a": "interp_a.bin",
+    "pk_asset_res_interp_b": "interp_b.bin",
     "pk_asset_wave0": "w0.bin",
     "pk_asset_wave1": "w1.bin",
     "pk_asset_wave2": "w2.bin",
@@ -39,6 +46,9 @@ def write_assets(firmware: Path, out: Path) -> Path:
     root.mkdir(parents=True, exist_ok=True)
     for symbol, blob in assets.items():
         (root / FILENAMES[symbol]).write_bytes(blob)
+    segment = find_m7(parse_container(firmware.read_bytes())[1])
+    (root / "interp_a.bin").write_bytes(segment.read(*INTERP_A))
+    (root / "interp_b.bin").write_bytes(segment.read(*INTERP_B))
     return root
 
 

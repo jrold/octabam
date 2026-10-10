@@ -4,6 +4,8 @@
 #include "cf_fold.h"
 #include "cf_karplus.h"
 #include "cf_noise_tone.h"
+#include "cf_resonant.h"
+#include "cf_noise_hat.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,7 +15,9 @@ enum {
     PK4_ALGO_FOLD2 = 1,
     PK4_ALGO_KARPLUS = 2,
     PK4_ALGO_NOISE_TONE = 3,
-    PK4_ALGO_COUNT = 4,
+    PK4_ALGO_RESONANT = 4,
+    PK4_ALGO_NOISE_HAT = 5,
+    PK4_ALGO_COUNT = 6,
     PK4_TRACK_COUNT = 4
 };
 
@@ -25,6 +29,8 @@ typedef struct {
     pk_cf_fold_wave_view waves[4];
     const uint8_t *m1_wave;    /* 2048 little-endian s16 */
     uint32_t m1_wave_address;
+    const uint8_t *res_interp_a; /* 257 little-endian u16 */
+    const uint8_t *res_interp_b; /* 257 little-endian u16 */
 } pk4_assets;
 
 typedef struct {
@@ -40,7 +46,19 @@ typedef struct {
     uint8_t karplus[PK_CF_KARPLUS_STATE_BYTES];
     uint8_t nt_m1[PK_CF_NT_STATE_BYTES];
     uint8_t nt_shared[PK_CF_NT_STATE_BYTES];
+    /* Resonant Drums: the firmware keeps a separate object per panel mode.
+     * The family object is 0x1d4 even for the bass prefix (its update writes
+     * 0x17C), so both use the snare-sized bytes. */
+    uint8_t res_snare[PK_CF_RES_SNARE_STATE_BYTES];
+    uint8_t res_bass[PK_CF_RES_SNARE_STATE_BYTES];
+    uint8_t res_nt[PK_CF_NT_STATE_BYTES];
+    /* Noise Hat: one Voice-4 wrapper object holds both classic limbs, the
+     * post-engine delay and the overlapping pulse-stack limb. MODE 0 selects
+     * metallic, 1 white, 2 the pulse stack. */
+    uint8_t nh[PK_CF_NH_WRAPPER_BYTES];
     pk4_control fold1_ctl, fold2_ctl, karplus_ctl, nt_m1_ctl, nt_shared_ctl;
+    pk4_control res_snare_ctl, res_bass_ctl, res_nt_ctl;
+    pk4_control nh_ctl;
     uint32_t rng_low, rng_high;
     uint8_t initialized_mask;
     uint8_t active_algo;
@@ -50,6 +68,9 @@ typedef struct {
 typedef struct {
     pk4_track tracks[PK4_TRACK_COUNT];
     const pk4_assets *assets;
+    /* The firmware owns ONE 16-bit noise sample/hold for the held-hat limb,
+     * shared by every voice -- not a per-track field. */
+    uint16_t nh_hold[2];
 } pk4_engine;
 
 void pk4_init(pk4_engine *engine, const pk4_assets *assets);

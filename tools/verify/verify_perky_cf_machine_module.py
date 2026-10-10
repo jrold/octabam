@@ -52,6 +52,8 @@ def main() -> None:
         ("pkfold", "out/perky/cf-final/pkfold.s", True, False),
         ("pkkarplus", "out/perky/cf-final/pkkarplus.s", True, False),
         ("pknoise", "out/perky/cf-final/pknoise.s", True, False),
+        ("pkresonant", "out/perky/cf-final/pkresonant.s", True, False),
+        ("pknoisehat", "out/perky/cf-final/pknoisehat.s", True, False),
         ("pkcore", "out/perky/cf-final/pkcore.s", True, False),
         ("pkcontrol", "out/perky/cf-final/pkcontrol.s", True, False),
     ]
@@ -68,6 +70,8 @@ def main() -> None:
         ("pkfold", "cf_fold.c"),
         ("pkkarplus", "cf_karplus.c"),
         ("pknoise", "cf_noise_tone.c"),
+        ("pkresonant", "cf_resonant.c"),
+        ("pknoisehat", "cf_noise_hat.c"),
     )
     if generated != expected_generated:
         raise AssertionError(f"ColdFire generator units drifted: {generated!r}")
@@ -77,8 +81,8 @@ def main() -> None:
     for label in asset_labels:
         if f"extern const uint8_t {label}[];" not in control:
             raise AssertionError(f"shipping control is missing asset extern {label}")
-    if len(asset_labels) != 9 or len(set(asset_labels)) != 9:
-        raise AssertionError(f"expected exactly nine unique firmware assets, got {asset_labels!r}")
+    if len(asset_labels) != 11 or len(set(asset_labels)) != 11:
+        raise AssertionError(f"expected exactly eleven unique firmware assets, got {asset_labels!r}")
 
     asset_source = (ROOT / "modules/perky/cf_assets.s").read_text()
     if '.include "remix.inc"' not in asset_source:

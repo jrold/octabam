@@ -148,17 +148,39 @@ def configure_fixture(source: pathlib.Path, destination: pathlib.Path) -> pathli
                     data[file_base + otp.SLOT_OFF + track * 5 + otp.SLOT_KIND["flex"]] = RECORDER_BASE + track
                     data[live_base + 60 + 30 * track:live_base + 63 + 30 * track] = b"PK\x01"
                     # Shipping SRC order: TUNE, DECAY, ALGO, PRM1, PRM2, MODE.
-                    values = (64, 64, voice, 64, 64, voice % 3)
+                    # ALGO 4 is Resonant Drums (MODE 0 = snare) and ALGO 5 is
+                    # Noise Hat (MODE 0 = white), so the whole-machine gate
+                    # exercises both newly added families.
+                    algo = (0, 2, 4, 5)[voice]
+                    mode = (0, 0, 0, 0)[voice]
+                    values = (64, 64, algo, 64, 64, mode)
                     for slot, value in enumerate(values):
                         off = 0x2a + 30 * track + 6 + slot
                         data[live_base + off] = value
 
-            # Step-one trigs on all four PERKY voices and both ordinary FLEX
-            # controls. The pattern repeats during the long run, proving later
-            # events rather than only startup state.
-            for track in (*PERKY_INDEX, *(t - 1 for t in FLEX_TRACKS)):
-                at = otp.trac_off(0, track)
-                data[at:at + 8] = (1).to_bytes(8, "big")
+            # ⚠️ FOUR trigs per bar on the PERKY voices (steps 1/5/9/13), not
+            # one. A single trig per pattern is what let the pinned-envelope
+            # drone hide: with obj+8 left at zero the amplitude envelope never
+            # released, so the voice sat at full scale and every later trig only
+            # stacked onto it. Four evenly spaced trigs force the envelope to
+            # fall and re-attack between hits, which is where "later trigs sound
+            # degraded" actually appeared. The ordinary FLEX controls keep one
+            # step-one trig. The pattern repeats during the long run.
+            #
+            # A TRAC step mask is 8 bytes: byte k (of trac_off..+7) holds steps
+            # 8k+1..8k+8, LSB=first -- exactly otp.set_pattern_trig's
+            # `off = trac_off + mask + 7 - (step-1)//8`, `bit = (step-1)%8`.
+            # Do not step 8 bytes per step; that lands in per-step parameter
+            # data and silently corrupts the track.
+            def set_trig(data: bytearray, track: int, step: int) -> None:
+                at = otp.trac_off(0, track) + 7 - (step - 1) // 8
+                data[at] |= 1 << ((step - 1) % 8)
+
+            for track in PERKY_INDEX:
+                for step in (1, 5, 9, 13):
+                    set_trig(data, track, step)
+            for track in (t - 1 for t in FLEX_TRACKS):
+                set_trig(data, track, 1)
 
         otp._bank_write(fixture, int(bank.stem[4:]), mutate, guard=False)
     return fixture
@@ -179,6 +201,32 @@ def require_audio(classes, track: int, label: str) -> list[int]:
     if distinct < MIN_DISTINCT:
         fail(f"{label}: only {distinct} distinct significant samples")
     print(f"  PASS {label}: {len(audio)} source samples, {len(sig)} significant, {distinct} distinct, peak {max(map(abs, audio))}")
+    return audio
+
+
+def require_readback(classes, track: int, label: str) -> list[int]:
+    """The CHAIN's output for the track, not the record fed to it.
+
+    ⚠️ THE RECORD IS NOT THE SOUND. From 9 Oct 2026: a build can publish a
+    perfect stock-shaped record for every track and still be silent -- the
+    emulator's per-track post-FX2 read-back for T1/T2/T5/T6 was ZERO while the
+    stock FLEX tracks on the same run were full audio, which is exactly what
+    the unit does. This gate looked only at the record, so it passed a silent
+    build for a whole session. The read-back is the chain's own output before
+    the master mix and is the right place to require sound.
+    """
+    audio = rl.readback_audio(classes, track)
+    if not audio:
+        fail(f"{label}: no per-track read-back (the DSP chain's output) at all")
+    sig = significant(audio)
+    if len(sig) < MIN_SIGNIFICANT:
+        fail(f"{label}: the CHAIN OUTPUT is silent -- only {len(sig)} samples exceed {SIGNIFICANT}"
+             f" (the record may be perfect; the DSP is not turning it into audio)")
+    distinct = len(set(sig))
+    if distinct < MIN_DISTINCT:
+        fail(f"{label}: the chain output has only {distinct} distinct significant samples")
+    print(f"  PASS {label} [chain output]: {len(audio)} samples, {len(sig)} significant, "
+          f"{distinct} distinct, peak {max(map(abs, audio))}")
     return audio
 
 
@@ -227,7 +275,7 @@ def main() -> None:
         "--set", "OCTABAM", "--project", "RIG",
         "--load-ms", "90000", "--sequencer", "--internal-clock",
         "--bank", "0", "--frames", str(args.frames),
-        "--dsp", "--dsp-dirty", "123", "--main-level", "64",
+            "--dsp", "--main-level", "64",
         "--block-dump", str(dump),
     ]
     with log.open("w") as f:
@@ -269,10 +317,12 @@ def main() -> None:
     classes = bd.classes(bd.read(dump))
     for track in FLEX_TRACKS:
         require_audio(classes, track, f"T{track} stock FLEX control")
+        require_readback(classes, track, f"T{track} stock FLEX control")
 
     perky = {}
     for voice, track in enumerate(PERKY_TRACKS):
         perky[track] = require_audio(classes, track, f"T{track} PERKY Algo {voice}")
+        require_readback(classes, track, f"T{track} PERKY Algo {voice}")
 
     # Different Algos on all four voices must not collapse to one shared stream.
     tracks = list(PERKY_TRACKS)
@@ -286,7 +336,8 @@ def main() -> None:
     print(f"  project load + real sequencer completed {args.frames} frames")
     print("  PERKY T1/T2/T5/T6 all emitted nonzero DSP-bound source PCM")
     print("  PERKY tracks used their stock recorder buffers as silent FLEX donors")
-    print("  Algos 0/1/2/3 exercised simultaneously and remained independent")
+    print("  Algos 0 (Fold1), 2 (Karplus), 4 (Resonant Drums) and 5 (Noise Hat) "
+          "exercised simultaneously and remained independent")
     print("  ordinary FLEX T3/T7 continued rendering the staged stock sample")
     print("  later sequencer trigs observed on all four PERKY tracks")
     print(f"  evidence: {log} / {dump}")

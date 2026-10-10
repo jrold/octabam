@@ -366,6 +366,58 @@ commands' reply formats are the header comment of `main.cpp`
   word (O9b), so a stalled core freezes the sequencer on trig 1;
   `--frame-timer` restores the 16-sample timer, and `--frame` uses the
   timer without the cores.
+- **`--cf-frame-deadline F`** models the unit's real-time frame deadline and
+  is the port's only way to SEE a frame overrun. The lock-step machine,
+  DSP included, is slaved to the ColdFire's instruction stream, so the
+  ColdFire can never be late: a slow frame is absorbed and the missed edges
+  are dropped. With the flag the emulator prices each frame's own work
+  (the cycles between two frame acks -- the idle park is skipped, not
+  executed) and scales it by `F`, the model-to-hardware cycle factor
+  (`modules/cfmeter/README.md`'s hardware reading: the stock frame prices at
+  126 us in the model against 213.5 us on the unit, ~1.7x). When the frame
+  handler is still inside its exchange after the calibrated frame period the
+  emulator DELIVERS the edge the hardware would send and reports
+  `cf overrun`; `OT_DEADLINE_TRACE=1` prints each frame's guard/mask state.
+  It also watches for the firmware's own `halt` and reports `cf stall`
+  (exit 1) if one happens.
+
+  Measured 9 Oct 2026: at `F = 1.7` the Perky CF image reports an overrun
+  every frame (~390 us of handler against a 362.8 us frame); the stock image
+  reports none under the same flag; at `F = 1.0` the Perky image reports none
+  either -- which is why the port never saw it.
+
+  The delivered edge does NOT halt this image, and neither the guard
+  (`0x46104d4e`, unreachable: the frame source is priority 5 and the handler
+  runs at SR mask 5, so the pending edge is taken only after the handler
+  returns) nor the bank-id range check
+  (`0x4000ab38 cmpl #1,0x800000e0 / 0x4000ab40 halt`) can fire: the read is
+  never stale, because the host port is host-paced in both directions (the
+  ColdFire's reads drive the DSP, and the DSP's frame loop waits for the host
+  take at `P:0x97`). What an overrun leaves is the ColdFire falling behind,
+  which the lock-step clock cannot show -- a batch real-time DSP mode is the
+  missing piece. See `docs/contributing/FAILURE_MODES.md`, the Perky entry.
+
+- **`--cf-cycles-clock F`** is that missing piece, as far as the lock-step
+  machine can express it: the audio clock is driven by the ColdFire's own
+  cycles (`F` times the vendored core's count, at 266 MHz over 44,100 -- one
+  sample is 6032 cycles) instead of the fitted `1/--ips` per instruction.
+  With the default rule the frame period is `16 x --ips` INSTRUCTIONS
+  whatever the ColdFire's work costs, so it can never be late; with this, it
+  can. DIAGNOSTIC: captures are functional, not byte-identical.
+  Measured 9 Oct 2026 at `F = 1.7`, 400 frames: the Perky image's frames take
+  22.5 samples against the 16-sample frame and the stock image's 18.9 -- and
+  the gap (3.6 samples, ~22%) is the Perky synthesis cost, which is the same
+  22% the budget gate prices. The absolute numbers still carry the model's own
+  `--dsp-ips` pacing, so the DELTA is the trustworthy part.
+
+- **`--dsp-rt` in the batch** is allowed with `--sequencer` (diagnostic only):
+  the cores run on their own worker threads, which is the only genuinely
+  independent DSP clock. ⚠️ On native Windows it still refuses, and the reason
+  is no longer the shim: `shm_open`/file-backed `MAP_SHARED|MAP_FIXED` are now
+  implemented in `win_compat/sys/mman.h`, but `MapViewOfFileEx` cannot take
+  over the address range the vendored `MmuHelper` has already reserved for the
+  DSP memory areas (`memorybuffer.cpp`). The six-view alias needs that range
+  mapped as a view of a shared section -- a vendored-side change.
 - **Memory-to-memory eDMA.** At the kick, a channel with neither end in the
   host-port window (`0x20000000–0x20000fff`) is copied per its TCD
   (`Rtos::copyMemToMem`: NBYTES per minor loop, SSIZE/DSIZE at

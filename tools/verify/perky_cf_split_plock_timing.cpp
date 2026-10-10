@@ -26,10 +26,12 @@ int main(int argc, char** argv) {
     auto e1=read_file(d+"/envelope1.bin"), e2=read_file(d+"/envelope2.bin");
     auto m1=read_file(d+"/m1.bin");
     std::array<std::vector<std::uint8_t>,4> w={read_file(d+"/w0.bin"),read_file(d+"/w1.bin"),read_file(d+"/w2.bin"),read_file(d+"/w3.bin")};
+    auto ria=read_file(d+"/interp_a.bin"), rib=read_file(d+"/interp_b.bin");
     constexpr std::array<std::uint32_t,4> wa={0x080222a0u,0x080224a0u,0x080226a0u,0x080228a0u};
     pk4_assets a{};
     a.pitch=pitch.data(); a.chromatic=chrom.data(); a.envelope1=e1.data(); a.envelope2=e2.data();
     a.m1_wave=m1.data(); a.m1_wave_address=0x080310e0u;
+    a.res_interp_a=ria.data(); a.res_interp_b=rib.data();
     for(unsigned i=0;i<4;i++){a.waves[i].address=wa[i];a.waves[i].table=w[i].data();}
 
     constexpr std::array<unsigned,4> splits={0,1,7,15};

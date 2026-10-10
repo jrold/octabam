@@ -1,5 +1,7 @@
 #include "rtos.h"
 
+#include "mc68k/cpuState.h"		// mc68ki_cpu_core::stopped -- the firmware's own `halt`
+
 #include <utility>
 
 #include <algorithm>
@@ -364,6 +366,19 @@ namespace ot
 			{
 				m_framePending = false;
 				++m_frameCount;
+				// THE FRAME DEADLINE (see setFrameDeadline): each frame starts
+				// its own clock here, at the ack.
+				if(m_deadlineArmed)
+				{
+					static const bool dlTrace = [] { const char* e = std::getenv("OT_DEADLINE_TRACE"); return e && *e && *e != '0'; }();
+					if(dlTrace)
+						std::fprintf(stderr, "dltrace ack frame %llu guard=%u late=%d mask=%d dl=%llu\n",
+							static_cast<unsigned long long>(m_frameCount), m_machine.peek32(g_frameGuard),
+							m_deadlineEdgeThisFrame ? 1 : 0, m_intc0.masked(1) ? 1 : 0,
+							static_cast<unsigned long long>(m_deadlineEdges));
+					m_deadlineFrameStartCycles = m_machine.getCycles();
+					m_deadlineEdgeThisFrame = false;
+				}
 			}
 			if(_vec >= m_intc0.vectorBase() && _vec < m_intc0.vectorBase() + 64)
 			{
@@ -708,6 +723,42 @@ namespace ot
 		m_edma.setBoundary(m_nextFrame);
 		m_edma.setNow(m_sample);
 		m_edma.advance(m_sample);
+		// THE REAL-TIME FRAME EDGE (see setFrameDeadline). The unit's frame
+		// clock does not wait for the ColdFire: when the frame handler is
+		// still inside its exchange after the calibrated frame period, the
+		// next edge arrives anyway -- and the firmware's own guard test
+		// (0x4000aae0 `tstl 0x46104d4e / beq / halt`) is what stops the unit.
+		// The port decides nothing; it only refuses to hide the lateness.
+		if(m_deadlineArmed && m_frame && m_deadlineFrameStartCycles != 0
+			&& !m_deadlineEdgeThisFrame && m_machine.peek32(g_frameGuard) != 0)
+		{
+			const double heldUs = static_cast<double>(m_machine.getCycles() - m_deadlineFrameStartCycles)
+				* m_deadlineHwFactor / g_cfClockHz * 1e6;
+			if(heldUs > g_framePeriod / g_sampleHz * 1e6)
+			{
+				m_deadlineEdgeThisFrame = true;
+				++m_deadlineEdges;
+				if(m_deadlineEdges == 1)
+				{
+					m_deadlineEdgeFrame = m_frameCount;
+					m_deadlineEdgeUs = heldUs;
+				}
+				m_framePending = true;		// the edge the hardware would send
+				m_wake = true;				// take it at the next boundary, not at a burst's end
+				static const bool dlTrace2 = [] { const char* e = std::getenv("OT_DEADLINE_TRACE"); return e && *e && *e != '0'; }();
+				if(dlTrace2)
+					std::fprintf(stderr, "dltrace late-edge frame %llu held=%.1fus guard=%u mask=%d\n",
+						static_cast<unsigned long long>(m_frameCount), heldUs,
+						m_machine.peek32(g_frameGuard), m_intc0.masked(1) ? 1 : 0);
+			}
+		}
+		// The firmware's `halt` (Musashi's stopped state). Nothing else stops
+		// the CPU that way in the frames phase, so this is the stall itself.
+		if(!m_firmwareHalted && m_machine.getCpuState() && m_machine.getCpuState()->stopped)
+		{
+			m_firmwareHalted = true;
+			m_why = "the firmware HALTed itself: a frame edge arrived while the previous frame was still in its exchange (the ColdFire overran the frame)";
+		}
 		if(m_ataIrqDue != 0.0 && m_sample >= m_ataIrqDue)
 		{
 			m_ataIrqDue = 0.0;
@@ -1178,6 +1229,8 @@ namespace ot
 					m_wake = false;
 					if(!stepOnce())
 						return Stop::Illegal;
+					if(m_firmwareHalted)
+						return Stop::Fault;
 					++executed;
 					m_machine.takePeriphTouched();		// stepOnce handled that instruction in full
 					continue;
@@ -1215,7 +1268,7 @@ namespace ot
 						m_why = m_machine.why();
 						return Stop::Illegal;
 					}
-					m_sample += 1.0 / m_ips;
+					advanceSample();
 					if(atSchedRte)
 					{
 						const auto cur = curTcb();
@@ -1248,11 +1301,15 @@ namespace ot
 				m_wake = false;		// before the timers: a wake raised inside them forces an exact step next
 				tickTimers();
 				deliver();
+				if(m_firmwareHalted)
+					return Stop::Fault;		// the firmware's own halt (see setFrameDeadline)
 				continue;
 			}
 
 			if(!stepOnce())
 				return Stop::Illegal;
+			if(m_firmwareHalted)
+				return Stop::Fault;
 			++executed;
 		}
 		if(_s.whyTime)
@@ -1291,7 +1348,7 @@ namespace ot
 			m_why = m_machine.why();
 			return false;
 		}
-		m_sample += 1.0 / m_ips;
+		advanceSample();
 
 		if(atSchedRte)
 		{
@@ -1604,6 +1661,42 @@ namespace ot
 	}
 
 	// -- M6c: the sequencer under the real scheduler -------------------------
+	void Rtos::setCycleClock(const double _hwFactor)
+	{
+		m_cycleClock = _hwFactor > 0.0;
+		m_cycleClockF = _hwFactor > 0.0 ? _hwFactor : 1.0;
+		m_cyclesLast = m_machine.getCycles();
+	}
+
+	// ONE instruction's worth of the audio clock. The stock rule is the fitted
+	// constant 1/m_ips; the cycle rule is the chip's own number, `_hwFactor`
+	// scaled ColdFire cycles at 266 MHz over 44,100 samples (6032 cycles is
+	// one sample). See setCycleClock for why the difference is the whole point.
+	void Rtos::advanceSample()
+	{
+		if(!m_cycleClock)
+		{
+			m_sample += 1.0 / m_ips;
+			return;
+		}
+		const auto c = m_machine.getCycles();
+		const auto d = c - m_cyclesLast;
+		m_cyclesLast = c;
+		m_sample += static_cast<double>(d) * m_cycleClockF / g_cfClockHz * g_sampleHz;
+	}
+
+	void Rtos::setFrameDeadline(const double _hwFactor)
+	{
+		m_deadlineArmed = _hwFactor > 0.0;
+		m_deadlineHwFactor = _hwFactor > 0.0 ? _hwFactor : 1.0;
+		m_deadlineFrameStartCycles = 0;
+		m_deadlineEdges = 0;
+		m_deadlineEdgeFrame = 0;
+		m_deadlineEdgeUs = 0.0;
+		m_deadlineEdgeThisFrame = false;
+		m_firmwareHalted = false;
+	}
+
 	void Rtos::setFrame(const bool _on)
 	{
 		m_frame = _on;

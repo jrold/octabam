@@ -8,7 +8,7 @@ s = (ROOT / "modules/perky/control_cf_final.c").read_text()
 required = (
     '"TUNE", "DECAY", "ALGO", "PRM1", "PRM2", "MODE"',
     'put32(desc + 0x1c6, 0x00111111u)',
-    'PK_FINAL_ALGO_COUNT 4u',
+    'PK_FINAL_ALGO_COUNT 6u',
     '#include "cf_perky4.h"',
     'pk4_process_segment(',
     'pk4_encode_stock_segment(',

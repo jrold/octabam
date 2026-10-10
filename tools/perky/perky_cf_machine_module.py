@@ -34,6 +34,8 @@ def build(original, *, generated_dir: str = "out/perky/cf-final"):
         Linked("pkfold", f"{generated_dir}/pkfold.s", dram=True),
         Linked("pkkarplus", f"{generated_dir}/pkkarplus.s", dram=True),
         Linked("pknoise", f"{generated_dir}/pknoise.s", dram=True),
+        Linked("pkresonant", f"{generated_dir}/pkresonant.s", dram=True),
+        Linked("pknoisehat", f"{generated_dir}/pknoisehat.s", dram=True),
         Linked("pkcore", f"{generated_dir}/pkcore.s", dram=True),
         Linked("pkcontrol", f"{generated_dir}/pkcontrol.s", dram=True),
     )
