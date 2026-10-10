@@ -50,6 +50,9 @@ REPITCH in [REPITCH.md](firmware/REPITCH.md)).
 modules (draft, not implemented): [OTX_PROJECT_PROPOSAL.md](proposals/OTX_PROJECT_PROPOSAL.md)
 and [OTX_MODULE_GUIDELINES.md](proposals/OTX_MODULE_GUIDELINES.md).
 
+[proposals/remixes/](proposals/remixes/README.md): remix proposals, each
+taken on hardware to verified stable before it lands under `remixes/`.
+
 ## History
 
 [../CHANGELOG.md](../CHANGELOG.md) has one entry per image that reached a
