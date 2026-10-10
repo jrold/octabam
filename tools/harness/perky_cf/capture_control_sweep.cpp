@@ -51,6 +51,7 @@ int main(int argc, char** argv)
     const unsigned index = std::strtoul(argv[3], nullptr, 0);
     const unsigned mode = std::strtoul(argv[4], nullptr, 0);
     const bool traj = argc == 6 && std::string(argv[5]) == "traj";
+    const bool full = argc == 6 && std::string(argv[5]) == "full";
     if (index >= kPerkyEngines.size() || mode > 2u) return 4;
 
     std::ofstream out(argv[2], std::ios::binary);
@@ -91,6 +92,32 @@ int main(int argc, char** argv)
         }
         std::cout << "trajectory engine " << index + 1 << " mode " << mode + 1
                   << ": " << (128u * kSteps) << " windows -> " << argv[2] << '\n';
+        return 0;
+    }
+
+    if (full) {
+        // Every 12-bit target, fully settled: the derived field for each
+        // reachable prepared word with no 7-bit quantisation gaps.  Needed for a
+        // law whose step pattern is not resolvable on the 128-point grid.
+        for (unsigned value = 0; value < 4096u; ++value) {
+            PerkonsM7 cpu;
+            PerkonsVoices voices(cpu);
+            std::array<std::uint16_t, 4> values = {
+                static_cast<std::uint16_t>(value), static_cast<std::uint16_t>(value),
+                static_cast<std::uint16_t>(value), static_cast<std::uint16_t>(value)};
+            if (!cpu.load(fw, error) || !voices.initialise(fw, error)
+                || !voices.setAlgorithm(engine.slot, engine.panelAlgorithm, error)
+                || !voices.setMode(engine.slot, engine.panelModeToFirmware[mode], error)
+                || !voices.setSoundParameters(engine.slot, values, error)
+                || !cpu.readMemory(wrapper, ram.data(), ram.size(), error)) {
+                std::cerr << error;
+                return 6;
+            }
+            out.write(reinterpret_cast<const char*>(ram.data()),
+                      static_cast<std::streamsize>(ram.size()));
+        }
+        std::cout << "full target sweep engine " << index + 1 << " mode " << mode + 1
+                  << ": 4096 windows -> " << argv[2] << '\n';
         return 0;
     }
 
