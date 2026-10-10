@@ -101,7 +101,7 @@ def main() -> None:
         (assets / name).write_bytes(src.read_bytes())
     objects = []
     for name in ("cf_fold", "cf_karplus", "cf_noise_tone", "cf_perky4",
-                 "cf_resonant", "cf_noise_hat", "cf_simple_drum"):
+                 "cf_resonant", "cf_noise_hat", "cf_simple_drum", "cf_complex_drum"):
         obj = work / f"{name}.o"
         run(["gcc", "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror",
              "-I", ROOT / "modules/perky",

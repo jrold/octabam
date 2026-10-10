@@ -51,6 +51,7 @@ SOURCES = (
     ("pkresonant", "cf_resonant.c"),
     ("pknoisehat", "cf_noise_hat.c"),
     ("pksimpledrum", "cf_simple_drum.c"),
+    ("pkcomplexdrum", "cf_complex_drum.c"),
 )
 
 # With the production source deliberately written in native 32-bit arithmetic,
