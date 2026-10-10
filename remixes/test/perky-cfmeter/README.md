@@ -81,3 +81,21 @@ Use the audio.
 - Perky renders inside the frame interrupt, so CF METER's window contains it.
 - Not a release artifact: it never passes `verify_perky_cf_final.py`'s
   stock-DSP identity requirement, and it is not meant to.
+- ⚠️ **Rebuilt on the post-merge tree, the probe no longer publishes in the
+  port (measured 10 Oct 2026).** The run is otherwise healthy -- the project
+  loads, the transport plays 12,000 frames, and Perky prices correctly (241.7
+  model us/frame with no Perky voice, 371.0 with four) -- but the block dump's
+  T8 read-back (`0x80003390`/`0x80003790`) is all zero, so
+  `tools/harness/cfmeter.py --dump` reports "no sync -> reference edge pair
+  found". The same harness decoded the pre-merge image's dump at 1:44 PM, and
+  the rebuilt card is not byte-identical to the delivered
+  `OCTATRACK_PK4METER2.bin` (`08b75917…` mainos / `569e5c64…` card against
+  `2821ec21…` / `9d019f0d…`), while the shipping `perky-cf-final` card *is*
+  byte-identical across the merge (`ece3a011…`). So the difference is confined
+  to this probe, and it is not yet attributed between the image and the port's
+  read model (the port was rebuilt in the same window and a pre-merge port
+  cannot run the post-merge image at all: it faults on the appended payload at
+  `0x4010fea4`). Until it is attributed, the instrument for a unit reading is
+  the delivered pre-merge build. Reproduce with
+  `python ..\test-artifacts\build_perky_cfmeter.py` (`VERSION=PK4METER2`) and
+  `work/probe_image.py`.
