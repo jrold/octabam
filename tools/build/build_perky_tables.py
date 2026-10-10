@@ -2,9 +2,11 @@
 """Post-process a normal ``perky-probe`` build with packed Noise/Tone tables.
 
 Unlike the deleted first draft, this uses platform_build's explicit
-``preboot_reserve`` support.  The normal Octabam build has already applied the
-PERKY module's 242-page bottom ArenaReserve to the OS image.  This tool verifies
-those geometry pokes, extends both finalized DSP uploads through
+``preboot_reserve`` support.  Upstream removed the module-level ArenaReserve
+(and with it the arena geometry the perky-probe build used to publish), so this
+tool now APPLIES the 242-page bottom reservation's geometry pokes itself --
+with the same stock-byte guard build_bus uses -- rather than verifying them.
+It then extends both finalized DSP uploads through
 ``perky_image.py``, then appends the standard Octabam loader carrying those two
 preboot payloads.
 
@@ -54,19 +56,34 @@ def apply_write(img: bytearray, address: int, expect: bytes, write: bytes, note:
     print(f"  poke 0x{address:08x}: {expect.hex()} -> {write.hex()}  {note}")
 
 
-def verify_reservation(img: bytes | bytearray) -> None:
-    """Prove build_bus already installed exactly PERKY's arena geometry."""
+def install_reservation(img: bytes | bytearray) -> None:
+    """Reserve PERKY's 242 bottom pages in the image's arena geometry.
+
+    build_bus only publishes arena geometry for a remix that carries DRAM
+    units; the perky-probe canary is ROM-only (its renderer is a cave), so this
+    post-processor installs the reservation its preboot windows need.  Every
+    write goes through apply_write, which refuses unless the site still holds
+    stock, so a moved base or a foreign reservation fails rather than being
+    silently overwritten."""
     reservations = [("PERKY PROBE", "bottom", PAGES)]
     pokes = arena.pokes(reservations)
     if not pokes:
         die("arena helper returned no writes for the PERKY reservation")
     for address, stock, written, note in pokes:
+        apply_write(img, address, stock, written, note)
+
+
+def verify_reservation(img: bytes | bytearray) -> None:
+    """Prove an image already carries PERKY's bottom-reservation geometry."""
+    pokes = arena.pokes([("PERKY PROBE", "bottom", PAGES)])
+    if not pokes:
+        die("arena helper returned no writes for the PERKY reservation")
+    for address, _stock, written, note in pokes:
         got = image_slice(img, address, len(written))
         if got != written:
             die(
                 f"arena reservation is not present: 0x{address:08x} ({note}) "
-                f"holds {got.hex()}, expected {written.hex()}. Build the "
-                "perky-probe remix from this branch before adding tables."
+                f"holds {got.hex()}, expected {written.hex()}"
             )
 
 
@@ -81,7 +98,7 @@ def build(image_path: Path, table_dir: Path, output: Path) -> None:
             f"{stock_len:,} B. This isolated table canary expects no existing "
             "platform-loader append."
         )
-    verify_reservation(img)
+    install_reservation(img)
 
     pres, pokes, log, layout = perky_image.integrate(img, table_dir)
     print("=== PERKY packed private-Y tables ===")

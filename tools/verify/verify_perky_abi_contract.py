@@ -55,9 +55,13 @@ def main() -> None:
 
     # Manifest ownership.
     module = manifest_mod.MODULE
-    expect(module.arena is not None, "PERKY must reserve preboot arena pages")
-    expect(module.arena.pages == 242, "PERKY preboot reservation must remain 242 pages")
-    expect(module.arena.where == "bottom", "PERKY preboot reservation must stay at arena bottom")
+    # Upstream removed the module-level ArenaReserve.  The probe is ROM-only,
+    # so its four 256 KiB preboot upload windows are reserved by
+    # tools/build/build_perky_tables.py (install_reservation) rather than by a
+    # manifest declaration; all this gate still fixes on the manifest is that
+    # it claims no module DRAM region of its own.
+    expect(not getattr(module, "dram_regions", ()),
+           "PERKY's probe must claim no module DRAM region")
 
     ranges = {(r.space, r.start, r.length, r.what) for r in module.claims.dsp_ranges}
     expect(

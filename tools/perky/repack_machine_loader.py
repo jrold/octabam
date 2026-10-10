@@ -27,7 +27,7 @@ sys.path[:0] = [str(ROOT / "tools"), str(ROOT / "tools/build")]
 
 import dsp_modmap  # noqa:E402
 import perky_image  # noqa:E402
-from remix import arena, platform_build, runtime_build  # noqa:E402
+from remix import arena, pack, platform_build  # noqa:E402
 
 BASE = dsp_modmap.BASE
 PAGES = 242
@@ -125,9 +125,9 @@ def load_runtime(platform_dir: Path) -> tuple[dict, bytes, dict]:
         die("normal platform loader must contain exactly one payload (octabam runtime)")
 
     packed = (
-        runtime_build.PACKED_MAGIC
+        pack.PACKED_MAGIC
         + len(raw).to_bytes(4, "big")
-        + runtime_build.pack(raw, platform_build.MAX_CANDIDATES)
+        + pack.pack(raw, platform_build.MAX_CANDIDATES)
     )
     runtime_payload = {
         "name": "octabam",

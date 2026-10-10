@@ -216,12 +216,17 @@ PERKY arena reserve    0x40a955e0..0x40c005df
 size                   1,486,848 bytes = 1.418 MiB
 ```
 
-241 pages do not contain the final stage slot. The module therefore declares
-`ArenaReserve(pages=242, where="bottom")`; this is intentionally far smaller
-than Octabam's 1,707-page platform-runtime reserve. `platform_build.py` now
-supports a separate `preboot_reserve`, so the same single loader can carry
-PERKY's DSP uploads either by themselves or alongside an unrelated DRAM runtime
-without making the two regions overlap.
+241 pages do not contain the final stage slot, which is why the reservation is
+242 pages rather than 241. Upstream removed the module-level `ArenaReserve`
+(6 Oct 2026) along with the Runtime machinery, so those pages are no longer
+declared by the manifest: `tools/build/build_perky_tables.py` installs the
+242-page bottom geometry itself — with the same stock-byte guard the build
+uses — before it appends the preboot loader, and the ColdFire machine images
+(`perky-cf-final`) get the same pages for free inside Octabam's 1,707-page
+platform reserve, which any remix with DRAM units pays for. `platform_build.py`
+still supports a separate `preboot_reserve`, so the same single loader can
+carry PERKY's DSP uploads either by themselves or alongside an unrelated DRAM
+runtime without making the two regions overlap.
 
 `tools/build/build_perky_tables.py` is the current isolated development build:
 it verifies the normal `perky-probe` image already contains those arena-geometry

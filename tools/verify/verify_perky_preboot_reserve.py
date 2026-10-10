@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Gate PERKY's minimal audio-arena reservation and generic preboot layout.
+"""Gate PERKY's preboot reserve and the generic preboot layout.
 
-No assembler, stock image or PĒRKONS data is needed.  This proves the 242-page
-bottom reservation contains all four 256 KiB DSP preboot windows in both cached
-and uncached aliases, that one fewer page cannot, and that platform_build's
-separate preboot-reserve path rejects overlap/out-of-range entries.
+No assembler, stock image or PĒRKONS data is needed.  Upstream replaced the
+module-level ArenaReserve with the platform-wide bottom reserve (built
+automatically whenever a remix carries DRAM units), so PERKY's four 256 KiB DSP
+preboot windows now live inside THAT reserve rather than a 242-page reservation
+of their own.  This proves the windows fit it in both cached and uncached
+aliases, and that platform_build's separate preboot-reserve path rejects
+overlap/out-of-range entries.
 """
 from __future__ import annotations
 
@@ -16,7 +19,11 @@ sys.path[:0] = [str(ROOT / "tools"), str(ROOT / "tools/remix")]
 
 from remix import arena, platform_build  # noqa:E402
 
-PAGES = 242
+# The reserve PERKY's preboot windows live in: the platform's own bottom
+# reservation, which every remix with DRAM units pays for (build_bus.py section
+# 1e).  242 x 6144 B was the old module reservation; this is the reserve that
+# replaced it, and it contains those 242 pages at the same base.
+PAGES = arena.PLATFORM_PAGES
 BASE = arena.BASE
 SIZE = PAGES * arena.PAGE
 END = BASE + SIZE
@@ -51,18 +58,18 @@ def expect_fail(fn, text: str) -> None:
 
 
 def main() -> None:
-    if END != 0x40C005E0:
-        raise AssertionError(f"242-page reserve ends at {END:#x}, expected 0x40c005e0")
-    if SIZE != 1_486_848:
-        raise AssertionError(f"242-page reserve is {SIZE} bytes, expected 1,486,848")
+    if END != arena.BASE + arena.PLATFORM_PAGES * arena.PAGE:
+        raise AssertionError(f"platform reserve ends at {END:#x}, not the declared extent")
 
-    # All four complete 256 KiB slots fit. The last one is the tight edge.
+    # All four complete 256 KiB slots fit the platform reserve.
     for start in STARTS:
         if not BASE <= start < start + WINDOW <= END:
-            raise AssertionError(f"slot {start:#x}..{start+WINDOW:#x} escapes reserve")
-    smaller_end = BASE + (PAGES - 1) * arena.PAGE
-    if 0x40BC0000 + WINDOW <= smaller_end:
-        raise AssertionError("241 pages unexpectedly fit the final stage slot")
+            raise AssertionError(f"slot {start:#x}..{start+WINDOW:#x} escapes the reserve")
+    # The old 242-page module reservation is contained in it: the windows sat
+    # at the very edge of 242 pages, so the platform reserve must still reach
+    # at least 0x40c005e0.
+    if END < 0x40C005E0:
+        raise AssertionError(f"platform reserve ends at {END:#x}, short of the windows")
 
     # The generic platform helper accepts a preboot-only layout with the
     # separately declared reservation. Cached and uncached aliases normalize
@@ -108,7 +115,7 @@ def main() -> None:
 
     print(
         "PERKY preboot reserve: PASS "
-        "(242 x 6144 B = 1.418 MiB; 241 pages insufficient; "
+        f"({PAGES} x {arena.PAGE} B platform reserve contains all four windows; "
         "preboot-only/composed layout and overlap refusal verified)"
     )
 

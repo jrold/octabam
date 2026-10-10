@@ -51,8 +51,12 @@ if (sr.addr, sr.expect, sr.unit, sr.symbol) != (
         0x400D6438, 0x40004008, "pkprobe", "pk_probe_render"):
     fail("FLEX renderer pointer is not the measured 0x400d6438 -> pk_probe_render rewrite")
 
-if m.arena is None or m.arena.where != "bottom" or m.arena.pages != 242:
-    fail("PERKY preboot scratch must reserve exactly 242 bottom audio-arena pages")
+# The probe is deliberately ROM-only (its renderer is a cave), so it cannot
+# rely on the platform reserve: tools/build/build_perky_tables.py installs the
+# 242-page bottom reservation its preboot upload windows live in.  What this
+# gate still fixes is that the manifest itself claims no module DRAM region.
+if getattr(m, "dram_regions", ()):
+    fail("PERKY's probe must claim no module DRAM region")
 
 ranges = {(r.space, r.start, r.length) for r in m.claims.dsp_ranges}
 for want in (

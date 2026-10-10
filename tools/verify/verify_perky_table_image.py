@@ -29,7 +29,7 @@ sys.path[:0] = [
 import ab_records  # noqa:E402
 import build_perky_tables  # noqa:E402
 import perky_image  # noqa:E402
-from remix import platform_build, runtime_build  # noqa:E402
+from remix import pack, platform_build  # noqa:E402
 
 
 def load_module(name: str, path: Path):
@@ -135,9 +135,9 @@ def main() -> None:
             exact_record(records, 1, perky_image.X_BASE, x_words, tag)
             exact_record(records, 2, perky_image.Y_BASE, y_words, tag)
             packed_stream = (
-                runtime_build.PACKED_MAGIC
+                pack.PACKED_MAGIC
                 + len(raw).to_bytes(4, "big")
-                + runtime_build.pack(raw, platform_build.MAX_CANDIDATES)
+                + pack.pack(raw, platform_build.MAX_CANDIDATES)
             )
             expected_blob[tag] = platform_build.SIGNATURE + packed_stream
 

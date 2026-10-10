@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / 'tools'), str(ROOT / 'tools/build'),
                 str(ROOT / 'tools/perky')]
 import perky_image
-from remix import platform_build, runtime_build
+from remix import pack, platform_build
 from verify_perky_table_image import parse_upload, exact_record
 
 
@@ -51,9 +51,9 @@ def main():
             exact_record(records, 2, base, values, f'{tag}:{purpose}')
 
         expected_blob = (
-            platform_build.SIGNATURE + runtime_build.PACKED_MAGIC
+            platform_build.SIGNATURE + pack.PACKED_MAGIC
             + len(raw).to_bytes(4, 'big')
-            + runtime_build.pack(raw, platform_build.MAX_CANDIDATES)
+            + pack.pack(raw, platform_build.MAX_CANDIDATES)
         )
         assert (work / f'preblob{index}.bin').read_bytes() == expected_blob
         dst = perky_image.PRE[tag][0]

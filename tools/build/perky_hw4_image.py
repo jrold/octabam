@@ -84,7 +84,7 @@ def extend_upload(img, tag, y_words, x_words, extra_x, extra_y):
 
 
 def integrate(img: bytes | bytearray, table_dir: Path):
-    from remix import platform_build, runtime_build
+    from remix import pack, platform_build
 
     y_words, layout = base.load_tables(table_dir)
     x_words = base.load_state_init(table_dir, layout)
@@ -95,9 +95,9 @@ def integrate(img: bytes | bytearray, table_dir: Path):
     for tag, c in base.PAY.items():
         raw = extend_upload(img, tag, y_words, x_words, extra_x, extra_y)
         packed = (
-            runtime_build.PACKED_MAGIC
+            pack.PACKED_MAGIC
             + len(raw).to_bytes(4, 'big')
-            + runtime_build.pack(raw, platform_build.MAX_CANDIDATES)
+            + pack.pack(raw, platform_build.MAX_CANDIDATES)
         )
         dst, stage = base.PRE[tag]
         if len(raw) > 0x40000 or 4 + len(packed) > 0x40000:

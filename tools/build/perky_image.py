@@ -232,7 +232,7 @@ def extend_upload(img: bytes | bytearray, tag: str, y_words: list[int],
 
 def integrate(img: bytes | bytearray, table_dir: Path):
     """Return (preboot_payloads, pointer_pokes, log, layout)."""
-    from remix import platform_build, runtime_build
+    from remix import pack, platform_build
 
     y_words, layout = load_tables(table_dir)
     x_words = load_state_init(table_dir, layout)
@@ -243,9 +243,9 @@ def integrate(img: bytes | bytearray, table_dir: Path):
             img, tag, y_words, x_words, extra_state_init(layout), extra_y
         )
         packed_blob = (
-            runtime_build.PACKED_MAGIC
+            pack.PACKED_MAGIC
             + len(raw).to_bytes(4, "big")
-            + runtime_build.pack(raw, platform_build.MAX_CANDIDATES)
+            + pack.pack(raw, platform_build.MAX_CANDIDATES)
         )
         dst, stage = PRE[tag]
         if len(raw) > 0x40000 or 4 + len(packed_blob) > 0x40000:

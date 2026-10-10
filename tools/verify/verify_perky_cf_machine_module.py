@@ -30,7 +30,10 @@ def main() -> None:
         raise AssertionError("final Perky Machines must not carry a DSP section")
     if final.claims is None or final.claims.dsp_ranges:
         raise AssertionError("final Perky Machines must reserve zero DSP ranges")
-    if final.arena is not None:
+    # Upstream replaced the module-level ArenaReserve with Module.dram_regions;
+    # the CF-only machine must claim no DRAM region of its own (its images are
+    # carried by the platform reserve, not by a module reservation).
+    if getattr(final, "dram_regions", ()):
         raise AssertionError("DSP preboot arena must not survive ColdFire-only design")
     if final.kind.value != "cf_patch":
         raise AssertionError(f"final kind is {final.kind}")

@@ -59,7 +59,6 @@ def build(original, *, generated_dir: str = "out/perky/cf-final"):
         # consumed by the unmodified DSP path.
         dsp=None,
         claims=Claims(),
-        arena=None,
         gates=(
             Gate("tools/verify/verify_perky_cf_final_control.py", remix_arg=False),
             Gate("tools/verify/verify_perky_cf_freestanding.py", remix_arg=False),

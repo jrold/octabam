@@ -53,7 +53,7 @@ def main() -> None:
         raise AssertionError("full PERKY module did not select generated synth DSP source")
     if full.dsp.hooks != perky.dsp.hooks or full.dsp.subst != perky.dsp.subst:
         raise AssertionError("full machine changed the proven DSP seam/continuations")
-    if full.arena != perky.arena or full.claims != perky.claims:
+    if full.claims != perky.claims:
         raise AssertionError("full machine changed the frozen PERKY memory ownership")
 
     refs = {(r.addr, r.expect, r.unit, r.symbol) for r in full.symbol_refs}

@@ -107,7 +107,7 @@ def require_dsp_pristine_release(final, selected) -> None:
     claims = final.claims
     final_dirty = (
         final.dsp is not None
-        or final.arena is not None
+        or getattr(final, "dram_regions", ())
         or claims is None
         or bool(claims.dsp_ranges)
         or bool(claims.reserved_private_y)

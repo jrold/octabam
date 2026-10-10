@@ -32,10 +32,13 @@ def main() -> None:
     original = load(ROOT / "modules/perky/manifest.py")
     final = perky_cf_machine_module.build(original)
     dram = tuple(u for u in final.linked if u.dram)
-    if len(dram) != 7:
-        raise AssertionError(f"expected seven final Perky DRAM units, got {len(dram)}")
-    if final.arena is not None:
-        raise AssertionError("final Perky must not restore a legacy explicit arena")
+    # 14 since the twelve-algorithm milestone: machine + assets + the eleven
+    # generated engine units + core + control.  (The old count of 7 predates
+    # the engine expansion and was stale before the upstream merge.)
+    if len(dram) != 14:
+        raise AssertionError(f"expected fourteen final Perky DRAM units, got {len(dram)}")
+    if getattr(final, "dram_regions", ()):
+        raise AssertionError("final Perky must not claim module DRAM regions")
 
     # This mirrors build_bus.py section 1e: any DRAM-linked runtime receives the
     # standard platform reservation independently of Module.arena.
