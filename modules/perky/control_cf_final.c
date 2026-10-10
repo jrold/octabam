@@ -3,7 +3,7 @@
  * Locked SRC page:
  *   A TUNE / B DECAY / C ALGO / D PRM1 / E PRM2 / F MODE
  *
- * Four independent voices live on OT tracks 1,2,5,6 (zero-based 0,1,4,5).
+ * Four independent voices live on OT tracks 1,2,3,4 (zero-based 0,1,2,3).
  * The native PĒRKONS renderers run on ColdFire and publish ordinary stock
  * unity-rate source segments.  No DSP synth hook, DSP code replacement, FX
  * memory claim, or FX dispatch change is used by this final architecture.
@@ -105,8 +105,8 @@ static int pk_final_voice_index(unsigned track)
     switch (track) {
     case 0u: return 0;
     case 1u: return 1;
-    case 4u: return 2;
-    case 5u: return 3;
+    case 2u: return 2;
+    case 3u: return 3;
     default: return -1;
     }
 }
@@ -138,11 +138,16 @@ static void pk_final_reset_runtime_if_needed(void)
     }
 }
 
-static uint32_t pk_final_page(void)
+/* The ALGO row is PER-VOICE.  T1..T4 are PĒRKONS voices V1..V4 and each
+ * track's ALGO knob ranges over only its own family (see cf_perky4.h), so the
+ * descriptor's ALGO maximum is (re)published on every call -- the descriptor
+ * buffer itself is a single static page that the stock editor reads live. */
+static uint32_t pk_final_page(unsigned track)
 {
     static const char *const names[6] = {
         "TUNE", "DECAY", "ALGO", "PRM1", "PRM2", "MODE"
     };
+    const unsigned voice = track < PK4_VOICE_COUNT ? track : 0u;
     (void)page_for_cf_legacy(DEFAULT_ENGINE);
     text(desc + 0x41, "PERKY MACH", 13);
     for (unsigned i = 0; i < 6u; ++i) {
@@ -150,7 +155,7 @@ static uint32_t pk_final_page(void)
         uint32_t formatter = 0u;
         uint32_t widget = 0u;
         if (i == PK_FINAL_ALGO) {
-            maximum = PK_FINAL_ALGO_COUNT;
+            maximum = pk4_voice_len(voice);
             formatter = MODE_FORMATTER;
         } else if (i == PK_FINAL_MODE) {
             maximum = 3u;
@@ -180,13 +185,17 @@ unsigned pk_admit_track(const volatile uint8_t *part, unsigned track)
 
 uint32_t pk_track_page(const volatile uint8_t *type_ptr)
 {
-    (void)type_ptr;
-    return pk_final_page();
+    /* The stock passes the address of this track's machine-type byte, exactly
+     * the way the legacy control.c page builder recovers the track. */
+    volatile uint8_t *part = part_base();
+    const uintptr_t track = (uintptr_t)type_ptr - (uintptr_t)(part + 0x22u);
+    return pk_final_page(track < 8u ? (unsigned)track : 0u);
 }
 
 void pk_ui_tick(void)
 {
-    U32(0x400d5f38u + PERKY_ROW * 4u) = pk_final_page();
+    /* 0x100b14cc is the stock "current track" byte the legacy builder used. */
+    U32(0x400d5f38u + PERKY_ROW * 4u) = pk_final_page((unsigned)U8(0x100b14ccu) & 7u);
 }
 
 int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
@@ -267,8 +276,11 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
             src[i] = (uint8_t)(fp[i] >> 8);
         if (src[PK_FINAL_MODE] > 2u)
             src[PK_FINAL_MODE] = 2u;
-        if (src[PK_FINAL_ALGO] >= PK_FINAL_ALGO_COUNT)
-            src[PK_FINAL_ALGO] = 0u;
+        /* ALGO arrives as a family-local knob position and becomes the global
+         * engine id here -- the one place the voice silo is enforced, so a
+         * p-locked or stale byte can never select an algorithm the hardware
+         * would not offer this voice. */
+        src[PK_FINAL_ALGO] = pk4_voice_engine((unsigned)voice, src[PK_FINAL_ALGO]);
 
         /* The synthesis core deliberately retains its recovered firmware
          * argument order: decay,tune,p1,p2,mode,algo. Keep the Octatrack page

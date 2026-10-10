@@ -198,6 +198,11 @@ def main() -> None:
         generated,
     ])
 
+    print("=== PERKY CF final 3c/9: voice silo (T1..T4 family map) ===")
+    run([
+        sys.executable, ROOT / "tools/verify/verify_perky_cf_voice_silo.py",
+    ])
+
     print("=== PERKY CF final 3b/9: odd-address word/long audit ===")
     run([
         sys.executable, ROOT / "tools/verify/verify_perky_cf_odd_access.py",
@@ -311,17 +316,17 @@ def main() -> None:
 
     print("=== PERKY CF final 9/9: release manifest ===")
     manifest.write_text(
-        "PERKY MACHINES FINAL FOUR-ALGORITHM COLDFIRE BUILD\n"
-        "tracks=T1,T2,T5,T6 independent\n"
+        "PERKY MACHINES FINAL COLDFIRE BUILD\n"
+        "tracks=T1,T2,T3,T4 independent\n"
         "src=A:Tune,B:Decay,C:Algo,D:Prm1,E:Prm2,F:Mode; all six p-lockable\n"
-        "algos=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3)\n"
+        "algos=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3),ResonantDrums(M1/M2/M3),NoiseHat(M1/M2/M3)\n"
         "production_pcm=196608 exact samples per Algo; 786432 total\n"
         "four_track_stress=16384 trigs / 262144 exact samples; zero cross-track mutation\n"
         "production_pk_render=1024 simultaneous four-voice frames / 4096 voice events / 65536 exact samples\n"
         "fixed_slot_transport=two-segment source PCM committed to measured 336-byte stock track slot\n"
         "runtime_reset=16 voice/algo cases across Part A0->A1->A0 and Bank A->B; exact cold PCM\n"
         "split_plock=2304 transitions / 36864 samples; exact event-boundary application\n"
-        "emulator_user_path=real project load + sequencer + T1/T2/T5/T6 PERKY + T3/T7 stock FLEX required PASS\n"
+        "emulator_user_path=real project load + sequencer + T1/T2/T3/T4 PERKY + T3/T7 stock FLEX required PASS\n"
         "stock_fx=all stock FX retained by remix; Perky module has zero DSP section/ranges/arena\n"
         "stock_dsp=156948 bootstrap/payload bytes required byte-identical by release gate\n"
         "wrapper_roundtrip=card ELUP -> emitted ELEK exact; MIDI section 3 -> final MAIN OS exact\n"

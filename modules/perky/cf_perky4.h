@@ -21,6 +21,46 @@ enum {
     PK4_TRACK_COUNT = 4
 };
 
+/* ---- PĒRKONS voice map: the hardware algorithm silo ---------------------
+ * The drum has four voices and each voice owns three algorithms.  The port
+ * keeps that shape: Octatrack T1..T4 are V1..V4, and a track's ALGO control
+ * ranges over its own family only.  The staged ALGO byte is a FAMILY-LOCAL
+ * index (0..len-1); the shipping control adapter maps it through this table,
+ * so the ALGO knob, the p-lock staging and the engine core all agree, and no
+ * patch can put an algorithm on a voice the hardware would not offer it on.
+ *
+ * Only the algorithms this port implements are listed, compacted into a
+ * contiguous knob range; PK4_VOICE_LEN is what the SRC page publishes as the
+ * ALGO maximum.  The entries past the length are unreachable padding that
+ * keeps the table rectangular -- never read them.
+ *
+ * Adding an engine means putting it in its family slot and bumping the
+ * length.  That SHIFTS the local indices after it, so a project saved with an
+ * older image can change which algorithm a slot selects; the SRC page clamp
+ * keeps the value in range, and the release note has to say so.
+ */
+#define PK4_VOICE_COUNT 4
+static const uint8_t pk4_family_engines[PK4_VOICE_COUNT][3] = {
+    { PK4_ALGO_FOLD1,     PK4_ALGO_FOLD1,      PK4_ALGO_FOLD1 },       /* V1 */
+    { PK4_ALGO_FOLD2,     PK4_ALGO_FOLD2,      PK4_ALGO_FOLD2 },       /* V2 */
+    { PK4_ALGO_RESONANT,  PK4_ALGO_KARPLUS,    PK4_ALGO_KARPLUS },     /* V3 */
+    { PK4_ALGO_NOISE_HAT, PK4_ALGO_NOISE_TONE, PK4_ALGO_NOISE_TONE },  /* V4 */
+};
+static const uint8_t pk4_family_len[PK4_VOICE_COUNT] = { 1u, 1u, 2u, 2u };
+
+static inline unsigned pk4_voice_len(unsigned voice)
+{
+    return voice < PK4_VOICE_COUNT ? (unsigned)pk4_family_len[voice] : 1u;
+}
+
+static inline uint8_t pk4_voice_engine(unsigned voice, unsigned local)
+{
+    const unsigned len = pk4_voice_len(voice);
+    if (local >= len)
+        local = len - 1u;
+    return pk4_family_engines[voice < PK4_VOICE_COUNT ? voice : 0u][local];
+}
+
 typedef struct {
     const uint8_t *pitch;      /* 4096 little-endian u16 */
     const uint8_t *chromatic;  /* 12 little-endian u16 */

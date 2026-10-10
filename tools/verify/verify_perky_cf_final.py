@@ -201,7 +201,7 @@ def main() -> None:
     ])
 
     print("PERKY CF FINAL QUALIFICATION: PASS")
-    print("  tracks=4 independent (Octatrack T1/T2/T5/T6)")
+    print("  tracks=4 independent (Octatrack T1/T2/T3/T4)")
     print("  SRC=A Decay,B Tune,C Param1,D Param2,E Mode,F Algo; all p-lock sequence/split gates passed")
     print("  supported Algo=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3),"
           "ResonantDrums(M1 snare/M2 bass/M3 noise-tone),"

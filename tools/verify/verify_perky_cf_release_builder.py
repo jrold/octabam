@@ -6,12 +6,12 @@ ROOT = Path(__file__).resolve().parents[2]
 s = (ROOT / "tools/perky/build_cf_final.py").read_text()
 
 required = (
-    'PERKY MACHINES FINAL FOUR-ALGORITHM COLDFIRE BUILD',
-    'tracks=T1,T2,T5,T6 independent',
-    'src=A:Decay,B:Tune,C:Param1,D:Param2,E:Mode,F:Algo; all six p-lockable',
-    'algos=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3)',
+    'PERKY MACHINES FINAL COLDFIRE BUILD',
+    'tracks=T1,T2,T3,T4 independent',
+    'src=A:Tune,B:Decay,C:Algo,D:Prm1,E:Prm2,F:Mode; all six p-lockable',
+    'algos=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3),ResonantDrums(M1/M2/M3),NoiseHat(M1/M2/M3)',
     'production_pcm=196608 exact samples per Algo; 786432 total',
-    'production_pk_render=1024 simultaneous four-voice frames / 4096 voice events / 65536 samples',
+    'production_pk_render=1024 simultaneous four-voice frames / 4096 voice events / 65536 exact samples',
     'verify_perky_cf_final.py',
     'generate_cf_final.generate(generated)',
     'verify_perky_cf_codegen.py',
@@ -26,10 +26,16 @@ for needle in required:
     if needle not in s:
         raise AssertionError(f"missing release-builder contract: {needle}")
 
+# The forbidden list guards against "reduced" release behaviour leaking back
+# in. Three entries that used to be forbidden are legitimate now and are
+# deliberately not listed:
+#   * OT_PROJECT -- the final builder REQUIRES a real card/project path for the
+#     whole-machine emulator gate (die() when it is unset); it is no longer a
+#     way to point the build at a toy fixture.
+#   * SimpleDrum / SIMPLE DRUM -- Simple Drum is a real PĒRKONS v1.2.1 voice
+#     (family V1 algorithm 3) that the shipped per-track algorithm list has to
+#     be able to name.  It is a milestone, not a reduction.
 for bad in (
-    'OT_PROJECT',
-    'SimpleDrum',
-    'SIMPLE DRUM',
     'probe_glue.asm',
     'synthetic_control_map',
     'PERKY HW4',

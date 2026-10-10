@@ -62,8 +62,11 @@ static pk4_assets make_assets() {
     return a;
 }
 
-static std::array<uint8_t, 6> to_engine_src(const uint8_t page[6]) {
-    return {page[1], page[0], page[3], page[4], page[5], page[2]};
+/* Staged ALGO is a family-local knob position; map it the way the driver
+ * does (cf_perky4.h) so the reference engine matches what pk_render runs. */
+static std::array<uint8_t, 6> to_engine_src(unsigned voice, const uint8_t page[6]) {
+    return {page[1], page[0], page[3], page[4], page[5],
+            pk4_voice_engine(voice, page[2])};
 }
 
 static bool render_reference(const pk4_assets &assets, unsigned voice,
@@ -71,7 +74,7 @@ static bool render_reference(const pk4_assets &assets, unsigned voice,
                              std::array<uint32_t, 40> &out) {
     pk4_engine e{};
     pk4_init(&e, &assets);
-    const auto engine_src = to_engine_src(page_src);
+    const auto engine_src = to_engine_src(voice, page_src);
     std::array<int16_t, 16> pcm{};
     std::array<uint32_t, 4> pre{};
     std::array<uint32_t, 36> post{};
@@ -132,7 +135,7 @@ int main() {
     constexpr uintptr_t part_off = 0x8ed80u;
     constexpr uintptr_t part_stride = 0x18b2u;
     constexpr uintptr_t cursor = 0x80010000u;
-    constexpr std::array<unsigned,4> tracks={0u,1u,4u,5u};
+    constexpr std::array<unsigned,4> tracks={0u,1u,2u,3u};
     const auto assets = make_assets();
 
     // Sign the four Perky tracks in two Parts of bank A and one Part of bank B.
@@ -143,7 +146,7 @@ int main() {
     uint64_t cases = 0;
     for (unsigned voice = 0; voice < 4u; ++voice) {
         const unsigned track = tracks[voice];
-        for (unsigned algo = 0; algo < 4u; ++algo) {
+        for (unsigned algo = 0; algo < pk4_voice_len(voice); ++algo) {
             /* Shipping page order: tune,decay,algo,p1,p2,mode. */
             uint8_t src[6] = {
                 (uint8_t)(31u + voice * 13u + algo * 3u),

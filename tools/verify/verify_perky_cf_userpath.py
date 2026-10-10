@@ -6,7 +6,7 @@ project/card, boots the built MAIN OS in tools/emu/ot_emu, starts the firmware's
 sequencer and lets the normal source packer/DSP transport run.
 
 The fixture carries:
-  * PERKY on T1/T2/T5/T6, one different Algo on each track;
+  * PERKY on T1/T2/T3/T4, one different Algo on each track;
   * ordinary FLEX controls on T3/T7 using a generated, staged 440 Hz sample;
   * PERKY's underlying FLEX slots pointed at each track's own recorder buffer
     (R1/R2/R5/R6), not at the staged file sample. Recorder buffers are stock,
@@ -49,9 +49,14 @@ from ab_fixture import prepare  # noqa:E402
 
 EMU = ROOT / "out/emu/ot_emu"
 PY = ROOT / ".venv/bin/python3"
-PERKY_TRACKS = (1, 2, 5, 6)       # one-based OT track numbers
+PERKY_TRACKS = (1, 2, 3, 4)       # one-based OT track numbers
+# Family-local ALGO position staged on each PERKY voice, in PERKY_TRACKS
+# order.  Kept as a named constant so frame-cost experiments can stage a
+# different engine mix without editing the gate (see
+# tools/verify/verify_perky_cf_realtime_budget.py).
+PERKY_ALGO = (0, 0, 0, 0)
 PERKY_INDEX = tuple(t - 1 for t in PERKY_TRACKS)
-FLEX_TRACKS = (3, 7)
+FLEX_TRACKS = (7, 8)
 SAMPLE_REL = "AUDIO/PERKY_GATE_440.wav"
 SR = 44100
 SAMPLE_FRAMES = SR * 8
@@ -148,10 +153,13 @@ def configure_fixture(source: pathlib.Path, destination: pathlib.Path) -> pathli
                     data[file_base + otp.SLOT_OFF + track * 5 + otp.SLOT_KIND["flex"]] = RECORDER_BASE + track
                     data[live_base + 60 + 30 * track:live_base + 63 + 30 * track] = b"PK\x01"
                     # Shipping SRC order: TUNE, DECAY, ALGO, PRM1, PRM2, MODE.
-                    # ALGO 4 is Resonant Drums (MODE 0 = snare) and ALGO 5 is
-                    # Noise Hat (MODE 0 = white), so the whole-machine gate
-                    # exercises both newly added families.
-                    algo = (0, 2, 4, 5)[voice]
+                    # ALGO is now a FAMILY-LOCAL knob position (cf_perky4.h):
+                    # T1 is PĒRKONS V1, T2 V2, T3 V3, T4 V4, so the same staged
+                    # 0 selects a different engine per track -- Fold Drum 1,
+                    # Fold Drum 2, Resonant Drums and Noise Hat here. That is
+                    # exactly the whole-machine proof this gate wants: four
+                    # voices, four families, two of them the newly added ones.
+                    algo = PERKY_ALGO[voice]
                     mode = (0, 0, 0, 0)[voice]
                     values = (64, 64, algo, 64, 64, mode)
                     for slot, value in enumerate(values):
@@ -209,7 +217,7 @@ def require_readback(classes, track: int, label: str) -> list[int]:
 
     ⚠️ THE RECORD IS NOT THE SOUND. From 9 Oct 2026: a build can publish a
     perfect stock-shaped record for every track and still be silent -- the
-    emulator's per-track post-FX2 read-back for T1/T2/T5/T6 was ZERO while the
+    emulator's per-track post-FX2 read-back for T1/T2/T3/T4 was ZERO while the
     stock FLEX tracks on the same run were full audio, which is exactly what
     the unit does. This gate looked only at the record, so it passed a silent
     build for a whole session. The read-back is the chain's own output before
@@ -334,7 +342,7 @@ def main() -> None:
 
     print("PERKY CF FULL USER PATH: PASS")
     print(f"  project load + real sequencer completed {args.frames} frames")
-    print("  PERKY T1/T2/T5/T6 all emitted nonzero DSP-bound source PCM")
+    print("  PERKY T1/T2/T3/T4 all emitted nonzero DSP-bound source PCM")
     print("  PERKY tracks used their stock recorder buffers as silent FLEX donors")
     print("  Algos 0 (Fold1), 2 (Karplus), 4 (Resonant Drums) and 5 (Noise Hat) "
           "exercised simultaneously and remained independent")

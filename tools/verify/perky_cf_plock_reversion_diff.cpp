@@ -66,8 +66,12 @@ static pk4_assets make_assets() {
     return a;
 }
 
-static std::array<uint8_t, 6> to_engine_src(const uint8_t page[6]) {
-    return {page[1], page[0], page[3], page[4], page[5], page[2]};
+/* Shipping page order is tune,decay,algo,p1,p2,mode and the staged ALGO is a
+ * family-local knob position, so the reference has to run it through the same
+ * voice map the driver uses (cf_perky4.h) before it hits the engine ABI. */
+static std::array<uint8_t, 6> to_engine_src(unsigned voice, const uint8_t page[6]) {
+    return {page[1], page[0], page[3], page[4], page[5],
+            pk4_voice_engine(voice, page[2])};
 }
 
 static void stage(const uint8_t src[6]) {
@@ -90,7 +94,7 @@ static int one_event(pk4_engine &reference, unsigned voice, unsigned track,
     std::array<int16_t, 16> pcm{};
     std::array<uint32_t, 4> expected_pre{};
     std::array<uint32_t, 36> expected_post{};
-    const auto engine = to_engine_src(src);
+    const auto engine = to_engine_src(voice, src);
     if (!pk4_process_segment(&reference, voice, engine.data(), 1, 1, 255u, 45u,
                              pcm.data(), 16u))
         return 20;
@@ -141,7 +145,7 @@ int main() {
     constexpr uint32_t bank_b = 0x49000000u;
     constexpr uintptr_t part_off = 0x8ed80u;
     constexpr uintptr_t cursor = 0x80010000u;
-    constexpr std::array<unsigned, 4> tracks = {0u, 1u, 4u, 5u};
+    constexpr std::array<unsigned, 4> tracks = {0u, 1u, 2u, 3u};
     const pk4_assets assets = make_assets();
 
     for (uint32_t bank : {bank_a, bank_b})
@@ -151,7 +155,7 @@ int main() {
     uint64_t cases = 0, events = 0, samples = 0;
     for (unsigned voice = 0; voice < 4u; ++voice) {
         const unsigned track = tracks[voice];
-        const uint8_t default_algo = (uint8_t)((voice + 1u) & 3u);
+        const uint8_t default_algo = (uint8_t)((voice + 1u) % pk4_voice_len(voice));
         const uint8_t default_mode = (uint8_t)((voice + 1u) % 3u);
         /* Shipping page order: tune,decay,algo,p1,p2,mode. */
         const uint8_t defaults[6] = {
@@ -163,7 +167,7 @@ int main() {
             default_mode,
         };
 
-        for (unsigned locked_algo = 0; locked_algo < 4u; ++locked_algo) {
+        for (unsigned locked_algo = 0; locked_algo < pk4_voice_len(voice); ++locked_algo) {
             for (unsigned locked_mode = 0; locked_mode < 3u; ++locked_mode) {
                 if (locked_algo == default_algo && locked_mode == default_mode)
                     continue;

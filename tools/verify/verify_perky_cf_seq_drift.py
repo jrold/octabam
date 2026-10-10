@@ -39,8 +39,6 @@ import shutil
 import subprocess
 import sys
 
-import numpy as np
-
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path[:0] = [str(ROOT / "tools"), str(ROOT / "tools/hw"), str(ROOT / "tools/harness")]
 import toolpath  # noqa:E402,F401
@@ -94,9 +92,9 @@ def stage(project: pathlib.Path, work: pathlib.Path) -> pathlib.Path:
     return fixture
 
 
-def leading_zeros(frame: np.ndarray) -> int:
+def leading_zeros(frame: list[int]) -> int:
     n = 0
-    while n < frame.size and frame[n] == 0:
+    while n < len(frame) and frame[n] == 0:
         n += 1
     return n
 
@@ -145,9 +143,9 @@ def main() -> None:
         fail(f"emulator produced no DSP block dump; see {log}")
 
     classes = bd.classes(bd.read(dump))
-    chain = np.asarray(rl.readback_audio(classes, TRACK + 1), dtype=np.int64)
-    if chain.size < int((BARS * 16 + 1) * 0.125 * SR):
-        fail(f"chain read-back too short ({chain.size} samples); see {log}")
+    chain = [int(v) for v in rl.readback_audio(classes, TRACK + 1)]
+    if len(chain) < int((BARS * 16 + 1) * 0.125 * SR):
+        fail(f"chain read-back too short ({len(chain)} samples); see {log}")
 
     # ---- 1. the sequencer really split frames (else this test is vacuous) ----
     groups = sorted(classes.get((">", 0, 1, 0x80001c90), []) +
@@ -165,20 +163,20 @@ def main() -> None:
     for split, (_, w) in zip(splits, groups):
         if split <= 0:
             continue
-        decoded = np.asarray(rl.record_audio(rl.words(w[0:84])), dtype=np.int64)
-        if decoded.size != 16:
+        decoded = [int(v) for v in rl.record_audio(rl.words(w[0:84]))]
+        if len(decoded) != 16:
             continue
-        if not decoded.any():
+        if not any(decoded):
             continue                    # a genuinely silent frame is fine
-        rec_pre.extend(decoded[:split].tolist())
+        rec_pre.extend(decoded[:split])
     if not rec_pre:
         fail("no sounding split frame in the source record -- test is vacuous")
     rec_blank = sum(1 for v in rec_pre if v == 0) / len(rec_pre)
 
     # ---- 3. the chain output must not blank its leading samples ----
-    frame_count = chain.size // 16
+    frame_count = len(chain) // 16
     sounding = [chain[16 * k:16 * k + 16] for k in range(2, frame_count)]
-    sounding = [f for f in sounding if f.any()]
+    sounding = [f for f in sounding if any(f)]
     blank_frames = sum(1 for f in sounding if leading_zeros(f) >= 2)
     chain_blank = blank_frames / len(sounding)
 
@@ -191,12 +189,18 @@ def main() -> None:
     levels = []
     for start in hits:
         a = int(start)
-        if a + window > chain.size:
+        if a + window > len(chain):
             fail(f"capture too short for hit at {start / SR:.3f}s; see {log}")
-        seg = chain[a:a + window].astype(np.float64)
-        env = np.array([np.sqrt((seg[i:i + sub] ** 2).mean())
-                        for i in range(0, seg.size - sub, sub)])
-        levels.append(float(env.max()))
+        seg = chain[a:a + window]
+        best = 0.0
+        for i in range(0, len(seg) - sub, sub):
+            acc = 0
+            for v in seg[i:i + sub]:
+                acc += v * v
+            rms = (acc / sub) ** 0.5
+            if rms > best:
+                best = rms
+        levels.append(best)
 
     ratio = min(levels) / max(levels)
     print(f"split frames   : {sum(1 for s in splits if s > 0)} / {len(splits)} "

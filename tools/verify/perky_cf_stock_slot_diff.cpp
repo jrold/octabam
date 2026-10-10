@@ -10,6 +10,7 @@
 #endif
 
 extern "C" {
+#include "cf_perky4.h"
 int pk_render(unsigned, unsigned, unsigned, unsigned);
 void pk_stock_pool_open(void) {}
 int pk_stock_validate(void *) { return 1; }
@@ -43,7 +44,7 @@ int main()
     constexpr uint32_t bank = 0x48000000u;
     constexpr uintptr_t part = bank + 0x8ed80u;
     constexpr uintptr_t staging = 0x80008000u;
-    constexpr std::array<unsigned,4> tracks = {0u,1u,4u,5u};
+    constexpr std::array<unsigned,4> tracks = {0u,1u,2u,3u};
     constexpr size_t slot_bytes = 336u;
     constexpr size_t source_bytes = 160u;
     constexpr size_t tail_bytes = slot_bytes - source_bytes;
@@ -60,7 +61,7 @@ int main()
             unsigned track=tracks[voice];
             for (unsigned ping=0; ping<2; ++ping) {
                 for (unsigned split=0; split<16; ++split) {
-                    const unsigned algo=(round+voice+split)&3u;
+                    const unsigned algo=(round+voice+split)%pk4_voice_len(voice);
                     const unsigned mode=(round*2u+voice+split)%3u;
                     const uint8_t src[6] = {
                         (uint8_t)((17u*round + 11u*split + voice)&127u),
@@ -102,7 +103,7 @@ int main()
         }
     }
     std::cout << "PERKY stock packer slot isolation: PASS " << cases << " cases\n"
-              << "  T1/T2/T5/T6; both ping buffers; all 16 event splits\n"
+              << "  T1/T2/T3/T4; both ping buffers; all 16 event splits\n"
               << "  source callback consumes exactly 160/336 bytes; trailing 176 bytes untouched\n";
     return 0;
 }

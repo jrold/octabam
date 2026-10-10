@@ -64,7 +64,7 @@ int main()
     constexpr uintptr_t cursor_base = 0x80010000u;
     constexpr unsigned frames = 1024u;
     constexpr unsigned events = frames * 4u;
-    constexpr std::array<unsigned, 4> tracks = {0u, 1u, 4u, 5u};
+    constexpr std::array<unsigned, 4> tracks = {0u, 1u, 2u, 3u};
 
     U32(0x46c82456u) = bank;
     U8(0x100b14cfu) = 0u;
@@ -86,8 +86,11 @@ int main()
 
     pk4_engine reference{};
     pk4_init(&reference, &assets);
-    std::array<std::array<uint64_t, 4>, 4> matrix{};
-    std::array<std::array<uint16_t, 4>, 4> split_mask{};
+    /* Coverage is per voice and per ENGINE, not per local knob position: the
+     * voice silo (cf_perky4.h) means each track only ever reaches its own
+     * family, so every engine in the family has to be exercised. */
+    std::array<std::array<uint64_t, PK4_ALGO_COUNT>, 4> matrix{};
+    std::array<std::array<uint16_t, PK4_ALGO_COUNT>, 4> split_mask{};
     uint64_t samples = 0;
     uint64_t early_trigger_cases = 0;
     uint64_t boundary_trigger_cases = 0;
@@ -101,7 +104,11 @@ int main()
             const unsigned track = tracks[voice];
             const unsigned ping = event & 1u;
             const unsigned step = frame;
-            const unsigned algo = (step + voice * 3u) & 3u;
+            /* Staged ALGO is a family-local knob position; the driver maps it
+             * to the global engine id, and the reference here must use the
+             * same mapping -- same inline table, so they cannot drift. */
+            const unsigned algo = (step + voice) % pk4_voice_len(voice);
+            const unsigned engine = (unsigned)pk4_voice_engine(voice, algo);
             const unsigned mode = (step * 2u + voice) % 3u;
             const unsigned split = ((step >> 2) + voice * 3u + algo * 5u) & 15u;
             const int trig = (event % 5u) != 0u;
@@ -114,11 +121,11 @@ int main()
                 (uint8_t)((step * 43u + voice * 5u) & 127u),
                 (uint8_t)((step * 61u + voice * 3u) & 127u),
                 (uint8_t)mode,
-                (uint8_t)algo,
+                (uint8_t)engine,
             };
             /* Shipping Octatrack SRC order is tune,decay,algo,p1,p2,mode. */
             const uint8_t page_src[6] = {
-                engine_src[1], engine_src[0], engine_src[5],
+                engine_src[1], engine_src[0], (uint8_t)algo,
                 engine_src[2], engine_src[3], engine_src[4],
             };
 
@@ -204,8 +211,8 @@ int main()
                 }
             }
 
-            matrix[voice][algo] += 16u;
-            split_mask[voice][algo] |= (uint16_t)(1u << split);
+            matrix[voice][engine] += 16u;
+            split_mask[voice][engine] |= (uint16_t)(1u << split);
             samples += 16u;
         }
         if (U32(0x80001c80u) != cursor_base + 4u * 160u) {
@@ -230,14 +237,17 @@ int main()
               << " boundary-half-only triggered events\n";
     for (unsigned voice = 0; voice < 4u; ++voice) {
         std::cout << "  voice " << voice << ':';
-        for (unsigned algo = 0; algo < 4u; ++algo) {
-            if (!matrix[voice][algo] || split_mask[voice][algo] != 0xffffu) {
+        for (unsigned local = 0; local < pk4_voice_len(voice); ++local) {
+            const unsigned engine = (unsigned)pk4_voice_engine(voice, local);
+            if (!matrix[voice][engine] || split_mask[voice][engine] != 0xffffu) {
                 std::cerr << "\ncoverage failure voice=" << voice
-                          << " algo=" << algo << " splitmask=0x" << std::hex
-                          << split_mask[voice][algo] << std::dec << '\n';
+                          << " local=" << local << " engine=" << engine
+                          << " splitmask=0x" << std::hex
+                          << split_mask[voice][engine] << std::dec << '\n';
                 return 20;
             }
-            std::cout << " algo" << algo << '=' << matrix[voice][algo];
+            std::cout << " algo" << local << "(engine" << engine << ")="
+                      << matrix[voice][engine];
         }
         std::cout << " samples; all 16 split offsets\n";
     }

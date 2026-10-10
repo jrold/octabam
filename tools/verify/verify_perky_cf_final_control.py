@@ -37,8 +37,12 @@ required = (
     'pk_asset_m1_wave',
     'case 0u: return 0;',
     'case 1u: return 1;',
-    'case 4u: return 2;',
-    'case 5u: return 3;',
+    'case 2u: return 2;',
+    'case 3u: return 3;',
+    # Voice silo: ALGO is a family-local knob position mapped through the one
+    # table in cf_perky4.h, and the SRC page publishes the per-voice length.
+    'src[PK_FINAL_ALGO] = pk4_voice_engine((unsigned)voice, src[PK_FINAL_ALGO]);',
+    'maximum = pk4_voice_len(voice);',
     'PK_FINAL_RUNTIME_COLD 0x504b434fu',
     'PK_FINAL_RUNTIME_READY 0x504b5244u',
     'pk_final_runtime_cookie != PK_FINAL_RUNTIME_READY',
