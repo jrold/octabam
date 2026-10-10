@@ -218,3 +218,29 @@ take that bank (and the crossfade walks through it, not just to one table).
 So Wavetable is: extract the bank, read the P1-driven crossfade fields
 (+0x104/+0x10C/+0x114 are the walk), then port the renderer — whose arithmetic
 the host model already gets right at corner 0.
+
+### Wavetable: the bank measured, and where the host model stops matching
+
+Walking every one of the 4096 twelve-bit targets gives the bank exactly:
+object +0x104 (the secondary oscillator's current table) takes **15 values**,
+`0x080337CC .. 0x080427CC` on a **0x1000 stride**, and +0x10C takes
+`0x080327CC .. 0x080417CC` — so the bank is **16 tables of 4,096 bytes starting
+at 0x080327CC**.  Object +0x100 and +0x108 stay on 0x080222A0.
+
+Two things that follow, both measured:
+
+* The tables are 4,096 bytes (2048 s16), not the 512 bytes the extractor takes
+  for the Simple Drum waves — those are the *first 256 entries of the same
+  tables*, which is all Simple Drum indexes (`(phase >> 12) & 0xFF`).  Extending
+  the shared wave assets to 4,096 bytes is required for Wavetable.
+* With 4,096-byte tables the host model still asks for an address the firmware
+  never puts in those fields — it requested **0x08048C4C**, which is outside the
+  0x080327CC + 0x1000k grid entirely.  So `wavetable_drum_compact.py`'s
+  *secondary-oscillator pointer* offsets (its words 34/36, raw +0x108/+0x10C)
+  are not the firmware's; its arithmetic is right at one corner but its layout
+  is a reconstruction.  The real crossfade fields are the ones the P1 sweep
+  moves: **+0x104, +0x106, +0x10C, +0x10E, +0x114, +0x134**.
+
+So the remaining Wavetable work is precisely: read those six fields' law from
+the sweep (the walk is visible there), fix the host model's offsets to the real
+ones, re-verify against the nine captures, then port.
