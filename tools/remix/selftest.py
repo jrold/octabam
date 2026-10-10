@@ -879,6 +879,7 @@ def main():
              "vocoder": ("PLATE REV", "DJ EQ"),   # VOCODER runs in PLATE's words; DJ EQ out so the tables sit in X
              "euclid": ("SPATIALIZER", "FLANGER", "CHORUS", "COMB FILTER"),
              "perky-probe": ("SPRING REV",),  # the impulse donor retains PLATE/DARK
+            "perky-cfmeter": ("DARK REV",),  # CF METER's readout insert, as cfmeter
              # perky-cf-final lists all fourteen stock effects (the target keeps
              # every stock FX), so it harvests nothing.
              "perky-cf-final": (),
