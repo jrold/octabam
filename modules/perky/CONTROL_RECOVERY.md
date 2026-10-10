@@ -244,3 +244,35 @@ Two things that follow, both measured:
 So the remaining Wavetable work is precisely: read those six fields' law from
 the sweep (the walk is visible there), fix the host model's offsets to the real
 ones, re-verify against the nine captures, then port.
+
+### Wavetable: the crossfade law, measured
+
+Sweeping P1 alone (object base 0x2E8, all other controls at mid) gives the whole
+crossfade in one table:
+
+| P1 (object +0x134) | +0x104 (current table) | +0x10C (next table) | +0x114 (mix) |
+|---|---|---|---|
+| 0 | 0x080417CC | 0x080407CC | 0 |
+| 254 | 0x080417CC | 0x080407CC | 246 |
+| 510 | 0x080407CC | 0x0803F7CC | 229 |
+| 1022 | 0x0803E7CC | 0x0803D7CC | 195 |
+| 1534 | 0x0803C7CC | 0x0803B7CC | 161 |
+| 2046 | 0x0803A7CC | 0x080397CC | 127 |
+| 2557 | 0x080387CC | 0x080377CC | 92 |
+| 3069 | 0x080367CC | 0x080357CC | 58 |
+| 3581 | 0x080347CC | 0x080337CC | 24 |
+| 3836 | 0x080337CC | 0x080327CC | 6 |
+| 4091 | 0x080337CC | 0x080327CC | 255 |
+
+Reading it: **+0x134 is P1 verbatim**, the secondary oscillator's current table
+(+0x104) walks *down* the 16-table bank as P1 rises — one table per ~512 of P1 —
+its next table (+0x10C) is always exactly one step lower, and **+0x114 is the
+crossfade fraction**, counting down 246 → 6 as P1 rises within a table and
+snapping to 255 only at the very top.  Object +0x100 and +0x108 stay on
+0x080222A0 (the primary table), and +0x112 is 0 in every captured state.
+
+That replaces the host model's secondary-pointer fields (`raw +0x108 / +0x10C`)
+with the firmware's own `+0x104 / +0x10C`, and gives the walk and the mix law
+directly rather than by fitting.  With the tables extracted at their real 4,096
+bytes, Wavetable V1 becomes the same kind of port as Simple and Complex Drum:
+point the model at the real fields, re-verify the nine captures, translate.
