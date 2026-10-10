@@ -284,6 +284,11 @@ def main() -> None:
     # the real sequencer with the bench pattern (trigs 1/7/11) and fails if the
     # per-frame source record loses its pre-event half (the 9 Oct 2026
     # "first hit good, later hits thinner" bug) or if six hits stop being level.
+    print("=== PERKY CF final 5i/9: Acoustic Hats DSP parity ===")
+    run([
+        sys.executable, ROOT / "tools/verify/verify_perky_cf_acoustic_hats_dsp.py",
+    ])
+
     print("=== PERKY CF final 5h/9: Wavetable DSP parity ===")
     run([
         sys.executable, ROOT / "tools/verify/verify_perky_cf_wavetable_dsp.py",

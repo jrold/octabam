@@ -41,7 +41,7 @@ EXPECTED = {
     0: ["FOLD1", "WAVETABLE", "SIMPLE_DRUM"],   # V1 hardware order
     1: ["FOLD2", "WAVETABLE", "COMPLEX_DRUM"],  # V2 hardware order
     2: ["RESONANT", "SLAP", "KARPLUS"],  # V3 complete
-    3: ["NOISE_HAT", "NOISE_TONE"],  # V4 - Acoustic Hats pending
+    3: ["NOISE_HAT", "NOISE_TONE", "ACOUSTIC_HATS"],  # V4 complete
 }
 
 TRACK_TO_VOICE = {0: 0, 1: 1, 2: 2, 3: 3}
@@ -102,8 +102,8 @@ def main() -> None:
                 continue
             seen[engine] = voice
 
-    if len(seen) != 10:
-        fail(f"the silo covers {sorted(seen)} -- expected all ten implemented engines")
+    if len(seen) != 11:
+        fail(f"the silo covers {sorted(seen)} -- expected all eleven implemented engines")
 
     # The driver must enforce the silo in exactly one place and publish the
     # per-voice knob range.
@@ -131,7 +131,7 @@ def main() -> None:
 
     print("PERKY CF voice silo: PASS "
           "(T1=V1 Fold1+Wavetable+SimpleDrum; T2=V2 Fold2+Wavetable+ComplexDrum; "
-          "T3=V3 Resonant+Slap+Karplus; T4=V4 NoiseHat+NoiseTone; staged ALGO is "
+          "T3=V3 Resonant+Slap+Karplus; T4=V4 NoiseHat+NoiseTone+AcousticHats; staged ALGO is "
           "family-local and mapped through one table; SRC page publishes the "
           "per-voice length)")
 

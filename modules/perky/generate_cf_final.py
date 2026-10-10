@@ -54,6 +54,7 @@ SOURCES = (
     ("pkcomplexdrum", "cf_complex_drum.c"),
     ("pkslap", "cf_slap.c"),
     ("pkwavetable", "cf_wavetable.c"),
+    ("pkah", "cf_acoustic_hats.c"),
 )
 
 # With the production source deliberately written in native 32-bit arithmetic,

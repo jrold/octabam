@@ -38,7 +38,7 @@ INTERP_B = (0x08032178, 514)
 
 PRODUCTION_C = ("cf_fold", "cf_karplus", "cf_noise_tone", "cf_perky4",
                 "cf_resonant", "cf_noise_hat", "cf_simple_drum", "cf_complex_drum",
-                "cf_slap", "cf_wavetable")
+                "cf_slap", "cf_wavetable", "cf_acoustic_hats")
 
 
 def run(cmd: list) -> None:
@@ -97,10 +97,10 @@ def main() -> None:
         raise SystemExit("PERKY parameter coverage: FAIL "
                          "(a control, Mode or Algo is not audible)")
     print(f"PERKY parameter coverage: PASS  "
-        f"(10 algos x 3 modes x 4 controls x 128 positions = "
-        f"{10 * 3 * 4 * 128} rendered blocks)")
+        f"(11 algos x 3 modes x 4 controls x 128 positions = "
+        f"{11 * 3 * 4 * 128} rendered blocks)")
     print("  every TUNE / DECAY / PARAM1 / PARAM2 changes the PCM by >=5% of peak")
-    print("  every MODE selects a different render; all ten Algos stay distinct")
+    print("  every MODE selects a different render; all eleven Algos stay distinct")
     print(f"  full sweep table: {csv}")
 
 

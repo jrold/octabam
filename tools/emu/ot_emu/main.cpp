@@ -1184,7 +1184,13 @@ int main(int _argc, char** _argv)
 	// have named it. Same family as the panic printer O7 could not finish.
 	std::setvbuf(stdout, nullptr, _IOLBF, 0);
 	std::string image = "out/raw/section_3_MAIN_OS.bin";
-	uint64_t maxInstructions = 50'000'000;	// route A's own budget
+	// Route A's budget was 50M.  The appended boot loader hashes and depacks
+	// every byte of the payload before the RTOS starts, and PerkyMachines'
+	// firmware assets (the Wavetable bank and Acoustic Hats' three samples,
+	// ~676 KB of incompressible PCM) put the boot at ~56M on their own, so the
+	// ceiling is 200M: still bounded, and a genuine hang is caught far earlier
+	// by the stall detector.
+	uint64_t maxInstructions = 200'000'000;
 	bool showPeripherals = false;
 	bool profile = false;
 	std::string golden;

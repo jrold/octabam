@@ -39,6 +39,9 @@ FILENAMES = {
     "pk_asset_wave3": "w3.bin",
     "pk_asset_wt_base": "wt_base.bin",
     "pk_asset_wt_bank": "wt_bank.bin",
+    "pk_asset_ah_closed": "ah_closed.bin",
+    "pk_asset_ah_open": "ah_open.bin",
+    "pk_asset_ah_ride": "ah_ride.bin",
 }
 
 

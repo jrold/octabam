@@ -68,6 +68,9 @@ extern const uint8_t pk_asset_res_interp_a[];
 extern const uint8_t pk_asset_res_interp_b[];
 extern const uint8_t pk_asset_wt_base[];
 extern const uint8_t pk_asset_wt_bank[];
+extern const uint8_t pk_asset_ah_closed[];
+extern const uint8_t pk_asset_ah_open[];
+extern const uint8_t pk_asset_ah_ride[];
 
 const uint8_t pk_defaults[12] = {
     64, 64, 0, 64, 64, 0,
@@ -101,6 +104,9 @@ static const pk4_assets pk_final_assets = {
     .res_interp_b = pk_asset_res_interp_b,
     .wt_base = pk_asset_wt_base,
     .wt_bank = pk_asset_wt_bank,
+    .ah_closed = pk_asset_ah_closed,
+    .ah_open = pk_asset_ah_open,
+    .ah_ride = pk_asset_ah_ride,
     .m1_wave_address = 0x080310e0u,
 };
 

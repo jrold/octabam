@@ -36,11 +36,11 @@ namespace {
  * false "dead control". 32768 samples (~0.74 s at 44.1 kHz) clears it. */
 constexpr unsigned kBlock = 32768;
 constexpr unsigned kModes = 3;
-constexpr unsigned kAlgos = 10;
+constexpr unsigned kAlgos = 11;
 constexpr unsigned kCtl = 4;
 const char* kAlgoName[kAlgos] = {"Fold1", "Fold2", "Karplus", "NoiseTone",
                                  "Resonant", "NoiseHat", "SimpleDrum", "ComplexDrum",
-                                 "Slap", "Wavetable"};
+                                 "Slap", "Wavetable", "AcousticHats"};
 const char* kCtlName[kCtl] = {"TUNE", "DECAY", "PARAM1", "PARAM2"};
 
 struct Render {
@@ -126,6 +126,14 @@ int main(int argc, char** argv)
     if (wt_base.size() != 4096 || wt_bank.size() != 48u * 4096u) return 3;
     assets.wt_base = wt_base.data();
     assets.wt_bank = wt_bank.data();
+    auto ah_closed = read_file(ad + "/ah_closed.bin");
+    auto ah_open = read_file(ad + "/ah_open.bin");
+    auto ah_ride = read_file(ad + "/ah_ride.bin");
+    if (ah_closed.size() != 20202u || ah_open.size() != 172800u
+        || ah_ride.size() != 259106u) return 3;
+    assets.ah_closed = ah_closed.data();
+    assets.ah_open = ah_open.data();
+    assets.ah_ride = ah_ride.data();
     for (unsigned i = 0; i < 4; ++i) assets.waves[i] = {addrs[i], wv[i].data()};
 
     std::FILE* csv = std::fopen(argv[2], "w");

@@ -54,10 +54,11 @@ PERKY_TRACKS = (1, 2, 3, 4)       # one-based OT track numbers
 # order.  Kept as a named constant so frame-cost experiments can stage a
 # different engine mix without editing the gate (see
 # tools/verify/verify_perky_cf_realtime_budget.py).
-# T1 runs Wavetable (V1 local 1) so the whole-machine path covers the newest
-# engine, not just the long-standing family defaults: T1=Wavetable V1,
-# T2=Fold2, T3=Resonant Drums, T4=Noise Hat.
-PERKY_ALGO = (1, 0, 0, 0)
+# T1 runs Wavetable (V1 local 1) and T4 Acoustic Hats (V4 local 2) so the
+# whole-machine path covers the two newest engines, not just the long-standing
+# family defaults: T1=Wavetable V1, T2=Fold2, T3=Resonant Drums,
+# T4=Acoustic Hats.
+PERKY_ALGO = (1, 0, 0, 2)
 PERKY_INDEX = tuple(t - 1 for t in PERKY_TRACKS)
 FLEX_TRACKS = (7, 8)
 SAMPLE_REL = "AUDIO/PERKY_GATE_440.wav"
@@ -347,7 +348,7 @@ def main() -> None:
     print(f"  project load + real sequencer completed {args.frames} frames")
     print("  PERKY T1/T2/T3/T4 all emitted nonzero DSP-bound source PCM")
     print("  PERKY tracks used their stock recorder buffers as silent FLEX donors")
-    print("  Wavetable V1 (T1), Fold2 (T2), Resonant Drums (T3) and Noise Hat (T4) "
+    print("  Wavetable V1 (T1), Fold2 (T2), Resonant Drums (T3) and Acoustic Hats (T4) "
           "exercised simultaneously and remained independent")
     print("  ordinary FLEX T3/T7 continued rendering the staged stock sample")
     print("  later sequencer trigs observed on all four PERKY tracks")

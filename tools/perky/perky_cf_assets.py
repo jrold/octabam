@@ -39,6 +39,10 @@ ASSETS = (
     # 48-table secondary crossfade bank the panel PARAM1 walk indexes.
     ("pk_asset_wt_base",     0x080222A0, 4096, "cd152c38143fd71b7d465a6f62abfb723a454a314cb94ef09384204925102b7c"),
     ("pk_asset_wt_bank",     0x080327CC, 196608, "98bbb3e2622d3e11b255537d53245f6631d82431dea08c3857ef1f77ff102937"),
+    # Acoustic Hats' three hat samples, selected by PANEL MODE.
+    ("pk_asset_ah_closed",   0x080CBEF0, 20202, "d9caeb79cc5c105bd13dd2b58dccde5bef3e1e17e15d2efeb34d15af6ed463be"),
+    ("pk_asset_ah_open",     0x080A1BF0, 172800, "0cffaca235777f058c065567b420143b506b62f07b3fdd13f87fe5f4623f893c"),
+    ("pk_asset_ah_ride",     0x080627CC, 259106, "0803c1873d5c255dd334c1e775f2d86e17e8d1a337bebcef2508160a5454f29f"),
 )
 
 

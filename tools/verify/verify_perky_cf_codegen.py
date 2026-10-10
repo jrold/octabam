@@ -17,7 +17,8 @@ import tempfile
 from pathlib import Path
 
 UNITS = ("pkcontrol.s", "pkcore.s", "pkfold.s", "pkkarplus.s", "pknoise.s",
-         "pksimpledrum.s", "pkcomplexdrum.s", "pkslap.s", "pkwavetable.s")
+         "pksimpledrum.s", "pkcomplexdrum.s", "pkslap.s", "pkwavetable.s",
+         "pkah.s")
 RUNTIME = re.compile(r"\b__[A-Za-z_][A-Za-z0-9_]*\b")
 LIBC = re.compile(r"\b(?:memcpy|memmove|memset|memcmp|strlen|abort|malloc|free)\b")
 FLOAT_OP = re.compile(
@@ -41,6 +42,9 @@ ALLOWED_UNDEFINED = {
     "pk_asset_wave3",
     "pk_asset_wt_base",
     "pk_asset_wt_bank",
+    "pk_asset_ah_closed",
+    "pk_asset_ah_open",
+    "pk_asset_ah_ride",
 }
 
 

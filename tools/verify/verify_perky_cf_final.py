@@ -25,7 +25,7 @@ import perky_cf_assets  # noqa:E402
 
 PRODUCTION_C = ("cf_fold", "cf_karplus", "cf_noise_tone", "cf_perky4",
                 "cf_resonant", "cf_noise_hat", "cf_simple_drum", "cf_complex_drum",
-                "cf_slap", "cf_wavetable")
+                "cf_slap", "cf_wavetable", "cf_acoustic_hats")
 NATIVE_CPP = (
     "NativeV121FoldDrums.cpp",
     "NativeV121Karplus.cpp",
