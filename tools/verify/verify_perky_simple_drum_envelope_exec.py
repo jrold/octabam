@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
+import shutil
 import struct
 import subprocess
 import sys
@@ -82,7 +83,14 @@ def build_host() -> None:
     if missing:
         fail("run `make setup` first; missing " + ", ".join(map(str, missing)))
     OUT.mkdir(parents=True, exist_ok=True)
-    if HOST.exists() and HOST.stat().st_mtime > HOST_SRC.stat().st_mtime:
+    # c++ on Windows appends .exe to `-o bd909_host`, and the perky gates that
+    # consume THIS directory's host name the bare POSIX-style path, so both
+    # names are published here.
+    exe = HOST.with_suffix(".exe")
+    built = HOST if HOST.exists() else exe
+    if built.exists() and built.stat().st_mtime > HOST_SRC.stat().st_mtime:
+        if built != HOST:
+            shutil.copy2(built, HOST)
         return
     subprocess.run(
         [
@@ -92,6 +100,8 @@ def build_host() -> None:
             "-o", str(HOST),
         ], check=True, capture_output=True,
     )
+    if not HOST.exists() and exe.exists():
+        shutil.copy2(exe, HOST)
 
 
 def assemble() -> tuple[Path, int]:

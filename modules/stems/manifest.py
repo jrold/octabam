@@ -71,7 +71,11 @@ def gtab_inc(modules):
     return ("| remix.inc -- STEM REC's copy of core 0's gain table\n"
             "        .global stems_gtab\n"
             "stems_gtab:\n"
-            f"        .incbin \"{STOCK_SLICE}\", {GTAB_OFF:#x}, {GTAB_LEN}\n")
+            # as_posix(): the text becomes the runtime's remix.inc verbatim and
+            # m68k-elf-as reads backslash as an escape, so a native Windows
+            # path ("C:\...") would come out as "C:<tab>emp...".  Forward
+            # slashes work on every host this builds on.
+            f"        .incbin \"{STOCK_SLICE.as_posix()}\", {GTAB_OFF:#x}, {GTAB_LEN}\n")
 
 MODULE = Module(
     name="stems",
