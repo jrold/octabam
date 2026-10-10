@@ -276,3 +276,60 @@ with the firmware's own `+0x104 / +0x10C`, and gives the walk and the mix law
 directly rather than by fitting.  With the tables extracted at their real 4,096
 bytes, Wavetable V1 becomes the same kind of port as Simple and Complex Drum:
 point the model at the real fields, re-verify the nine captures, translate.
+
+## Acoustic Hats (V4, algorithm 3) — renderer verified, port staged
+
+Measured after Wavetable landed (11 of 12 shipping).  Unlike the other two
+"missing" engines, this one is **not** a method problem: the renderer is
+already an exact host model and only the port is outstanding.
+
+**Renderer.** `modules/perky/acoustic_hats_compact.py` reproduces the firmware
+for **9/9** engine-12 continuation blocks — PCM, the 35-word compact state, the
+IEEE754 filter history *and* the firmware-global held sample
+(`verify_perky_acoustic_compact.py`, re-run against the current fixtures with
+the offsets below).  The object is **wrapper + 0x2A80, 0x10C bytes**; the
+common envelope sits at +0x74, the sample player at +0xC4..+0xE0, the selected
+asset at +0xF8/+0xFC and the one-pole filter at +0x100 (int) / +0x104 (float
+bits) / +0x108 (dirty).
+
+**Sample assets** (plain M7 reads — the extractor does not carry them yet):
+
+| panel mode | M7 address | s16 samples |
+|---|---|---|
+| M1 closed | `0x080CBEF0` | 10,101 |
+| M2 open   | `0x080A1BF0` | 86,400 |
+| M3 ride   | `0x080627CC` | 129,553 |
+
+452,108 bytes of PCM total; they are incompressible, so the appended payload
+grows by that much and the boot loader's hash gets correspondingly longer.
+
+**Control path** (measured from `capture_sweep 11 <mode>`, all three modes; the
+moving-field map is identical in each):
+
+| panel | fields that move | law |
+|---|---|---|
+| TUNE | `0x1C`, `0xBA`, `0x34`, `0xCC` | the shared `common_update`: raw pitch `min(prep_tune + 768, 4095)`, `0x34 = pitch_at(0xBA)`, `0xCC` the oscillator increment |
+| DECAY | `0x20`, `0x7A`, `0x96`, `0xBC` | `0x96` = the family envelope-rate helper, `0x7B` the `obj+8 <= decay` sustain gate |
+| P1 | `0x24`, `0xBE`, `0xD8` | `0xD8` (sample-and-hold reload) = `prep_p1 >> 6` — 0, 7, 15, 23, 31, 47, 63 at prep 0/510/1022/1534/2046/3069/4091 |
+| P2 | `0x0A`, `0x28`, `0x94`, `0xC0` | `0x0A` = `prep_p2` verbatim, `0x94` = the family envelope-rate helper driven by it |
+
+So the family is `common_update` plus three derived fields, exactly the shape
+Simple/Complex/Slap/Wavetable already use.
+
+**What the port still needs.**
+
+1. Extract the three sample assets into `perky_cf_assets` and add them to
+   `pk4_assets` (about +452 KB of SHA-pinned firmware bytes).
+2. An exact integer binary32 FMUL/FADD for the one-pole filter.  The ColdFire
+   build is freestanding `-msoft-float` with no libgcc float helpers, so
+   `decayed = previous * 0.98f` and `summed = input + previous` have to be
+   written as integer arithmetic and the 24-bit product taken with
+   `pk_cf_mul_hi_u32`/`pk_cf_mul_lo_u32` — a 64-bit multiply would emit
+   `__muldi3`, which `generate_cf_final.py` rejects.  Also needed: `int32 ->
+   f32` (the dirty-flag path loads the integer history as a float) and
+   `f32 -> int32` truncation.
+3. The firmware-global held sample at **0x20007598** (captured in the fixtures
+   as `acoustic-hold-*`; the model takes it as a one-element mutable list).
+4. `cf_acoustic_hats.c`, a gate modelled on `verify_perky_cf_wavetable_dsp.py`,
+   the family slot `V4 {NOISE_HAT, NOISE_TONE, ACOUSTIC_HATS}` and the usual
+   wiring.
