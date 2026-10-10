@@ -93,7 +93,8 @@ Sweeping each control identifies exactly which object fields move:
 | P1 | `0xBE`, `0x266C` (MIX) |
 | P2 | `0xA8` (filter damping), `0xC0` |
 
-Five are recovered exactly from the 128-point sweep:
+Six are recovered exactly from the 128-point sweep, and the amplitude rate was
+solved against all 3,584 points (sweep + trajectory):
 
 | field | law |
 |---|---|
@@ -102,22 +103,27 @@ Five are recovered exactly from the 128-point sweep:
 | `0xA8` filter damping | `2048 - (prepared_p2 >> 1)` |
 | `0xC0` | `prepared_p2` |
 | `0x7B` sustain gate | `prepared_decay >= 0x0FF0` (the common `obj+8 <= decay` rule) |
+| `0x96` amplitude env rate | `0xFFFFF / (912 + (48*749 * time_parameter(prepared_decay)) >> 12)` |
 
-Two are **not yet recovered**, and they are deliberately left rather than
-fitted:
+The amplitude rate is the standard helper with **offset 18, scale 750 and no
+rounding bias** — every other family's helper form, with this family's
+constants.  Note the near miss that cost the most time: scale 751 (48\*750) fits
+the coarse sweep but fails 747 of the trajectory points, so the intermediate
+smoothing data is what actually pins it.
 
-* `0x96`, the amplitude-envelope rate.  Its denominator at prepared-decay 0 is
-  exactly **912 = 48*19**, so the usual `48*(off+1) + (48*(scale-1)*x) >> 12`
-  helper is in play with offset 18 — but neither `x = prepared` nor
-  `x = time_parameter(prepared)` satisfies the rest of the curve, and the
-  denominators (912, 1474, 2035, 3157, 4279, 6514, 8811, 13273, 17772) grow
-  far faster than linearly.  The family is using a *different* conversion from
-  the smoothed control to that helper's argument.
-* `0xAA`, the filter coefficient: 6588 at prepared 0 rising ~8.58 per step and
-  clamping at **35127**.  No `(A + B*x) >> s` form fits all 128 unclamped
-  points, so the clamp is not the only nonlinearity.
+One is **not yet recovered**:
 
-Both want the ARM update routine read directly (the disassembly tooling in
-`work/`: `fwdis.py`, `fwscan.py`, `fwimm.py`), or a finer trajectory capture —
-the two remaining unknowns are a single helper's argument conversion, not the
-shape of the engine.
+* `0xAA`, the filter coefficient: 6588 at prepared 0, rising ~8.58 per unit and
+  clamping at **35127**.  It is not affine in `prepared`, not affine in
+  `time_parameter(prepared)`, not pitch-table-derived, and no
+  `(A + B*x) >> s`, `A + ((B*x + E) >> s)` or `(A + B*x + E) >> s` form fits the
+  unclamped points.  Its local step pattern is 8,9,8,9 while its long-range
+  slope is 8.578, so its argument is non-linear in a way the other families did
+  not show.
+
+That one wants the ARM update routine read directly — the disassembly tooling
+is in `work/` (`fwdis.py`, `fwscan.py`, `fwimm.py`) — or a capture that steps
+the control through *single* update passes at a finer target grid.  It is a
+single coefficient, not the shape of the engine: the Slap renderer is already
+exact against the firmware (PCM, the full 0x2670 object including the 4,805-word
+delay ring, and the RNG).
