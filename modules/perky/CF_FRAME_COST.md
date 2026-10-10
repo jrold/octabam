@@ -36,9 +36,25 @@ the frame — which is exactly the firmware's own stall guard
 * `pk4_init` clears the engine a long at a time (the object is 4-byte aligned
   and a whole number of longs long), instead of a byte store loop.
 
-Result on the project the user reported: `PRESETS MKII/PROJECT 261010`, three
-Perky machines — the deadline model went from **OVER (375.1 us late)** to
-**fits, 0 late edges over 1,500 frames** (152.8 us/frame average).
+⚠️ A short run says more than it should. `PRESETS MKII/PROJECT 261010` with
+three Perky machines fits for the first ~1,500 frames (152.8 us/frame, 0 late
+edges) and then does not: the song only becomes fully busy later.
+
+| frames | 0 Perky | 3 Perky | late edges (3 Perky) |
+|---|---|---|---|
+| 1,500 | 116.3 us | 152.8 us | 0 |
+| 4,000 | 120.5 us | 210.8 us | n/a |
+| 12,000 | 123.6 us | 243.4 us | 9,888 of 12,000 |
+
+The 4,000-frame row is the handoff's own table on the current image
+(120.5 / 146.1 / 185.9 / 210.8 for 0/1/2/3 machines, against
+120.5 / 151.2 / 195.7 / 221.3 before). So the two levers are worth about 5 us
+a voice at that point in the song, not enough on their own.
+
+Hold the deadline to the hardware-relevant threshold instead of frame/2: the
+frame handler fits while the model average stays under 362.8/1.7 = 213.4 us.
+The reported project needs 243.4 -> 213.4, i.e. about a quarter off its Perky
+work (119.8 us). The gate's frame/2 = 181.4 needs ~2.9x.
 
 ## Lever 2 — word/long state access
 
@@ -95,9 +111,24 @@ multiplier and trip count (so the optimiser can neither fold nor delete it)
 added 9.0 us/frame for ~223,000 instructions, i.e. ~8.5 model cycles per
 added instruction against 1.11 for the image as a whole.
 
-This is the "the model under-counts hardware ... the *size* of the overrun
-could still move" caveat the handoff raises, and the reason a `cfmeter`
-reading from a Perky build is worth more than chasing the model's number.
+Counted in the source, `pk_cf_slap_render` runs 22 multiplies per sample
+(2 filter stages x 3, envelope, output scale, the five-tap delay's 10, and its
+3 mixing multiplies) out of ~623 model cycles per sample, so **~64% of the
+engine the reported project leans on hardest is `MUL.L` at the 5206E price**.
+The snare is ~14 per sample.
+
+That also means the x1.7 hardware factor is being applied to the same
+multiplies twice. The factor was calibrated on the *stock* image, whose frame
+handler is EMAC-heavy (`msacl`) -- and the model charges A-line EMAC opcodes
+nothing -- so 1.7 already absorbs the stock image's unpriced multiply work.
+Multiplying our engines' 18-cycle `MULS.L` figure by the same 1.7 counts that
+work a second time. On the part both forms run on the EMAC at ~3 cycles.
+
+So the honest reading is: **the model says the PERKY path is roughly twice as
+expensive as the part will make it**, and a `cfmeter` reading from a Perky
+build is what settles the real margin -- the "the size of the overrun could
+still move" caveat the handoff raises. What cannot be settled locally is
+whether the real margin is enough for three machines; that needs the unit.
 
 ⚠️ The engines deliberately do **not** use the A-line EMAC multiply form to
 exploit this. The v4e layer charges A-line opcodes ~nothing, so rewriting
