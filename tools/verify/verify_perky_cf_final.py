@@ -24,7 +24,8 @@ import generate_cf_final_fixtures as fixtures  # noqa:E402
 import perky_cf_assets  # noqa:E402
 
 PRODUCTION_C = ("cf_fold", "cf_karplus", "cf_noise_tone", "cf_perky4",
-                "cf_resonant", "cf_noise_hat", "cf_simple_drum", "cf_complex_drum", "cf_slap")
+                "cf_resonant", "cf_noise_hat", "cf_simple_drum", "cf_complex_drum",
+                "cf_slap", "cf_wavetable")
 NATIVE_CPP = (
     "NativeV121FoldDrums.cpp",
     "NativeV121Karplus.cpp",

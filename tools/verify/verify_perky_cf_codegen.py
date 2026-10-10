@@ -16,7 +16,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-UNITS = ("pkcontrol.s", "pkcore.s", "pkfold.s", "pkkarplus.s", "pknoise.s")
+UNITS = ("pkcontrol.s", "pkcore.s", "pkfold.s", "pkkarplus.s", "pknoise.s",
+         "pksimpledrum.s", "pkcomplexdrum.s", "pkslap.s", "pkwavetable.s")
 RUNTIME = re.compile(r"\b__[A-Za-z_][A-Za-z0-9_]*\b")
 LIBC = re.compile(r"\b(?:memcpy|memmove|memset|memcmp|strlen|abort|malloc|free)\b")
 FLOAT_OP = re.compile(
@@ -38,6 +39,8 @@ ALLOWED_UNDEFINED = {
     "pk_asset_wave1",
     "pk_asset_wave2",
     "pk_asset_wave3",
+    "pk_asset_wt_base",
+    "pk_asset_wt_bank",
 }
 
 

@@ -57,6 +57,7 @@ def main() -> None:
         ("pksimpledrum", "out/perky/cf-final/pksimpledrum.s", True, False),
         ("pkcomplexdrum", "out/perky/cf-final/pkcomplexdrum.s", True, False),
         ("pkslap", "out/perky/cf-final/pkslap.s", True, False),
+        ("pkwavetable", "out/perky/cf-final/pkwavetable.s", True, False),
         ("pkcore", "out/perky/cf-final/pkcore.s", True, False),
         ("pkcontrol", "out/perky/cf-final/pkcontrol.s", True, False),
     ]
@@ -78,6 +79,7 @@ def main() -> None:
     ("pksimpledrum", "cf_simple_drum.c"),
     ("pkcomplexdrum", "cf_complex_drum.c"),
     ("pkslap", "cf_slap.c"),
+    ("pkwavetable", "cf_wavetable.c"),
     )
     if generated != expected_generated:
         raise AssertionError(f"ColdFire generator units drifted: {generated!r}")
@@ -87,8 +89,8 @@ def main() -> None:
     for label in asset_labels:
         if f"extern const uint8_t {label}[];" not in control:
             raise AssertionError(f"shipping control is missing asset extern {label}")
-    if len(asset_labels) != 11 or len(set(asset_labels)) != 11:
-        raise AssertionError(f"expected exactly eleven unique firmware assets, got {asset_labels!r}")
+    if len(asset_labels) != 13 or len(set(asset_labels)) != 13:
+        raise AssertionError(f"expected exactly thirteen unique firmware assets, got {asset_labels!r}")
 
     asset_source = (ROOT / "modules/perky/cf_assets.s").read_text()
     if '.include "remix.inc"' not in asset_source:
@@ -118,7 +120,7 @@ def main() -> None:
 
     print(
         "PERKY CF machine declaration: PASS "
-        "(10 DRAM CF units; generator/assets/shims closed; sample-free recorder donor live+SRAM; "
+        "(11 DRAM CF units; generator/assets/shims closed; sample-free recorder donor live+SRAM; "
         "no CPU writes in stock DSP span; build-time SHA-pinned assets; stock DSP section absent; "
         "0 DSP ranges; 0 DSP preboot arena)"
     )

@@ -38,13 +38,17 @@ CONTROL = ROOT / "modules/perky/control_cf_final.c"
 # range; the expected mapping is therefore the hardware order with the
 # not-yet-ported engines removed.
 EXPECTED = {
-    0: ["FOLD1", "SIMPLE_DRUM"],     # V1 - Wavetable V1 pending
-    1: ["FOLD2", "COMPLEX_DRUM"],    # V2 - Wavetable V2 pending
+    0: ["FOLD1", "WAVETABLE", "SIMPLE_DRUM"],   # V1 hardware order
+    1: ["FOLD2", "WAVETABLE", "COMPLEX_DRUM"],  # V2 hardware order
     2: ["RESONANT", "SLAP", "KARPLUS"],  # V3 complete
     3: ["NOISE_HAT", "NOISE_TONE"],  # V4 - Acoustic Hats pending
 }
 
 TRACK_TO_VOICE = {0: 0, 1: 1, 2: 2, 3: 3}
+
+# Wavetable Drum is the one algorithm the hardware's own silo offers on two
+# voices (V1 and V2); every other engine belongs to exactly one voice.
+SHARED_ENGINES = {"WAVETABLE"}
 
 
 def fail(message: str) -> "NoReturn":
@@ -92,12 +96,14 @@ def main() -> None:
                      "-- a clamp could select a foreign engine")
         for engine in names[:len(want)]:
             if engine in seen:
-                fail(f"engine {engine} is reachable from voice {seen[engine]} "
-                     f"and voice {voice}")
+                if engine not in SHARED_ENGINES:
+                    fail(f"engine {engine} is reachable from voice {seen[engine]} "
+                         f"and voice {voice}")
+                continue
             seen[engine] = voice
 
-    if len(seen) != 9:
-        fail(f"the silo covers {sorted(seen)} -- expected all nine implemented engines")
+    if len(seen) != 10:
+        fail(f"the silo covers {sorted(seen)} -- expected all ten implemented engines")
 
     # The driver must enforce the silo in exactly one place and publish the
     # per-voice knob range.
@@ -124,9 +130,10 @@ def main() -> None:
             fail(f"control_cf_final.c still maps a track to a voice with '{stray}'")
 
     print("PERKY CF voice silo: PASS "
-          "(T1=V1 Fold1+SimpleDrum; T2=V2 Fold2+ComplexDrum; T3=V3 Resonant+Slap+Karplus; "
-          "T4=V4 NoiseHat+NoiseTone; staged ALGO is family-local and mapped "
-          "through one table; SRC page publishes the per-voice length)")
+          "(T1=V1 Fold1+Wavetable+SimpleDrum; T2=V2 Fold2+Wavetable+ComplexDrum; "
+          "T3=V3 Resonant+Slap+Karplus; T4=V4 NoiseHat+NoiseTone; staged ALGO is "
+          "family-local and mapped through one table; SRC page publishes the "
+          "per-voice length)")
 
 
 if __name__ == "__main__":

@@ -888,10 +888,13 @@ namespace ot
 					{
 						// A memset makes progress; a poll does not.
 						if(m_windowWrites.back() - m_windowWrites.front() > 2000)
-							m_window.clear(), m_windowWrites.clear();
+							m_window.clear(), m_windowWrites.clear(), m_tightBursts = 0;
 						else if(tryAutoPoke(pc()))
-							m_window.clear(), m_windowWrites.clear();
-						else
+							m_window.clear(), m_windowWrites.clear(), m_tightBursts = 0;
+						// Nothing answered: this may still be a bounded scan
+						// (the boot loader's payload hash). Only a window that
+						// stays tight, unanswered, for g_faultBursts is a hang.
+						else if(++m_tightBursts >= g_faultBursts)
 						{
 							char msg[160];
 							std::snprintf(msg, sizeof msg,
@@ -901,6 +904,8 @@ namespace ot
 							return Stop::Fault;
 						}
 					}
+					else
+						m_tightBursts = 0;
 				}
 			}
 		}

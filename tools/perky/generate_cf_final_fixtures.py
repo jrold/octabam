@@ -37,6 +37,8 @@ FILENAMES = {
     "pk_asset_wave1": "w1.bin",
     "pk_asset_wave2": "w2.bin",
     "pk_asset_wave3": "w3.bin",
+    "pk_asset_wt_base": "wt_base.bin",
+    "pk_asset_wt_bank": "wt_bank.bin",
 }
 
 

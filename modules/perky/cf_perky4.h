@@ -9,6 +9,7 @@
 #include "cf_simple_drum.h"
 #include "cf_complex_drum.h"
 #include "cf_slap.h"
+#include "cf_wavetable.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -23,7 +24,8 @@ enum {
     PK4_ALGO_SIMPLE_DRUM = 6,
     PK4_ALGO_COMPLEX_DRUM = 7,
     PK4_ALGO_SLAP = 8,
-    PK4_ALGO_COUNT = 9,
+    PK4_ALGO_WAVETABLE = 9,
+    PK4_ALGO_COUNT = 10,
     PK4_TRACK_COUNT = 4
 };
 
@@ -47,12 +49,12 @@ enum {
  */
 #define PK4_VOICE_COUNT 4
 static const uint8_t pk4_family_engines[PK4_VOICE_COUNT][3] = {
-    { PK4_ALGO_FOLD1,     PK4_ALGO_SIMPLE_DRUM, PK4_ALGO_SIMPLE_DRUM }, /* V1 */
-    { PK4_ALGO_FOLD2,     PK4_ALGO_COMPLEX_DRUM, PK4_ALGO_COMPLEX_DRUM }, /* V2 */
+    { PK4_ALGO_FOLD1,     PK4_ALGO_WAVETABLE,  PK4_ALGO_SIMPLE_DRUM }, /* V1 */
+    { PK4_ALGO_FOLD2,     PK4_ALGO_WAVETABLE,  PK4_ALGO_COMPLEX_DRUM }, /* V2 */
     { PK4_ALGO_RESONANT,  PK4_ALGO_SLAP,       PK4_ALGO_KARPLUS },     /* V3 */
     { PK4_ALGO_NOISE_HAT, PK4_ALGO_NOISE_TONE, PK4_ALGO_NOISE_TONE },  /* V4 */
 };
-static const uint8_t pk4_family_len[PK4_VOICE_COUNT] = { 2u, 2u, 3u, 2u };
+static const uint8_t pk4_family_len[PK4_VOICE_COUNT] = { 3u, 3u, 3u, 2u };
 
 static inline unsigned pk4_voice_len(unsigned voice)
 {
@@ -77,6 +79,8 @@ typedef struct {
     uint32_t m1_wave_address;
     const uint8_t *res_interp_a; /* 257 little-endian u16 */
     const uint8_t *res_interp_b; /* 257 little-endian u16 */
+    const uint8_t *wt_base;    /* 4096-byte Wavetable primary table */
+    const uint8_t *wt_bank;    /* 48 contiguous 4096-byte crossfade tables */
 } pk4_assets;
 
 typedef struct {
@@ -106,12 +110,19 @@ typedef struct {
     uint8_t sd[PK_CF_SD_STATE_BYTES];
     uint8_t cd[PK_CF_CD_STATE_BYTES];
     uint8_t slap[PK_CF_SLAP_STATE_BYTES];
+    uint8_t wt[PK_CF_WT_STATE_BYTES];
     pk4_control fold1_ctl, fold2_ctl, karplus_ctl, nt_m1_ctl, nt_shared_ctl;
     pk4_control res_snare_ctl, res_bass_ctl, res_nt_ctl;
     pk4_control nh_ctl;
     pk4_control sd_ctl, cd_ctl, slap_ctl;
+    pk4_control wt_ctl;
     uint32_t rng_low, rng_high;
-    uint8_t initialized_mask;
+    /* One bit per engine kind, and there are now ten of them: Slap (8) and
+     * Wavetable (9) do not fit an 8-bit mask.  With a uint8_t the bit for
+     * algo>=8 became zero, so every event re-initialised the object and the
+     * committed control state was thrown away -- the first block after a trig
+     * sounded and the rest of the bar was silent. */
+    uint16_t initialized_mask;
     uint8_t active_algo;
     uint8_t active_mode;
 } pk4_track;

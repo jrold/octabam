@@ -34,6 +34,11 @@ ASSETS = (
     # Resonant Drums' two 257-entry interpolation tables.
     ("pk_asset_res_interp_a", 0x0803237C, 514, "005cdcef1e936228a92e8b513872bbffd3435cc81882c8d0fbd939e4630b16a7"),
     ("pk_asset_res_interp_b", 0x08032178, 514, "5fa9df6f7f2a46a70716329ea966ea931b0460a1a2c8afb93f7d36bc5a180e72"),
+    # Wavetable Drum: the primary oscillator's own 2048-entry table (the shared
+    # 256-entry wave views are only its first 256 samples) and the contiguous
+    # 48-table secondary crossfade bank the panel PARAM1 walk indexes.
+    ("pk_asset_wt_base",     0x080222A0, 4096, "cd152c38143fd71b7d465a6f62abfb723a454a314cb94ef09384204925102b7c"),
+    ("pk_asset_wt_bank",     0x080327CC, 196608, "98bbb3e2622d3e11b255537d53245f6631d82431dea08c3857ef1f77ff102937"),
 )
 
 

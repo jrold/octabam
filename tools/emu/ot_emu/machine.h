@@ -642,6 +642,15 @@ namespace ot
 		// and it is a measured trap).
 		static constexpr uint64_t g_burst = 500000;
 		static constexpr uint32_t g_stallBursts = 4;
+		// A tight PC window is *recognised* after four bursts, exactly as
+		// before, so the boot's completion-flag polls are still auto-poked at
+		// the same latency. Declaring a FAULT waits much longer, because the
+		// appended boot loader's x33 hash blocks its PC to a 36-byte window
+		// for ~3M instructions while it walks a large payload -- a bounded,
+		// forward-progressing scan, not a spin. A real hang still faults
+		// (well inside the instruction budget) instead of running to it.
+		static constexpr uint32_t g_faultBursts = 64;
+		uint32_t m_tightBursts = 0;
 		bool tryAutoPoke(uint32_t _pcInLoop);
 		std::vector<uint32_t> m_window;
 		std::vector<uint64_t> m_windowWrites;

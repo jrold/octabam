@@ -46,26 +46,27 @@ def main() -> None:
     sd = macro(PERKY / "cf_simple_drum.h", "PK_CF_SD_STATE_BYTES")
     cd = macro(PERKY / "cf_complex_drum.h", "PK_CF_CD_STATE_BYTES")
     slap = macro(PERKY / "cf_slap.h", "PK_CF_SLAP_STATE_BYTES")
+    wt = macro(PERKY / "cf_wavetable.h", "PK_CF_WT_STATE_BYTES")
 
     # Frozen 32-bit MCF54455 layout: one engine object per Algo/Mode
     # (fold1, fold2, karplus, nt_m1, nt_shared, res_snare, res_bass, res_nt),
     # eight pk4_control blocks per track, two RNG u32s and three trailing
     # bytes; max member alignment is 4. The resonant family keeps one object
     # per panel mode, and its bass object is the 0x1d4 family size.
-    state = fold1 + fold2 + karplus + 2 * nt + 2 * res + nt + nh + sd + cd + slap
+    state = fold1 + fold2 + karplus + 2 * nt + 2 * res + nt + nh + sd + cd + slap + wt
     track = align4(align4(state) + 12 * CONTROL_BYTES_32 + 8 + 3)
     engine = align4(TRACKS * track + 4)  # const pk4_assets *assets
-    assets_struct = 4 * 4 + 4 * (4 + 4) + 4 + 4 + 4 + 4
+    assets_struct = 4 * 4 + 4 * (4 + 4) + 4 + 4 + 4 + 4 + 4 + 4
     asset_bytes = sum(size for _label, _address, size, _sha in perky_cf_assets.ASSETS)
     persistent_known = engine + assets_struct + asset_bytes
     reserve = arena.PLATFORM_PAGES * arena.PAGE
 
-    if (fold1, fold2, karplus, nt, res, nh, sd, cd, slap) != (0xF4, 0x134, 0x10E0, 0x120, 0x1D4, 0x2DF8, 0x120, 0x140, 0x2670):
+    if (fold1, fold2, karplus, nt, res, nh, sd, cd, slap, wt) != (0xF4, 0x134, 0x10E0, 0x120, 0x1D4, 0x2DF8, 0x120, 0x140, 0x2670, 0x150):
         raise AssertionError(
             f"final state-size drift: fold1={fold1:#x} fold2={fold2:#x} "
             f"karplus={karplus:#x} nt={nt:#x} res={res:#x} nh={nh:#x} sd={sd:#x} cd={cd:#x} slap={slap:#x}"
         )
-    if (track, engine, assets_struct, asset_bytes) != (29188, 116756, 64, 23580):
+    if (track, engine, assets_struct, asset_bytes) != (29524, 118100, 72, 224284):
         raise AssertionError(
             f"final CF layout drift: track={track} engine={engine} "
             f"assets_struct={assets_struct} asset_bytes={asset_bytes}"

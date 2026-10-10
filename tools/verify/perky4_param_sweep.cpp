@@ -36,10 +36,11 @@ namespace {
  * false "dead control". 32768 samples (~0.74 s at 44.1 kHz) clears it. */
 constexpr unsigned kBlock = 32768;
 constexpr unsigned kModes = 3;
-constexpr unsigned kAlgos = 9;
+constexpr unsigned kAlgos = 10;
 constexpr unsigned kCtl = 4;
 const char* kAlgoName[kAlgos] = {"Fold1", "Fold2", "Karplus", "NoiseTone",
-                                 "Resonant", "NoiseHat", "SimpleDrum", "ComplexDrum", "Slap"};
+                                 "Resonant", "NoiseHat", "SimpleDrum", "ComplexDrum",
+                                 "Slap", "Wavetable"};
 const char* kCtlName[kCtl] = {"TUNE", "DECAY", "PARAM1", "PARAM2"};
 
 struct Render {
@@ -120,6 +121,11 @@ int main(int argc, char** argv)
     if (res_ia.size() != 514 || res_ib.size() != 514) return 3;
     assets.res_interp_a = res_ia.data();
     assets.res_interp_b = res_ib.data();
+    auto wt_base = read_file(ad + "/wt_base.bin");
+    auto wt_bank = read_file(ad + "/wt_bank.bin");
+    if (wt_base.size() != 4096 || wt_bank.size() != 48u * 4096u) return 3;
+    assets.wt_base = wt_base.data();
+    assets.wt_bank = wt_bank.data();
     for (unsigned i = 0; i < 4; ++i) assets.waves[i] = {addrs[i], wv[i].data()};
 
     std::FILE* csv = std::fopen(argv[2], "w");
@@ -131,7 +137,9 @@ int main(int argc, char** argv)
     std::printf("%-9s %-6s %-7s %10s %6s %8s  %s\n",
                 "algo", "mode", "control", "max|dPCM|", "at", "of peak",
                 "verdict");
-    std::array<std::array<Render, kModes>, kAlgos> midpoint{};
+    /* kAlgos*kModes 64 KiB PCM buffers on the stack overflow the default
+     * Windows/MinGW 1 MiB stack; keep the scratch image static. */
+    static std::array<std::array<Render, kModes>, kAlgos> midpoint{};
 
     for (unsigned algo = 0; algo < kAlgos; ++algo) {
         for (unsigned mode = 0; mode < kModes; ++mode) {
