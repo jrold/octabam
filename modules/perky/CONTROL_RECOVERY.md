@@ -183,3 +183,38 @@ that the asset extractor does not currently carry.
 
 Neither is blocked on method — both are blocked on work that is larger than the
 sweep-and-fit pass that closed Complex Drum and Slap.
+
+### Wavetable: what the sweeps settled
+
+Correcting the first read: the object is **not** at 0xC4.  Sweeping each
+control and clustering the four prepared words gives the real bases:
+
+* **Wavetable V1 (engine 2): wrapper + 0x2E8** (plus a second prepared-word
+  cluster at +0x3F8, the secondary oscillator's own block)
+* **Wavetable V2 (engine 5): wrapper + 0x31C**
+
+At those bases the layout is the usual one — envelope at +0x74, rate at +0x96,
+raw pitch at +0xBA — and the moving-field map is:
+
+| panel | object fields that move |
+|---|---|
+| TUNE | `+0x34`, `+0xBA`, `+0x12C` |
+| DECAY | `+0x7A`, `+0x96`, `+0xBC`, `+0x130` |
+| P1 | `+0xBE`, `+0x104`, `+0x106`, `+0x10C`, `+0x10E`, `+0x114`, `+0x134` |
+| P2 | `+0xC0`, `+0xEC`, `+0x138` |
+
+**Wavetable V1 is already exact against the firmware at the corner where it
+uses the shared waves** — 3 of 3 modes, PCM first block + continuation + full
+object state, at base 0x2E8 with the four existing wave assets.  What it needs
+beyond that is its **own wavetable bank**: the secondary oscillator's current
+wave pointer (object +0x104) walks to addresses the extractor does not carry —
+measured across the nine cases, mode 1 corners 0/1/2 give
+`0x080417CC / 0x0803A7CC / 0x080337CC`, mode 2 gives
+`0x080517CC / 0x0804A7CC / 0x080437CC`, mode 3 gives
+`0x080617CC / 0x0805A7CC / 0x080537CC`.  Those are 4,096-byte tables on a
+0x2000 stride in the 0x0803xxxx–0x0806xxxx region, so the asset extractor has to
+take that bank (and the crossfade walks through it, not just to one table).
+
+So Wavetable is: extract the bank, read the P1-driven crossfade fields
+(+0x104/+0x10C/+0x114 are the walk), then port the renderer — whose arithmetic
+the host model already gets right at corner 0.
