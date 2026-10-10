@@ -127,3 +127,30 @@ the control through *single* update passes at a finer target grid.  It is a
 single coefficient, not the shape of the engine: the Slap renderer is already
 exact against the firmware (PCM, the full 0x2670 object including the 4,805-word
 delay ring, and the RNG).
+
+### Where Slap's update routine is (mapped by disassembling the M7 image)
+
+The image's M7 segment loads at **0x08020000**, ends at 0x080d17e8, and
+disassembles with capstone in Thumb mode with `skipdata = True` (without it,
+decoding stops after ~4.5 k instructions at the first data region).
+
+The envelope-rate helper that `simple_drum_control.py` documents —
+**0x08028784** — has exactly **seven** callers in the whole image:
+
+```
+0x08024a3a  0x08024ad2  0x08024dcc  0x08025108  0x080262be  0x08026322  0x08027114
+```
+
+one per family update.  Landmarks already identified:
+
+* **0x0802775c** — the shared voice-defaults pass ("strh 0x0FF0 at engine+8"),
+  and the *only* `strh [rN, #0xaa]` in the image, which is where the filter
+  coefficient is initialised to 0.  Slap's *update* writes 0xAA through a
+  computed base, which is why an offset search does not find it.
+* **0x08024714** — the common update; **0x080246ac** — common init.
+* The four family init/update pairs seen so far sit at 0x08024a04/0x08024a8c,
+  0x08026288/0x080262fc, and one of the two unread call sites
+  (0x08024dcc, 0x08025108) is Slap's.
+
+So the remaining job is bounded: disassemble those two call sites, find the
+coefficient computation, and read off its two constants.
