@@ -277,22 +277,21 @@ directly rather than by fitting.  With the tables extracted at their real 4,096
 bytes, Wavetable V1 becomes the same kind of port as Simple and Complex Drum:
 point the model at the real fields, re-verify the nine captures, translate.
 
-## Acoustic Hats (V4, algorithm 3) — renderer verified, port staged
+## Acoustic Hats (V4, algorithm 3) — shipped
 
-Measured after Wavetable landed (11 of 12 shipping).  Unlike the other two
-"missing" engines, this one is **not** a method problem: the renderer is
-already an exact host model and only the port is outstanding.
+Measured after Wavetable landed; ported last, so the drum now has all twelve.
+Like the other families it needed the renderer, the assets and the control
+laws recovered separately.
 
 **Renderer.** `modules/perky/acoustic_hats_compact.py` reproduces the firmware
-for **9/9** engine-12 continuation blocks — PCM, the 35-word compact state, the
-IEEE754 filter history *and* the firmware-global held sample
-(`verify_perky_acoustic_compact.py`, re-run against the current fixtures with
-the offsets below).  The object is **wrapper + 0x2A80, 0x10C bytes**; the
+— PCM, the 35-word compact state, the IEEE754 filter history *and* the
+firmware-global held sample — for all nine engine-12 captures, first,
+continuation and retrigger.  The object is **wrapper + 0x2A80, 0x10C bytes**; the
 common envelope sits at +0x74, the sample player at +0xC4..+0xE0, the selected
 asset at +0xF8/+0xFC and the one-pole filter at +0x100 (int) / +0x104 (float
 bits) / +0x108 (dirty).
 
-**Sample assets** (plain M7 reads — the extractor does not carry them yet):
+**Sample assets** (plain M7 reads, now carried by `perky_cf_assets`):
 
 | panel mode | M7 address | s16 samples |
 |---|---|---|
@@ -301,35 +300,45 @@ bits) / +0x108 (dirty).
 | M3 ride   | `0x080627CC` | 129,553 |
 
 452,108 bytes of PCM total; they are incompressible, so the appended payload
-grows by that much and the boot loader's hash gets correspondingly longer.
+grew by that much and the boot loader's hash got correspondingly longer (the
+emulator's default instruction budget had to move 50M -> 200M).
 
 **Control path** (measured from `capture_sweep 11 <mode>`, all three modes; the
 moving-field map is identical in each):
 
 | panel | fields that move | law |
 |---|---|---|
-| TUNE | `0x1C`, `0xBA`, `0x34`, `0xCC` | the shared `common_update`: raw pitch `min(prep_tune + 768, 4095)`, `0x34 = pitch_at(0xBA)`, `0xCC` the oscillator increment |
+| TUNE | `0x1C`, `0xBA`, `0x34`, `0xCC` | the shared `common_update`: raw pitch `clamp12(prep_tune - 0x800 + note_offset(note))`, `0x34 = pitch_at(0xBA)`, `0xCC` the sample-playback increment (below) |
 | DECAY | `0x20`, `0x7A`, `0x96`, `0xBC` | `0x96` = the family envelope-rate helper, `0x7B` the `obj+8 <= decay` sustain gate |
 | P1 | `0x24`, `0xBE`, `0xD8` | `0xD8` (sample-and-hold reload) = `prep_p1 >> 6` — 0, 7, 15, 23, 31, 47, 63 at prep 0/510/1022/1534/2046/3069/4091 |
 | P2 | `0x0A`, `0x28`, `0x94`, `0xC0` | `0x0A` = `prep_p2` verbatim, `0x94` = the family envelope-rate helper driven by it |
 
-So the family is `common_update` plus three derived fields, exactly the shape
-Simple/Complex/Slap/Wavetable already use.
+**The amplitude rate is this family's own helper.**  Both rates came out of the
+sweeps as `0xFFFFF / (48*n + (40320 * time_parameter(x)) >> 12)`, with `n = 1`
+(i.e. `48*2 = 96`) for the attack — driven by `0x0A`, which the update sets to
+the prepared PARAM2 word — and `n = 12` (`48*13 = 624`) for the decay.  Exact
+over all 128 positions of both sweeps.
 
-**What the port still needs.**
+**TUNE's increment (`+0xCC`) is pinned as captured data.**  `increment^2` is
+proportional to the pitch-table value to within 4e-4, but no closed form
+reproduces it: `isqrt(pitch*A)>>B` (floored or rounded) has an empty feasible
+interval over the 128 captured points, and neither a linear fit in `sqrt(pitch)`
+nor in `sqrt(base)` closes.  So `tools/perky/acoustic_hats_rate_table.py`
+generates `cf_acoustic_hats_rate.inc`, 4096 entries indexed by the raw pitch,
+from the real firmware's control sweep — `capture_control_sweep` now takes a
+note, because the object's own note byte is what `ix` is derived from, and the
+shipping note 45 makes `ix = prep` and therefore covers the whole 0..4092
+domain in one pass.
 
-1. Extract the three sample assets into `perky_cf_assets` and add them to
-   `pk4_assets` (about +452 KB of SHA-pinned firmware bytes).
-2. An exact integer binary32 FMUL/FADD for the one-pole filter.  The ColdFire
-   build is freestanding `-msoft-float` with no libgcc float helpers, so
-   `decayed = previous * 0.98f` and `summed = input + previous` have to be
-   written as integer arithmetic and the 24-bit product taken with
-   `pk_cf_mul_hi_u32`/`pk_cf_mul_lo_u32` — a 64-bit multiply would emit
-   `__muldi3`, which `generate_cf_final.py` rejects.  Also needed: `int32 ->
-   f32` (the dirty-flag path loads the integer history as a float) and
-   `f32 -> int32` truncation.
-3. The firmware-global held sample at **0x20007598** (captured in the fixtures
-   as `acoustic-hold-*`; the model takes it as a one-element mutable list).
-4. `cf_acoustic_hats.c`, a gate modelled on `verify_perky_cf_wavetable_dsp.py`,
-   the family slot `V4 {NOISE_HAT, NOISE_TONE, ACOUSTIC_HATS}` and the usual
-   wiring.
+**Float.**  `cf_softfloat.h` implements exact binary32 mul/add and
+int32<->float in 32-bit integer arithmetic (round-to-nearest-ties-to-even; the
+24-bit product is taken with `pk_cf_mul_hi_u32`/`pk_cf_mul_lo_u32` because a
+64-bit multiply would emit `__muldi3`, which the link cannot resolve).
+`verify_perky_cf_softfloat.py` checks it against the host's own float over 17.5
+million operations, the whole int32->float domain and the filter's exact
+operands, and requires zero mismatches.
+
+**Gate.**  `verify_perky_cf_acoustic_hats_dsp.py` renders the authentic
+snapshots through the production translation and requires bit-exact PCM, the
+bit-exact object *and* the exact firmware-global held sample, for all three
+panel modes, all three control corners and first/continuation/retrigger.
