@@ -76,5 +76,35 @@ the four-Perkys runs. Closing the remaining gap is not a renderer tweak:
   ColdFire frame entirely (the DSPs have a 23,040 cycle/16 samples voice
   budget), which is a different architecture, not an optimisation.
 
+The same arithmetic already fails the handoff's own table one voice earlier:
+120.5 / 151.2 / 195.7 / 221.3 us for 0/1/2/3 machines means a *second* Perky
+voice overruns 181.4, let alone a fourth. A four-voice fixture at frame/2 is
+asking for roughly 13 us of model time per voice.
+
+## The model over-prices this code's multiplies
+
+The vendored core prices instructions from the MCF5206E user manual
+(`vendor/mc68k/Musashi/m68kcfcycles.h`), which has no EMAC: `MUL.L` is the
+"upper bound" 18 cycles and `MUL.W` is 9. The MCF5445x this image runs on has
+an EMAC and executes `MULS.L`/`MULU.L` in about three. The engine inner loops
+are multiply-heavy — the snare alone carries 39 `muls.l` sites — so the
+model's absolute frame cost overstates the synthesised path specifically.
+
+Measured on the fixture: a dependent multiply chain with a loop-variant
+multiplier and trip count (so the optimiser can neither fold nor delete it)
+added 9.0 us/frame for ~223,000 instructions, i.e. ~8.5 model cycles per
+added instruction against 1.11 for the image as a whole.
+
+This is the "the model under-counts hardware ... the *size* of the overrun
+could still move" caveat the handoff raises, and the reason a `cfmeter`
+reading from a Perky build is worth more than chasing the model's number.
+
+⚠️ The engines deliberately do **not** use the A-line EMAC multiply form to
+exploit this. The v4e layer charges A-line opcodes ~nothing, so rewriting
+`pk_cf_mul_lo_u32` as `mac.l` + `movclr.l` would move the gate, but it would
+also be *slower* on the part than one `muls.l` (six instructions against
+three cycles). Trading a real instruction for a model artifact is not an
+optimisation.
+
 Numbers in this file are the vendored core's cycle model. The project's own
 `cfmeter` factor (x1.7) still applies on top.

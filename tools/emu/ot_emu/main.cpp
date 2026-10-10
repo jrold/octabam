@@ -3099,7 +3099,7 @@ int main(int _argc, char** _argv)
 		std::printf("hottest addresses over the frames (PC sampled every 64 instructions; the boot table above is the boot alone):\n");
 		uint64_t total = 0;
 		for(const auto& h : hot) total += h.second;
-		for(size_t i = 0; i < hot.size() && i < 24; ++i)
+		for(size_t i = 0; i < hot.size() && i < 256; ++i)
 		{
 			char buf[256] = {};
 			m.disassemble(hot[i].first, buf);
