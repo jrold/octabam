@@ -34,6 +34,25 @@ jobs:
           python-version: '3.12'
       - run: make reach BASE=origin/${{ github.base_ref }}
 
+  perky-optimization-gates:
+    # Temporary branch-only qualification harness for the optimization pass.
+    # The current perky-machines head records this exact shared-gate set as
+    # 70/70 locally; run it on a clean Linux runner so renderer edits are
+    # actually compiled/exercised instead of relying only on generic CI.
+    name: Perky shared gates (70/70 set)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          submodules: true
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: make ci-dsp
+      - run: make check-shared REMIXES="bus ok-ms perky-cf-final perky-cfmeter stems"
+
   acceptance-runner:
     name: acceptance runner tests (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

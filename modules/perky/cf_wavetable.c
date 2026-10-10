@@ -78,11 +78,13 @@ static int32_t pitch(uint16_t raw,const uint8_t*t){
     return s32(v);
 }
 
-static void wt_set_frequency(uint8_t*s,uint32_t f){
+/* Same arithmetic as the original state-writing helper, but return the
+ * increment so a render block can keep phase/increment in registers. */
+static uint32_t wt_frequency_step(uint32_t f){
     int32_t shifted=s32(f<<20);
     int32_t hi=pk_cf_mul_hi_s32(shifted,s32(0x057619f1u));
     int32_t result=asr(hi,10)-asr(shifted,31);
-    w32(s,0xf8,u32(result));
+    return u32(result);
 }
 
 int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
@@ -94,10 +96,19 @@ int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
      * comparisons and a bank index for nothing. */
     uint32_t a_cur=0xffffffffu,a_nc=0xffffffffu,a_sec=0xffffffffu,a_ns=0xffffffffu;
     const uint8_t*wc=0,*wn=0,*sc=0,*sn=0;
-    /* Block invariants: nothing inside the loop writes either of these. */
-    uint32_t pe_amount,half_rate;
+    /* Block invariants and block-local state.  The firmware-visible object is
+     * observed at render-call boundaries, so avoid endian load/store traffic
+     * for fields that are only consumed by this loop and commit them once. */
+    uint32_t pe_amount,half_rate,phase,step,cur,sec,target_cur,target_sec;
+    uint16_t mix,target_mix;
+    uint8_t velocity,mute;
     if(!s||!d||!t||!t->pitch||!t->base_wave||!t->bank)return 0;
     pe_amount=r16(s,0xec);half_rate=(s[0x128]==1u)?1u:0u;
+    phase=r32(s,0xf4);step=r32(s,0xf8);
+    cur=r32(s,0x100);target_cur=r32(s,0x104);
+    sec=r32(s,0x108);target_sec=r32(s,0x10c);
+    mix=r16(s,0x112);target_mix=r16(s,0x114);
+    velocity=s[6];mute=s[0xb8];
     base=(uint32_t)mullo(pitch(r16(s,0xba),t->pitch),0xbb80u)>>20;
     for(i=0;i<n;i++){
         const uint16_t amp=env(s,0x74,t);
@@ -105,27 +116,27 @@ int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
         const uint32_t lo=(uint32_t)pe&0x1fffu,sh=13u-(uint32_t)(pe>>13);
         const int32_t factor=(int32_t)(((lo+0x2000u)>>sh)-1u);
         uint32_t frequency=base+((pe_amount*(uint32_t)factor)>>9);
-        uint32_t phase,index,following,fraction,cur,sec,nc,ns;
+        uint32_t index,following,fraction,nc,ns;
         if(half_rate)frequency>>=1;
-        wt_set_frequency(s,frequency);
-        phase=r32(s,0xf4)+r32(s,0xf8);
+        step=wt_frequency_step(frequency);
+        phase+=step;
         if(s32(phase)>0x100000){
             phase-=0x100000u;
-            w16(s,0x112,r16(s,0x114));
-            if(r32(s,0x100)!=r32(s,0x104)){
-                w32(s,0x100,r32(s,0x104));
-                w32(s,0x108,r32(s,0x10c));
-            }
+            mix=target_mix;
+            if(cur!=target_cur){cur=target_cur;sec=target_sec;}
         }
-        w32(s,0xf4,phase);
         index=(phase>>9)&0x7ffu;following=(index+1)&0x7ffu;fraction=phase&0x1ffu;
-        cur=r32(s,0x100);sec=r32(s,0x108);nc=cur;ns=sec;
-        if(index>following&&r32(s,0x104)!=cur){nc=r32(s,0x104);ns=r32(s,0x10c);}
+        nc=cur;ns=sec;
+        if(index>following&&target_cur!=cur){nc=target_cur;ns=target_sec;}
         if(cur!=a_cur){wc=pk_cf_wt_wave(t,cur);a_cur=cur;}
         if(nc!=a_nc){wn=pk_cf_wt_wave(t,nc);a_nc=nc;}
         if(sec!=a_sec){sc=pk_cf_wt_wave(t,sec);a_sec=sec;}
         if(ns!=a_ns){sn=pk_cf_wt_wave(t,ns);a_ns=ns;}
-        if(!wc||!wn||!sc||!sn)return 0;
+        if(!wc||!wn||!sc||!sn){
+            w32(s,0xf4,phase);w32(s,0xf8,step);
+            w32(s,0x100,cur);w32(s,0x108,sec);w16(s,0x112,mix);
+            return 0;
+        }
         {
             const int32_t a1=(int32_t)tabs16(wc,index),a2=(int32_t)tabs16(wn,following);
             const int32_t b1=(int32_t)tabs16(sc,index),b2=(int32_t)tabs16(sn,following);
@@ -135,17 +146,18 @@ int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
              * (first*(255-MIX) + second*MIX) & 0xFFFFFFFF; uint32 multiply
              * wraps so a MIX word past 255 stays bit-exact without a 64-bit
              * helper the freestanding ColdFire runtime does not link. */
-            const uint32_t mix=r16(s,0x112);
             const uint32_t mixed=(uint32_t)first*(uint32_t)(255-(int32_t)mix)
                                  +(uint32_t)second*mix;
             const int32_t osc=s16((uint16_t)(mixed>>8));
             int32_t sample=asr(mullo(osc,(int32_t)amp),16);
-            sample=asr(mullo(sample,(int32_t)(s[6]&0xffu)),8);
-            if(s[0xb8])sample=0;
+            sample=asr(mullo(sample,(int32_t)(velocity&0xffu)),8);
+            if(mute)sample=0;
             else if(sample>INT16_MAX)sample=INT16_MAX;
             else if(sample<INT16_MIN)sample=INT16_MIN;
             d[i]=(int16_t)sample;
         }
     }
+    w32(s,0xf4,phase);w32(s,0xf8,step);
+    w32(s,0x100,cur);w32(s,0x108,sec);w16(s,0x112,mix);
     return 1;
 }
