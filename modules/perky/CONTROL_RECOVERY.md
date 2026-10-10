@@ -74,3 +74,50 @@ Note `prepared_p1` here is the *raw* smoothed word, not `time_parameter` of it,
 and the pitch law's denominator is *smaller* for larger controls — the opposite
 of the amplitude law and of Simple Drum's pitch law.  That asymmetry is why
 guessing from the three-corner captures was not an option.
+
+## Slap (V3, algorithm 2) — renderer done, two laws still open
+
+**Object at wrapper + 0xC4, 0x2670 bytes** (it embeds a 4,805-word delay ring at
+0xE0).  `slap_compact.py` is **exact against the firmware** — PCM, the full
+0x2670 state *and* the RNG for the continuation and active-retrigger blocks, all
+three modes and all three corners.  So the renderer can be ported the same way
+as Simple and Complex Drum; it needs the shared RNG (already in the engine), the
+two filter stages per sample, the counter/tap ring and one envelope.
+
+Sweeping each control identifies exactly which object fields move:
+
+| panel | object fields that move |
+|---|---|
+| TUNE | `0xBA`, `0xAA` (filter coefficient), `0x34` (derived increment) |
+| DECAY | `0x96`, `0x7A`, `0xBC` |
+| P1 | `0xBE`, `0x266C` (MIX) |
+| P2 | `0xA8` (filter damping), `0xC0` |
+
+Five are recovered exactly from the 128-point sweep:
+
+| field | law |
+|---|---|
+| `0xBA` raw pitch | `min(prepared_tune + 768, 4095)` (same bias as Complex Drum) |
+| `0x266C` MIX | `prepared_p1 >> 1` |
+| `0xA8` filter damping | `2048 - (prepared_p2 >> 1)` |
+| `0xC0` | `prepared_p2` |
+| `0x7B` sustain gate | `prepared_decay >= 0x0FF0` (the common `obj+8 <= decay` rule) |
+
+Two are **not yet recovered**, and they are deliberately left rather than
+fitted:
+
+* `0x96`, the amplitude-envelope rate.  Its denominator at prepared-decay 0 is
+  exactly **912 = 48*19**, so the usual `48*(off+1) + (48*(scale-1)*x) >> 12`
+  helper is in play with offset 18 — but neither `x = prepared` nor
+  `x = time_parameter(prepared)` satisfies the rest of the curve, and the
+  denominators (912, 1474, 2035, 3157, 4279, 6514, 8811, 13273, 17772) grow
+  far faster than linearly.  The family is using a *different* conversion from
+  the smoothed control to that helper's argument.
+* `0xAA`, the filter coefficient: 6588 at prepared 0 rising ~8.58 per step and
+  clamping at **35127**.  No `(A + B*x) >> s` form fits all 128 unclamped
+  points, so the clamp is not the only nonlinearity.
+
+Both want the ARM update routine read directly (the disassembly tooling in
+`work/`: `fwdis.py`, `fwscan.py`, `fwimm.py`), or a finer trajectory capture —
+the two remaining unknowns are a single helper's argument conversion, not the
+shape of the engine.
