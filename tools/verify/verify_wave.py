@@ -50,7 +50,7 @@ class Host:
     def __init__(self, mems, mod):
         self.mems, self.mod = mems, mod
 
-    def render(self, tag, knobs, inputs, positions, blocks, extra=()):
+    def render(self, tag, knobs, inputs, positions, blocks, extra=(), timeout=600):
         eps = [send_probe.entry_points(self.mems[k // 4], self.mod.menu.fx2_id) for k in positions]
         out = OUT / f'{tag}.raw'
         cmd = [str(br.HOST), '-mem', str(self.mems[0]), '-memB', str(self.mems[1]),
@@ -70,7 +70,7 @@ class Host:
         for k in knobs:
             cmd += ['-params', ','.join(map(str, k))]
         cmd += list(extra)
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
         if r.returncode:
             raise SystemExit(f'{tag}: dsp_host failed\n{r.stdout[-1500:]}\n{r.stderr[-1500:]}')
         audio = [np.array(br.read_raw(Path(str(out) + (f'.i{j}' if j else ''))), dtype=np.int64).reshape(-1, 2)
@@ -171,6 +171,40 @@ def verify(mems):
     for j in range(8):
         (alone,), _ = host.render(f'solo{j}', [knobs8[j]], [ins[j]], [j], b8)
         gate(f'slot {j}: eight together == alone', np.array_equal(together[j], alone))
+
+    # 8. a modulated knob word: the LFO leaves a non-zero byte in bits 8-15
+    # (measured 21,011 of 21,088 stores under the port, 5 Oct 2026). OCT is
+    # r6+4; dsp_host -pword writes the raw word after -params.
+    tone = sine([(0, C5, .5)], n)
+    ref = {}
+    for oct_ in (1, 2, 4):
+        k = list(d); k[4] = oct_
+        (ref[oct_],), _ = host.render(f'oct{oct_}', [k], [tone], [4], blocks)
+    f2 = peak_freqs(ref[2][settle:, 0] / 2 ** 23, 1)[0][0]
+    f1 = peak_freqs(ref[1][settle:, 0] / 2 ** 23, 1)[0][0]
+    gate('OCT 1 and OCT 2 clean words are an octave apart', abs(cents(f2, f1) - 1200) < 5, f'{f1:.2f} Hz, {f2:.2f} Hz')
+    k = list(d); k[4] = 2
+    (probe,), _ = host.render('pword_probe', [k], [tone], [4], blocks, extra=['-pword', '0:4=010000'])
+    gate('dsp_host takes -pword (raw OCT word 0x010000 renders as OCT 1)', np.array_equal(probe, ref[1]))
+    for oct_, word in ((4, 0x0400fe), (2, 0x0200fe), (4, 0x047f7f)):
+        k = list(d); k[4] = oct_
+        try:
+            (a,), m = host.render(f'dirty{word:06x}', [k], [tone], [4], blocks,
+                                  extra=['-pword', f'0:4={word:06x}'], timeout=120)
+        except subprocess.TimeoutExpired:
+            gate(f'OCT word {word:06x}: renders within 120 s', False, 'timeout')
+            continue
+        peak_i = int(m[:, 2].max())
+        gate(f'OCT word {word:06x}: <= {INSTR_BOUND} instructions a block', peak_i <= INSTR_BOUND, f'peak {peak_i}')
+        got = peak_freqs(a[settle:, 0] / 2 ** 23, 1)[0][0]
+        want = peak_freqs(ref[oct_][settle:, 0] / 2 ** 23, 1)[0][0]
+        gate(f'OCT word {word:06x}: pitch == the clean word\'s', abs(cents(got, want)) < 2,
+             f'{got:.3f} Hz vs {want:.3f} Hz ({cents(got, want):+.1f} cents)')
+        gate(f'OCT word {word:06x}: output == the clean word\'s, bit for bit', np.array_equal(a, ref[oct_]))
+    k = list(d); k[3] = 3
+    (cl,), _ = host.render('chrd_clean', [k], [tone], [4], blocks)
+    (dt,), _ = host.render('chrd_dirty', [k], [tone], [4], blocks, extra=['-pword', '0:3=0300fe'])
+    gate('CHRD word 0300fe: output == the clean word\'s, bit for bit', np.array_equal(cl, dt))
 
     # 7. instructions: one instance's peak block
     (_,), meter = host.render('meter', [d], [sine([(0, C5, .5)], n)], [4], blocks)

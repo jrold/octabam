@@ -1094,6 +1094,36 @@ namespace
 	}
 }
 
+// "FRAME:ADDR:ARG,..." (FRAME omitted for --call-before-play). ARG defaults to 0.
+struct Call { uint64_t frame = 0; uint32_t addr = 0, arg = 0; };
+static std::vector<Call> parseCalls(const std::string& _s, const bool _withFrame)
+{
+	std::vector<Call> out;
+	size_t q = 0;
+	while(q < _s.size())
+	{
+		auto e = _s.find(',', q); if(e == std::string::npos) e = _s.size();
+		std::string one = _s.substr(q, e - q); q = e + 1;
+		if(one.empty())
+			continue;
+		Call c;
+		std::vector<std::string> f;
+		size_t r = 0;
+		while(r <= one.size()) { auto k = one.find(':', r); if(k == std::string::npos) k = one.size(); f.push_back(one.substr(r, k - r)); r = k + 1; }
+		if(f.size() < (_withFrame ? 2u : 1u))
+		{
+			std::fprintf(stderr, "ot_emu: bad call spec '%s'\n", one.c_str());
+			std::exit(2);
+		}
+		size_t n = 0;
+		if(_withFrame) c.frame = std::strtoull(f[n++].c_str(), nullptr, 0);
+		c.addr = static_cast<uint32_t>(std::strtoul(f[n++].c_str(), nullptr, 0));
+		if(n < f.size()) c.arg = static_cast<uint32_t>(std::strtoul(f[n].c_str(), nullptr, 0));
+		out.push_back(c);
+	}
+	return out;
+}
+
 // After a fork: the vendored DSP memory is a shm object mapped MAP_SHARED
 // several times over (the bridged X/Y/P views, dsp56kBase/mmuhelper.cpp),
 // so a forked child would write its parent's and its siblings' DSP memory
@@ -1234,7 +1264,7 @@ int main(int _argc, char** _argv)
 	std::string hostPortLog;	// every write into the DSP host-port window -> FILE (O8)
 	bool dsp = false;			// O8: put the two real DSP cores behind the host port
 	bool dspRt = false;			// O17: --dsp-rt -- the cores under the JIT on worker threads, on the lockstep schedule (dsp.cpp, THE REAL-TIME MODE); --interactive only
-	double dspRatio = ot::DspPair::g_dspIps / ot::DspPair::g_cfIps, dspIps = ot::DspPair::g_dspIps;	// their clock, in DSP instructions per ColdFire instruction / per sample (dsp.h says where 4160 comes from)
+	double dspRatio = ot::DspPair::g_dspIps / ot::DspPair::g_cfIps, dspIps = ot::DspPair::g_dspIps;	// their clock, in DSP instructions per ColdFire instruction / per sample (dsp.h says where 4532 comes from)
 	std::string dspLog;			// every host-side event on the DSP pair -> FILE
 	uint64_t dspTrace = 0;		// a status line per core every N DSP instructions
 	uint64_t dspTraceFrom = 0;	// ... only once a core has executed this many (a window at the end of a run)
@@ -1261,6 +1291,7 @@ int main(int _argc, char** _argv)
 	std::string pokeAfterLoad;	// O9c: "addr=byte;addr=byte" written after the load, before the frames (drive an apply the load skips)
 	std::string pokeEarly;		// the same, written before --call (the current-track byte 0x80000000 an editor call reads)
 	bool noPost = false;		// 2 Oct 2026: --no-post: no LOAD PROJECT post; the firmware's own power-up load (with --cs1-in, a power cycle)
+	bool loadEarly = false;		// 4 Oct 2026: live phase from LOAD PROJECT's first handling, the background bank loads still queued
 	std::string cs1In;		// 2 Oct 2026: --cs1-in FILE: CS1 (0x10000000, the memory that keeps the current bank over a power-off) holds FILE's bytes before the boot; with a --mem-dump of 0x10000000,0x100000 from an earlier run it is a power cycle
 	std::string callSpec;		// "addr[,arg,...]": a firmware routine called AS MAIN after the load (a menu action the port has no panel for -- Part Reload, 14 Sep 2026)
 	int callAt = -1;			// with --sequencer: make that call this many frames AFTER the transport start instead (a panel edit while playing: the transport start re-applies the part over the live lane, so an edit made before it is gone)
@@ -1275,6 +1306,10 @@ int main(int _argc, char** _argv)
 	std::string lcd;			// the panel's 1-bpp plane (0x46c7e0ea, 1024 B) plus the popup windows (table + planes) to FILE whenever they have changed, at most once per 2M instructions; tools/emu/lcd_view.py composites and draws it
 	std::string memDump;		// O10.21: "addr,len=path[;...]" -- ColdFire memory ranges, raw bytes, to FILE at the very end (peeks only support one word, pre-sequencer; this is a range, post-run)
 	std::string cardOut;		// the card image as the firmware left it, to FILE at the very end (the load's WRITEs: emu_card.extract_image reads it back)
+	std::string pokeBeforePlay;	// --poke-before-play: "addr=byte;..." written after the --call-before-play calls and before the transport start, so a take's first frame sees it
+	std::string callBeforePlay;	// --call-before-play ADDR[:ARG][,...]: each called AS MAIN from main's spin, after --pre-roll, before the transport start (STEM REC arms a take here)
+	std::string atFrames;		// --at FRAME:ADDR[:ARG][,...]: each called AS MAIN that many frames after the transport start (several, where --call-at makes one)
+	long long cardFailAfter = -1;	// --card-fail-after N: once N sectors are written, every WRITE SECTORS ends in ERR + ABRT, no DRQ
 	bool mainLevelGiven = false;	// 12 Sep 2026: --interactive defaults it to 64 (the panel wants sound); `--main-level off` keeps the -1. The batch default stays -1.
 	bool interactive = false;	// 11 Sep 2026: after the boot (and load), serve the line protocol on stdin/stdout (serveInteractive above)
 	bool mkii = false;			// boot as an MKII: the GPIO loopback the boot probe tests, the MKII panel's replies (docs/firmware/PANEL.md)
@@ -1358,8 +1393,13 @@ int main(int _argc, char** _argv)
 		else if(a == "--poke-early" && i + 1 < _argc)	pokeEarly = _argv[++i];
 		else if(a == "--cs1-in" && i + 1 < _argc)	cs1In = _argv[++i];
 		else if(a == "--no-post")				noPost = true;
+		else if(a == "--load-early")			loadEarly = true;
 		else if(a == "--call" && i + 1 < _argc)		callSpec = _argv[++i];
 		else if(a == "--call-at" && i + 1 < _argc)	callAt = std::atoi(_argv[++i]);
+		else if(a == "--poke-before-play" && i + 1 < _argc)	pokeBeforePlay = _argv[++i];
+		else if(a == "--call-before-play" && i + 1 < _argc)	callBeforePlay = _argv[++i];
+		else if(a == "--at" && i + 1 < _argc)			atFrames = _argv[++i];
+		else if(a == "--card-fail-after" && i + 1 < _argc)	cardFailAfter = std::atoll(_argv[++i]);
 		else if(a == "--step" && i + 1 < _argc)		steps.emplace_back(_argv[++i]);
 		else if(a == "--live-script" && i + 1 < _argc)	liveScript = _argv[++i];
 		else if(a == "--scenario" && i + 1 < _argc)	scenarios.emplace_back(_argv[++i]);
@@ -1382,7 +1422,7 @@ int main(int _argc, char** _argv)
 			"              [--usb-host SOCKET] [--usb-notify FILE] [--usb-fs]   the USB device controller + a scripted host (usb.h)\n"
 			"              [--interactive] [--rtc host|off|EPOCH] [--dsp-rt]    the line protocol on stdin/stdout (tools/panel)\n"
 			"              [--step FRAME:call|poke|dump:SPEC]...              a gate's whole script on one boot: FRAME '-' = after the load, N = N frames after the transport start\n"
-			"              [--live-script FILE]                              '<emulated ms> key|enc|pot|midi|quit ...' lines, transport stopped, no wall-clock pacing\n"
+			"              [--live-script FILE]                              '<emulated ms> key|enc|pot|midi|poke|quit ...' lines, transport stopped, no wall-clock pacing\n"
 			"              [--no-post]                                       no LOAD PROJECT post: the firmware's own power-up load\n"
 			"              [--cs1-in FILE]                                   CS1 (0x10000000) from FILE before the boot: a power cycle with an earlier --mem-dump 0x10000000,0x100000\n"
 			"              [--cf-frame-budget-us US] [--cf-frame-deadline F]  the ColdFire's real-time frame budget (a report) and its frame DEADLINE (models the unit's stall: the calibrated frame cost must fit the 362.8 us frame, F = the model-to-hardware cycle factor; --dsp --sequencer)\n"
@@ -1707,6 +1747,7 @@ int main(int _argc, char** _argv)
 			std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(cf)),
 				std::istreambuf_iterator<char>());
 			card = std::make_unique<ot::AtaCard>(std::move(bytes));
+			if(cardFailAfter >= 0) card->failWritesAfter(cardFailAfter);
 			rtos.attachCard(*card);
 			rtos.setAtaTrace(!ataTrace.empty());
 			std::printf("card       : %s, %u sectors\n", cardImage.c_str(), card->totalSectors());
@@ -1879,6 +1920,7 @@ int main(int _argc, char** _argv)
 				if(ataLatency >= 0.0)
 					rtos.setAtaLatency(ataLatency);
 				rtos.setNoPost(noPost);
+				rtos.setLoadEarly(loadEarly);
 				load = rtos.loadProjectLive(setName, projectName, loadMs, 3000.0, namesEarly);
 				const auto& r = load;
 				m.setPeriphTrace(false);
@@ -2111,6 +2153,9 @@ int main(int _argc, char** _argv)
 					::_exit(2);
 				if(blockDump.empty() || blockDump != bootBlockDump)
 					rtos.closeBlockDump();
+				// The card was built before the fork; a child's --card-fail-after applies here.
+				if(card && cardFailAfter >= 0)
+					card->failWritesAfter(cardFailAfter);
 
 				if(dspPair)
 				{
@@ -2292,6 +2337,11 @@ int main(int _argc, char** _argv)
 						bytes.push_back(static_cast<uint8_t>(std::strtoul(hex.c_str(), nullptr, 16)));
 					rtos.midiIn(bytes);
 				}
+				else if(what == "poke")
+				{
+					std::string spec; is >> spec;			// as --poke: "addr=byte[;...]"
+					pokeBytes(spec, "live");
+				}
 				else
 					std::printf("live       : unknown line '%s'\n", _line.c_str());
 			};
@@ -2343,6 +2393,8 @@ int main(int _argc, char** _argv)
 					return 1;
 				}
 				const auto f0 = rtos.frameCount();
+				if(pcRing)
+					rtos.armPcRingNow(pcRing);
 				std::string line;
 				size_t n = 0;
 				bool early = false;
@@ -2367,6 +2419,23 @@ int main(int _argc, char** _argv)
 				std::printf("live script: %zu line(s) from %s over %llu frames, ended %s -- %s\n", n, liveScript.c_str(),
 					static_cast<unsigned long long>(rtos.frameCount() - f0), early ? "early" : (live.quit ? "on quit" : "at the end"),
 					rtos.why().c_str());
+				if(!midiOut.empty())
+				{
+					// MIDI OUT as the firmware wrote it over the live script (CC FEEDBACK's stream, stock's knob echo)
+					const auto& tx = rtos.serialTx0();
+					std::ofstream f(midiOut, std::ios::binary);
+					f.write(reinterpret_cast<const char*>(tx.data()), static_cast<std::streamsize>(tx.size()));
+					std::printf("midi out   : %zu byte(s) on UART0 -> %s\n", tx.size(), midiOut.c_str());
+				}
+				if(pcRing && rtos.pcRingArmed())
+				{
+					const auto& ring = rtos.pcRing();
+					const auto pos = rtos.pcRingPos();
+					const size_t k = std::min(ring.size(), pos);
+					std::printf("             pc ring (last %zu of %zu instructions since the script start):\n", k, pos);
+					for(size_t i = 0; i < k; ++i)
+						std::printf("               %#010x\n", ring[(pos - k + i) % ring.size()]);
+				}
 			}
 			else if(!livePath.empty() && !sequencer)
 			{
@@ -2462,6 +2531,21 @@ int main(int _argc, char** _argv)
 						static_cast<unsigned long long>(rtos.frameCount() - f0),
 						rsp == ot::Rtos::Stop::Gate ? "REACHED" : rtos.why().c_str());
 				}
+				for(const auto& c : parseCalls(callBeforePlay, false))
+				{
+					// The pre-roll stops the instant the last frame's
+					// interrupt is taken, never at main's spin, so
+					// callAsMain's own guard refused every call here
+					// whenever --pre-roll was given (measured 12 Sep 2026 on
+					// crosscheck). Run to the spin first; a no-op when the
+					// PC is already there.
+					rtos.runToMainSpin(1000.0);
+					uint32_t d0 = 0;
+					const bool ok = rtos.callAsMain(c.addr, {c.arg}, d0, 200000000);
+					std::printf("call       : %#x(%#x) before play -> %s, d0 %#x\n", c.addr, c.arg,
+						ok ? "returned" : rtos.why().c_str(), d0);
+				}
+				pokeBytes(pokeBeforePlay, "before play");
 				if(!rtos.startTransportLive())
 					std::printf("transport  : FAILED -- %s\n", rtos.why().c_str());
 				if(pokeTrig)
@@ -2501,7 +2585,7 @@ int main(int _argc, char** _argv)
 				// Timed actions while the sequencer runs -- a panel edit
 				// (--call-at) or MIDI IN bytes (--midi): the frame engine
 				// keeps going underneath them, as on the unit.
-				struct Action { uint64_t frame; bool call; std::vector<uint8_t> bytes; int step = -1; };
+				struct Action { uint64_t frame; bool call; std::vector<uint8_t> bytes; int step = -1; uint32_t addr = 0, arg = 0; bool at = false; };
 				std::vector<Action> actions;
 				if(!callSpec.empty() && callAt >= 0)
 					actions.push_back({static_cast<uint64_t>(callAt), true, {}});
@@ -2511,12 +2595,23 @@ int main(int _argc, char** _argv)
 				for(const auto& ev : midiEvents)
 					if(!ev.pre)
 						actions.push_back({ev.frame, false, ev.bytes});
+				for(const auto& c : parseCalls(atFrames, true))
+					actions.push_back({c.frame, false, {}, -1, c.addr, c.arg, true});
 				std::stable_sort(actions.begin(), actions.end(), [](const Action& x, const Action& y) { return x.frame < y.frame; });
 				for(const auto& act : actions)
 				{
 					const auto at = frame0 + act.frame;
 					rtos.runUntil(budgetMs, [&] { return rtos.frameCount() >= at; }, ot::Rtos::Changes::OnEvent);	// O15e: the ack hook wakes
-					if(act.step >= 0)
+					if(act.at)
+					{
+						const bool spun = rtos.runToMainSpin(1000.0) == ot::Rtos::Stop::Gate;
+						uint32_t d0 = 0;
+						const bool ok = spun && rtos.callAsMain(act.addr, {act.arg}, d0, 200000000);
+						std::printf("call       : %#x(%#x) at frame %llu -> %s, d0 %#x\n", act.addr, act.arg,
+							static_cast<unsigned long long>(rtos.frameCount() - frame0),
+							ok ? "returned" : rtos.why().c_str(), d0);
+					}
+					else if(act.step >= 0)
 					{
 						const auto& s = parsedSteps[static_cast<size_t>(act.step)];
 						char when[64];

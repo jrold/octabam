@@ -439,14 +439,18 @@ companion field at bits 8–15. The low byte is never published. The field a
 slot is delivered in is fixed by the slot; its count and renderer are free.
 Slot 6 is on `$c`; `$b` is not a page-2 parameter word.
 
-| slot | word | field | example (BusVerb / BusDelay) |
+| slot | word | field | example (BusVerb / BusDelay, from the manifests, 5 Oct 2026) |
 |---|---|---|---|
 | 6 | `$c` | knob, bits 16–23 | MODE / MODE |
-| 7 | `$c` | bits 8–15 | SHMR / MDEP |
-| 8 | `$d` | knob, bits 16–23 | DIFF / MRAT |
-| 9 | `$d` | bits 8–15 | SHFT / SIZE |
-| 10 | `$e` | knob, bits 16–23 | GATE / PTCH |
+| 7 | `$c` | bits 8–15 | TONE / SCTR |
+| 8 | `$d` | knob, bits 16–23 | DIFF / DENS |
+| 9 | `$d` | bits 8–15 | GATE / SIZE |
+| 10 | `$e` | knob, bits 16–23 | DLY / PTCH |
 | 11 | `$e` | bits 8–15 | TIME / TIME (26 Sep 2026; blank / WOW before) |
+
+The example column before 5 Oct 2026 named slots 7–11 SHMR/MDEP, DIFF/MRAT,
+SHFT/SIZE, GATE/PTCH, TIME/TIME; those are the names of earlier builds
+(the evidence paragraph below uses them).
 
 Evidence: MODE on slot 7 read bits 8–15 across five positions on hardware;
 SHMR needed `$c`'s knob field, not `$b`'s; slot 11 was dead for both

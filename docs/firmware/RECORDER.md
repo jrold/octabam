@@ -4,7 +4,7 @@ OS 1.40C, ColdFire side: the recorder page's descriptor and storage, the
 length arithmetic, the buffer pool, the write path and the loop point.
 Read out of the binary by Bryan T over five Discord sessions (2–6 Sep
 2026) and re-read here against our image the same week; the loop click
-itself, fixed on hardware 12 Sep 2026, is `modules/recorder-hold/README.md` "The loop click". The
+itself, fixed on hardware 12 Sep 2026, is `modules/recorder-loop-fix/README.md`. The
 frame-phase model and its simulation are in git history
 (`git show 3ceba41:docs/history/EXTERNAL_INGEST.md`).
 

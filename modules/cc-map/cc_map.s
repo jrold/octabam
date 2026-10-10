@@ -9,9 +9,8 @@
 | needs a range test at CAVE and its own write path.
 |
 | CC_NEXT is where anything but 62-73 goes: the stock CC handler
-| (0x4000e79c), or -- when Octakit is in the image and the scenes-kits
-| bridge chains this cave in front of her CC dispatch -- her handler. The
-| build defines it (CavePatch.defsyms; schema.Override); it is not set here.
+| (0x4000e79c). The build defines it (CavePatch.defsyms); it is not set
+| here.
         .set    P1WRITE,  0x40054cd8   | stock page-1 writer (canary, CC 67 only)
         .set    MAPBUILD, 0x40001854   | fills the channel->track map
         .set    MAPGLOB,  0x46104cf4   | long stock loads to d3 before MAPBUILD

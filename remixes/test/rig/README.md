@@ -1,6 +1,6 @@
-# `rig` — the rig without a ColdFire runtime, for the gates
+# `rig` — bottleservice's bus and FX1 stations, for the gates
 
-The fixture `verify_ccmap`, `verify_ccfeedback`, `verify_character` and `verify_onebus` build (`registry.fixture`: the smallest remix carrying their modules, and for the CC MAP gates one without a DRAM runtime, since they run under unicorn). Not a remix to flash: `bottleservice` is the rig as it ships.
+The fixture `verify_ccmap`, `verify_ccfeedback`, `verify_character` and `verify_onebus` build (`registry.fixture`: the smallest remix carrying their modules, and for the CC MAP gates one without a DRAM runtime, since they run under unicorn). Not a remix to flash: `bottleservice` is the one that ships.
 
 ## What is in it
 

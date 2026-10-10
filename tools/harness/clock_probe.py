@@ -49,7 +49,7 @@ def main():
     print(f"rms L {20*math.log10(rl+1e-12):.2f} dBFS, R {20*math.log10(rr+1e-12):.2f} dBFS, L/R {ratio:.5f}")
     print(f"timer advance per frame {adv:.1f} (CLK/2), core cycles per sample {cps:.1f}, "
           f"core clock {cps * sr / 1e6:.3f} MHz at fs = {sr}")
-    print(f"  4160/sample = 183.456 MHz (EXTAL 22.5792 x 195/24); 4535 = 200 MHz")
+    print(f"  4532/sample = 199.9 MHz (measured, probe 55, 22 Sep 2026); 4535 = 200 MHz; 4160 = 183.456 MHz (retracted)")
     print(f"  if the timer counts CLK (not CLK/2) halve the result: {cps/2:.1f}")
 
 

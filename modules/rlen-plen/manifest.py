@@ -31,7 +31,7 @@ encoder reaches PLEN; and the part validator's hard-coded 64 (0x40002c72 /
 0x40002c78) -> 65, which otherwise rewrites a stored 65 to MAX on every bank
 load (measured under the port: the file parser 0x400165dc stores 65, the
 validator 0x40002c7a wrote 64 over it). Raw 0..64 keep their meaning; saved parts need no
-restamp. RECORDER SPACING (hook 0x40006e0c) is bypassed on the PLEN path:
+restamp. RECORDER LOOP FIX's spacing cave (hook 0x40006e0c) is bypassed on the PLEN path:
 its next-arm model is for chained sequencer passes, and a PLEN take ended by
 the next arm is a MAX take anyway.
 

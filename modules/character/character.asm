@@ -34,7 +34,7 @@
 ;   $2d attack coeff   $2e release coeff
 ;   $30 k2   $31 k3mag   $48 d/8 (TAPE)
 ;   $32 G/8   $33 the output scale after the curve (1, (1+d)/G, 1/G by mode)
-;   $37 d/2   $38 d   $39 comp/2   $4c (0.5+d)/2 (TUBE)   $3a e/2   $3b 1-e (INFL)
+;   $37 d/2   $38 d   $39 comp/2 (TUBE)   $4c (0.5+d)/2 (TUBE)   $3a e/2   $3b 1-e (INFL)
 ;   $4d DRV == 0: skip the saturator
 ;   $25 master flag (1 = position 3 on A: GLUE), $23 FX2-slot flag (set at
 ;     init: 1 = this instance is on FX2, dry)
@@ -231,7 +231,7 @@ ch_cset:
 ; = DaTube, INFL (2) = OInflator (JClones, MIT). A stored 3 lands on TAPE.
 ; Per-mode words, all from DRV = d (0..0.992):
 ;   TUBE  $37 = d/2 (the positive half's scale)  $38 = d (the negative half's)
-;         ($4c = (0.5 + d)/2 input gain and $39 = comp/2 below, every mode)
+;         ($4c = (0.5 + d)/2 input gain and $39 = comp/2)
 ;   INFL  $3a = e/2 with e = d            $3b = 1 - e
         clr     a
         move    a,x:(r7+$29)            ; sat mode: 0 = TAPE
@@ -338,7 +338,19 @@ ch_kself:
 ch_kset:
         move    x1,x:(r7+$17)
         move    x:(r7+$4e),a             ; d = DRV/128
-        move    a,x1                    ; (x1 = DRV/128 for TapeHead's words below)
+        move    a,x1                    ; shared by the selected saturator decode
+        move    #>$fab1e0,r1            ; TUBE_UP -- also the base of TAPE_D8
+        move    #>$ffffff,m1
+        move    x:(r7+$29),b            ; mode: calculate only the active curve's words
+        cmp     #>$1,b
+        beq     onlysat_tube_decode_block
+        tst     b
+        beq     onlysat_tape_decode_block
+        bra     onlysat_decode_finish   ; INFL's coefficients were set at ch_sinfd
+onlysat_tube_decode_block:
+        move    r1,r2
+        move    #$11,n2
+        move    (r2)+n2                 ; r2 = TUBE_UP's slopes
         move    a,x0
         move    #>$37445f,y1            ; 0.43175 = 1.727/4
         mpy     x0,y1,a
@@ -358,14 +370,11 @@ ch_kset:
         div     x0,a                    ; 24 quotient bits land in a0
         move    a0,x0
         move    x0,x:(r7+$39)           ; comp/2
+        bra     onlysat_decode_finish
+onlysat_tape_decode_block:
 ; the P table: TUBE_UP (DaTube's curve: 17 values, then their 17 slopes)
 ; then TAPE_D8 (17 words).
-        move    #>$fab1e0,r1            ; TUBE_UP -- rewritten by build_bus.py
-        move    #>$ffffff,m1
-        move    r1,r2
-        move    #$11,n2
-        move    (r2)+n2                 ; r2 = its slopes
-; ---- TapeHead's per-block words (TAPE only reads them; computed always) --
+; ---- TapeHead's per-block words (used only by TAPE) ----------------------
 ; d8 = d/8 from TAPE_D8 (the 17 words after TUBE_UP's 34), interpolated over
 ; DRV/128 (idx = DRV >> 19, frac = the 19 bits under it); k2 linear in
 ; TONE/128 (2.1 -> 5 kHz);
@@ -407,6 +416,7 @@ ch_kset:
         mpy     x0,y1,a
         asl     #$1,a,a
         move    a,x:(r7+$31)            ; k3mag (< 0.98)
+onlysat_decode_finish:
 ; WDTH -> mid and side gains. 64 = (1, 1); 0 = (1, 0) mono; 127 = (1, ~2).
 ; side gain = WDTH/64, mid stays 1 -- widening only touches the difference,
 ; so a mono source is untouched at every setting.
@@ -518,6 +528,9 @@ ch_live:
         mpy     x0,y1,a
         add     #>$100000,a             ; G/8 = 0.125 + 0.375 d
         move    a,x:(r7+$32)
+        move    x:(r7+$29),b            ; TAPE's output scale is unity; skip the unused reciprocal
+        tst     b
+        beq     ch_gtape
         move    a,x0
         move    #$08,y1                 ; 1/16
         move    y1,a                    ; a clean load: a0 = 0 for the divide
@@ -527,9 +540,6 @@ ch_live:
         move    a0,x0
         move    x0,a
         asl     #$1,a,a                 ; 1/G, 1.0 at DRV 0 (the store limits)
-        move    x:(r7+$29),b            ; sat mode
-        tst     b
-        beq     ch_gtape
         cmp     #>$1,b
         bne     ch_gdone                ; INFL: 1/G
         move    a,x0                    ; TUBE: (1/G)(1+d)

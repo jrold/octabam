@@ -980,6 +980,9 @@ read_bank:
         movel   %a0@,%d0
         cmpil   #0x50324c4b,%d0
         bne.s   rb_bad
+        movel   %a0@(4),%d0            | the version hdr writes
+        subql   #1,%d0
+        bne.s   rb_bad
         movel   %a0@(12),%d0
         cmpil   #BANK_B,%d0
         bne.s   rb_bad
@@ -1266,12 +1269,31 @@ MODE_W: .asciz  "w"
 | the power-up then reads that bank's p2lkNN.work instead.
 
 | nv_save: d0 = bank -> CS1 holds its page 2. Keeps every register.
+| Two tasks call it: the UI task (prio 3) and the engine task (prio 1), and
+| the UI task preempts the engine task at any instruction, so a save can
+| start and finish inside another's. Each start takes a ticket (NVGEN, with
+| NVBANK, under SR 0x2700); the entry loop compares its ticket with NVGEN
+| every four bytes, and the commit (count, sum, magic) runs under 0x2700
+| after the same compare. A save that finds a newer ticket starts over from
+| NVBANK, the newest request's bank, so the last writer to start is the one
+| whose entries stand and the magic is never set over a mixture. The mask
+| covers a few instructions; the scan of up to BANK_B bytes runs unmasked.
 nv_save:
-        lea     %sp@(-32),%sp
+        lea     %sp@(-40),%sp
         movem.l %d0-%d5/%a0-%a1,%sp@
+        move.w  %sr,%d1
+        move.w  %d1,%sp@(36)           | the caller's SR
+        move.w  #0x2700,%sr
+        movel   %d0,NVBANK
+        addql   #1,NVGEN
+        movel   NVGEN,%d1
+        movel   %d1,%sp@(32)           | this save's ticket
+        move.w  %sp@(36),%d1
+        move.w  %d1,%sr
+ns_again:
+        movel   NVBANK,%d0
         lea     NV,%a1
         clrl    %a1@                   | no magic while it is written
-        movel   %d0,NVBANK
         movel   %d0,%a1@(4)
         bsr.w   bank_at                | a0 = the bank's page 2
         lea     %a1@(16),%a1
@@ -1279,6 +1301,9 @@ nv_save:
         moveq   #0,%d3                 | sum
         moveq   #0,%d4                 | index
 ns_loop:
+        movel   %sp@(32),%d1
+        cmpl    NVGEN,%d1
+        bne.w   ns_again               | a newer save started meanwhile
         cmpil   #BANK_B,%d4
         bcc.s   ns_done
         movel   %a0@(0,%d4:l),%d0      | four at a time past the empty ones
@@ -1294,9 +1319,9 @@ ns_b4:  moveq   #0,%d0
         cmpil   #0xff,%d0
         beq.s   ns_next
         cmpil   #0x7f,%d0
-        bhi.s   ns_out                 | not a knob value: no copy
+        bhi.s   ns_fail                | not a knob value: no copy
         cmpil   #NV_MAX,%d2
-        bcc.s   ns_out                 | does not fit: no copy
+        bcc.s   ns_fail                | does not fit: no copy
         movel   %d4,%d1
         lsll    #7,%d1
         orl     %d0,%d1                | the entry
@@ -1313,14 +1338,28 @@ ns_next:
         subql   #1,%d5
         bpl.s   ns_b4
         bra.s   ns_loop
+ns_fail:
+        moveq   #-1,%d2                | commit nothing, magic stays clear
 ns_done:
+        move.w  #0x2700,%sr
+        movel   %sp@(32),%d1
+        cmpl    NVGEN,%d1
+        beq.s   ns_commit
+        move.w  %sp@(36),%d1           | a newer save started: unmask, start over
+        move.w  %d1,%sr
+        bra.w   ns_again
+ns_commit:
+        tstl    %d2
+        bmi.s   ns_end
         lea     NV,%a1
         movel   %d2,%a1@(8)
         movel   %d3,%a1@(12)
         movel   #NV_MAGIC,%d0
         movel   %d0,%a1@
-ns_out: movem.l %sp@,%d0-%d5/%a0-%a1
-        lea     %sp@(32),%sp
+ns_end: move.w  %sp@(36),%d1
+        move.w  %d1,%sr
+        movem.l %sp@,%d0-%d5/%a0-%a1
+        lea     %sp@(40),%sp
         rts
 
 | nv_apply: d0 = bank -> 1 in d0 when CS1 held that bank's page 2 and it
@@ -1527,6 +1566,7 @@ in_out: movem.l %sp@,%d0-%d1/%a0
 INITED: .long   0
 NVBANK: .long   -1                      | the bank whose page 2 CS1 holds
 NEEDFILE: .long 0                       | bank + 1: read it from its file at the next bank load
+NVGEN:  .long   0                       | counts nv_save starts (see nv_save)
 EDITED: .long   0                       | set by a page-2 lock edit (the file pass reads it)
 P2STAGE: .fill  8*REC,1,0xff            | the staging record, by track
 P2PEND: .fill   24*REC,1,0xff           | pending slots n = 0..2, index n*8 + track

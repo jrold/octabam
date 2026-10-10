@@ -91,7 +91,7 @@ bitmap calls) and hardware timing.
 
 ## On the unit
 
-- ✅ Image OCTABAM81 (16 Sep 2026, Sam's MKII), the third implementation:
+- ✅ Image OCTABAM81 (16 Sep 2026, MKII; unit undetermined: commit `d745c5fe` says "the user's MKII", later docs say Sam's and repeat98's), the third implementation:
   pitch and length follow the tempo, no stretch.
 - Image 80 (the second) drew the panel right but pitched the sample while
   keeping its tempo, and sounded time-stretched: the voice renderer still

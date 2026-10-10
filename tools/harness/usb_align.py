@@ -11,7 +11,8 @@ channel at 200 + 100 N Hz, its right at +50) on a card, runs the remix under
 the port with the sequencer playing, and at the end dumps the producer's
 own ring (`aud_ring`, 1,024 frames x 20 channels, the last 23 ms, contiguous
 once unwrapped at `aud_produced`) -- no USB bench, whose polls pace nothing
-under --sequencer. The lag of MAIN L (channel 17) behind each track's left
+under --sequencer; `aud_force` is poked to 1 after the load so the producer
+runs, as it otherwise does only while a host asks for the stream. The lag of MAIN L (channel 17) behind each track's left
 channel comes from the phase of that track's tone in both, Goertzel at the
 known frequency over the same window: lag = (phase_track - phase_main) /
 (2 pi f) samples, modulo the tone's period. Every tone that sounds gives a
@@ -131,6 +132,11 @@ def main():
         r = subprocess.run([str(EMU), "--image", str(image), "--card", str(card), "--set", "OCTABAM",
                             "--project", "USBSIG", "--sequencer", "--internal-clock", "--poke-trig", "2",
                             "--frames", str(a.frames), "--load-ms", "90000",
+                            # the producer runs only while a host asks for the stream (5 Oct 2026);
+                            # aud_force is its harness switch: produce with no bench attached and
+                            # EP3 left alone (asking for alt 1 instead spins the bring-up on the
+                            # unmodelled controller and the frame interrupt never returns)
+                            "--poke", f"{sym['aud_force']:#x}=1",
                             "--dsp", "--main-level", "64",          # both cores live; MAIN volume up (verify_set's run)
                             "--mem-dump", f"{sym['aud_ring']:#x},{ring_b}={OUT / 'ring.bin'};"
                                           f"{sym['aud_produced']:#x},4={OUT / 'produced.bin'}"],

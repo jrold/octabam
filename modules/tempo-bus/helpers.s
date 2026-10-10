@@ -17,12 +17,6 @@
         .set    LPOP,     0x4003146c   | (layer): unregister it
         .set    PUSHED,   0x4003171c   | (key): nonzero while that key is held
         .set    P1WRITE,  0x40054cd8   | (track, flat, value): page-1 writer
-        .set    P1TOKEN,  0x54500000
-| P1TOKEN goes on the stack above the writer's three arguments. With
-| Octakit in the image the writer's last store (0x40054fec) runs her check,
-| which halts unless that word's top half is GK_TRACK_PARAMETER_TOKEN_ARMED
-| (her abi.inc; her own wrapper pushes it there). Stock ignores the word.
-| modules/octakit/manifest.py refuses a build whose abi.inc changes it.
         .set    DESC2,    0x400d5fdc   | FX2 descriptor table [id] -> P
         .set    DBPTR,    0x46c82456   | long: Part DB base
         .set    PARTB,    0x80000003   | byte: the current part
@@ -93,14 +87,13 @@ getval: moveal  %a4,%a0
 setval: moveq   #6,%d0
         cmpl    %d0,%d6
         bge.s   p2
-        movel   #P1TOKEN,%sp@-         | page 1: the stock writer, Octakit's token above its arguments
-        movel   %d2,%sp@-
+        movel   %d2,%sp@-              | page 1: the stock writer
         moveq   #24,%d0
         addl    %d6,%d0
         movel   %d0,%sp@-
         movel   %d4,%sp@-
         jsr     P1WRITE
-        lea     %sp@(16),%sp
+        lea     %sp@(12),%sp
         rts
 p2:     movel   %d6,%d3
         subql   #6,%d3                 | d3 = slot2

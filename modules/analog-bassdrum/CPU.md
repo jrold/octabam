@@ -209,7 +209,8 @@ benchmark keeps the failing scenarios visible and returns failure for them.
 Dynamic code loading would increase the engine library's possible size,
 not reduce active synthesis or effect processing cost.
 
-As a diagnostic only, raising `--dsp-ips` from the port's normal 4160 to
+The scenario results in this section were taken with the port at `--dsp-ips` 4160 (its default until 5 Oct 2026; retracted, CHIP.md section 2); the default is now 4532, measured, and they have not been re-run.
+As a diagnostic only, raising `--dsp-ips` from 4160 to
 5200 makes the same eight-909/double-DJ-EQ fixture produce audio on all eight
 tracks. Its complete four-track-loop peak then measures 4325.1875
 instructions/sample, already above the normal budget before surrounding IO.

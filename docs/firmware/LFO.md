@@ -155,6 +155,17 @@ Destination *d* = PMTR: `d < 12` → word *d* of the page record (PLAYBACK
 works through the store offset at `0x4000d02e`: a mode whose byte 12 is
 not 8 leaves `+8` untouched, so the held value persists.
 
+**Low byte of the store (measured, port, 5 Oct 2026).** `ot_emu --watch-pc
+0x4000d07a` on bottleservice with `tools/harness/stress_project.py` (24 LFOs
+per part, depth 18-28 on FX1/FX2 knobs), 900 frames: 21,088 output stores,
+each modulating its destination; 21,011 wrote a halfword with a non-zero low
+byte (e.g. `d0 = 0x22fe` for knob 34). 147 stores had knob byte 0 (the clamp
+at the bottom of the range) and all 147 had a non-zero low byte; the largest
+knob byte seen at the clamp was 0x7d. Each halfword is one DSP word `<< 8`,
+so an LFO-modulated knob word has non-zero bits 8-15. On the gate project at
+LFO depth 0, all 19,843 stores had a zero low byte. DSP code reads of
+page words take `and #>$7f0000` first (`AGENTS.md`).
+
 ## 6. Extending it
 
 Measured against the image; none built.

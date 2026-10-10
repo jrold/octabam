@@ -33,13 +33,14 @@ from dsp_modmap import BASE, IMG, PAYLOADS, modules  # noqa: E402
 from remix import registry as remix_registry  # noqa: E402
 from remix.registry import modules as remix_modules  # noqa: E402
 from remix.schema import (DEFAULT_HARVEST, NO_FALLBACK, BusRole,  # noqa: E402
-                          YBase)
+                          YBase, enable_words)
 from remix.state import fx1_hazard  # noqa: E402
 from remix import stock as stock_mod  # noqa: E402
 import label_fmt  # noqa: E402
 import mode_names  # noqa: E402
 import wide_dial  # noqa: E402
 from remix import dsp_ranges, ledger  # noqa: E402
+from remix import ybase as ybase_lit  # noqa: E402
 
 OUT = pathlib.Path("out/mainos_bus.bin")
 DIS = pathlib.Path("vendor/dsp56300/build/source/dsp_host/dsp_asm")
@@ -142,9 +143,11 @@ ORDER = [k for k in CARRIED if k not in HIDDEN]
 NO_FB = REMIX.fallback == NO_FALLBACK
 
 BUILD_TAG = os.environ.get("BUILD", "79").encode()
-if not (BUILD_TAG.isdigit() and 1 <= len(BUILD_TAG) <= 2):
+# Two characters: `Modulation` + the tag fills the 12 the field holds.
+# Past image 99 the first character is a letter: A0 = 100, A1 .. A9, B0 = 110.
+if not (BUILD_TAG.isalnum() and BUILD_TAG.isascii() and 1 <= len(BUILD_TAG) <= 2):
     sys.exit(f"BUILD={BUILD_TAG.decode()!r}: the tag is appended to a 13-byte "
-             f"name field, so it must be one or two digits")
+             f"name field, so it is one or two letters or digits (A0 = image 100)")
 
 # ---- the module tables, derived from modules/*/manifest.py ------------------
 # One statement per fact, living in the module that owns it. These dicts keep
@@ -217,11 +220,13 @@ for _k, _n in HOST_SLOTS.items():
 # near-boolean, which is what hardware showed.
 PAGE2_COUNTS = {m.key: {i: p.count for i, p in enumerate(m.params)
                         if p.count is not None} for m in _CLONED}
-# Membership here also GATES the display-formatter pass below: a module with
-# no stepped slot keeps its donor's formatters untouched, which is what SEND
-# wants (FILTER's plain-numeric zeros, hardware-confirmed).
+# Membership here also GATES the all-slots formatter reset below: a module
+# with no stepped slot keeps its donor's formatters on every slot it does not
+# declare, which is what SEND wants (FILTER's plain-numeric zeros,
+# hardware-confirmed). A slot declared Formatter.PLAIN is zeroed either way.
 STEPPED_SLOTS = {m.key: m.stepped_slots for m in _CLONED if m.stepped_slots}
 BIPOLAR_SLOTS = {m.key: m.bipolar_slots for m in _CLONED if m.bipolar_slots}
+PLAIN_SLOTS = {m.key: m.plain_slots for m in _CLONED if m.plain_slots}
 _DEF_ASM = {m.key: m.dsp.asm for m in _CLONED}
 # DSP code reached from STOCK code rather than a chooser row
 # (schema.DspSection.hooks with no MenuEntry): placed like an effect, on
@@ -252,17 +257,6 @@ P_PARAM_NAMES, P_DEFAULTS = 0x16, 0x5e
 P_PENABLE_LO, P_PENABLE_HI = 0x18e, 0x18a
 
 
-def penable(active, linked=()):
-    """The two enable words: bit 0 of a slot's nibble draws it, bit 1 draws
-    the link element to its left neighbour (PARAM_PAGES.md 3b)."""
-    lo = hi = 0
-    for i in active:
-        bits = 3 if i in linked else 1
-        if i < 8:
-            lo |= bits << (4 * i)
-        else:
-            hi |= bits << (4 * (i - 8))
-    return lo, hi
 
 
 # ---- PROBE MODE (PROBE=1): swap BusVerb for dsp/page2_probe.asm and expose
@@ -425,6 +419,20 @@ if SPEC:
                  f"those replace a server with a probe (BURN=1 is allowed: "
                  f"with SPEC it is the rig burn on SEND, see RIG_BURN)")
 
+if not SPEC:
+    # Without SPEC every carried module is placed on both payloads, so the
+    # ledger's per-payload exemption for owns_fx2_buffers does not hold. The
+    # two servers overlap there in the pinned non-SPEC images (plain,
+    # render-delay, xbus-only); any other owner is refused by name.
+    _fx2_own = [k for k in CARRIED if _MODS[k].claims is not None
+                and _MODS[k].claims.owns_fx2_buffers]
+    _fx2_other = [k for k in _fx2_own if k not in ("REVERB SERVER", "DELAY SERVER")]
+    if _fx2_other and len(_fx2_own) > 1:
+        sys.exit(f"{', '.join(_fx2_other)} owns the FX2 instance buffers beside "
+                 f"{', '.join(k for k in _fx2_own if k not in _fx2_other)}: "
+                 f"without SPEC=1 every module is placed on both payloads, so "
+                 f"their payloads={{...}} declarations do not separate them")
+
 # ---- DSP code placement (task 13) ------------------------------------------
            # DLSRC= swaps the delay engine for an alternate source file --
            # the same mechanism as RVSRC below, for the same reason: the
@@ -486,14 +494,21 @@ STOCK_DELAY_P = 0x400d4ace          # DELAY's E (0x400d4a96) + 0x38
 _SCRATCH = None
 
 # Disassemble what you assemble (AGENTS.md): dsp_asm's own listing (-list)
-# against dsp56kDisassemble's decode of the same bytes, mnemonic by mnemonic.
-# Only mnemonics are compared: a branch displacement or a `do` immediate
-# renders differently in a listing and a decoder without any bug. What this
-# cannot see is a resolver choosing the wrong ADDRESS for a symbolic operand
-# (the label-prefix trap): both tools decode the bytes dsp_asm wrote.
-# Jannik Aßfalg, PR #380, 22 Sep 2026.
+# against dsp56kDisassemble's decode of the same bytes, instruction by
+# instruction -- the mnemonic and every operand field, parallel moves
+# included, so a move the encoder dropped stops the build. Fields are
+# compared after normalising what the two tools print differently: case, the
+# <, << and > size marks, and numbers (decimal or $hex in the source, $hex in
+# the decode). A decoded field that is a label (func_0010a6) matches any
+# number: a branch displacement in the listing is an absolute target in the
+# decode. The decoder omits nop. What this cannot see is a resolver choosing
+# the wrong ADDRESS for a symbolic operand (the label-prefix trap): both tools
+# decode the bytes dsp_asm wrote. Jannik Aßfalg, PR #380, 22 Sep 2026;
+# operands since 4 Oct 2026.
 _LISTLINE = re.compile(r"^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; "
                        r"[0-9a-f]{6}(?: [0-9a-f]{6})?$")
+_RT_NUM = re.compile(r"(-?)(\$[0-9a-f]+|[0-9]+)")
+_RT_LABEL = re.compile(r"^[a-z][a-z0-9]*_[a-z0-9_]+$")
 
 # `mpy` that dsp_asm encodes as `mpysu` is the one mismatch the shipping
 # code carries on purpose: the second operand is non-negative at every site
@@ -504,6 +519,7 @@ _LISTLINE = re.compile(r"^([0-9a-f]{6}): (\S+)(?:\s+(.*?))?\s*; "
 MPYSU_AUDITED = {
     "REVERB SERVER": {"x0,y0,a": 12, "x0,x1,a": 9, "x1,y1,a": 4},
     "CHARACTER":     {"x1,y1,b": 1},
+    "CHARACTER TXTR": {"x1,y1,b": 1},   # the same chtube site, in its copy of the source
     "SPECTRUM":      {"x1,y1,b": 1},
 }
 # These flags substitute or excise module source (probes, the shimmer
@@ -522,6 +538,26 @@ def _listing(text):
     return out
 
 
+def _rt_fields(ops):
+    """Operand tokens (whitespace-separated), each split into its comma
+    fields, every field lower case with no size marks and its numbers hex."""
+    def field(f):
+        f = f.lower().replace("<", "").replace(">", "")
+        return _RT_NUM.sub(
+            lambda m: m.group(1) + format(int(m.group(2)[1:], 16)
+                                          if m.group(2)[0] == "$"
+                                          else int(m.group(2)), "x"), f)
+    return [[field(x) for x in tok.split(",")] for tok in ops.split()]
+
+
+def _rt_same(sop, dop):
+    s, d = _rt_fields(sop), _rt_fields(dop)
+    if [len(t) for t in s] != [len(t) for t in d]:
+        return False
+    return all(sf == df or (_RT_LABEL.match(df) and re.fullmatch(r"-?[0-9a-f]+", sf))
+               for st, dt in zip(s, d) for sf, df in zip(st, dt))
+
+
 def _roundtrip(list_out, blob, org, label):
     src = _listing(list_out)
     if not src:
@@ -533,19 +569,27 @@ def _roundtrip(list_out, blob, org, label):
     dec = _listing(r.stdout)
     bad, mpysu = [], {}
     for a, (sm, sop) in src.items():
-        if a not in dec or dec[a][0] == sm:
+        if a not in dec:
+            if sm != "nop":
+                bad.append((a, sm, sop, "(nothing decoded here)", ""))
             continue
         dm, dop = dec[a]
-        if (sm, dm) == ("mpy", "mpysu"):
+        if sm == "lua":
+            # lua's only rN+nN mode is (rN)+nN (D = rN+nN); dsp_asm takes
+            # (rN+nN) as that encoding and the decoder prints it (rN)+nN.
+            sop = re.sub(r"\((r\d)\+(n\d)\)", r"(\1)+\2", sop)
+        if not _rt_same(sop, dop):
+            bad.append((a, sm, sop, dm, dop))
+        elif (sm, dm) == ("mpy", "mpysu"):
             mpysu.setdefault(sop, []).append(a)
-        else:
+        elif dm != sm:
             bad.append((a, sm, sop, dm, dop))
     who = f" in {label}" if label else ""
     if bad:
         detail = "\n".join(f"    P:0x{a:05x}  wrote '{sm} {sop}'  chip runs "
                            f"'{dm} {dop}'" for a, sm, sop, dm, dop in bad)
         sys.exit(f"disassemble-what-you-assemble: dsp_asm wrote bytes{who} that "
-                 f"do not decode to the mnemonic typed:\n{detail}")
+                 f"do not decode to the instruction typed:\n{detail}")
     found = {k: len(v) for k, v in mpysu.items()}
     audited = MPYSU_AUDITED.get(label, {})
     if any(os.environ.get(k) for k in _VARIANT_FLAGS):
@@ -703,6 +747,11 @@ def main():
             wr32(clone_P + 0x0ca + bi_slot * 4, 0x4003c7a0)
             wr32(clone_P + 0x0fa + bi_slot * 4, 0)
             wr32(clone_P + 0x12a + bi_slot * 4, 0x400328e4)
+        # Formatter.PLAIN: the stock numeric dial, both formatter words zero,
+        # whatever the donor drew in that slot (verify_menu's KNOB check).
+        for pl_slot in PLAIN_SLOTS.get(name, ()):
+            wr32(clone_P + 0x0ca + pl_slot * 4, 0)
+            wr32(clone_P + 0x0fa + pl_slot * 4, 0)
         for idx, cnt in PAGE2_COUNTS.get(name, {}).items():
             wr32(clone_P + 0x9a + idx * 4, cnt)     # P+0x9a = value-count array
             wr32(clone_P + 0x6a + idx * 4, 0)       # min 0
@@ -710,12 +759,18 @@ def main():
             for idx, cnt in PROBE_COUNTS.items():
                 wr32(clone_P + 0x9a + idx * 4, cnt)
                 wr32(clone_P + 0x6a + idx * 4, 0)   # min 0: slot 7 showed -64   # P+0x9a = count array
-        lo, hi = penable(ACTIVE_PARAMS[name], LINKED_PARAMS.get(name, ()))
+        # Param(active=None) on a stock_dsp clone: the slot's nibble stays
+        # the donor's, already copied into the clone above.
+        _inh = _MODS[name].inherited_enable
+        lo, hi = enable_words(ACTIVE_PARAMS[name], LINKED_PARAMS.get(name, ()),
+                              _inh, (rd32(clone_P + P_PENABLE_LO),
+                                     rd32(clone_P + P_PENABLE_HI)))
         wr32(clone_P + P_PENABLE_LO, lo)
         wr32(clone_P + P_PENABLE_HI, hi)
         clone_addr[name] = clone_P
         print(f"  {name:14s} id 0x{new_id:02x}  clone P=0x{clone_P:08x}  "
-              f"knobs {ACTIVE_PARAMS[name]}")
+              f"knobs {ACTIVE_PARAMS[name]}"
+              + (f"  donor's nibble {list(_inh)}" if _inh else ""))
 
     for name in CLONED_ORDER:
         wr32(FX2_IDS + NEW_IDS[name] * 4, clone_addr[name])
@@ -820,23 +875,6 @@ def main():
     for i, v in enumerate(entries):
         wr32(list_addr + i * 4, v)
 
-    # Octakit's machine-selection runtime hardcodes the stock FX2 chooser
-    # table at 0x400d6090 and accepts cursor positions 0..14. OCTABAM moves
-    # the live chooser elsewhere, so mirror the active list back into the
-    # original 15-row stock table when Octakit is present. This keeps
-    # Octakit's descriptor/payload validation coherent without modifying
-    # Octakit itself.
-    if "OCTAKIT" in REMIX.modules:
-        if len(real) > 15:
-            sys.exit(
-                "OCTAKIT supports at most 15 FX2 chooser rows: "
-                "its machine-selection runtime accepts cursor 0..14"
-            )
-
-        for i in range(16):
-            wr32(FX2_LIST + i * 4,
-                 entries[i] if i < len(entries) else 0)
-
     # and size the viewport: shrink it to a short list so there are no rows
     # left to pad, never grow it past the seven the screen has -- a longer
     # list scrolls, as stock's fifteen-entry list does.
@@ -932,46 +970,14 @@ def main():
     _replay = os.environ.get("TEMPOCAVE") == "replay"
     _plan = []
     # ---- overrides (schema.Override): a bridge stands in at a shared site --
-    # Collected before anything is written: which detours to skip, which
-    # recipe writes to skip, and the continuation symbols the bridge's stub
-    # and any overridden cave link against -- the TARGET the skipped write
-    # carried (a `jmp abs.l`'s address, or a 4-byte pointer entry).
+    # Collected before anything is written: which detours to skip.
     _ovr_detours: set[tuple[int, str]] = set()          # (site, module key)
-    _ovr_writes: dict[str, set[str]] = {}               # module key -> write names
-    _defsym_ovr: dict[str, int] = {}                    # symbol -> target
     for _k in REMIX.modules:
         for _o in getattr(remix_modules()[_k], "overrides", ()):
             if _o.module not in REMIX.modules:
                 sys.exit(f"{_k} overrides {_o.module} at 0x{_o.site:08x}, which this "
                          f"remix does not carry -- nothing to bridge; drop {_k}")
-            if _o.write is None:
-                _ovr_detours.add((_o.site, _o.module))
-                continue
-            _ovr_writes.setdefault(_o.module, set()).add(_o.write)
-            if _o.defsym:
-                _rt = getattr(remix_modules()[_o.module], "runtime", None)
-                if _rt is None:
-                    sys.exit(f"{_k}: override names write {_o.write!r} of {_o.module}, "
-                             f"which has no runtime recipe")
-                _spec = json.loads(pathlib.Path(_rt.recipe).read_text())
-                _data = None
-                for _p in _spec["patches"]:
-                    if _p["name"] == _o.write:
-                        _wl = [w for w in _p["writes"]
-                               if _spec["format"]["os_load_address"] + w["offset"] == _o.site]
-                        if _wl:
-                            _data = bytes.fromhex(_wl[0]["data"])
-                if _data is None:
-                    sys.exit(f"{_k}: {_o.module} has no write {_o.write!r} at 0x{_o.site:08x}")
-                if _data[:2] == b"\x4e\xf9" and len(_data) >= 6:
-                    _defsym_ovr[_o.defsym] = int.from_bytes(_data[2:6], "big")   # jmp abs.l
-                elif len(_data) == 4:
-                    _defsym_ovr[_o.defsym] = int.from_bytes(_data, "big")       # a pointer
-                else:
-                    sys.exit(f"{_k}: cannot read a target out of {_o.module}'s write "
-                             f"{_o.write!r} ({_data.hex()}) -- not a jmp abs.l or a pointer")
-                print(f"  {_k}: {_o.defsym} = 0x{_defsym_ovr[_o.defsym]:08x} "
-                      f"({_o.module}'s {_o.write} at 0x{_o.site:08x}, bridged)")
+            _ovr_detours.add((_o.site, _o.module))
 
     for _c in _caves:
         _b = _c.pinned
@@ -1012,7 +1018,7 @@ def main():
         # Linked.defsyms: a bridge's target, else an earlier global, else
         # the declared value; the oracle links the declared values.
         _decl = dict(_u.defsyms)
-        _mine = tuple((n, _defsym_ovr.get(n, _exports.get(n, v))) for n, v in _u.defsyms)
+        _mine = tuple((n, _exports.get(n, v)) for n, v in _u.defsyms)
         _rest = tuple((n, v) for n, v in _exports.items() if n not in _decl)
         for _n, _v in _mine:
             if _v != _decl[_n]:
@@ -1112,8 +1118,8 @@ def main():
             # A bridge may redefine one of this cave's defsyms (CC_NEXT):
             # the linked bytes then differ from the ratified form by exactly
             # that address, so the oracle is set aside for it and said so.
-            _bridged = [n for n, _v in _c.defsyms if n in _defsym_ovr or n in _exports]
-            _cdefs = tuple((n, _defsym_ovr.get(n, _exports.get(n, v))) for n, v in _c.defsyms)
+            _bridged = [n for n, _v in _c.defsyms if n in _exports]
+            _cdefs = tuple((n, _exports.get(n, v)) for n, v in _c.defsyms)
             _lb, _lsyms, _lglob = _link(
                 _c.source, _c.cave_addr, _c.cpu,
                 pathlib.Path("out/linked/caves") / re.sub(r"\W+", "_", _c.label),
@@ -1122,7 +1128,7 @@ def main():
             _ref = (_c.reference(_c.cave_addr) if _c.reference is not None
                     else _c.pinned if _c.emit is None else _b)
             if _bridged:
-                print(f"  {_c.label}: {', '.join(f'{n} -> 0x{_defsym_ovr.get(n, _exports.get(n, 0)):08x}' for n in _bridged)}"
+                print(f"  {_c.label}: {', '.join(f'{n} -> 0x{_exports.get(n, 0):08x}' for n in _bridged)}"
                       f" (bridged; the ratified-bytes oracle is set aside for this cave)")
                 _ref = b""
             if _ref and _lb != _ref:
@@ -1131,6 +1137,9 @@ def main():
                          f"{len(_ref)} B) -- re-pin them in the manifest deliberately")
             if not _ref and not _lb:
                 sys.exit(f"{_c.label}: source produced no bytes")
+            if _c.reserve and len(_lb) > _c.reserve:
+                sys.exit(f"{_c.label}: linked {len(_lb)} B exceeds its declared "
+                         f"reserve of {_c.reserve} B")
             if _floating and _inside and _c.cave_addr + len(_lb) > cave_limit:
                 # A floating source cave that no longer fits the clone window
                 # (the ROM units come first since 15 Sep 2026) goes to the
@@ -1198,51 +1207,8 @@ def main():
         if _inside:
             _cave_top, _last_placed = _c.cave_addr + len(_b), _c.label
 
-    # ==== 1c. loader-appended DRAM runtimes (schema.Runtime) =================
-    # The third placement class: the OS image GROWS by an append (early
-    # loader + stage + packed runtime) and the runtime executes from DRAM.
-    # Its recipe's sparse writes into the image are pokes with the same
-    # assert-before-write discipline as a cave's; the append is stitched on
-    # at the very end, after every other pass has seen the stock-length
-    # image. tools/remix/runtime_build.py re-derives every identity the
-    # recipe pins, so nothing lands here that does not match the author's
-    # own build byte for byte. Nothing runs for a remix without a runtime.
     _appends = []
     _platform_at = None
-    _payloads = []                  # runtimes carried by octabam's loader (1e)
-    for _k in REMIX.modules:
-        _m = remix_modules()[_k]
-        _rt = getattr(_m, "runtime", None)
-        if _rt is None:
-            continue
-        from remix import runtime_build
-        _work = pathlib.Path("out/runtime") / _m.name
-        # A runtime whose recipe writes the arena geometry (Octakit's four)
-        # declares them in its ArenaReserve; the build computes those
-        # literals from EVERY reservation in the remix (1e) instead.
-        _skip = tuple(getattr(getattr(_m, "arena", None), "recipe_writes", ())) + \
-            tuple(_ovr_writes.get(_m.key, ()))                 # bridged (schema.Override)
-        _writes, _append, _info = runtime_build.build(_rt, IMG.read_bytes(), _work,
-                                                      skip=_skip)
-        _sym[_m.key] = _info["symbols"]
-        _exports.update({k: v for k, v in _info["symbols"].items()
-                         if not k.startswith("_") or k.startswith("__gk_")})
-        for _va, _expect, _write, _name in _writes:
-            _got = bytes(img[_va - BASE:_va - BASE + len(_expect)])
-            if _got != _expect:
-                sys.exit(f"{_m.key}: runtime write {_name} at 0x{_va:08x} finds "
-                         f"{_got.hex()}, not stock {_expect.hex()} -- another module "
-                         f"got there first; refusing")
-            img[_va - BASE:_va - BASE + len(_write)] = _write
-        # Her append (loader + stage + packed runtime) is NOT stitched on:
-        # her runtime becomes a PAYLOAD of octabam's loader (section 1e),
-        # staged at her own stage address so her relocation still finds it.
-        _payloads.append(_info["payload"])
-        print(f"  {_m.key}: {len(_writes)} writes into the image, runtime "
-              f"{_info['runtime_size']:,} B -> packed {_info['packed_size']:,} B "
-              f"(m68k-elf-gcc {_info['gcc']}, recipe pins {_info['gcc_pinned']}; "
-              f"rebuilt runtime, packed runtime and append all match the "
-              f"recipe) -- carried as a payload of octabam's loader{_rt.report_note}")
 
     # ==== 1d. linker-backed units (schema.Linked/Detour/TableGrow/Poke) =====
     # Placement by the BUILD: each unit is assembled and linked at the
@@ -1255,25 +1221,17 @@ def main():
     # author's own build output, so a source or toolchain drift from the
     # bytes they ratified fails here even though the image carries the unit
     # elsewhere. Nothing runs for a remix without linked units.
-    if _payloads and not _toolchain:
-        sys.exit("linked units need m68k-elf-as/ld/objcopy/nm -- run `make setup` "
-                 "(Homebrew: brew install m68k-elf-gcc)")
-
     # ==== 1e. the platform runtime: DRAM units + other payloads, one loader ==
     # Every `dram=True` unit in the remix is linked as ONE image at the
     # base of the platform's arena reserve, packed and carried behind
-    # octabam's loader together with any runtime built in 1c (Octakit) --
-    # equal payloads, one boot detour. The loader itself is the append;
+    # octabam's loader, one boot detour. The loader itself is the append;
     # nothing here touches the OS zero runs.
     # ---- the audio page arena: every reservation, one geometry -----------
-    # Modules that live in the arena declare their pages (Octakit: the top
-    # 528); the platform reserves its own at the bottom whenever the remix
-    # carries DRAM units. tools/remix/arena.py stacks them and yields the
-    # writes: the base literal at its 24 sites and the four geometry words.
+    # The platform reserves its pages at the bottom whenever the remix
+    # carries DRAM units. tools/remix/arena.py yields the writes: the base
+    # literal at its 24 sites and the four geometry words.
     from remix import arena
-    _reservations = [(_m.name, _m.arena.where, _m.arena.pages)
-                     for _k in REMIX.modules for _m in (remix_modules()[_k],)
-                     if getattr(_m, "arena", None) is not None]
+    _reservations = []
     if _dram:
         _reservations.append(("octabam platform", "bottom", arena.PLATFORM_PAGES))
     _reserve = None
@@ -1293,7 +1251,7 @@ def main():
         print(f"  arena: base 0x{_abase:08x}, {_acount:,} pages "
               f"({_acount * arena.PAGE // 1048576} MB) left for samples and recorders "
               f"(stock {arena.PAGES:,}); {len(arena.pokes(_reservations))} words rewritten")
-    # A cave that compares against the arena base (RECORDER HOLD: the fetch
+    # A cave that compares against the arena base (RECORDER LOOP FIX's hold caves: the fetch
     # returns the base for an unmapped page) carries the stock literal; it
     # follows the base like the firmware's own sites. The declared count is
     # checked in every build, moved or not.
@@ -1315,22 +1273,25 @@ def main():
     _dram_defs: dict[str, int] = {}
     _unit_defs: dict[str, tuple] = {}
     for _m, _u in _dram:
-        _mine = tuple((n, _defsym_ovr.get(n, _exports.get(n, v))) for n, v in _u.defsyms)
+        _mine = tuple((n, _exports.get(n, v)) for n, v in _u.defsyms)
         for _n, _v in _mine:
             if _dram_defs.get(_n, _v) != _v:
                 sys.exit(f"{_m.key} {_u.label}: defsym {_n} = 0x{_v:x}, but another DRAM unit "
                          f"has 0x{_dram_defs[_n]:x} -- the platform runtime is one link")
             _dram_defs[_n] = _v
         _unit_defs[_u.label] = _mine
-    _pdefs = {**_dram_defs, **_defsym_ovr}
+    _pdefs = dict(_dram_defs)
     _sel = {_k: remix_modules()[_k] for _k in REMIX.modules}
+    _regions = [(_r.symbol, _r.size, _r.align) for _k in REMIX.modules
+                for _r in getattr(remix_modules()[_k], "dram_regions", ())]
 
-    if _dram or _payloads:
+    if _dram:
         from remix import platform_build
         _pappend, _psyms, _boot, _pnames = platform_build.build(
-            [(_m.key, _u) for _m, _u in _dram], _payloads, pathlib.Path("out/platform"),
+            [(_m.key, _u) for _m, _u in _dram], [], pathlib.Path("out/platform"),
             reserve=_reserve, defsyms=_pdefs, unit_defs=_unit_defs,
-            includes={_u.label: _u.include(_sel) for _m, _u in _dram if _u.include is not None})
+            includes={_u.label: _u.include(_sel) for _m, _u in _dram if _u.include is not None},
+            regions=_regions)
         for _m, _u in _dram:
             _sym[_u.label] = _psyms          # detours name units; one table serves all
             _uref = _u.reference_for(_sel)
@@ -1354,21 +1315,15 @@ def main():
                              f"author's {_rsha} -- source or toolchain drift; refusing")
                 print(f"  {_m.key} {_u.label}: matches the author's build at 0x{_ra:08x} ({len(_rb):,} B)")
         _exports.update(_psyms)
-        for _p in _payloads:
-            _exports.update({k: v for k, v in _p.get("symbols", {}).items() if k.startswith("gk_")})
         _platform_at = len(_appends)
         _appends.append(("octabam loader + payloads (" + ", ".join(_pnames) + ")", _pappend))
-        if "OCTAKIT" not in REMIX.modules:
-            # Octakit's own recipe already routes the boot site through her
-            # wrapper, which calls the loader at its fixed address; without
-            # her, the redirect is ours to make.
-            _ba, _bexp, _bw, _bnote = _boot
-            _got = bytes(img[_ba - BASE:_ba - BASE + len(_bexp)])
-            if _got != _bexp:
-                sys.exit(f"boot site 0x{_ba:08x} holds {_got.hex()}, not stock "
-                         f"{_bexp.hex()} -- refusing to redirect boot")
-            img[_ba - BASE:_ba - BASE + len(_bw)] = _bw
-            print(f"    poke 0x{_ba:08x}: {_bexp.hex()} -> {_bw.hex()}  {_bnote}")
+        _ba, _bexp, _bw, _bnote = _boot
+        _got = bytes(img[_ba - BASE:_ba - BASE + len(_bexp)])
+        if _got != _bexp:
+            sys.exit(f"boot site 0x{_ba:08x} holds {_got.hex()}, not stock "
+                     f"{_bexp.hex()} -- refusing to redirect boot")
+        img[_ba - BASE:_ba - BASE + len(_bw)] = _bw
+        print(f"    poke 0x{_ba:08x}: {_bexp.hex()} -> {_bw.hex()}  {_bnote}")
         _dsize = sum(1 for _ in _dram)
         print(f"  platform runtime: {_dsize} DRAM unit(s) linked at "
               f"0x{_reserve[0]:08x}, payloads {', '.join(_pnames)}, "
@@ -1376,6 +1331,8 @@ def main():
               if _reserve else
               f"  platform loader: payloads {', '.join(_pnames)}, "
               f"append {len(_pappend):,} B at 0x{platform_build.LOADER_AT:08x}")
+        for _s, _n, _al in _regions:
+            print(f"  dram region: {_s} {_n:,} B at 0x{_psyms[_s]:08x}")
 
     for _m, _t in [(remix_modules()[_k], _t) for _k in REMIX.modules
                    for _t in getattr(remix_modules()[_k], "tables", ())]:
@@ -1402,6 +1359,11 @@ def main():
             print(f"  {_m.key}: detour at 0x{_d.site:08x} bridged -- another module's stub "
                   f"stands in for it")
             continue
+        _n = _d.pad_to or 6
+        assert _n >= 6 and _n % 2 == 0, \
+            f"{_m.key} detour at 0x{_d.site:08x}: pad_to {_n} must be an even count >= 6"
+        assert len(_d.expect) >= _n, \
+            f"{_m.key} detour at 0x{_d.site:08x}: expect covers {len(_d.expect)} of the {_n} bytes written"
         _got = bytes(img[_d.site - BASE:_d.site - BASE + len(_d.expect)])
         if _got != _d.expect:
             sys.exit(f"{_m.key} detour {_d.note or _d.symbol} at 0x{_d.site:08x} finds "
@@ -1409,9 +1371,6 @@ def main():
         _target = _d.target if _d.target is not None else _sym[_d.unit][_d.symbol]
         _op = {"jmp": b"\x4e\xf9", "jsr": b"\x4e\xb9", "lea": _d.expect[:2]}[_d.kind]
         _w = _op + _target.to_bytes(4, "big")
-        _n = _d.pad_to or 6
-        assert _n >= 6 and _n % 2 == 0, \
-            f"{_m.key} detour at 0x{_d.site:08x}: pad_to {_n} must be an even count >= 6"
         img[_d.site - BASE:_d.site - BASE + _n] = _w + b"\x4e\x71" * ((_n - 6) // 2)
         _what = f"{_d.unit}:{_d.symbol}" if _d.target is None else "stock"
         print(f"  {_m.key}: {_d.kind} 0x{_d.site:08x} -> {_what} 0x{_target:08x}  {_d.note}")
@@ -1461,7 +1420,7 @@ def main():
         if name in BLANKED:
             continue
         for _i, _p in enumerate(_MODS[name].params):
-            if not (_p.active and _p.labels):
+            if not _p.prints_labels:
                 continue
             # A MODE select with views gets the BIGGER cave: it renames the
             # knobs around it before printing its own word, so the panel
@@ -1741,21 +1700,6 @@ def main():
                              f"duplicate")
                 wr32(_slot, clone_addr[_n])
             wr32(FX1_ID2POS + _eid * 4, _pos + 1)      # past NONE at row 0
-        # Octakit's machine-selection runtime hardcodes the stock FX1 table
-        # too (0x400d6060, cursor 0..10), so the relocated list is mirrored
-        # back the same way as the FX2 one above. Unmirrored, a cursor
-        # position resolves to whatever stock row sat there: Octakit's
-        # validation passes on that descriptor and it identifies the wrong
-        # machine, silently.
-        if "OCTAKIT" in REMIX.modules:
-            if len(_new) - 1 > 11:
-                sys.exit(
-                    "OCTAKIT supports at most 11 FX1 chooser rows (NONE "
-                    "included): its machine-selection runtime accepts "
-                    "cursor 0..10"
-                )
-            for _i in range(12):
-                wr32(FX1_LIST + _i * 4, _new[_i] if _i < len(_new) else 0)
         _ours = [n for n in _fx1 if not _MODS[n].is_stock]
         print(f"  FX1 chooser = {len(_new) - 1} rows at 0x{_fx1_addr:08x} "
               f"(NONE + {', '.join(_fx1)}), {len(FX1_LIST_REFS)} refs "
@@ -2157,8 +2101,9 @@ mkgo:""",
     # $30000 as its payload discriminator. The gate is emitted per payload now
     # and carries no literal, so only the Y base remains.
     _want = (1 if DEV or SPEC else 0) if os.environ.get("XBUS") == "1" else 1
-    if delay_src is not None and delay_src.count("$30000") != _want:
+    if delay_src is not None and ybase_lit.count(delay_src) != _want:
         sys.exit(f"expected exactly {_want} $30000 literal(s) in the DELAY source")
+    _delay_lit_want = _want
 
     dev_delay = None            # (words) for the .mem dump append, DEV only
     for tag, va, ln in PAYLOADS:
@@ -2335,7 +2280,7 @@ mkgo:""",
         # three get the substitution rather than DELAY SERVER alone.
         # Under XBUS the SENDER and SERVER carry the payload discriminator, so
         # they get the substitution; the delay slot is a bare stub.
-        _sub = lambda s: s.replace("$30000", f"${pp['ybase']:x}")
+        _sub = lambda s: ybase_lit.substitute(s, pp['ybase'])
         _x = os.environ.get("XBUS") == "1"
 
         # ---- ROTLATCH: resolve this block's write offset, per payload ------
@@ -2352,9 +2297,16 @@ mkgo:""",
                        "DELAY SERVER": "bus_notfirst"}
         _hkb = os.environ.get("HKB") == "1"
 
+        def _marker_once(src, name, marker):
+            if src.count(marker) != 1:
+                sys.exit(f"{name}: the {marker.strip()} marker must appear exactly "
+                         f"once (found {src.count(marker)}; a comment that spells "
+                         f"it counts)")
+
         def _gate(src, name):
             if "; XBUS_GATE" not in src:
                 return src
+            _marker_once(src, name, "; XBUS_GATE")
             # DEV places the delay in payload A but it must behave as payload B
             # -- it is not the housekeeper there either; SEND's self-healing
             # election covers that, exactly as on hardware.
@@ -2407,10 +2359,9 @@ mkgo:""",
             """Seed the client's block label at init. PAYLOAD B ONLY."""
             if "; ROTINIT" not in src:
                 return src
+            _marker_once(src, name, "; ROTINIT")
             as_b = (tag == "B") or (DEV and name == "DELAY SERVER")
             if not as_b:
-                # first occurrence only: the delay's rebase note begins a
-                # line with the marker's text
                 return src.replace("; ROTINIT",
                                    f";  (payload {tag} reads the shared word "
                                    f"every block: nothing to seed)", 1)
@@ -2424,12 +2375,6 @@ mkgo:""",
                 f"        move    a,x:(r7+${slot:02x})",
                 "seedskip:"])
             return src.replace("; ROTINIT", body, 1)
-
-        def _marker_once(src, name, marker):
-            if src.count(marker) != 1:
-                sys.exit(f"{name}: the {marker.strip()} marker must appear exactly "
-                         f"once (found {src.count(marker)}; a comment that spells "
-                         f"it counts)")
 
         def _rotlatch(src, name, slot):
             if "; ROTLATCH" not in src:
@@ -2561,10 +2506,21 @@ mkgo:""",
                           f"a client that never housekeeps")
                 _texts[_k] = _src_k
 
+        def _ybase_check(m, src):
+            if any(os.environ.get(k) for k in _VARIANT_FLAGS):
+                return None
+            return ybase_lit.check(m.key, src, _delay_lit_want if m.key == "DELAY SERVER" else None)
+
         def _ybase(m, src):
             if DEV and m.dsp.dev_pin_ybase is not None:
-                return src.replace("$30000", f"${m.dsp.dev_pin_ybase:x}")
+                _err = _ybase_check(m, src)
+                if _err:
+                    sys.exit(_err)
+                return ybase_lit.substitute(src, m.dsp.dev_pin_ybase)
             if m.dsp.ybase is YBase.ALWAYS or (m.dsp.ybase is YBase.XBUS and _x):
+                _err = _ybase_check(m, src)
+                if _err:
+                    sys.exit(_err)
                 return _sub(src)
             return src
 
@@ -2636,14 +2592,20 @@ hostquit:
         # keeps the reverb, payload B the delay; the other is not placed at all
         # and its id is aliased to the fallback after placement (it needs its
         # which only exists once SEND has been assembled at this cursor).
-        absent = None
+        absent = []
         if SPEC:
-            absent = "DELAY SERVER" if tag == "A" else "REVERB SERVER"
-            plan = tuple(p for p in plan if p[0] != absent)
-            # A remix that never carried that module has nothing to specialize
-            # away, and its id is already handled by the omitted-id alias.
-            if absent not in NEW_IDS:
-                absent = None
+            # A chooser module is placed on the payloads its DspSection
+            # declares (BusVerb A, BusDelay B). Its id on the other payload
+            # is aliased after placement.
+            for _k in CARRIED:
+                _d = _MODS[_k].dsp
+                _pl = _d.payloads if _d is not None else frozenset({"A", "B"})
+                if not _pl & {"A", "B"}:
+                    sys.exit(f"{_k}: DspSection.payloads {sorted(_pl)} names "
+                             f"neither payload A nor B")
+                if tag not in _pl and _k in NEW_IDS:
+                    absent.append(_k)
+            plan = tuple(p for p in plan if p[0] not in absent)
         if NO_FB:
             # The DSP half of the NONE fallback, and it needs no new code:
             # the per-payload null stub is already in the image and is what
@@ -2681,13 +2643,16 @@ hostquit:
         # once and compare them.
         LFO01_MARK = "LFO lines 0-1: ROLLED TOO"
         PTABLE_MARK = "$fab1e0"          # schema.DspSection.ptable's literal
+        PTABLE2_MARK = "$fab2e0"         # schema.DspSection.ptable2's literal
 
         # ---- XTABLE: the P tables go to the stock curve bank ------------
         _xt_base, _xt_words = stock_mod.CURVE_BANK
         _xt_readers = stock_mod.curve_bank_readers()
         _xt_kept = sorted({k for ks in _xt_readers.values() for k in ks
                            if k == "OUTSIDE-DONOR" or k in _listed})
-        _xt_tables = [k for k in sorted((k for k in CARRIED if k in _texts),
+        # Every placed section with a table: chooser rows and hook-only
+        # sections alike (_texts holds a HOOKED one on its own payloads only).
+        _xt_tables = [k for k in sorted((k for k in CARRIED + HOOKED if k in _texts),
                                         key=lambda k: _MODS[k].dsp.priority)
                       if "$facade" in _texts[k] or PTABLE_MARK in _texts[k]]
         _pristine = IMG.read_bytes()
@@ -2713,7 +2678,8 @@ hostquit:
                 # first, and each literal is rewritten to its own start.
                 _n = ((len(LFO01 + LFOTAB) if LFO01_MARK in _t else len(LFOTAB))
                       if "$facade" in _t else 0) \
-                    + (len(_MODS[_k].dsp.ptable) if PTABLE_MARK in _t else 0)
+                    + (len(_MODS[_k].dsp.ptable) if PTABLE_MARK in _t else 0) \
+                    + (len(_MODS[_k].dsp.ptable2) if PTABLE2_MARK in _t else 0)
                 _xt_layout[_k] = (_xa, _n)
                 _xa += _n
             if _xa > _xt_base + _xt_words:
@@ -2733,6 +2699,44 @@ hostquit:
                          f"the curve bank record")
             for k, w in enumerate(words):
                 wrw_p(BASE + off + (start - _xt_base + k) * 3, w)
+
+        # ---- XHARVEST: a given-up effect's own X data ----------------------
+        # The third place for a table, used only when a module's table and
+        # code fit neither the curve bank nor one P run: the X records only
+        # an effect on neither chooser addresses (stock.x_exclusive_runs),
+        # less any record a kept effect's pinned words read. Each table
+        # block goes whole into the first run it fits; adjacent records of
+        # one owner form one run. Every image that places without it is
+        # unchanged.
+        _xh_recs = stock_mod.x_records(_pristine, tag)
+        _xh_gone = stock_mod.harvested(_listed)
+        _xh_pin = frozenset(w for _a, _n, _k, _c in stock_mod.pinned(tag, _xh_gone)
+                            for w in range(_a, _a + _n))
+        _xh_runs = [{"base": a, "words": n, "owner": o, "cursor": a}
+                    for a, n, o in stock_mod.x_exclusive_runs(tag, _xh_gone, _xh_pin)]
+
+        def place_xh(words, start):
+            """Write table words into this payload's X records at `start`."""
+            for k, w in enumerate(words):
+                a = start + k
+                r = next((r for r in _xh_recs if r[0] <= a < r[0] + r[1]), None)
+                if r is None:
+                    sys.exit(f"payload {tag}: X:0x{a:05x} is in no X record")
+                wrw_p(BASE + r[2] + (a - r[0]) * 3, w)
+
+        def _xh_fit(blocks):
+            """First-fit X start per block over the XHARVEST runs, or None.
+            Does not move the cursors."""
+            cur = {id(r): r["cursor"] for r in _xh_runs}
+            out = []
+            for b in blocks:
+                r = next((r for r in _xh_runs
+                          if cur[id(r)] + len(b) <= r["base"] + r["words"]), None)
+                if r is None:
+                    return None
+                out.append((cur[id(r)], r))
+                cur[id(r)] += len(b)
+            return out
 
         def _p2x(src, name):
             """Every `p:(` table read in the CODE becomes `x:(`; comments
@@ -2755,10 +2759,16 @@ hostquit:
                 sys.exit(f"payload {tag}: {name} has multiple $facade "
                          f"LFOTAB literals -- expected exactly one")
             _ptab = list(remix_modules()[name].dsp.ptable) if name in remix_modules() else []
+            _ptab2 = list(remix_modules()[name].dsp.ptable2) if name in remix_modules() else []
             if PTABLE_MARK in src and (not _ptab or src.count(PTABLE_MARK) > 1):
                 sys.exit(f"payload {tag}: {name}: a DspSection.ptable and exactly one "
                          f"{PTABLE_MARK} literal in the source go together "
                          f"(table {len(_ptab)} words, literal x{src.count(PTABLE_MARK)})")
+            if (bool(_ptab2) != (PTABLE2_MARK in src) and PTABLE_MARK in src) \
+                    or src.count(PTABLE2_MARK) > 1:
+                sys.exit(f"payload {tag}: {name}: a DspSection.ptable2 and exactly one "
+                         f"{PTABLE2_MARK} literal in the source go together "
+                         f"(table {len(_ptab2)} words, literal x{src.count(PTABLE2_MARK)})")
             if _ptab and PTABLE_MARK not in src:
                 # The manifest declares a table this SOURCE never reads: an
                 # alternate engine (RVSRC= / DLSRC=, the reference side of
@@ -2767,7 +2777,7 @@ hostquit:
                 # engines build through one manifest.
                 print(f"  {name}: declares a {len(_ptab)}-word ptable the "
                       f"source does not read -- not placed")
-                _ptab = []
+                _ptab, _ptab2 = [], []
             if DEV and name == "DELAY SERVER":
                 # DEV: the delay does NOT go in the donor region. It is
                 # assembled at DEV_DELAY_P (see that constant) and its module
@@ -2827,33 +2837,56 @@ hostquit:
             # it keeps the length honest instead of assuming origin-invariant
             # encoding, which is exactly the kind of assumption this codebase
             # has been burned by.
-            _fit, _last = None, None
             _xa = _xt_layout.get(name)          # (X address, words) or None
-            for _r in runs:
-                _c, _end = _r["cursor"], _r["base"] + _r["words"]
-                _tab, _s2, _lfo = None, src, "$facade" in src
-                # LFOTAB, the module's ptable, or BOTH in one slot (LFOTAB
-                # first; each literal rewritten to its own start).
-                _ltab = ((LFO01 + LFOTAB) if LFO01_MARK in src else LFOTAB) \
-                    if _lfo else []
-                if _lfo or _ptab:
-                    _tab = _ltab + _ptab
-                    _at = _xa[0] if _xa is not None else _c
-                    if _xa is None and _c + len(_tab) > _end:
-                        continue
-                    if _lfo:
-                        _s2 = _s2.replace("$facade", f"${_at:x}")
-                    if _ptab:
-                        _s2 = _s2.replace(PTABLE_MARK, f"${_at + len(_ltab):x}")
-                    if _xa is not None:
-                        _s2, _xt_sites[name] = _p2x(_s2, name)
-                    else:
-                        _c += len(_tab)
-                _w, _syms = assemble_syms(_s2, _c, label=name)
-                _last = (_c, len(_w))
-                if _c + len(_w) <= _end:
-                    _fit = (_r, _tab, _s2, _c, _w, _syms)
-                    break
+            _lfo = "$facade" in src
+            # LFOTAB, the module's ptable, or BOTH in one slot (LFOTAB
+            # first; each literal rewritten to its own start), then ptable2.
+            _ltab = ((LFO01 + LFOTAB) if LFO01_MARK in src else LFOTAB) \
+                if _lfo else []
+
+            def _try_runs(xh):
+                """First run the module fits, as (run, table, source, origin,
+                words, syms), and the last (origin, length) tried. `xh` is
+                the XHARVEST start of each table block, or None."""
+                fit, last = None, None
+                for _r in runs:
+                    _c, _end = _r["cursor"], _r["base"] + _r["words"]
+                    _tab, _s2 = None, src
+                    if _lfo or _ptab:
+                        _tab = _ltab + _ptab + _ptab2
+                        if xh is not None:
+                            _at, _at2 = xh[0], (xh[1] if _ptab2 else None)
+                        else:
+                            _at = _xa[0] if _xa is not None else _c
+                            _at2 = _at + len(_ltab) + len(_ptab)
+                        if xh is None and _xa is None and _c + len(_tab) > _end:
+                            continue
+                        if _lfo:
+                            _s2 = _s2.replace("$facade", f"${_at:x}")
+                        if _ptab:
+                            _s2 = _s2.replace(PTABLE_MARK, f"${_at + len(_ltab):x}")
+                        if _ptab2:
+                            _s2 = _s2.replace(PTABLE2_MARK, f"${_at2:x}")
+                        if xh is not None or _xa is not None:
+                            _s2, _xt_sites[name] = _p2x(_s2, name)
+                        else:
+                            _c += len(_tab)
+                    _w, _syms = assemble_syms(_s2, _c, label=name)
+                    last = (_c, len(_w))
+                    if _c + len(_w) <= _end:
+                        fit = (_r, _tab, _s2, _c, _w, _syms)
+                        break
+                return fit, last
+
+            _fit, _last = _try_runs(None)
+            _xh = None
+            if _fit is None and _xa is None and _ptab and _xh_runs:
+                _blocks = [_ltab + _ptab] + ([_ptab2] if _ptab2 else [])
+                _xh = _xh_fit(_blocks)
+                if _xh is not None:
+                    _fit, _xlast = _try_runs([a for a, _r in _xh])
+                    if _fit is None:
+                        _xh = None
             if _fit is None:
                 if len(runs) < 2 and _last is not None:
                     # ⚠️ WORDING FROZEN: the build report is API (refhash
@@ -2879,7 +2912,39 @@ hostquit:
                 if _h.label not in _syms:
                     sys.exit(f"payload {tag}: {name}'s hook at P:0x{_h.site_on(tag):05x} names "
                              f"label {_h.label!r}, which the source does not define")
-            if tab is not None and _xa is not None:
+            if tab is not None and _xh is not None:
+                _bl = [_ltab + _ptab] + ([_ptab2] if _ptab2 else [])
+                for _i, (_b, (_a, _xr)) in enumerate(zip(_bl, _xh)):
+                    # a module that addresses these words itself would read
+                    # or write under the table (ledger.curve_bank_claims'
+                    # rule, for this ground)
+                    for _on, _osrc in plan:
+                        for _g in ledger._X_ADDR.findall("\n".join(
+                                l.split(";", 1)[0] for l in _osrc.splitlines())):
+                            _v = int(next(h for h in _g if h), 16)
+                            if _a <= _v < _a + len(_b):
+                                sys.exit(f"payload {tag}: {_on} addresses "
+                                         f"X:0x{_v:05x}, where {name}'s table "
+                                         f"goes in {_xr['owner']}'s X data")
+                    for _on, _osrc in plan:
+                        _om = remix_modules().get(_on)
+                        for _dr in (_om.claims.dsp_ranges
+                                    if _om is not None and _om.claims is not None else ()):
+                            if (_dr.space == "x" and not _dr.half_relative
+                                    and _dr.start < _a + len(_b) and _a < _dr.start + _dr.length):
+                                sys.exit(f"payload {tag}: {_on} claims X:0x{_dr.start:05x}"
+                                         f"+{_dr.length} ({_dr.what}), where {name}'s "
+                                         f"table goes in {_xr['owner']}'s X data")
+                    place_xh(_b, _a)
+                    _xr["cursor"] = _a + len(_b)
+                    print(f"  {'PTABLE' if _i == 0 else 'PTABLE2':13} "
+                          f"X:0x{_a:05x}..0x{_a + len(_b):05x} "
+                          f"({len(_b):4d} words)  {name}'s table"
+                          + (" block 1" if len(_bl) > 1 and _i == 0 else
+                             " block 2" if _i else "")
+                          + f"  in {_xr['owner']}'s X data (given up)")
+                print(f"  {'':13} {name}: {_xt_sites[name]} p:( reads -> x:(")
+            elif tab is not None and _xa is not None:
                 if len(tab) != _xa[1]:
                     sys.exit(f"payload {tag}: {name}'s table is {len(tab)} "
                              f"words, its X slot {_xa[1]}")
@@ -2915,10 +2980,11 @@ hostquit:
                 # replays the displaced instruction (schema.DspHook)
                 _hs = _h.site_on(tag)
                 _got = (rdw_p_at(_hs), rdw_p_at(_hs + 1))
-                if _got != tuple(_h.stock):
+                _want = _h.stock_on(tag)
+                if _got != _want:
                     sys.exit(f"payload {tag}: {name}'s hook site P:0x{_hs:05x} holds "
                              f"{_got[0]:06x} {_got[1]:06x}, not stock "
-                             f"{_h.stock[0]:06x} {_h.stock[1]:06x}; refusing")
+                             f"{_want[0]:06x} {_want[1]:06x}; refusing")
                 wrw_p_at(_hs, 0x0BF080)
                 wrw_p_at(_hs + 1, _syms[_h.label])
                 print(f"  {'HOOK':13} P:0x{_hs:05x} -> {name} {_h.label} "
@@ -2950,16 +3016,16 @@ hostquit:
             wrw_p(pp["xtab"] + _m.menu.fx2_id * 3, fb_init)
             wrw_p(pp["xtab"] + (32 + _m.menu.fx2_id) * 3, fb_proc)
 
-        if absent is not None:
+        for _abs in absent:
             # The absent engine's id must still dispatch to something on this
             # core -- the chooser list is shared across all eight tracks and
             # nothing stops it being selected here. Point it at the SEND client
             # already placed above: same fail-safe id 0 uses, and a track that
             # selects the "wrong" server becomes a send to the right one.
-            wrw_p(pp["xtab"] + NEW_IDS[absent] * 3, fb_init)
-            wrw_p(pp["xtab"] + (32 + NEW_IDS[absent]) * 3, fb_proc)
-            print(f"  {absent:13} NOT PLACED on this core -- id "
-                  f"0x{NEW_IDS[absent]:02x} aliased to SEND P:0x{fb_init:05x} "
+            wrw_p(pp["xtab"] + NEW_IDS[_abs] * 3, fb_init)
+            wrw_p(pp["xtab"] + (32 + NEW_IDS[_abs]) * 3, fb_proc)
+            print(f"  {_abs:13} NOT PLACED on this core -- id "
+                  f"0x{NEW_IDS[_abs]:02x} aliased to SEND P:0x{fb_init:05x} "
                   f"(selecting it here makes the track a send, not silence)")
 
         if probe == "silence":
@@ -3129,11 +3195,6 @@ hostquit:
         # only; letting it land on the flashable path is the one way this
         # hatch could do harm.
         out = pathlib.Path("out/mainos_bus_dev.bin")
-    # A loader-appended runtime grows the image here, last of all: every
-    # pass above worked on the stock-length image. The combined OS must
-    # match the identity the recipe pins for exactly this (single-runtime)
-    # composition; a remix that combines the runtime with other modules
-    # cannot match it, and says so instead of failing.
     # Analog BD replaces the source renderer on both cores. Its uploads
     # must see the final DSP payloads, before they are packed for boot.
     if "ANALOG BD" in REMIX.modules:
@@ -3157,9 +3218,10 @@ hostquit:
             img[_aa - BASE:_aa - BASE + len(_aw)] = _aw
             print(f"    poke 0x{_aa:08x}: {_aexp.hex()} -> {_aw.hex()}  {_anote}")
         _pappend, _psyms2, _boot, _pnames = platform_build.build(
-            [(_m.key, _u) for _m, _u in _dram], _payloads, pathlib.Path("out/platform"),
+            [(_m.key, _u) for _m, _u in _dram], [], pathlib.Path("out/platform"),
             reserve=_reserve, defsyms=_pdefs, preboot=_pres, unit_defs=_unit_defs,
-            includes={_u.label: _u.include(_sel) for _m, _u in _dram if _u.include is not None})
+            includes={_u.label: _u.include(_sel) for _m, _u in _dram if _u.include is not None},
+            regions=_regions)       # the same regions as the first link, or its symbols differ
         if _psyms2 != _psyms or _platform_at is None:
             sys.exit("analog bd: the platform runtime linked differently the second time")
         _appends[_platform_at] = (

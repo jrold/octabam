@@ -3,13 +3,18 @@
 The OS is a fixed 1.1 MB block of Elektron's code. A module declares what
 it is, not an address; the build decides which bytes land where.
 
-## The three placement classes
+## The two placement classes
 
 | class | declared as | where it lands | budget |
 |---|---|---|---|
 | **ROM cave** | `CavePatch` (pinned hex, or a `.s` source that is the truth) | one of the OS image's free zero runs; floats after what precedes it unless pinned | ~8.4 KB total, shared by everyone |
 | **DRAM unit** | `Linked(..., dram=True)` | linked with every other DRAM unit in the remix as one image, packed, appended after the OS behind octabam's loader, depacked at boot into the platform's arena reserve | 10 MiB, off the unit's sample/recorder pool |
-| **Appended runtime** | `Runtime` (a recipe: Octakit's `firmware.json`) + `ArenaReserve` | its own pages of the same arena, as a payload of the same loader | the author's (Octakit: 528 pages) |
+
+Until 6 Oct 2026 there was a third, the appended runtime (`Runtime` + 
+`ArenaReserve`): Em's Octakit, built from her recipe and carried as a
+payload of the same loader in its own 528 pages of the arena. KITS
+(`modules/kits`) replaced it; the class went with it (`git show
+2063370f:tools/remix/schema.py`).
 
 The OS-image edits every class needs (a detour at a stock instruction, a
 poke, a grown table) are `Detour`, `Poke`, `TableGrow`, wired by symbol;
@@ -47,20 +52,21 @@ at exit, the write watch folding the uncached alias.
 |---|---|---|
 | `0x40000000..0x47ffffff` | the cached SDRAM, 128 MB | boot code (ACR0 mask) + hardware |
 | `0x48000000..0x4fffffff` | the same memory uncached: `SDCS0 = 0x4000001b` is a 256 MB decode over a 128 MB part (NXP's own example uses `0x1a` for 128 MB); `CACR = 0xa50ce100` has `DDCM_P` (default data mode cache-inhibited) and `ACR0 = 0x4007e020` covers only the lower 128 MB copyback; no MMU | boot code; hardware (Octakit writes through `0x4dd0dde0` and executes at `0x45d0dde0`; mxldyn's canary at `0x47800000` was clobbered by the rings the OS addresses at `0x4f8…`) |
-| `0x40a955e0..0x46025de0` | the audio page arena: 14,602 × 6,144 B = 89,720,832 B = 85.56 MiB, Elektron's "85.5 MB" (cold init `0x40096f7a`: count `0x390a`, free-list fill to 14,603, `memset(0x40a955e0, 0x05590800)` at `0x40097006`; the Flex cap is the `0x04000000` literal at `0x40004028`). Octakit takes the top 528 pages, octamax 2.0 the bottom 64 (base moved to `0x40af55e0`), the platform reserve the bottom 1,707 | measured; both authors' placements hardware-proven |
-| `0x45d0dde0..0x46025de0` | Octakit's window ("reserved recorder pages"). Stock's engine zero-fills exactly this extent at project load, twice; her post-clear relocation re-depacks from a stage the OS never touches | measured |
-| `0x46025de0..0x4763d580` | zero-filled at boot by the loop after the boot detour (`0x40000518`); the base of stock's object pool (`pool_init(0x46025de0)` at `0x4002000e`): globals and heap. Not free | static |
+| `0x40a955e0..0x46025de0` | the audio page arena: 14,602 × 6,144 B = 89,720,832 B = 85.56 MiB, Elektron's "85.5 MB" (cold init `0x40096f7a`: count `0x390a`, free-list fill to 14,603, `memset(0x40a955e0, 0x05590800)` at `0x40097006`; the Flex cap is the `0x04000000` literal at `0x40004028`). Octakit took the top 528 pages (until 6 Oct 2026), octamax 2.0 the bottom 64 (base moved to `0x40af55e0`), the platform reserve the bottom 1,707 | measured; both authors' placements hardware-proven |
+| `0x45d0dde0..0x46025de0` | Octakit's window until 6 Oct 2026 ("reserved recorder pages"). Stock's engine zero-fills exactly this extent at project load, twice; her post-clear relocation re-depacks from a stage the OS never touches | measured |
+| `0x46025de0..0x4763d580` | zero-filled at boot by the loop after the boot detour (`0x40000518`); the base of stock's object pool (`pool_init(0x46025de0)` at `0x4002000e`): globals and heap. Not free; its first long is also zeroed by every clear that ends at the arena's top (the stock `memset` writes one long past a length that is a multiple of 16; `docs/firmware/STEM_REC.md` section 19.1) | static |
 | `0x47500a10` | an 8,704 B sector bounce buffer just below the rings (`0x4f500a10 − (offset & 511)` at `0x40091f94`) | static |
 | `0x47502c10..0x47fc7410` | the stock delay rings, 10.8 MB: eight rings of 1,411,200 B (wrap `cmpil #1411200` at `0x4000359e`) at a stride of 1,411,328 (`addil #1411328` at `0x40003386`; 128 B, one 16-sample frame, of pad); the boot memset at `0x40002fb4` (`lea 0x4f502c10`, 705,664 × 16 B) ends at `0x47fc7410`; the delay frame routine's four `#0x4f502c10` adds. Stock never names `0x47502c10`; every reference is through the alias. Cleared ~38 M instructions after the boot detour returns; live audio memory after that. Not free | static + port + Bryan T's write-up (`docs/firmware/COLDFIRE_DELAY.md`) + mxldyn's hardware. An earlier "8.8 MB free at 0x47700000" was a watch on cached addresses blind to the clear through the alias: retracted |
-| `0x47fc7410..0x47fe0000` | 101,360 B between the end of the rings and the 128 KiB Octakit keeps below the reset stack. Octakit's boot-time stage (72,959 B) at the bottom. Not clean: stock's engine task names four buffers inside it through the alias (`0x4ffc7610`, `0x4ffc9010` sector bounce buffers; `0x4ffcb220`, `0x4ffce230` two arrays of 769 × 16 B descriptors), and with static samples in the project the port fills `0x47fc8fe4..0x47fcd9e4` (18,944 B, 37 sectors, the PIO sector loop `0x40015472..0x4001548e`) at project load, inside her stage from `+0x1bd4`. Nothing seen above `0x47fcd9e4`; no literal names anything above `0x47fd1240` | measured on the port's PIO path; a DMA-capable card and play-time streaming unexercised. Em (12 Sep 2026): the stage is needed on boot only, so the fills after boot are a non-issue for Octakit; whether her wrapper's re-hash at project load (`0x40013304`) tolerates a clobbered stage is unconfirmed |
+| `0x47fc7410..0x47fe0000` | 101,360 B between the end of the rings and the 128 KiB Octakit kept below the reset stack (until 6 Oct 2026). Octakit's boot-time stage (72,959 B) at the bottom. Not clean: stock's engine task names four buffers inside it through the alias (`0x4ffc7610`, `0x4ffc9010` sector bounce buffers; `0x4ffcb220`, `0x4ffce230` two arrays of 769 × 16 B descriptors), and with static samples in the project the port fills `0x47fc8fe4..0x47fcd9e4` (18,944 B, 37 sectors, the PIO sector loop `0x40015472..0x4001548e`) at project load, inside her stage from `+0x1bd4`. Nothing seen above `0x47fcd9e4`; no literal names anything above `0x47fd1240` | measured on the port's PIO path; a DMA-capable card and play-time streaming unexercised. Em (12 Sep 2026): the stage is needed on boot only, so the fills after boot are a non-issue for Octakit; whether her wrapper's re-hash at project load (`0x40013304`) tolerates a clobbered stage is unconfirmed |
 | `0x46000000..0x47502c10` | ~21 MB outside both big clears | unmeasured; stock's sample pool may live there. Measure with samples loaded and the recorder running before placing anything |
+| inside the row above | fixed firmware buffers named by static reads (addresses are the uncached alias; cached = minus `0x08000000`). Sizes unmeasured. `0x4ec94004`/`0x4ec94008`: READ CAPACITY(10) reply, 8 B (`0x4001e350`, `0x4001e35a`). `0x4ec94800`: USB dQH list (`usbaudio_in.s`). `0x4ec94900..`, `0x4ecc8000`, `0x4ecc9000`: EP2 dQHs, dTDs and buffers (`modules/usb-midi/README.md`). `0x4ecb8000`: the USB mass-storage worker's sector buffer (`0x4001eed8`, `STEM_REC.md` section 7.7). `0x4ecd3000`: the buffered file layer's staging buffer (`STEM_REC.md` section 7.5) | static; not placed on |
 
 What the port cannot see: caches (it has none), the recorder, anything
 after the handoff, and DMA traffic (the eDMA's descriptors and completions
 are modelled but no bytes move, so a region only DMA writes to reads as
 never written). The rings are known from the CPU's own memset.
 
-### Em's DRAM (`m68k-elf-nm` on her `runtime.elf`)
+### Em's DRAM (`m68k-elf-nm` on her `runtime.elf`; Octakit, until 6 Oct 2026)
 
 | | range | bytes |
 |---|---|---|
@@ -96,21 +102,19 @@ the bottom of the audio page arena, `0x40a955e0..0x41495de0`
 64. The base literal moves up by that much at its 24 sites (23 direct plus
 `lea base+6144` at `0x40094a62`), and the four geometry words (page count,
 free-list fill limit, arena clear length, recorder page cap) are computed
-from every reservation in the remix: Octakit's 528 at the top are declared
-by her module (`ArenaReserve(528, "top", recipe_writes=…)`), her four
-recipe writes are skipped, and the build writes the combined values. The
-`octakit` remix alone yields exactly her four words (`36fa / 36fb /
-05278800 / 36fa`); `midi-scenes` yields base `0x41495de0` and 12,895 pages
-(75 MB) left. The runtime is linked at the reserve's base; the stage
-follows it page-aligned; the ceiling is the reserve's end. The reserve is
-always the first 1,707 pages, so a remix without Octakit boots the same
-bytes to the same places.
+from the reservation (`tools/remix/arena.py` stacks any number; until 6
+Oct 2026 Octakit's 528 at the top were the other one, and the `octakit`
+remix alone yielded exactly her four words `36fa / 36fb / 05278800 /
+36fa`). `midi-scenes` yields base `0x41495de0` and 12,895 pages (75 MB)
+left. The runtime is linked at the reserve's base; the stage follows it
+page-aligned; the ceiling is the reserve's end; a unit's `.bss` must end
+below it. KITS's library (1,622,944 B) and PLOCKS P2's table (1,572,864 B)
+are `.bss` there.
 
 The OS never touches a reservation again: the arena clear starts at the
 new base, the boot-time copies follow the literal, and the page allocator
 hands out only indexes below the new count. The cost is 10 MB of an
-85.5 MB pool, off the recorder share by default. Octakit's stage stays at
-`0x47fc7410` because her own relocation re-depacks from there.
+85.5 MB pool, off the recorder share by default.
 
 Measured under the port on the static-sample card (boot → LOAD PROJECT →
 400 frames): the `hello-dram` image reproduces the stock run to the count
@@ -144,16 +148,15 @@ retracted.)
 
 `tools/remix/loader.S`, derived from Em's Octakit loader with attribution:
 a stub at `0x4010fdf0` (the byte after the OS image) that the boot site's
-`jsr 0x40001e50` is redirected into, by her recipe's own wrapper when
-Octakit is in the image and by octabam's three-byte poke otherwise. It
+`jsr 0x40001e50` is redirected into by octabam's three-byte poke. It
 replays the boot-continue call, then for each payload in its table: copies
 the staged blob (4-byte signature + `GKA3` stream) to its persistent stage
 through the uncached alias, hash-gates the packed stream (rolling ×33, the
 same function her OS-resident helper computes), checks the `GKA3` header,
 depacks with the firmware's own aPLib routine at `0x400e0aca`, hash-gates
 the result, and copies a backup if asked. Any mismatch hangs the boot
-visibly. Her runtime is one payload, staged at her address so her
-relocation finds it; octabam's runtime is another.
+visibly. octabam's runtime is the one payload today (Octakit's runtime was
+another until 6 Oct 2026).
 
 `tools/verify/verify_dram_boot.py` (in `make verify`) boots the built image
 under the port and checks that the loader ran once, never hit its hang,
@@ -162,34 +165,23 @@ bytes a runtime writes about itself.
 
 ## Shared sites: the bridges
 
-Two pairs no bridge covers (measured 28 Sep 2026, building `mods` with each
-module removed in turn): DIRECT JUMP's queue hook `0x400a06d6` is a site
-Octakit's recipe writes, so the two never share an image; and in the free
-ROM, SCALE QUANTIZER's 2,916 B unit beside REPITCH's 576 B leaves CC MAP's
-724 B cave no run, so `mods` carries REPITCH and CC MAP without octatrick's
-three.
+In the free ROM, SCALE QUANTIZER's 2,916 B unit beside REPITCH's 576 B
+leaves CC MAP's 724 B cave no run (measured 28 Sep 2026), so `mods`
+carries REPITCH and CC MAP without the quantizer.
 
 A stock site claimed by two mods is refused by the ledger unless a bridge
 carries it. A bridge is a stub that does what both hooks did, in an order
 that respects each protocol, declared through `schema.Override` so the
-build skips the overridden detour or recipe write and hands the stub the
-skipped claim's target as a link-time symbol.
+build skips the overridden detour.
 
-- `modules/scenes-kits`: the MIDI CC dispatch entry (`0x400d64a0`), CC
-  PAGE 2's cave in front of Octakit's handler (`CC_NEXT`). Measured under
-  the port on the `mods` image. Not measured: MIDI CCs through the chained
-  dispatch (the port has no MIDI in).
-- `modules/kits-reload`: OKMS1 trapped on the first Part Reload on
-  hardware (VEC:04, ADDR = her
-  `gk_stock_part_saved_to_working_reload_report_fatal`, D0 = his
-  `rel_after`): not a byte collision; her replacement of the stock reload
-  validates its caller's return address and his `reload` stub substitutes
-  it. The bridge keeps the stock `jsr` at both call sites and hooks the
-  return sites for his post-work (one of them her own
-  `reload-shortcut-format` site, overridden like `CC_NEXT`). The ledger
-  carries the class: `Runtime.pinned_returns` (from her abi.inc) against
-  `Detour.subst_return`. Reproduced and fixed under the port with `ot_emu
-  --call`; hardware pending. `modules/kits-reload/README.md`.
+Until 6 Oct 2026 three bridges carried Octakit's shared sites:
+`scenes-kits` (the MIDI CC dispatch entry `0x400d64a0`, CC MAP's cave in
+front of her handler), `scenes-p2-kits` (the two page-2 editor entries)
+and `kits-reload` (OKMS1 trapped on the first Part Reload: her
+replacement of the stock reload validated its caller's return address and
+midisc's `reload` stub substitutes it; the ledger carried the class as
+`Runtime.pinned_returns` against `Detour.subst_return`). KITS leaves the
+stock Part routines and the CC dispatch as stock, so none is needed (`git show 2063370f:modules/kits-reload/README.md`).
 
 ## Open
 
@@ -199,7 +191,5 @@ skipped claim's target as a link-time symbol.
   `0x400031a0` so the eight rings are never written, 10.8 MB) is
   unmeasured; whether the routine has duties beyond the delay is the
   question.
-- Octakit's stage at `0x47fc7410` sits under stock's sector bounce buffer;
-  hers to move.
 - `0x46000000..0x47502c10`: measure with samples loaded and the recorder
   running before placing there.

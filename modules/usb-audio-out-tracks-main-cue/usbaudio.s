@@ -38,6 +38,13 @@
 |                               the 250 us cadence at high speed (96 B packets)
 |                               so USB AUDIO IN can take it as its feedback
 |                               source: a two-in, two-out interface.
+|   5  USB AUDIO OUT TRACKS POST -- layout 1's sixteen channels, each track's
+|                               block multiplied by that track's own MAIN gain
+|                               as core 0 applies it (LEVEL, mute, solo, XLV,
+|                               the 16-sample ramp), MAIN_LEVEL left out. The
+|                               POST section below has the design;
+|                               modules/usb-audio-out-tracks-post/README.md
+|                               the semantics and what was measured.
 | Layouts 1-3 are ours; every USB_LAYOUT = 0 path is the source as it was.
     .include "remix.inc"
 .set LAYOUT_TRACKS_MAIN_CUE,  0
@@ -45,8 +52,10 @@
 .set LAYOUT_MASTER,   2
 .set LAYOUT_MAIN_CUE,   3
 .set LAYOUT_MAIN,     4
+.set LAYOUT_TRACKS_POST, 5
 | gas's .if takes no ||: a sum of comparisons is non-zero when either holds.
 .set SLOT8_LAYOUT, (USB_LAYOUT == LAYOUT_MASTER) + (USB_LAYOUT == LAYOUT_MAIN)   | one 8-byte (L,R) slot, both speeds send the ring
+.set TRACKS16, (USB_LAYOUT == LAYOUT_TRACKS) + (USB_LAYOUT == LAYOUT_TRACKS_POST)  | the sixteen track channels, 64-byte slot
 
 .set SUM_SHIFT,      8              | 32-bit read-back -> 24-bit units for the sum
 .set UAC2_AC_IFACE,  3              | the audio function's AudioControl
@@ -74,6 +83,11 @@
 .set EPPRIME,    0xfc0b01b0
 .set EPFLUSH,    0xfc0b01b4
 .set EPCOMPLETE, 0xfc0b01bc
+.set SETUPSTAT,  0xfc0b01ac         | ENDPTSETUPSTAT
+.set EP0CTRL,    0xfc0b01c0         | ENDPTCTRL0: bit 16 = EP0 IN (TX) stall
+.set EP0OUT_DTD, 0x4ec95000         | the stock EP0 OUT dTD (usb_ep0_send's status OUT)
+.set EP0_BUF,    0x4ec96000         | ... and its 64-byte buffer
+.set QH0_OUT_PTR,0x46c8ce18         | -> EP0 OUT dQH
 .set ENDPTCTRL3, 0xfc0b01cc
 .set USBCMD,     0xfc0b0140
 .set ATDTW,      0x00004000         | USBCMD bit 14: the add-dTD tripwire
@@ -111,8 +125,8 @@
 | measured under the port at 16 samples on every tone that reaches MAIN
 | (tools/harness/usb_align.py, 28 Sep 2026; heard as MAIN lagging on Bryan
 | T's unit, 25 Sep). The producer writes the pair this many blocks behind
-| the tracks' slot; the consumer runs 512 frames behind, so that slot is
-| unread when it is written.
+| the tracks' slot; the consumer runs AUD_TARGET (64) frames behind, more
+| than one 16-frame block, so that slot is unread when it is written.
 .set MAIN_CUE_LAG_BLOCKS, 1
 | With MASTER TRACK on, CUE leads MAIN. The mixdown (payload A, P:0x257:
 | brset #$a on x:(X:$207+$7e)) takes the master path at P:0x292: the cue bus
@@ -136,7 +150,7 @@
 .macro MUL_SLOT r, t
     lsll    #3,\r
 .endm
-.elseif USB_LAYOUT == LAYOUT_TRACKS
+.elseif TRACKS16
 | x -> x * SLOT_BYTES (64) in place.
 .macro MUL_SLOT r, t
     lsll    #6,\r
@@ -195,7 +209,7 @@
 .set PKT_MAX_HS,   12*SLOT_BYTES | 96: the largest 250 us packet
 .set PKT_MAX_FS,   45*SUM_BYTES | 360: the largest 1 ms packet
 .set PKT_BUF,      512          | packet buffer stride (>= PKT_MAX_FS)
-.elseif USB_LAYOUT == LAYOUT_TRACKS
+.elseif TRACKS16
 .set SLOT_BYTES,   64           | ring slot: 8 tracks * (L,R), 4 B each
 .set SUM_BYTES,    8            | sum slot: (L,R) * 4 B
 .set PKT_MAX_HS,   12*SLOT_BYTES | 768: the largest 250 us packet
@@ -319,6 +333,53 @@ audio_getiface_shim:
     pea     GETIFACE_STOCKP
     jmp     GETIFACE_REJOIN
 
+| ---- bus reset and session end (installed at 0x4001e91c and 0x4001e952) -------
+| The stock USBSTS.URI handler (jsr 0x4001d6b8: flush, dTD tokens cleared,
+| ENDPTCTRL1 cleared) and the OTGSC.BSVIS session-end path (USBCMD.RS and
+| USBINTR cleared) write neither this unit's alt bytes nor ENDPTCTRL3. USB
+| 2.0 9.1.1.5 puts every interface back to alternate setting 0 on a reset;
+| without these two shims a cable pull or a host crash with the stream open
+| left usbaudio_alt (and USB AUDIO IN's in_alt) at 1: the producer kept
+| running, the kick re-primed EP3 IN before the device was configured, the
+| next SET_INTERFACE took .Lep3_same, and GET_INTERFACE answered 1.
+| Both shims record the alt 0 request, the way audio_setiface_shim does for
+| alt 0, and the frame ISR tears EP3 down. Both sites are USB MIDI's as
+| well (usbmidi_rx_reset_shim, usbmidi_rx_sessend_shim: EP2 down); this
+| module overrides those detours and calls usbmidi_rx_bus_end itself. The
+| ISR prologue has saved d0-d2/a0-a4 (the epilogue at 0x4001e98e restores
+| them); a2 is live in the session-end path (0x4001e93a, used at
+| 0x4001e974) and is not touched.
+|
+| Reset: displaced jsr %pc@(0x4001d6b8); moveq #64,%d0 (6 bytes); the next
+| instruction is 0x4001e922.
+    .global audio_reset_shim
+audio_reset_shim:
+    jsr     0x4001d6b8              | displaced
+    bsr     audio_alt0_request
+    jsr     usbmidi_rx_bus_end      | USB MIDI's detour at this site, which this one overrides
+    moveq   #64,%d0                 | displaced: USBSTS.URI, written back at 0x4001e922
+    jmp     0x4001e922
+
+| Session end: displaced movel 0xfc0b0140,%d0 (USBCMD, 6 bytes); the next
+| instruction is 0x4001e958. The request is recorded before the stock code
+| clears USBCMD.RS.
+    .global audio_sessend_shim
+audio_sessend_shim:
+    bsr     audio_alt0_request
+    jsr     usbmidi_rx_bus_end      | USB MIDI's detour at this site, which this one overrides
+    movel   0xfc0b0140,%d0          | displaced
+    jmp     0x4001e958
+
+| Alt 0 requested on every interface this unit and USB AUDIO IN own. The
+| request bytes only: the frame ISR flushes, disables EP3 and clears the
+| dTDs. Clobbers nothing.
+audio_alt0_request:
+    clrb    usbaudio_alt
+.if USB_IN
+    clrb    in_alt
+.endif
+    rts
+
 | ---- EP0 buffer-page fix (installed at 0x4001d4b2 inside usb_ep0_send) -------
 | usb_ep0_send sets only the dTD's buffer PAGE 0 (0x4ec95028), never PAGE 1.
 | A descriptor whose buffer crosses a 4 KB page then transmits only the bytes
@@ -340,12 +401,28 @@ audio_ep0page_shim:
     jmp     0x4001d4b8
 
 | ---- usb_isr shim (installed at 0x4001e606, USB MIDI's site) ---------------
-| Retires EP3 IN completions, then chains to USB MIDI's ISR shim, which
-| handles EP2 and runs the original displaced instruction.
+| Retires EP3 IN completions, then chains to USB MIDI's receive shim
+| (usbmidi_rx.s), which takes the EP2 OUT completion and hands on to
+| usbmidi.s's, which handles EP2 IN and runs the original displaced instruction.
     .global audio_isr_shim
 audio_isr_shim:
-    lea     %sp@(-8),%sp
-    moveml  %d0-%d1,%sp@            | all this shim touches
+    lea     %sp@(-16),%sp
+    moveml  %d0-%d1/%a0-%a1,%sp@    | all this shim touches
+    | A clock SET_CUR whose data stage outlived audio_ctrl_shim's wait: a new
+    | SETUP means the host gave it up; otherwise its OUT completion is ours,
+    | taken before the stock completion loop can see it.
+    tstb    uac2_set_pending
+    beqs    4f
+    movel   SETUPSTAT,%d0
+    btst    #0,%d0
+    beqs    3f
+    clrb    uac2_set_pending        | superseded by a new SETUP
+    bras    4f
+3:  movel   EPCOMPLETE,%d0
+    btst    #0,%d0                  | EP0 OUT
+    beqs    4f
+    bsr     uac2_set_done
+4:
     | Exactly ONE place queues packets on EP3: the per-block producer in
     | frame_isr. This shim only retires the completion bit so it cannot go
     | stale; the queue's own state is the ACTIVE bit of each dTD, which the
@@ -358,9 +435,9 @@ audio_isr_shim:
     beqs    2f
     movel   #EP3IN_BIT,%d1
     movel   %d1,EPCOMPLETE          | W1C EP3 IN
-2:  moveml  %sp@,%d0-%d1
-    lea     %sp@(8),%sp
-    jmp     usbmidi_isr_shim         | USB MIDI's shim, whose detour this one stands in for
+2:  moveml  %sp@,%d0-%d1/%a0-%a1
+    lea     %sp@(16),%sp
+    jmp     usbmidi_rx_isr_shim      | USB MIDI's shim, whose detour this one stands in for
 
 | ---- the iso packet builder -------------------------------------------------
 | Each packet holds the next n frames from the ring: n = 11/12 at high speed
@@ -578,7 +655,7 @@ audio_pkt_build:
 .elseif USB_LAYOUT == LAYOUT_MAIN_CUE
     lsll    #8,%d0
     lsll    #1,%d0                  | slot * 512 = slot * PKT_BUF
-.elseif USB_LAYOUT == LAYOUT_TRACKS
+.elseif TRACKS16
     lsll    #8,%d0
     lsll    #2,%d0                  | slot * 1024
     movel   %a6,%d1
@@ -611,7 +688,7 @@ audio_pkt_build:
     bsr     audio_copy8             | an 8-byte slot, as the full-speed ring's
 .elseif USB_LAYOUT == LAYOUT_MAIN_CUE
     bsr     audio_copy16
-.elseif USB_LAYOUT == LAYOUT_TRACKS
+.elseif TRACKS16
     bsr     audio_copy64
 .else
     bsr     audio_copy80
@@ -630,7 +707,7 @@ audio_pkt_build:
     lea     aud_ring,%a2
     movel   %a5,%d0
     bsr     audio_copy16
-.elseif USB_LAYOUT == LAYOUT_TRACKS
+.elseif TRACKS16
     bsr     audio_copy64
     lea     aud_ring,%a2
     movel   %a5,%d0
@@ -741,7 +818,7 @@ audio_pkt_build:
     moveq   #0,%d0
     rts
 
-.if USB_LAYOUT == LAYOUT_TRACKS
+.if TRACKS16
 | Copy d0 (>= 1) 64-byte frames from %a2 to %a1, both advanced: two moveml
 | pairs per frame. Clobbers d1-d7/a4.
 audio_copy64:
@@ -922,18 +999,24 @@ audio_ep3_down:
 | frame ISR and a controller that never answers must not wedge the machine.
 | Clobbers d0/d1.
 audio_ep3_flush:
+    movel   %d2,%sp@-
     moveq   #16,%d1                 | attempts
 1:  movel   #EP3IN_BIT,%d0
     movel   %d0,EPFLUSH
-2:  movel   EPFLUSH,%d0             | complete when the bit clears
+    movel   #0x10000,%d2            | bound: a flush with USBCMD.RS clear (session end) may never complete
+2:  movel   EPFLUSH,%d0
     andil   #EP3IN_BIT,%d0
+    beqs    4f
+    subql   #1,%d2
     bnes    2b
+4:
     movel   ENDPTSTAT,%d0
     andil   #EP3IN_BIT,%d0
     beqs    3f                      | idle: done
     subql   #1,%d1
     bnes    1b
-3:  rts
+3:  movel   %sp@+,%d2
+    rts
 
 | ---- the per-block producer (installed at 0x4000d9a0, inside frame_isr) ----
 | frame_isr runs once per 16-frame block: the block clock, the audio and the
@@ -960,12 +1043,66 @@ audio_ep3_flush:
 .Lsat_ok\@:
 .endm
 
+.if USB_LAYOUT == LAYOUT_TRACKS_POST
+| d2 = the stem of the read-back word at %a0@(off) by the gain at `gain`:
+| the word's low byte cleared (the DSP's hi/lo join drops it), one
+| fractional macl by g << 10, so ACC = floor(g x / 2^13), whose top 24 bits
+| are floor(8 g x / 2^24). Clobbers d0.
+.macro POST_WORD gain, off
+    movel   %a0@(\off),%d2
+    clrb    %d2
+    movel   \gain,%d0
+    macl    %d0,%d2,%acc0
+    movclrl %acc0,%d2
+.endm
+| d2 -> the ring: top 24 bits, little-endian.
+.macro POST_STORE
+    clrb    %d2
+    byterev %d2
+    movel   %d2,%a3@+
+.endm
+.endif
+
     .global audio_frame_shim
 audio_frame_shim:
-    | The producer runs whether or not the host has opened the stream, so the
-    | ring is full at alt 1 and the stream starts with no underruns (his build
-    | idled until alt 1: 127 underruns at startup on hardware). aud_running
-    | gates the sending, not the producing.
+    | The producer runs only while the host asks for the stream (usbaudio_alt,
+    | the SET_INTERFACE request, so from the block after it). His build idled
+    | until alt 1 and had 127 underruns at startup on hardware, which is why
+    | it ran every block here until 5 Oct 2026; the first-poll anchor
+    | (usbaudio_kick) now re-sets the cursor AUD_TARGET behind the producer
+    | at the host's first poll, 460 frames after alt 1 on macOS, so the ring
+    | needs nothing from before the request. What it does need: the
+    | AUD_TARGET slots bring-up starts the cursor in must not hold the
+    | previous session's tail, so they are zeroed once at the first produced
+    | block (audio_cushion_zero), and the stream starts with silence until
+    | the anchor (or, for a host that polls within AUD_TARGET frames, up to
+    | that many zero frames). Measured on Bryan T's MKII (4 Oct 2026): the
+    | always-on producer cost 13-25 us of frame interrupt per frame with no
+    | host attached (OUT TRACKS MAIN CUE against OUT MAIN CUE). Not on a
+    | unit since.
+    tstb    usbaudio_alt
+    bnes    .Lproduce
+    tstb    aud_force               | the harness's switch (usb_align): produce
+    bnes    .Lproduce               | with no host and EP3 left alone
+    moveq   #1,%d0
+    moveb   %d0,aud_closed
+    movel   RB_PREV,%d0             | keep the bank record current: bankdup
+    movel   %d0,usbaudio_lastbank   | counts producing blocks only
+.if USB_LAYOUT == LAYOUT_TRACKS_POST
+    | The gain history and the ramp state follow core 0 every block, stream
+    | or not, so the first block a host gets is already paired and ramped
+    | as the mix was (post_frame).
+    moveq   #0,%d0                  | state only, no per-sample table
+    bsr     post_frame
+    bsr     post_emac_leave
+.endif
+    bra     .Lep3
+.Lproduce:
+    tstb    aud_closed
+    beqs    .Lproduce_go
+    clrb    aud_closed
+    bsr     audio_cushion_zero
+.Lproduce_go:
 .if USB_LAYOUT == LAYOUT_MASTER
     | ---- two channels: track 8's (L,R), one 8-byte slot per frame -----------
     | The same read-back words as the twenty-channel build's channels 15/16,
@@ -1103,6 +1240,102 @@ audio_frame_shim:
     addql   #8,%d4
     addql   #8,%d4                  | 16 frames produced
     movel   %d4,aud_produced
+.elseif USB_LAYOUT == LAYOUT_TRACKS_POST
+    | ---- sixteen channels: each track's block times its own MAIN gain ------
+    | post_frame leaves this block's per-sample gains in post_gtab ([frame]
+    | [track], g << 10) and the EMAC in fractional mode with the interrupted
+    | context's state saved. Per word: the read-back word with its low byte
+    | cleared (the DSP's hi/lo join keeps the top 24 bits), one fractional
+    | macl by the gain, so ACC = floor(g * x / 2^13) and its top 24 bits are
+    | floor(8 g x / 2^24): the track's term of core 0's mixdown sum at the
+    | `asl #2` (P:0x238-0x2d4) before the sum's one truncation. Then layout
+    | 1's format: low byte cleared, byte-reversed, one long per channel; the
+    | stereo sum (full speed) is the sum of these stems.
+    moveq   #1,%d0                  | state and the per-sample table
+    bsr     post_frame
+    moveq   #0,%d1
+    movel   PORTSC1,%d0
+    andil   #0x0c000000,%d0
+    cmpil   #0x08000000,%d0
+    seq     %d1                     | d1 = 0xff at high speed: skip the sum
+    movel   RB_PREV,%d0
+    movel   %d0,%d2
+    cmpl    usbaudio_lastbank,%d2
+    bnes    .Lpost_bank_ok
+    addql   #1,usbaudio_bankdup
+.Lpost_bank_ok:
+    movel   %d2,usbaudio_lastbank
+    lsll    #8,%d0
+    lsll    #2,%d0                  | prev * 1024
+    addil   #RB_BASE,%d0
+    moveal  %d0,%a2                 | a2 = this bank's track 0, frame 0
+    movel   aud_produced,%d4
+    movel   %d4,%d5
+    andil   #AUD_FRAMES-1,%d5
+    movel   %d5,%d0
+    MUL_SLOT %d0, %d2               | slot * SLOT_BYTES (d2 is dead: lastbank is stored)
+    lea     aud_ring,%a3
+    addal   %d0,%a3
+    lsll    #3,%d5
+    lea     aud_sum,%a4
+    addal   %d5,%a4
+    lea     post_gtab,%a1           | gains, frame-major, read in step with the words
+    moveal  #0x7fffff,%a5           | SAT24 bounds
+    moveal  #-0x800000,%a6
+    moveq   #15,%d6                 | 16 frames
+    tstb    %d1
+    bne     .Lpost_hs
+    | full speed: the stems and their stereo sum
+1:  moveal  %a2,%a0                 | track 0, this frame
+    moveq   #0,%d5                  | L sum
+    moveq   #0,%d3                  | R sum
+    moveq   #RB_TRACKS-1,%d7
+2:  POST_WORD %a1@, 0
+    movel   %d2,%d0
+    asrl    #8,%d0
+    addl    %d0,%d5
+    POST_STORE
+    POST_WORD %a1@+, 4
+    movel   %d2,%d0
+    asrl    #8,%d0
+    addl    %d0,%d3
+    POST_STORE
+    lea     %a0@(128),%a0           | next track, same frame
+    subql   #1,%d7
+    bpl     2b
+    movel   %d5,%d2
+    SAT24   %d2
+    movel   %d2,usbaudio_lastsamp
+    lsll    #8,%d2
+    byterev %d2
+    movel   %d2,%a4@+               | sum L
+    SAT24   %d3
+    lsll    #8,%d3
+    byterev %d3
+    movel   %d3,%a4@+               | sum R
+    lea     %a2@(8),%a2             | next frame
+    subql   #1,%d6
+    bpl     1b
+    bra     .Lpost_done
+    | high speed: the sum is not sent, so it is not made
+.Lpost_hs:
+1:  moveal  %a2,%a0
+    moveq   #RB_TRACKS-1,%d7
+2:  POST_WORD %a1@, 0
+    POST_STORE
+    POST_WORD %a1@+, 4
+    POST_STORE
+    lea     %a0@(128),%a0
+    subql   #1,%d7
+    bpl     2b
+    lea     %a2@(8),%a2
+    subql   #1,%d6
+    bpl     1b
+.Lpost_done:
+    addql   #8,%d4
+    addql   #8,%d4                  | 16 frames produced
+    movel   %d4,aud_produced
+    bsr     post_emac_leave
 .else
 audio_frame_shim_body:
     | The stereo sum is only SENT at full speed; at high speed (PORTSC1 bits
@@ -1273,6 +1506,7 @@ audio_frame_shim_body:
     | usbaudio_alt is what the host asked for (SET_INTERFACE); aud_running is
     | what EP3 currently is. Bring it up or down when they differ, and when
     | it is up the block clock IS the send clock: top the queue up now.
+.Lep3:
     mvzb    usbaudio_alt,%d0
     mvzb    aud_running,%d1
     cmpl    %d0,%d1
@@ -1286,11 +1520,211 @@ audio_frame_shim_body:
     bras    9f
 .Lep3_same:
     tstl    %d1
-    beqs    9f                      | nobody listening: produce, but do not send
+    beqs    9f                      | nobody listening: nothing to send
 .Lep3_kick:
     bsr     usbaudio_kick
 9:  clrl    0x46104d4e              | displaced
     jmp     0x4000d9a6
+
+| The AUD_TARGET ring slots behind the producer, zeroed: the stream's first
+| packets are built from them before the anchor. Both rings (one ring in the
+| SLOT8 layouts, where aud_sum is aud_ring). May clobber d0-d7/a0-a6.
+audio_cushion_zero:
+    movel   aud_produced,%d0
+    cmpil   #AUD_TARGET,%d0
+    bccs    0f
+    addil   #AUD_FRAMES,%d0         | fewer frames ever produced than the cushion
+    movel   %d0,aud_produced        | (boot): count one lap ahead, same slots, so
+0:  subil   #AUD_TARGET,%d0         | bring-up's cursor is not clamped at 0
+    moveq   #AUD_TARGET-1,%d1
+1:  movel   %d0,%d2
+    andil   #AUD_FRAMES-1,%d2
+    movel   %d2,%d3
+    MUL_SLOT %d3, %d4
+    lea     aud_ring,%a0
+    addal   %d3,%a0
+    moveq   #SLOT_BYTES/4-1,%d4
+2:  clrl    %a0@+
+    subql   #1,%d4
+    bpls    2b
+    lsll    #3,%d2
+    lea     aud_sum,%a0
+    addal   %d2,%a0
+    clrl    %a0@+
+    clrl    %a0@
+    addql   #1,%d0
+    subql   #1,%d1
+    bpls    1b
+    rts
+
+.if USB_LAYOUT == LAYOUT_TRACKS_POST
+| ==== TRACKS POST: each track's MAIN gain, as core 0 computes it ============
+| Measured under the port, 5 Oct 2026 (modules/usb-audio-out-tracks-post/
+| README.md, "How it works"):
+|
+| - The gains. The ColdFire builds a four-entry snapshot ring at 0x80005460
+|   (0x80 bytes an entry) in frame_isr (0x40004db8, from 0x4000d0de); per
+|   track, eight bytes: cue, MAIN, XLV, split. MAIN is LEVEL << 8 after the
+|   ColdFire's 1/16-per-frame smoothing (0x80000c60), set to 0 by mute and
+|   by another track's solo; XLV is the crossfader's scene level (0x80000c80,
+|   0x7f00 unlocked); split is a sample offset in the block (& 15).
+| - The pairing. Core 0 mixes the read-back block this producer reads (the
+|   previous bank, pulled one frame ago) with the snapshot BUILT FOUR FRAMES
+|   AGO: the transfer machine sends entry (write index + 1) & 3, built three
+|   frames before the frame whose block it travels with. By the time this
+|   hook runs, frame_isr has rebuilt that entry, so the words are kept here:
+|   post_hist, four slots, the slot for this frame read before it is
+|   overwritten with this frame's snapshot (0x80003c10).
+| - The arithmetic, payload A P:0xfa-0x165 and P:0x203-0x237, with
+|   MAIN_LEVEL fixed at 64 (the factor (M/64)^2 core 0 applies is left
+|   out, and at 64 it is exactly 1 once the mixdown's asl #2 is counted):
+|     sq = floor((w << 8)^2 * 2 / 2^24) = floor(w^2 / 2^7), limited to 2^23-1
+|     T  = X:0x6c00[w_xlv >> 7], the 1,024-point sine (post_xlv, extracted
+|          from the user's own payload A at build time)
+|     G  = floor(sq * floor(T / 4) / 2^23)
+|   then per sample the ramp: the last block's increment continues for
+|   min(split, last split) samples, holds for the rest of the split, and a
+|   new increment floor((G - cur) / 16) runs the remaining 16 - split.
+| This runs every block (the closed-stream path too, without the table), so
+| the state is core 0's whether or not a host listens.
+.set SNAP_PTR,  0x80003c10            | this frame's snapshot (frame_isr 0x4000ac26)
+
+| d0 = 0: advance the state only; 1: also write this block's sixteen gains
+| per track into post_gtab ([frame][track], g << 10). Leaves the EMAC in
+| fractional mode with the interrupted context's state in post_emac: the
+| caller ends with post_emac_leave. Clobbers d0-d7/a0-a6.
+post_frame:
+    moveal  %d0,%a6
+    | The interrupted context's EMAC, saved as frame_isr saves it
+    | (0x4000ac96): MACSR, then integer mode, the extension word, the
+    | accumulator. frame_isr restored it at 0x4000d968, before this hook.
+    movel   %macsr,%d1
+    movel   %d1,post_emac
+    moveq   #0,%d1
+    movel   %d1,%macsr
+    movel   %accext01,%d1
+    movel   %d1,post_emac+8
+    movclrl %acc0,%d1
+    movel   %d1,post_emac+4
+    moveq   #0x20,%d1               | fractional, truncating, no saturation
+    movel   %d1,%macsr
+    movel   post_hidx,%d0
+    movel   %d0,%d1
+    addql   #1,%d1
+    moveq   #3,%d2
+    andl    %d2,%d1
+    movel   %d1,post_hidx
+    lsll    #6,%d0                  | slot * 64: 8 tracks x 8 bytes
+    lea     post_hist,%a0
+    addal   %d0,%a0                 | a0 = the snapshot of four frames ago
+    moveal  SNAP_PTR,%a1            | a1 = this frame's
+    lea     post_state,%a2          | per track: cur, increment, last split
+    lea     post_gtab,%a3           | column of track 0
+    lea     post_xlv,%a4
+    moveq   #RB_TRACKS-1,%d7
+4:  mvsw    %a0@,%d2                | MAIN word (signed, as core 0 reads w << 8)
+    mvzw    %a0@(2),%d3             | XLV word
+    mvzw    %a0@(4),%d4             | split word
+    movew   %a1@(2),%a0@            | this frame's, kept four frames
+    movew   %a1@(4),%a0@(2)
+    movew   %a1@(6),%a0@(4)
+    mulsl   %d2,%d2
+    asrl    #7,%d2                  | sq
+    cmpil   #0x7fffff,%d2
+    bles    5f
+    movel   #0x7fffff,%d2           | w = -0x8000 squares to 2^23: the store limits it
+5:  lsrl    #7,%d3                  | the curve index (a word above 0x7fff, which
+    andil   #0xff,%d3               | nothing writes, is wrapped, not core 0's)
+    movel   %a4@(0,%d3:l:4),%d3     | T
+    asrl    #2,%d3                  | floor(T / 4): mpy by (64/128)^2
+    lsll    #8,%d2
+    lsll    #8,%d3
+    macl    %d2,%d3,%acc0           | floor(sq * T/4 / 2^15)
+    movclrl %acc0,%d2
+    asrl    #8,%d2                  | d2 = G
+    moveq   #15,%d0
+    andl    %d0,%d4                 | d4 = s, the split
+    movel   %a2@,%d5                | d5 = cur
+    movel   %a2@(4),%d6             | d6 = the running increment
+    movel   %a2@(8),%d0             | the last block's split
+    cmpl    %d4,%d0
+    bles    6f
+    movel   %d4,%d0                 | d0 = m = min(s, last split)
+6:  movel   %d4,%a2@(8)
+    movel   %a6,%d1
+    tstl    %d1
+    bnes    .Lpf_table
+    | state only: the three segments in closed form
+    movel   %d6,%d3
+    mulsl   %d0,%d3
+    addl    %d3,%d5                 | cur += m * increment
+    movel   %d2,%d3
+    subl    %d5,%d3
+    asrl    #4,%d3                  | d3 = the new increment
+    moveq   #16,%d1
+    subl    %d4,%d1
+    mulsl   %d3,%d1
+    addl    %d1,%d5                 | cur += (16 - s) * increment
+    bra     .Lpf_next
+.Lpf_table:
+    moveq   #16,%d1
+    subl    %d4,%d1                 | d1 = 16 - s, the new ramp's samples (>= 1)
+    subl    %d0,%d4                 | d4 = s - m, the hold
+    moveal  %a3,%a5
+    tstl    %d0
+    beqs    8f
+7:  movel   %d5,%d3                 | the last ramp, continued
+    lsll    #8,%d3
+    lsll    #2,%d3                  | g << 10
+    movel   %d3,%a5@
+    lea     %a5@(32),%a5
+    addl    %d6,%d5
+    subql   #1,%d0
+    bnes    7b
+8:  tstl    %d4
+    beqs    10f
+    movel   %d5,%d3
+    lsll    #8,%d3
+    lsll    #2,%d3                  | g << 10
+9:  movel   %d3,%a5@                | held
+    lea     %a5@(32),%a5
+    subql   #1,%d4
+    bnes    9b
+10: movel   %d2,%d6
+    subl    %d5,%d6
+    asrl    #4,%d6                  | the new increment
+11: movel   %d5,%d3
+    lsll    #8,%d3
+    lsll    #2,%d3                  | g << 10
+    movel   %d3,%a5@
+    lea     %a5@(32),%a5
+    addl    %d6,%d5
+    subql   #1,%d1
+    bnes    11b
+    movel   %d6,%d3
+.Lpf_next:
+    movel   %d5,%a2@
+    movel   %d3,%a2@(4)
+    lea     %a2@(12),%a2
+    addql   #8,%a0
+    addql   #8,%a1
+    addql   #4,%a3
+    subql   #1,%d7
+    bpl     4b
+    rts
+
+| The interrupted context's EMAC back, as frame_isr restores it (0x4000d968).
+post_emac_leave:
+    moveq   #0,%d0
+    movel   %d0,%macsr
+    movel   post_emac+4,%d0
+    movel   %d0,%acc0
+    movel   post_emac+8,%d0
+    movel   %d0,%accext01
+    movel   post_emac,%d0
+    movel   %d0,%macsr
+    rts
+.endif
 
 | ---- UAC2 class-request shim (installed at 0x4001de64) ----------------------
 | Displaced: movel 0xfc0b01c0,%d0 — the first instruction of the stock
@@ -1299,8 +1733,9 @@ audio_frame_shim_body:
 | rate before it will publish a device (RANGE + CUR of CS_SAM_FREQ_CONTROL,
 | CUR of CS_CLOCK_VALID_CONTROL, all class GET to the AudioControl interface
 | with the entity id in wIndex's high byte), and a STALL there means no
-| audio device. Everything else falls through to the stock STALL, which is
-| the legal answer for a control we do not implement.
+| audio device. A SET CUR of that rate is taken too (.Lctrl_set). Everything
+| else falls through to the stock STALL, which is the legal answer for a
+| control we do not implement.
 |
 | Reply the way the stock string-descriptor path does: push the buffer and
 | min(wLength, len) and jump to the shared usb_ep0_send tail. d2 still holds
@@ -1325,6 +1760,8 @@ audio_ctrl_shim:
     moveq   #60,%d0
     bra     .Lctrl_send
 .Lctrl_class:
+    cmpil   #0x21,%d0               | class SET, interface recipient
+    beq     .Lctrl_set
     cmpil   #0xa1,%d0               | class GET, interface recipient
     bne     .Lctrl_stock
     mvzb    SETUP_IFACE,%d0
@@ -1361,9 +1798,80 @@ audio_ctrl_shim:
     movel   %d2,%d0
 1:  movel   %d0,%sp@-
     jmp     EP0_SEND_TAIL
+| ---- SET CUR of the clock's sample frequency ---------------------------------
+| The clock is fixed and its frequency control is declared read-only, but a
+| UAC2 host may still SET it to the rate it has just read back (CUR, 4
+| bytes), and some hosts give the audio function up when that STALLs. So a
+| SET CUR of CS_SAM_FREQ_CONTROL on this clock is taken: 44100, the one rate
+| RANGE offers, is acknowledged and changes nothing; any other rate STALLs
+| the status stage. Every other class SET still STALLs at once (stock).
+| The stock EP0 stack has no control OUT data stage, so this primes EP0's OUT
+| dTD for it exactly as usb_ep0_send primes its status OUT, and waits here
+| for the data: returning first races the stock completion loop that runs
+| right after this request in the same interrupt, which would take a data
+| stage that lands by then for the previous transfer's status OUT. A host
+| sends it in the next microframe; 100,000 polls (~10 ms) is the bound, and
+| audio_isr_shim finishes it for a host slower than that.
+.Lctrl_set:
+    mvzb    SETUP_IFACE,%d0
+    cmpil   #UAC2_AC_IFACE,%d0      | the audio function's AudioControl
+    bne     .Lctrl_stock
+    mvzb    SETUP_WIDXH,%d0
+    cmpil   #UAC2_CLOCK_ID,%d0      | the clock source entity
+    bne     .Lctrl_stock
+    mvzb    SETUP_WVALH,%d0
+    cmpil   #1,%d0                  | CS_SAM_FREQ_CONTROL
+    bne     .Lctrl_stock
+    mvzb    SETUP_BREQ,%d0
+    cmpil   #1,%d0                  | CUR
+    bne     .Lctrl_stock
+    moveq   #4,%d0
+    cmpl    %d0,%d2                 | wLength
+    bne     .Lctrl_stock
+    movel   #0x00408080,%d0         | 64 bytes, IOC, ACTIVE (usb_ep0_send's status OUT)
+    movel   %d0,EP0OUT_DTD+4
+    movel   #EP0_BUF,%d0
+    movel   %d0,EP0OUT_DTD+8
+    movel   #0xdead0001,%d0         | next: terminate
+    movel   %d0,EP0OUT_DTD
+    moveal  QH0_OUT_PTR,%a0
+    movel   #EP0OUT_DTD,%d0
+    movel   %d0,%a0@(8)             | dQH next dTD
+    movel   EPPRIME,%d0
+    moveq   #1,%d1                  | EP0 OUT
+    orl     %d1,%d0
+    movel   %d0,EPPRIME
+    movel   #100000,%d1
+5:  movel   EP0OUT_DTD+4,%d0
+    btst    #7,%d0                  | ACTIVE
+    beqs    6f
+    subql   #1,%d1
+    bnes    5b
+    moveq   #1,%d0
+    moveb   %d0,uac2_set_pending
+    jmp     SETIFACE_DONE
+6:  bsr     uac2_set_done
+    jmp     SETIFACE_DONE
 .Lctrl_stock:
     movel   0xfc0b01c0,%d0          | displaced
     jmp     CTRL_STOCK
+
+| The data stage of a clock SET CUR has landed in EP0_BUF: take the OUT
+| completion (before the stock loop sees it), then ACK 44100 (status IN) or
+| STALL the status stage. Clobbers d0-d1/a0-a1.
+uac2_set_done:
+    moveq   #1,%d0
+    movel   %d0,EPCOMPLETE          | W1C EP0 OUT
+    clrb    uac2_set_pending
+    movel   EP0_BUF,%d0             | wire order: 44 ac 00 00 = 44100
+    cmpil   #0x44ac0000,%d0
+    bnes    1f
+    jsr     EP0_STATUS_IN
+    rts
+1:  movel   EP0CTRL,%d0
+    bset    #16,%d0                 | STALL EP0 IN: the status stage
+    movel   %d0,EP0CTRL
+    rts
 
     .data
 | UAC2 clock-source replies, little-endian on the wire (his; constant, the
@@ -1409,10 +1917,26 @@ aud_ring:          .space AUD_FRAMES*SLOT_BYTES  | 1024 x 20 ch (16 OUT TRACKS, 
 aud_sum:           .space AUD_FRAMES*SUM_BYTES   | 1024 x stereo sum (MAIN alone in OUT MAIN CUE), 24 in 4 B LE
 .endif
 usbaudio_alt:      .byte 0          | alt setting the host asked for
+uac2_set_pending:  .byte 0          | a clock SET CUR's data stage is primed
 aud_running:       .byte 0          | EP3 is up (frame-ISR owned)
 aud_await:         .byte 0          | 1 = queue for the first poll, 2 = queued, 0 = anchored
 aud_hs:            .byte 0          | 1 = high speed (20 ch), 0 = full (sum)
 aud_tail:          .byte 0          | next dTD slot to fill (0..NSLOT-1)
+aud_closed:        .byte 0          | 1 = blocks have passed with no stream asked for: zero the cushion before producing again
+aud_force:         .byte 0          | harness only (tools/harness/usb_align.py pokes it): produce with no host; nothing on a unit sets it
+.if USB_LAYOUT == LAYOUT_TRACKS_POST
+    .balign 4
+post_hidx:         .long 0          | the history slot for this block (0..3)
+post_emac:         .long 0, 0, 0    | the interrupted context's MACSR, ACC0, ACCEXT01
+post_hist:         .space 4*8*8     | four blocks x 8 tracks x (MAIN, XLV, split, pad) words
+post_state:        .space 8*12      | per track: cur, increment, last split (core 0's X:0x3dd ramp state, MAIN half)
+post_gtab:         .space 16*8*4    | this block's gains, [frame][track], g << 10
+| The XLV curve: X:0x6c00[0..255] of payload A, the first quarter of its
+| 1,024-point sine. Extracted from the user's own image at build time by
+| modules/usb-audio-out-tracks-post/manifest.py into remix.inc; no stock
+| bytes are in the repo.
+post_xlv:          POST_XLV_TABLE
+.endif
 
 | Everything the USB controller reads by DMA is read and written by the
 | CPU ONLY through the uncached alias (address + UNCACHED). The unit runs

@@ -498,6 +498,99 @@ def curve_bank_record(img: bytes, tag: str):
     return None
 
 
+
+# ---- a given-up effect's own X data ------------------------------------------
+# The third place for a module's table (build_bus.py XHARVEST), after the
+# curve bank and P: an X record of a payload that only one stock effect's
+# P code addresses belongs to that effect, and once the effect is on
+# neither chooser nothing reads it. SPRING REV owns two such runs per
+# payload (measured 5 Oct 2026, this scan, matching Zac Kyoti's 4 Oct
+# canary run under his emulator: 0 reads and 0 writes from every other
+# DSP effect, a real project playing):
+#
+#   payload A   X:0x89a4 216 words   X:0x8afc 500 words
+#   payload B   X:0x8464 216 words   X:0x85bc 500 words
+#
+# and the 27-word record after them is read by DARK REV too, so it is not
+# exclusive. ⚠️ STATIC SCAN, NOT A READ-WATCH: a record is attributed by
+# the P words whose value falls inside it, so a reader that reaches it by
+# indexing past another record, or through a pointer held in data, is
+# invisible. A record no P word addresses belongs to nobody and is not
+# offered. Falsifier: a DSP read-watch on a placed run under the ColdFire
+# port, every other effect selected, reporting a hit.
+_xreaders: dict[str, list] = {}
+
+
+def x_records(img: bytes, tag: str) -> list[tuple[int, int, int]]:
+    """(X address, words, image byte offset) of every X record of one
+    payload, in address order."""
+    import sys as _sys, pathlib as _pl
+    _sys.path.insert(0, str(_pl.Path(__file__).resolve().parents[1]))
+    import toolpath  # noqa: F401
+    import dsp_modmap as dm
+    va, ln = [(v, l) for t, v, l in dm.PAYLOADS if t == tag][0]
+    mods, _b = dm.modules(img, va, ln)
+    return sorted((addr, cnt, va - dm.BASE + data)
+                  for space, addr, cnt, data in mods if space == 1)
+
+
+def x_readers(tag: str) -> list[tuple[int, int, dict[str, tuple[int, ...]]]]:
+    """(X address, words, {owner: P addresses}) for every X record of one
+    payload: which P words hold an address inside the record, keyed by the
+    stock effect whose span holds them ("OUTSIDE-DONOR" for code outside
+    every effect span)."""
+    if tag in _xreaders:
+        return _xreaders[tag]
+    import sys as _sys, pathlib as _pl
+    _sys.path.insert(0, str(_pl.Path(__file__).resolve().parents[1]))
+    import toolpath  # noqa: F401
+    import dsp_modmap as dm
+    img = dm.IMG.read_bytes()
+    va, ln = [(v, l) for t, v, l in dm.PAYLOADS if t == tag][0]
+    mods, b = dm.modules(img, va, ln)
+    sp = p_spans(tag)
+    recs = x_records(img, tag)
+    starts = [r[0] for r in recs]
+    import bisect
+    hits: list[dict[str, list[int]]] = [{} for _ in recs]
+    for space, addr, cnt, data in mods:
+        if space != 0:
+            continue
+        for i in range(cnt):
+            w = dm.w24(b, data + i * 3)
+            j = bisect.bisect_right(starts, w) - 1
+            if j < 0 or w >= recs[j][0] + recs[j][1]:
+                continue
+            pc = addr + i
+            k = next((k for k, (a, n) in sp.items() if a <= pc < a + n),
+                     "OUTSIDE-DONOR")
+            hits[j].setdefault(k, []).append(pc)
+    out = [(a, n, {k: tuple(v) for k, v in h.items()})
+           for (a, n, _o), h in zip(recs, hits)]
+    _xreaders[tag] = out
+    return out
+
+
+def x_exclusive_runs(tag: str, given_up, pinned_words=frozenset()
+                     ) -> list[tuple[int, int, str]]:
+    """(X address, words, owner) for each run of contiguous X records that
+    only one effect in `given_up` addresses, none of whose readers is in
+    `pinned_words` (a harvested word a kept effect still runs), in address
+    order. Adjacent records of one owner join into one run."""
+    given_up = set(given_up)
+    runs: list[list] = []
+    for a, n, rd in x_readers(tag):
+        ok = (len(rd) == 1 and next(iter(rd)) in given_up
+              and not any(pc in pinned_words for pcs in rd.values() for pc in pcs))
+        if not ok:
+            continue
+        owner = next(iter(rd))
+        if runs and runs[-1][0] + runs[-1][1] == a and runs[-1][2] == owner:
+            runs[-1][1] += n
+        else:
+            runs.append([a, n, owner])
+    return [tuple(r) for r in runs]
+
 # ---- words a KEPT effect reaches inside a HARVESTED one ---------------------
 # The thirteen spans are not self-contained. Stock effects call routines that
 # sit in another effect's span (measured on both payloads, 3 Oct 2026, Zac

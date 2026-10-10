@@ -1,4 +1,4 @@
-"""Unpack a GKA3 stream: the inverse of tools/remix/runtime_build.pack.
+"""Unpack a GKA3 stream: the inverse of tools/remix/pack.pack.
 
 The lint reads a built image on its own, and the DRAM runtimes it jumps
 into travel packed in the appended payloads. This decoder follows the bit

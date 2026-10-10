@@ -121,6 +121,14 @@ CHROMATIC keys move the pitch. With loop on and AMP REL at INF it holds
 until the AMP envelope ends it, as the carrier does. Not measured on the
 unit: DSP headroom, how many instances fit.
 
+
+Knob words are masked with `and #>$7f0000` before any shift; OCT is clamped
+to 0..4. An LFO leaves a non-zero byte in bits 8-15 of a modulated knob word
+(`docs/firmware/LFO.md` section 5): unmasked, OCT came out one octave off
+and at OCT 4 `do n3` ran with LC = 0xffff. `verify_wave` renders OCT words
+`0x0400fe`, `0x0200fe`, `0x047f7f` and CHRD `0x0300fe` and requires the clean
+word's output bit for bit.
+
 ## Open
 
 - How many instances fit beside a project on the unit (CF METER cannot

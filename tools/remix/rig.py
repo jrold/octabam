@@ -12,7 +12,7 @@ manifests, never declared here:
           tools/remix/stock.py) -- code already in both payloads, any track.
   MOD     a ColdFire modification: no chooser row, and it changes the OS
           image outside one -- caves, linked units, detours, pokes, grown
-          tables or a DRAM runtime (midisc, Octakit, the bridges, the fixes).
+          tables (midisc, KITS, the fixes).
           Never on a track; the ledger says which can share an image.
   SYSTEM  everything else: the SEND client. Plumbing the image needs.
 """
@@ -45,10 +45,10 @@ GROUP_TITLE = {BUS: "Bus", INSERT: "Inserts", STOCK: "Stock Effects",
 
 def touches_coldfire(m) -> bool:
     """Does this module change the OS image outside its own chooser row --
-    caves, linked units, detours, pokes, grown tables, overrides or a runtime --
+    caves, linked units, detours, pokes, grown tables or overrides --
     or claim stock bytes it keeps?"""
     return bool(m.cf_patches or m.linked or m.detours or m.symbol_refs or m.pokes
-                or m.keeps or m.tables or m.overrides or m.runtime is not None)
+                or m.keeps or m.tables or m.overrides)
 
 
 def category(mod) -> str:

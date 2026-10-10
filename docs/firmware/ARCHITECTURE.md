@@ -260,8 +260,214 @@ What "sample analysis" and the "correlation search" do is his reading,
 unverified here.
 
 The lockstep port measured 23,946 instructions per 16-sample frame
-(17 Sep 2026, stock, the rig project). The hottest loop is the stock
+(17 Sep 2026, stock image, the port's `RIG` fixture project). The hottest loop is the stock
 delay's EMAC mix at `0x40003734` (`COLDFIRE_DELAY.md`).
+
+### ColdFire time per frame on a unit ✅ (Bryan T, 4 Oct 2026)
+
+CF METER + CF METER IDLE (`modules/cfmeter/README.md`) on Bryan T's MKII,
+his remix `bt_oct_stress` (not in the tree: RECORDER LOOP FIX, LOFI AMF
+FIX, USB MIDI, USB AUDIO OUT TRACKS MAIN CUE, USB CROSSBAR, USB AUDIO IN
+ABCD, the stock effects less SPATIALIZER, CF METER, CF METER IDLE). ISR =
+the frame interrupt, vector `0x41` entry to the epilogue at `0x4000d9a6`,
+on DTIM3; the frame is 362.8 µs. Capture `tools/hw/rec 8 <out>.wav
+Octatrack`, decoded by `tools/harness/cfmeter.py`. Both USB directions
+streamed in every take: macOS opens the host → OT stream when `rec`
+starts I/O (`tools/hw/usb_counters.py --in --watch 1`: USB AUDIO IN's
+`produced` rose ~44,100 frames/s, `pkts` ~4,000/s, for exactly the take),
+so every number carries the full USB stack with USB CROSSBAR's priorities.
+Project: T1–T7 FLEX (STATIC where stated), each a long sample recorded at
+137 BPM, project at 120 BPM, all voices sounding for the take; FX1 FILTER,
+FX2 NONE except the DELAY takes, TSTR OFF except the TSTR take. Cells are
+the three 2 s cycles.
+
+| take | idle % | ISR mean µs | ISR max µs |
+|---|---|---|---|
+| near-empty project, stopped | 46.2 / 46.4 / 46.4 | 119 / 119 / 119 | 198 / 205 / 201 |
+| 7 FLEX, TSTR off, stopped | 42.2 / 42.0 / 41.8 | 143 / 142 / 143 | 218 / 217 / 218 |
+| 7 FLEX, TSTR off, playing | 11.0 / 7.6 / 11.3 | 268 / 244 / 264 | 306 / 291 / 301 |
+| 7 FLEX, TSTR AUTO (137 → 120, audibly stretching) | 16.9 / 13.3 / 19.4 | 261 / 278 / 257 | 307 / 313 / 308 |
+| 7 FLEX + DELAY on T1 | 10.1 / 6.2 / 11.3 | 237 / 268 / 245 | 292 / 302 / 291 |
+| 7 FLEX + DELAY on T1–T4 | 15.3 / 6.8 / 15.9 | 237 / 270 / 242 | 292 / 306 / 292 |
+| 7 FLEX + DELAY on T1, TIME swept by hand | 13.6 / 20.9 / 12.2 | 269 / 240 / 271 | 314 / 291 / 306 |
+| 7 STATIC, one sample slot | 10.0 / 10.5 / 8.5 | 256 / 277 / 266 | 314 / 335 / 327 |
+| 7 STATIC, seven different samples | 0.0 / 0.0 / 0.0 | 256 / 285 / 270 | 307 / 330 / 321 |
+
+Voice count, transport running, trigs cleared per take:
+
+| voices | idle % | ISR mean µs | ISR max µs |
+|---|---|---|---|
+| 0 | 42.2 / 42.1 / 42.0 | 139 / 139 / 138 | 218 / 221 / 216 |
+| 1 (T1) | 35.4 / 34.9 / 34.8 | 173 / 182 / 174 | 259 / 257 / 255 |
+| 1 (T5) | 36.5 / 37.4 / 36.3 | 180 / 169 / 180 | 251 / 260 / 255 |
+| 4 (T1–T4) | 24.3 / 28.5 / 26.9 | 233 / 220 / 228 | 284 / 274 / 283 |
+| 7 (T1–T7) | 17.8 / 17.8 / 16.8 | 265 / 247 / 267 | 302 / 288 / 307 |
+| 7, seven different samples | 20.4 / 14.8 / 17.1 | 246 / 268 / 250 | 292 / 318 / 294 |
+
+The same projects under the port (`verify_set.py bt_oct_stress --project
+<dir> --frames 17000`, `cfmeter.py --dump`): the port advances one step per
+instruction at `--ips 3990`, so instructions = port µs × 176; unit cycles =
+unit µs × 264.
+
+| | port ISR | instructions | unit ISR | unit cycles | CPI |
+|---|---|---|---|---|---|
+| 0 voices | 144.7 µs | ~25,470 | 138.6 µs | ~36,590 | ~1.4 ❌ (history-contaminated; the follow-up below has 106.5 µs unplugged, CPI ~1.1) |
+| 0 → 1 voice | +6.3 µs | ~1,110 | +37.4 µs | ~9,870 | ~8.9 ❌ (retracted the same evening: +14.6 µs, CPI ~3.5) |
+| each voice, 1 → 7 | +5.7 µs | ~1,000 | +13.9 µs | ~3,660 | ~3.7 ❌ (revised: +16.5 µs, CPI ~4.4) |
+
+Port points: 0 voices 144.7, T1 151.0, T1 + T5 156.6, 4 voices 168.2, 7
+voices 185.2 µs; 1,009 instructions per voice over 1 → 4 and 994 over
+4 → 7. On the unit 1 → 4 gives CPI ~4.4 and 4 → 7 ~2.9, a spread the size
+of the unit's cycle-to-cycle noise.
+
+- **Voice cost.** ❌ The morning reading, a first-voice premium of +37 µs
+  then 11–17 µs per voice, was retracted the same evening: the 0- and
+  1-voice takes were taken after seven tracks had played and had their
+  trigs cleared, and fresh loads read 121 and 146 µs with USB streaming
+  (the follow-up below). Every voice costs the same, ~16.5 µs. Still
+  standing from the morning: seven voices put the ISR at 255–260 µs of
+  362.8; equal on either DSP core (T1 alone = T5 alone), equal with one
+  shared sample or seven (259 vs 255 µs); the running transport with no
+  voice costs nothing (139 µs vs 143 stopped).
+- **The voice path is memory-bound; the rest of the ISR is not.** The port
+  prices every voice at ~1,000–1,100 instructions; on the unit the
+  baseline runs at CPI ~1.1 and each voice at ~4.4 (~4,360 cycles for
+  ~1,000 instructions; the follow-up's figures). Candidates: SDRAM line
+  fills (CACR `0xA50CE100`, ACR0 `0x4007E020`, written at `0x4001f3e0`
+  and `0x4001fc44` ✅: SDRAM `0x40000000..0x47FFFFFF` cached copyback,
+  everything else cache-inhibited) and uncached accesses. SDRAM contention
+  with USB DMA is ruled out by the follow-up: the per-voice slope is 16.6 µs
+  unplugged and 16.9 µs with USB streaming.
+- **A loaded, stopped project costs ~24 µs per frame** over a near-empty
+  one (143 vs 119 µs).
+- **Timestretch at 137 → 120 BPM adds nothing measurable.** The renderer
+  (`0x40007960`) runs inside the ISR: the per-track dispatch `jsr %a3@` at
+  `0x4000d340` / `0x4000d36c` and `%a4@` at `0x4000d35a` goes through the
+  machine-type table `0x400d6434` (`lea` at `0x4000bff0`); types 0, 1 and 4
+  point at `0x40004008`, which calls the renderer 🟡 (read from the image
+  5 Oct 2026, the table's entries not re-read here). Untested: stretch
+  beyond 2× (voice `+3`, a separate renderer path, `REPITCH.md`).
+- **The stock DELAY adds nothing measurable** on one track or four, settled
+  or with TIME moving. The routine `0x400031a0` is called from transfer
+  state 5 of the level-6 eDMA chain (state entry `0x40004aaa`, the `jsr` at
+  `0x40004b12` ✅), which can nest inside the measured span; its cost is a
+  fixed per-frame amount in every baseline either way. The profile's
+  7,665-instruction row above is not visible as ISR time on the unit;
+  neither is the sample analysis / correlation search under stretch.
+- **STATIC streaming leaves the ISR mean alone and adds spikes:** max
+  +25–35 µs over FLEX (335 µs in one cycle). ATA is level 5, the frame
+  interrupt's own level (`KERNEL.md`), so ATA handler time cannot nest
+  inside the span: the spikes are stalls.
+- **Seven distinct STATIC files drive idle to 0.00 % with the UI
+  responsive** (fast knob turns, the file browser). Idle % is not a
+  screen-lag predictor; the ISR share is the limit, since no task runs
+  while it does.
+- **Spin-waits inside the ISR: two**, both polling the host port's HC bit
+  (`movew 0x20000004,%d0` at `0x4000ab26` and `0x4000a90c` ✅), per frame.
+  The ISR arms eDMA channels 1, 6 and 7 and leaves; the chain's two
+  eDMA-status spins are in the delay routine (`0x400035a8`, `0x40003780`)
+  🟡 (read from the image 5 Oct 2026, not re-read for this entry).
+- **DSP core 0, every take:** TUE 0, ROE 0, spin min 2,017–2,262 polls.
+  Its frame period reads 362–363 µs stopped and with T1–T4 playing (ISR
+  227 µs), ~345–385 µs when T5–T7 play. No underruns. (An earlier reading,
+  long ColdFire ISRs delaying frame delivery, is retracted.)
+- **The ISR mean alternates ~240 / ~268 µs between consecutive 2 s cycles**
+  in most playing takes; one bar at 120 BPM is 2 s. Not investigated.
+
+#### Follow-up the same evening: USB and the crossbar ✅ (Bryan T, 4 Oct 2026)
+
+Same image and unit, T8 alone on CUE, CUE L/R into an SSL 12 (`tools/hw/rec
+20 <out>.wav "SSL 12"`, `cfmeter.py --lr 2,3`), so the USB cable can be out.
+"USB streaming" = cable in and a dummy `rec 60` on the Octatrack device in
+another window (both directions open); "unplugged" = cable out, the OUT
+producer and USB IN's per-frame transfer still running. Every take from a
+freshly loaded project (no trigs / T1 / T1–T7, one long sample), 20 s = 9
+cycles; the ISR mean alternates between consecutive 2 s windows (~3 µs at 1
+voice, ~18 µs unplugged and ~27 µs with USB at 7), so each figure is the
+mean of the two phases' means. The analog path reads ~0.6 % high (the frame
+period reads 365.0 for 362.8); raw below, ×0.994 where marked. The decoder
+needed a wider sync window for the analog path (`cfmeter.py --analog`).
+Validation: 7 voices with USB streaming, 252.7 µs here against 259.3 over
+USB in the morning.
+
+| fresh load | unplugged | USB streaming | USB cost |
+|---|---|---|---|
+| no voices | 107.1 µs | 121.2 µs | 14.1 µs |
+| T1 | 121.8 µs | 145.7 µs | 23.9 µs |
+| T1–T7 | 221.4 µs | 247.0 µs | 25.6 µs |
+
+×0.994: 106.5 / 120.5, 121.1 / 144.8, 220.1 / 245.5 µs. Repeatability: no
+voices unplugged, 9 cycles within ±0.5 µs; T1 unplugged, three fresh loads
+122.0 / 121.7 / 121.8 µs. ISR max: no voices ~127 unplugged, ~201–209 with
+USB; T1 ~148 or ~200 alternating (a trig in the window or not) unplugged,
+~223–246 with USB; T1–T7 ~253–274 / ~282–314.
+
+| | unit (×0.994) | cycles | port instructions | CPI |
+|---|---|---|---|---|
+| baseline ISR, no voices | 106.5 µs | ~28,100 | ~25,470 | ~1.1 |
+| first voice | +14.6 µs | ~3,850 | ~1,110 | ~3.5 |
+| each further voice, T1 → T1–T7 | +16.5 µs | ~4,360 | ~1,000 | ~4.4 |
+
+- **No crossbar contention on the voice path:** 16.6 µs per added voice
+  unplugged, 16.9 µs with USB streaming.
+- **The USB stack costs** ~14 µs of mean ISR per frame with nothing
+  playing, ~24–26 µs as soon as anything plays, flat from 1 to 7 voices.
+  The ~10 µs step at the first voice is repeatable and unexplained.
+- **The worst frame is set by trigs** when anything plays (the frame that
+  starts a voice); at idle USB's own spikes set it (~127 → ~205 µs). The
+  mean, not the max, prices USB.
+- **Tracks that have played keep costing after they fall silent:** ~18 µs
+  across seven tracks with none sounding, ~30 µs with one; the source of
+  the morning's first-voice premium.
+- Guidance: ~15–17 µs of mean ISR per playing voice, no first-voice
+  premium, plus ~24–26 µs for the USB stack while a host streams and
+  anything plays.
+
+#### Third note: 4 in / 20 out against 4 in / 4 out ✅ (Bryan T, 4 Oct 2026)
+
+Two images from the same module set, differing only in the OUT layout:
+USB AUDIO OUT TRACKS MAIN CUE (eight track pairs + MAIN + CUE) against OUT
+MAIN CUE (MAIN + CUE), both beside USB AUDIO IN ABCD, USB MIDI, USB
+CROSSBAR, CF METER + CF METER IDLE and the stock effects. Same unit, same
+fresh-loaded projects, 20 s takes balanced over the alternating windows; the
+20-out takes through the analog CUE path (×0.994), the 4-out takes over USB
+(CUE on host channels 3/4); the two methods agreed where they overlapped.
+Repeat loads within ±0.5 µs.
+
+| fresh load | 20 out, unplugged | 20 out, streaming | 4 out, streaming | 20 out streaming − 4 out |
+|---|---|---|---|---|
+| no voices | 106.5 µs | 120.5 µs | 93.8 µs | 26.7 µs |
+| T1 | 121.1 µs | 144.8 µs | 110.3 µs | 34.5 µs |
+| T1–T7 | 220.1 µs | 245.5 µs | 195.3 µs | 50.2 µs |
+| per voice, T1 → T1–T7 | 16.5 µs | 16.8 µs | 14.2 µs | |
+
+Seven voices: 68 % of the frame in the ISR with 20 out, 54 % with 4 out.
+Worst frame per window: no voices ~201–209 µs (20 out) against ~114–121 (4
+out); seven voices ~282–314 against ~231–272.
+
+- **Most of the 20-out cost is paid with no host connected:** 4 out
+  streaming sits 13 µs below 20 out unplugged with no voices and 25 µs
+  below with seven. That is the OUT TRACKS MAIN CUE producer, which runs
+  every block whether or not a host listens (~2,710 instructions and 320
+  read-back words per block, against 64 words for MAIN CUE); packet
+  building is only part of it.
+- **20 out makes each voice dearer:** 16.5–16.8 µs per voice with it, cable
+  in or out, against 14.2 µs with 4 out. Cache pressure from the 320 words
+  per block is his candidate, not measured; a probe walking the same
+  footprint without USB would test it.
+- **The ~10 µs step at the first voice** in the follow-up above belongs to
+  the 20-out layout: no voices → T1 is +24.3 µs with 20 out streaming,
+  +14.6 unplugged, +16.5 with 4 out streaming.
+- Not measured: 4 out unplugged; recording; the ColdFire DELAY; one MKII.
+
+Method, port side: `verify_set` pokes a trig on T1 step 2 by default, so
+every port run has T1 playing; `--poke-trig 0` (since 5 Oct 2026) is the
+zero-voice run. The gate stages samples from the SAVED part of pattern 1 and
+plays pattern 1; working-part edits or a setup on another pattern give
+silent tracks with `0 failure(s)`. The OT's SAVE AS NEW leaves later edits
+in the original project (`ot_bank.trigs(data, 0, track)` reads a copy's
+trigs). `cfmeter.py --dump` needs two sync → reference edges: 17,000 frames
+gives two rows, 2,000 none.
 
 ## 7. Memory map
 
@@ -291,3 +497,16 @@ container), `string_func_map.py`, the `Ghidra*.java` headless scripts.
   the dispatch itself is not.
 - Remaining ATA handlers; large functions the decompiler does not lift.
 - The vector table (`0x400` preamble, not in this section).
+- ColdFire load (the CF METER takes above): why the voice path stalls
+  (~4,360 cycles for ~1,000 instructions per voice; USB contention ruled
+  out), and whether its data can move to SRAM; ns per cache line fill on
+  cached SDRAM, the uncached alias (`+0x08000000`) and on-chip SRAM
+  `0x80000000` (CF METER's MEM/SRC knobs, not yet run on a unit); DTIM3
+  around the two HC polls and inside the level-6 handlers, for the nested
+  share; the ~10 µs USB step when anything starts playing (the 20-out
+  layout's, by the third note); whether 320 read-back words per block cost
+  the renderer cache lines (20 out: 16.5 µs per voice, 4 out: 14.2); why
+  tracks that have played keep costing after they fall silent (a fresh no-voice
+  project, measure, a bar of T1, clear it, measure again); the alternating
+  2 s windows (a 4 s period, the swing growing with voices); a recording
+  take (the 8-recorder SOS project).

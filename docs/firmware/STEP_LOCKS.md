@@ -114,12 +114,13 @@ initialise (`0x4001fa76`) writes it. `0x100fff00..` is a checksummed
 settings record (`0x4001f218..`); `0x10000004..0x10016143` is filled by a
 file read at load.
 
-## 7. Octakit's patches on these paths
+## 7. Octakit's patches on these paths (until 6 Oct 2026)
 
-Octakit (`modules/octakit`) patches the call sites of every routine in
+Octakit (removed from octabam 6 Oct 2026; `docs/firmware/PARTS.md` is
+what KITS does instead) patched the call sites of every routine in
 section 5, the entry of `0x400905d4`, `0x4002b9b0`'s entry, `0x40026eb0`
 (in the pattern copy), both page-2 editor entries and stores, and
 the frame ISR's trig path at 49 sites `0x4000b408..0x4000c590`, one of
-them (`0x4000c502`) inside the restore loop. None covers the routines'
+them (`0x4000c502`) inside the restore loop. None covered the routines'
 own bodies in section 5, `0x4000bae8..0x4000bb0e`, `0x4000c5ac..0x4000c614`,
 `0x4009b862` or `0x4009d8d0..0x4009d90a`.

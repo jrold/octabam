@@ -1,7 +1,7 @@
 # `usb-out-main` — USB AUDIO OUT MAIN on the stock effects
 
 The stock chooser plus USB MIDI and USB AUDIO OUT MAIN, for testing the
-two-channel MAIN stream on a unit that runs stock projects: no rig
+two-channel MAIN stream on a unit that runs stock projects: no FX1
 stations, no chooser changes, no project stamping.
 
 ## What is in it

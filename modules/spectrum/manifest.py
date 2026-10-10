@@ -134,7 +134,7 @@ MODULE = Module(
     # both (the build refused). midisc's own build used this run on
     # hardware; in the remixer its enc_unlock is DRAM, so nothing else here.
     cf_patches=(CavePatch(
-        label="SHPE formatter", cave_addr=0x400c45b0, pinned=b"",
+        label="SHPE formatter", cave_addr=0x400c45b0, pinned=b"", reserve=96,   # linked: 89 B
         source="modules/spectrum/shpe_fmt.s",
         emit=lambda _addr: (b"", ()),
         registers_formatter=FormatterReg(module="SPECTRUM", slot=7),

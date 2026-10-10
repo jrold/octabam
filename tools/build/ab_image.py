@@ -125,7 +125,7 @@ def assemble(org, cont, lay, vbase, tag):
 def integrate(img, stock_img):
     """Patch both payloads in `img` (bytearray); return ([pre-boot dicts], [pokes], log).
     `stock_img` is the pristine image: SPRING's words are checked against it."""
-    from remix import runtime_build, platform_build
+    from remix import pack, platform_build
     lay, vbase = layout()
     xwords = x_image(lay, vbase)
     pres, pokes, log = [], [], []
@@ -176,8 +176,8 @@ def integrate(img, stock_img):
         p0 = c["payload"][0] - BASE
         raw = bytes(img[p0:term]) + ab_records.ot_record(1, TABLES, xwords) + \
             bytes(img[term:p0 + c["payload"][1]])
-        packed = runtime_build.PACKED_MAGIC + len(raw).to_bytes(4, "big") + \
-            runtime_build.pack(raw, platform_build.MAX_CANDIDATES)
+        packed = pack.PACKED_MAGIC + len(raw).to_bytes(4, "big") + \
+            pack.pack(raw, platform_build.MAX_CANDIDATES)
         dst, stage = PRE[tag]
         if len(raw) > 0x40000 or 4 + len(packed) > 0x40000:
             die(f"payload {tag}'s upload ({len(raw):,} B, packed {len(packed):,}) outgrows its scratch")

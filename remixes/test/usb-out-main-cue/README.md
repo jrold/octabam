@@ -1,6 +1,6 @@
 # `usb-out-main-cue` — USB AUDIO OUT MAIN CUE on the stock effects
 
-The stock chooser plus USB MIDI and USB AUDIO OUT MAIN CUE, for testing the four-channel (MAIN + CUE) stream on a unit that runs stock projects: no rig stations, no chooser changes, no project stamping.
+The stock chooser plus USB MIDI and USB AUDIO OUT MAIN CUE, for testing the four-channel (MAIN + CUE) stream on a unit that runs stock projects: no FX1 stations, no chooser changes, no project stamping.
 
 ## What is in it
 

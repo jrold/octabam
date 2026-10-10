@@ -19,18 +19,30 @@ passes are the same audio except where the loop is wrong.
   sos_capture.py fixture TEMPLATE OUT [--bpm 128] [--rlen 16] [--trigs 1]
       a copy of the project TEMPLATE with bank 1 pattern 1 in the primer's
       shape: T1 FLEX on R1, PLAY + REC1 (INAB) + REC3 (SRC3 = T1) on the trig
-      steps, AMP VOL 127 locked there, FX1/FX2 NONE, R1 at 0 dB, LOOP off.
+      steps, AMP VOL 127 locked there, FX1/FX2 NONE, R1 at 0 dB, LOOP off,
+      24-bit recorders (RECORD_24BIT=1; at 16 bits the ramp is a staircase).
   sos_capture.py signal OUT.wav [--bpm 128] [--rlen 16] [--passes 2] [--seconds 40]
       the signal above (stereo, 24-bit) and OUT.json beside it.
   sos_capture.py capture SIGNAL.wav OUT.wav [--device Octatrack]
       plays SIGNAL into A/B and records the sixteen track channels for its
-      length; reads USB AUDIO's and USB AUDIO IN's counters before and after
-      when pyusb is there (a changed underrun/overrun count is a capture
-      that dropped or repeated frames of its own).
+      length; reads USB AUDIO's and USB AUDIO IN's counters 1 s into the
+      stream and 1 s before its end when pyusb is there (a changed
+      underrun/overrun count is a capture that dropped or repeated frames of
+      its own; the stream's open and close fall outside). Stops on a
+      recording that is digital zero on every channel: on macOS that is
+      Terminal without Microphone access (System Settings > Privacy &
+      Security > Microphone, then restart Terminal).
   sos_capture.py port PROJECT SIGNAL.wav OUT.wav [--image out/mainos_bus.bin] [--delay N]
       the same project and signal under the port (out/emu/ot_emu): input
       A/B from the transport start, delayed by N samples; OUT.wav holds the
       sixteen track channels from the read-back the USB producer reads.
+  sos_capture.py wraps A.wav [B.wav ...] [--track 1] [--pass N]
+      every wrap of the recirculating loop from the loop's own lag: each
+      pass is the one before delayed by a whole number of samples, so the
+      lag that fits best, window by window, steps +1 at a REPEAT and -1 at
+      a SKIP; any other step, or a sample that fits neither lag, is flagged.
+      Needs nothing from the signal: works on real audio. --pass defaults
+      to the signal's .json beside A, else 128 BPM / RLEN 16.
   sos_capture.py compare SIGNAL.wav A.wav [B.wav] [--track 1]
       per capture: the input sample at each arm; per recirculating pass, the
       largest difference from the pass before (after the best -2..+2 sample
@@ -38,9 +50,11 @@ passes are the same audio except where the loop is wrong.
       delay that puts B's first arm on A's input sample, and, once they
       match, the samples where A and B differ.
 
-On the unit: PLAY first, then `capture` (the signal starts at once; any
-point in the pattern works, `compare` finds the arm). Then `port` with the
-same project and `--delay` from the compare, then `compare` both.
+On the unit: PLAY first, wait a few seconds (a capture straight after a
+recorder reallocation overran), then `capture` (the signal starts at once;
+any point in the pattern works, `compare` finds the arm). `wraps` on the
+capture. Then `port` with the same project and `--delay` from the compare,
+then `compare` both.
 
 Needs the .venv (numpy; sounddevice for `capture`), the port (make emu-cf)
 for `port`, pyusb for the counters.
@@ -152,11 +166,14 @@ def fixture(a):
         raw, k = re.subn(r"\[SAMPLE\][^\[]*?TYPE=FLEX[^\[]*?SLOT=129\b.*?\[/SAMPLE\]", attrs, raw, count=1, flags=re.S)
         if k != 1:
             sys.exit(f"{p}: no FLEX SLOT=129 sample block (R1) to set")
+        raw, k = re.subn(r"RECORD_24BIT=\d+", "RECORD_24BIT=1", raw)
+        if k != 1:
+            sys.exit(f"{p}: {k} RECORD_24BIT keys (expected one)")
         p.write_bytes(raw.encode("latin1"))
     ot_spec.apply(out, {"banks": [1], "patterns": {"1": {"tracks": {"1": {
         "locks": {"amp": {str(s): {"VOL": 127} for s in trigs}}}}}}})
     print(f"{out}: T1 FLEX R1 (TSMODE 0, LOOP off, 0 dB), PLAY+REC1+REC3 (SRC3=T1) on step(s) {a.trigs}, "
-          f"RLEN {a.rlen}, {a.bpm} BPM, AMP VOL 127 locked")
+          f"RLEN {a.rlen}, {a.bpm} BPM, AMP VOL 127 locked, 24-bit recorders")
 
 
 # ---- signal -----------------------------------------------------------------
@@ -222,13 +239,23 @@ def capture(a):
     if len(idx) != 1:
         sys.exit(f"{len(idx)} devices match {a.device!r} with 16 inputs and 2 outputs: "
                  + ", ".join(f"{d['name']!r} in={d['max_input_channels']} out={d['max_output_channels']}" for d in devs))
+    import time
     dev = _usb_dev()
-    before = _counters(dev) if dev is not None else None
     out = sig.astype(np.float64) / (1 << 23)
-    rec = sd.playrec(out.astype(np.float32), samplerate=FS, device=idx[0], channels=16, dtype="int32", blocking=True)
-    after = _counters(dev) if dev is not None else None
-    write_wav(a.out, np.asarray(rec, np.int64) >> 8)
+    secs = len(out) / FS
+    rec = sd.playrec(out.astype(np.float32), samplerate=FS, device=idx[0], channels=16, dtype="int32", blocking=False)
+    t0 = time.monotonic()
+    time.sleep(min(1.0, secs / 4))
+    before = _counters(dev) if dev is not None else None      # inside the stream: its open falls outside
+    time.sleep(max(0.0, secs - 1.0 - (time.monotonic() - t0)))
+    after = _counters(dev) if dev is not None else None       # 1 s before its close
+    sd.wait()
+    x = np.asarray(rec, np.int64) >> 8
+    write_wav(a.out, x)
     print(f"{a.out}: {len(rec)} frames x 16 channels from {devs[idx[0]]['name']!r}")
+    if not np.any(x):
+        sys.exit("every channel is digital zero for the whole capture: on macOS, Terminal needs Microphone access "
+                 "(System Settings > Privacy & Security > Microphone), then a restart of Terminal")
     if before is None:
         print("counters: pyusb/libusb not available -- check USB AUDIO's underruns/overruns with tools/hw/usb_counters.py")
         return
@@ -300,6 +327,76 @@ def port(a):
     print(f"{a.out}: {len(x)} samples x 16 channels (input delay {a.delay}, signal {meta['signal_samples']}); log {log}")
 
 
+# ---- wraps -------------------------------------------------------------------
+
+def lag_track(x, P, W=1024):
+    """Window by window, the whole-sample lag d near P for which x[n] - x[n-d]
+    is smallest, and that residual's rms against the window's rms.
+    -> [(window start, lag, residual / rms)]."""
+    cands = range(int(math.floor(P)) - 3, int(math.ceil(P)) + 4)
+    dmax = max(cands)
+    rows = []
+    for i in range(dmax, len(x) - W, W):
+        cur = x[i:i + W]
+        rms = float(np.sqrt(np.mean(cur ** 2)))
+        if rms < 1000:                                   # ~ -78 dBFS: nothing playing
+            continue
+        errs = [float(np.sqrt(np.mean((cur - x[i - d:i - d + W]) ** 2))) for d in cands]
+        j = int(np.argmin(errs))
+        rows.append((i, list(cands)[j], errs[j] / rms))
+    return rows
+
+
+def find_wraps(x, P, W=1024, fit=0.01):
+    """The loop's wraps from its lag (x: one channel, float). A window where
+    the best lag leaves a residual under `fit` of its rms is a clean
+    recirculation; between two clean windows whose lags differ, the wrap is
+    the first sample from which the new lag fits better than the old one.
+    -> [(output sample, old lag, new lag, kind)]."""
+    rows = [r for r in lag_track(x, P, W) if r[2] < fit]
+    out = []
+    for (i0, d0, _), (i1, d1, _) in zip(rows, rows[1:]):
+        if d0 == d1:
+            continue
+        lo, hi = i0, i1 + W
+        e0 = np.abs(x[lo:hi] - x[lo - d0:hi - d0])
+        e1 = np.abs(x[lo:hi] - x[lo - d1:hi - d1])
+        # split at k: the old lag before it, the new lag from it on
+        cost = np.concatenate([[0.0], np.cumsum(e0)]) + (e1.sum() - np.concatenate([[0.0], np.cumsum(e1)]))
+        k = int(np.argmin(cost))
+        n = lo + k
+        kind = {1: "REPEAT", -1: "SKIP"}.get(d1 - d0, f"LAG {d1 - d0:+d}")
+        rms = float(np.sqrt(np.mean(x[lo:hi] ** 2))) or 1.0
+        near = slice(max(0, k - 4), k + 4)
+        misfit = float(np.minimum(e0[near], e1[near]).max()) / rms      # a sample neither lag explains
+        if misfit > 0.05:
+            kind += f" + FOREIGN SAMPLE ({100 * misfit:.0f}% of rms)"
+        out.append((n, d0, d1, kind))
+    return out
+
+
+def wraps(a):
+    P = a.pass_len
+    if P is None:
+        js = pathlib.Path(a.captures[0]).with_suffix(".json")
+        sig = [p for p in (js, pathlib.Path(a.captures[0]).parent / "sig.json") if p.is_file()]
+        P = json.loads(sig[0].read_text())["pass"] if sig else pass_len(128.0, 16)
+    for path in a.captures:
+        x = read_wav(path)
+        ch = x[:, 2 * (a.track - 1):2 * a.track].astype(np.float64).sum(1)
+        found = find_wraps(ch, P)
+        kinds = {}
+        for _, _, _, k in found:
+            k = k.split(" (")[0]
+            kinds[k] = kinds.get(k, 0) + 1
+        print(f"{path}: T{a.track}, pass {P:.3f}, {len(found)} wrap(s): "
+              + ", ".join(f"{v} {k}" for k, v in sorted(kinds.items())))
+        prev = None
+        for n, d0, d1, k in found:
+            print(f"  {n:9d}{'' if prev is None else f'  (+{n - prev})':>12}  lag {d0} -> {d1}  {k}")
+            prev = n
+
+
 # ---- compare ----------------------------------------------------------------
 
 def decode_index(R, meta, lo, hi):
@@ -318,7 +415,8 @@ def decode_index(R, meta, lo, hi):
 def segments(R, meta):
     """The runs of R that hold ONE recording of the ramp, each a straight
     line at the path's gain: grown window by window while the line fitted
-    so far predicts the next window to within 0.4 of one ramp step, then
+    so far predicts the next window to within 0.4 of one ramp step (or 4x
+    the first window's residual, where the path's noise is larger), then
     kept only at the gain of the first run (a feedback pass holds two
     recordings, whose sum is a line at about twice the gain).
     -> [(start, end, g, d)]: output sample t in [start, end) plays input t + d."""
@@ -328,10 +426,10 @@ def segments(R, meta):
         return []
     runs, i, stop = [], nz[0], nz[-1]
     while i + 2 * W < stop:
-        g, d, _ = decode_index(R, meta, i, i + W)
-        if not np.isfinite(d) or abs(g) < 1e-3:
+        g, d, res = decode_index(R, meta, i, i + W)
+        if not np.isfinite(d) or abs(g) < 0.05:          # silence or noise: no ramp here
             i += W; continue
-        tol = max(3.0, 0.4 * k * abs(g))
+        tol = max(3.0, 0.4 * k * abs(g), 4.0 * res)      # a noise floor above one ramp step widens it
         j = i + W
         while j < len(R):
             t = np.arange(j, min(j + W, len(R)))
@@ -439,8 +537,11 @@ def main():
     p.add_argument("--load-ms", type=int, default=20000)
     p = sub.add_parser("compare"); p.add_argument("signal"); p.add_argument("a"); p.add_argument("b", nargs="?")
     p.add_argument("--track", type=int, default=1)
+    p = sub.add_parser("wraps"); p.add_argument("captures", nargs="+")
+    p.add_argument("--track", type=int, default=1)
+    p.add_argument("--pass", dest="pass_len", type=float, default=None, help="pass length in samples")
     a = ap.parse_args()
-    {"fixture": fixture, "signal": signal, "capture": capture, "port": port, "compare": compare}[a.cmd](a)
+    {"fixture": fixture, "signal": signal, "capture": capture, "port": port, "compare": compare, "wraps": wraps}[a.cmd](a)
 
 
 if __name__ == "__main__":

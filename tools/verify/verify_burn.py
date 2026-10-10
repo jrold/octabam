@@ -95,7 +95,7 @@ def main():
     mods = set(registry.remix(remix).modules)
     need = {"SEND", "DELAY SERVER", "REVERB SERVER"}
     if not need <= mods:
-        print(f"  SKIPPED: the rig burn needs {sorted(need - mods)}, which remix "
+        print(f"  [SKIP] the rig burn needs {sorted(need - mods)}, which remix "
               f"{remix!r} does not carry -- nothing to burn")
         return 0
     if not (ROOT / "out/test_audio/loop.wav").is_file():

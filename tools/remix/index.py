@@ -85,7 +85,7 @@ def matrix(mods):
 
 
 BEGIN, END = "<!-- modules:begin -->", "<!-- modules:end -->"
-FAMILIES = (("rig", "The rig"), ("effects", "Effects"),
+FAMILIES = (("rig", "The delay and reverb bus"), ("effects", "Effects"),
             ("mods", "Firmware mods on the stock effects"),
             ("reference", "Reference"), ("probes", "Probes"))
 

@@ -13,8 +13,8 @@ value back, as page 1 does.
 ## Measured
 
 Under the port, 2 Oct 2026, `tools/verify/verify_plocksp2.py` on
-`plocks-p2` and on bottleservice with PLOCKS P2 added (Octakit, the rig,
-SCENES P2 KITS), project OCTABAM89_setgate:
+`plocks-p2` and on bottleservice with PLOCKS P2 added (Octakit, the bus, the FX1
+stations, SCENES P2 KITS), project OCTABAM89_setgate:
 
 - A held trig and knob A on the FX2 SETUP page lock step 1's page-2
   slot 0; stock's page-1 locks of step 1 stay 0xff.
@@ -50,6 +50,25 @@ Not flashed.
 - A held step with no trig takes a page-2 lock that never plays (stock
   makes a lock trig from a page-1 lock; not mirrored).
 - On the unit.
+
+## CS1 writer ordering
+
+`nv_save` is called from the UI task (priority 3) and the engine task
+(priority 1, `plk_loadall`, `plk_loadmask`, `plk_tocs1`); the UI task
+preempts the engine task at any instruction. Each call takes a ticket
+(`NVGEN` incremented and `NVBANK` stored under SR `0x2700`). The entry loop
+compares its ticket with `NVGEN` every four bytes, and the commit (count,
+sum, magic) runs under `0x2700` after the same compare. A call that finds a
+newer ticket starts over from `NVBANK`. The mask covers a few instructions;
+the scan of up to 98,304 bytes runs unmasked, because a mask held for the
+scan would delay the frame ISR (about 24,600 long compares on an empty bank:
+inferred from the instruction count, not measured). A spin on a flag was
+not used: the engine task spinning on the UI task's flag cannot make
+progress if the UI task is the one preempting it. The ordering is by reading
+the code; the port is lock-step and cannot interleave tasks, so it is not
+measured on the port or the unit.
+
+`read_bank` rejects a `p2lkNN` header whose version is not 1 as no locks.
 
 ## Gates
 
@@ -109,8 +128,10 @@ trig. Nothing carries page 2, and every byte of the pattern data is used.
   load and the masked bank loads, and emptied for a new project. A missing
   source copies as an empty file.
 
-## Octakit
+## KITS
 
-Built and gated beside Octakit in bottleservice: none of the 52 sites is
-one her recipe writes. The masked bank loader `0x400905d4` (her entry
-wrapper) is reached through its call sites.
+KITS (in bottleservice beside this module since 6 Oct 2026) hooks the
+file routines' own entries (`0x40090504`, `0x400905d4`, `0x400909d8`,
+`0x400917c8`, `0x4008ee74`, `0x4008f180`) where this module hooks their
+call sites, so the two share no site. Its CS1 ranges (`0x100f85a0..e8`,
+`0x100ffe00..ff00`) sit on either side of this module's.

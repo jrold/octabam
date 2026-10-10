@@ -62,7 +62,7 @@ import mixer                           # noqa: E402  (the measured gain chain)
 from remix import registry             # noqa: E402
 
 SR = 44100
-FRAMES = 16                            # the firmware's frame; the harness's own cap is 15
+FRAMES = 16                            # the firmware's frame; dsp_host caps a block at 16
 NTRACKS = 8
 # Track -> core. Measured (marker flash): payload A serves 5-8.
 CORE_OF = {t: (0 if t >= 5 else 1) for t in range(1, NTRACKS + 1)}

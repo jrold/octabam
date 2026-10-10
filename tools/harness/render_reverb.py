@@ -80,15 +80,42 @@ def prov_stamp(img, fp):
     img.with_suffix(img.suffix + ".prov").write_text(fp + "\n")
 
 SR = 44100
-FRAMES = 16              # the firmware's frame (the harness's own cap is 15: the & 0xf
+FRAMES = 16              # the firmware's frame; dsp_host caps a block at 16 (-frames 16 seeds the split nibble as 0 = whole block)
 WARMUP_BLOCKS = 260      # the engine stays dry for 256 CALLS; pad past it and trim
 
-PARAMS = [("DEL", 0), ("REV", 64), ("SIZE", 127), ("SHMR", 0), ("SHFT", 3),
-          ("WET", 127), ("_C", 0), ("TONE", 64), ("DIFF", 64), ("_9", 0),
-          ("GATE", 0), ("TIME", 64)]   # 26 Sep 2026: DEL / REV on slots 0 / 1 (REV was SEND on 0), TIME on slot 11
+HARNESS_REV = 64      # REV is the send that feeds the engine (x:(r6+1))
+
+
+def _manifest_params():
+    """(name, default) per slot, from the REVERB SERVER manifest, with two
+    harness settings: MODE's slot stays 0 (--mode builds the image with the
+    character assembled in), and REV is HARNESS_REV (the manifest's 0 is a
+    return track with no send, which renders dry here)."""
+    m = registry.by_key("REVERB SERVER")
+    out = []
+    for i, p in enumerate(m.params):
+        name = p.name.decode() if p.name else f"_{i}"
+        out.append((name, 0 if name == "MODE" else HARNESS_REV if name == "REV"
+                    else (p.default or 0) & 0x7f))
+    return out
+
+
+PARAMS = _manifest_params()
 NAMES = {n: i for i, (n, _) in enumerate(PARAMS)}
-# _C (index 6) is MODE's slot; --mode owns it, so no knob.
-KNOBS = ", ".join(n for n, _ in PARAMS if n != "_C")
+# MODE's slot is owned by --mode, so it is not a -p knob.
+KNOBS = ", ".join(n for n, _ in PARAMS if n != "MODE")
+# Every name a slot answers to (its own plus each MODE view's alias).
+KNOB_SLOTS = registry.by_key("REVERB SERVER").knob_map_all()
+
+
+def knob_slot(k):
+    """-> slot for a -p / --sweep name, or die. MODE is --mode's."""
+    k = k.strip().upper()
+    if k not in KNOB_SLOTS or k == "MODE":
+        alias = sorted(set(KNOB_SLOTS) - set(NAMES))
+        die(f"unknown knob {k!r}; known: {KNOBS}"
+            + (f" (MODE-view aliases: {', '.join(alias)})" if alias else ""))
+    return KNOB_SLOTS[k]
 
 
 def die(msg):
@@ -447,16 +474,13 @@ def main():
         if "=" not in spec:
             die(f"bad -p {spec!r}, want NAME=VALUE")
         k, v = (s.strip() for s in spec.split("=", 1))
-        if k.upper() not in NAMES or k.upper() == "_C":
-            die(f"unknown knob {k!r}; known: {KNOBS}")
-        values[NAMES[k.upper()]] = max(0, min(127, int(v)))
+        values[knob_slot(k)] = max(0, min(127, int(v)))
 
     sweep = []
     if a.sweep:
         k, vs = a.sweep.split("=", 1)
-        if k.upper() not in NAMES or k.upper() == "_C":
-            die(f"unknown knob {k!r}; known: {KNOBS}")
-        sweep = [(k.upper(), int(v)) for v in vs.split(",")]
+        k = PARAMS[knob_slot(k)][0]
+        sweep = [(k, int(v)) for v in vs.split(",")]
 
     src_path = pathlib.Path(a.input)
     if not src_path.exists():
@@ -522,7 +546,7 @@ def main():
             # name the knobs that differ from the defaults, and always the swept one
             # (a sweep can legitimately pass through a knob's own default value)
             label = " ".join(f"{n}={vals[n]}" for n, _ in PARAMS
-                             if n != "_C" and (n == swept or vals[n] != dict(PARAMS)[n])) \
+                             if n != "MODE" and (n == swept or vals[n] != dict(PARAMS)[n])) \
                     or "defaults"
             if mode_name:
                 label = f"{mode_name:<6s} {label}"

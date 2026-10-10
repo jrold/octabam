@@ -6,7 +6,7 @@ REMIX = Remix(
     name="direct-jump-kyoti",
     family="mods", proof=Proof.CHECK, proof_note="",
     doc="stock effects with DIRECT_JUMP_KYOTI: [PTN] + [YES] toggles an immediate, clock-locked pattern change.",
-    modules=("DIRECT_JUMP_KYOTI",
+    modules=("DIRECT_JUMP_KYOTI", "BATCH_BUGFIXES",
              "FILTER", "EQUALIZER", "DJ EQ", "PHASER", "FLANGER",
              "CHORUS", "SPATIALIZER", "COMB FILTER", "COMPRESSOR", "LO-FI",
              "DELAY", "PLATE REV", "SPRING REV", "DARK REV"),

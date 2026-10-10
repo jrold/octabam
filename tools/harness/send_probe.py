@@ -37,10 +37,11 @@ non-fundamental energy relative to the fundamental. MOD and SPEED are forced to
 import argparse, array, cmath, math, os, pathlib, struct, subprocess, sys, wave
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-HOST = ROOT / "vendor/dsp56300/build/source/dsp_host/dsp_host"
+HOST = pathlib.Path(os.environ.get("DSP_HOST") or ROOT / "vendor/dsp56300/build/source/dsp_host/dsp_host")
 
 SR = 44100
-FRAMES = 15                # dsp_host caps a block at 15 frames
+FRAMES = 15                # pinned: bus latency of exactly 2 blocks (30 samples) and the bit-identity
+                           # references are recorded at 15; dsp_host's cap is 16 (tools/harness/README.md)
 WARMUP_BLOCKS = 300        # the engine stays dry for 256 CALLS; pad well past it
 
 INIT_TAB, PROC_TAB = 0x215, 0x235
@@ -51,6 +52,7 @@ INIT_TAB, PROC_TAB = 0x215, 0x235
 # not by editing this file.
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1])); import toolpath  # noqa: E402,F401  (every tools/ dir on sys.path)
 from remix import registry  # noqa: E402
+from remix.schema import render_slot  # noqa: E402
 
 SERVER_ID = {m.harness.layout_char: m.menu.fx2_id
              for m in registry.modules().values()
@@ -234,12 +236,13 @@ def run(mem, dur, tail, rev_params, send_params, verbose=False, amp=0.5,
         # so its render is an FX1 instance: state block 0x6100 and the
         # allocator's first FX1 entry (Y:0x1000). Everything else renders
         # as FX2 instance 1 (0x6200 / Y:0x4000), as it always has.
-        _fx1o = (_tm is not None and getattr(_tm, "claims", None) is not None
-                 and _tm.claims.fx1_only)
+        # A module that runs at some positions only names one it runs at
+        # (Harness.render_r7; VOCODER 0x6500): schema.render_slot.
+        _r7, _al = render_slot(_tm) if _tm is not None else (2, 1)
         cmd = [str(HOST), "-mem", str(mem),
                "-init", f"{ri:x}", "-proc", f"{rp:x}",
-               "-inst", "1", "-r7", "1" if _fx1o else "2",
-               "-alloc", "0" if _fx1o else "1",
+               "-inst", "1", "-r7", str(_r7),
+               "-alloc", str(_al),
                "-inmask", "1",                   # tone straight into the module
                *(["-audio", "0"] if _tm is not None and _tm.is_stock else []),
                "-blocks", str(blocks), "-in", str(src), "-out", str(out),

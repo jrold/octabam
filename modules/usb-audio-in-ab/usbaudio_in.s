@@ -196,22 +196,43 @@ in_ctrl_shim:
 | The transfer IRQ saved d0-d1/a0-a1; everything else is saved here. The
 | first visit per frame is the stock machine's; our transfer's completion
 | is the second, which runs the displaced stock state 7.
+| While the stream is closed the DSP needs word 0 = 0 in both of its banks
+| (the transfer lands in the working bank's +$320 and the banks alternate per
+| frame), not a fresh block every frame: the block is transferred until
+| ZERO_BLOCKS of them have completed since the close (in_zero_sent), then
+| skipped, and the first visit runs the stock state 7 itself. in_seconds
+| therefore counts transfers, not frames, while closed. (Bryan T, 4 Oct
+| 2026: one eDMA transfer and one interrupt pass per frame for nothing with
+| no host; not measured since.)
+.set ZERO_BLOCKS, 4                 | two banks; two more for margin
     .global in_state7_shim
 in_state7_shim:
     tstb    in_busy
     bnes    .Ls7_second
-    moveq   #1,%d0
-    moveb   %d0,in_busy
     lea     %sp@(-40),%sp
     moveml  %d2-%d7/%a2-%a5,%sp@
     bsr     in_frame
     moveml  %sp@,%d2-%d7/%a2-%a5
     lea     %sp@(40),%sp
+    tstb    in_running
+    bnes    .Ls7_send
+    mvzb    in_zero_sent,%d0
+    cmpil   #ZERO_BLOCKS,%d0
+    bccs    .Ls7_stock              | both DSP banks hold word 0 = 0
+.Ls7_send:
+    moveq   #1,%d0
+    moveb   %d0,in_busy
     bsr     in_dma_start
     jmp     STATE7_DONE
 .Ls7_second:
     addql   #1,in_seconds
     clrb    in_busy
+    tstb    in_running
+    bnes    .Ls7_stock
+    mvzb    in_zero_sent,%d0        | one more closed block (word 0 = 0) landed
+    addql   #1,%d0
+    moveb   %d0,in_zero_sent
+.Ls7_stock:
     moveq   #1,%d1                  | stock state 7, displaced
     moveb   %d1,FRAME_UNMASK
     jmp     STATE7_DONE
@@ -302,6 +323,7 @@ in_up:
     bsr     in_arm_all
     moveq   #1,%d0
     moveb   %d0,in_running
+    clrb    in_zero_sent
 9:  rts
 
 in_down:
@@ -315,22 +337,29 @@ in_down:
     subql   #1,%d1
     bpls    1b
     clrb    in_running
+    clrb    in_zero_sent            | a zero block goes out before the transfers stop
     rts
 
 | Flush EP3 OUT, bounded, repeating while it still shows primed.
 in_flush:
+    movel   %d2,%sp@-
     moveq   #16,%d1
 1:  movel   #EP3OUT_BIT,%d0
     movel   %d0,EPFLUSH
+    movel   #0x10000,%d2            | bound: a flush with USBCMD.RS clear (session end) may never complete
 2:  movel   EPFLUSH,%d0
     andil   #EP3OUT_BIT,%d0
+    beqs    4f
+    subql   #1,%d2
     bnes    2b
+4:
     movel   ENDPTSTAT,%d0
     andil   #EP3OUT_BIT,%d0
     beqs    3f
     subql   #1,%d1
     bnes    1b
-3:  rts
+3:  movel   %sp@+,%d2
+    rts
 
 | EP3 OUT's queue head from ENDPTLISTADDR (a value outside SDRAM is not a
 | list: the firmware's constant then). -> a0, cached in qh_in.
@@ -657,6 +686,7 @@ in_running:   .byte 0               | EP3 OUT is up (state-7 owned)
 in_prefill:   .byte 0               | filling the cushion
 in_ri:        .byte 0               | next dTD slot to retire
 in_busy:      .byte 0               | state 7: our transfer is in flight
+in_zero_sent: .byte 0               | closed: blocks with word 0 = 0 completed since the close; transfers skipped from ZERO_BLOCKS
 
     .balign 32
 in_tx:        .space TX_BYTES

@@ -73,11 +73,7 @@ the window's top edge; the boxes are 41 px, five rows, 3 px under the rule.
   divisions, the select labels. A slot with no formatter prints a plain
   number.
 - **Page-1 edits** go through the firmware's page-1 writer
-  `0x40054cd8(track, 24 + slot, value)`, with Octakit's token
-  (`P1TOKEN`, `0x54500000`) pushed above the three arguments: her
-  build rewrites the writer's dirty store to check the word there and
-  halts on any other (26 Sep 2026, `modules/octakit/README.md`). Stock
-  never reads it.
+  `0x40054cd8(track, 24 + slot, value)`.
 - **Page-2 edits** make the FX2 page-2 editor's stores: Part `+0x8f084`,
   shadow `0x100a51d2`, live lane `+0x38`, and the four dirty flags. This is
   CC MAP's write path. When MODE DEFAULTS is linked before this module,

@@ -294,26 +294,20 @@ def selected(r) -> list:
     return [modules()[k] for k in r.modules]
 
 
-def fixture(*keys: str, without_runtime: bool = False, grains: int | None = None) -> str:
+def fixture(*keys: str, grains: int | None = None) -> str:
     """The name of the smallest remix carrying every module in `keys` (fewest
     modules, then name), for a gate that needs a particular image rather
     than the selected one: the one-aux rig for the bus gates, the plain
-    two-server image for the two-core gate. `without_runtime` excludes a
-    remix with a DRAM runtime (a gate under unicorn); `grains` pins
-    Remix.grains. Refuses, naming the requirement, when no remix fits."""
-    known = modules()
+    two-server image for the two-core gate. `grains` pins Remix.grains. Refuses, naming the requirement, when no remix fits."""
     fits = []
     for name in remix_names():
         r = remix(name)
         if not set(keys) <= set(r.modules):
-            continue
-        if without_runtime and any(known[k].runtime is not None for k in r.modules):
             continue
         if grains is not None and r.grains != grains:
             continue
         fits.append((len(r.modules), name))
     if not fits:
         raise SystemExit(f"no remix carries {', '.join(keys)}"
-                         + (" without a DRAM runtime" if without_runtime else "")
                          + (f" at {grains} grains" if grains is not None else ""))
     return min(fits)[1]

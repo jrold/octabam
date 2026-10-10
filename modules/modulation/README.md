@@ -34,9 +34,16 @@ WDTH. `stamp-defaults` before play.
 
 ## Measured
 
+- **5 Oct 2026, the cycles pass** (bit-identical, `make verify-ident
+  MOD=modulation` 13/13): LINE 354 → 330, COMB 329 → 291, PHSR 298.
+  The lines run as modulo-1024 rings in the two loops (`m5 = $3ff`, a
+  stock modulo; every FX1 allocator base is 1024-aligned, `DSP.md`'s
+  table, line R at +1024), so `mo_itap` and `mo_herm` step to the next
+  delay with a post-decrement read instead of the add / and / n5 /
+  (r5)+n5 / −n5 sequence per point.
 - **27 Sep 2026, the cycle pass** (PR: mod-cycles): pricer per loop LINE
-  404 → 354, PHSR 394 → 298, COMB 339 → 329 words/sample; the rig's priced
-  worst core 2,781 → 2,585 (four Characters beside the reverb now bound it;
+  404 → 354, PHSR 394 → 298, COMB 339 → 329 words/sample; the priced
+  worst core beside the bus and the other FX1 stations 2,781 → 2,585 (four Characters beside the reverb now bound it;
   four JUNO + reverb + 3 sends 2,781 → 2,581), payload A FREE 87 → 138.
   Exact (13/13 `verify-ident` settings bit-identical): the walk pointers by
   `lua`, `mo_itap`/`mo_herm` read and step back in one move
@@ -54,18 +61,18 @@ WDTH. `stamp-defaults` before play.
   LOFI removed −18 words/sample in every loop (its inline hold and mask;
   LINE 336, PHSR 280, COMB 311); PHSR capped at 4 stages −68 (two trips of
   the roll: PHSR 230), which drops 6/8-stage phasing.
-- **1,480 words** with the knob ramps (26 Sep 2026; payload A FREE 61 in
-  the rig; pricer per loop LINE 404, PHSR 397, COMB 339 words/sample).
+- **1,480 words** with the knob ramps (26 Sep 2026; payload A FREE 61
+  beside the bus; pricer per loop LINE 404, PHSR 397, COMB 339 words/sample).
   Before them: 1,383 words (`make bus`, 23 Sep 2026; 1,352 on 22 Sep, 1,128 on 20
   Sep, LOFI added 16 Sep 2026: 1,044 before, 1,199 with ENS), payload A FREE
-  673 in the rig; pricer per loop PHSR 393, LINE 372, COMB 321 words/sample
+  673 beside the bus; pricer per loop PHSR 393, LINE 372, COMB 321 words/sample
   (489 / 423 / 361 on 22 Sep; 525 / 446 / 359 before the pointer rewrite).
   23 Sep 2026: the allpass stage passes x0 straight through (its entry and
   exit copies went, 20 calls per sample), the LFO, LOFI and MIX bodies are
   inline, the fixed taps' centre is split into i and f per block, c200, the
   COMB period−1 and trim are stream words, and six parallel moves with
   stock precedent; 13 settings (every MODE × two knob sets, zeros, max)
-  bit-identical (`make verify-ident MOD=modulation`). The rig's priced worst
+  bit-identical (`make verify-ident MOD=modulation`). The priced worst
   core (four PHSR beside the reverb) went 3,121 → 2,737 against 3,120
   usable. The loops are pointer-addressed since 22 Sep 2026 (PR #378):
   displaced moves per sample LINE 107, PHSR 136, COMB 116 → 0, the block's

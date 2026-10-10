@@ -50,7 +50,8 @@ flowchart LR
 
 - DARK REV and SPRING REV, off both effect menus in this remix.
 - Each Wave Synth track takes one FX2 memory buffer, as a stock delay or reverb does.
-- DSP time: two or three Wave Synth tracks on tracks 1–4 and two or three on 5–8, beside light effects. Four on the same half is more than the DSP has. (From the offline count; not measured on the unit.)
+- DSP time: two Wave Synth tracks per core (tracks 1–4 are one core, tracks 5–8 the other). The module declares `max_per_core=2` and the offline counter prices two copies: 2 x 1,082 = 2,164 of 3,120 usable cycles per sample. A third is over the static DSP wall (3 x 1,082 = 3,246 > 3,120; the counter is a floor). The unit does not stop a third or fourth selection.
+- Open: whether three or four instances on one core glitch on the unit is unmeasured.
 - The track playing the sine: its own audio is replaced by the synth.
 
 ## Where it has run

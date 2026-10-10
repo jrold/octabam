@@ -48,7 +48,7 @@ once a second:
   DSP's frame clock produces into EP3 IN's ring and consumes from this one.
   1,355 frames is about 31 ms, the round trip through the unit before the
   host's own buffers.
-- **Where it comes from**: `AUD_TARGET` + `IN_TARGET` (896) plus about 460
+- **Where it comes from**: `AUD_TARGET` + `IN_TARGET` (896 when they were 512 + 384; 64 + 96 = 160 since 28 Sep 2026) plus about 460
   frames EP3 IN gains between the stream starting and macOS polling it
   steadily (INFERRED from two sessions).
 - **The split drifts** about 0.5 frames a second (11 ppm, that Mac against
@@ -64,7 +64,7 @@ So `IN_TARGET` alone does not set the latency. Two levers, both in
 1. **Anchor usbaudio's consumer at the host's first IN poll** rather than
    at SET_INTERFACE. Done 28 Sep 2026 (`usbaudio_kick`, the `anchor`
    counter over `0x55`; `verify_usb` holds the bench's first poll back 600
-   frames and checks the fill lands at 512). Not measured on a unit:
+   frames and checks the fill lands within `AUD_TARGET`/2 of `AUD_TARGET`). Not measured on a unit:
    expected sum of the two `lastfill`s about 896.
 2. Lower `AUD_TARGET`, `IN_TARGET` and `AUD_BAND` together, keeping
    `IN_TARGET − AUD_BAND` (this ring's floor) above the jitter the unit
@@ -84,11 +84,16 @@ So `IN_TARGET` alone does not set the latency. Two levers, both in
   pairings have not been run since. `usb-io-tracks-main-cue-ab` pairs it with OUT TRACKS MAIN CUE.
 - Packet buffers in SDRAM through the alias with USB CROSSBAR on.
 - Latency lever 2 above, after the unit measurement.
+- The skipped closed-stream transfer (5 Oct 2026) on a unit: what it
+  saves per frame with no host (not measured; Bryan T's 4 Oct takes all
+  streamed), and that the jacks stay live across open/close. Port only so
+  far: `verify_usb_in`, `verify_set` with the IN remixes.
 
 ## Gates
 
 - `tools/verify/verify_usb_in.py` (the manifest's gate; `make check` runs it for any remix that carries the module).
 - `verify_usb`.
+- `verify_usb_in` runs 3 and 4: a bus reset and a session end with both streams open and no alt 0 from the host leave `in_alt`, `in_running` and `in_tx` word 0 at 0, and GET_INTERFACE(5) answers 0.
 
 ## How it works
 
@@ -114,6 +119,19 @@ So `IN_TARGET` alone does not set the latency. Two levers, both in
   interface 5 alt 0 or 1 records the alt setting and ACKs; any other alt
   STALLs. usbaudio.s answers GET_INTERFACE(5) from the same byte
   (`USB_IN` in its `remix.inc`).
+- Bus reset and session end: `in_alt` is cleared by usbaudio's
+  `audio_reset_shim` (`0x4001e91c`, the USBSTS.URI handler) and
+  `audio_sessend_shim` (`0x4001e952`, the OTGSC.BSVIS session end), which
+  the OUT module in every remix with this one carries (`USB_IN`). Before
+  them, a cable pull or a host crash with the stream open left `in_alt =
+  in_running = 1`, `in_build` underran, and `rx_inject` wrote zeros over
+  the module's jacks until a host sent SET_INTERFACE(5, 0) (USB 2.0
+  9.1.1.5: alternate setting 0 after a reset). State 7 sees `in_alt = 0`
+  and brings EP3 OUT down within one frame. Port only: `verify_usb_in` runs
+  3 (URI) and 4 (session end); no unit has had a reset or a pulled cable
+  with this build. The flush `in_down` issues runs with USBCMD.RS already
+  clear on the session-end path; the port's flush completes at once, so
+  that case is unmeasured.
 - `in_state7_shim`, a detour on the frame-transfer state machine's state 7
   (`0x40004bc0`). It is the one owner of EP3 OUT:
   - brings it up and down;
@@ -125,8 +143,14 @@ So `IN_TARGET` alone does not set the latency. Two levers, both in
     sample[7:0].
 
   The stock frame-IRQ unmask runs on the second visit, our transfer's
-  completion.
-- Cushion `IN_TARGET` = 384 frames (8.7 ms).
+  completion. While the stream is closed the transfer runs until four
+  blocks with word 0 = 0 have completed (the DSP reads the block from its
+  working bank and the banks alternate per frame, so one zero block clears
+  one bank: `verify_usb_in` saw host words in every other block with a
+  single one), then is skipped and the first visit runs the stock state 7
+  itself (since 5 Oct 2026; before that every frame). `in_seconds` counts
+  transfers, so it stops rising while closed.
+- Cushion `IN_TARGET` = 96 frames (2.2 ms; 384 frames, 8.7 ms, until 28 Sep 2026).
 - The **dTDs and packet buffers are in on-chip SRAM** at `0x80007c00`, and
   the EP0 reply buffer at `0x80007f80`, declared as `Claims.sram`; see
   *SRAM*.
@@ -182,7 +206,7 @@ counters through a host session and prints a verdict.
 | what | where |
 |---|---|
 | code | DRAM unit `usbaudio_in`; DSP section `rx_inject_ab.asm`, payload A's donor region, 33 words |
-| hooks | `0x4001dd0a` SET_INTERFACE (after usbaudio's), `0x40004bc0` frame transfer state 7, `0x4001de6e` EP0 stall store; DSP P:`0x88` (`DspHook`) |
+| hooks | `0x4001e91c` bus reset and `0x4001e952` session end (usbaudio's shims, below), `0x4001dd0a` SET_INTERFACE (after usbaudio's), `0x40004bc0` frame transfer state 7, `0x4001de6e` EP0 stall store; DSP P:`0x88` (`DspHook`) |
 | ring | 1,024 × 8 B, the unit's data |
 | DMA memory | dTDs `0x80007c00` (128 B), packet buffers `0x80007c80` (384 B), EP0 reply `0x80007f80` (64 B): `Claims.sram` |
 | host-port buffer | `in_tx`, 192 B, through the uncached alias (+`0x08000000`) → core 0 X bank +`$320`..+`$380` |

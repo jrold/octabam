@@ -263,7 +263,7 @@ neighbour's whole module (`stock.harvested`, `docs/contributing/MODULES.md`).
 | FX1 is not idle | the dispatcher calls it every frame; a fresh part defaults FX1 = FILTER | ✅ |
 | parameters per effect | 12: 6 page-1 knobs, 6 page-2 slots. Any slot may carry any count (`DSP.md` section 6, "Page 2") | ✅ |
 | unassigned tracks | id 0 is aliased to SEND in a bus remix, to the firmware's NONE otherwise | ✅ |
-| `r7` state block | `$00–$83` usable; `$84–$8a` is host-owned and cannot hold state across calls (per-call scratch there is fine; BusDelay uses `$84`–`$88`) | ✅ bisected |
+| `r7` state block | `$00–$83` usable; `$84–$8a` is host-owned and cannot hold state across calls (per-call scratch there is fine). ❌ retracted 5 Oct 2026: "BusDelay uses `$84`–`$88`"; its highest raw slot is `$83` (slot census of `modules/busdelay/delay_server.asm`; `CHANGELOG.md` image 41) | ✅ bisected |
 
 Persistent state need not live in `r7`: a probe build parked LFO and
 damping state in the instance's own Y region.

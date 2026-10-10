@@ -37,6 +37,10 @@ DETOURS = (
            "GET_INTERFACE: interface 4 reports the alt setting the host asked for"),
     Detour(0x4001de64, H("2039fc0b01c0"), "usbaudio", "audio_ctrl_shim",
            "class requests to the clock source (sample rate CUR/RANGE, validity); the rest STALL as stock"),
+    Detour(0x4001e91c, H("4ebaed9a7040"), "usbaudio", "audio_reset_shim",
+           "USBSTS.URI handler: bus reset puts the audio interfaces (4, and 5 with USB AUDIO IN) back to alt 0"),
+    Detour(0x4001e952, H("2039fc0b0140"), "usbaudio", "audio_sessend_shim",
+           "OTGSC.BSVIS session end: the same, before USBCMD.RS is cleared"),
     Detour(0x4001d4b2, H("23d04ec95028"), "usbaudio", "audio_ep0page_shim",
            "usb_ep0_send fills the dTD's buffer page 1 too: a configuration straddling a 4 KB page transmitted truncated"),
     Detour(0x4000d9a0, H("42b946104d4e"), "usbaudio", "audio_frame_shim",
@@ -48,13 +52,15 @@ DETOURS = (
 MODULE = Module(
     name="usb-audio-out-tracks-main-cue", key="USB AUDIO OUT TRACKS MAIN CUE", kind=Kind.CF_PATCH,
     category=Category.MIDI_USB, author="markandrus/octemu", author_url="https://github.com/markandrus/octemu",
-    proof=Proof.HARDWARE, proof_note="Sam's MKII (image 64, 25 Sep 2026); Tim's MKI (OCTATRICK9, 26 Sep 2026)",
-    doc="Twenty 24-bit channels over USB (UAC2): the tracks post-FX pre-fader, MAIN, CUE; the stereo sum at full speed (markandrus/octemu).",
+    proof=Proof.PORT, proof_note="bus reset and session-end shims (audio_reset_shim, audio_sessend_shim): the alt 0 request `verify_usb` under the port only, the `usbmidi_rx_bus_end` call on Ignorato's MKII (OCTABAM21, 9 Oct 2026, three replugs); the rest ran on Sam's MKII (image 64, 25 Sep 2026) and Tim's MKI (OCTATRICK9, 26 Sep 2026)",
+    doc="Twenty 24-bit channels over USB (UAC2): the tracks post-FX pre-fader, MAIN, CUE; the stereo sum at full speed (markandrus/octemu). Costs the ColdFire 27-50 us of each 362.8 us frame over OUT MAIN CUE, host or not (one MKII, 4 Oct 2026).",
     linked=(Linked("usbaudio", SOURCE, cpu="5475", dram=True, include=layout_inc(0)),),
     detours=DETOURS,
     # The ISR site is USB MIDI's; this shim does its EP3 work and jumps to
-    # USB MIDI's shim by symbol (the units link together).
-    overrides=(Override(0x4001e606, "USB MIDI"),),
+    # USB MIDI's shim by symbol (the units link together). The bus reset and
+    # session-end sites are USB MIDI's too: these shims call
+    # usbmidi_rx_bus_end beside their own alt 0 request.
+    overrides=(Override(0x4001e606, "USB MIDI"), Override(0x4001e91c, "USB MIDI"), Override(0x4001e952, "USB MIDI")),
     pokes=(Poke(0x400e2004, H("000000"), H("ef0201"),
                 "device descriptor: class/subclass/protocol = interface-association composite"),),
     # MAIN/CUE aligned with the tracks (skips without a source project)

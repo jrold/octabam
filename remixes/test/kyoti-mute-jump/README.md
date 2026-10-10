@@ -1,11 +1,12 @@
-# `kyoti-mute-jump` -- MUTE_MODES, DIRECT_JUMP_KYOTI
+# `kyoti-mute-jump` -- MUTE_MODES, DIRECT_JUMP_KYOTI, BATCH_BUGFIXES
 
-2 ColdFire modules by Zac Kyoti and the stock effects.
+3 ColdFire modules by Zac Kyoti and the stock effects.
 
 ## What is in it
 
 - **MUTE_MODES** -- [`modules/mute-modes/README.md`](../../../modules/mute-modes/README.md).
 - **DIRECT_JUMP_KYOTI** -- [`modules/direct-jump-kyoti/README.md`](../../../modules/direct-jump-kyoti/README.md).
+- **BATCH_BUGFIXES** -- [`modules/batch-bugfixes/README.md`](../../../modules/batch-bugfixes/README.md). DIRECT_JUMP_KYOTI requires it.
 - the 14 stock FX2 effects, listed so the chooser is stock's.
 
 ## Status

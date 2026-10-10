@@ -36,6 +36,12 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1])); import toolpath  # noqa: E402,F401
 import send_probe  # noqa: E402
 import verify_onebus as ob  # noqa: E402
+from remix import registry  # noqa: E402
+
+# The station under test: CHARACTER, or the module named on the command line
+# (modules/character-txtr's gate passes its own); the fixture carries it.
+KEY = registry.by_name(sys.argv[1]).key if len(sys.argv) > 1 else "CHARACTER"
+ob.REMIX = registry.fixture("REVERB SERVER", "DELAY SERVER", "SEND", "SPECTRUM", KEY, "MODULATION", "RIG HOSTS")
 
 ob.SCRATCH = ob.OUT / "_charkey"
 FRAMES, PAD, BLOCKS = ob.FRAMES, ob.PAD, ob.BLOCKS
@@ -82,7 +88,7 @@ def main():
     run = lambda insts, **k: ob.run(mems, insts, tone="burst.raw", **k)   # noqa: E731
 
     D = lambda fed=True: ob.Inst("DELAY SERVER", 1, 0, fed=fed, WET=0)     # noqa: E731
-    C = lambda core, pos, **k: ob.Inst("CHARACTER", core, pos, fx=1, fed=True,  # noqa: E731
+    C = lambda core, pos, **k: ob.Inst(KEY, core, pos, fx=1, fed=True,  # noqa: E731
                                        **{"COMP": 127, "KLVL": 64, **k})
     bad = []
 

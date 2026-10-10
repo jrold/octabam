@@ -55,6 +55,13 @@ streaming. At the start of a session the ring's fill was above its band
 Overruns were counted only when macOS closed the stream (USB AUDIO IN's
 README, *Latency*, has the trace).
 
+Frame-interrupt cost (Bryan T's MKII, 4 Oct 2026, beside IN ABCD, USB
+MIDI and USB CROSSBAR, host streaming, fresh-loaded FLEX projects): 93.8 µs
+with no voices, 110.3 with T1, 195.3 with T1–T7, 14.2 µs per voice; OUT
+TRACKS MAIN CUE in the same image reads 120.5 / 144.8 / 245.5 µs and 16.8
+per voice (`docs/firmware/ARCHITECTURE.md` "ColdFire time per frame on a
+unit"). Not measured with the cable out.
+
 ## Open
 
 - Full speed on a unit.

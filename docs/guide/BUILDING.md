@@ -12,8 +12,8 @@ built on your own computer from your own copy of Octatrack OS 1.40C.
 > Elektron's OS.
 
 Pick a remix from [the remix index](../../remixes/README.md). The commands below use `ok-ms`
-(Octakit + MIDI SCENES on the stock effects, the smallest remix that has
-run on a unit); substitute any remix name.
+(KITS + MIDI SCENES on the stock effects; with Octakit in KITS's place it
+was the smallest remix that has run on a unit); substitute any remix name.
 
 ## 0. What you need
 
@@ -47,7 +47,7 @@ make emu-setup
 ```
 
 `--recurse-submodules` fetches the module authors' repositories
-(`modules/octakit/upstream`, `modules/midi-scenes/upstream`, and
+(`modules/midi-scenes/upstream` and
 `timhastie/octatrick-modules` under `modules/synth`, `modules/quantizer`,
 `modules/direct-jump` and `modules/tuner`) at the pinned commits. If you cloned without
 it: `git submodule update --init`.
@@ -101,21 +101,96 @@ source $HOME/.local/bin/env
   Ubuntu profile. Its playback is `afplay` (macOS only); `docs/guide/REMIXER.md`
   has the two-line wrapper that points it at WSLg's PulseAudio.
 
-**Not verified on this route since 9 Sep 2026.** The build now needs the
-m68k cross-toolchain (`m68k-elf-gcc`, `as`, `ld`, `objcopy`, `nm`): every
-remix with linked ColdFire units (Octakit, MIDI SCENES, the USB modules,
-every DRAM module) refuses without it, and `scripts/setup.sh` adds
-`m68k-elf-gcc` to its Homebrew list when it is missing, so on a machine
-without Homebrew `make setup` stops at `brew: command not found`.
-`binutils-m68k-linux-gnu` ships the binutils half under the
-`m68k-linux-gnu-` prefix; whether symlinking them as `m68k-elf-*`
-satisfies the build, and whether a `.s` re-assembled that way still
-matches its author's bytes, has not been tried. Until someone reports a
-run, treat `make setup`, `make image` and `make check` on Linux as
-unverified; a Linux run that works, with the package list that made it
-work, is a doc PR. Flashing from a Windows host has not been done: the
-card copy is a plain file copy, and the MIDI path needs a SysEx app on
-the host.
+**The m68k cross-toolchain.** The build needs `m68k-elf-gcc`, `as`,
+`ld`, `objcopy` and `nm`: every remix with linked ColdFire units (KITS,
+MIDI SCENES, the USB modules, every DRAM module) refuses without them, and
+`scripts/setup.sh` adds `m68k-elf-gcc` to its Homebrew list when it's
+missing, so on a machine without Homebrew `make setup` stops at `brew:
+command not found`.
+
+**Build the bare-metal toolchain (recommended).** Upstream's authors use
+Homebrew's `m68k-elf-binutils` and `m68k-elf-gcc`. The same toolchain
+builds from GNU's sources on Linux, with the formulae's configure flags:
+binutils 2.47 (Homebrew's current) and GCC 16.1.0 (the version Octakit's
+recipe pinned; Homebrew is on 16.2.0). Measured on Ubuntu 26.04 under WSL2,
+28 Sep 2026; about an hour with two compile jobs:
+
+```bash
+sudo apt install -y libgmp-dev libmpfr-dev libmpc-dev libisl-dev zlib1g-dev libzstd-dev pkgconf texinfo
+# binutils-2.47.tar.xz and gcc-16.1.0.tar.xz from https://ftp.gnu.org/gnu/, each checked:
+#   gpgv --keyring ./gnu-keyring.gpg <file>.sig <file>
+mkdir build-binutils && cd build-binutils
+../binutils-2.47/configure --target=m68k-elf --prefix=/opt/m68k-elf --with-system-zlib --with-zstd --disable-nls
+make -j2 && sudo make install && cd ..
+export PATH=/opt/m68k-elf/bin:$PATH
+mkdir build-gcc && cd build-gcc
+../gcc-16.1.0/configure --target=m68k-elf --prefix=/opt/m68k-elf --disable-nls --without-headers \
+  --with-as=/opt/m68k-elf/bin/m68k-elf-as --with-ld=/opt/m68k-elf/bin/m68k-elf-ld \
+  --enable-languages=c --with-system-zlib --with-zstd
+make -j2 all-gcc && sudo make install-gcc
+make -j2 all-target-libgcc && sudo make install-target-libgcc
+for f in /opt/m68k-elf/bin/m68k-elf-*; do sudo ln -sf "$f" /usr/local/bin/; done
+```
+
+- `pkgconf` is needed: without `pkg-config`, binutils' configure stops on
+  `--with-zstd was given, but pkgconfig/libzstd.pc is not found`.
+- ✅ Octakit's runtime rebuilt to its author's bytes: "rebuilt runtime,
+  packed runtime and append all match the recipe" (`make bus REMIX=ok-ms`,
+  28 Sep 2026; KITS replaced Octakit on 6 Oct).
+- ✅ USB MIDI's linked unit matches its author's build at `0x400d24f0`,
+  1,124 bytes (`make bus REMIX=octatrick-usb`, 28 Sep 2026; octatrick-usb
+  became `octatrick` on 29 Sep).
+- ✅ This repository's pinned ColdFire bytes still match
+  (`tools/build/label_fmt.py`), and `scripts/disasm.sh emac 0x40003664 8`
+  still prints `msacl`.
+- ✅ A module that isn't checked against an author's bytes can change: the
+  bare-metal assembler reads a same-section global PC-relative, where
+  Ubuntu's keeps an absolute address. STEM REC's runtime came out 48 bytes
+  shorter, and its gates pass on both (`docs/firmware/STEM_REC.md` 15.5).
+- On a VM with 3.8 GB, never compile beside a port run: on 28 Sep 2026 an
+  8-job port build there set off the kernel's OOM killer, which killed the
+  verifier.
+
+**The older route: Ubuntu's Linux-target tools.** Ubuntu's packages ship
+the tools under another prefix. This route was run with them, measured on
+Ubuntu 26.04 under WSL2 (10 and 27 Sep 2026, on branch `stem-rec-v2`):
+
+```bash
+sudo apt install -y gcc-m68k-linux-gnu      # GCC 15.2.0; binutils 2.46 comes with it
+for t in as ld objcopy nm objdump gcc; do
+  sudo ln -sf "$(command -v m68k-linux-gnu-$t)" /usr/local/bin/m68k-elf-$t
+done
+```
+
+- ✅ With these on PATH, `make setup` runs without Homebrew: binwalk,
+  radare2 and `m68k-elf-gcc` are all present, so step 1 has nothing to
+  install.
+- ✅ They produce this repository's own pinned ColdFire bytes:
+  `tools/build/label_fmt.py` re-assembles its twelve caves and matches,
+  `tools/build/mode_names.py` passes, and the DRAM loader they build boots
+  under the port (`verify_dram_boot`: it ran once and never reached
+  `fatal`).
+- ❌ They couldn't build Octakit's runtime. Its `firmware.json` pinned
+  `m68k-elf-gcc` 16.1.0, and binutils 2.46 refuses `runtime.S:438`
+  (`bne.s` to a `.global` label more than 127 bytes into the section: it
+  emits an `R_68K_PC8` relocation that overflows). The same loop with a
+  local label assembles at any offset.
+- ❌ USB MIDI's linked unit links to 1,130 bytes that aren't its author's
+  (sha256 `b49af01e…`, not `6291d91e…`), so the build refuses it.
+- ✅ Both refusals are the toolchain: the bare-metal toolchain above
+  builds both to their authors' bytes from the same trees (28 Sep 2026).
+  This line was inferred until then.
+
+With these tools `make check` passes, and the every-remix sweeps skip the
+remixes the machine can't build, by name, with the reason
+(`tools/remix/prereq.py`). `make accept` doesn't pass with them: it
+refuses any `[SKIP]`, so its `check_shared` stage fails for every remix.
+Use the bare-metal toolchain instead. ❌ Retracted: this paragraph said
+until 28 Sep 2026 that the symlinked tools had "not been tried" and that
+`make check` on Linux was unverified.
+
+Flashing from a Windows host hasn't been done: the card copy is a plain
+file copy, and the MIDI path needs a SysEx app on the host.
 
 ## 2. Get the stock OS
 
@@ -143,7 +218,10 @@ out/OCTATRACK_OCTABAM1.bin            the card image
 out/OCTATRACK_OS1.40C_OCTABAM1.syx    the MIDI image
 ```
 
-`BUILD` is a one- or two-digit number of your choosing. It becomes the
+`BUILD` is a one- or two-character tag of your choosing (digits; past
+image 99 a letter then a digit: `A0` is 100, `A1`..`A9`, `B0` is 110,
+since `Modulation` + three digits overfills the 12-character name
+field). It becomes the
 unit's OS version string (`OCTABAM1`) and the suffix on any octabam
 effect's name, so a unit can always be traced to the build it runs. Bump
 it every time you flash. `VERSION=<up to 10 chars>` overrides the version
@@ -176,9 +254,9 @@ without a project in `OT_PROJECT` the set gates do too.
 ## 4. Back up
 
 Flashing the OS does not touch the CF card. Back it up anyway (USB DISK
-MODE, copy everything). Any remix carrying **Octakit** migrates Parts into
-Kits on project load; going back to stock can lose Kit data (Em's
-warning).
+MODE, copy everything). Any remix carrying **KITS** writes `kits.work`
+into each project it loads (the Parts become Kits); a stock OS ignores
+that file and plays the Parts as saved.
 
 ## 5. Flash from the card
 
@@ -223,7 +301,7 @@ decodes the official file, validates its checksum and round-trips ours.
 1. **The version.** The boot screen and **SYSTEM STATUS → OS VERSION** read
    `OCTABAM1`. If it still says `1.40C`, the stock OS is running.
 2. **Stamp old projects** after flashing a remix that changes an effect's
-   parameter layout (the bus engines, the rig's hosts):
+   parameter layout (the bus engines, and RIG HOSTS' T1/T5 FX2 assignments):
 
    ```bash
    python3 tools/hw/ot_project.py stamp-defaults "<card>/<set>/<project>" <remix>

@@ -41,8 +41,6 @@ Part and shadow stores and before the live-lane store:
 (`+0x8ed88 + track` / `+0x8ed80 + track`), and walks the table: an entry
 whose id and MODE slot match, and a view whose mode equals the value, has
 its pairs written -- page-1 slots through `0x40054cd8(track, flat, value)`
-(with Octakit's token `0x54500000` pushed above the arguments, which her
-rewrite of the writer's dirty store requires; `modules/octakit/README.md`)
 (flat `0x12 + k` FX1, `0x18 + k` FX2: Part, shadow, live byte, the
 descriptor's clamp), page-2 slots with the editor's own stores (Part
 `+0x8f084`/`+0x8f07e`, shadow `0x100a51d2`/`0x100a51cc`, lane `+0x38`/
@@ -65,4 +63,4 @@ frame then sets SCTR over it.
 
 Generated per remix by `manifest.table_inc` (`Linked.include`), one entry
 per module in the image with views: `id, mode slot, nviews`, then per view
-`mode, npairs, (slot, value)*`; `0xff` ends it. 528 B linked in the rig.
+`mode, npairs, (slot, value)*`; `0xff` ends it. 528 B linked in bottleservice.

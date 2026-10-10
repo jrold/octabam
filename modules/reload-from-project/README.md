@@ -3,7 +3,7 @@
 Reload one track's sequence from the CF card without stopping the transport: `[PTN]` + `[TRACK n]` reloads that track's card-saved sequence with the Part untouched; `[BANK]` + `[TRACK n]` also re-applies the saved Part. A toast confirms.
 
 Built from [Zac-Kyoti/octatrack-kyoti-fw](https://github.com/Zac-Kyoti/octatrack-kyoti-fw)
-(submodule `upstream/`, pinned to `77f132f`). `Kind.CF_PATCH`. One DRAM unit (`patch_reload3.s`, `Linked(dram=True)`) and six `jmp` detours. A remix with this module carries the platform loader and its 10 MiB arena reserve, unless another DRAM module already brings them.
+(submodule `upstream/`, pinned to `329b801`). `Kind.CF_PATCH`. One DRAM unit (`patch_reload3.s`, `Linked(dram=True)`) and six `jmp` detours. A remix with this module carries the platform loader and its 10 MiB arena reserve, unless another DRAM module already brings them.
 `upstream/octabam-modules/reload-from-project/README.md` is the full description, with what was measured and what was inferred.
 
 ## Measured

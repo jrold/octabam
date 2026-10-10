@@ -9,13 +9,14 @@ recorders: 14,602 pages plus an unused index 0, 89,720,832 B, Elektron's
 Its geometry is four literals in the pool's cold init (`0x40096f24`, run at
 main init and again inside LOAD PROJECT) and one base address in 24
 instructions across the engine. Every DRAM mod with a hardware record lives
-here by shrinking it: Octakit takes the top 528 pages (her four recipe
-writes cut the count to 14,074 and the clear to match), octamax 2.0 takes
-the bottom 64 by moving the base. This module does both for any number of
-reservations: bottom reservations stack upward from the stock base (the
-base literal moves past them), top reservations stack downward from the end
-(the count shrinks), and the four geometry literals are computed from the
-total. With Octakit alone the result is byte-identical to her own writes.
+here by shrinking it: Octakit took the top 528 pages (her four recipe
+writes cut the count to 14,074 and the clear to match; removed 6 Oct
+2026), octamax 2.0 takes the bottom 64 by moving the base. This module does
+both for any number of reservations: bottom reservations stack upward from
+the stock base (the base literal moves past them), top reservations stack
+downward from the end (the count shrinks), and the four geometry literals
+are computed from the total. octabam's platform is the one reservation a
+remix makes today.
 
 N pages = N x 6 KB of sample/recorder memory, off the recorder share by
 default (Flex keeps its 64 MB cap). The region a reservation yields is
@@ -45,17 +46,11 @@ DERIVED_SITES = ((0x40094A62, PAGE),)          # lea base+6144 (page 1)
 # (OPERAND address, stock value, what it is) -- these are the 32-bit
 # immediates of `movel #14602,%d6` (0x40096f80), `cmpil #14603,%d0`
 # (0x40096faa), `movel #0x05590800,%sp@-` (0x40097006) and `movel
-# #14602,%d0` (0x40097124); Octakit's guards name the same four words.
+# #14602,%d0` (0x40097124).
 COUNT_SITE = (0x40096F82, PAGES, "page count")
 FILL_SITE = (0x40096FAC, PAGES + 1, "free-list fill limit")
 CLEAR_SITE = (0x40097008, (PAGES + 1) * PAGE, "arena clear length")
 CAP_SITE = (0x40097126, PAGES, "recorder page cap")
-# Octakit's four recipe writes ARE these four literals; her module names
-# them so the build computes them instead of applying hers verbatim.
-OCTAKIT_RECIPE_WRITES = ("reserve-audio-page-free-list-tail",
-                         "shorten-audio-page-free-list-initializer",
-                         "shorten-audio-page-arena-clear",
-                         "cap-recorder-page-allocation")
 PLATFORM_PAGES = 1707
 MIN_PAGES_LEFT = 2048                 # 12 MB for the unit; below this, refuse
 
@@ -72,8 +67,7 @@ class Placed:
 def layout(reservations):
     """reservations: [(owner, where, pages)] -> (placed list, new base, count).
     Bottom reservations in the given order from the stock base upward; top
-    ones from the end downward (the first top reservation is the topmost,
-    which is where Octakit's link.ld puts hers)."""
+    ones from the end downward (the first top reservation is the topmost)."""
     placed = []
     lo = BASE
     for owner, where, pages in reservations:

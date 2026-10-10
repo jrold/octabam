@@ -52,13 +52,11 @@ SRC = sys.argv[1] if len(sys.argv) > 1 else registry.asm("busverb")
 # Slots reachable through computed pointers, invisible to the direct-address
 # parser. Each entry: why it is exempt.
 POINTER_EXEMPT = {
-    **{s: "u0..u3: read by the fbA loop through r4 (move r7,a / add #>$16)"
-       for s in range(0x16, 0x1A)},
-    **{s: "fb scratch 0..3: read by Step 2/3/4 partly via walked r5"
-       for s in range(0x1A, 0x1E)},
-    **{s: "u4..u7: read by the fbB loop through r4 (add #>$3a)"
+    **{s: "u0..u7: written by the tank loop through r4 (lua (r7+$16)), read by the fbA/fbB loops through r4"
+       for s in range(0x16, 0x1E)},
+    **{s: "fb scratch 0..3: written by fbA via walked r5 (lua (r7+$3a)), read by Step 2/3/4"
        for s in range(0x3A, 0x3E)},
-    **{s: "fb scratch 4..7: read by Step 4 via walked r5 (add #>$41)"
+    **{s: "fb scratch 4..7: read by Step 4 via walked r5 (lua (r4+$27) = r7+$41)"
        for s in range(0x41, 0x45)},
 }
 

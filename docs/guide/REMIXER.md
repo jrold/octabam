@@ -40,7 +40,8 @@ sudo chmod +x /usr/local/bin/afplay
 ## The remixer: three panes
 
 Nothing in it touches hardware. `ok-ms` loaded (`l`), the cursor in
-AVAILABLE, a 118-column terminal:
+AVAILABLE, a 118-column terminal (captured while `ok-ms` carried Octakit
+and KITS RELOAD, before 6 Oct 2026):
 
 ```
  Available                      Choosers · ok-ms                BusDelay
@@ -83,10 +84,10 @@ as in the module table (the bus, on a track, machines and the sequencer,
 Parts/Kits/scenes, MIDI and USB, fixes, reference), then the stock effects
 the unit ships. `✓` marks what the selection holds; for an effect the `FX1+FX2`
 column is which choosers it *can* appear on (`stock.fx1_ids()` from the
-pristine image). A firmware mod (midisc, Octakit, the bridges, the fixes)
+pristine image). A firmware mod (midisc, KITS, the bridges, the fixes)
 has no chooser; its column is the ledger's verdict against what is loaded
-— `✓` shares the image, `x octakit` names what it collides with, and
-`· add Kits Reload` names the bridge that would clear it (the same
+— `✓` shares the image, `x direct-jump` names what it collides with, and
+`· add <bridge>` names the bridge that would clear it (the same
 `ledger.check` the build refuses on). The unit pane lists every ledger
 line the pointed-at module is party to. `enter` adds and displaces
 nothing.

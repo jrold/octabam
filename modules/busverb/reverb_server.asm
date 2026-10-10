@@ -28,7 +28,9 @@
 ; re-layout moves only the modulo, the spacing and the shift counts.
 ;
 ; The tank state tables, 64 words:
-;   table A, six words per line, walked at stride 6 by the tank loop:
+;   table A, five words per line, walked at stride 5 by the tank loop
+;   (six until 5 Oct 2026: +5 held the line's output, collected into the
+;   Hadamard slots after the loop; the loop writes them there now):
 ;     +0  read offset   (4096 - tap) - LFO offset        per block
 ;     +1  interpolation fraction                         per block
 ;     +2  d0 carry: last sample's tap                    per sample, seeded per block
@@ -53,9 +55,8 @@
 ;   r7+$0f        shimmer write phase (persistent, masked)
 ;   r7+$14        the dispatcher's call flag; a shimmer park (head 0's t0)
 ;   r7+$15        the tank input (per sample)
-;   r7+$16..$19   Hadamard u0..u3 (lines 0..3), walked by pointer
-;   r7+$1a..$1d   feedback scratch fb0..fb3 (fbA writes, the APs and the
-;                 write-back read)
+;   r7+$16..$1d   Hadamard u0..u7 (lines 0..7), written by the tank loop,
+;                 walked by pointer (u4..u7 at $3a..$3d until 5 Oct 2026)
 ;   r7+$1e        k_mode, the TIME law's mode constant
 ;   r7+$1f        DAMP coefficient, glided
 ;   r7+$20        wet gain (wgain/2)
@@ -69,7 +70,8 @@
 ;   r7+$31        the private line base
 ;   r7+$32..$35   input diffuser bases; $36/$37/$4c/$4d line 4..7 bases
 ;   r7+$38        shimmer read fraction (per sample)
-;   r7+$3a..$3d   Hadamard u4..u7 (lines 4..7), walked by pointer
+;   r7+$3a..$3d   feedback scratch fb0..fb3 (fbA writes, the APs and the
+;                 write-back read)
 ;   r7+$3e/$4f/$50/$51/$47/$48/$49/$4a   LFO phase, lines 0..7 (persistent)
 ;   r7+$3f        DIFF's mode offset; $6d g, glided
 ;   r7+$40        LO coefficient, glided
@@ -1338,7 +1340,7 @@ lfrol:
         move    a,x:(r7+$61)            ; 512 - 446    (14.5%)
 
 ; ---- STAGE 2: read offsets for the four modulo-indexed line reads -------
-        move    #4,n6                   ; w2 -> the NEXT line's w0 (short:
+        move    #3,n6                   ; w2 -> the NEXT line's w0 (short:
                                         ; an address register, zero-extended)
         move    x:(r7+$0b),a            ; the per-line state table
         move    a,r6
@@ -1634,8 +1636,7 @@ lfrol:
         move    a,r5                    ; = write address
         move    x:(r7+$25),y0           ; g, from DIFFUSION; held across all
                                         ; four input allpasses
-        bsr     apbody                  ; the rolled allpass body: reads $1b,
-                                        ; writes $1b and y:(r5)
+        bsr     apbody                  ; the rolled allpass body
 
         move    x:(r7+$06),n5        ; this MODE's allpass 1
         move    r5,a
@@ -1707,6 +1708,8 @@ lfrol:
         move    a,r6
         move    r1,x0                   ; line 0: base + phase, the same
         move    x0,r5                   ; pointer r1 has always been
+        lua     (r7+$16),r4             ; the Hadamard slots u0..u7 (m4 = $fff:
+                                        ; eight words inside one block)
         do      #8,>tankend
         move    y:(r6)+,n5              ; w0: this line's read offset
         move    y:(r6)+,y1              ; w1: its interpolation fraction
@@ -1741,45 +1744,18 @@ lfrol:
         move    a,x0                    ; the low-passed part
         move    y1,a                    ; y again
         sub     x0,a                    ; y - lo, the low cut
-        move    a,y:(r6)+               ; w5: this line's output
+        move    a,x:(r4)+               ; this line's output, straight into its
+                                        ; Hadamard slot
 tankend:
 
-; ---- collect the LINES outputs for the Hadamard ---------------------------
-; The tank loop leaves them in the state table at stride 6. Lines 0-3 go to
-; $16..$19 and lines 4-7 to $3a..$3d, the two 4-word groups the 8x8 FWHT
-; operates on in place; r4 (m4 = $fff) and r5 (m5 = $7ff) walk them, and
-; both groups sit inside one aligned block of either modulo for every r7.
-        move    #6,n6                   ; the table's stride (short: address
-                                        ; register, zero-extended)
-        move    r6,a                    ; the tank loop left r6 48 words past
-        sub     #>43,a                  ; the table: back to line 0's output
-        move    a,r6                    ; word (table + 5)
         move    #>$7ff,m5               ; back to the input diffusers' 2048
-        lua     (r7+$16),r4             ; (these two space the r6 write)
-        lua     (r7+$3a),r5
-        move    y:(r6)+n6,a
-        move    a,x:(r4)+               ; line 0
-        move    y:(r6)+n6,a
-        move    a,x:(r4)+               ; line 1
-        move    y:(r6)+n6,a
-        move    a,x:(r4)+               ; line 2
-        move    y:(r6)+n6,a
-        move    a,x:(r4)+               ; line 3
-        move    y:(r6)+n6,a
-        move    a,x:(r5)+               ; line 4
-        move    y:(r6)+n6,a
-        move    a,x:(r5)+               ; line 5
-        move    y:(r6)+n6,a
-        move    a,x:(r5)+               ; line 6
-        move    y:(r6)+n6,a
-        move    a,x:(r5)+               ; line 7
 
 ; ---- wet output: eight lines summed per channel -------------------------
 ; L = l0 - l1 + l2 + l3/2 + l4 - l5 + l6 + bloom/8; R = l0 + l1 - l2 + l4 +
 ; l5 - l6 + l7/2 + bloom/8 (l3/l7, the driven lines, split L/R keep the
 ; image wide; the bloom at 0.5x). 56-bit sums, so the order is free.
         lua     (r7+$16),r4
-        lua     (r7+$3a),r5
+        lua     (r7+$1a),r5
         move    x:(r7+$08),b            ; the bloom, pre-filter
         asr     #$3,b,b
         move    x:(r4)+,a               ; line 0
@@ -1793,7 +1769,7 @@ tankend:
         add     x0,a
         move    a,x:(r7+$2d)            ; wet L
         lua     (r7+$16),r4
-        lua     (r7+$3a),r5
+        lua     (r7+$1a),r5
         move    x:(r7+$08),b            ; the bloom again
         asr     #$3,b,b
         move    x:(r4)+,a               ; line 0
@@ -1827,9 +1803,7 @@ tankend:
         sub     x0,b        a,x:(r5)+   ; u2 = d2+d3
         move    b,x:(r5)+               ; u3 = d2-d3
 
-        lua     (r7+$3a),r4
-        lua     (r7+$3a),r5
-        move    x:(r4)+,a               ; d4
+        move    x:(r4)+,a               ; d4 (both pointers are on u4 now)
         move    x:(r4)+,x0              ; d5
         move    a,b
         add     x0,a
@@ -1860,9 +1834,7 @@ tankend:
         move    y0,x:(r5)+              ; u2'
         move    b,x:(r5)+               ; u3' = u1-u3
 
-        lua     (r7+$3a),r4
-        lua     (r7+$3a),r5
-        move    x:(r4)+,x0              ; u4
+        move    x:(r4)+,x0              ; u4 (both pointers are on it)
         move    x:(r4)+,x1              ; u5
         move    x:(r4)+,a               ; u6
         move    a,b
@@ -1879,7 +1851,7 @@ tankend:
         move    b,x:(r5)+               ; u7' = u5-u7
 
         lua     (r7+$16),r4
-        lua     (r7+$3a),r5
+        lua     (r7+$1a),r5
         lua     (r7+$16),r6
         move    x:(r4)+,a               ; u0
         move    x:(r5),x0               ; u4
@@ -2197,11 +2169,11 @@ shd1:
         move    a,r6
 
 ; -- Step 1a: rolled feedback, group A (u[0..3] at $16..$19) --------------
-; r4 walks u[0..3] (post-increment), r5 walks scratch[0..3] ($1a..$1d).
+; r4 walks u[0..3] (post-increment), r5 walks scratch[0..3] ($3a..$3d).
 ; r6 already walks table B (weight + gain, 2 words per line). The tank input
 ; sits in y1 across both groups: nothing in either body writes y1.
         lua     (r7+$16),r4             ; r4 -> u0
-        lua     (r7+$1a),r5             ; r5 -> scratch0
+        lua     (r7+$3a),r5             ; r5 -> scratch0
         move    x:(r7+$15),y1           ; input, also spaces the r5 write
         nop
         do      #4,>fbA
@@ -2220,11 +2192,11 @@ shd1:
         nop                            ; one instruction between r5 write and use
 fbA:
 
-; -- Step 1b: rolled feedback, group B (u[4..7] at $3a..$3d) --------------
+; -- Step 1b: rolled feedback, group B (u[4..7] at $1a..$1d) --------------
 ; r4 walks u[4..7], r5 walks scratch[4..7] ($41..$44).
-        lua     (r7+$3a),r4             ; r4 -> u4
+        lua     (r7+$1a),r4             ; r4 -> u4
         nop                             ; spaces the r4 write
-        lua     (r4+$7),r5              ; r5 -> scratch4 = r7+$41, past
+        lua     (r4+$27),r5             ; r5 -> scratch4 = r7+$41, past
                                         ; lua's 7-bit displacement
         nop                             ; r5 is first read ten
                                         ; instructions into the loop
@@ -2243,7 +2215,7 @@ fbB:
         move    #>$1ff,m5               ; these two are 512. The input
                                         ; diffusers share m5, so it is switched
                                         ; here and put back after line 1.
-        move    x:(r7+$1a),a            ; fb0 from scratch
+        move    x:(r7+$3a),a            ; fb0 from scratch
         move    a,x1                    ; x = the value bound for the line
         move    x:(r7+$60),a
         move    x:(r7+$31),x0           ; LFO integer offset -- the allpass is
@@ -2278,7 +2250,7 @@ fbB:
         move    a,y:(r1)             ; write at the line's own modulo pointer
 
 ; -- Step 3: in-loop allpass, line 1 --
-        move    x:(r7+$1b),a            ; fb1 from scratch
+        move    x:(r7+$3b),a            ; fb1 from scratch
         move    a,x1                    ; x = the value bound for the line
         move    x:(r7+$61),a
         move    x:(r7+$34),x0           ; LFO integer offset -- the allpass is
@@ -2313,10 +2285,10 @@ fbB:
         move    x0,r5                   ; start at line 2's pointer
         move    n1,x0                   ; line stride, hoisted
         move    r5,b                    ; b carries the ADDRESS from here down
-        move    x:(r7+$1c),a            ; fb2
+        move    x:(r7+$3c),a            ; fb2
         add     x0,b        a,y:(r5)    ; write to line 2
         move    b,r5                    ; -> line 3
-        move    x:(r7+$1d),a            ; fb3
+        move    x:(r7+$3d),a            ; fb3
         add     x0,b        a,y:(r5)    ; write to line 3
         move    b,r5                    ; -> line 4
         move    x:(r7+$41),a            ; fb4

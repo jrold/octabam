@@ -192,7 +192,7 @@ stronger evidence than either alone.
 
 | routine | address | named by |
 |---|---|---|
-| open | `0x40016864` | ems-octakit `runtime/abi.inc` (`modules/octakit/upstream`), octamax's `NOTES.md` (octamax's notes, not in this repo) |
+| open | `0x40016864` | ems-octakit `runtime/abi.inc` (a submodule here until 6 Oct 2026), octamax's `NOTES.md` (octamax's notes, not in this repo) |
 | read | `0x40016564` | both |
 | seek | `0x4001660c` | ems-octakit |
 | write | `0x400166b8` | both |

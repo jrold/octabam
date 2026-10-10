@@ -302,6 +302,7 @@ send_ok:
         move    #>$1,x0                 ; the increment
         clr     b                       ; b = 0 -- BEFORE the tst below
         move    x:(r6),a                ; DEL level
+        and     #>$7f0000,a             ; the companion byte is not the knob
         tst     a                       ; Z set == silent == not a client
         tne     x0,b                    ; sending -> b = 1
         move    y:(r3),a
@@ -314,6 +315,7 @@ send_ok:
         move    #>$1,x0
         clr     b                       ; b = 0 -- BEFORE the tst below
         move    x:(r6+$1),a             ; REV level
+        and     #>$7f0000,a             ; the companion byte is not the knob
         tst     a
         tne     x0,b
         move    y:(r3),a

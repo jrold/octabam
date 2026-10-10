@@ -124,6 +124,10 @@
 //     -params a,b,...       parameter values 0..127 (default 64); 6 fills page 1,
 //                           8 also covers the page-2 slots. Repeat the option to
 //                           give successive instances different values.
+//     -pword k:off=hex[,..] raw word at pblock+off (hex off and value) of instance
+//                           k (decimal), written after the -params words on every
+//                           call: a knob word with its companion bits 8-15 set,
+//                           as an LFO leaves it.
 //     -paramfile FILE       automate parameters per block. Repeat the option to
 //                           give successive instances their own file, in the
 //                           same order as repeated -params. Each non-comment
@@ -159,6 +163,7 @@
 #include <cstdlib>
 #include <memory>
 #include <string>
+#include <array>
 #include <vector>
 #include <fstream>
 #include <iostream>
@@ -197,6 +202,7 @@ struct Args {
     unsigned inmask = ~0u;                     // which instances get the input
     bool stereo = false;                       // -in is interleaved L,R
     std::vector<std::vector<int>> pv;          // one parameter set per instance
+    std::vector<std::array<TWord, 3>> pwords;   // -pword: (instance, offset, word)
     std::vector<std::vector<ParamEvent>> paramEvents; // one event stream per instance
     std::string allocProc = "perinst";
     bool guard = false, guardShared = false; TWord guardWords = 0x3800;
@@ -586,6 +592,21 @@ int main(int argc, char** argv) {
             }
             a.pv.push_back(pv);
         }
+        else if (k == "-pword") {
+            const std::string spec = argv[++i];
+            size_t pos = 0;
+            while (pos < spec.size()) {
+                size_t comma = spec.find(',', pos);
+                if (comma == std::string::npos) comma = spec.size();
+                const std::string item = spec.substr(pos, comma - pos);
+                const size_t col = item.find(':'), eq = item.find('=');
+                if (col == std::string::npos || eq == std::string::npos) { std::cerr << "-pword wants k:off=hex\n"; return 1; }
+                a.pwords.push_back({static_cast<TWord>(strtoul(item.substr(0, col).c_str(), nullptr, 10)),
+                                    static_cast<TWord>(strtoul(item.substr(col + 1, eq - col - 1).c_str(), nullptr, 16)),
+                                    static_cast<TWord>(strtoul(item.substr(eq + 1).c_str(), nullptr, 16))});
+                pos = comma + 1;
+            }
+        }
         else if (k == "-paramfile") {
             const std::string path = v();
             std::ifstream f(path);
@@ -871,7 +892,7 @@ int main(int argc, char** argv) {
     // Params 0..5 are page 1; 6..11 follow the table. A companion value is
     // written to bits 8-15 of the SAME word as its slot's knob, so both are
     // composed together rather than the last write clobbering the word.
-    auto setParams = [&](Core& C, const std::vector<int>& pv) {
+    auto setParams = [&](Core& C, const std::vector<int>& pv, size_t who) {
         for (size_t i = 0; i < 6 && i < pv.size(); ++i)
             C.mem->set(MemArea_X, C.pblock + i, (static_cast<TWord>(pv[i]) & 0x7f) << 16);
         for (TWord w = 0; w < 3; ++w) {                    // +$c, +$d, +$e
@@ -882,6 +903,7 @@ int main(int argc, char** argv) {
             if (knob < pv.size() || comp < pv.size())
                 C.mem->set(MemArea_X, C.pblock + 0xc + w, v);
         }
+        for (auto& w : a.pwords) if (w[0] == who) C.mem->set(MemArea_X, C.pblock + w[1], w[2]);
         // -tempo: what the stock frame builder publishes (0x40004d6a): tempo24 =
         // BPM*24 in halfword 31 of the track's record, r6+$13 of an FX2
         // instance, <<8 like every published word. BusDelay derives the clock
@@ -940,7 +962,7 @@ int main(int argc, char** argv) {
     for (int k = 0; k < a.inst; ++k) {
         Core& C = *cores[inst[k].core];
         setAlloc(C, inst[k].alloc);
-        setParams(C, inst[k].pv);
+        setParams(C, inst[k].pv, k);
         C.dsp->regs().r[6].var = C.pblock;
         C.dsp->regs().r[7].var = inst[k].state;
         if (inst[k].init) {
@@ -1136,7 +1158,7 @@ int main(int argc, char** argv) {
     auto beginCall = [&](CoreRun& R, const Call& call) {
         Core& C = *R.C; Instance& I = inst[call.inst];
         if (a.allocProc == "perinst") setAlloc(C, I.alloc);
-        setParams(C, I.pv);
+        setParams(C, I.pv, static_cast<size_t>(call.inst));
         DSP& D = *C.dsp;
         D.regs().r[6].var = C.pblock;
         D.regs().r[7].var = I.state;

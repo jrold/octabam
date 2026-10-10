@@ -58,6 +58,11 @@ off and the output is mono to both channels.
   GRAIN 1,028 / REVERSE 395 per sample (1,354 words and 1,126 before the
   23 Sep 2026 rewrite; 1,326 words after the return left 20 Sep, +28 for
   the TIME ramp).
+- 5 Oct 2026, the cycles pass (bit-identical, `verify_delay.py` against
+  the 23c91b15 engine, every case): GRAIN 1,007 → 975 per sample. The
+  grain readers' two clean reloads per grain went: `move a1,r5` and
+  `move a1,r6` take a1 raw, as the t1 read already did, and `add #>$1`
+  needs only a1 correct before its mask.
 - 23 Sep 2026: the sample loop reads the aux accumulator through r3 and
   writes the chain at `(r3+n3)`, keeps x_in, the lag, the fraction, the
   TIME ramp, the crossfeed terms and the stage outputs in registers, and
@@ -82,7 +87,7 @@ off and the output is mono to both channels.
 
 Image 28 (15 Sep 2026), the two 32K lines: "sounds fantastic now".
 
-On Sam's unit in every rig flash. Heard: REVERSE 371 ms over 93 ("the long
+On Sam's unit in every flash that carried the bus. Heard: REVERSE 371 ms over 93 ("the long
 one is better"); GRAIN DENS 32 → 127 on the loop "sounds pretty good".
 
 ## Open

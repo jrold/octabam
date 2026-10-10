@@ -6,14 +6,20 @@ The unit is assembled and linked at a test address and its sweep called
 directly (the keyrepeat-loop detour is the build's; `verify_set` runs it
 under the port). Stock's emitter 0x40033e3c runs as the image carries it.
 
-1. Eight sweeps over eight tracks on channels 0..7 with every mapped lane
-   byte non-zero: the emitter is entered once per (track, CC) of the map,
-   336 times, with the lane's value; its per-channel cache holds the lane;
-   its dirty bitmap has exactly the 42 mapped CCs per channel; the channel
-   mask reads 0xff; INTFRCH bit 2 (source 34, the drainer) is forced.
+1. Sweeps over eight tracks on channels 0..7 with every mapped Part byte
+   non-zero: the emitter is entered once per (track, CC) of the map, 336
+   times, with the Part's value, PACE (1) per sweep -- 336 sweeps plus one
+   per track end; its per-channel cache holds the Part; its dirty bitmap
+   has exactly the 42 mapped CCs per channel; the channel mask reads 0xff;
+   INTFRCH bit 2 (source 34, the drainer) is forced.
 2. Eight more sweeps: nothing is emitted (the cache is the diff).
 3. One mapped byte changes: exactly one message, that CC, that value.
-4. An unmapped lane byte changes (PLAYBACK page 2, AMP page 2): nothing.
+4. An unmapped Part byte changes (AMP page 2, the LFO page-2 blocks):
+   nothing. Every byte of the live lane changes (a lock, a slide, a scene
+   rewrites the lane every step): nothing -- the sweep reads the Part.
+4b. The numbering: the Part's LFO block goes out as CC 28..33, AMP as
+   22..27 (the firmware's, docs/firmware/MIDI.md section 3); PLAYBACK page 1
+   follows the track's machine block.
 5. AUDIO CC OUT bit 1 clear: nothing; set again: the change is sent.
 6. A track whose trig channel is off: nothing; on again: sent.
 7. A MIDI track on the same channel: the emitter is entered and refuses
@@ -44,15 +50,30 @@ UNIT_AT = 0x40300000            # a fresh RWX page, away from the OS image
 EMIT = 0x40033e3c
 EMIT_FORCE = 0x40033ece           # its `orl %d0,0xfc048010`: INTFRCH bit 2 = source 34, the soft-timer dispatcher
 CCOUT, TRIGCH, LIVEB = 0x8000004a, 0x8000003f, 0x80000810
+DBPTR, PARTIX, DB = 0x46c82456, 0x80000003, 0x400e21e0       # the bank pointer, the part index, a bank in RAM (ot_emu's)
+PARTLEN, MACHINE, PBP1, PAGE1, PAGE2 = 6322, 0x8eda2, 0x8edaa, 0x8ee9a, 0x8f072
+PACE = 1                            # cc_feedback.s: messages per UI tick
 CACHE, BITMAP, CHMASK, TXBUSY = 0x46c7bf2c, 0x46c7d7d8, 0x46c7e0de, 0x46c7ca34
 MIDITRK, MIDITRK_STRIDE = 0x46c76de0, 68     # the eight MIDI tracks' channel bytes (0 = off, else ch+1)
 ENGQ_WAITER, ENGINE_TCB = 0x460d17ce + 0xc, 0x460ddde4   # the engine blocked on its queue: its TCB parked by the event wait
-# The unit's map, as cc_feedback.s: (lane offset, CC)
-MAP = [(i, 16 + i) for i in range(30)] + [(0x32 + i, 68 + i) for i in range(6)] + [(0x38 + i, 62 + i) for i in range(6)]
-UNMAPPED = [0x20, 0x25, 0x2c, 0x31, 0x3e, 0x47]
+# The unit's map, as cc_feedback.s: (region, offset, CC); region 0 = the
+# machine's PLAYBACK page-1 block, 1 = the page-1 array (LFO AMP FX1 FX2),
+# 2 = the page-2 row (FX1 +12, FX2 +18)
+MAP = ([(0, i, 16 + i) for i in range(6)]
+       + [(1, 6 + i, 22 + i) for i in range(6)] + [(1, i, 28 + i) for i in range(6)]
+       + [(1, 12 + i, 34 + i) for i in range(6)] + [(1, 18 + i, 40 + i) for i in range(6)]
+       + [(2, 12 + i, 68 + i) for i in range(6)] + [(2, 18 + i, 62 + i) for i in range(6)])
+UNMAPPED = [(2, 0), (2, 5), (2, 6), (2, 11), (2, 24), (2, 29)]      # page-2 LFO PMTR/WAVE, AMP, LFO MULT/TRIG
+
+
+def part_addr(t, region, off, machine=0):
+    base = DB + 0 * PARTLEN
+    return {0: base + PBP1 + t * 30 + machine * 6 + off,
+            1: base + PAGE1 + t * 24 + off,
+            2: base + PAGE2 + t * 30 + off}[region]
 # Any image without the DRAM platform boots under unicorn; the CC MAP fixture
 # is the one verify_ccmap builds, so the build memo serves it warm.
-FIXTURE_REMIX = registry.fixture("CC MAP", "REVERB SERVER", "DELAY SERVER", "CHARACTER", without_runtime=True)
+FIXTURE_REMIX = registry.fixture("CC MAP", "REVERB SERVER", "DELAY SERVER", "CHARACTER")
 
 
 def _build(remix):
@@ -80,13 +101,17 @@ def lane_value(t, off):
     return (t * 13 + off * 7) % 127 + 1
 
 
+def part_value(t, region, off):
+    return (t * 13 + region * 31 + off * 7) % 127 + 1
+
+
 def main():
     import shutil
     if not all(shutil.which(x) for x in ("m68k-elf-as", "m68k-elf-ld", "m68k-elf-objcopy", "m68k-elf-nm")):
         print("  [SKIP] verify_ccfeedback: no m68k-elf toolchain")
         return 0
     blob, syms = _link(UNIT_AT)
-    sweep, track_var = syms["cf_sweep"], syms["cf_track"]
+    sweep, track_var, pos_var = syms["cf_sweep"], syms["cf_track"], syms["cf_pos"]
     print(f"  unit: {len(blob)} bytes; cf_sweep +0x{sweep - UNIT_AT:x}, cf_track +0x{track_var - UNIT_AT:x}")
 
     r = emu.boot(str(_build(FIXTURE_REMIX)))
@@ -117,15 +142,19 @@ def main():
         uc.mem_write(TXBUSY, bytes(4))
         forced[0] = 0
         uc.mem_write(track_var, b"\x00")
+        uc.mem_write(pos_var, b"\x00")
+        uc.mem_write(DBPTR, DB.to_bytes(4, "big"))
+        uc.mem_write(PARTIX, b"\x00")
+        uc.mem_write(DB + PBP1, bytes([0x55] * (8 * 30)))
+        uc.mem_write(DB + PAGE1, bytes([0x55] * (8 * 24)))
+        uc.mem_write(DB + PAGE2, bytes([0x55] * (8 * 30)))
         for t in range(8):
-            lane = bytearray(72)
-            for off in range(72):
-                lane[off] = 0x55
-            for off, _ in MAP:
-                lane[off] = lane_value(t, off)
-            uc.mem_write(LIVEB + t * 72, bytes(lane))
+            uc.mem_write(DB + MACHINE + t, b"\x00")       # machine 0: its PLAYBACK block first
+            uc.mem_write(LIVEB + t * 72, bytes([0x55] * 72))
+            for region, off, _ in MAP:
+                uc.mem_write(part_addr(t, region, off), bytes([part_value(t, region, off)]))
 
-    def sweeps(n=8):
+    def sweeps(n=16):
         del calls[:]
         for _ in range(n):
             emu._call(uc, sweep, (), count=2_000_000)
@@ -144,41 +173,67 @@ def main():
         fails += 0 if ok else 1
         print(f"  [{'ok' if ok else 'FAIL'}] {label}{'  ' + detail if detail else ''}")
 
-    # 1. the full dump
+    # 1. the full dump, paced
     reset_stock()
-    got = sweeps()
-    want = [(t, cc, lane_value(t, off)) for t in range(8) for off, cc in MAP]
-    check("dump: 8 sweeps enter the emitter once per mapped (track, CC) with the lane's value",
+    got = sweeps(1)
+    check(f"pace: the first sweep emits exactly PACE = {PACE} message(s) of T1's 42",
+          len(got) == PACE and got[0] == (0, 16, part_value(0, 0, 0)), f"{got[:3]}")
+    got = sweeps(1)
+    check("pace: the second sweep carries on with T1's next slot", got == [(0, 17, part_value(0, 0, 1))], f"{got}")
+    reset_stock()
+    n_dump = len(MAP) * 8 // PACE + 8          # one tick per message, one per track end
+    got = sweeps(n_dump)
+    want = [(t, cc, part_value(t, region, off)) for t in range(8) for region, off, cc in MAP]
+    check(f"dump: {n_dump} sweeps enter the emitter once per mapped (track, CC) with the Part's value",
           got == want, f"{len(got)} calls (want {len(want)})" + ("" if got == want else f"; first diff {next((g, w) for g, w in zip(got, want) if g != w) if len(got) == len(want) else '(length)'}"))
-    check("dump: the emitter's cache holds every mapped lane byte",
-          all(cache(t, cc) == lane_value(t, off) for t in range(8) for off, cc in MAP))
+    check("dump: the emitter's cache holds every mapped Part byte",
+          all(cache(t, cc) == part_value(t, region, off) for t in range(8) for region, off, cc in MAP))
     check("dump: each channel's dirty bitmap is exactly the 42 mapped CCs",
-          all(bits(ch) == {cc for _, cc in MAP} for ch in range(8)), f"ch0 {sorted(bits(0))}")
+          all(bits(ch) == {cc for _, _, cc in MAP} for ch in range(8)), f"ch0 {sorted(bits(0))}")
     check("dump: the channel mask reads 0xff", uc.mem_read(CHMASK, 4) == b"\x00\x00\x00\xff",
           uc.mem_read(CHMASK, 4).hex())
     check("dump: the emitter forced INTFRCH bit 2 (source 34, the drainer) on every call",
           forced[0] == len(want), f"{forced[0]} forces")
-    check("dump: cf_track wrapped to 0 after eight sweeps", uc.mem_read(track_var, 1) == b"\x00")
+    check("dump: cf_track wrapped to 0 and cf_pos is 0 after the dump",
+          uc.mem_read(track_var, 1) == b"\x00" and uc.mem_read(pos_var, 1) == b"\x00")
 
     # 2. idempotent
-    got = sweeps()
+    got = sweeps(8)
     check("diff: eight more sweeps emit nothing", got == [], f"{len(got)} calls")
 
     # 3. one mapped byte
-    uc.mem_write(LIVEB + 3 * 72 + 0x38, b"\x05")
+    uc.mem_write(part_addr(3, 2, 18), b"\x05")              # FX2 page-2 slot 0 on T4
     got = sweeps()
     check("diff: one FX2 page-2 byte on T4 -> one message, CC 62 = 5", got == [(3, 62, 5)], f"{got}")
     check("diff: the cache follows", cache(3, 62) == 5)
 
-    # 4. unmapped bytes
-    for off in UNMAPPED:
-        uc.mem_write(LIVEB + 3 * 72 + off, b"\x09")
+    # 4. unmapped Part bytes, and the live lane (locks, slides, scenes write it every step)
+    for region, off in UNMAPPED:
+        uc.mem_write(part_addr(3, region, off), b"\x09")
     got = sweeps()
-    check("map: unmapped lane bytes (PLAYBACK/AMP page 2, past the FX2 lane) emit nothing", got == [], f"{got}")
+    check("map: unmapped Part bytes (page-2 LFO and AMP blocks) emit nothing", got == [], f"{got}")
+    for t in range(8):
+        uc.mem_write(LIVEB + t * 72, bytes((t * 5 + i) % 127 + 1 for i in range(72)))
+    got = sweeps()
+    check("lane: every live-lane byte rewritten (a lock step) emits nothing -- the sweep reads the Part", got == [], f"{len(got)} calls")
+
+    # 4b. the numbering and the machine block
+    uc.mem_write(part_addr(2, 1, 2), b"\x2b")               # LFO SPD3 on T3
+    uc.mem_write(part_addr(2, 1, 8), b"\x2c")               # AMP REL on T3
+    got = sweeps()
+    check("map: the Part's LFO SPD3 -> CC 30, AMP REL -> CC 24 (the firmware's numbering)",
+          sorted(got) == [(2, 24, 0x2c), (2, 30, 0x2b)], f"{got}")
+    uc.mem_write(DB + MACHINE + 4, b"\x02")                 # T5 on machine 2: its PLAYBACK block moves
+    uc.mem_write(part_addr(4, 0, 3, machine=2), b"\x33")
+    got = sweeps()
+    check("map: PLAYBACK page 1 follows the track's machine block (T5 machine 2, slot 3 -> CC 19)",
+          got == [(4, 19, 0x33)] or (len(got) == 6 and (4, 19, 0x33) in got), f"{got}")
+    uc.mem_write(DB + MACHINE + 4, b"\x00")
+    sweeps()
 
     # 5. EXT off
     uc.mem_write(CCOUT, b"\x01")                            # INT only
-    uc.mem_write(LIVEB + 1 * 72 + 0x0c, b"\x07")            # LFO slot 0 on T2
+    uc.mem_write(part_addr(1, 1, 0), b"\x07")               # LFO SPD1 on T2
     got = sweeps()
     check("gate: AUDIO CC OUT without EXT emits nothing", got == [], f"{got}")
     uc.mem_write(CCOUT, b"\x02")
@@ -187,7 +242,7 @@ def main():
 
     # 6. channel off
     uc.mem_write(TRIGCH + 5, b"\xff")
-    uc.mem_write(LIVEB + 5 * 72 + 0x18, b"\x11")            # FX2 slot 0 on T6
+    uc.mem_write(part_addr(5, 1, 18), b"\x11")              # FX2 slot 0 on T6
     got = sweeps()
     check("gate: a track with its trig channel off is skipped", got == [], f"{got}")
     uc.mem_write(TRIGCH + 5, b"\x05")
@@ -196,19 +251,21 @@ def main():
 
     # 8. the engine running a command (a load): the sweep waits, then catches up
     uc.mem_write(ENGQ_WAITER, bytes(4))
-    uc.mem_write(LIVEB + 7 * 72 + 0x06, b"\x2a")            # AMP slot 0 on T8
+    uc.mem_write(part_addr(7, 1, 6), b"\x2a")               # AMP ATK on T8
+    held = bytes(uc.mem_read(track_var, 1)) + bytes(uc.mem_read(pos_var, 1))
     got = sweeps()
-    check("gate: while the engine runs a command nothing is swept", got == [] and uc.mem_read(track_var, 1) == b"\x00", f"{got}")
+    check("gate: while the engine runs a command nothing is swept and the sweep's place holds",
+          got == [] and bytes(uc.mem_read(track_var, 1)) + bytes(uc.mem_read(pos_var, 1)) == held, f"{got}")
     uc.mem_write(ENGQ_WAITER, ENGINE_TCB.to_bytes(4, "big"))
     got = sweeps()
     check("gate: the engine idle again -> sent (T8 CC 22 = 42)", got == [(7, 22, 0x2a)], f"{got}")
 
     # 7. a MIDI track on the same channel: the emitter refuses
     uc.mem_write(MIDITRK + 2 * MIDITRK_STRIDE, bytes([6 + 1]))
-    uc.mem_write(LIVEB + 6 * 72 + 0x00, b"\x21")            # PLAYBACK slot 0 on T7
+    uc.mem_write(part_addr(6, 0, 0), b"\x21")               # PLAYBACK slot 0 on T7
     got = sweeps()
-    check("gate: a MIDI track on T7's channel -> the emitter is entered and refuses (cache unchanged)",
-          got == [(6, 16, 0x21)] and cache(6, 16) != 0x21, f"{got} cache {cache(6, 16)}")
+    check("gate: a MIDI track on T7's channel -> the emitter is entered and refuses (cache unchanged, so every pass retries)",
+          got and set(got) == {(6, 16, 0x21)} and cache(6, 16) != 0x21, f"{got} cache {cache(6, 16)}")
     uc.mem_write(MIDITRK + 2 * MIDITRK_STRIDE, b"\x00")
     got = sweeps()
     check("gate: MIDI track off -> sent", got == [(6, 16, 0x21)] and cache(6, 16) == 0x21, f"{got}")

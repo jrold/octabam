@@ -63,6 +63,7 @@ apply_patch() {
     echo "   local patch already applied: $(basename "$2")"
   else
     echo "   [!] $(basename "$2") does NOT apply to $1 at $(git -C "$1" rev-parse --short HEAD)"
+    echo "       (tried: git apply --check; git apply --check --reverse)"
     echo "       and is not already applied either. Fix: rm -rf $1; make setup"
     echo "       (vendor/dsp56300 with an older version of the patch: make dsp-repatch)"
     exit 1
@@ -88,7 +89,10 @@ vendor_eft() {
   apply_patch vendor/elektron-firmware-tool "$(pwd)/tools/patches/elektron-firmware-tool.patch"
 }
 
-# The patch carries: the one-word displaced move; the AGU pre-decrement
+# The patch carries: the one-word displaced move; a data-ALU op with two
+# parallel moves (XY, X:R, R:Y, class II) and a refusal where a move token
+# has no encoding (before 4 Oct 2026 the non-parallel form was emitted and
+# the moves dropped); the AGU pre-decrement
 # fix; the DMA dual-counter reload at end of block; a same-value DCR
 # rewrite while a self-clearing window is open renews instead of being
 # dropped (measured 1199/1200 frames on DCR2, the ESAI feed -- bit-

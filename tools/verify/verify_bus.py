@@ -38,8 +38,9 @@ REF = ROOT / "out/dsp/bus_reference.json"
 REF_MEM = ROOT / "out/dsp/mem_ref_A.mem"      # only needed by --allow-lag
 DEV_MEM = ROOT / "out/dsp/mem_dev_A.mem"
 
-# dsp_host caps a block at 15 frames, so one block is 15 samples here even
-# though the accumulator buffers are 16 words wide for the hardware's 16.
+# send_probe.FRAMES pins the block at 15 samples (dsp_host's cap is 16) so the
+# bit-identity references hold, although the accumulator buffers are 16 words
+# wide for the hardware's 16.
 BLOCK = send_probe.FRAMES
 
 # Each case pins one property of the bus. The layout string is dispatch order,
@@ -269,8 +270,8 @@ def main():
                          "For deliberate LATENCY changes only -- moving the bus read\n"
                          "one buffer further back adds exactly one block, and this is\n"
                          "how you show that the added latency is the ONLY difference.\n"
-                         "⚠️ A block here is 15 samples, not 16: dsp_host caps a block\n"
-                         "at 15 frames (send_probe.FRAMES) while the accumulators are\n"
+                         "⚠️ A block here is 15 samples, not 16: send_probe.FRAMES pins\n"
+                         "15 frames (dsp_host's cap is 16) while the accumulators are\n"
                          "16 words wide for the hardware's 16. Expecting 16 sent one\n"
                          "session chasing an off-by-one that did not exist.\n"
                          "⚠️ Engines with per-block state do NOT shift with the bus:\n"

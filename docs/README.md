@@ -41,12 +41,17 @@ Where each doc is, by who reads it. A module's own page is
 is the silicon and the cycle budget, [DSP.md](firmware/DSP.md) the audio
 DSP, and the rest one subsystem each (kernel, tables, parameter pages,
 menus, panel, MIDI, LFO, level law, recorder, sample save, storage,
-step locks).
+Parts and pattern changes in [PARTS.md](firmware/PARTS.md), step locks, the ColdFire delay routine in [COLDFIRE_DELAY.md](firmware/COLDFIRE_DELAY.md),
+REPITCH in [REPITCH.md](firmware/REPITCH.md)).
 
 ## Proposals
 
-[proposals/](proposals/): OTX, a shared settings store for modules (draft,
-not implemented).
+[proposals/](proposals/): two OTX documents, a shared settings store for
+modules (draft, not implemented): [OTX_PROJECT_PROPOSAL.md](proposals/OTX_PROJECT_PROPOSAL.md)
+and [OTX_MODULE_GUIDELINES.md](proposals/OTX_MODULE_GUIDELINES.md).
+
+[proposals/remixes/](proposals/remixes/README.md): remix proposals, each
+taken on hardware to verified stable before it lands under `remixes/`.
 
 ## History
 

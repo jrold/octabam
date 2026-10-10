@@ -32,12 +32,12 @@
 // TIMING. The cores are stepped in lockstep with the ColdFire: `ratio` DSP
 // instructions per ColdFire instruction during the boot (which has no sample
 // clock), `ips` instructions per sample once the RTOS runs. Both are knobs.
-// `ips` defaults to 4160 = 512 x 8.125: the payload never writes PCTL, so the
-// core runs at the DSP56720's reset PLL (0x2B60C2: NF/(NR*NO) = 195/24) from
-// an EXTAL the payload itself makes the audio clock (P:0x30024 routes EXTAL
-// into both ESAI chains, TPSR=1/TPM=0/TFP=0, 8 slots x 32 bits), so
-// Fsys/fs = 512 x 8.125 whatever the crystal is (git show 3ceba41:docs/history/COLDFIRE_PORT.md, O8:
-// "the ESAI rate"). The ESAI fires ONE SLOT per `ips / 8` instructions -- the
+// `ips` defaults to 4532 = 199.9 MHz / 44.1 kHz, measured on the board
+// (probe 55, 22 Sep 2026; docs/firmware/CHIP.md section 2). Until 5 Oct 2026
+// the default was 4160 = 512 x 8.125, inferred from the payload not writing
+// PCTL (reset PLL 0x2B60C2: NF/(NR*NO) = 195/24, EXTAL as the audio clock,
+// P:0x30024; git show 3ceba41:docs/history/COLDFIRE_PORT.md, O8): RETRACTED,
+// CHIP.md section 2. `--dsp-ips` overrides. The ESAI fires ONE SLOT per `ips / 8` instructions -- the
 // vendored clock's "cycles per sample" is per slot (its "2 samples = 1
 // frame" comment). ⚠️ A core whose bootstrap ROM has not finished is HELD
 // (the ROM jumps only after the last word), and a core is never run past the
@@ -85,12 +85,12 @@ namespace ot
 		bool faulted(int _core) const;
 
 		// `_ratio`: DSP instructions per ColdFire instruction (boot clock);
-		// `_ips`: DSP instructions per sample (RTOS clock). 4160 is the
-		// firmware's own arithmetic (see the file comment; ❌ 4535 was the
-		// datasheet's 200 MIPS ceiling, not this board's clock); the ratio is
-		// that against the port's 3990 ColdFire instructions per sample.
+		// `_ips`: DSP instructions per sample (RTOS clock). 4532 is
+		// measured on the board (see the file comment; ❌ 4160 retracted, 4535
+		// is the datasheet's 200 MIPS ceiling); the ratio is that against the
+		// port's 3990 ColdFire instructions per sample.
 		// Neither is a measurement of either emulator's cadence.
-		static constexpr double g_dspIps = 4160.0;
+		static constexpr double g_dspIps = 4532.0;
 		static constexpr double g_cfIps = 3990.0;
 		static constexpr uint32_t g_esaiSlots = 8;		// TDC = 7 in both payload TCCRs
 		// O17 (12 Sep 2026): `_rt` = the REAL-TIME MODE (--dsp-rt). The two
@@ -313,7 +313,7 @@ namespace ot
 		// tick sequence and the edge guard (below) it is byte-identical in
 		// practice (the O16c gate). `--dsp-lazy N` in main.cpp; the default
 		// in every mode is g_lazyDefault.
-		static constexpr double g_lazyDefault = 4160.0;		// one sample
+		static constexpr double g_lazyDefault = g_dspIps;		// one sample
 		void setLazy(const double _n) { if(m_rt) return; m_lazy = _n > 0.0 ? _n : 0.0; m_edgeGuard = 1e300; m_edgeWindowEnd = m_lazy > 0.0 ? 0.0 : 1e300; }	// a first prediction at the first lazy runDue; the rt mode has its own schedule
 		double lazy() const { return m_lazy; }
 		void sync() override { if(m_rt) rtSync(); else catchUp(); }

@@ -57,7 +57,7 @@ def main():
         if key in remix.blanked:
             continue
         for i, p in enumerate(m.params):
-            if not (p.active and p.labels):
+            if not p.prints_labels:
                 continue
             fmt = rd32(P + P_FMT_A + i * 4)
             got = []

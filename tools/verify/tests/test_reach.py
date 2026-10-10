@@ -285,6 +285,19 @@ class PlanTests(unittest.TestCase):
         c.read = lambda p: head.replace('key="X"', 'key="Y"')
         self.assertIn("make check REMIX=bamsep26", [cmd for _, g, _ in reach.classify(["modules/character/manifest.py"], c) for _, cmd in g])
 
+    def test_remix_display_fields_alone_reach_the_docs_gate(self):
+        base = 'REMIX = Remix(name="miniverb", doc="old", proof=Proof.PORT, proof_note="n", modules=("MINIVERB",))\n'
+        head = base.replace('doc="old"', 'doc="new"').replace('proof_note="n"', 'proof_note="m"')
+        c = ctx()
+        c.read_base = lambda p: base
+        c.read = lambda p: head
+        rows = reach.classify(["remixes/miniverb/remix.py"], c)
+        self.assertEqual([cmd for _, g, _ in rows for _, cmd in g], ["python3 tools/verify/verify_docs.py"])
+        self.assertIn("display fields only", rows[0][2])
+        c.read = lambda p: head.replace('("MINIVERB",)', '("MINIVERB", "SEND")')
+        self.assertEqual([cmd for _, g, _ in reach.classify(["remixes/miniverb/remix.py"], c) for _, cmd in g],
+                         ["make check REMIX=miniverb", "make accept REMIX=miniverb STRESS_SOURCE=${STRESS_SOURCE}"])
+
     def test_identity_extras_replan_into_the_accept_line_and_the_shards(self):
         queue = [("check-remix", "python3 tools/verify/check_shards.py --jobs 4 bamsep26 miniverb", ["p"]),
                  ("accept", 'make accept REMIXES="bamsep26 miniverb" STRESS_SOURCE=${STRESS_SOURCE} JOBS=4', ["p"])]

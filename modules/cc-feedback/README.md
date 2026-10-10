@@ -6,18 +6,29 @@ unit. Stock transmits a page-1 knob's CC on a panel turn only; after a
 pattern or part change, a project load, MODE DEFAULTS, an incoming CC or a
 page-2 knob turn the controller shows stale values.
 
-`Kind.CF_PATCH`: one DRAM unit (`cc_feedback.s`, 254 bytes) and one jmp
-detour.
+`Kind.CF_PATCH`: one DRAM unit (`cc_feedback.s`) and one jmp detour. The
+sweep compares the PART's knob bytes with the stock emitter's cache (page
+1: the machine's PLAYBACK block `+0x8edaa + t·30 + machine·6` and the
+LFO·AMP·FX1·FX2 array `+0x8ee9a + t·24`; page 2: `+0x8f07e`/`+0x8f084 +
+t·30`), not the live lane: locks, slides and scenes rewrite the lane every
+step and never the Part. Paced: one message per UI tick (120 Hz, `PACE`
+in `cc_feedback.s`), so a bank or pattern change with a different Kit
+reaches the controller over about three seconds instead of one burst —
+on image A2 (4 Oct 2026) the unpaced dump of the new Part locked a
+BCR2000 up the moment the bank changed.
 
 ## Measured
 
 - Unicorn (`verify_ccfeedback`, the fixture image, the unit linked at a
-  test address): eight sweeps enter the emitter 336 times with the lane's
+  test address): eight sweeps enter the emitter 336 times with the Part's
   values; cache, dirty bitmap (exactly the 42 CCs per channel), channel
   mask and the INTFRCH force as the table above; eight more sweeps emit
-  nothing; one changed byte is one message; unmapped lane bytes, AUDIO CC
-  OUT without EXT and a track with its channel off emit nothing; a MIDI
-  track on the channel is refused by the emitter.
+  nothing; one changed byte is one message; unmapped Part bytes, every
+  live-lane byte rewritten (a lock step), AUDIO CC OUT without EXT and a
+  track with its channel off emit nothing; the LFO block goes out as CC
+  28..33 and AMP as 22..27; PLAYBACK page 1 follows the track's machine
+  block; a MIDI track on the channel is refused by the emitter; the first sweep emits
+  exactly one message and the next carries on with the track's next slot.
 - The port (`verify_set`, bottleservice and usb-audio on OCTABAM89_setgate
   bank 3, before the engine gate): the load's part dumped as 281 CC
   messages, 582 bytes with running status, on all eight channels; UART0's
@@ -35,22 +46,41 @@ detour.
   set -- T7's part changed late in the run, the sweep queued the new
   values (the cache equalled the lane where the lane had stopped) and the
   batch timer had not fired yet. `verify_set` therefore checks the
-  emitter's cache against the lane (the module's contract) when the engine
-  is idle at the end, and the wire for shape: every CC sent is a mapped
-  slot on a track's channel.
+  emitter's cache against the Part's knob bytes (the module's contract;
+  the lane until 4 Oct 2026) for every slot the paced sweep has reached
+  when the engine is idle at the end, counts the remainder still to come,
+  and checks the wire for shape: every CC sent is a mapped slot on a
+  track's channel.
 
 ## On the unit
 
-Not flashed. DIN bandwidth for a full dump of eight tracks is 344
-messages, about one second at 31.25 kbaud without running status.
+- Images 88–A1 (27 Sep – 4 Oct 2026, the lane-watching sweep): a
+  BCR2000's rings followed the unit. On 4 Oct, a Midihub capture of the
+  OT's output on a pattern whose T1 lane bytes 8 (LFO SPD3) and 14 (AMP
+  REL) flipped between two values every step: four CCs per step, 60 a
+  second, until the BCR locked up — and each went out twice, as CC 24/30
+  and as 30/24: the map had the page-1 array's AMP and LFO blocks the
+  wrong way round (lane 6..11 is LFO, 12..17 AMP; `docs/firmware/MIDI.md`
+  section 3). Both fixed the same day: the sweep reads the Part, the map
+  follows the firmware's numbering. Whether those lane flips were locks
+  or two writers disagreeing (a CC-written value against the sequencer's
+  per-step refresh from the Part) is open; the Part-based sweep reports
+  neither.
+- Image A2 (4 Oct 2026, the Part-based sweep, unpaced): no stream while
+  B1 played untouched (a Midihub export held only the knob turns, CC 22
+  and CC 46), and the BCR2000 died the moment the bank changed — the
+  dump of the new Part, up to 336 messages in about a second. Paced to
+  one per tick the same day (image A3).
+- DIN bandwidth for a full dump of eight tracks is 344 messages, about
+  one second at 31.25 kbaud without running status; paced, about three.
 
 ## Open
 
-- Whether scene locks or parameter locks rewrite the live lane during
-  play (which would make the sweep transmit at step rate). The lane is
-  the knob store the frame builder copies; the lock arrays are
-  `0x80001538`/`0x80001658` (`docs/firmware/MIDI.md` section 3). Not measured
-  with a project that plays locks under the port.
+- What rewrote T1's lane bytes 8 and 14 at step rate on a fresh project's
+  B1 (4 Oct 2026): locks, or a CC-written lane value against the
+  sequencer's refresh from the Part (`0x4000c19c`). The lane is the knob
+  store the frame builder copies; the lock arrays are
+  `0x80001538`/`0x80001658` (`docs/firmware/MIDI.md` section 3).
 - LEVEL (CC 46), AMP VOL as CC 25 outside the AMP page, MUTE/SOLO (49/50)
   and the crossfader (48) are not in the map: their state is not in the
   lane.
@@ -119,7 +149,7 @@ gate was added after the first port run: 272 UART interrupts inside LOAD
 PROJECT re-ordered `sys` against the engine and tripped Octakit's
 part-byte lifecycle check (`gk_lifecycle_activation_publication_report_fatal`,
 the ATA-latency ordering `tools/emu/README.md` records); the same image
-loaded at `--ata-latency 32`, and the rig without Octakit loaded at the
+loaded at `--ata-latency 32`, and the `rig` test remix (bottleservice without Octakit) loaded at the
 default.
 
 ## Wiring a BCR2000

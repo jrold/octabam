@@ -336,7 +336,7 @@ def main():
         if silent:
             # The silence is the port's, not the case's (the same image, the
             # same machine): one probe stands for all seven, and the other
-            # six Octakit loads (~1 min each on the wall) are not paid.
+            # six loads are not paid.
             print(f"  [SKIP] playback {name}: not measured, the first case's output carried no audio -- {silent}", flush=True)
             continue
         res = run_case(a, name, machine, tstr, tsmode, ptch, image, rate)

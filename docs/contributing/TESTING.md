@@ -59,21 +59,22 @@ on which remix is selected, so a run over several remixes does it once:
 | `tools/remix/selftest.py` | the ledger refuses every collision it claims to (FX2 id, declared conflict, cave, hook and detour span, poke, table and symbol ref, runtime write, kept bytes, grown table, private Y word, FX2 buffer region, DSP data range, DSP hook site), every shipped remix is clean, the placer fills non-contiguous runs in both payloads |
 | `verify_slots` | no dead store in BusVerb's per-instance state block |
 | `verify_replaces --static` | a declared replacement names a real stock effect and carries its id (the registry only) |
-| `verify_docs` | the README module table and the remix index match the manifests and selections (`make docs`); every remix has a README |
+| `verify_docs` | the README module table and the remix index match the manifests and selections (`make docs`); every remix has a README; every relative Markdown link and anchor, and every `docs/…`, `tools/…`, `modules/…` or `remixes/….md` path written in a tracked text file, resolves (`tools/verify/doclinks.py`); no section sign in a `.md` |
+| `verify_remixer` (`Makefile` verify-shared) | the remixer (`make remix`) opens and draws headless under Textual's test pilot for stock and every remix (three panes, cursor in each); `k` moves the cursor up in AVAILABLE and `K` resets to stock. SKIPs without textual |
 | `tools/build/label_fmt.py` | the select formatter caves re-derive from their sources (with `m68k-elf-as` on PATH) |
 | `verify_knob_clicks` | the knob census: every continuous knob of the fixture remix's DSP modules moved mid-render, the block-rate step in dBFS; a garbage start stays quiet |
-| `module_gates.py --shared` | every manifest gate declared `remix_arg=False` by a module in the selection, once for the union |
+| `module_gates.py --shared` | every manifest gate declared `remix_arg=False` by a module in the selection, once for the union; every `once=True` gate, once, on the named remix with the fewest modules that carries its module |
 
 **The per-remix half** (`make check-remix REMIX=<name>`), in recipe order:
 
 | step | proves | needs |
 |---|---|---|
-| `bus`, `cycles` | the image builds; static per-sample cycles of every module and the worst load one core can be asked for, against the measured wall | |
+| `bus`, `cycles` | the image builds; static per-sample cycles of every module and the worst load one core can be asked for, against the measured wall; an insert is priced at four copies, or at its declared `max_per_core` (declared, not enforced by the unit) | |
 | `verify_dirtystate` | each DSP module rendered from a garbage-filled instance block on silence is silent or identical to the zeroed render | `dsp_host` |
 | `verify_initregs` | no module's `init` writes r1/n1/m1 (the dispatcher keeps the effect id there) | |
 | `verify_dram_boot` | the image boots under the port; the loader runs once, its `fatal` never, every DRAM window reads back equal to the linked runtime | port |
 | `verify_labels`, `verify_modenames`, `verify_hidden` | the firmware's own formatter code prints each select's words; the MODE formatter renames its neighbours; a hidden engine is placed, dispatched, off the chooser and draws nothing | `.venv` |
-| `module_gates.py --stage isolated --remix-only` | the manifest gates declared `remix_arg=True` | per gate |
+| `module_gates.py --stage isolated --remix-only` | the manifest gates declared `remix_arg=True` and not `once` | per gate |
 | `verify_menu` | the FX1/FX2 choosers and every cloned descriptor against the chooser logic decompiled from the firmware: row order, formatter vs value count, name-field lengths, link bits | |
 | `verify_replaces --image` | on this image, every stock effect id is stock's or declared by `replaces`, on both menus (until 29 Sep 2026 the shared half built all 35 remixes for this: 41 s warm, 402 s on a cold build memo) | |
 | `verify_set` | a real project on the image under the port: the load completes, live ids equal the part's, page-2 lanes reach the DSP record, every track with audio has chain output, CCs over MIDI IN move the right bytes, CC FEEDBACK's wire and cache, the load rewrote no project file, the firmware's log is clean | port, `.venv`, project |
@@ -109,9 +110,25 @@ The two tables above.
 | `verify_repitch` | REPITCH | per remix | the hook contracts, the page (Tier-0), and playback pitch and position speed through a live tempo change, seven cases | port, `.venv`, project |
 | `verify_ccmap` | CC MAP | shared | the CC cave re-assembles to its pinned bytes; CC 62-73 write page 2 and clamp to the count; page-1 CCs reach stock | `.venv` |
 | `verify_ccfeedback` | CC FEEDBACK | shared | the knob-change sweep enters the stock CC emitter once per changed byte, gated as stock gates | `.venv` |
-| `verify_midiscenes`, `verify_octakit` | MIDI SCENES, OCTAKIT | shared | the two port oracles: the author's own build reproduced byte for byte | submodule, m68k toolchain |
+| `verify_midiscenes` | MIDI SCENES | shared | the port oracle: the author's own build reproduced byte for byte | submodule, m68k toolchain |
+| `verify_kits` | KITS | once, on the smallest carrier | staging through the Part slots, LOAD/SAVE KIT and the list ops, kits.work over a save, reboot and power cycle, migration, Octakit import, a rejected bank file | a project (OT_PROJECT), the port |
 | `verify_usb_in` | USB AUDIO IN AB, CD, ABCD | image | the host's channels land bit-exact on their RX slots, the others stay the jacks', the recorder ring fills, the jacks return at alt 0 | port, `.venv` |
 | `verify_usb_align` | USB AUDIO OUT TRACKS MAIN CUE | image | MAIN and CUE are in phase with the tracks in the twenty-channel stream (lag 0) | port, `.venv` |
+| `verify_cfmeter` | CF METER | per remix | the DSP meter under the port with T8's FX2 = CF METER: frames counted within 8 of the frames run; spin min <= max and > 0; period min <= max and > 0; DBRN 40 lowers the spin minimum with the period maximum unchanged (within 10 %); DBRN 127 raises the period maximum past 1.5 x run 1's. Cannot see: the unit's cycle costs (the port prices each instruction at one step) and the ESAI's real underrun behaviour | `.venv`, port, project |
+| `verify_charkey` | CHARACTER | shared | KEY = T1 on both cores: a host-fed T3 (core 1) and T6 (core 0, also under four skews) duck in a burst; KEY = T1 with the host unfed holds no gain reduction; no host holds none; SELF is bit-identical fed or not; the master at KEY = T1 equals KEY = SELF; the host's own output is unchanged by Characters reading it. Cannot see: the chip's timing, anything the ColdFire does (knobs are poked into r6) | `dsp_host` |
+| `verify_character_txtr`, `verify_charkey_txtr` (`modules/character-txtr/`) | CHARACTER TXTR | shared | `verify_character` and `verify_charkey` run on the TXTR module (a `Gate` takes no arguments, so each names the module) | `dsp_host` |
+| `verify_fx2lock` | FX2 LOCK | image | T2, FX2 twice, DOWN, YES leaves the live FX2 ids (`0x80000ec4`) as a run that pressed nothing; with the poke undone in RAM the ids change; the poke is in the image. Without the module the same sequence turns T2's SEND into the stock DELAY | `.venv`, port, project |
+| `verify_plocksp2` | PLOCKS P2 | per remix | under the port: page-2 locks recorded from the panel (record, copy and paste, clear, pattern copy / paste / clear, undo), played on trigs, saved to the card (`p2lkNN.work`, `.strd`) and loaded back, including a power-up load from CS1 (`--cs1-in`, `--no-post`). Cannot see: the dial draw (the LCD is not decoded), the hardware, a slide trig | port, project |
+| `verify_testgen` | TESTGEN | shared | SINE against `sin(2 pi n inc / 2^24)` within 4 LSB, frequency within 0.003 Hz, FINE within 1 ppm, THD below −120 dB, LEVL steps of 0.5 dB within 0.01 dB, CHAN; SWEEP, WHITE, PINK, IMPULSE, NEEDLE and DC against `testgen_ref.py`; silent at LEVL 0; an invalid MODE byte is SINE | `dsp_host` |
+| `verify_transient` | TRANSIENT | shared | defaults and MIX 0 bit-exact passthrough; a negated input gives the negated output within 4 LSB; the per-sample gain matches the float reference within 0.1 dB across ATCK and SUST extremes and three levels; SUST +63 raises no onset peak and steps under 0.5 dB between samples on a decaying tail; a steady 1 kHz tone moves under 0.25 dB | `dsp_host` |
+| `verify_wave` | WAVE | image | pitch from the carrier, the chord, a pitch step, the envelope, silence, eight instances and the instruction bound, on the remix's own image, both payloads. Counts executed instructions, not hardware cycles | `dsp_host` |
+| `verify_analog_bassdrum` | ANALOG BD | shared | the generated descriptor helpers | |
+| `bd909.py`, `bd808.py` (`tools/harness/`) | ANALOG BD | shared | the 909 engine in `bd909_host` against `dsp909.Voice` (a mismatch is a DSP bug; a mismatch with Drumazon is a model limit); the 808 reference, retrigger, automation and desk stability | `bd909_host` built into `out/bd909` |
+| `verify_analog_bd_exact.py`, `verify_analog_bd_levels.py` (`tools/harness/`) | ANALOG BD | shared | the original DSP output and state pinned by hash (all trigger offsets, rapid retriggers, long tails, control extremes, random block-rate automation) with both post-desk output gains verified; the shipped 808/909 defaults compared by fixed-window hit RMS | `dsp_host` |
+| `verify_analog_bd_reverbs.py` (`tools/harness/`) | ANALOG BD | image | PLATE and DARK stay bit-identical to stock after SPRING is harvested, on both cores, with fixed and moving controls, at the hardware audio address X:0 | `dsp_host` |
+| `verify_analog_bassdrum_cf` | ANALOG BD | image | the built ColdFire control transport and source setup ABI. Instruction counts are diagnostics, not hardware timing | `.venv` |
+| `verify_analog_bassdrum_port` | ANALOG BD | image | the real source transport and main output, 808 on T1 and 909 on T5, with no audio sample staged: integration, not 808/909 timbre | port |
+| `verify_analog_bassdrum_ui` | ANALOG BD | image | choosing Analog Bassdrum and selecting its engine with actual stock panel events | port |
 
 `verify_repitch_ui` is called by `verify_repitch`; `verify_repitch_reference`
 is an offline specification test nothing runs.
@@ -153,6 +170,12 @@ dear={"DRV": 127, "FOLD": 127, "COMP": 127, "MIX": 127, "WDTH": 127, "SAT": 0},
   `"image"` runs last, on the finished `out/mainos_bus.bin` (and after
   `verify_set` has staged its card).
 - `venv=True` runs it under `.venv/bin/python3` when the venv exists.
+- `once=True` (with `remix_arg=True`, isolated): the gate checks the
+  module's own code, the same in every carrier, so it runs once per run
+  in the shared half, on the named remix with the fewest modules that
+  carries the module, not once per carrying remix. `make check REMIX=x`
+  on its own still runs it on x. For a ColdFire module's port scenarios
+  (KITS: 29 scenarios, 371 s emulated, two carriers).
 - A missing script is `[FAIL]`. The same script may not be listed twice.
 - `dear` is every knob at its dearest setting by name; the stress fixture
   and the pressure render read it, and `make accept` is blocked by name for
@@ -238,7 +261,7 @@ than the binary.
 |---|---|
 | `modules/<name>/` | `make check` and `make accept` for every remix that carries the module |
 | `modules/<name>/README.md`, or a manifest edit to display fields only (`doc`, `proof`, `proof_note`, `author`, `author_url`, `category`, docstrings) | `verify_docs` |
-| `remixes/<name>/remix.py` (or `remixes/test/...`) | `make check` and `make accept` for that remix; a README alone reaches `verify_docs`; a removed remix the selftest and `verify_docs` |
+| `remixes/<name>/remix.py` (or `remixes/test/...`) | `make check` and `make accept` for that remix; an edit to `doc`, `proof`, `proof_note` or a docstring only, or a README alone, reaches `verify_docs`; a removed remix the selftest and `verify_docs` |
 | the build (`build_bus.py`, `cycle_count.py`, `dsp/`) or anything it imports | `scripts/refhash.sh check`, `make identity`, `make test-acceptance`, `make check-shared` for the cover |
 | a gate of the shared half | `make check-shared` for the cover |
 | a gate of the per-remix half | `make check-remix` for the cover |
@@ -464,8 +487,9 @@ A new module's gates, `dear` and behavioral tests belong in that same PR.
   `remixes/test/bus` (the shipping flags, the plain build, the DEV hatch,
   the probes, the overrides); every artifact and every build report
   hashed. Save on main, check on the branch. A path in the report is part
-  of the report. Two cases (`plain`, `marker`) refuse to build and the
-  refusal is pinned the same way.
+  of the report. Three cases (`probe`, `xprobe`, `tprobe`: the probes in a plain
+  layout, where the real delay overruns the region) refuse to build and the
+  refusal is pinned the same way (`scripts/refhash.sh`).
 - **`make identity`**: every remix, base against head.
 - **`make verify-bus`, `verify-ident`, `verify-roll`, `verify-delay`,
   `verify-spectrum-ident`**: a rewrite against a saved reference.
@@ -484,12 +508,13 @@ with the load average noted because it moves every number:
 | the cover's per-remix halves, `JOBS=3` | 530 s (574 s before the image job was split out, 681 s whole, 986 s before the scenesp2 fork) |
 | `verify_scenesp2` on bottleservice, quiet machine | 109-111 s one load per run, 73-74 s one load and forked scenarios |
 | `verify_tempobus`, quiet machine | 49 s wall-clock paced, 34 s scripted |
+| `verify_kits` on bottleservice, quiet machine | 630 s: 29 scenarios, 371 s emulated, no DSP cores, 3 at a time, native binary (6 Oct 2026; the first reach run took 3,375 s for the whole per-remix half with the cores on, 6 at a time on two shards, under Rosetta) |
 
 Typical changes (with `JOBS=4`, kept shards):
 
 | change | remixes | wall |
 |---|---|---|
-| a module README or a manifest's display fields | none | seconds (`verify_docs`) |
+| a module or remix README, or a manifest's or `remix.py`'s display fields | none | seconds (`verify_docs`) |
 | one USB IN or OUT module | its few `usb-io-*` remixes (+ bottleservice if it carries it) | 5-15 min |
 | USB MIDI (every USB remix) | ~24 | 15-20 min, floored by bottleservice |
 | the build | the cover + identity's moved remixes | 25-40 min |
@@ -538,6 +563,11 @@ their results go in the PR body.
   overruns and underruns against a scripted host; with shards and another
   run on the machine the host falls behind and a remix fails that passes
   alone. Rerun a USB red alone before believing it.
+- **The USB stream's timing on a unit.** The port runs the frame
+  interrupt and the eDMA in lock-step, so `verify_usb_align` and
+  `usb_align.py` give the alignment the producer's code makes, not the
+  unit's. On a unit: a click on one track, a `tools/rec` take, and
+  `tools/hw/usb_offset.py` for the offset between its channel and MAIN's.
 - **Whatever the metric cannot represent.** A harmonic metric cannot see
   an inharmonic block-rate step; an AC-coupled capture cannot see DC; a
   reverb smears a per-sample fault. Ask what the instrument cannot see

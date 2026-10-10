@@ -6,7 +6,8 @@ live 8x30 lock table only the panel writes. midisc adds a second table
 XF morph, part save/reload and the scene clear/copy/paste rows to read it
 when a MIDI event is driving. The panel path is untouched.
 
-Source: `upstream/` is his repository (submodule, tracking 1.40MIDISC8.2).
+Source: `upstream/` is his repository (submodule at 4f9a894, MIDISC2.0; the
+gas units are his 1.40MIDISC8.2 code, which 2.0 did not change -- README).
 His caves are written in his Python encoder; his `tools/gas_port.py`
 regenerates `gas/*.s` from the same builders and proves each region
 assembles to his bytes at his addresses (`tools/verify/verify_midiscenes.py`
@@ -24,12 +25,11 @@ fails project load under the port because his CAVE2 (0x400d2ee6) overruns
 a live descriptor's enable words at 0x400d3014/18; this build links every
 unit into DRAM and is immune (measured).
 
-On hardware as OKMS1 (remix ok-ms), confirmed by him -- and Part Reload
-trapped on it: Octakit's replacement of the stock reload validates its
-caller's return address and his `reload` stub substitutes it
-(subst_return below). Refused by the ledger without KITS RELOAD
-(modules/kits-reload), which keeps the stock jsr and hooks the return
-sites for rel_after.
+On hardware as OKMS1 (remix ok-ms, with Octakit), confirmed by him. Part
+Reload trapped there: Octakit's replacement of the stock reload validated
+its caller's return address and his `reload` stub substitutes it; the
+KITS RELOAD bridge carried the pair until Octakit was removed (6 Oct
+2026). With KITS the stock reload is stock, so his stubs run as on stock.
 """
 
 from remix.schema import Gate, Category, Proof, Claims, Detour, Kind, Linked, Module, Poke
@@ -81,11 +81,9 @@ DETOURS = (
     Detour(0x4009D1DE, H("4cd73cfc4fef00284e75"), "safe_cave", "plock", "post-plock scene rebuild", pad_to=10),
     Detour(0x4002DD12, H("4eb94004a908"), "safe_cave", "save", "Part Save menu action", kind="jsr"),
     # `reload` and `apply_bridge` park the site's return address in apply_ret
-    # and return the stock callee through their own continuation
-    # (subst_return): Octakit's part reload validates that address and traps
-    # on his -- the two reload sites need the KITS RELOAD bridge beside her.
-    Detour(0x4002DD56, H("4eb94004aab4"), "code2", "reload", "Part Reload, menu path", kind="jsr", subst_return=True),
-    Detour(0x4005E05A, H("4eb94004aab4"), "code2", "reload", "Part Reload, non-menu path", kind="jsr", subst_return=True),
+    # and return the stock callee through their own continuation.
+    Detour(0x4002DD56, H("4eb94004aab4"), "code2", "reload", "Part Reload, menu path", kind="jsr"),
+    Detour(0x4005E05A, H("4eb94004aab4"), "code2", "reload", "Part Reload, non-menu path", kind="jsr"),
     Detour(0x400622AA, H("23c046c82456"), "seam_bank", "bank_sw", "bank-pointer refresh on switch A", kind="jsr"),
     Detour(0x40087D44, H("23c046c82456"), "stub", "bank_pub", "bank publish (no pack) on switch B", kind="jsr"),
     Detour(0x4001FBD0, H("23c046c82456"), "seam_bank", "bank_inv", "bank-pointer refresh on init A", kind="jsr"),
@@ -94,11 +92,10 @@ DETOURS = (
     Detour(0x4002DCD4, H("45f94004a908"), "safe_cave", "save", "SAVE ALL's lea -> the ported Save", kind="lea"),
     # The part-change UI sites go through his apply bridge (pack, stock
     # apply, unpack + mix); STOCK_APPLY itself stays stock.
-    Detour(0x4002B59A, H("4eb940009094"), "safe_cave", "apply_bridge", "part-change UI apply -> bridge, site 1", kind="jsr", subst_return=True),
-    Detour(0x4002B8F8, H("4eb940009094"), "safe_cave", "apply_bridge", "part-change UI apply -> bridge, site 2", kind="jsr", subst_return=True),
-    Detour(0x4004A8FC, H("4eb940009094"), "safe_cave", "apply_bridge", "set pattern's part then apply -> bridge, site 3", kind="jsr", subst_return=True),
-    Detour(0x40029AF8, H("4ef940009094"), "safe_cave", "apply_bridge", "part-change UI apply (jmp) -> bridge",
-           subst_return=True),
+    Detour(0x4002B59A, H("4eb940009094"), "safe_cave", "apply_bridge", "part-change UI apply -> bridge, site 1", kind="jsr"),
+    Detour(0x4002B8F8, H("4eb940009094"), "safe_cave", "apply_bridge", "part-change UI apply -> bridge, site 2", kind="jsr"),
+    Detour(0x4004A8FC, H("4eb940009094"), "safe_cave", "apply_bridge", "set pattern's part then apply -> bridge, site 3", kind="jsr"),
+    Detour(0x40029AF8, H("4ef940009094"), "safe_cave", "apply_bridge", "part-change UI apply (jmp) -> bridge"),
 )
 
 POKES = (

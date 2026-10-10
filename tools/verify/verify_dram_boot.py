@@ -6,9 +6,8 @@ For the current REMIX (the image at out/mainos_bus.bin):
   * the boot reaches the RTOS handoff, and the loader's entry ran exactly
     once while its `fatal` hang never did -- so every hash gate passed;
   * the octabam window (out/platform/runtime/runtime.bin, when the remix
-    has DRAM units) and Octakit's window (out/runtime/octakit/runtime.bin,
-    when OCTAKIT is in the remix) read back equal to the linked runtimes
-    -- except for bytes the runtimes themselves write once they run
+    has DRAM units) reads back equal to the linked runtime -- except for
+    bytes the runtime itself writes once it runs
     (midi-scenes' state words are the known case), which are counted and
     printed, not hidden.
 
@@ -30,8 +29,7 @@ IMAGE = ROOT / "out/mainos_bus.bin"
 remix = registry.remix(os.environ.get("REMIX"))
 mods = [registry.modules()[k] for k in remix.modules]
 dram = any(u.dram for m in mods for u in getattr(m, "linked", ()))
-octakit = "OCTAKIT" in remix.modules
-if not (dram or octakit):
+if not dram:
     print(f"  [ -- ] verify_dram_boot: {remix.name} carries no DRAM payload")
     sys.exit(0)
 if not EMU.exists():
@@ -62,10 +60,6 @@ if dram:
     raw = (ROOT / "out/platform/runtime/runtime.bin").read_bytes()
     dumps.append((layout["base"], len(raw), ROOT / "out/_dump_octabam.bin"))
     expects.append(("octabam reserve", raw))
-if octakit:
-    raw = (ROOT / "out/runtime/octakit/runtime.bin").read_bytes()
-    dumps.append((0x45D0DDE0, len(raw), ROOT / "out/_dump_octakit.bin"))
-    expects.append(("Octakit window", raw))
 
 args = [str(EMU), "--image", str(IMAGE), "--max", "80000000",
         "--watch-pc", f"0x{entry:x},0x{fatal:x}",

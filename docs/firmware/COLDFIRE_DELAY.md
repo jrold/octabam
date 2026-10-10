@@ -128,6 +128,15 @@ Tape Echo's instruction counts per frame against stock DELAY's, and what
 the meter cannot see: `modules/tapeecho/README.md` "CPU integration" and
 `git show 666b6154:modules/tapeecho/VOICING.md`.
 
+On a unit (Bryan T's CF METER takes, 4 Oct 2026, `ARCHITECTURE.md`
+section 6): DELAY on T1, on T1–T4, and on T1 with TIME swept by hand adds
+nothing measurable to the frame interrupt against FX2 NONE (237–271 µs
+either way, seven FLEX voices). The routine is called from transfer state
+5 of the level-6 eDMA chain (`jsr %pc@(0x400031a0)` at `0x40004b12`), so
+its time either nests inside the measured span as a fixed per-frame
+amount or falls outside it; the takes cannot tell cheap from fixed. An
+image with the routine bypassed would.
+
 ## 5. Consequences for the bus
 
 - The routine's input is the read-back after FX2 and its output re-enters

@@ -99,7 +99,16 @@ namespace ot
 		//   setup <16 hex>     SETUP packet into the EP0 OUT dQH        -> ok
 		//   in <ep> <maxlen>   IN transfer on EP n                       -> in <ep> [<hex>|stall]
 		//   out <ep> [<hex>]   OUT transfer (bytes, or a ZLP) to EP n    -> out <ep> <count>|stall
-		//   reset              bus reset (URI + PCI, address cleared)    -> ok
+		//   reset              bus reset (URI + PCI, address cleared)    -> ok, once the guest
+		//                      has acknowledged URI (its reset handling done)
+		//   unplug             B-session valid drops, BSVIS latches (the
+		//                      stock ISR's session-end path)             -> ok, once the guest
+		//                      has acknowledged BSVIS (session end handled)
+		//   plug               the cable back: B-session valid returns and
+		//                      BSVIS latches (the stock ISR's session-start
+		//                      path, as at boot)                     -> ok, once the guest
+		//                      has acknowledged BSVIS; a `reset` and an
+		//                      enumeration follow, as from a real host
 		//   speed hs|fs        the port speed PORTSC1 reports            -> ok
 		//   isohz <hz>         the isochronous poll rate the endpoint's
 		//                      bInterval sets (0: 4000 at high speed,
@@ -134,8 +143,9 @@ namespace ot
 		// time here until the bench's next command arrives, so a bench that is
 		// late on the wall clock (a loaded machine) costs wall time, not
 		// device time. The hold ends early when the bench has a transfer or
-		// request outstanding (the device must run to finish it), on hangup,
-		// or at the wall deadline (setBenchDeadline), after which polls are
+		// request outstanding or a bus reset the guest has not acknowledged
+		// (the device must run to finish it), on hangup, or at the wall
+		// deadline (setBenchDeadline), after which polls are
 		// answered as before. A direct `command()` caller (a test) is never
 		// held.
 		bool isoPoll();		// true when an enabled isochronous IN found no request waiting
@@ -184,6 +194,9 @@ namespace ot
 		Write8 m_write8;
 		std::array<uint32_t, g_size / 4> m_regs = {};
 		uint32_t m_otgscIs = 0;				// the latched BSVIS
+		bool m_sessionEnded = false;			// unplug: OTGSC reports no B-session
+		bool m_unplugUnacked = false;			// unplug landed, BSVIS not yet acknowledged: the host's ok waits
+		bool m_plugUnacked = false;			// plug landed, BSVIS not yet acknowledged: the host's ok waits
 		bool m_speedHs = true;
 		double m_isoHz = 0;					// isohz: 0 = by speed
 		bool m_hwFaithful = true;
@@ -194,6 +207,7 @@ namespace ot
 		bool m_sawClient = false;
 		bool m_hostPresent = false;
 		bool m_resetPending = false;
+		bool m_resetUnacked = false;			// landed, URI not yet acknowledged: the host's ok waits
 		std::unique_ptr<Request> m_request;
 		std::chrono::steady_clock::time_point m_benchDeadline = std::chrono::steady_clock::time_point::max();
 		std::function<void(const std::string&)> m_sink;	// where replies go while a command is being served

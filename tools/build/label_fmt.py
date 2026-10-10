@@ -112,7 +112,7 @@ if __name__ == "__main__":
         if m.is_stock:
             continue
         for i, p in enumerate(m.params):
-            if not (p.active and p.labels):
+            if not p.prints_labels:
                 continue
             try:
                 verify(p.labels)

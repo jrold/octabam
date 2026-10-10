@@ -52,9 +52,8 @@ ID2POS = 0x400d6150
 LIST_REFS = [0x400375f4, 0x40052496, 0x40059a42]
 FX1_ID_LOOKUP = 0x400d5f58
 FX1_CHOOSER = 0x400d6060
-# 11 entries + the NUL terminator = 12 words; 0x400d6090 is FX2_LIST (the
-# stock table build_bus mirrors the live chooser into when Octakit is
-# present), so a wider window reads that table as FX1 damage.
+# 11 entries + the NUL terminator = 12 words; 0x400d6090 is FX2_LIST, so a
+# wider window reads that table as FX1 damage.
 FX1_CHOOSER_LEN = 0x30
 FX1_ID2POS = 0x400d60d0                 # FX1's own cursor-row table
 FX1_LIST_REFS = [0x40037990, 0x40052706, 0x40059bd2]
@@ -95,6 +94,14 @@ ACTIVE_PARAMS = {k: _MODS[k].active_params for k in _ORDER
                  if k not in STOCK_KEYS}
 LINKED_PARAMS = {k: _MODS[k].linked_params for k in _ORDER
                  if k not in STOCK_KEYS}
+# Param(active=None) on a stock_dsp clone: the slot's nibble is the donor's
+# (schema.Module.inherited_enable), checked against the pristine donor.
+INHERITED = {k: _MODS[k].inherited_enable for k in _ORDER
+             if k not in STOCK_KEYS}
+
+
+def _nibble(lo, hi, i):
+    return ((lo if i < 8 else hi) >> (4 * (i if i < 8 else i - 8))) & 0xf
 # a host page's link elements stop at its last drawn slot (build_bus.py)
 for _k, _n in REMIX.host_slots:
     if _k in LINKED_PARAMS:
@@ -188,21 +195,6 @@ def main():
             break
         a += 4
 
-    if "OCTAKIT" in REMIX.modules:
-        print("\n=== OCTAKIT: its machine-selection runtime hardcodes the "
-              "stock FX2 table at 0x400d6090 and accepts cursor 0..14; "
-              "the stock table must shadow the live OCTABAM chooser ===")
-        check(N_REAL <= 15,
-              f"OCTAKIT-compatible FX2 chooser has at most 15 rows "
-              f"(got {N_REAL})")
-        for i in range(16):
-            shadow = rd32(img, 0x400d6090 + i * 4)
-            want = positions[i] if i < len(positions) else 0
-            check(shadow == want,
-                  f"OCTAKIT shadow[{i}] == "
-                  f"{'live chooser' if i < len(positions) else '0'} "
-                  f"(0x{shadow:08x})")
-
     print("\n=== list is exactly the three real entries, and the chooser's "
           "viewport was shrunk to match so no row can read past the "
           "terminator (the hardware-test-1 garbage) ===")
@@ -277,6 +269,19 @@ def main():
         got = {i for i in range(12)
                if ((lo if i < 8 else hi) >> (4 * (i if i < 8 else i - 8))) & 1}
         want = set(ACTIVE_PARAMS[name])
+        wantl = set(LINKED_PARAMS[name])
+        _inh = INHERITED[name]
+        if _inh:
+            _dP = _MODS[name].menu.donor_desc + 0x38
+            _dlo = rd32(stock, _dP + P_PENABLE_LO)
+            _dhi = rd32(stock, _dP + P_PENABLE_HI)
+            for i in _inh:
+                _dn, _gn = _nibble(_dlo, _dhi, i), _nibble(lo, hi, i)
+                check(_gn == _dn,
+                      f"{name}: p{i} (active=None, stock_dsp) keeps the donor's "
+                      f"enable nibble 0x{_dn:x} (got 0x{_gn:x})")
+                want |= {i} if _dn & 1 else set()
+                wantl |= {i} if _dn & 2 else set()
         check(got == want,
               f"{name}: enabled knobs {sorted(got)} == expected {sorted(want)} "
               f"(lo=0x{lo:08x} hi=0x{hi:08x})")
@@ -284,11 +289,11 @@ def main():
         # exactly the manifest's, and no other bit anywhere in a nibble
         linked = {i for i in range(12)
                   if ((lo if i < 8 else hi) >> (4 * (i if i < 8 else i - 8))) & 2}
-        wantl = set(LINKED_PARAMS[name])
         check(linked == wantl,
               f"{name}: linked knobs {sorted(linked)} == expected {sorted(wantl)}")
         stray = {i for i in range(12)
-                 if ((lo if i < 8 else hi) >> (4 * (i if i < 8 else i - 8))) & 0xc}
+                 if i not in _inh
+                 and ((lo if i < 8 else hi) >> (4 * (i if i < 8 else i - 8))) & 0xc}
         check(not stray, f"{name}: no nibble carries bits 2/3 (stock's PLAYBACK-only flags) {sorted(stray)}")
         # a knob that is enabled but unnamed would render as a blank row
         for i in sorted(got):
@@ -488,19 +493,6 @@ def main():
         check(_rows == _want,
               f"FX1 viewport row count == {_want} (got {_rows})"
               + (" -- it scrolls" if len(_list) > CHOOSER_ROWS else ""))
-        if "OCTAKIT" in REMIX.modules:
-            # Octakit reads the stock FX1 table at 0x400d6060 by cursor
-            # 0..10; the build mirrors the relocated list into it.
-            check(len(_list) <= 11,
-                  f"OCTAKIT-compatible FX1 chooser has at most 11 rows "
-                  f"(got {len(_list)})")
-            for _i in range(12):
-                _shadow = rd32(img, FX1_CHOOSER + _i * 4)
-                _want = _list[_i] if _i < len(_list) else 0
-                check(_shadow == _want,
-                      f"OCTAKIT FX1 shadow[{_i}] == "
-                      f"{'live chooser' if _i < len(_list) else '0'} "
-                      f"(0x{_shadow:08x})")
         _listed = set()
         for _n, _k in enumerate(REMIX.fx1):
             _m = _MODS[_k]
@@ -564,8 +556,26 @@ def main():
         check(got["abbr"] == mod.menu.abbr.decode("latin1"),
               f"{name}: its abbreviation is "
               f"{got['abbr']!r} == {mod.menu.abbr.decode('latin1')!r}")
-        want_slots = [p.name.decode("latin1") for p in mod.params
-                      if p.active and p.name]
+        # an inherited slot (active=None, stock_dsp) draws as its donor's
+        # does: its expected name is the manifest's, else the donor's
+        _inh = INHERITED.get(name, ())
+        _dP = mod.menu.donor_desc + 0x38
+        _dlo = rd32(stock, _dP + P_PENABLE_LO)
+        _dhi = rd32(stock, _dP + P_PENABLE_HI)
+        want_slots = []
+        for i, p in enumerate(mod.params):
+            if i in _inh:
+                if not _nibble(_dlo, _dhi, i) & 1:
+                    continue
+                _a = _dP + P_PARAM_NAMES + i * 6 - BASE
+                nm = (p.name if p.name is not None
+                      else stock[_a:_a + 6].split(b"\0")[0])
+            elif p.active:
+                nm = p.name
+            else:
+                continue
+            if nm:
+                want_slots.append(nm.decode("latin1"))
         drew = [x for x in got["slots"] if x]
         check(drew == want_slots,
               f"{name}: its {len(want_slots)} drawn slot names are the "

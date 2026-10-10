@@ -54,9 +54,8 @@ places it) and one poke. Named CC PAGE 2 (`modules/ccpage2`) until
 The MIDI dispatch table's CC entry `0x400d64a0` (`0x400d6474[0xB]`) is
 repointed from the stock handler `0x4000e79c` to the cave. A CC outside
 every block tail-calls `CC_NEXT` with the message pointer intact. The build
-defines `CC_NEXT`: the stock handler, or Octakit's handler when the
-SCENES KITS bridge is in the image (`modules/scenes-kits`). With the bridge,
-the order is this cave's blocks, then Octakit's handler, then stock's.
+defines `CC_NEXT`: the stock handler. (Until 6 Oct 2026 the SCENES KITS
+bridge chained Octakit's handler in between.)
 
 ## What a CC in a block does
 
@@ -102,7 +101,6 @@ to the handler's `rts`.
 | 74–111 | 38 | free |
 | 0–6, 9–15 | 14 | free |
 
-Octakit's handler reads 7, 46, 47 and 55–58, all stock numbers.
 
 Controllers send some numbers in these ranges without being asked, for
 their standard MIDI meanings:
@@ -130,8 +128,8 @@ their standard MIDI meanings:
 `manifest.CODE` is the hand-assembled form of the cave. `legacy_bytes`
 patches in the count-table addresses. It is the `CavePatch.reference` that
 the linked source is compared against, wherever the source is linked. The
-comparison is skipped when `CC_NEXT` is bridged to Octakit or `CC_MODEDEF*`
-resolve to MODE DEFAULTS, since those change the bytes.
+comparison is skipped when `CC_MODEDEF*` resolve to MODE DEFAULTS, since
+that changes the bytes.
 
 `VERB_COUNTS` / `DLY_COUNTS` in the manifest and `VCOUNT` / `DCOUNT` in the
 cave must match the busverb and busdelay page-2 counts.

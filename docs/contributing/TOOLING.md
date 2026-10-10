@@ -1,15 +1,15 @@
 # The tooling, end to end
 
 What each tool is and where it sits in the pipeline. The audition and
-measurement rig in depth: `tools/harness/README.md`.
+measurement harness in depth: `tools/harness/README.md`.
 
 The pipeline, left to right:
 
 ```
 acquire ──► unpack ──► understand ──► build ──► hear/measure ──► verify ──► flash ──► capture
-scripts/     scripts/    tools/build    tools/build tools/harness   tools/      docs/       tools/hw
-fetch-os     analyze     dsp_modmap     build_bus   dsp_host +      verify/*    remixer/    capture_hw
-                         disasm         make image  tools/emu       cycles      FLASHING    ot_midi …
+scripts/     scripts/    tools/build    tools/build tools/harness   tools/      docs/guide/ tools/hw
+fetch-os     analyze     dsp_modmap     build_bus   dsp_host +      verify/*    BUILDING.md capture_hw
+                         disasm         make image  tools/emu       cycles                  ot_midi …
 ```
 
 `make help` lists the entry points; almost everything below is behind a make
@@ -24,7 +24,7 @@ line `verify_dram_boot.py` does.
 
 | directory | what is in it | its doc |
 |---|---|---|
-| `tools/remix/` | **the toolkit**: the module schema, the registry, the ledger, the stock-effect list, the loader (`loader.S`), the DRAM platform (`platform_build.py`), the recipe runtime builder (`runtime_build.py`), the TUI (`app.py`), auditioning, the index and the selftest | [`tools/remix/README.md`](../../tools/remix/README.md) |
+| `tools/remix/` | **the toolkit**: the module schema, the registry, the ledger, the stock-effect list, the loader (`loader.S`), the DRAM platform (`platform_build.py`), the payload packer (`pack.py`), the TUI (`app.py`), auditioning, the index and the selftest | [`tools/remix/README.md`](../../tools/remix/README.md) |
 | `tools/build/` | **the build** (`build_bus.py`) and the tools that understand the OS layout: the DSP load map, disassembly, reachability, the ELUP/`.bin` codecs, label and formatter emitters, cycle pricing | section 4 below |
 | `tools/verify/` | **the gates**: one `verify_*.py` per property, run by `make verify` | [`TESTING.md`](TESTING.md) |
 | `tools/harness/` | **hearing and measuring the DSP side** locally: the emulator harness (`dsp_host/`), `send_probe`, `render_reverb`, `rig_render`, `pressure`, `stress_project` | [`tools/harness/README.md`](../../tools/harness/README.md) |
@@ -163,7 +163,7 @@ Render on the desktop at ~6× real time instead of flashing.
 | tool | what it does |
 |---|---|
 | `tools/harness/dsp_host` | the emulator harness: boots a payload dump (both payloads, `-memB`, shared window shared), calls effects through the recovered ABI, captures audio, polices memory, meters instructions per block |
-| `tools/harness/rig_render.py` (`make render-rig`) | the whole rig locally: eight tracks on both cores, FX1→FX2 chained per track, ids and knobs from a project part or by name, stems in, per-track + mix wavs and `meter.txt` out |
+| `tools/harness/rig_render.py` (`make render-rig`) | all eight tracks locally on both cores, FX1→FX2 chained per track, ids and knobs from a project part or by name, stems in, per-track + mix wavs and `meter.txt` out |
 | `tools/verify/verify_twocore.py` (`make verify-twocore`, in `make check`) | the two-core gate: the servers on their real cores render bit-identical to the DEV hatch, and under four interleave skews |
 | `tools/verify/verify_onebus.py` (`make verify-onebus`, in `make check`) | the one aux bus on both cores: the chain, each host's print, WET passthrough (sample-exact), the track-8 send refusal, a stored RET byte inert, stations without sends, four skews |
 | `tools/harness/render_reverb.py` (`make reverb IN=..`) | wav → BusVerb → wav, knobs by name, sweeps, wet-only |
@@ -186,7 +186,8 @@ CI). The family, and what each proves:
 | `tools/verify/verify_slots.py` | static dead-store check on the reverb's r7 state block |
 | `tools/verify/verify_midi.py` | the note→PITCH interval path, locally, via a build override |
 | `tools/verify/verify_burn.py` | the cycle-burn probe is the shipping engine plus an inert knob |
-| `tools/verify/verify_octakit.py`, `verify_midiscenes.py`, `verify_dram_boot.py` | the two ports' oracles; every DRAM remix booted under the port and its window read back |
+| `tools/verify/verify_midiscenes.py`, `verify_dram_boot.py` | MIDI SCENES' oracle; every DRAM remix booted under the port and its window read back |
+| `tools/verify/verify_kits.py` | KITS under the port: staging, LOAD/SAVE KIT, the files, migration and Octakit import |
 | `tools/verify/verify_dirtystate.py`, `verify_initregs.py`, `verify_replaces.py`, `verify_labels.py`, `verify_modenames.py`, `verify_hidden.py`, `verify_grains.py`, `verify_twocore.py`, `verify_onebus.py`, the per-module render gates | every module silent from a garbage block; no init writes r1; no stock effect hijacked; selects print their words on the emulated firmware; the mode formatter renames; hidden engines; the grain lever; both cores; the bus |
 | `tools/remix/selftest.py` | the resource ledger catches every collision it claims to, and every shipped remix is clean (part of `make check`) |
 | `scripts/refhash.sh` | a change to the build (not a module) changed nothing: 24 configurations, artifacts and build reports, bit-identical; save a baseline on a tree you trust first |
@@ -194,24 +195,25 @@ CI). The family, and what each proves:
 ## 7. Hardware measurement and control
 
 For the claims the emulator structurally cannot make (`tools/harness/README.md`,
-last section), the hardware rig — protocol in `docs/history/CAPTURE_18AUG.md`:
+last section), the hardware capture setup — protocol in `docs/history/CAPTURE_18AUG.md`:
 
 | tool | what it does |
 |---|---|
 | `tools/hw/capture_hw.py` | records the unit through an audio interface and analyses the capture numerically |
 | `tools/hw/usb_counters.py` | USB AUDIO's ring counters (`--in`: USB AUDIO IN's) over their vendor requests, once or `--watch` |
 | `tools/hw/usb_probe.py` | a host session (sustained tone or open/close churn) against a unit on `usb-io`, both rings' counters polled while the stream is open, a verdict and a JSON report |
-| `tools/hw/sos_capture.py` | the sound-on-sound loop sample-exact: a fixture project, a tone + sample-index-ramp signal, a capture over USB AUDIO IN AB / OUT TRACKS (remix `sos-capture`), the same project and signal under the port, and a compare that finds the arm, aligns unit and port and lists where recirculating passes or the two runs differ |
+| `tools/hw/sos_capture.py` | the sound-on-sound loop sample-exact: a fixture project, a tone + sample-index-ramp signal, a capture over USB AUDIO IN AB / OUT TRACKS (remix `sos-capture`), the same project and signal under the port, a compare that finds the arm, aligns unit and port and lists where recirculating passes or the two runs differ, and `wraps`, which classifies each wrap (repeat, skip, a sample neither lag explains) from the loop's own lag, on any audio |
+| `tools/hw/usb_offset.py` | the offset in samples between two channels of one recording, per click (cross-correlation and onset): a click on one track recorded with `tools/rec`, for example a track channel against MAIN in the twenty-channel stream; `--selftest` |
 | `tools/harness/usb_align.py` | the twenty-channel stream's MAIN-to-track alignment under the port: the tone project on a staged card, EP3 IN drained once the sequencer plays, the lag from each tone's phase in its track channel and in MAIN |
 | `tools/hw/rec.swift` | drop-free CoreAudio HAL recorder (compiled on demand); the ffmpeg/avfoundation path drops samples |
 | `tools/hw/ot_midi.py` | drives the Octatrack over CoreMIDI from the CLI: CC, notes, raw bytes |
-| `tools/hw/bcr2000.py` | programs a Behringer BCR2000 for the rig: BCL from the manifests (page-1 CCs + CC MAP's page 2), sent over SysEx with per-line acks or written for BC Manager |
+| `tools/hw/bcr2000.py` | programs a Behringer BCR2000 for bottleservice: BCL from the manifests (page-1 CCs + CC MAP's page 2), sent over SysEx with per-line acks or written for BC Manager |
 | `tools/hw/hw_sweep.py` | scripted sweeps: MIDI steps + capture + per-step metrics in one process |
 | `tools/hw/level_cap.py` | quick capture with peak/RMS/crest/clip-run reporting per channel |
 | `tools/hw/gain_pass.py` | gain-matches a whole project bank-by-bank over MIDI |
 | `tools/hw/ot_project.py` | reads and writes Octatrack project/bank files on the CF card: `stamp-defaults` after a layout change, `set-fx`, `stamp-slot`, `rigproj` |
 | `tools/hw/ot_soak.py`, `hw_bus_test.py`, `hw_knob_sweep.py`, `hw_flash7.py`, `midi_flash.py`, `ot_clock.py` | a soak run that reports a freeze or the idle tick; synchronous-detection A/B of a parameter over MIDI; every knob's liveness; the one-aux bus claims driven over MIDI; OS flashing over MIDI; transport |
-| `tools/hw/ot_ladder.py` | the rig LADDER: one configuration per bank in a card project (effect selection without the panel), stepped by program change, each rung measured by level, spectrum and the tail after STOP (bus connected, reverb T60, delay time); `proj` / `run` / `analyse` / `summary` |
+| `tools/hw/ot_ladder.py` | the LADDER: one configuration per bank in a card project (effect selection without the panel), stepped by program change, each rung measured by level, spectrum and the tail after STOP (bus connected, reverb T60, delay time); `proj` / `run` / `analyse` / `summary` |
 | `tools/hw/decode_tempo_probe.py` | decodes captures from the tempo probe build, which streams the DSP's parameter staging block out through the audio |
 
 ## Conventions the tooling enforces

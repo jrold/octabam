@@ -1,10 +1,11 @@
-# `direct-jump-kyoti` -- DIRECT_JUMP_KYOTI
+# `direct-jump-kyoti` -- DIRECT_JUMP_KYOTI, BATCH_BUGFIXES
 
-One ColdFire module by Zac Kyoti and the stock effects.
+Two ColdFire modules by Zac Kyoti and the stock effects.
 
 ## What is in it
 
 - **DIRECT_JUMP_KYOTI** -- [`modules/direct-jump-kyoti/README.md`](../../../modules/direct-jump-kyoti/README.md).
+- **BATCH_BUGFIXES** -- [`modules/batch-bugfixes/README.md`](../../../modules/batch-bugfixes/README.md). DIRECT_JUMP_KYOTI requires it.
 - the 14 stock FX2 effects, listed so the chooser is stock's.
 
 ## Status

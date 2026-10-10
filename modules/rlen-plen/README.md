@@ -44,8 +44,8 @@ What the cave relies on (read from the image for the module, 26 Sep 2026):
   t × 0x91a` + the same offset, length +0x50, scale +0x51); ticks per step
   from `0x400aba50`; the blob pointer `[0x46c82456]` read `0x400e21e0`.
 
-Raw 0..64 keep their meaning; saved parts need no restamp. RECORDER SPACING
-is bypassed on the PLEN path (its next-arm model is for chained sequencer
+Raw 0..64 keep their meaning; saved parts need no restamp. RECORDER LOOP
+FIX's spacing cave is bypassed on the PLEN path (its next-arm model is for chained sequencer
 passes).
 
 ## Measured (port, recfix image, one REC1 + PLAY trig on step 1, RLEN raw 65)
@@ -97,6 +97,6 @@ recording track's. Three entries in one cave:
 - pokes `0x40002c72`/`0x40002c78`: the part validator's hard-coded RLEN max
   64 → 65 (it runs on every bank load and would rewrite a stored 65 to MAX).
 
-Raw 0..64 keep their meaning; saved parts need no restamp. RECORDER SPACING
-is bypassed on the PLEN path (its next-arm model is for chained sequencer
+Raw 0..64 keep their meaning; saved parts need no restamp. RECORDER LOOP
+FIX's spacing cave is bypassed on the PLEN path (its next-arm model is for chained sequencer
 passes).

@@ -211,6 +211,15 @@ CORE 1 (payload B)  tracks 1–4   BusDelay  Y:0x4000–0xBFFF (private) + Y:0x3
   Payload B's position 3 (T4) sends normally; the payload is told apart by
   SEND's `$30000` base literal, rewritten to `$38000` on B (`YBase.XBUS`).
 
+A knob under an LFO is not a zero word at knob 0: 147 of 147 LFO stores at
+knob byte 0 carried a non-zero low byte (port, 5 Oct 2026,
+`docs/firmware/LFO.md` section 5). The registration masks the DEL and REV
+words with `and #>$7f0000` before the `tst`, as BusVerb and BusDelay do; the
+unmasked `tst` counted a track at knob 0 as a sender (N/(N+1) dilution of the
+other senders, -6.02 dB with one). `verify_onebus` renders an unfed client
+with a DEL word `0x000080` and a REV word `0x000080` beside a real send and
+requires the real send's print unchanged.
+
 ## What a send is
 
 A block with a trig on the track is dispatched as two calls: a=0 for the

@@ -43,6 +43,7 @@ MIDI_FIFO_HEAD = 0x46100b80         # midi_rx_fifo_head: +1 per byte midi_rx_enq
 LAYOUTS = {
     "USB AUDIO OUT TRACKS MAIN CUE": (20, 960, 2, [(t, c) for t in range(8) for c in (0, 1)] + [(8, 0), (8, 1), (9, 0), (9, 1)]),
     "USB AUDIO OUT TRACKS": (16, 768, 2, [(t, c) for t in range(8) for c in (0, 1)]),
+    "USB AUDIO OUT TRACKS POST": (16, 768, 2, [(t, c) for t in range(8) for c in (0, 1)]),
     "USB AUDIO OUT MASTER": (2, 96, 2, [(7, 0), (7, 1)]),
     "USB AUDIO OUT MAIN CUE": (4, 192, 2, [(8, 0), (8, 1), (9, 0), (9, 1)]),
     "USB AUDIO OUT MAIN": (2, 96, 2, [(8, 0), (8, 1)]),
@@ -60,6 +61,29 @@ def tap_word(src, lr, frame):
 
 TAP_RB = b"".join(tap_word(t, c, f).to_bytes(4, "big") for _bank in range(2) for t in range(8) for f in range(16) for c in (0, 1))
 TAP_MC = b"".join(tap_word(8 + k, c, f).to_bytes(4, "big") for k in (0, 1) for f in range(16) for c in (0, 1))
+
+# USB AUDIO OUT TRACKS POST multiplies each track by its own MAIN gain, so a
+# word cannot name its source: the taps are amplitudes instead, source k =
+# 2t + c at (k + 1) << 17, and every track's gain at the boot defaults (LEVEL
+# 108, nothing muted or soloed, XLV unlocked once the crossfader's weights
+# exist) is one G. Channel k then carries floor(g (k + 1) / 16) with g within
+# 15 of G (core 0's ramp settles up to 15 below its target), ranges far apart.
+POST_TAP = lambda k: (k + 1) << 17
+TAP_RB_POST = b"".join((POST_TAP(t * 2 + c) << 8).to_bytes(4, "big", signed=True)
+                       for _bank in range(2) for t in range(8) for f in range(16) for c in (0, 1))
+XFADE_WEIGHTS, XFADE_64 = 0x80003c60, bytes.fromhex("bf7fc081") * 10   # the crossfader at 64: unlocked XLV = 0x7f00
+
+
+def post_g_default():
+    """G for the boot defaults (MAIN word 0x6c00, XLV 0x7f00), as the unit's
+    post_frame computes it, from the XLV table the build extracts."""
+    import importlib.util
+    sys.path.insert(0, str(ROOT / "tools/harness"))
+    import usb_post_model
+    spec = importlib.util.spec_from_file_location("usb_post_manifest", ROOT / "modules/usb-audio-out-tracks-post/manifest.py")
+    man = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(man)
+    return usb_post_model.target(0x6c00, 0x7f00, man.xlv_table())
 
 
 def main():
@@ -87,6 +111,7 @@ def main():
                                cwd=ROOT, stdout=lf, stderr=subprocess.STDOUT, pass_fds=(guest_socket.fileno(),))
     guest_socket.close()
     fails = []
+    stalls_expected = 0     # EP0 STALLs this gate elicits on purpose (SET CUR of an unoffered rate)
 
     def check(what, ok, detail=""):
         print(f"  [{'PASS' if ok else 'FAIL'}] {what}{'  ' + detail if detail else ''}")
@@ -169,6 +194,33 @@ def main():
             # the clock source answers its sample rate; SET_INTERFACE alt 1 brings EP3 up
             cur = b.ctrl_in(0xa1, 1, 0x0100, 0x1000 | 3, 4)
             check("USB AUDIO: CS_SAM_FREQ_CONTROL CUR = 44100", cur == (44100).to_bytes(4, "little"), cur.hex())
+            # SET CUR of the (fixed, read-only) rate: some UAC2 hosts send it
+            # with the rate they have just read and give the audio function up
+            # if it STALLs (the Elektron Outbox 8: modules/usb-audio-out-tracks-main-cue/README.md).
+            # 44100 is acknowledged; any other rate STALLs the status stage.
+            # Before the fix the stock handler STALLed only EP0 IN, so the
+            # data stage was never accepted and the host timed out.
+            def set_cur_freq(rate):
+                b.setup(0x21, 1, 0x0100, 0x1000 | 3, 4)
+                try:
+                    b.ep_out(0, rate.to_bytes(4, "little"), timeout=10.0)   # a data-stage STALL raises
+                except TimeoutError:
+                    return "data stage never accepted (timeout)"
+                try:
+                    b.ep_in(0, 64)                          # status stage
+                    return "ACK"
+                except usb_host.Stall:
+                    return "status STALL"
+            for rate, want in ((44100, "ACK"), (48000, "status STALL")):
+                stalls_expected += want == "status STALL"
+                try:
+                    got = set_cur_freq(rate)
+                except usb_host.Stall as e:
+                    got = f"data-stage STALL ({e})"
+                check(f"USB AUDIO: SET CUR sample frequency {rate} -> {want}", got == want, got)
+                cur = b.ctrl_in(0xa1, 1, 0x0100, 0x1000 | 3, 4)
+                check(f"USB AUDIO: EP0 answers after SET CUR {rate} (CUR = 44100)",
+                      cur == (44100).to_bytes(4, "little"), cur.hex())
             b.ctrl_nodata(0x01, 0x0b, 1, 4)
             alt = b.ctrl_in(0x81, 0x0a, 0, 4, 1)
             check("USB AUDIO: GET_INTERFACE reports alt 1", alt == b"\x01", alt.hex())
@@ -196,21 +248,35 @@ def main():
             # eDMA rewrites the current bank each frame). Every channel must
             # carry only its own source's words, and every source it should.
             tapped = []
+            post = audio == "USB AUDIO OUT TRACKS POST"
+            if post:
+                b.poke(XFADE_WEIGHTS, XFADE_64)
             for _ in range(1200):
-                b.poke(RB_BASE, TAP_RB)
+                b.poke(RB_BASE, TAP_RB_POST if post else TAP_RB)
                 b.poke(MAIN_CUE_BASE, TAP_MC)
                 tapped.append(b.ep_in(3, 1024))
             tw = [int.from_bytes(w[i:i + 4], "little") for w in tapped[-400:] for i in range(0, len(w), 4)]
             seen, wrong = [0] * nch, []
+            if post:
+                g = post_g_default()
+                band = [((g - 15) * (k + 1) >> 4, g * (k + 1) >> 4) for k in range(16)]
             for i, w in enumerate(tw):
-                src, lr = (w >> 24) - 0x10, ((w >> 16) & 0xff) - 0x20
+                if post:
+                    v = (w >> 8) - (1 << 24) if w & 0x80000000 else w >> 8
+                    k = next((k for k, (lo, hi) in enumerate(band) if lo <= v <= hi), None)
+                    if k is None:
+                        continue
+                    src, lr = divmod(k, 2)
+                else:
+                    src, lr = (w >> 24) - 0x10, ((w >> 16) & 0xff) - 0x20
                 if 0 <= src < 10 and lr in (0, 1):
                     if (src, lr) == taps[i % nch]:
                         seen[i % nch] += 1
                     else:
                         wrong.append((i % nch, f"{w:08x}"))
             names = ["T%d %s" % (s + 1, "LR"[c]) if s < 8 else ("MAIN", "CUE")[s - 8] + " " + "LR"[c] for s, c in taps]
-            check(f"{audio}: channels 1-{nch} carry {', '.join(names) if nch <= 4 else names[0] + ' .. ' + names[-1]}, each its own source's words only",
+            check(f"{audio}: channels 1-{nch} carry {', '.join(names) if nch <= 4 else names[0] + ' .. ' + names[-1]}, each its own source's words only"
+                  + (f" (POST: tap k at (k+1)<<17 times the boot gain G = 0x{post_g_default():06x})" if post else ""),
                   not wrong and all(n >= 100 for n in seen), f"per-channel hits {seen}; wrong {wrong[:6]}")
             b.ctrl_nodata(0x01, 0x0b, 0, 4)
             after = [len(b.ep_in(3, 1024)) for _ in range(8)]
@@ -230,8 +296,8 @@ def main():
             first = [len(b.ep_in(3, 1024)) for _ in range(4)]
             c1 = usb_host.counters(b)
             gap = c1["produced"] - c0["produced"]
-            check(f"{audio}: a first poll {gap} frames after alt 1 re-anchors the cushion at {AUD_TARGET}: {c1['anchor']} frames skipped",
-                  480 <= c1["anchor"] <= gap + 32 and abs(c1["lastfill"] - AUD_TARGET) <= 64 and any(first),
+            check(f"{audio}: a first poll {gap} frames after alt 1 re-anchors the cushion at {AUD_TARGET}: {c1['anchor']} frames skipped, lastfill {c1['lastfill']}",
+                  480 <= c1["anchor"] <= gap + 32 and abs(c1["lastfill"] - AUD_TARGET) <= AUD_TARGET // 2 and any(first),
                   f"anchor {c1['anchor']} gap {gap} lastfill {c1['lastfill']} first polls {first}")
             for _ in range(400):
                 b.ep_in(3, 1024)
@@ -239,11 +305,26 @@ def main():
             # The floor only: a poll the bench host misses drains nothing, so
             # bench lag can only RAISE the fill (maxfill 678 and 698 with 106
             # and 351 missed polls, four shards, 28 Sep 2026). maxfill is printed.
-            # The proportional servo holds the target within a packet or two;
-            # 64 below it is a failure.
-            check(f"{audio}: 400 polls on, the fill held near the target: min {c2['minfill']} (floor {AUD_TARGET - 64}), max {c2['maxfill']}, no underrun",
-                  c2["underruns"] == 0 and c2["minfill"] >= AUD_TARGET - 64,
+            # Floor AUD_TARGET / 2. Measured under the port (usb-out-tracks-main-cue,
+            # AUD_TARGET 64, 5 Oct 2026, three runs): lastfill 79, 63, 63 (band
+            # 32..96); minfill 64, 53, 63 (floor 32).
+            check(f"{audio}: 400 polls on, the fill held near the target: min {c2['minfill']} (floor {AUD_TARGET // 2}), max {c2['maxfill']}, no underrun",
+                  c2["underruns"] == 0 and c2["minfill"] >= AUD_TARGET // 2,
                   f"minfill {c2['minfill']} maxfill {c2['maxfill']} underruns {c2['underruns']}")
+            # Bus reset with the stream open and no alt 0 from the host (a
+            # cable pull or a host crash): USB 2.0 9.1.1.5 puts the interface
+            # back to alt 0. The stock URI handler writes no alt byte
+            # (audio_reset_shim does), so before it GET_INTERFACE(4) answered
+            # 1 and the stream went on.
+            b.reset()
+            alt = b.ctrl_in(0x81, 0x0a, 0, 4, 1)
+            check("USB AUDIO: GET_INTERFACE reports alt 0 after a bus reset", alt == b"\x00", alt.hex())
+            after = [len(b.ep_in(3, 1024)) for _ in range(8)]
+            check("USB AUDIO: a bus reset stops the stream (empty polls)", all(a == 0 for a in after[2:]), str(after))
+            b.ctrl_nodata(0x01, 0x0b, 1, 4)
+            got = [len(b.ep_in(3, 1024)) for _ in range(400)]
+            check("USB AUDIO: SET_INTERFACE alt 1 after the reset brings the stream back, none of the last 300 polls empty",
+                  all(g > 0 for g in got[100:]), f"empty polls after the first 100: {sum(1 for g in got[100:] if g == 0)}")
             b.ctrl_nodata(0x01, 0x0b, 0, 4)
             # Full speed: the same device re-enumerated. The stereo sum of the
             # tracks (OUT TRACKS MAIN CUE, OUT TRACKS) or track 8's L/R (OUT MASTER) in 44/45-frame
@@ -296,7 +377,8 @@ def main():
         s = summary[-1]
         print("  " + s)
         check("no uninitialised queue head was primed", "UNINITIALIZED" not in s)
-        check("no EP0 stall during enumeration", " 0 stall(s)" in s)
+        check("no EP0 stall during enumeration" + (f" (only the {stalls_expected} the gate asks for)" if stalls_expected else ""),
+              f" {stalls_expected} stall(s)" in s)
     print(f"verify_usb: {'OK' if not fails else str(len(fails)) + ' FAILED'} ({log})")
     return 1 if fails else 0
 

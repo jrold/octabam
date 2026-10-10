@@ -12,6 +12,7 @@ Gates:
                  and near unity small-signal (trimmed)
   TONE        -> a tilt in every mode: 0 dark < 64 flat (bit-exact) < 127 bright
   FOLD        -> a full-scale ramp folds back; unity on a small signal
+  TXTR        -> tracks the Pockey2 transcription (mean error, level); 0 bit-exact
   COMP/GLUE   -> AC1's dip: deeper with COMP, unity at COMP 0 (skipped), the
                  makeup; GLUE on the master BY POSITION (r7 = $6a00): its
                  release is slower than the insert's COMP
@@ -31,7 +32,9 @@ sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1]
 import send_probe  # reuse its dispatch-table entry resolution
 from remix import registry
 
-MOD = registry.by_name("character")
+# The station under test: `character` (bottleservice's), or the module named
+# on the command line (modules/character-txtr's gate passes its own).
+MOD = registry.by_name(sys.argv[1] if len(sys.argv) > 1 else "character")
 SEND = registry.by_name("send")
 K = MOD.knob_map()
 MEM = f"out/dsp/_audition_{MOD.name}_A.mem"
@@ -40,7 +43,7 @@ MEM = f"out/dsp/_audition_{MOD.name}_A.mem"
 # [REVERB] == INIT_TABLE[SEND], which is what the audition's scratch image
 # has. Those renders come from the shipping build's own payload A instead.
 RIG_IMAGE = "out/mainos_bus.bin"
-RIG_REMIX = registry.fixture("CHARACTER", "REVERB SERVER", "SEND")   # Character beside the reverb on payload A
+RIG_REMIX = registry.fixture(MOD.key, "REVERB SERVER", "SEND")   # the station beside the reverb on payload A
 RIG_MEM = "out/dsp/_verify_character_rig_A.mem"
 HOST = "vendor/dsp56300/build/source/dsp_host/dsp_host"
 FXID = MOD.menu.fx2_id
@@ -226,6 +229,26 @@ check("FOLD=127 folds a monotonic ramp (it changes direction many times)",
       turns > 4, f"{turns} direction changes")
 _f = rms_db(render(tone(438, amp=0.01), FOLD=127)[0]) - rms_db(tone(438, amp=0.01))
 check("FOLD=127 is unity on a -40 dBFS tone (the trim: nothing folds, nothing turns up)", abs(_f) < 0.5, f"{_f:+.2f} dB")
+
+# ---- 7. TXTR is Airwindows Pockey2 (MIT, 2022): the port against the
+# transcription modules/character/pockey2_ref.py at TXTR/128 (A) and 1 -
+# TXTR/128 (B). The codec is two 257-point tables, so the measure is the mean
+# error and the level, not bit identity; 0 is a bit-exact skip.
+if "TXTR" in K:
+    sys.path.insert(0, str(pathlib.Path(MOD.dsp.asm).resolve().parent))
+    import pockey2_ref as _P2
+    for _amp in (0.25, 0.8):
+        _tx_src = tone(438, amp=_amp)
+        for _t in (8, 43, 64, 100, 127):
+            _L, _R = render(_tx_src, TXTR=_t)
+            _rL, _ = _P2.Pockey2(_t).process([v / 8388607 for v in _tx_src], [v / 8388607 for v in _tx_src])
+            _me = sum(abs(_L[i] / 8388607 - _rL[i]) for i in range(200, N)) / (N - 200)
+            _lv = rms_db(_L) - 20 * math.log10(math.sqrt(sum(v * v for v in _rL[N // 2:]) / (N - N // 2)))
+            check(f"TXTR {_t} at {_amp} FS tracks Pockey2 (mean |err| < 0.005, level within 0.1 dB, L == R)",
+                  _me < 0.005 and abs(_lv) < 0.1 and _L == _R, f"mean |err| {_me:.5f}, level {_lv:+.3f} dB")
+    _tx_src = tone(438, amp=0.25)
+    _L, _ = render(_tx_src, TXTR=0)
+    check("TXTR 0 is a bit-exact skip", _L == _tx_src, "")
 
 # ---- 8. the compressor is AC1's dip (JClones) -----------------
 # gr = (Lv^2/2 - 1)^2 + a*Lv, <= 1: a dip around Lv = 1 (level 0.25 FS at

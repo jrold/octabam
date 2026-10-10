@@ -6,8 +6,7 @@ Stock incoming CC reaches page 1 only (CC 16-45; the handler admits
 cc-16 < 30, docs/firmware/MIDI.md appendix A). The MIDI dispatch table entry
 0x400d6474[0xB] (the CC vector) is repointed from the stock handler
 0x4000e79c to the cave. The cave reads the CC number; anything outside its
-blocks tail-calls CC_NEXT (stock, or Octakit's handler under the SCENES KITS
-bridge) with the argument intact. Inside a block it rebuilds the
+blocks tail-calls CC_NEXT (the stock handler) with the argument intact. Inside a block it rebuilds the
 channel->track map, gates on AUDIO CC IN, and on every audio track whose
 trig channel matches makes the stores of that page's editor: FX2 page 2
 as 0x4003aab2 (Part +0x8f084, shadow 0x100a51d2, lane +0x38), FX1 page 2
@@ -103,8 +102,7 @@ MODULE = Module(
         source="modules/cc-map/cc_map.s",
         cpu="5407",
         reference=legacy_bytes,         # checked at whatever address it floats to
-        # Where other CCs go: stock's handler, or Octakit's when the
-        # SCENES KITS bridge overrides it (the oracle is then skipped).
+        # Where other CCs go: stock's handler.
         # CC_MODEDEF2 / CC_MODEDEF1: a stock `rts` unless MODE DEFAULTS is in
         # the image, whose unit exports them (the oracle is set aside then).
         defsyms=(("CC_NEXT", STOCK_CC), ("CC_MODEDEF2", STOCK_RTS), ("CC_MODEDEF1", STOCK_RTS)),

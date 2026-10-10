@@ -46,7 +46,7 @@ Needs `make setup` and `make os && make recon` ([BUILDING.md sections 0–2](../
 
 ```sh
 make emu-cf                          # cmake into out/emu, then boots stock 1.40C to the RTOS handoff
-./out/emu/ot_emu --help              # every option, grouped
+./out/emu/ot_emu --help              # an unrecognised argument: prints the usage block (main.cpp, parseArgs) and exits 2
 make emu-setup                       # .venv via uv: unicorn, textual, sounddevice (Tier-0, the panel's audio)
 make emu-unicorn                     # the EMAC-fixed Unicorn for Tier-0
 ```
@@ -121,7 +121,7 @@ out/emu/ot_emu --image out/mainos_bus.bin --card out/card.img --set OCTABAM --pr
     - `call`, a poke `addr=byte;...`, or a memory dump `addr,len=path;...`;
     - FRAME `-` means after the load and before the transport;
     - FRAME N means frame N after the transport start.
-  - `--live-script FILE`: lines of `<emulated ms> key|enc|pot|midi|quit ...`,
+  - `--live-script FILE`: lines of `<emulated ms> key|enc|pot|midi|poke|quit ...` (`poke` as `--poke`),
     applied at those emulated times with the transport stopped.
   - `--scenario "LOG ARGS..."` (repeatable, with `--scenario-jobs N`) loads
     once and forks one child per scenario from the identical loaded
@@ -272,11 +272,19 @@ tools/harness/usb_host.py /tmp/ot-usb.sock audio 3 2.0 capture.pcm 4
   markandrus, MIT).
 - **Holding for the client.** After every other phase, the port holds the
   machine until the client has connected and hung up (`--usb-hold-ms` caps
-  it). A `reset` waits until the firmware has attached.
+  it). A `reset` answers once the firmware has attached and acknowledged
+  it (URI), so the bench's first SETUP finds the reset handling done, as a
+  real host's does after its >= 10 ms of reset signalling (5 Oct 2026:
+  answered at landing, a SETUP sent while the reset was unhandled was
+  served and then flushed with everything else, status-stage prime
+  included -- `verify_usb`'s full-speed phase timed out on `out 0`).
 - **Other flags.**
   - `--usb-notify FILE` logs USB DISK MODE's attach/detach edges
     (`0x460e76a0`).
   - `--usb-fs` reports full speed.
+  - `OT_USB_TRACE=1` in the environment prints every bench line, register
+    write, completion and reset on stderr with wall seconds and the SOF
+    count (device time).
 - **Polling cadence.** The bench polls an isochronous endpoint on the
   endpoint's own schedule in device time: 250 µs at high speed for
   bInterval 2, 1 ms at full speed.
@@ -284,9 +292,9 @@ tools/harness/usb_host.py /tmp/ot-usb.sock audio 3 2.0 capture.pcm 4
   isochronous IN endpoint is enabled with no IN waiting, the port holds
   device time until the client's next command, so a bench that is slow on
   the wall clock (a loaded machine) costs wall time, not polls. The hold
-  ends early while the client has a transfer or a `poke`/`call` outstanding
-  (the device must run to finish it), on hangup, and at the `--usb-hold-ms`
-  wall cap. A poll it lets through with no IN waiting is counted in the
+  ends early while the client has a transfer, a `poke`/`call` or an
+  unacknowledged `reset` outstanding (the device must run to finish it),
+  on hangup, and at the `--usb-hold-ms` wall cap. A poll it lets through with no IN waiting is counted in the
   final "iso poll(s) with no IN waiting". The bench issues one command at
   a time, so a poll slot that falls inside an EP0 control transfer made
   while the stream is enabled (`verify_usb_in`: SET_INTERFACE 5, the two
@@ -306,7 +314,7 @@ tools/harness/usb_host.py /tmp/ot-usb.sock audio 3 2.0 capture.pcm 4
 
 ## Port features
 
-Every option is in `./out/emu/ot_emu --help`. The `--interactive`
+Every option is in the usage block `./out/emu/ot_emu` prints for an argument it does not know (`--help` is not an option; exit status 2). The `--interactive`
 commands' reply formats are the header comment of `main.cpp`
 (`serveInteractive`). All but `--mkii` came from Tim Hastie's fork
 (O14i–O23, 11–13 Sep 2026; `THIRD_PARTY.md`).
@@ -361,7 +369,9 @@ commands' reply formats are the header comment of `main.cpp`
   replies (`docs/firmware/PANEL.md` section 4c).
 - **DMA timers** DTIM0–3 (`0xfc070000 + 0x4000·n`, INTC0 sources 32–35);
   DTIM1 is the firmware's 8.333 ms UI/LED tick. The 2.8 s boot logo on
-  DTIM3 is skipped unless `--boot-logo`.
+  DTIM3 is skipped unless `--boot-logo`. DTIM0 counts its DTIN0 pin at
+  256 fs (inferred from the MIDI clock handler), the timestamp the MIDI
+  clock tempo is built from.
 - **The frame edge.** With `--dsp` the frame interrupt is the DSP's bank
   word (O9b), so a stalled core freezes the sequencer on trig 1;
   `--frame-timer` restores the 16-sample timer, and `--frame` uses the

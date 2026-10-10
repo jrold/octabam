@@ -94,8 +94,9 @@ def tone_file(path, blocks, amp=0.4, start=0):
 
 class Inst:
     """one effect instance: key, core, fx slot (1|2), position on its core"""
-    def __init__(self, key, core, pos, fx=2, fed=False, **kw):
+    def __init__(self, key, core, pos, fx=2, fed=False, pw=(), **kw):
         self.key, self.core, self.pos, self.fx, self.fed = key, core, pos, fx, fed
+        self.pw = pw            # raw (offset, word) pairs written over the knob words
         self.params = knobs(key, **kw)
 
 
@@ -125,6 +126,9 @@ def run(mems, insts, skew=None, tag="r", tone="tone.raw"):
            "-in", str(SCRATCH / tone), "-out", str(out)]
     for i in insts:
         cmd += ["-params", ",".join(map(str, i.params))]
+    pw = [f"{k}:{off:x}={word:06x}" for k, i in enumerate(insts) for off, word in i.pw]
+    if pw:
+        cmd += ["-pword", ",".join(pw)]
     if skew is not None:
         cmd += ["-skew", str(skew)]
     r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
@@ -238,6 +242,21 @@ def main():
     ph_d = run(mems, [R(), S6(DEL=0), D(), S2(REV=0)], tag="ph_d")
     check("a REV-only send leaves T1 bit-identical (it does not count on the delay's bus)",
           ph_d[2] == ref_d[1])
+
+    print("\n== a modulated idle knob registers nothing (bits 8-15 of the word are the companion) ==")
+    # An LFO on a knob at 0 leaves a non-zero byte in bits 8-15 (147 of 147
+    # stores at knob byte 0 under the port, 5 Oct 2026). The extra client is
+    # unfed, so its only effect on the bus is its registration.
+    alone_d = run(mems, [R(DLY=0), D(), S2(REV=0)], tag="mod_alone_d")
+    mod_d = run(mems, [R(DLY=0), D(), S2(REV=0), Inst("SEND", 1, 2, DEL=0, REV=0, pw=[(0, 0x000080)])], tag="mod_d")
+    check("a DEL word 0x000080 beside a DEL 100 send: T1's print == the send alone (no dilution)",
+          mod_d[1] == alone_d[1], f"{rms_db(mod_d[1][0]):.2f} dB vs {rms_db(alone_d[1][0]):.2f} dB alone")
+    mod_d2 = run(mems, [R(DLY=0), D(), S2(REV=0), Inst("SEND", 1, 2, DEL=0, REV=0, pw=[(0, 0x7f0000)])], tag="mod_d2")
+    check("... and a DEL word 0x7f0000 (a real sender) does change it", mod_d2[1] != alone_d[1])
+    alone_r = run(mems, [R(), S6(DEL=0), D()], tag="mod_alone_r")
+    mod_r = run(mems, [R(), S6(DEL=0), D(), Inst("SEND", 0, 2, DEL=0, REV=0, pw=[(1, 0x000080)])], tag="mod_r")
+    check("a REV word 0x000080 beside a REV 100 send: T5's print == the send alone (no dilution)",
+          mod_r[0] == alone_r[0], f"{rms_db(mod_r[0][0]):.2f} dB vs {rms_db(alone_r[0][0]):.2f} dB alone")
 
     print("\n== the reverb host's REV goes into the reverb only ==")
     rh = [R(REV=100, DLY=0), S6(DEL=0, REV=0), D(), S2(DEL=0, REV=0)]

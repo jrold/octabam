@@ -185,12 +185,11 @@ The older jump-table path (`press_key_live`, `RTOS_FORK.md` section 9) is kept i
 the server as `press()` — it calls a key's handler directly, which changes
 state but does not redraw under route A, so the UART path is the real one.
 
-## Two backends, one panel
+## One backend, the port
 
-`--backend port|routea|auto` (default `auto`: the port when `out/emu/ot_emu`
-exists and carries `--interactive`, built here when missing; otherwise
-route A, with the reason in `/status` `backend_note`). The same `Panel`
-code drives both — the port is wrapped in `PortRt`, an object with the
+The panel runs the port (`out/emu/ot_emu --interactive`, built here when
+missing); `--backend` was removed with route A on 26 Sep 2026. The `Panel`
+code drives the port through `PortRt`, an object with the
 handful of things the panel uses of `emu_rtos.Rtos` (`run(ms=)`,
 `uart64.rx/tx`, `uc.mem_read/mem_write`, `sample`, `frame`,
 `pattern_base()`, `poke_trig()`).
@@ -427,8 +426,7 @@ file that persists, like the CF card in the unit**:
 ## Hearing the unit
 
 With the port backend the server starts the child with `--dsp-rt` by
-default (`--sound on`; `--sound off` boots without the cores, and so does
-`--backend routea`, which has no sound at all): the two DSP56303 cores
+default (`--sound on`; `--sound off` boots without the cores): the two DSP56303 cores
 render under the vendored JIT on two worker threads driven by the
 ColdFire's own schedule (O17 in `git show 666b6154:docs/firmware/COLDFIRE_PORT.md`), and core 0's
 **main L/R** — the words the ESAI puts out to the DAC, 16-bit (the 24-bit

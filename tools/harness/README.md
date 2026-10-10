@@ -192,21 +192,21 @@ track — the same `(L/128)²` law, measured on MAIN/CUE by hardware capture
 rather than under the port (`docs/firmware/LEVEL_LAW.md`); the AMP stage
 was measured on a THRU and is inferred for FLEX/STATIC.
 
-**The rig on a real set:** `tools/hw/ot_project.py rigproj SONGSET
-out/set/RIGSONG bottleservice` writes the rig's layout (ids, defaults, mode
+**bottleservice's layout on a real set:** `tools/hw/ot_project.py rigproj SONGSET
+out/set/RIGSONG bottleservice` writes that layout (ids, defaults, mode
 views) into every part of a copy of the song set;
 `tools/harness/set_stems.py out/set/RIGSONG --bank B --part P --audio DIR
 --out D/stems` writes T1..T8 from each track's STATIC sample at its slot
 gain; `rig_render --project out/set/RIGSONG --bank B --part P --stems
 D/stems` renders the part with its own knobs.
 
-**The rig's floor, metered** (the RIG table with eight stems): core 0
+**The bus and FX1 stations' floor, metered** (the RIG table with eight stems): core 0
 (Modulation + BusVerb on T5, Spectrum + SEND on T6/T7, Character + the
 fallback SEND on T8) 1,570 instructions/sample at its worst block; core 1
 (Character + BusDelay on T1, Spectrum + SEND on T2-T4) 702. The 3,120
 wall was triangulated in `cycle_count.py`'s units (words in the sample
 loop), so the static sum is the comparable floor. The ColdFire port
-measured the same rig under the firmware's own dispatch (`--dsp-stopwatch`,
+measured the same layout under the firmware's own dispatch (`--dsp-stopwatch`,
 `git show 3ceba41:docs/history/COLDFIRE_PORT.md` O13): core 0 24,654 a frame against the
 meter's 24,971, core 1 15,177 against 14,880: the meter reads the real
 load within 2 %.
@@ -215,7 +215,7 @@ load within 2 %.
 real payload B feeding BusVerb on payload A (the send hop, the delay hop,
 the delay→reverb series hop) render bit-identical to the same layouts on
 one core through the DEV hatch, and under four skews.
-`tools/verify/verify_onebus.py` (in `make check`): the one-aux rig's chain,
+`tools/verify/verify_onebus.py` (in `make check`): the one-aux bus's chain,
 its liveness stamp, WET passthrough, each host's print, the track-8 send
 refusal and station silence, senders and delay on payload B, reverb on payload A.
 
@@ -235,7 +235,7 @@ modulator, the delay's LFO) matches in scale and not in residual.
 |---|---|---|---|
 | stock image, T1 THRU: SEND + EQ flat, tone | T1 chain | −0.001 dB | −121 dB |
 | same | mix (TX0 slot 2 vs `mix.wav` L) | −0.001 dB | −113 dB |
-| the one-aux rig, kick on T2's inputs | T2 chain (SPECTRUM + SEND) | −0.001 dB | −137 dB |
+| the one-aux bus, kick on T2's inputs | T2 chain (SPECTRUM + SEND) | −0.001 dB | −137 dB |
 | same | T8 return (delay → reverb, history; the return gone 20 Sep 2026) | −0.083 dB | −8 dB |
 | same | mix | −0.001 dB | −90 dB |
 

@@ -119,7 +119,7 @@ dispatcher site (`0x4000d2c6`-`0x4000d2da`, the raw byte into the
 per-track DSP record at `X:0x080`+`0x32`/`0x33`), the encoder handlers
 (`0x40066b64`/`ba8`) and their SRAM mirrors, the squaring
 (`P:0x2f4`-`0x2fb`), and the coefficient loop (`P:0x2ff`-`0x30a`). Not
-re-derived here: the hardware captures themselves (his rig, not re-run).
+re-derived here: the hardware captures themselves (his capture setup, not re-run).
 This is the same `(L/128)²` law `tools/harness/mixer.py` measured under
 the port for per-track LEVEL (`tools/harness/README.md`); his note is the
 first measurement of MAIN/CUE, which that harness explicitly does not

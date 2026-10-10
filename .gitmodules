@@ -1,6 +1,3 @@
-[submodule "modules/octakit/upstream"]
-	path = modules/octakit/upstream
-	url = https://github.com/emuyia/ems-octakit
 [submodule "modules/midi-scenes/upstream"]
 	path = modules/midi-scenes/upstream
 	url = https://github.com/bkkbrls-del/midisc
@@ -34,4 +31,13 @@
 	url = https://github.com/Zac-Kyoti/octatrack-kyoti-fw
 [submodule "modules/mute-modes/upstream"]
 	path = modules/mute-modes/upstream
+	url = https://github.com/Zac-Kyoti/octatrack-kyoti-fw
+[submodule "modules/rec-trig-mute/upstream"]
+	path = modules/rec-trig-mute/upstream
+	url = https://github.com/Zac-Kyoti/octatrack-kyoti-fw
+[submodule "modules/sidechain-compressor/upstream"]
+	path = modules/sidechain-compressor/upstream
+	url = https://github.com/Zac-Kyoti/octatrack-kyoti-fw
+[submodule "modules/repitch-repeat98-kyoti/upstream"]
+	path = modules/repitch-repeat98-kyoti/upstream
 	url = https://github.com/Zac-Kyoti/octatrack-kyoti-fw

@@ -140,8 +140,7 @@ def main():
 
     fails = 0
     # One boot for everything: each case's current-track pokes (both bytes,
-    # as a track key moves them: Octakit's editor wrapper halts when the
-    # engine's 0x80000000 and the UI's 0x100b14cc differ), its editor call
+    # as a track key moves them), its editor call
     # and its lane dump, after the load; then the MIDI path below on the
     # same boot. The editor takes ENCODER ticks: 256 units a tick against
     # the slot's step (0x46c7dede + slot2*20 + 8: 0x10e for a 3-way select,

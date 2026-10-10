@@ -98,6 +98,7 @@ lines through `check_shards.py`, N worktrees at a time.
 """
 import argparse
 import ast
+import hashlib
 import shutil
 import json
 import os
@@ -581,17 +582,44 @@ def manifest_display_only(base_src, head_src):
         return False
 
 
-def port_is_stale(exe=None, src=None):
-    """The port binary is older than a source under tools/emu/ot_emu: a
-    rebase brought emulator changes the root tree never rebuilt (28 Sep
-    2026: four false reds in one run; the shards rebuild theirs)."""
+PORT_STAMP = "out/emu/.sources.sha256"      # written by `make emu-cf`: the digest of the sources it built
+
+
+def port_sources(src):
+    return sorted(p for p in src.rglob("*") if p.is_file() and "build" not in p.parts and "out" not in p.parts)
+
+
+def port_digest(src=None):
+    """One digest over the port's sources (paths and contents)."""
+    src = src or ROOT / "tools/emu/ot_emu"
+    h = hashlib.sha256()
+    for p in port_sources(src):
+        h.update(str(p.relative_to(src)).encode()); h.update(b"\0"); h.update(p.read_bytes()); h.update(b"\0")
+    return h.hexdigest()
+
+
+def stamp_port(src=None, stamp=None):
+    stamp = stamp or ROOT / PORT_STAMP
+    stamp.parent.mkdir(parents=True, exist_ok=True)
+    stamp.write_text(port_digest(src) + "\n")
+
+
+def port_is_stale(exe=None, src=None, stamp=None):
+    """The port binary was not built from these sources: a rebase brought
+    emulator changes the root tree never rebuilt (28 Sep 2026: four false
+    reds in one run; the shards rebuild theirs). With the stamp `make
+    emu-cf` writes, by content; without one, by mtime -- which a fresh
+    worktree checkout always fails, 50 s of rebuild for the same bytes
+    (6 Oct 2026)."""
     exe = exe or ROOT / "out/emu/ot_emu"
     src = src or ROOT / "tools/emu/ot_emu"
+    stamp = stamp or exe.parent / pathlib.Path(PORT_STAMP).name     # beside the binary it describes
     if not exe.is_file() or not src.is_dir():
         return False
+    if stamp.is_file():
+        return stamp.read_text().strip() != port_digest(src)
     built = exe.stat().st_mtime
-    return any(p.stat().st_mtime > built for p in src.rglob("*")
-               if p.is_file() and "build" not in p.parts and "out" not in p.parts)
+    return any(p.stat().st_mtime > built for p in port_sources(src))
 
 
 PORT_KINDS = ("check", "check-remix", "accept")
@@ -655,6 +683,13 @@ def classify(paths, ctx):
                 # (verify_docs).
                 note = "removed remix: the selftest and the index"
                 gates = [CMD["selftest"], CMD["verify_docs"]]
+            elif parts[-1].endswith(".py") and \
+                    manifest_display_only(ctx.read_base(path), ctx.read(path)):
+                # Only the fields the index draws changed (doc, proof,
+                # proof_note, a docstring): the selection and the image are
+                # what they were.
+                gates = [CMD["verify_docs"]]
+                note = f"{name}: display fields only"
             elif name in ctx.test_remixes and not ctx.include_tests:
                 note = "a test remix: not checked (TESTS=1 runs it)"
                 gates = [CMD["selftest"], CMD["verify_docs"]]
@@ -822,7 +857,12 @@ def main(argv=None):
                          "(the default is quick: see the module docstring)")
     ap.add_argument("--all", action="store_true",
                     help="the floor is every remix instead of the cover (the remixes that between them carry every module)")
+    ap.add_argument("--stamp-port", action="store_true",
+                    help=f"record the port sources' digest at {PORT_STAMP} (make emu-cf, after its build) and exit")
     a = ap.parse_args(argv)
+    if a.stamp_port:
+        stamp_port()
+        return 0
     if a.paths is not None:
         merge_base, paths = None, sorted(set(a.paths))
     else:

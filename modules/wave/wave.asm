@@ -127,18 +127,24 @@ proc:
         move    #>$004000,x0
         cmp     x0,a
         blt     wv01
-        move    x:(r6),x0
+        move    x:(r6),a
+        and     #>$7f0000,a
+        move    a1,x0
         move    #>$70e1c4,y1
         mpy     x0,y1,a                     ; FRAM -> frames 0..7, /8
         move    a,x:(r7+$29)
         move    x:(r6+$1),a
-        move    a,x:(r7+$2a)
-        move    x:(r6+$2),x0
+        and     #>$7f0000,a
+        move    a1,x:(r7+$2a)
+        move    x:(r6+$2),a
+        and     #>$7f0000,a
+        move    a1,x0
         move    #>$7954f8,y1
         mpy     x0,y1,a                     ; RES: setMasterResonance x .95
         move    a,x:(r7+$2b)
         move    x:(r6+$5),a
-        move    a,x:(r7+$30)
+        and     #>$7f0000,a
+        move    a1,x:(r7+$30)
         move    x:(r6+$c),a
         and     #>$ff0000,a
         move    a1,x:(r7+$2c)
@@ -167,8 +173,11 @@ proc:
         move    a,x:(r7+$2f)
         move    x:(r7+$0f),a
         move    x:(r6+$4),b
-        asr     #$10,b,b                    ; OCT 0..4
+        and     #>$7f0000,b                 ; the companion byte is not the knob
+        asr     #$10,b,b                    ; OCT, b0 clean
         move    #>$000004,x0
+        cmp     x0,b
+        tgt     x0,b                        ; OCT clamped to 0..4
         sub     x0,b
         neg     b                           ; octaves down
         move    b1,n3
@@ -179,6 +188,7 @@ proc:
 wv11:
         move    a,x:(r7+$3a)                 ; root increment
         move    x:(r6+$3),a
+        and     #>$7f0000,a
         asr     #$10,a,a
         move    a,b
         asl     #$1,a,a

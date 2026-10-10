@@ -54,6 +54,7 @@ EMU = ROOT / "out/emu/ot_emu"
 PY = ROOT / ".venv/bin/python3"
 OUT = ROOT / "out/setverify"
 LIVE_IDS, RECORDS, LANES = 0x80000ec4, 0x80000110, 0x80000810
+BLOB, BANK_STRIDE, PART_STRIDE, PART_KNOBS = 0x400e21e0, 0x9b340, 6322, 0x8eda2   # ot_emu's bank blobs; the Part's knob region (machine types first)
 TYPE_NAME = {0: "STATIC", 1: "FLEX", 2: "THRU", 3: "NEIGH", 4: "PICKUP"}
 # lane offset -> record halfword: the copier 0x4000cae8 (PARAM_PAGES.md 5c)
 P2_LANES = (("FX1 p2", 0x32, 18), ("AMP p2", 0x2c, 21), ("FX2 p2", 0x38, 24))
@@ -173,6 +174,8 @@ def main():
                          "image-stage gates that boot this card (TEMPO BUS) need, as their own shard job")
     ap.add_argument("--image", default="", help="a built image to boot instead of building the remix (a bisect)")
     ap.add_argument("--extra", default="", help="extra ot_emu arguments, e.g. '--dsp-dirty' (garbage DSP RAM, as hardware)")
+    ap.add_argument("--poke-trig", type=int, default=2,
+                    help="the step the port pokes a trig on for T1 (default 2); 0 = none, a run with only the project's own trigs")
     ap.add_argument("--midi-file", default="", help="extra MIDI IN lines appended to the gate's own "
                     "('<frame> <status> <d1> <d2>' in hex, one per line; T<n> in the status is that "
                     "track's channel): a knob script through the panel's real path")
@@ -272,7 +275,8 @@ def main():
     midi_out = OUT / "midi_out.bin" if "CC FEEDBACK" in mods else None
     if midi_out:
         # the stock emitter's per-channel cache and dirty bitmap, the engine's queue
-        dumps.update(cccache=OUT / "cccache.bin", ccbits=OUT / "ccbits.bin", engq=OUT / "engq.bin")
+        dumps.update(cccache=OUT / "cccache.bin", ccbits=OUT / "ccbits.bin", engq=OUT / "engq.bin",
+                     dbptr=OUT / "dbptr.bin", partix=OUT / "partix.bin", parts=OUT / "parts.bin")
     blocks, cmds, log, card_after = OUT / "port.dump", OUT / "port.cmds", OUT / "port.txt", OUT / "card_after.img"
     writes = OUT / "dsp_writes.txt"
     if not (a.reuse and blocks.is_file() and writes.is_file() and all(p.is_file() for p in dumps.values())):
@@ -281,12 +285,15 @@ def main():
         print(f"  card: {mb} MB, {len(audio)} sample file(s) staged for bank {bank} part {part_no}")
         cmd = [str(EMU), "--image", str(image), "--card", str(card), "--set", a.set_name, "--project", a.name,
                "--sequencer", "--internal-clock", "--frames", str(a.frames), "--load-ms", str(a.load_ms),
-               "--dsp", "--main-level", "64", "--audio-in", "tones", "--poke-trig", "2", "--midi", str(midi),
+               "--dsp", "--main-level", "64", "--audio-in", "tones", "--midi", str(midi),
                "--block-dump", str(blocks), "--cmd-log", str(cmds), "--card-out", str(card_after),
                "--dsp-writes", str(writes),
                "--mem-dump", f"{LIVE_IDS:#x},16={dumps['ids']};{RECORDS:#x},512={dumps['records']};{LANES:#x},576={dumps['lanes']}"
-               + (f";0x46c7bf2c,2048={dumps['cccache']};0x46c7d7d8,256={dumps['ccbits']};0x460d17ce,16={dumps['engq']}" if midi_out else ""),
+               + (f";0x46c7bf2c,2048={dumps['cccache']};0x46c7d7d8,256={dumps['ccbits']};0x460d17ce,16={dumps['engq']}"
+                  f";0x46c82456,4={dumps['dbptr']};0x80000000,4={dumps['partix']}"
+                  f";{BLOB + (bank - 1) * BANK_STRIDE + PART_KNOBS:#x},{4 * PART_STRIDE}={dumps['parts']}" if midi_out else ""),
                "--dsp-peek", "0:Y:36082,1;1:Y:36082,1;1:X:6229,1;1:X:6275,1;0:Y:36081,1;0:Y:9f4,1"] \
+            + (["--poke-trig", str(a.poke_trig)] if a.poke_trig else []) \
             + (["--midi-out", str(midi_out)] if midi_out else []) + a.extra.split()
         if a.stage_only:
             log.write_text(" ".join(cmd) + "\n")
@@ -335,11 +342,15 @@ def main():
     aux = recs[64 + 24] << 8 | recs[64 + 25]                     # T2 halfword 12
     t2_fx2 = registry.by_id(part["fx2"][1])
     if t2_fx2 is not None and t2_fx2.key in mods:
-        check("midi: CC 40 = 100 on T2's channel reached T2's AUX halfword", (aux >> 8) == 100,
+        # a select on slot 0 clamps to its count, as slot 6 does below (VOCODER's
+        # NOTE is 61 steps: CC 100 lands as 60)
+        n0 = t2_fx2.params[0].count if t2_fx2.params and t2_fx2.params[0].count else 128
+        want = min(100, n0 - 1)
+        check(f"midi: CC 40 = 100 on T2's channel reached T2's AUX halfword (as {want})", (aux >> 8) == want,
               f"halfword 12 = {aux:#06x} (knob {aux >> 8}; the lane's slew takes ~30 frames)")
     else:
         # an unimplemented id runs the fallback, whose page publishes no slot 0
-        print(f"  [skip] midi: CC 40 -> T2 slot 0: the part's T2 FX2 id 0x{part['fx2'][1]:02x} "
+        print(f"  [SKIP] midi: CC 40 -> T2 slot 0: the part's T2 FX2 id 0x{part['fx2'][1]:02x} "
               f"is not a module of this remix")
     if ccmap:
         # the cave clamps to the slot's count from the descriptor: slot 6 is
@@ -392,13 +403,32 @@ def main():
         # queued per (channel, CC), its bitmap the CCs not yet on the wire,
         # and the drainer paces the wire to MIDI bandwidth (DTIM2 re-armed
         # for the batch's wire time). The module's contract is the CACHE:
-        # every mapped lane byte (page 1 = CC 16-45, FX1 page 2 = 68-73,
+        # every mapped Part knob byte (page 1 = CC 16-45, FX1 page 2 = 68-73,
         # FX2 page 2 = 62-67) equals it within eight UI ticks while the
         # engine is idle. The wire is checked for shape: every CC sent is a
         # mapped slot on a track's channel, with the cache's value at the
         # time (the stream carries only values the cache held).
-        cfmap = [(i, 16 + i) for i in range(30)] + [(0x32 + i, 68 + i) for i in range(6)] + [(0x38 + i, 62 + i) for i in range(6)]
+        # (region, offset, CC) as cc_feedback.s: the sweep reads the PART since 4
+        # Oct 2026 (the sequencer's lock rewrites of the live lane are not reported)
+        cfmap = ([(0, i, 16 + i) for i in range(6)]
+                 + [(1, 6 + i, 22 + i) for i in range(6)] + [(1, i, 28 + i) for i in range(6)]
+                 + [(1, 12 + i, 34 + i) for i in range(6)] + [(1, 18 + i, 40 + i) for i in range(6)]
+                 + [(2, 12 + i, 68 + i) for i in range(6)] + [(2, 18 + i, 62 + i) for i in range(6)])
         cache, bits, engq = dumps["cccache"].read_bytes(), dumps["ccbits"].read_bytes(), dumps["engq"].read_bytes()
+        dbptr = int.from_bytes(dumps["dbptr"].read_bytes(), "big")
+        partix = dumps["partix"].read_bytes()[3]
+        parts = dumps["parts"].read_bytes()
+        check(f"midi out: the bank pointer is the staged bank's blob ({dbptr:#x}), part index {partix}",
+              dbptr == BLOB + (bank - 1) * BANK_STRIDE and partix < 4)
+        pbase = partix * PART_STRIDE          # the Part's knob region, offsets from PART_KNOBS
+
+        def part_byte(t, region, off):
+            if region == 0:
+                machine = parts[pbase + t]                               # +0x8eda2 + t
+                return parts[pbase + (0x8edaa - PART_KNOBS) + t * 30 + machine * 6 + off]
+            if region == 1:
+                return parts[pbase + (0x8ee9a - PART_KNOBS) + t * 24 + off]
+            return parts[pbase + (0x8f072 - PART_KNOBS) + t * 30 + off]
         engine_idle = int.from_bytes(engq[12:16], "big") != 0
         pending = sum(bin(int.from_bytes(bits[ch * 16 + 4 * k:ch * 16 + 4 * k + 4], "big")).count("1") for ch in range(16) for k in range(4))
         msgs, st, buf = [], None, []
@@ -412,24 +442,41 @@ def main():
                 if st is not None and st >> 4 == 0xb and len(buf) == 2:
                     msgs.append((st & 15, buf[0], buf[1])); buf = []
         ch_track = {chans[t] & 0xf: t for t in range(8) if chans[t] >= 0}
-        mapped = {cc for _, cc in cfmap}
+        mapped = {cc for _, _, cc in cfmap}
         # CC 48 is stock's own crossfader echo (MIDI.md section 4), sent on the
         # current track's channel from the panel path, not the module's
         stray = [(ch, cc) for ch, cc, _ in msgs if cc != 48 and (ch not in ch_track or cc not in mapped)]
-        wrong = []
+        # The sweep is paced (one message per UI tick since 4 Oct 2026), so a
+        # dump is still in flight at the end of a short run: the contract is
+        # that every slot the sweep has reached (its CC is on the wire for
+        # that channel) holds the Part's byte, and the rest are the remainder.
+        sent = {(c, n) for c, n, _ in msgs}
+        wrong, behind = [], 0
         for t in range(8):
             if chans[t] < 0:
                 continue
             ch = chans[t] & 0xf
-            for off, cc in cfmap:
-                want, got = lanes[72 * t + off], cache[ch * 128 + cc]
-                if got != want:
-                    wrong.append(f"T{t + 1} CC {cc} cache {got} lane {want}")
-        check(f"midi out: every CC sent is a mapped slot on a track's channel ({len(msgs)} CCs on {len({(c, n) for c, n, _ in msgs})} slots)",
+            for region, off, cc in cfmap:
+                want, got = part_byte(t, region, off), cache[ch * 128 + cc]
+                if got == want:
+                    continue
+                if (ch, cc) in sent:
+                    wrong.append(f"T{t + 1} CC {cc} cache {got} part {want}")
+                else:
+                    behind += 1
+        check(f"midi out: every CC sent is a mapped slot on a track's channel ({len(msgs)} CCs on {len(sent)} slots)",
               bool(msgs) and not stray, f"stray {sorted(set(stray))[:6]}" if stray else "")
-        if engine_idle:
-            check("midi out: the emitter's cache holds every mapped lane byte (CC FEEDBACK swept every change)",
+        # One sweep cycle is 336 messages + 8 track ends at 120 ticks/s, ~2.9 s;
+        # a shorter run cannot separate "sent, then the Part changed" from
+        # "wrong", so the exact check needs a run of at least one cycle.
+        cycle_frames = int((344 / 120) * 44100 / 16) + 1
+        if engine_idle and a.frames >= cycle_frames:
+            check(f"midi out: every slot the paced sweep reached holds the Part's knob byte ({behind} slot(s) still to come)",
                   not wrong, "; ".join(wrong[:6]))
+        elif engine_idle:
+            print(f"  [info] midi out: {a.frames} frames is under one paced sweep cycle ({cycle_frames}); "
+                  f"{len(wrong)} sent slot(s) differ from the Part now, {behind} not yet reached -- "
+                  f"the per-sweep contract is verify_ccfeedback's (--frames {cycle_frames} makes this exact)")
         else:
             print(f"  [N/A] midi out: the engine was running a command at the end; the sweep waits, {len(wrong)} slot(s) differ")
         # Informational: the bytes after the transport start are the dump's
@@ -485,11 +532,11 @@ def main():
     import json
     cd = json.loads(r.stdout)
     rewritten = [k for k in cd["changed"] if not k.startswith("LOG ")]
-    if "OCTAKIT" in mods:
-        # Octakit's load migrates Parts into kits*.strd/.work files (modules/octakit)
-        kits = [k for k in rewritten if pathlib.Path(k).name.startswith("kits")]
+    if "KITS" in mods:
+        # KITS writes kits.work at a project's first load (the migration, modules/kits)
+        kits = [k for k in rewritten if pathlib.Path(k).name in ("kits.work", "kits.strd")]
         rewritten = [k for k in rewritten if k not in kits]
-        check("card: with Octakit the load rewrote only kits files", not rewritten,
+        check("card: with KITS the load wrote only kits.work", not rewritten,
               f"{n_writes} WRITE command(s); kits: {', '.join(kits) or 'none'}"
               + (f"; other: {', '.join(rewritten)}" if rewritten else ""))
     else:

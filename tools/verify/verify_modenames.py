@@ -78,7 +78,7 @@ def main():
         if key in remix.blanked:
             continue
         for slot, prm in enumerate(mod.params):
-            if not (prm.active and prm.labels):
+            if not prm.prints_labels:
                 continue
             views = mod.name_views_for(slot)
             if slot == mod.mode_slot:

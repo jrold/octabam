@@ -38,7 +38,7 @@ STOCK_CC = 0x4000e79c
 MSG_AT = 0x47e00000            # scratch for the 3-byte MIDI message
 from remix import registry  # noqa: E402
 # CC MAP on the two hosts and a station, under unicorn: no DRAM runtime.
-FIXTURE_REMIX = registry.fixture("CC MAP", "REVERB SERVER", "DELAY SERVER", "CHARACTER", without_runtime=True)
+FIXTURE_REMIX = registry.fixture("CC MAP", "REVERB SERVER", "DELAY SERVER", "CHARACTER")
 
 
 def _build(remix):
@@ -84,8 +84,7 @@ def check_source_matches(m):
             o, e, b = (pathlib.Path(d) / n for n in ("cc.o", "cc.elf", "cc.bin"))
             subprocess.run(["m68k-elf-as", "-mcpu=5407", "-o", str(o),
                             str(ROOT / "modules/cc-map/cc_map.s")], check=True)
-            # The cave's fall-through is a link-time symbol (CC_NEXT) so a
-            # bridge can chain it in front of Octakit's CC handler; the
+            # The cave's fall-through is a link-time symbol (CC_NEXT); the
             # manifest's default is stock's handler, and that is what the
             # ratified bytes carry.
             subprocess.run(["m68k-elf-ld", f"-Ttext=0x{addr:x}",

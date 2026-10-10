@@ -18,7 +18,7 @@ The code that turns `modules/<name>/manifest.py` files and a
 | `index.py` | `make modules`, `make docs`: the module table in `README.md` and the remix index |
 | `selftest.py` | proves the ledger catches each collision class and every shipped remix is clean |
 | `platform_build.py`, `loader.S` | the DRAM platform: every DRAM unit linked as one image, packed and appended after the OS behind the loader (derived from Em's Octakit loader) |
-| `runtime_build.py` | a loader-appended runtime from its recipe (Octakit's `firmware.json`); memoised in `out/cache/` |
+| `pack.py` | the loader payloads' packer (the firmware's aPLib variant, GKA3, ported from Em's encoder); memoised in `out/cache/` |
 | `arena.py` | the audio page arena and the pages a remix takes from it for DRAM |
 | `grains.py`, `geom.py` | BusDelay's per-build source substitutions (GRAIN count, line geometry) |
 | `state.py` | the remixer's model: selection, `problems()`, `measure()`, scratch builds; no UI import |

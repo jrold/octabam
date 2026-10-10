@@ -36,7 +36,10 @@ treats as "on" is not measured here, and which end of CC 48 is scene A is
 inferred from the panel fader's inversion, not measured.
 
 The OT: PROJECT > MIDI > CONTROL > AUDIO CC IN on; each track's trig channel
-set (T1-8 = 1-8 is the default, `--channels` follows the project).
+set (T1-8 = 1-8 is the default, `--channels` follows the project); PROJECT >
+MIDI > SYNC > PROG CH SEND off, or the OT's Program Change on every pattern
+change selects a BCR preset (PC 0-31 -> presets 1-32; an empty preset is
+dark and deaf; PC >= 32 is ignored) -- 4 Oct 2026, docs/contributing/FAILURE_MODES.md.
 The BCR's mode (hold EDIT, press STORE; encoder 1; EXIT): U-1 over its own USB
 (DIN ports off); S-4 over a DIN interface (`--port UM-ONE`: interface OUT ->
 BCR IN, BCR OUT A -> interface IN). Playing the OT: S-4, BCR OUT A -> OT MIDI

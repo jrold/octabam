@@ -13,12 +13,6 @@
 | (manifest.py table_inc) from the manifests' ModeViews.
         .set    DIRTY,   0x40027e00    | the displaced call (project-dirty)
         .set    P1WRITE, 0x40054cd8    | page-1 writer (track, flat, value)
-        .set    P1TOKEN,  0x54500000
-| P1TOKEN goes on the stack above the writer's three arguments. With
-| Octakit in the image the writer's last store (0x40054fec) runs her check,
-| which halts unless that word's top half is GK_TRACK_PARAMETER_TOKEN_ARMED
-| (her abi.inc; her own wrapper pushes it there). Stock ignores the word.
-| modules/octakit/manifest.py refuses a build whose abi.inc changes it.
         .set    DBPTR,   0x46c82456    | long: the Part DB base
         .set    ID1OFF,  0x8ed80       | Part: per-track FX1 id byte
         .set    ID2OFF,  0x8ed88       | Part: per-track FX2 id byte
@@ -116,12 +110,11 @@ apply:  lea     %sp@(-20),%sp
         beq.s   f1
         addql   #6,%d0
 f1:     addil   #0x12,%d0
-        movel   #P1TOKEN,%sp@-         | Octakit's token above the writer's arguments
         movel   %d1,%sp@-
         movel   %d0,%sp@-
         movel   %d4,%sp@-
         jsr     P1WRITE
-        lea     %sp@(16),%sp
+        lea     %sp@(12),%sp
         bra.s   adone
 page2:  subql   #6,%d0                 | d0 = slot2
         movel   %d4,%d3

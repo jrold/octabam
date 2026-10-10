@@ -189,7 +189,7 @@ track bit.
 | CC | code | what is posted / done |
 |---|---|---|
 | 7 (0x07), 46 (0x2e) | `0x4000ea4a` | track level: byte `0x80000c50+2t`, pattern copy, kind `0x43` |
-| 47 (0x2f) | `0x4000eb54` | same, odd byte `0x80000c51+2t` (cue level 🟡) |
+| 47 (0x2f) | `0x4000eb54` | same, odd byte `0x80000c51+2t`: the cue level ✅ (port, 3 Oct 2026: with T1 cued, 127 makes its cue word on the level page `0x7ef8`, against `0x6c00` cued at the default; uncued, the byte moves nothing; `STEM_REC.md` 18.1) |
 | 8 (0x08) | `0x4000e9d0` | `post(0x40, track, 10, value)` → AMP BAL |
 | **16–45** | `0x4000e91c` | `idx = cc−16` (checked `< 30` at `0x4000e928`), `post(0x40, track, idx, value, stamp, 0)` |
 | 48 (0x30) | `0x4000ec60` | `post(0x44, 0,0, value)` crossfader |
@@ -584,7 +584,7 @@ at `0x4000ce60..0x4000ced4`). Frame halfwords are `knob<<8 | companion`
 | 12..17 | voice record `0x80000110+ping·0x200+track·0x40`, hw 0..5 | AMP p1: PMTR 12–17 write there (✅ objdump, `LFO.md` section 5) |
 | 18..23 | voice record hw 6..11 | FX1 page 1 (`r6+0..5`) ✅ |
 | 24..29 | voice record hw 12..17 | **FX2 page 1 (`r6+0..5`)** ✅ |
-| 30..31 | — | **skipped**: `addql #4,%a2` at `0x4000cef6` |
+| 30..31 | — | **skipped**: `addql #4,%a2` at `0x4000cef6`; SCENES P2 keeps its page-2 locks here (`modules/scenes-p2/README.md`) |
 
 **Not-locked sentinel: any negative byte (bit 7 set, i.e. `0xFF`)** — every
 reader tests with `blt`/`bge` after a sign-extending load (`mvsb`). A lock is

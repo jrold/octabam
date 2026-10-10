@@ -14,7 +14,7 @@ them into the live lane and puts the Part's value back at the next trig.
 Requires SCENES P2: its page-2 dial hooks show a held step's lock.
 """
 
-from remix.schema import Category, Detour, Gate, Kind, Linked, Module, Proof
+from remix.schema import Category, Claims, Detour, Gate, Kind, Linked, Module, Proof
 
 H = bytes.fromhex
 MEMCPY = ("a memcpy site that moves patterns or tracks between the banks, the clipboard "
@@ -148,5 +148,8 @@ MODULE = Module(
                "power-up: the bank back from CS1, its page 2 with it", kind="jsr"),
     ),
     requires=("SCENES P2",),
+    # NV copy of the current bank's page 2 in CS1 (battery SRAM), nv_save in
+    # p2locks.s: 0x100f8600..0x100ffe00, unused by stock beyond its whole-CS1 init.
+    claims=Claims(sram=((0x100f8600, 0x100ffe00 - 0x100f8600, "P2NV bank copy in CS1"),)),
     gates=(Gate('tools/verify/verify_plocksp2.py'),),
 )

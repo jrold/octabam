@@ -62,6 +62,17 @@ Rotation and odd Euclidean lengths do not rotate the track swing grid. The
 
 Not hardware-tested: the current revision has not been run on a unit.
 
+## Clock restart ordering
+
+`eu_clock_start` runs from the PLAY sites in task context; `eu_clock_update`
+runs in the frame ISR and reads `now`, `quantum`, `remainder` once
+`initialized` is set. `eu_clock_start` clears `initialized` first and sets
+it last, and `eu_reset_clock` (hooks.s) holds the interrupt mask at 7 across
+the call, restoring the SR saved after the displaced PLAYING store (mask and
+CCR). The ordering is by reading the code; the port is lock-step and cannot
+interleave the ISR with the task, so it is not measured on the port or the
+unit. The store order is checked under the port with `--watch-mem`.
+
 ## Gates
 
 `make check REMIX=euclid` runs the Euclid suite as part of the normal verify

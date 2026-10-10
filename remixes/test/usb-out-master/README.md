@@ -1,6 +1,6 @@
 # `usb-out-master` — USB AUDIO OUT MASTER on the stock effects
 
-The stock chooser plus USB MIDI and USB AUDIO OUT MASTER, for testing the two-channel stream on a unit that runs stock projects: no rig stations, no chooser changes, no project stamping.
+The stock chooser plus USB MIDI and USB AUDIO OUT MASTER, for testing the two-channel stream on a unit that runs stock projects: no FX1 stations, no chooser changes, no project stamping.
 
 ## What is in it
 

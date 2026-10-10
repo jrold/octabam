@@ -90,6 +90,8 @@ and sets ICRn at `+0x40+n`; a CIMR write must also clear IMRL's MASKALL bit.
 |---|---|---|---|---|
 | `0x41` | INTC0 1 | `0x4000aad0` | `0x4001fc02` (main) | DSP frame (level 5) |
 | `0x47` | INTC0 7 | `0x4001fca0` | `0x4001f81c` | halt path (`SR 0x2700`, `bras .`) |
+| `0x48`/`0x49`/`0x4f` | INTC0 8/9/15 | `0x40004840` | `0x400097a6`/`0x400097b0`/`0x400097ba` | eDMA channels 0/1/7: the 7-state frame transfer, jump table `0x400ab61a` (`ARCHITECTURE.md` section 6) |
+| `0x56` | INTC0 22 | `0x400152a4` | `0x400160c6` (the ATA init) | eDMA channel 14, the ATA sector DMA's completion: clears CINT 14, sectors done = (`0xfc0451d0` − buffer `0x4ecb8000`) ≫ 9 into `0x460bac04`, one kernel signal (`0x40000c3c`, `0x460bb3a0`) per new sector |
 | `0x5a` | INTC0 26 | `0x400106ec` | `0x400110ae` | UART0 RX, MIDI IN (`MIDI.md`) |
 | `0x5b` | INTC0 27 | `0x400109bc` | `0x40010faa` (UART init `0x40010efc`, 312,500 baud) | serial link `0xfc064000`, level 6 |
 | `0x5c` | INTC0 28 | `0x40010b88` | `0x40010d6e` | serial block `0xfc068000`, RX only |
@@ -98,9 +100,31 @@ and sets ICRn at `+0x40+n`; a CIMR write must also clear IMRL's MASKALL bit.
 | `0x64`/`0x65` | INTC0 36/37 | `0x40092bf4`/`0x4009228c` | `0x40092f10`/`0x4009268c` | MIDI framer (`MIDI.md`) / ❓ |
 | `0xab` | INTC1 43 | `0x40000550` | `0x400005dc` | PIT0, the time-slice |
 | `0xac` | INTC1 44 | `0x40020d38` | `0x40020c5e` | PIT1, the storage delay timer |
-| `0xaf` | INTC1 47 | `0x4001e594` | `0x4001e01a` | ❓ |
+| `0xaf` | INTC1 47 | `0x4001e594` | `0x4001e01a` | USB OTG (source 47 in the MCF54455RM; installed from the USB stack's init) |
 | `0xb1` | INTC1 49 | `0x4001c244` | `0x4001c2fc` | counter + ack of `0xfc0bc008` |
 | `0xb6` | INTC1 54 | `0x40015304` | `0x40016128` (ATA init `0x400160f8`) | ATA: one sector per interrupt, signal at count 0 |
+
+Levels, from the ICR byte writes (✅ objdump, 5 Oct 2026):
+
+| level | vectors |
+|---|---|
+| 7 | `0x47` halt |
+| 6 | `0x48`/`0x49`/`0x4f` eDMA frame transfer; `0x5a` UART0 MIDI IN; `0x5b` UART1 serial link |
+| 5 | `0x41` DSP frame; `0xb1`; `0xb6` ATA |
+| 4 | `0x5c` serial block; `0xaf` USB |
+| 3 | `0x56` eDMA 14 (ATA sector DMA) |
+| 2 | `0xac` PIT1 |
+| 1 | `0xab` PIT0 time-slice |
+
+INTC0 sources 8 + n are eDMA channel n (channels 0, 1, 7 and 14 are
+used); `0xfc04401c` is the eDMA CINT register, written with the channel
+number by each of their handlers. Level 6 nests inside the frame interrupt
+when it lands before the ISR's
+`rte`; level 5 and below cannot (unless the ISR lowers SR mid-body, not
+checked). The frame ISR is measured from entry to the epilogue at
+`0x4000d9a6` by CF METER, so the eDMA chain and both UARTs can be inside
+that span and ATA and USB cannot (`ARCHITECTURE.md` section 6, the CF METER
+takes).
 
 Time-slice: PIT0 `0xfc080000`, prescaler 2¹¹ (PCSR `0x0b36` at init,
 `0x0b3f` on every switch), PMR `264,000,000 / 409,600 − 1 = 643` → 5.0 ms

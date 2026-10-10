@@ -643,7 +643,7 @@ namespace ot
 				for(const auto& sh : g_shapes)
 					if(sh.core == core && sh.words == words)
 						return sh.samples;
-				return (2.04 * static_cast<double>(words) + 2.0) / 4160.0;	// DSP instructions per sample (dsp.h g_dspIps)
+				return (2.04 * static_cast<double>(words) + 2.0) / 4532.0;	// DSP instructions per sample (dsp.h g_dspIps)
 			});
 		}
 		m_edma.setCompletionGate([this, co](const uint32_t _ch)
@@ -1621,7 +1621,7 @@ namespace ot
 			out.stop = runToPc(g_engineReceive, left);
 			if(out.stop != Stop::Gate)
 				break;
-			if((m_noPost || m_machine.pcCount() > 0) && m_machine.peek32(g_engineQueue + 4) == 0)
+			if((m_noPost || m_machine.pcCount() > 0) && (m_loadEarly || m_machine.peek32(g_engineQueue + 4) == 0))
 			{
 				out.handledMs = (m_sample - postSample) / g_sampleHz * 1000.0;
 				out.handledInstr = m_machine.instructions();

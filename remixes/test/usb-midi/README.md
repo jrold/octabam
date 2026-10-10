@@ -11,7 +11,7 @@ The USB AUDIO modules are built on USB MIDI (its composite descriptor and ISR sh
 
 ## Status
 
-- Not flashed in this form. The module ran on Sam's MKII inside the rig as image 64 (25 Sep 2026): USB MIDI in took 7,950 messages/s for 185 s without a stall.
+- Not flashed in this form. The module ran on Sam's MKII in the `usb-audio` remix (the bus, the FX1 stations and USB; removed 30 Sep 2026) as image 64 (25 Sep 2026): USB MIDI in took 7,950 messages/s for 185 s without a stall.
 - Not measured: USB MIDI timing against DIN, DISK MODE entered with a MIDI session open, Windows, Linux hosts.
 
 ## Build and flash

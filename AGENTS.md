@@ -21,7 +21,7 @@ core-private Y word, per-core FX2 buffer region or DSP data range
 
 **Modules come in kinds, and the traps below say which they belong to.** A
 **ColdFire module** (linked GNU-as units, detours by symbol, a runtime in
-DRAM: midisc, Octakit, octalab, REPITCH) never touches the DSP and none of the DSP traps
+DRAM: midisc, KITS, octalab, REPITCH) never touches the DSP and none of the DSP traps
 apply to it; its own traps are in the last section. On the DSP side an
 insert has no bus role, no shared-window claim, sits in both payloads and
 runs on any track; a **server** pays for the rotation, the housekeeping
@@ -29,8 +29,8 @@ election, the auto-gain and the payload asymmetry, and most of the DSP
 traps are a server's.
 
 **A port is a proof.** The author's own build is the oracle: `pinned`,
-`reference(addr)`, `Linked.reference` and a `Runtime` recipe's identities
-are four forms of one rule, and the build refuses on drift. Never "port" by
+`reference(addr)` and `Linked.reference` are three forms of one rule, and
+the build refuses on drift. Never "port" by
 rewriting; run their build against the shared stock image first.
 
 **If you change the BUILD rather than a module, prove it changed nothing:**
@@ -88,7 +88,7 @@ so `cmake --build` there compiles THEIR `tools/emu/ot_emu`, not yours
 (14 Sep 2026: a port edit "built" fine and the binary did not have it).
 Build the port into the worktree: `make emu-cf` (a fresh cache, ~1 min).
 `out/cache/` is the build's memo (the packed runtimes, keyed by the sha256
-of their inputs; `tools/remix/runtime_build.py`), per worktree and safe to
+of their inputs; `tools/remix/pack.py`), per worktree and safe to
 delete; `OCTABAM_NO_CACHE=1` builds cold when a build result is in doubt.
 **The same holds for `dsp_host` and `dsp_asm`:** `scripts/setup.sh` builds
 them from a COPY staged into `vendor/dsp56300/source/dsp_host/`, so in a
@@ -131,7 +131,18 @@ a negative multiplier there is silently corrupted. `mpy x0,y1` and
 **Disassemble what you assemble** when a result surprises you — and always
 for a new `mpy` whose second operand can go negative. A related family bit
 us in shipping code: `cmp a,b` had encoded as `max a,b`, which updates only
-the C bit while `blt` tests N^V. **And until 14 Sep 2026 it emitted only
+the C bit while `blt` tests N^V. **Until 4 Oct 2026 it had no encoding
+for a data-ALU op with two parallel moves** (XY, X:R, R:Y, class II):
+`clr`/`add`/... with one were InvalidInstruction, and `mpy`/`mac` fell
+to the non-parallel `mpysu`/`macsu` with both moves dropped (`mac
+x1,y0,b x:(r1)+,x1 y:(r7)+,y0` -> `0126a6`; the chip word is `f4f9ea`).
+`move x:(r1)-n1,x0 y:(r7)+,y0` encoded `(r1)` (`f0e100`): the XY form
+has no `(Rn)-Nn`. Against the stock payloads (A+B) the old `dsp_asm` got
+0 of 688 ALU+XY lines right (605 wrong, 83 refused) and 0 of 258 X:R/R:Y
+lines; the patch makes all 946 the stock word and leaves the result for
+the other 12,079 stock lines unchanged. A move token with no encoding is now
+InvalidInstruction, and the round-trip compares every operand field,
+parallel moves included. **And until 14 Sep 2026 it emitted only
 the TWO-WORD displaced move**: `move x:(r7+$15),a` assembled to
 `0a77ce 000015` where the chip (and every Elektron payload, 533 sites in A)
 has the one-word `0257de` for displacements −64..63 with a data-ALU
@@ -145,9 +156,11 @@ a `dsp_asm` built before it silently emits the two-word form for every
 site — five images (8–12, 14 Sep 2026) and every price quoted with them
 were ~800 words / ~500 cycles heavier than the tree said, found only when
 another session's FREE table did not match. After any change under
-`tools/patches/` or `tools/harness/dsp_host/`: `scripts/setup.sh` (or
-apply the hunk and `cmake --build vendor/dsp56300/build --target dsp_asm
-dsp_host`), then assemble `move x:(r7+$15),a` and expect `0257de`.
+`tools/patches/`: `make dsp-repatch` (`scripts/setup.sh` does not
+re-patch a built tree; it stops when the tree lacks the current patch),
+then `make emu-cf`; after one under `tools/harness/dsp_host/`:
+`scripts/setup.sh`. `make check-asm` expects `0257de` for `move
+x:(r7+$15),a` and `f4f9ea` for `mac x1,y0,b x:(r1)+,x1 y:(r7)+,y0`.
 
 **READING `a0` EXPOSES THE FRACTIONAL LEFT SHIFT THAT READING `a1` HIDES.**
 `mpy` aligns the Q46 product into Q47, so `a1` is the plain fractional
@@ -258,7 +271,9 @@ occurrence, and on 21 Sep 2026 a housekeeping comment that said "the
 ROTLATCH check" took the tracker body while the real marker stayed a
 comment -- no client on either payload resolved its write offset, and
 `verify-bus` read it as every server's client count changing.
-`_marker_once` refuses a second occurrence now.
+`_marker_once` refuses a second occurrence of `; ROTLATCH`, `; ROTINIT` and
+`; XBUS_GATE`; the `; HOSTGUARD`, mode-override and delay-override markers are
+counted to exactly one before they are replaced.
 
 **AN INSTRUCTION FORM THE CHIP HAS NEVER RUN IS NOT PROVEN BY THE PORT.**
 The assembler encodes it, the vendored emulator decodes it the same way, and
@@ -505,6 +520,30 @@ payload, or read through a build-supplied base; and audit any stock-table
 read on BOTH payloads under `rig_render.py`. Our own modules were scanned
 14 Sep 2026 and read none.
 
+**A KNOB WORD UNDER AN LFO IS NOT A CLEAN WORD: BITS 8-15 ARE NON-ZERO, AND
+NO LOCAL RENDER WRITES THEM.** Each ColdFire halfword is one DSP word `<< 8`,
+and the firmware's LFO store (`movew %d0,%a1@` at `0x4000d07a`,
+`docs/firmware/LFO.md` section 5) writes the modulated value with its low byte
+free. Measured under the port (`ot_emu --watch-pc 0x4000d07a`, bottleservice
+with `tools/harness/stress_project.py`, 24 LFOs per part, depth 18-28 on
+FX1/FX2 knobs, 900 frames, 5 Oct 2026): 21,088 stores, 21,011 with a
+non-zero low byte (e.g. `d0 = 0x22fe` for knob 34); 147 stores had knob
+byte 0 and all 147 carried a non-zero low byte (largest knob byte seen
+0x7d), so a knob at 0 under an LFO is not a zero word. The gate project at
+LFO depth 0: 19,843 stores, all with a zero low byte. A knob at rest is
+clean; `dsp_host -params` takes 0..127 and writes clean words, so no render
+shows it. Two modules read the raw word: WAVE's `asr #$10` on OCT left a
+remainder in b0, `neg b` borrowed from b1 (one octave off at any OCT) and at
+OCT 4 `do n3` ran with LC = 0xffff (65,535 `asr` a block); SEND's
+registration `tst` on the raw DEL/REV word counted a track at knob 0 as a
+sender (N/(N+1) dilution of every other sender, -6.02 dB with one). Rule:
+mask a page word with `and #>$7f0000` before any shift, compare, select or
+`tst` use (the form the servers, Spectrum and BusVerb use); the
+`asr` then leaves a clean low word. After `and`, store from `a1`/`b1`
+(`move a1,x:`), not `move a,x:` (the A2-staleness trap above). The
+`dsp_host -pword k:off=hex` option writes a raw word after `-params`, and
+`verify_wave` / `verify_onebus` render dirty words.
+
 **A DESCRIPTOR NAME THAT EXACTLY FILLS ITS FIELD LEAVES NO NUL, AND THE
 CRASH LANDS SOMEWHERE ELSE ENTIRELY.** `abbr` is a 5-byte field holding FOUR
 characters plus a terminator; `fullname` is 13 bytes holding TWELVE (and the
@@ -653,20 +692,15 @@ too. Found by a peer session. Scratch is `tempfile.mkdtemp` per process now
 is a shared-scratch race before it is anything else; and a `make check`
 result taken while another build was running is not a result.
 
-**A STOCK ROUTINE OCTAKIT WRAPS CHECKS ITS CALLER, AND A MODULE THAT
-CALLS IT BARE HALTS THE UNIT.** Her recipe repoints the three stock calls
-to the page-1 writer `0x40054cd8` at her wrapper and rewrites the writer's
-dirty store to check a token long 12 bytes above the arguments; the wrapper
-accepts only the three stock return addresses. TEMPO BUS and MODE DEFAULTS
-called the writer bare, so `bottleservice` (the rig + USB + Octakit) halted
-under the port at frame 40 of `verify_set` on the first CC 68 (26 Sep 2026;
-never flashed). Both push the token now (`P1TOKEN`, read back from her
-`abi.inc` by `modules/octakit/manifest.py`), and the Kit save / reload /
-copy paths were measured intact after it (`modules/octakit/README.md`).
-Before calling a stock routine from a module in a remix that carries a
-`Runtime`, diff the routine and its callers against stock in the built
-image (`tools/build/where.py`, or the recipe's writes): the same family as
-KITS RELOAD's return-address check, found the same way.
+**A MODULE THAT REPLACES A STOCK ROUTINE CAN MAKE EVERY OTHER CALLER
+OF IT A HALT.** Em's Octakit (in octabam until 6 Oct 2026) repointed the
+three stock calls to the page-1 writer `0x40054cd8` at her wrapper and
+made the writer's dirty store check a token above its arguments; TEMPO
+BUS and MODE DEFAULTS called the writer bare, so `bottleservice` halted
+under the port at frame 40 of `verify_set` on the first CC 68 (26 Sep
+2026; never flashed). Before calling a stock routine from a module, diff
+the routine and its callers against stock in the built image
+(`tools/build/where.py`): another module may own it.
 
 **A FORKED PORT SHARES ITS DSP MEMORY WITH ITS SIBLINGS UNLESS IT IS
 UNSHARED.** The vendored DSP memory is a `shm` object mapped `MAP_SHARED`
@@ -677,6 +711,17 @@ while the third ran clean. `unshareRanges` in `tools/emu/ot_emu/main.cpp`
 copies each backing object into a private one after the fork. Anything
 new the port maps shared (a window, a ring for the host) needs the same
 treatment, or the children interfere and the failure moves between runs.
+
+**THE PORT RAN UNDER ROSETTA IN EVERY SHARD, AND NOTHING SAID SO.** `make
+reach` and `check_shards.py` run under `python3`; on this machine that is
+Intel Homebrew's (`/usr/local/bin`), and under it `uname -m` and
+`os.uname().machine` both say `x86_64`, so cmake built an x86_64 `ot_emu`
+that ran translated: 1.27x slower to the handoff, 1.75x on DSP frames
+(6 Oct 2026, both binaries side by side under the same load). The
+Makefile's `HOST_ARCH` and `check_shards.host_arch()` ask the kernel
+(`sysctl -n hw.optional.arm64`, the same answer under Rosetta; Linux keeps
+`uname -m`). `file out/emu/ot_emu` is the check; `make check-asm` prints
+the binaries' architecture.
 
 **The report is API, and it prints paths.** Moving a tool changed the build
 report (the hints name `tools/harness/send_probe.py`), which refhash

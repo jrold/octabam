@@ -37,6 +37,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import time
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1])); import toolpath  # noqa: E402,F401
@@ -110,14 +111,16 @@ def vendor(b):
     return dict(zip(COUNTERS, struct.unpack(f">{len(COUNTERS)}I", raw)))
 
 
-def run(tag, sym, packets, close_first, in_frame):
+def run(tag, sym, packets, close_first, in_frame, reset=False, unplug=False):
     sock = f"/tmp/ot-usbin-{os.getpid()}-{tag}.sock"
     log = ROOT / f"out/verify_usb_in_{tag}.log"
     dump = ROOT / f"out/verify_usb_in_{tag}"
     dump.mkdir(parents=True, exist_ok=True)
     peek = "0:X:8100,576;0:X:202,1"
     mem = (f"{sym['in_counters']:#x},{4 * len(COUNTERS)}={dump}/counters.bin;"
-           f"{sym['in_tx']:#x},4={dump}/tx.bin;0x80005660,2048={dump}/ring.bin")
+           f"{sym['in_tx']:#x},4={dump}/tx.bin;0x80005660,2048={dump}/ring.bin;"
+           f"{sym['in_alt']:#x},1={dump}/in_alt.bin;{sym['in_running']:#x},1={dump}/in_running.bin;"
+           f"{sym['usbaudio_alt']:#x},1={dump}/aud_alt.bin;{sym['aud_running']:#x},1={dump}/aud_running.bin")
     with open(log, "w") as lf:
         emu = subprocess.Popen([str(EMU), "--image", str(IMAGE), "--usb-host", sock,
                                 "--usb-hold-ms", "300000", "--frame", "--dsp",
@@ -151,6 +154,16 @@ def run(tag, sym, packets, close_first, in_frame):
             b.ctrl_nodata(0x01, 0x0b, 0, 5)             # alt 0: USB AUDIO IN's stream closed
             for _ in range(400):                        # 100 ms more of EP3 IN's stream
                 b.ep_in(3, 1024)
+        giface = None
+        if reset:
+            b.reset()                                   # bus reset (URI), no SET_INTERFACE alt 0 from the host
+            for _ in range(400):                        # 100 ms more of EP3 IN's stream
+                b.ep_in(3, 1024)
+            giface = (b.ctrl_in(0x81, 0x0a, 0, 4, 1)[0], b.ctrl_in(0x81, 0x0a, 0, 5, 1)[0])
+        if unplug:
+            b.unplug()                                  # session end (OTGSC.BSVIS), answered once the ISR has handled it
+            time.sleep(0.2)
+            giface = None
         b.sock.close()
     finally:
         emu.wait(timeout=600)
@@ -162,7 +175,9 @@ def run(tag, sym, packets, close_first, in_frame):
     cnt = dict(zip(COUNTERS, struct.unpack(f">{len(COUNTERS)}I", (dump / "counters.bin").read_bytes())))
     tx = (dump / "tx.bin").read_bytes()
     ring = (dump / "ring.bin").read_bytes()
-    return dict(frames=frame, sizes=sorted(sizes), empty=empty, rx=rx, cur=cur,
+    one = lambda n: (dump / n).read_bytes()[0]
+    return dict(in_alt=one("in_alt.bin"), in_running=one("in_running.bin"), aud_alt=one("aud_alt.bin"),
+                aud_running=one("aud_running.bin"), giface=giface, frames=frame, sizes=sorted(sizes), empty=empty, rx=rx, cur=cur,
                 cnt=cnt, tx=tx, ring=ring, log=log, snaps=snaps)
 
 
@@ -235,9 +250,13 @@ def main():
         # The port holds device time for the bench's next IN (usb.h,
         # isoPoll), so every poll is one 250 us slot: state 7 runs at the
         # unit's 0.689 per poll however loaded the machine is.
-        check("state 7 runs once per 16-sample frame: 0.689 per 250 us poll (between the two reads)",
-              abs(rate - 0.689) < 0.01 and abs(c["frames"] - c["seconds"]) <= 1,
-              f"{rate:.4f} per poll; first {c['frames']} / second {c['seconds']} visits")
+        # Both reads fall inside the stream, so between them every frame
+        # transfers (the second visit); while the stream is closed the
+        # transfer stops after four zero blocks, so the lifetime counts differ.
+        check("state 7 runs once per 16-sample frame: 0.689 per 250 us poll, one transfer per frame (between the two reads)",
+              abs(rate - 0.689) < 0.01
+              and abs((s1["frames"] - s0["frames"]) - (s1["seconds"] - s0["seconds"])) <= 1,
+              f"{rate:.4f} per poll; first {s1['frames'] - s0['frames']} / second {s1['seconds'] - s0['seconds']} visits between the reads")
     else:
         check("two counter reads over EP0 during the stream (POLLS >= 4)", False, f"{len(r['snaps'])} read(s)")
     tgt = re.search(r"^\.set IN_TARGET,\s+(\d+)", (ROOT / "modules/usb-audio-in-ab/usbaudio_in.s").read_text(), re.M).group(1)
@@ -289,6 +308,28 @@ def main():
         coded_left = sum(1 for bl in blks if any(w != 0 for w in bl))
         check("the RX blocks are the jacks' again (no host samples in the 6 completed blocks)",
               coded_left == 0, f"{coded_left} block(s) with host words")
+    print("== run 3: bus reset while both streams are open, no alt 0 from the host ==")
+    r3 = run("reset", sym, 2000, close_first=False, in_frame=in_frame, reset=True)
+    print(f"  device counters: {r3['cnt']}")
+    print(f"  in_alt {r3['in_alt']} in_running {r3['in_running']} usbaudio_alt {r3['aud_alt']} aud_running {r3['aud_running']} "
+          f"GET_INTERFACE(4), (5) = {r3['giface']}")
+    check("in_alt and in_running are 0 after the reset (USB 2.0 9.1.1.5: alternate setting 0)",
+          r3["in_alt"] == 0 and r3["in_running"] == 0, f"in_alt {r3['in_alt']} in_running {r3['in_running']}")
+    check("usbaudio_alt and aud_running (EP3 IN) are 0 after the reset",
+          r3["aud_alt"] == 0 and r3["aud_running"] == 0 and r3["giface"][0] == 0,
+          f"usbaudio_alt {r3['aud_alt']} aud_running {r3['aud_running']} GET_INTERFACE(4) {r3['giface'][0]}")
+    check("word 0 of the transfer is clear after the reset (the jacks, not the ring's silence)",
+          len(r3["tx"]) >= 2 and r3["tx"][0] == 0 and r3["tx"][1] == 0, r3["tx"][:2].hex())
+    check("GET_INTERFACE(5) answers 0 after the reset", r3["giface"][1] == 0, str(r3["giface"][1]))
+    print("== run 4: cable pulled (session end) while both streams are open, no alt 0 from the host ==")
+    r4 = run("unplug", sym, 2000, close_first=False, in_frame=in_frame, unplug=True)
+    print(f"  in_alt {r4['in_alt']} in_running {r4['in_running']} usbaudio_alt {r4['aud_alt']} aud_running {r4['aud_running']}")
+    check("in_alt and in_running are 0 after the session end",
+          r4["in_alt"] == 0 and r4["in_running"] == 0, f"in_alt {r4['in_alt']} in_running {r4['in_running']}")
+    check("usbaudio_alt and aud_running (EP3 IN) are 0 after the session end",
+          r4["aud_alt"] == 0 and r4["aud_running"] == 0, f"usbaudio_alt {r4['aud_alt']} aud_running {r4['aud_running']}")
+    check("word 0 of the transfer is clear after the session end",
+          len(r4["tx"]) >= 2 and r4["tx"][0] == 0 and r4["tx"][1] == 0, r4["tx"][:2].hex())
     print(f"verify_usb_in: {'OK' if not fails else f'{len(fails)} FAILED'}")
     return 1 if fails else 0
 

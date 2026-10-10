@@ -77,7 +77,10 @@ MODULE = Module(
 
     # The checks `make check` runs when a remix carries this module: your
     # render gates (modules/character has verify_character.py). stage="image" for one that reads the built image.
-    gates=(Gate("tools/verify/verify_template.py", remix_arg=False),),
+    # Placeholder: the registry skips `_template`, and the script named here is
+    # the one you write as tools/verify/verify_<yourname>.py (pattern:
+    # tools/verify/verify_character.py; docs/contributing/TESTING.md section 4).
+    gates=(Gate("tools/verify/verify_<yourname>.py", remix_arg=False),),
     # Every knob at its DEAREST setting, by name: the mode the pricer calls
     # the worst loop, work-gating knobs at maximum. The pressure render and
     # the stress fixture use it; without it `make accept` is blocked for

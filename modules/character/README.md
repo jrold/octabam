@@ -81,7 +81,7 @@ Page layout history: 16 Sep 2026 put MIX bottom right and SAT top left.
   store; the tilt's k, TapeHead's 0.7 and TUBE's R load once per sample or
   ride in the ring; twelve parallel moves (forms with stock precedent);
   OInflator inlined per channel. Bit-identical on `make verify-ident
-  MOD=character` (9 settings) and a T8 (GLUE) rig render.
+  MOD=character` (9 settings) and a T8 (GLUE) render under `make render-rig`.
 - 22 Sep 2026: the sample loop reads its coefficients through two 16-word
   post-increment rings and its state through pointers; displaced `(r7+$..)`
   moves per sample path went TAPE 79 / TUBE 74 / INFL 62 -> 0. Probe 57
@@ -92,7 +92,7 @@ Page layout history: 16 Sep 2026 put MIX bottom right and SAT top left.
   TUBE) are bit-identical to the pre-rewrite build.
 - `verify_menu`, `verify_replaces` (it took LO-FI's FX1 page) and
   `verify_labels` (the select prints its words on the emulated firmware)
-  pass on the rig.
+  pass on the `rig` test remix.
 
 ## On the unit
 

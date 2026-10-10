@@ -12,7 +12,9 @@ read out/, so one tree runs one remix at a time; PR #486's 25-remix table
 was three worktrees driven by hand. This makes N detached worktrees of HEAD
 plus the tree's uncommitted changes under out/shards/<i>, each with the
 shared vendor/ and .venv/ links, the stock slice, its submodules and its
-OWN port build (out/emu is never shared between trees: AGENTS.md), then
+OWN port build (out/emu is never shared between trees: AGENTS.md; built
+for the machine's own architecture, host_arch(), whatever python3 runs
+this), then
 hands the remixes out from one queue as shards come free, so the dear ones
 (bottleservice, rig-kits) do not decide the wall time. Logs land in
 out/check_shards/<remix>.log; one table at the end; exit 1 when a remix
@@ -30,10 +32,10 @@ the other remixes' whole halves, longest first, so it no longer takes one
 shard for the whole run while the others idle. Which remixes: `--split
 auto` (the default) splits a remix whose last recorded time
 (out/check_shards/times.json, written after every run) exceeds both 300 s
-and the run's total over the shard count; with no record, the remixes that
-carry OCTAKIT (every project load under it is ~32 s emulated; bottleservice
-and mods were the floor of every run on 28-29 Sep 2026). `--split none`
-runs every remix whole; `--split a,b` names them.
+and the run's total over the shard count; with no record, none (until 6
+Oct 2026 the remixes that carried Octakit, whose project load took ~32 s
+emulated). `--split none` runs every remix whole; `--split a,b` names
+them.
 
 `--by-gate` shards ONE remix's per-remix half by gate instead: every gate
 of `make verify-remix` (plus `make cycles`) is its own job, each shard
@@ -63,6 +65,21 @@ SKIP = re.compile(r"^\s*(?:\[SKIP\]|SKIP:)")
 
 def git(*args, cwd=ROOT, check=True):
     return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=check)
+
+
+def host_arch():
+    """The machine's own architecture for CMAKE_OSX_ARCHITECTURES. Under
+    Rosetta (an Intel-Homebrew python3, /usr/local/bin) os.uname().machine
+    says x86_64 and the port then runs translated: 1.27x slower to the
+    handoff, 1.75x on DSP frames (measured 6 Oct 2026, every shard of a
+    reach run). Darwin asks the kernel, which answers the same under
+    Rosetta; elsewhere uname is the answer."""
+    machine = os.uname().machine
+    if sys.platform == "darwin":
+        r = subprocess.run(["sysctl", "-n", "hw.optional.arm64"], capture_output=True, text=True)
+        if r.returncode == 0 and r.stdout.strip() == "1":
+            return "arm64"
+    return machine
 
 
 def shard_ok(path):
@@ -107,7 +124,7 @@ def make_shard(path, log, fresh=False):
                 shutil.rmtree(child, ignore_errors=True) if child.is_dir() else child.unlink()
     (out / "raw").mkdir(parents=True, exist_ok=True)
     shutil.copy2(ROOT / "out/raw/section_3_MAIN_OS.bin", out / "raw/section_3_MAIN_OS.bin")
-    arch = os.uname().machine
+    arch = host_arch()
     cmds = [["git", "submodule", "update", "--init"],
             # `make emu-cf` configures with --fresh (a cache from another
             # source path makes cmake refuse); a kept shard's cache names
@@ -138,7 +155,7 @@ def clean_env():
     env = dict(os.environ)
     for var in ("MAKEFLAGS", "MFLAGS", "MAKEOVERRIDES"):
         env.pop(var, None)
-    # every shard builds from this tree's memo (tools/remix/runtime_build.CACHE)
+    # every shard builds from this tree's memo (tools/remix/pack.CACHE)
     env.setdefault("OCTABAM_CACHE", str(ROOT / "out/cache"))
     return env
 
@@ -203,8 +220,7 @@ def remix_jobs(remix_name, shard):
 
 def choose_split(remixes, spec, times, jobs):
     """The remixes to run as gate jobs: named, none, or (auto) those whose
-    last recorded time would set the wall time; with no record, those that
-    carry OCTAKIT."""
+    last recorded time would set the wall time; with no record, none."""
     if spec == "none":
         return set()
     if spec != "auto":
@@ -213,9 +229,7 @@ def choose_split(remixes, spec, times, jobs):
     if len(known) == len(remixes):
         floor = max(300.0, sum(known.values()) / jobs)
         return {r for r, s in known.items() if s > floor}
-    sys.path.insert(0, str(ROOT / "tools")); import toolpath  # noqa: E402,F401
-    from remix import registry  # noqa: E402
-    return {r for r in remixes if "OCTAKIT" in registry.remix(r).modules}
+    return set()
 
 
 def check_recipe(jobs):

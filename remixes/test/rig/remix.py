@@ -13,7 +13,7 @@ from remix.schema import Proof, Remix
 REMIX = Remix(
     name="rig",
     family="rig", proof=Proof.CHECK, proof_note="",
-    doc="The rig without a ColdFire runtime: the fixture of the CC MAP, Character and one-aux gates.",
+    doc="bottleservice's delay and reverb bus and FX1 stations, without USB, Octakit or the scene modules: the fixture of the CC MAP, Character and one-aux gates.",
     modules=("REVERB SERVER", "DELAY SERVER", "SEND",
              "SPECTRUM", "CHARACTER", "MODULATION",
              "TEMPO SYNC", "CC MAP", "MODE DEFAULTS", "RIG HOSTS"),
