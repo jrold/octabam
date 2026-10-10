@@ -25,8 +25,58 @@ Each entry's full investigation: `git show 666b6154:docs/remixer/FAILURE_MODES.m
 - **⚠️ THE 1.7 CALIBRATION IS A STOCK NUMBER AND MAY NOT APPLY TO THE RENDERERS.** It comes from cache-inhibited traffic: `CACR`'s `DDCM_P` plus an `ACR0` that covers only `0x40000000..0x47ffffff`, so the delay rings (through the uncached alias `0x4f502c10`) and the shared RAM (`0x80000000`) are the expensive part of the stock frame. The Perky renderers live entirely inside `ACR0` (`0x40a9b230..0x40a9e000`, state small and sequential), so their real cost should be close to the model's. Re-pricing only the uncached pieces puts the frame at ~360 us against a 362.8 us frame -- **right at the limit**, not 22% over, which fits "briefly sounds then stalls" better than either extreme. One reading of the `cfmeter` module in a PERKY build settles it.
 - **Check:** `ot_emu --cf-frame-deadline 1.7 --dsp --sequencer ...` reports the overrun live ("the frame handler was still in its exchange 390.3 us after the frame began") and delivers the late edge; the stock image reports none under the same flag, and `--cf-frame-deadline 1.0` (the model at face value) reports none either -- which is exactly the blindness this entry is about. `OT_DEADLINE_TRACE=1` prints the per-frame guard/mask state.
 
-## Pops and clicks from T1 with BusDelay when T1 plays its own trigs 🔴 open
+## Three Perky machines on a unit: stutter, audio cut-out, then the transport sits on step 1 ✅ measured in the model, 10 Oct 2026
 
+- **Seen:** Sam's unit, 10 Oct 2026, image PK4AH2 (all twelve algorithms, the
+  card-size fix). Two Perky machines played; **adding a third** made the
+  sequence stutter and the audio cut out. Stopping and playing again left the
+  trig lit on step 1 with no playback. The project was saved and handed over
+  as `PRESETS MKII/PROJECT 261010`.
+- **The project, read back:** bank A part 1 has exactly three Perky machines --
+  **T1 (FLEX slot 129 = R1), T3 (131 = R3), T4 (132 = R4)**; everything else on
+  the part is STATIC. The pattern is intact (T1 steps 1/7/11, T3 steps
+  5/8/11/13, T4 step 8), so nothing was lost on save; the trig LEDs lighting
+  with no playback is a *transport* state, not an empty pattern.
+- **Cause (measured in the model): the ColdFire's frame handler overruns the
+  362.8 us frame once the Perky voices trig.** Same project, only the number of
+  Perky machines changed, run under the unit's own deadline
+  (`ot_emu --cf-frame-deadline 1.7 --sequencer --dsp --dsp-dirty 123`):
+
+  | Perky machines | overrun |
+  |---|---|
+  | 0 (stock tracks only) | none |
+  | 1 (T1) | none |
+  | 2 (T1, T3) | **404.7 us late** |
+  | 3 (T1, T3, T4) | **375.1 us late** |
+
+  and the average frame cost rises with each machine:
+  `--cf-frame-budget-us` 120.5 -> 151.2 -> 195.7 -> 221.3 us/frame of 362.8.
+- **It is the EVENT frames, not the per-frame rendering ✅ measured.** The same
+  three machines with every trig mask erased: **no overrun**. So the frames
+  that overrun are the ones carrying a trig -- the first-event engine creation,
+  the control settle (16-18 smoother passes) and the trigger, all inside the
+  audio callback.
+- **Why the symptom is a permanent stall and not just dropouts:** an overrun
+  desynchronises the CF/DSP exchange, and the frame handler at `0x4000aad0`
+  reads the DSP bank id with no ready check and **halts if it is not 0 or 1**
+  (`0x4000ab38`). "The firmare halted ... its own frame-handler guard" is the
+  path the emulator prints as `cf stall`; it did not trip in these runs (the
+  port is host-paced, see the entry above), so the model shows the *cause* and
+  the unit shows the *hang*.
+- **Confidence:** the model says the frame does not fit; the project's own
+  calibration for that model (x1.7) is a STOCK number and the entry above warns
+  it may not apply to the renderers, whose state is cached. One `cfmeter`
+  reading from a PERKY build settles the real per-frame cost.
+- **Fix:** open, and it is the frame-cost work, not the algorithms: every
+  engine's hand-off in this table is still bit-exact against the firmware. The
+  next lever is the event frame -- hoisting the one-time engine creation and
+  the control settle out of the audio callback -- plus the typed state access
+  named in the entry above.
+- **Check:** `C:\temp4495\perky-deepseek-20261009-072423\octabam\work\budget_variants.py`
+  (3->2->1->0 machines, budget and deadline modes) and
+  `work/notrigs.py` (the no-trig control).
+
+## Pops and clicks from T1 with BusDelay when T1 plays its own trigs 🔴 open
 - **Seen:** Discord, Arcdmd_, 29 Sep 2026. Image, unit model, T1's machine and trig pattern not stated.
 - **Cause:** open. The rig is tested with T1 and T5 as THRU tracks without trigs. The one earlier test with a trig on every T1 step (21 Sep 2026) gave clicks and no wash. A trig splits the host's block into two dispatcher calls; the delay's glides run on the first call only since 21 Sep 2026 (`modules/busdelay/README.md`).
 - **Fix:** open. To find out: the reporter's image, machine and trig pattern; whether the clicks land on T1's trigs; whether they follow the delay (FX2 = SEND on T1, same trigs) or the machine (a THRU host with a trig every step clicks from the THRU's re-open); the same test on T5 with BusVerb.
