@@ -17,7 +17,7 @@ REMIX = Remix(
         "probe; the instrument for pricing the Perky frame on hardware"
     ),
     doc=(
-        "Perky Machines (T1/T2/T5/T6) with CF METER on T8's FX2: the frame "
+        "Perky Machines (T1/T2/T3/T4) with CF METER on T8's FX2: the frame "
         "interrupt's mean/longest duration and the frame period, on the unit. "
         "Diagnostic only -- FILTER and DARK REV are given up to the probe."
     ),

@@ -1,7 +1,7 @@
 # `perky-cfmeter` — what the Perky frame really costs on the unit
 
 [Perky Machines](../../../modules/perky/README.md) (four ColdFire voices on
-T1/T2/T5/T6, as `perky-cf-final`) plus [CF METER](../../../modules/cfmeter/README.md)
+T1/T2/T3/T4, as `perky-cf-final`) plus [CF METER](../../../modules/cfmeter/README.md)
 on T8's FX2.
 
 ## Why
@@ -29,7 +29,7 @@ the release profile, not of this probe.
 they are not selected and running, the meter measures the stock frame again.
 
 1. Flash `out/OCTATRACK_OS1.40C_<VER>.syx` (or the card image), power-cycle.
-2. Load a project. Set **T1/T2/T5/T6 to the PERKY machine** (the chooser lists
+2. Load a project. Set **T1/T2/T3/T4 to the PERKY machine** (the chooser lists
    it) and put a **trig** on each — a trig on step 1 is enough — so the voices
    render every frame.
 3. On **T8**: **FX2 = CF Meter**, T8 LEVEL high (say 100). The meter's insert
@@ -37,7 +37,7 @@ they are not selected and running, the meter measures the stock frame again.
 4. Press **PLAY**.
 5. **Record T8's audio.** Best: a recorder buffer with **source = T8**, saved
    to the card — the Perky tracks then play normally, which they must. (The
-   OT's MAIN OUT into an interface also works, but then T1/T2/T5/T6 have to be
+   OT's MAIN OUT into an interface also works, but then T1/T2/T3/T4 have to be
    out of the mix, and the ratio must not be contaminated.) Keep it
    **stereo**: the readout is a square wave whose L/R amplitude ratio is
    N / 8192, so the ratio carries the number and any level that does not clip
