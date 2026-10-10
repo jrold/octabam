@@ -144,6 +144,9 @@ static int32_t ah_sample(const uint8_t*b,uint32_t bytes,uint32_t index){
 int pk_cf_ah_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_ah_tables*t,int32_t*hold){
     uint32_t i,length,bytes=0;
     const uint8_t*sample=0;
+    uint32_t index,fraction,rate,mask,shift,hold_left;
+    uint32_t filter_bits,previous_bits;
+    uint8_t filter_seed,velocity,mute;
     if(!s||!d||!t||!hold)return 0;
     {
         const uint32_t address=r32(s,0xf8);
@@ -154,16 +157,21 @@ int pk_cf_ah_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_ah_tables*t,int32
     }
     if(!sample)return 0;
     length=r32(s,0xfc);
+    /* These renderer fields cannot be modified from inside a block.  Keep
+     * them native in registers rather than endian-loading/storing them for
+     * every one of the 16 samples. */
+    index=r32(s,0xc4);fraction=r32(s,0xc8);rate=r32(s,0xcc);
+    mask=r32(s,0xd4);shift=(uint32_t)s[0xd0];hold_left=r32(s,0xdc);
+    filter_bits=r32(s,0x100);previous_bits=r32(s,0x104);filter_seed=s[0x108];
+    velocity=s[6];mute=s[0xb8];
     for(i=0;i<n;i++){
         const uint16_t amplitude=env(s,0x74,t);
-        const uint32_t index=r32(s,0xc4);
-        uint32_t fraction,mask,shift,hold_left,advanced;
+        uint32_t advanced;
         int32_t interpolated,envelope_scaled,filtered;
         if(length==0u||length<=index){d[i]=0;continue;}
         {
             const uint32_t next_index=index+1u;
             const int32_t nxt=(length>next_index)?ah_sample(sample,bytes,next_index):0;
-            fraction=r32(s,0xc8);mask=r32(s,0xd4);shift=(uint32_t)s[0xd0];hold_left=r32(s,0xdc);
             if(hold_left!=0u){
                 hold_left=(hold_left-1u)&0xffffffffu;
                 interpolated=s32((uint32_t)*hold);
@@ -176,28 +184,29 @@ int pk_cf_ah_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_ah_tables*t,int32
                 hold_left=r32(s,0xd8);
             }
             envelope_scaled=asr(mullo(interpolated,(int32_t)amplitude),15);
-            w32(s,0xdc,hold_left);
         }
-        advanced=(fraction+r32(s,0xcc))&0xffffffffu;
-        w32(s,0xc4,(index+(advanced>>shift))&0xffffffffu);
-        w32(s,0xc8,advanced&mask);
+        advanced=(fraction+rate)&0xffffffffu;
+        index=(index+(advanced>>shift))&0xffffffffu;
+        fraction=advanced&mask;
         {
             uint32_t previous;
-            if(s[0x108]){previous=pk_cf_i32_to_f32(s32(r32(s,0x100)));s[0x108]=0u;}
-            else previous=r32(s,0x104);
+            if(filter_seed){previous=pk_cf_i32_to_f32(s32(filter_bits));filter_seed=0u;}
+            else previous=previous_bits;
             {
                 const uint32_t input_bits=pk_cf_i32_to_f32(envelope_scaled);
-                w32(s,0x104,pk_cf_f32_mul(previous,PK_CF_AH_DECAY_BITS));
+                previous_bits=pk_cf_f32_mul(previous,PK_CF_AH_DECAY_BITS);
                 filtered=pk_cf_f32_to_i32_trunc(pk_cf_f32_add(input_bits,previous));
-                w32(s,0x100,(uint32_t)filtered);
+                filter_bits=(uint32_t)filtered;
             }
         }
-        if(s[0xb8]){d[i]=0;continue;}
+        if(mute){d[i]=0;continue;}
         {
-            int32_t value=asr(mullo(filtered,(int32_t)(s[6]&0xffu)),8);
+            int32_t value=asr(mullo(filtered,(int32_t)(velocity&0xffu)),8);
             if(value>INT16_MAX)value=INT16_MAX;else if(value<INT16_MIN)value=INT16_MIN;
             d[i]=(int16_t)value;
         }
     }
+    w32(s,0xc4,index);w32(s,0xc8,fraction);w32(s,0xdc,hold_left);
+    w32(s,0x100,filter_bits);w32(s,0x104,previous_bits);s[0x108]=filter_seed;
     return 1;
 }
