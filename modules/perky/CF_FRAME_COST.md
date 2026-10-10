@@ -191,3 +191,14 @@ list, so each verdict carries its number.
    only the low half. The EMAC cannot do it either: `MAC.L` accumulates into a
    **48-bit** accumulator, so a 64-bit product's top 16 bits are gone; taking
    the high half needs bits 63:32.
+
+### Unrelated pre-existing failure found while verifying
+
+`verify_perky_cf_final.py` (the release qualification, not in the gate suite)
+stops at `perky_cf_split_plock_timing` with exit 30. That is not a regression:
+the test's asset set carries no wavetable bank or base wave, so
+`pk_cf_wt_render` correctly refuses, and the same test built against the
+sources before this work exits 30 as well. Everything before it in the release
+gate passes — including the PerkyBits control->PCM differential, the render
+stress sweep and the 1,179,648-sample long-tail continuity gate, which is the
+strongest bit-exactness evidence these engine changes have.
