@@ -173,7 +173,7 @@ slot of `0x80001388 + 16·(3t + lfo)`):
 | `+0x1712..+0x1782` | audio LFO designs, tracks 2–8 | MIDI SCENES' freeze twin, on Part Save when the sparse blob carries `MS` |
 | `+0x1782..+0x1792` | 0 in every census file (below) | MIDI SCENES' freeze twin |
 | `+0x1792..+0x17a2` | MIDI LFO design, track 1 | MIDI SCENES' freeze twin |
-| `+0x17a2..+0x1812` | MIDI LFO designs, tracks 2–8 | MIDI SCENES' sparse blob (`MS`); SCENES P2's pool (`P2`, from the first page-2 scene lock) |
+| `+0x17a2..+0x1812` | MIDI LFO designs, tracks 2–8 | MIDI SCENES' sparse blob (`MS`); SCENES P2's pool (`P2`, from the first page-2 scene lock) until 10 Oct 2026 |
 | `+0x1812..+0x1832` | not located | the same |
 
 Census of the Part tail across 1,536 bank files (12,288 Part records) on
@@ -185,6 +185,10 @@ not a measurement of use.
 
 Not measured: the designer editor's writes landing on the module bytes
 (📖 from the addresses above); on the unit.
+
+Since 10 Oct 2026 SCENES P2 keeps its locks in bytes 30 and 31 of the
+stock scene block (`modules/scenes-p2/README.md`); MIDI SCENES still
+stores at `+0x1712..+0x1832`.
 
 ## 10. KITS
 

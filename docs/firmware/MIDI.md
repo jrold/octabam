@@ -584,7 +584,7 @@ at `0x4000ce60..0x4000ced4`). Frame halfwords are `knob<<8 | companion`
 | 12..17 | voice record `0x80000110+ping·0x200+track·0x40`, hw 0..5 | AMP p1: PMTR 12–17 write there (✅ objdump, `LFO.md` section 5) |
 | 18..23 | voice record hw 6..11 | FX1 page 1 (`r6+0..5`) ✅ |
 | 24..29 | voice record hw 12..17 | **FX2 page 1 (`r6+0..5`)** ✅ |
-| 30..31 | — | **skipped**: `addql #4,%a2` at `0x4000cef6` |
+| 30..31 | — | **skipped**: `addql #4,%a2` at `0x4000cef6`; SCENES P2 keeps its page-2 locks here (`modules/scenes-p2/README.md`) |
 
 **Not-locked sentinel: any negative byte (bit 7 set, i.e. `0xFF`)** — every
 reader tests with `blt`/`bge` after a sign-extending load (`mvsb`). A lock is

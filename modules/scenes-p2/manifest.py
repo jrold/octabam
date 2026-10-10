@@ -3,15 +3,16 @@
 Stock morphs 30 bytes a track a scene: page 1 of the five pages. Page 2 has
 no scene byte, and the exclusion is structural (block size, the 32-pair
 working copy, the frame builder's loop extents; docs/firmware/MIDI.md
-Appendix C). This module keeps its own page-2 locks in a 144-byte pool
-inside each Part window (+0x90522, the run midisc's MIDI-track locks use)
-and adds one pass to the frame builder, after the stock morph and before
+Appendix C). This module keeps its page-2 locks in bytes 30 and 31 of
+each track's block in the stock scene block, which the frame builder skips
+(eight two-byte cells a scene), and adds one pass to the frame builder, after the stock morph and before
 the transfer, that lerps every locked page-2 slot into the voice record
 with the stock weight table; a select snaps at the fader's midpoint. A
 page-2 knob turned while a scene is held edits that scene's lock instead
-of the Part (both page-2 editors detoured at entry). The pool travels with
-the Part: Part Save / Reload and Project Save copy the window whole, and
-a KITS Kit is a whole Part.
+of the Part (both page-2 editors detoured at entry). The cells travel with
+the scene: Part Save / Reload, Project Save and a KITS Kit copy the Part
+whole, and stock scene copy, paste, undo and clear copy each track's 32
+bytes.
 
 Sites: the frame builder's join after the morph (0x4000cf40), the FX2
 page-2 editor (0x4003a9dc) and FX1's (0x4003abe4), all at instruction
@@ -49,22 +50,19 @@ MODULE = Module(
                kind="jmp", pad_to=8),
         Detour(0x4003ABE4, H("4fefffe448d71c3c"), "p2scenes", "fx1_edit_hook",
                "FX1 page-2 editor entry: the same for FX1", kind="jmp", pad_to=8),
-        Detour(0x400274CC, H("4fefffe848d700fc242f001c"), "p2scenes", "scene_copy_hook",
-               "scene copy: snapshot the scene's page-2 locks beside the stock clipboard",
-               kind="jmp", pad_to=12),
         Detour(0x40025B40, H("4fefffd048d77cfc2a6f0034"), "p2scenes", "scene_write_hook",
-               "scene write (paste, clear, undo): the target scene's page-2 locks follow",
-               kind="jmp", pad_to=12),
-        Detour(0x400275A0, H("4fefffe848d700fc242f0020"), "p2scenes", "scene_undo_hook",
-               "undo snapshot before a paste or clear: the scene's page-2 locks beside it",
+               "scene write (paste, undo): the frame cache is dropped after it",
                kind="jmp", pad_to=12),
         Detour(0x40038C30, H("4fefffd848d73cfc282f002c"), "p2scenes", "scene_clear_hook",
-               "scene clear: the scene's page-2 locks go with its bytes", kind="jmp", pad_to=12),
+               "scene clear: the frame cache is dropped after it", kind="jmp", pad_to=12),
         Detour(0x40037840, H("d1fc0008f0841c10"), "p2scenes", "dial2_hook",
                "FX2 page-2 dial: with a scene held, draw that scene's lock", kind="jmp", pad_to=8),
         Detour(0x40037BDC, H("d1fc0008f07e1c10"), "p2scenes", "dial1_hook",
                "FX1 page-2 dial: the same", kind="jmp", pad_to=8),
     ),
-    claims=Claims(part_window=((0x90522, 144, "page-2 scene lock pool"),)),
+    # bytes 30, 31 of every (scene, track) block: Part +0x8f3e2 + 0x100*scene
+    # + 0x20*track + 30
+    claims=Claims(part_window=tuple((0x8f400 + 0x20 * i, 2, f"page-2 scene cell {i}")
+                                    for i in range(128))),
     gates=(Gate('tools/verify/verify_scenesp2.py'),),
 )

@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
 """SCENES P2 under the port: page-2 locks reach the DSP frame through the
-crossfader, and a page-2 knob turned with a scene held writes the pool.
+crossfader, a page-2 knob turned with a scene held writes a cell, and stock
+scene copy and paste carry the cells.
 
     python3 tools/verify/verify_scenesp2.py REMIX --project DIR
 
 Stages the project's card, boots the remix's image in `ot_emu`, and:
 
-  frame   pokes a pool into every bank's part-0 window (scene 0: T1 FX2
-          MODE = 1 and TIME = 100; scene 1: TIME = 20), selects scenes 0/1,
+  frame   pokes cells into every bank's part-0 window (bytes 30, 31 of the
+          stock scene block; scene 0: T1 FX2 MODE = 1 and TIME = 100;
+          scene 1: TIME = 20), selects scenes 0/1,
           clears both scene-disable bytes, sets the fader and the stock
           weight table, runs 120 frames with the transport on, and reads
           T1's voice record (0x80000110, both pings): at fader 64 MODE must
           snap to the A side (1) and TIME lerp to 60; at fader 0 the B side
-          alone: MODE the knob (measured by a run with the pool's count 0),
+          alone: MODE the knob (measured by a run with no cells),
           TIME 20. The three runs are three boots side by side (each is one
-          LOAD PROJECT): a pool poked once the
+          LOAD PROJECT): a cell poked once the
           transport has started never reaches the live lane, with or
           without a transport restart (measured 28 Sep 2026), so each
           needs the machine as it was after the load: the port loads once
@@ -22,11 +24,17 @@ Stages the project's card, boots the remix's image in `ot_emu`, and:
           pass a fourth.
   editor  calls the FX2 page-2 editor `0x4003a9dc(5, 2 ticks)` on T1 with
           scene A held (0x460d169c = 1): the Part byte and the live lane
-          must not move; the pool in the Part DB's part-0 window and its
-          SRAM twin must hold one entry (scene 0, track 0, slot 5) whose
+          must not move; scene 0's cells in the Part DB's part-0 window
+          and its SRAM twin must hold one lock (track 0, FX2 slot 5) whose
           value is the knob's plus the ticks' step. Then, on the same boot
-          (`ot_emu --step`), the pool is poked to one entry of 50 and the
-          call repeated: the same entry updated, count 1.
+          (`ot_emu --step`), cell 0 is poked to 50 and the call repeated:
+          the same cell updated, the other seven empty. Then the same with
+          FUNCTION held (0x46100b1d bit 5): the cell empty. Then all eight cells
+          are poked with other locks and the call repeated: the turn is
+          dropped, the cells unchanged.
+  paste   the stock scene copy `0x400274cc(0, 0)` and paste
+          `0x40027578(0, 3)` on part 0 with cells in scene 0: scene 3's
+          cells equal scene 0's.
 
 SKIPs without a project, without the port, or for a remix without SCENES
 P2.
@@ -41,16 +49,32 @@ EMU = ROOT / "out/emu/ot_emu"
 PY = ROOT / ".venv/bin/python3"
 OUT = ROOT / "out/scenesp2verify"
 BLOB, BANK_STRIDE, PART_STRIDE = 0x400e21e0, 0x9b340, 0x18b2
-POOL_OFF, SEL_OFF = 0x90522, 0x8ed90
+CELL0, SEL_OFF = 0x8f400, 0x8ed90     # scene s, cell c at CELL0 + 0x100*s + 0x20*c
 RECORDS, DBPTR, SRAM_PART = 0x80000110, 0x46c82456, 0x100a4ece
 WEIGHTS, FADER, SCENE_HELD = 0x80003c60, 0x460d16c8, 0x460d169c
 TRACK_CUR, PART_DISP = 0x80000000, 0x100b14cf
-FX2_EDITOR = 0x4003a9dc
+FX2_EDITOR, SCENE_COPY, SCENE_PASTE = 0x4003a9dc, 0x400274cc, 0x40027578
 LANES = 0x80000810
 
 
 def pokes_bytes(addr, data):
     return [f"{addr + i:#x}={v:#x}" for i, v in enumerate(data)]
+
+
+def cell_pokes(window, cells):
+    """cells: {(scene, cell): (key, value)} -> pokes into a part window."""
+    out = []
+    for (sc, c), (key, val) in cells.items():
+        out += pokes_bytes(window + CELL0 + 0x100 * sc + 0x20 * c, [key, val])
+    return out
+
+
+def cells_of(dump):
+    """A 0x100-byte dump of one scene's blocks -> its eight (key, value) cells."""
+    return [(dump[0x20 * c + 30], dump[0x20 * c + 31]) for c in range(8)]
+
+
+EMPTY = (0xff, 0xff)
 
 
 def weights(xf):
@@ -125,16 +149,16 @@ def main():
         fails += not ok
 
     # ---- the frame pass ---------------------------------------------------
-    # the pool: 'P2', 3 entries -- scene 0 / T1 / FX2 slot 5 (TIME) = 100,
-    # scene 1 / T1 / slot 5 = 20, scene 0 / T1 / slot 0 (MODE) = 1 -- in part
-    # 0 of every bank (the playing bank is the saved one, not bank 0)
-    pool = [0x50, 0x32, 3, 0x00, 0x05, 100, 0x08, 0x05, 20, 0x00, 0x00, 1]
+    # the cells (key = track<<4 | fx1<<3 | slot2): scene 0 / T1 / FX2 slot 5
+    # (TIME) = 100 and slot 0 (MODE) = 1, scene 1 / T1 / slot 5 = 20 -- in
+    # part 0 of every bank (the playing bank is the saved one, not bank 0)
+    cells = {(0, 0): (0x05, 100), (1, 0): (0x05, 20), (0, 3): (0x00, 1)}
 
-    def frames(tag, pool, xf):
+    def frames(tag, cells, xf):
         """One frame run as a scenario: (log, args, dump)."""
         common = []
         for bank in range(16):
-            common += pokes_bytes(BLOB + bank * BANK_STRIDE + POOL_OFF, pool)
+            common += cell_pokes(BLOB + bank * BANK_STRIDE, cells)
             common += pokes_bytes(BLOB + bank * BANK_STRIDE + SEL_OFF, [0, 1])
         common += ["0x80000006=0", "0x80000007=0"]
         tag_ = tag.replace(" ", "_")
@@ -146,15 +170,19 @@ def main():
 
     # ---- the editor with a scene held: one boot, both seeds ----------------
     early = f"{TRACK_CUR:#x}=0;{SCENE_HELD + 3:#x}=1;{PART_DISP:#x}=0"
-    SEEDS = (None, 50)
+    # None: no lock yet; 50: cell 0 holds 50; "func": cell 0 holds 50 and
+    # FUNCTION is held; "full": eight other locks
+    FULL = {(0, c): (0x10 * (c // 6 + 1) + c % 6, 30 + c) for c in range(8)}
+    SEEDS = (None, 50, "func", "full")
+    KFUNC_ROW = 0x46100b1d                 # FUNCTION: row 5, bit 5
 
     def dumps_for(seed):
         d = OUT / f"editor_{seed}"
         d.mkdir(parents=True, exist_ok=True)
         return d, ";".join([f"{DBPTR:#x},4={d / 'dbptr.bin'}"]
-                           + [f"{BLOB + b * BANK_STRIDE + POOL_OFF:#x},12={d / f'pool_{b}.bin'}" for b in range(16)]
+                           + [f"{BLOB + b * BANK_STRIDE + CELL0 - 30:#x},256={d / f'scene_{b}.bin'}" for b in range(16)]
                            + [f"{BLOB + b * BANK_STRIDE + 0x8f084:#x},6={d / f'p2_{b}.bin'}" for b in range(16)]
-                           + [f"{SRAM_PART + POOL_OFF - 0x8ed80:#x},12={d / 'pool_sram.bin'}",
+                           + [f"{SRAM_PART + CELL0 - 30 - 0x8ed80:#x},256={d / 'scene_sram.bin'}",
                               f"{LANES + 0x38:#x},6={d / 'lane.bin'}"])
 
     def editor():
@@ -162,14 +190,33 @@ def main():
         steps = []
         for seed in SEEDS:
             pokes = early
-            if seed is not None:
-                for b in range(16):
-                    pokes += ";" + ";".join(pokes_bytes(BLOB + b * BANK_STRIDE + POOL_OFF, [0x50, 0x32, 1, 0, 5, seed]))
+            seeded = ({(0, 0): (0x05, seed)} if isinstance(seed, int) else {(0, 0): (0x05, 50)} if seed == "func"
+                      else FULL if seed == "full" else {})
+            pokes += f";{KFUNC_ROW:#x}={0x20 if seed == 'func' else 0}"
+            for b in range(16):
+                pk = cell_pokes(BLOB + b * BANK_STRIDE, seeded)
+                if pk:
+                    pokes += ";" + ";".join(pk)
             steps += ["--step", f"-:poke:{pokes}", "--step", f"-:call:{FX2_EDITOR:#x},5,2",
                       "--step", f"-:dump:{dumps_for(seed)[1]}"]
         return OUT / "editor.txt", steps
 
-    # the knob alone: the same run with the pool's count 0, so what fader 0
+    # ---- stock scene copy then paste: scene 0 -> scene 3 of part 0 ----------
+    def paste():
+        d = OUT / "paste"
+        d.mkdir(parents=True, exist_ok=True)
+        pokes = [f"{PART_DISP:#x}=0", "0x80000003=0"]
+        for b in range(16):
+            pokes += cell_pokes(BLOB + b * BANK_STRIDE, {(0, 0): (0x05, 77), (0, 5): (0x1b, 9)})
+        dumps = ";".join([f"{DBPTR:#x},4={d / 'dbptr.bin'}"]
+                         + [f"{BLOB + b * BANK_STRIDE + CELL0 - 30 + 0x100 * sc:#x},256={d / f's{sc}_{b}.bin'}"
+                            for b in range(16) for sc in (0, 3)])
+        return d, OUT / "paste.txt", ["--step", f"-:poke:{';'.join(pokes)}",
+                                      "--step", f"-:call:{SCENE_COPY:#x},0,0",
+                                      "--step", f"-:call:{SCENE_PASTE:#x},0,3",
+                                      "--step", f"-:dump:{dumps}"]
+
+    # the knob alone: the same run with no cells, so what fader 0
     # (the B side, which holds no MODE lock) must read is measured from the
     # project: T1's MODE is 1 in the stress fixture's part 0 and 0 in
     # OCTABAM89_setgate's (a literal 0 failed `make accept`, 26 Sep 2026)
@@ -178,9 +225,11 @@ def main():
     # same loaded machine. Until then each was its own LOAD PROJECT, three
     # side by side and one after.
     specs = {tag: frames(tag, pl, xf)
-             for tag, pl, xf in (("knob", pool[:2] + [0] + pool[3:], 0), ("fader 64", pool, 64), ("fader 0", pool, 0))}
+             for tag, pl, xf in (("knob", {}, 0), ("fader 64", cells, 64), ("fader 0", cells, 0))}
     elog, eargs = editor()
-    scen = [f"{log} " + " ".join(args) for log, args, _ in specs.values()] + [f"{elog} " + " ".join(eargs)]
+    pdir_, plog, pargs = paste()
+    scen = ([f"{log} " + " ".join(args) for log, args, _ in specs.values()]
+            + [f"{elog} " + " ".join(eargs), f"{plog} " + " ".join(pargs)])
     cmd = base + ["--dsp"] + [x for s in scen for x in ("--scenario", s)]
     run(cmd, OUT / "port.txt")
     results = {}
@@ -203,24 +252,43 @@ def main():
             check(f"fader {xf}: ping {ping} T1 TIME (hw 26 lo) = {r[53]} (want {want_time})", r[53] == want_time)
 
     # ---- the editor's checks ------------------------------------------------
-    check(f"editor: both calls returned", editor_text.count("returned, d0") == len(SEEDS))
+    check(f"editor: all {len(SEEDS)} calls returned", editor_text.count("returned, d0") == len(SEEDS))
     for seed in SEEDS:
         d = dumps_for(seed)[0]
         db = int.from_bytes((d / "dbptr.bin").read_bytes(), "big")
         bank = (db - BLOB) // BANK_STRIDE
-        got = (d / f"pool_{bank}.bin").read_bytes()
-        sram = (d / "pool_sram.bin").read_bytes()
+        got = cells_of((d / f"scene_{bank}.bin").read_bytes())
+        sram = cells_of((d / "scene_sram.bin").read_bytes())
         lane = (d / "lane.bin").read_bytes()
         part = (d / f"p2_{bank}.bin").read_bytes()
         knob = part[5]
-        check(f"editor (seed {seed}): pool magic + count 1 in bank {bank}'s part 0 ({got[:3].hex(' ')})",
-              got[:3] == bytes([0x50, 0x32, 1]))
-        check(f"editor (seed {seed}): entry = scene 0 / T1 / FX2 slot 5 ({got[3:5].hex(' ')})", got[3:5] == bytes([0, 5]))
+        if seed == "full":
+            want = [FULL[(0, c)] for c in range(8)]
+            check(f"editor (seed full): eight locks held, the turn dropped ({got})", got == want)
+            check(f"editor (seed full): the Part byte ({knob}) and the lane ({lane[5]}) did not take the turn",
+                  knob == lane[5])
+            continue
+        check(f"editor (seed {seed}): the SRAM twin's scene 0 cells match bank {bank}'s part 0", sram == got)
+        if seed == "func":
+            check(f"editor (seed func): FUNCTION + turn removed the lock ({got[0]})", got[0][0] & 0x80 and
+                  got[1:] == [EMPTY] * 7)
+            continue
+        check(f"editor (seed {seed}): cell 0 = T1 FX2 slot 5 ({got[0][0]:#04x}), cells 1-7 empty",
+              got[0][0] == 0x05 and got[1:] == [EMPTY] * 7)
         start = seed if seed is not None else knob
-        check(f"editor (seed {seed}): value {got[5]} moved up from {start} by the ticks", start < got[5] <= start + 4)
-        check(f"editor (seed {seed}): the SRAM twin matches ({sram[:6].hex(' ')})", sram[:6] == got[:6])
+        check(f"editor (seed {seed}): value {got[0][1]} moved up from {start} by the ticks", start < got[0][1] <= start + 4)
         check(f"editor (seed {seed}): the Part byte ({knob}) and the lane ({lane[5]}) did not take the turn",
-              knob == lane[5] and knob != got[5])
+              knob == lane[5] and knob != got[0][1])
+
+    # ---- copy and paste -------------------------------------------------------
+    ptext = plog.read_text()
+    check("paste: copy and paste returned", ptext.count("returned, d0") == 2)
+    db = int.from_bytes((pdir_ / "dbptr.bin").read_bytes(), "big")
+    bank = (db - BLOB) // BANK_STRIDE
+    s0 = cells_of((pdir_ / f"s0_{bank}.bin").read_bytes())
+    s3 = cells_of((pdir_ / f"s3_{bank}.bin").read_bytes())
+    check(f"paste: scene 0 holds the two locks ({s0[0]}, {s0[5]})", s0[0] == (0x05, 77) and s0[5] == (0x1b, 9))
+    check(f"paste: scene 3's cells equal scene 0's in bank {bank}", s3 == s0)
     print(f"verify_scenesp2: {'FAIL' if fails else 'ok'} ({fails} failure(s))")
     return 1 if fails else 0
 

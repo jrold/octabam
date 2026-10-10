@@ -1,11 +1,35 @@
 # `scenes-p2` — SCENES P2
 
 Scene locks and the crossfader for page 2 of FX1 and FX2. `Kind.CF_PATCH`:
-one DRAM unit, nine detours, nothing on the DSP.
+one DRAM unit, seven detours, nothing on the DSP.
 
 ## Measured
 
-Under the port, 26 Sep 2026 (`tools/verify/verify_scenesp2.py`):
+Under the port, 10 Oct 2026, the cells (`tools/verify/verify_scenesp2.py`
+on `remixes/test/scenes-midisc`, MIDI SCENES + KITS + SCENES P2 + PLOCKS
+P2, OCTABAM89_setgate):
+
+- Cells `{scene 0: MODE 1, TIME 100; scene 1: TIME 20}` on T1, fader 64:
+  MODE 1 and TIME 60 in both pings; fader 0: MODE the knob, TIME 20.
+- The FX2 editor with scene A held: one cell written in the working window
+  and the SRAM twin, the Part byte and the lane unchanged; a seeded cell
+  updated in place; FUNCTION + turn empties it; with all eight cells of the
+  scene taken the turn is dropped.
+- Stock scene copy `0x400274cc(0, 0)` then paste `0x40027578(0, 3)`: scene
+  3's cells equal scene 0's.
+- Stock image, every scene block's bytes 30 and 31 set to `0x12 0x34` in
+  every Part record against the unmodified project, 300 frames with the
+  transport on: no DSP block differs (`blockdump.py diff`); the working
+  copy `0x80000ed4` differs in those bytes' pairs only.
+- 1,536 bank files on this machine: bytes 30 and 31 are `0xff` in all
+  196,608 scene blocks. The census does not show that no stock code reads
+  them; the frame builder skips them (`0x4000cef6`), and scene copy, paste,
+  undo snapshot and clear move 32 bytes a track (`moveq #32` at
+  `0x400274f8`, `0x40025bc8`, `0x4002761c`, `0x40038cbc`).
+
+Under the port, 26 Sep 2026, the 144-byte pool at Part `+0x17a2` this
+module used until 10 Oct 2026 (stock's LFO designs of MIDI tracks 2–8,
+`docs/firmware/PARTS.md` section 9):
 
 - bamsep26 and rig-kits (Octakit): pool `{scene 0: MODE 1, TIME 100;
   scene 1: TIME 20}` on T1 (BusDelay), fader 64: T1's record carries MODE 1
@@ -36,16 +60,19 @@ Under the port, 26 Sep 2026 (`tools/verify/verify_scenesp2.py`):
 - A knob PRESS with a scene held toggles the page-1 lock of that knob
   (stock, `0x40053a68`); page 2 has FUNC+turn to
   remove a lock instead.
-- The pool holds 47 locks a part.
+- A scene holds eight page-2 locks across its tracks (128 a Part). The
+  pool before 10 Oct 2026 held 47 a Part across all scenes.
+- Page-2 scene locks saved by an image before 10 Oct 2026 are in the old
+  pool at Part `+0x17a2` and are not read.
+- Whether any stock routine other than those named under Measured reads
+  or writes scene bytes 30 and 31.
 
-- **Pool store order.** The frame pass (inside the frame ISR) walks the
-  pool without a lock. `pappend` writes the entry's three bytes (track,
-  slot, value) and then the count; `premove` moves the tail down and then
-  drops the count. An ISR between two stores sees the old count, a whole
-  new entry, or a duplicated entry; it does not see an unwritten one. The
-  order is by reading the code; the port is lock-step and cannot interleave
-  the ISR with the task, so it is not measured on the port or the unit. The
-  store order is checked under the port with `--watch-mem`.
+- **Cell store order.** The frame pass (inside the frame ISR) reads the
+  cells without a lock, key byte first. A new lock writes the value and
+  then the key; a removal writes `0xff` to the key; an update writes the
+  value. An ISR between two stores sees no lock or a whole one. The order
+  is by reading the code; the port is lock-step and cannot interleave the
+  ISR with the task.
 
 ## Gates
 
@@ -79,25 +106,25 @@ together (`docs/firmware/MIDI.md` Appendix C):
 
 Two spare bytes per track could host **one** extra halfword, not three, and
 the DSP-side companion packing would still be lost at every intermediate
-position.
+position. Those two bytes (30 and 31, skipped by the morph) are where this
+module keeps its locks instead, as cells the frame pass reads itself.
 
 ## What this adds
 
-- **The pool.** Each Part window carries 144 bytes at `+0x90522`: `u16`
-  magic `P2`, `u8` count, then 3-byte entries `scene<<3 | track`,
-  `fx1<<3 | slot2`, `value`; 47 at most. The window is copied whole by
-  Part Save, Part Reload and Project Save (`docs/firmware/STORAGE.md` section 3)
-  and by KITS's Kit loads and saves (whole Parts), so the pool travels
-  with the part. midisc's MIDI-track lock blob lives at the same offset:
-  `Claims.part_window` makes the ledger refuse the pair.
-  Stock keeps the LFO designs of MIDI tracks 2–8 in these bytes
-  (`docs/firmware/PARTS.md` section 9, measured under the port 10 Oct
-  2026).
+- **The cells.** Bytes 30 and 31 of each track's 32-byte block in the
+  stock scene block (Part `+0x8f3e2 + 0x100·scene + 0x20·track`) are a
+  cell: byte 30 = `track<<4 | fx1<<3 | slot2`, bit 7 set = empty; byte 31
+  = the value. A scene's eight cells (one per track block) hold up to eight
+  locks of any of its tracks. Stock moves these bytes with the rest of the
+  block: Part Save, Reload and paste, Project Save, the CS1 copy, KITS's
+  Kits, and scene copy, paste, undo and clear. `Claims.part_window` lists
+  the 128 cells; MIDI SCENES' bytes are elsewhere.
 - **The frame pass** (`frame_hook`, at the join after the stock morph,
   `0x4000cf40`). Per track: the current key `(bank, part, scene A, scene
   B)` (bank/part from `0x8000182a[t]` / `0x80001832[t]`, the selectors from
   the part) is compared with a cache row; on a change the track's locks are
-  unpacked from the pool (A and B values per slot, `0xff` = none). Every
+  unpacked from scene A's and scene B's cells (A and B values per slot,
+  `0xff` = none). Every
   locked slot is then written into the voice record's page-2 bytes (FX2
   halfwords 24..26 = bytes 48..53, FX1 18..20 = 36..41): `(A*wA + B*wB +
   0x4000) >> 15`, an unlocked side taking the knob byte the copier left in
@@ -109,18 +136,16 @@ position.
   `0x4003abe4`) are detoured at entry. With a scene held (`0x460d169c`: 1 =
   A, else B) a turn on slots 6..11 edits the held scene's lock: the slot's
   own encoder hook and clamp (descriptor `+0x12a`, `+0x6a`, `+0x9a`) from
-  the lock's value, or the Part's byte when unlocked; the pool in the
+  the lock's value, or the Part's byte when unlocked; the cell in the
   working window and its SRAM twin (`0x100a4ece + part*0x18b2`); the stock
   scene editor's dirty marks; the slot's redraw flag. With FUNC held the
-  turn removes the lock. No scene held: on to the stock body with the entry
+  turn removes the lock. A scene with eight locks drops a turn that would
+  add a ninth. No scene held: on to the stock body with the entry
   state untouched.
-- **Scene copy / paste / clear / undo.** A copy (`0x400274cc`) snapshots
-  the scene's entries beside the stock clipboard; the undo snapshot
-  (`0x400275a0`) does the same for its buffer; a scene write
-  (`0x40025b40(src, part, scene)`: paste, undo) drops the target scene's
-  entries and adds the clip's when `src` is the stock clipboard
-  (`0x460c8122`) or the undo buffer (`0x460bf218`); the clear writer
-  (`0x40038c30(scene)`) drops them.
+- **Scene copy / paste / clear / undo.** Stock moves the cells. The scene
+  write (`0x40025b40(src, part, scene)`: paste, undo) and the clear writer
+  (`0x40038c30(scene)`) are detoured to run as calls and drop the frame
+  cache after they return.
 - **The dial.** The page-2 knob draw reads the Part byte at `0x40037840`
   (FX2) and `0x40037bdc` (FX1); with a scene held it shows that scene's
   lock instead, as the page-1 dials do. With PLOCKS P2 in the remix and
