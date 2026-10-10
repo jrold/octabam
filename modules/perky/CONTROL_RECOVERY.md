@@ -154,3 +154,32 @@ one per family update.  Landmarks already identified:
 
 So the remaining job is bounded: disassemble those two call sites, find the
 coefficient computation, and read off its two constants.
+
+## The last three engines are a different class of work
+
+Measured after Slap landed (9 of 12 shipping):
+
+**Wavetable V1 / V2.**  The host model `wavetable_drum_compact.py` says of
+itself "an oracle candidate, not an Octatrack DSP renderer", and it shows: the
+engine-2 and engine-5 captures place the object at **wrapper + 0xC4** (the
+0x0802819D simple-oscillator entry sits at object +0x58, i.e. wrapper +0x11C,
+exactly as the other engines' geometry), with the primary oscillator's
+current/next wave pointers at object +0x38/+0x3C holding **0x080222A0** — but
+the model's *secondary*-oscillator and crossfade fields (object +0xF4, +0xF8,
++0x100, +0x104) hold no valid wave address in either capture.  So the ARM
+layout for the two-oscillator crossfade has to be recovered before a port can
+be verified; rendering the model at the right offset does not reproduce the
+firmware PCM.  Its wavetable assets may also be its own bank rather than the
+four shared waves.
+
+**Acoustic Hats.**  Its render is single-precision float, not fixed point: the
+one-pole filter does `decayed = previous * DECAY`, `summed = input + previous`
+with IEEE754 singles stored in the object (object +0x100 int, +0x104 float bits,
++0x108 dirty flag), then truncates to int.  The ColdFire build is freestanding
+`-msoft-float` with no libgcc float helpers linked, so this needs either an
+exact integer soft-float FMUL/FADD for those two operations or a different
+approach; it also plays *sample assets* (object +0xF8 address, +0xFC length)
+that the asset extractor does not currently carry.
+
+Neither is blocked on method — both are blocked on work that is larger than the
+sweep-and-fit pass that closed Complex Drum and Slap.
