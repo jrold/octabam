@@ -23,7 +23,12 @@ static int32_t s32(uint32_t u){return (u&0x80000000u)?-1-(int32_t)~u:(int32_t)u;
 static uint32_t u32(int32_t s){return s>=0?(uint32_t)s:~(uint32_t)(-1-s);}
 static int32_t asr(int32_t v,unsigned n){uint32_t b;if(!n)return v;b=u32(v)>>n;if(v<0)b|=(~0u)<<(32u-n);return s32(b);}
 static int32_t mullo(int32_t a,int32_t b){return s32(pk_cf_mul_lo_u32(u32(a),u32(b)));}
-static uint16_t tab16(const uint8_t*t,size_t i){return (uint16_t)t[2*i]|(uint16_t)((uint16_t)t[2*i+1]<<8);}
+/* Same little-endian word as the byte pair, through the typed helper: every
+ * table in this engine is a multiple of four bytes and 2*i is even, so the
+ * load is a single move.l + byterev rather than two byte loads, a shift and
+ * an or.  The two bytes past the field are inside the same table (or the
+ * next one in the bank) and are discarded. */
+static uint16_t tab16(const uint8_t*t,size_t i){return pk_cf_ld16(t,2u*i);}
 static int16_t tabs16(const uint8_t*t,size_t i){return s16(tab16(t,i));}
 
 const uint8_t *pk_cf_wt_wave(const pk_cf_wt_tables *t, uint32_t address)
@@ -83,10 +88,15 @@ static void wt_set_frequency(uint8_t*s,uint32_t f){
 int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
     uint32_t i;
     uint32_t base;
+    /* Resolved wave views, kept across samples: the primary and secondary
+     * addresses only move at the object's own wave/phase transitions, so
+     * resolving all four every sample was four constant-folded address
+     * comparisons and a bank index for nothing. */
+    uint32_t a_cur=0xffffffffu,a_nc=0xffffffffu,a_sec=0xffffffffu,a_ns=0xffffffffu;
+    const uint8_t*wc=0,*wn=0,*sc=0,*sn=0;
     if(!s||!d||!t||!t->pitch||!t->base_wave||!t->bank)return 0;
     base=(uint32_t)mullo(pitch(r16(s,0xba),t->pitch),0xbb80u)>>20;
     for(i=0;i<n;i++){
-        const uint8_t*wc,*wn,*sc,*sn;
         const uint16_t amp=env(s,0x74,t);
         const uint16_t pe=env(s,0xc4,t);
         const uint32_t lo=(uint32_t)pe&0x1fffu,sh=13u-(uint32_t)(pe>>13);
@@ -108,8 +118,10 @@ int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
         index=(phase>>9)&0x7ffu;following=(index+1)&0x7ffu;fraction=phase&0x1ffu;
         cur=r32(s,0x100);sec=r32(s,0x108);nc=cur;ns=sec;
         if(index>following&&r32(s,0x104)!=cur){nc=r32(s,0x104);ns=r32(s,0x10c);}
-        wc=pk_cf_wt_wave(t,cur);wn=pk_cf_wt_wave(t,nc);
-        sc=pk_cf_wt_wave(t,sec);sn=pk_cf_wt_wave(t,ns);
+        if(cur!=a_cur){wc=pk_cf_wt_wave(t,cur);a_cur=cur;}
+        if(nc!=a_nc){wn=pk_cf_wt_wave(t,nc);a_nc=nc;}
+        if(sec!=a_sec){sc=pk_cf_wt_wave(t,sec);a_sec=sec;}
+        if(ns!=a_ns){sn=pk_cf_wt_wave(t,ns);a_ns=ns;}
         if(!wc||!wn||!sc||!sn)return 0;
         {
             const int32_t a1=(int32_t)tabs16(wc,index),a2=(int32_t)tabs16(wn,following);

@@ -31,7 +31,7 @@ static int32_t s32(uint32_t u){return (u&0x80000000u)?-1-(int32_t)~u:(int32_t)u;
 static uint32_t u32(int32_t s){return s>=0?(uint32_t)s:~(uint32_t)(-1-s);}
 static int32_t asr(int32_t v,unsigned n){uint32_t b;if(!n)return v;b=u32(v)>>n;if(v<0)b|=(~0u)<<(32u-n);return s32(b);}
 static int32_t mullo(int32_t a,int32_t b){return s32(pk_cf_mul_lo_u32(u32(a),u32(b)));}
-static uint16_t tab16(const uint8_t*t,size_t i){return (uint16_t)t[2*i]|(uint16_t)((uint16_t)t[2*i+1]<<8);}
+static uint16_t tab16(const uint8_t*t,size_t i){return pk_cf_ld16(t,2u*i);}
 /* --- shared common envelope, identical to cf_fold's ----------------------- */
 static uint16_t env(uint8_t*s,size_t b,const pk_cf_ah_tables*t){
     uint8_t st=s[b];int32_t v=s32(r32(s,b+0xc));

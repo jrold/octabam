@@ -21,7 +21,7 @@ static int32_t mullo(int32_t a,int32_t b){return s32(pk_cf_mul_lo_u32(u32(a),u32
 static int32_t add(int32_t a,int32_t b){return s32(u32(a)+u32(b));}
 static int32_t sub(int32_t a,int32_t b){return s32(u32(a)-u32(b));}
 static int32_t clamp32767(int32_t v){if(v<-32767)return -32767;if(v>=32767)return 32767;return v;}
-static uint16_t tab16(const uint8_t*t,size_t i){return (uint16_t)t[2*i]|(uint16_t)((uint16_t)t[2*i+1]<<8);}
+static uint16_t tab16(const uint8_t*t,size_t i){return pk_cf_ld16(t,2u*i);}
 
 /* --- shared common envelope (amp env at object 0x74) ---------------------- */
 static uint16_t slap_env(uint8_t*s,size_t b,const pk_cf_fold_tables*t){

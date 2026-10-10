@@ -20,8 +20,19 @@
  * and the captured filter values, plus millions of random pairs).
  */
 
+/* Leading-zero count.  The MCF54455 has FF1 (ISA_C opcode 0x04c0) for exactly
+ * this, priced at one execution cycle in the manual, against up to 32
+ * shift-and-test iterations for the portable loop below -- and Acoustic Hats'
+ * soft-float calls this per sample through i32->f32 and the add's
+ * normalization.  FF1 sets N and Z from the source, so the condition codes
+ * are clobbered (the sibling BYTEREV in cf_math.h leaves them alone). */
 static inline int32_t pk_cf_clz32(uint32_t x)
 {
+#if defined(__mcoldfire__)
+    uint32_t r = x;                  /* FF1 is a one-operand, in-place op */
+    __asm__("ff1 %0" : "+d"(r) : : "cc");
+    return (int32_t)r;
+#else
     int32_t n = 0;
     if (x == 0u)
         return 32;
@@ -30,6 +41,7 @@ static inline int32_t pk_cf_clz32(uint32_t x)
         ++n;
     }
     return n;
+#endif
 }
 
 /* Assemble a finite single from an unbiased exponent, a 24-bit mantissa
@@ -127,17 +139,20 @@ static inline uint32_t pk_cf_f32_add(uint32_t a, uint32_t b)
     if (ea == 0xff || eb == 0xff)
         return sa | 0x7f800000u;
     if (ea == 0) {
-        e = -126;
-        MA = ma;
-        while (!(MA & 0x800000u)) { MA <<= 1; --e; }
+        /* Subnormal operand: normalise the 24-bit field with one FF1 instead
+         * of a shift loop.  Equivalent to the original for ma != 0, which the
+         * zero-operand return above guarantees. */
+        const int32_t z = pk_cf_clz32(ma) - 8;
+        e = -126 - z;
+        MA = ma << z;
     } else {
         e = ea - 127;
         MA = ma | 0x800000u;
     }
     if (eb == 0) {
-        f = -126;
-        MB = mb;
-        while (!(MB & 0x800000u)) { MB <<= 1; --f; }
+        const int32_t z = pk_cf_clz32(mb) - 8;
+        f = -126 - z;
+        MB = mb << z;
     } else {
         f = eb - 127;
         MB = mb | 0x800000u;

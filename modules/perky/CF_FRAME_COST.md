@@ -139,3 +139,54 @@ optimisation.
 
 Numbers in this file are the vendored core's cycle model. The project's own
 `cfmeter` factor (x1.7) still applies on top.
+
+## Third-party review, five items — reviewed, measured, answered
+
+A review proposed five optimisations. All five were checked against the code
+and the shipped image; four were implemented. The four-voice fixture moved
+266.1 -> 263.3 us/frame, and every bit-exactness gate still passes (24/25; the
+budget gate is the one that does not). The measurements matter more than the
+list, so each verdict carries its number.
+
+1. **Resonant snare: "pounds the ARM state object every sample" — IMPLEMENTED,
+   small win.** The snare does touch the object ~50 times a sample (four
+   decays x five fields, three resonators x nine, envelope, noise) and most of
+   that is invariants. It is now block-cached: `res_env_load/step/store`,
+   `res_dec_load/step/store`, `res_core_load/step/store` and
+   `res_noise_load/step/store` run the whole 16-sample render in locals and
+   commit once, exactly the shape cf_noise_hat already used. Measured: **-1.5
+   us/frame (0.6%)**, not the expected fifth of the engine. The reason is the
+   register file: the working set is ~50 fields against 8 data registers, so
+   GCC spills and the object traffic is merely exchanged for stack traffic.
+   The object accesses were already two instructions each after the BYTEREV
+   work; what is left is arithmetic. The image grew 6 KB.
+2. **Wavetable: `tab16` byte pairs, four `pk_cf_wt_wave()` a sample —
+   IMPLEMENTED.** `tab16` now goes through `pk_cf_ld16`, and the four wave
+   views are resolved once and kept until the object's own address changes
+   (the bank stride is 0x1000, so each call was otherwise four comparisons
+   plus a bank index). `tab16` was also switched in the other seven engines.
+   The rest of the review's list — phase, current/next wave, pitch-envelope
+   amount, mix — is genuinely per-sample mutable state, and hoisting it into
+   locals hits the same register-file wall as item 1.
+3. **Fold2: `wave()` scans four descriptors inside the loop, p1/p2 recomputed
+   — IMPLEMENTED.** The descriptor scan is now cached per oscillator
+   (`fold_wave_cache`) and p1/p2, the fold amount and the mute byte are read
+   once per block. Note the oscillator *phase* cannot be hoisted: it changes
+   every sample by construction.
+4. **Acoustic Hats soft-float: `pk_cf_clz32()` is a shift loop, use FF1 —
+   IMPLEMENTED.** `ff1 %dn` is one ISA_C instruction (the opcode the emulator
+   already implements for the stock image, and the manual prices it at one
+   cycle). It is a one-operand, in-place instruction, and it sets N/Z from the
+   source, so the asm declares a `cc` clobber — unlike the sibling BYTEREV,
+   which leaves the codes alone. The two subnormal normalisation loops in
+   `pk_cf_f32_add` were folded into the same helper. Measured: **-0.9
+   us/frame**, smaller than hoped because the loop rarely ran far (the
+   captured filter values normalise in a few steps).
+5. **`pk_cf_mul_hi_u32()`: four multiplies, investigate the EMAC —
+   REVIEWED, NO CHANGE.** The four multiplies are real but they are already
+   `MULU.W`, not `MULU.L`: GCC recognises the masked 16-bit operands and emits
+   the 9-cycle form (verified in the generated assembly). Four 16x16 partial
+   products is the minimum for an exact high half — a 32x32 `MULU.L` yields
+   only the low half. The EMAC cannot do it either: `MAC.L` accumulates into a
+   **48-bit** accumulator, so a 64-bit product's top 16 bits are gone; taking
+   the high half needs bits 63:32.
