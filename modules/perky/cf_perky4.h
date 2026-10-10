@@ -6,6 +6,7 @@
 #include "cf_noise_tone.h"
 #include "cf_resonant.h"
 #include "cf_noise_hat.h"
+#include "cf_simple_drum.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -17,7 +18,8 @@ enum {
     PK4_ALGO_NOISE_TONE = 3,
     PK4_ALGO_RESONANT = 4,
     PK4_ALGO_NOISE_HAT = 5,
-    PK4_ALGO_COUNT = 6,
+    PK4_ALGO_SIMPLE_DRUM = 6,
+    PK4_ALGO_COUNT = 7,
     PK4_TRACK_COUNT = 4
 };
 
@@ -41,12 +43,12 @@ enum {
  */
 #define PK4_VOICE_COUNT 4
 static const uint8_t pk4_family_engines[PK4_VOICE_COUNT][3] = {
-    { PK4_ALGO_FOLD1,     PK4_ALGO_FOLD1,      PK4_ALGO_FOLD1 },       /* V1 */
+    { PK4_ALGO_FOLD1,     PK4_ALGO_SIMPLE_DRUM, PK4_ALGO_SIMPLE_DRUM }, /* V1 */
     { PK4_ALGO_FOLD2,     PK4_ALGO_FOLD2,      PK4_ALGO_FOLD2 },       /* V2 */
     { PK4_ALGO_RESONANT,  PK4_ALGO_KARPLUS,    PK4_ALGO_KARPLUS },     /* V3 */
     { PK4_ALGO_NOISE_HAT, PK4_ALGO_NOISE_TONE, PK4_ALGO_NOISE_TONE },  /* V4 */
 };
-static const uint8_t pk4_family_len[PK4_VOICE_COUNT] = { 1u, 1u, 2u, 2u };
+static const uint8_t pk4_family_len[PK4_VOICE_COUNT] = { 2u, 1u, 2u, 2u };
 
 static inline unsigned pk4_voice_len(unsigned voice)
 {
@@ -96,9 +98,12 @@ typedef struct {
      * post-engine delay and the overlapping pulse-stack limb. MODE 0 selects
      * metallic, 1 white, 2 the pulse stack. */
     uint8_t nh[PK_CF_NH_WRAPPER_BYTES];
+    /* Simple Drum: one 0x120-byte ARM object, one oscillator. */
+    uint8_t sd[PK_CF_SD_STATE_BYTES];
     pk4_control fold1_ctl, fold2_ctl, karplus_ctl, nt_m1_ctl, nt_shared_ctl;
     pk4_control res_snare_ctl, res_bass_ctl, res_nt_ctl;
     pk4_control nh_ctl;
+    pk4_control sd_ctl;
     uint32_t rng_low, rng_high;
     uint8_t initialized_mask;
     uint8_t active_algo;

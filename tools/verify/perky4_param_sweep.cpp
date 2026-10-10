@@ -36,10 +36,10 @@ namespace {
  * false "dead control". 32768 samples (~0.74 s at 44.1 kHz) clears it. */
 constexpr unsigned kBlock = 32768;
 constexpr unsigned kModes = 3;
-constexpr unsigned kAlgos = 6;
+constexpr unsigned kAlgos = 7;
 constexpr unsigned kCtl = 4;
 const char* kAlgoName[kAlgos] = {"Fold1", "Fold2", "Karplus", "NoiseTone",
-                                 "Resonant", "NoiseHat"};
+                                 "Resonant", "NoiseHat", "SimpleDrum"};
 const char* kCtlName[kCtl] = {"TUNE", "DECAY", "PARAM1", "PARAM2"};
 
 struct Render {

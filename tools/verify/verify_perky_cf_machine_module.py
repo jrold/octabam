@@ -54,6 +54,7 @@ def main() -> None:
         ("pknoise", "out/perky/cf-final/pknoise.s", True, False),
         ("pkresonant", "out/perky/cf-final/pkresonant.s", True, False),
         ("pknoisehat", "out/perky/cf-final/pknoisehat.s", True, False),
+        ("pksimpledrum", "out/perky/cf-final/pksimpledrum.s", True, False),
         ("pkcore", "out/perky/cf-final/pkcore.s", True, False),
         ("pkcontrol", "out/perky/cf-final/pkcontrol.s", True, False),
     ]
@@ -72,6 +73,7 @@ def main() -> None:
         ("pknoise", "cf_noise_tone.c"),
         ("pkresonant", "cf_resonant.c"),
         ("pknoisehat", "cf_noise_hat.c"),
+    ("pksimpledrum", "cf_simple_drum.c"),
     )
     if generated != expected_generated:
         raise AssertionError(f"ColdFire generator units drifted: {generated!r}")
@@ -112,7 +114,7 @@ def main() -> None:
 
     print(
         "PERKY CF machine declaration: PASS "
-        "(7 DRAM CF units; generator/assets/shims closed; sample-free recorder donor live+SRAM; "
+        "(8 DRAM CF units; generator/assets/shims closed; sample-free recorder donor live+SRAM; "
         "no CPU writes in stock DSP span; build-time SHA-pinned assets; stock DSP section absent; "
         "0 DSP ranges; 0 DSP preboot arena)"
     )

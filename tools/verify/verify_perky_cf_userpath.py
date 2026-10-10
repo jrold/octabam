@@ -54,7 +54,9 @@ PERKY_TRACKS = (1, 2, 3, 4)       # one-based OT track numbers
 # order.  Kept as a named constant so frame-cost experiments can stage a
 # different engine mix without editing the gate (see
 # tools/verify/verify_perky_cf_realtime_budget.py).
-PERKY_ALGO = (0, 0, 0, 0)
+# T1 runs Simple Drum (V1 local 1) so the whole-machine path covers the
+# newest engine, not just the long-standing family defaults.
+PERKY_ALGO = (1, 0, 0, 0)
 PERKY_INDEX = tuple(t - 1 for t in PERKY_TRACKS)
 FLEX_TRACKS = (7, 8)
 SAMPLE_REL = "AUDIO/PERKY_GATE_440.wav"

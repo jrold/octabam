@@ -38,7 +38,7 @@ CONTROL = ROOT / "modules/perky/control_cf_final.c"
 # range; the expected mapping is therefore the hardware order with the
 # not-yet-ported engines removed.
 EXPECTED = {
-    0: ["FOLD1"],                    # V1 - Wavetable V1 and Simple Drum pending
+    0: ["FOLD1", "SIMPLE_DRUM"],     # V1 - Wavetable V1 pending
     1: ["FOLD2"],                    # V2 - Wavetable V2 and Complex Drum pending
     2: ["RESONANT", "KARPLUS"],      # V3 - Slap pending (sits between them)
     3: ["NOISE_HAT", "NOISE_TONE"],  # V4 - Acoustic Hats pending
@@ -96,8 +96,8 @@ def main() -> None:
                      f"and voice {voice}")
             seen[engine] = voice
 
-    if len(seen) != 6:
-        fail(f"the silo covers {sorted(seen)} -- expected all six implemented engines")
+    if len(seen) != 7:
+        fail(f"the silo covers {sorted(seen)} -- expected all seven implemented engines")
 
     # The driver must enforce the silo in exactly one place and publish the
     # per-voice knob range.
