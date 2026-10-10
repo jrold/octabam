@@ -37,6 +37,7 @@
 #undef pk_defaults
 
 #include "cf_perky4.h"
+#include "cf_pcm_rice.h"
 
 #define PK_FINAL_TUNE 0u
 #define PK_FINAL_DECAY 1u
@@ -66,11 +67,45 @@ extern const uint8_t pk_asset_wave2[];
 extern const uint8_t pk_asset_wave3[];
 extern const uint8_t pk_asset_res_interp_a[];
 extern const uint8_t pk_asset_res_interp_b[];
-extern const uint8_t pk_asset_wt_base[];
-extern const uint8_t pk_asset_wt_bank[];
-extern const uint8_t pk_asset_ah_closed[];
-extern const uint8_t pk_asset_ah_open[];
-extern const uint8_t pk_asset_ah_ride[];
+extern const uint8_t pk_asset_pcm_rice[];
+extern const uint8_t pk_asset_pcm_rice_end[];
+
+/* The five big PCM assets travel as one lossless PKR1 stream, because the card
+ * OS upgrade refuses an ELUP .bin whose payload exceeds 1 MiB and these
+ * 652,812 bytes are effectively incompressible.  They are decoded once into
+ * these .bss buffers (never loaded, so they cost the image nothing) before any
+ * render can ask for them. */
+extern uint8_t pk_pcm_wt_base[];
+extern uint8_t pk_pcm_wt_bank[];
+extern uint8_t pk_pcm_ah_closed[];
+extern uint8_t pk_pcm_ah_open[];
+extern uint8_t pk_pcm_ah_ride[];
+
+static uint8_t pk_final_pcm_ready;
+
+static void pk_final_decode_pcm(void)
+{
+    static const pk_cf_rice_target targets[5] = {
+        { 2048u,   (int16_t *)(void *)pk_pcm_wt_base },
+        { 98304u,  (int16_t *)(void *)pk_pcm_wt_bank },
+        { 10101u,  (int16_t *)(void *)pk_pcm_ah_closed },
+        { 86400u,  (int16_t *)(void *)pk_pcm_ah_open },
+        { 129553u, (int16_t *)(void *)pk_pcm_ah_ride },
+    };
+    if (pk_cf_rice_unpack(pk_asset_pcm_rice,
+                          (uint32_t)(pk_asset_pcm_rice_end - pk_asset_pcm_rice),
+                          targets, 5u))
+        pk_final_pcm_ready = 1u;
+}
+
+/* First call is the UI tick, which runs long before any PERKY render, so the
+ * one-time cost never lands in the audio callback; pk_render keeps the check
+ * as a one-byte guard in case a render ever gets there first. */
+static void pk_final_ensure_pcm(void)
+{
+    if (!pk_final_pcm_ready)
+        pk_final_decode_pcm();
+}
 
 const uint8_t pk_defaults[12] = {
     64, 64, 0, 64, 64, 0,
@@ -102,11 +137,11 @@ static const pk4_assets pk_final_assets = {
     .m1_wave = pk_asset_m1_wave,
     .res_interp_a = pk_asset_res_interp_a,
     .res_interp_b = pk_asset_res_interp_b,
-    .wt_base = pk_asset_wt_base,
-    .wt_bank = pk_asset_wt_bank,
-    .ah_closed = pk_asset_ah_closed,
-    .ah_open = pk_asset_ah_open,
-    .ah_ride = pk_asset_ah_ride,
+    .wt_base = pk_pcm_wt_base,
+    .wt_bank = pk_pcm_wt_bank,
+    .ah_closed = pk_pcm_ah_closed,
+    .ah_open = pk_pcm_ah_open,
+    .ah_ride = pk_pcm_ah_ride,
     .m1_wave_address = 0x080310e0u,
 };
 
@@ -204,12 +239,16 @@ uint32_t pk_track_page(const volatile uint8_t *type_ptr)
 
 void pk_ui_tick(void)
 {
+    /* Boot-time, in the UI task: decode the PCM assets out of the PKR1 stream
+     * once, long before a render can need them. */
+    pk_final_ensure_pcm();
     /* 0x100b14cc is the stock "current track" byte the legacy builder used. */
     U32(0x400d5f38u + PERKY_ROW * 4u) = pk_final_page((unsigned)U8(0x100b14ccu) & 7u);
 }
 
 int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
 {
+    pk_final_ensure_pcm();
     volatile uint32_t *cursor;
     volatile uint16_t *fp;
     uint8_t src[6];

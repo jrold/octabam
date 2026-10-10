@@ -53,6 +53,9 @@ from remix import registry  # noqa:E402
 DEFAULT_WORK = ROOT / "out/perky/machine-canary"
 DEFAULT_MAINOS = ROOT / "out/mainos_perky_machine.bin"
 STOCK_SYX = ROOT / "downloads/extracted/OCTATRACK_OS1.40C.syx"
+# 0x100000 + 12: the ELUP file length the unit's OS-upgrade validator accepts
+# (`filesize - 12 > 0x100000` is the refusal that prints "LENGTH ERROR").
+CARD_OS_BIN_MAX = 0x100000 + 12
 EFT = ROOT / "vendor/elektron-firmware-tool/elektron-firmware-tool"
 MAKE_BIN = ROOT / "tools/build/make_bin.py"
 
@@ -172,6 +175,18 @@ def wrap_flashable(mainos: Path, version: str) -> tuple[Path, Path, Path]:
     )
     if not card.exists() or not midi.exists():
         die("firmware wrapper returned without both card and MIDI images")
+    # The card OS upgrade's own validator (0x4007f748) computes
+    # `filesize - 12` and refuses anything over 0x100000; the screen it prints
+    # is "LENGTH ERROR".  An artifact called flashable from the card must
+    # honour that, or the unit rejects it after the copy.
+    if card.stat().st_size > CARD_OS_BIN_MAX:
+        die(
+            f"the card OS image is {card.stat().st_size:,} B, over the "
+            f"{CARD_OS_BIN_MAX:,} B the unit's upgrade accepts "
+            f"(datasize-12 > 0x100000 -> \"LENGTH ERROR\"). Shrink the payload: "
+            f"the counts are in tools/perky/perky_cf_assets.py and "
+            f"tools/verify/verify_perky_cf_pcm_rice.py."
+        )
     return card, midi, manifest
 
 

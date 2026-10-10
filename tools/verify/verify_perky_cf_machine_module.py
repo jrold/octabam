@@ -87,12 +87,17 @@ def main() -> None:
         raise AssertionError(f"ColdFire generator units drifted: {generated!r}")
 
     control = (ROOT / "modules/perky/control_cf_final.c").read_text()
-    asset_labels = tuple(row[0] for row in perky_cf_assets.ASSETS)
-    for label in asset_labels:
+    asset_labels = tuple(row[0] for row in perky_cf_assets.IMAGE_ASSETS)
+    for label in asset_labels + (perky_cf_assets.PCM_STREAM_LABEL,):
         if f"extern const uint8_t {label}[];" not in control:
             raise AssertionError(f"shipping control is missing asset extern {label}")
-    if len(asset_labels) != 16 or len(set(asset_labels)) != 16:
-        raise AssertionError(f"expected exactly sixteen unique firmware assets, got {asset_labels!r}")
+    if len(asset_labels) != 11 or len(set(asset_labels)) != 11:
+        raise AssertionError(f"expected exactly eleven unique firmware assets, got {asset_labels!r}")
+    # The PCM that cannot fit the card path travels as one lossless stream and
+    # decodes into .bss at boot; both halves must be wired.
+    for label, _size in perky_cf_assets.PCM_SYMBOLS:
+        if f"extern uint8_t {label}[];" not in control:
+            raise AssertionError(f"shipping control is missing PCM destination {label}")
 
     asset_source = (ROOT / "modules/perky/cf_assets.s").read_text()
     if '.include "remix.inc"' not in asset_source:

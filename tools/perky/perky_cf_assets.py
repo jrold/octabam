@@ -92,13 +92,46 @@ def _byte_rows(blob: bytes, width: int = 16) -> list[str]:
     ]
 
 
+# The five big firmware assets are carried as ONE lossless PKR1 stream
+# (tools/perky/pcm_rice.py) instead of raw image rodata.  The card OS upgrade
+# refuses an ELUP .bin whose payload exceeds 1 MiB, and these 652,812 bytes are
+# effectively incompressible PCM: they cost the image ~1:1 and pushed the
+# payload to 1.2 MB.  The stream is 368,895 bytes and is decoded at boot into
+# .bss buffers (pk_pcm_*) by modules/perky/cf_pcm_rice.h.
+PCM_ASSETS = (
+    ("pk_asset_wt_base",   0x080222A0, 4096),
+    ("pk_asset_wt_bank",   0x080327CC, 196608),
+    ("pk_asset_ah_closed", 0x080CBEF0, 20202),
+    ("pk_asset_ah_open",   0x080A1BF0, 172800),
+    ("pk_asset_ah_ride",   0x080627CC, 259106),
+)
+PCM_SYMBOLS = (
+    ("pk_pcm_wt_base",   4096),
+    ("pk_pcm_wt_bank",   196608),
+    ("pk_pcm_ah_closed", 20202),
+    ("pk_pcm_ah_open",   172800),
+    ("pk_pcm_ah_ride",   259106),
+)
+PCM_STREAM_LABEL = "pk_asset_pcm_rice"
+
+_PCM_LABELS = {label for label, _a, _s in PCM_ASSETS}
+IMAGE_ASSETS = tuple(a for a in ASSETS if a[0] not in _PCM_LABELS)
+
+
+def pcm_stream(blobs: dict[str, bytes]) -> bytes:
+    """The PKR1 stream, in PCM_ASSETS order (the decoder's target order)."""
+    import pcm_rice  # noqa:E402  (tools/perky on sys.path)
+
+    return pcm_rice.encode([blobs[label] for label, _a, _s in PCM_ASSETS])
+
+
 def assembly_text(path: Path | None = None) -> str:
     blobs = extract(path)
     rows = [
         "| Generated at build time from SHA-pinned PĒRKONS v1.2.1; do not commit firmware bytes.",
         "        .balign 4",
     ]
-    for label, address, size, _expected in ASSETS:
+    for label, address, size, _expected in IMAGE_ASSETS:
         blob = blobs[label]
         rows += [
             "        .balign 4",
@@ -109,6 +142,30 @@ def assembly_text(path: Path | None = None) -> str:
             f"        .global {label}_end",
             f"{label}_end:",
         ]
+    stream = pcm_stream(blobs)
+    rows += [
+        "        .balign 4",
+        f"        .global {PCM_STREAM_LABEL}",
+        f"{PCM_STREAM_LABEL}:",
+        f"        | PKR1 stream over {len(PCM_ASSETS)} assets, "
+        f"{sum(s for _l, _a, s in PCM_ASSETS)} raw bytes",
+        *_byte_rows(stream),
+        f"        .global {PCM_STREAM_LABEL}_end",
+        f"{PCM_STREAM_LABEL}_end:",
+        "",
+        "| The decode destination: never loaded (BSS), filled once at boot.",
+        "        .section .bss",
+        "        .balign 4",
+    ]
+    for label, size in PCM_SYMBOLS:
+        rows += [
+            f"        .global {label}",
+            f"{label}:",
+            f"        .space {size}",
+            f"        .global {label}_end",
+            f"{label}_end:",
+        ]
+    rows.append("        .text")
     return "\n".join(rows) + "\n"
 
 
