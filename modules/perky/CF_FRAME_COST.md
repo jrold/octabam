@@ -15,21 +15,23 @@ the release qualification (23 gates, bit-exact) plus the codegen audit pass.
 
 Three further changes, all bit-exact (release qualification still 23/23):
 
-1. **Cycle model**: `tools/patches/mc68k-cycles.patch` prices MUL.L at 3 and
-   MUL.W at 3 instead of the MCF5206E's 18/9.  The emulator models the 5206E
-   (no EMAC); the MCF5445x the firmware runs on executes both on its EMAC in
-   ~3 cycles (measured here: "MULS.L/MULU.L in about three").  This is a model
-   correction, not an A-line rewrite -- the code still uses real `muls.l`.
+1. **Cycle model**: `tools/patches/mc68k-cycles.patch` prices MUL.L at 1 and
+   MUL.W at 1 instead of the MCF5206E's 18/9.  The emulator models the 5206E
+   (no EMAC); the MCF5445x the firmware runs on issues both on its pipelined
+   EMAC at one per cycle (3-cycle latency; this is a throughput-priced table,
+   so 1 matches how add.l is priced).  This is a model correction, not an
+   A-line rewrite -- the code still uses real `muls.l`.
 2. **Native arithmetic shift**: the portable `asr()` helper (logical shift +
    branch + OR-sign-extension, ~5 instructions) is now `v >> n`, which
    m68k-elf-gcc lowers to one `asr.l`.
 3. **Native reinterprets**: `s16`/`s32`/`u32` (branch + negate) are now the
    direct casts `(int16_t)/(int32_t)/(uint32_t)`.
 
-Result: **254.9 -> 207.5 us (model fix) -> 203.5 us (shifts/reinterprets)**.
-The frame/2 = 181.4 us gate still does not close; the remaining render cost is
-dominated by register spills (the ~59-field snare working set against 8 data
-registers) and little-endian table reads, not by multiplies.
+Result: **254.9 -> 207.5 us (model fix 3-cycle) -> 203.5 us (shifts/reinterprets)
+-> 196.4 us (model fix throughput 1-cycle)**.  The frame/2 = 181.4 us gate
+still does not close; the remaining render cost is dominated by register spills
+(the ~59-field snare working set against 8 data registers) and little-endian
+table reads, not by multiplies.
 
 ---
 

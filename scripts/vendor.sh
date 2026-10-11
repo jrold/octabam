@@ -77,11 +77,13 @@ vendor_mc68k() {
   # odd-address word/long access; the emulator must too, or a hardware-only fault
   # reads as success. tools/patches/mc68k-win.patch.
   apply_patch vendor/mc68k "$(pwd)/tools/patches/mc68k-win.patch"
-  # octabam: price MUL.L/MUL.W at the MCF5445x V4e EMAC's ~3 cycles, not the
-  # MCF5206E's microcoded 18/9. The 5206E has no EMAC; the 5445x the firmware
-  # runs on executes both forms on the EMAC in ~3 cycles, so the 5206E table
-  # over-charges the multiply-heavy Perky renderers ~6x. Measured in
-  # modules/perky/CF_FRAME_COST.md ("MULS.L/MULU.L in about three").
+  # octabam: price MUL.L/MUL.W at the MCF5445x V4e EMAC's 1-cycle issue
+  # (throughput), not the MCF5206E's microcoded 18/9. The 5206E has no EMAC and
+  # stalls 18 cycles per multiply; the 5445x the firmware runs on issues both
+  # forms on its 3-stage pipelined EMAC at one per cycle (3-cycle latency, but
+  # this is a throughput-priced table -- add.l is priced at its 1-cycle issue
+  # too). The 5206E table over-charges the multiply-heavy Perky renderers ~6x;
+  # the dependent-chain latency is ~3 cycles (modules/perky/CF_FRAME_COST.md).
   apply_patch vendor/mc68k "$(pwd)/tools/patches/mc68k-cycles.patch"
 }
 
