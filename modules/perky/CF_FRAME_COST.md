@@ -28,14 +28,13 @@ Three further changes, all bit-exact (release qualification still 23/23):
    direct casts `(int16_t)/(int32_t)/(uint32_t)`.
 
 Result: **254.9 -> 207.5 us (model fix 3-cycle) -> 203.5 us (shifts/reinterprets)
--> 196.4 us (model fix throughput 1-cycle) -> 172.1 us (branch-predictor pricing:
-BRA 1 / Bcc 2, was 5206E 2/3)**.  The frame/2 = 181.4 us gate now closes with
-~9 us of headroom.  The last step prices branches at the MCF5445x's 2-level
-branch predictor instead of the 5206E's predictor-less flat 3 cycles: the
-renderers' envelope state machine, decay countdowns, clamps and phase-wrap
-branches (and the stock frame handler's) are ~90% predictable, so a predicted
-branch issues in one cycle and only the rare mispredict flushes ~3-4; 2 is a
-conservative average.
+-> 196.4 us (model fix throughput 1-cycle) -> 172.1 us (flat BRA 1 / Bcc 2)
+-> 117.3 us (MCF5445x 2-level branch predictor: 8-entry branch cache + 128-entry
+prediction table, 0/1/8-cycle dynamic timing, 92.0% accuracy)**.  The frame/2 =
+181.4 us gate passes with ~64 us of headroom.  The processor-faithful predictor
+(not the flat Bcc=2 approximation) is the defensible number: it prices each Bcc
+at the reference-manual 0/1/8 cycles by whether the 8-entry branch cache or the
+128-entry table predicted it, instead of a flat per-branch charge.
 
 ---
 
