@@ -215,6 +215,22 @@ static uint32_t res_dec_step(res_dec_l*m,int add_constant,uint32_t constant){
     return value;
 }
 
+/* The snare's first three decays (SNARE_A/B/C) have sign hard-wired to zero
+ * (res_init_snare writes 0 and nothing else touches the field), so the sign
+ * branch and the abs_arm adjustment in res_dec_step are dead code there. */
+static uint32_t res_dec_step_pos(res_dec_l*m,int add_constant,uint32_t constant){
+    uint32_t value=(pk_cf_mul_lo_u32(m->mul,m->value))>>12;
+    int32_t count;int use_constant;
+    if(s32(value)<m->min)value=u32(m->min);
+    count=m->count;
+    m->value=value;
+    use_constant=add_constant&&count!=0;
+    if(count>0){count=sub(count,1);m->count=count;
+        if(count==0){use_constant=0;}}
+    if(use_constant)value=u32(add(s32(value),(int32_t)constant));
+    return value;
+}
+
 static int16_t res_velocity_scale(uint8_t velocity,int32_t value){
     int32_t o=asr(mullo(value,(int32_t)velocity),8);
     if(o>32767)o=32767;else if(o<-32768)o=-32768;
@@ -330,11 +346,11 @@ int pk_cf_res_snare_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables
         int32_t first_drive,first_mix,second_mix,velocity1,velocity2,velocity3;
         int32_t random_value,term1,term2,term3,mixed;
         (void)res_env_step(&env);
-        a=res_dec_step(&da,0,0u);
-        b=res_dec_step(&db,1,0x0A3Du);
+        a=res_dec_step_pos(&da,0,0u);
+        b=res_dec_step_pos(&db,1,0x0A3Du);
         first_drive=add(s32(a),s32(b));
         (void)res_core_step_fast(&r1,first_drive,t->interp_a,t->interp_b,&velocity1);
-        cv=res_dec_step(&dc,1,0x3333u);
+        cv=res_dec_step_pos(&dc,1,0x3333u);
         first_mix=add(velocity1,asr(first_drive,4));
         (void)res_core_step_fast(&r2,s32(cv),t->interp_a,t->interp_b,&velocity2);
         second_mix=add(velocity2,asr(s32(cv),4));

@@ -15,7 +15,7 @@ EXPECTED = {
     'modules/perky/cf_noise_tone.c': '08cbf517d53365740b5e89399233b5d4229e496bc822efe2f8aeb7af13b6eea6',
     'modules/perky/cf_noise_tone.h': '9cbf001ccbdedb4ee25cd6ec88d8d804ac442a070b1f3ac4c26470c113417d45',
     'modules/perky/cf_perky4.c': '80786fa434403f0365953e2b97542013ac9a65a27a8be74a444090e235d0cd33',
-    'modules/perky/cf_resonant.c': 'edd491ceda725cf0c8d82a291ceeb80a9668807691500d9740fd9f94918ca093',
+    'modules/perky/cf_resonant.c': '6e7cfe2cdce22b7fbd9b2f8c9f71497a7d0f51c00c5d457f3a898e8e6af75b3f',
     'modules/perky/cf_resonant.h': 'a11636313ff7e8c2e9bf9d6ad6f40439056a46adbabc103ae843e7f69465834f',
     'modules/perky/cf_noise_hat.c': '18aac652089aa04d7e6f751dd8bba3314f63aa1a8bf7dfb1016fd421f7df8776',
     'modules/perky/cf_noise_hat.h': 'bcdb9999fe511ede8ec4fc991d2a42fd84288e4b9512d22604d6acb5d7d9287b',
