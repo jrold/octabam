@@ -23,6 +23,11 @@ FLAGS = [
     "-finline-functions",
     "-finline-limit=3000",
     "-funroll-loops",
+    # Schedule with register pressure in mind: the resonant snare's ~21
+    # loop-carried fields spill heavily against 8 data registers, and this
+    # cuts the snare's stack spill traffic measurably (344-byte frame and ~384
+    # spill moves down to 340/348). Arithmetic is unchanged; bit-exact.
+    "-fsched-pressure",
     "-ffreestanding",
     "-fno-builtin",
     "-fno-common",

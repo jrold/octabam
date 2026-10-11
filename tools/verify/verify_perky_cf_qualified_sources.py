@@ -34,7 +34,7 @@ EXPECTED = {
     'modules/perky/simple_drum_control.py': 'df108a857d49ec679e4355f7def9a4a7dd76fcc0056aee31a65e4c6f66e676f3',
     'modules/perky/resonant_control_update.py': '2866f790af44676d82d5a0a3f5122706a57c53d1c1f5b633ce71ea3dfdb8c1b6',
     'modules/perky/noise_hat_control_update.py': 'b8a1caa9a3d508589bd9585e90730152061f22550ef03d58c1ac89931b0997fd',
-    'modules/perky/generate_cf_final.py': '1c9040c01632ed768d2c4d33bbc9d5e87aefda936c3e79aff54abb5ee5b42b30',
+    'modules/perky/generate_cf_final.py': 'ff93a6716b576dd0661cdcbb5eb3e19f2a471a6fe76ca0dba3259656c7f342ca',
     'remixes/test/perky-cf-final/remix.py': '409443c6b4e27e37c488c779a8f50e7795448acc4e56e77acb31996377945c3b',
     'tools/build/bin_decode.py': 'd092430bf99d30d39c6fa81a186a746f0bfc5c6875636a03f48d800e59a05144',
     'tools/build/build_bus.py': '4248b54852bd96643950bdac18543e750c60c69355629b150399d3dd6c45c937',
