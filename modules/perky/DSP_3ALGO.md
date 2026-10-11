@@ -110,33 +110,40 @@ tables; placement of the resonant banks is the next measurement (see below).
 
 `tools/verify/verify_perky_3algo_exec.py` assembles the shipping composition
 twice (with and without the seam entry) and drives each renderer entry point
-directly. Its Fold case currently fails against the ARM expected PCM, and the
-investigation so far says this is a **gate/fixture-modelling problem, not a
-composed-renderer problem**. Measured this round:
+directly. Its Fold case currently fails against the ARM expected PCM. The
+evidence so far says this is a **gate/harness problem, not a composed-renderer
+problem**:
 
 * the composed `pk_simple_base`, `pk_simple_delta_at`, `pk_simple_envelope`,
   `pk_simple_frequency`, `pk_simple_oscillator` and `pk_fold_voice` bodies are
-  the standalone bodies exactly -- byte comparison differs only in the
+  the standalone bodies exactly -- a byte comparison differs **only** in the
   relocated `DO`/`JSR` target words;
-* driven with **matched register setup, matched state and matched tables**, the
-  composed and the standalone binaries produce **identical** results. In
-  particular the second-difference decoder returns the same `0x594d` from both
-  for the same `sc4c`/`sc50`/`sc51` words;
-* the delta cache's first entry is also the voice's prepared-base word
-  (`x:r4+0 == x:r6+$34` when `r4 = r6 + 0x14`), so a first call with
-  `index == 0` legitimately takes the decoder's cache-hit path. That is a
-  property of the qualified primitive, not of the composition;
-* the ARM fixtures under `out/perky/engine-fixtures` carry
-  `raw_pitch = 0` and `pitch_env_amount = 0` (bytes `0xBA` / `0xEC`), which is
-  not the state a triggered Fold voice renders from. The standalone gate feeds
-  the renderer a state the fixture alone does not describe; the composed gate
-  currently feeds the raw `from_arm` words instead.
+* driven with matched register setup, matched state and matched tables, the
+  composed and the standalone binaries agree. The second-difference decoder
+  returns the same `0x594d` from both for the same `scr4c`/`scr50`/`scr51`
+  words, and `pk_simple_frequency` returns identical values from both;
+* running the standalone gate's **own** binary with its **own** generated data
+  reproduces the ARM PCM exactly (`-1, -1, -2, -2, ...`), so the fixtures and
+  tables the gate builds are correct;
+* the same probe source, same data, same host and same `n7` run against the
+  composed binary returns silence.
 
-The concrete next step is therefore to port the standalone gate's state
-preparation (and only that) into the composed gate, rather than to change any
-renderer. `resonant_control_update.py` / `fold_control_update.py` /
-`simple_drum_control.py` are the exact v1.2.1 oracles for the preparation that
-is missing.
+One concrete, documented trap was found while narrowing this: **the delta
+decoder's cache entry 0 shares an address with the voice's prepared-base word**
+(`x:r4+0 == x:r6+$34` when `r4 = r6 + 0x14`). A first call whose index equals
+`state[0x34]` therefore takes the decoder's cache-hit path. For the captured
+Fold fixtures both are `0`, so the composed renderer's first base word is `0`
+until the cache is seeded with a non-matching value -- the standalone gate
+seeds `X 3964 = 0xffffff` for exactly this reason. The composed gate does not
+yet, and seeding it did not by itself change the result, which is why the
+remaining difference has to be found in the harness's state preparation rather
+than in the renderer.
+
+The concrete next step: port the standalone gate's state preparation -- the
+`FoldDrum1.from_arm` words plus the gate's own table/seed setup -- into the
+composed gate verbatim, and diff the two host invocations argument by argument.
+The control-law oracles (`fold_control_update.py`, `resonant_control_update.py`,
+`simple_drum_control.py`) are the source for the prepared state.
 
 The standalone per-renderer gates stay green:
 `verify_perky_fold_drum_exec.py` and `verify_perky_resonant_dsp_exec.py` both
