@@ -192,13 +192,19 @@ def rename_family(text: str, family: str) -> str:
     return text
 
 
-def extra_body() -> str:
-    """Shared primitives the resonant recipes do not carry themselves."""
-    parts = [
-        _read("noise_tone_voice_native_xstate.asm").split("\npknv_noise:", 1)[1],
-        _read("noise_tone_math.asm"),
-    ]
-    return "\npknv_noise:" + "\n".join(parts)
+def extra_body(shared) -> str:
+    """Only what the resonant tail does not already carry.
+
+    The tail already holds the centered low32/RNG/envelope helper block, so
+    re-emitting ``noise_tone_math.asm`` here would define every helper twice --
+    and, because that copy is uncentered, it would silently take over. The
+    noise sample-and-hold helper is the one body the tail lacks.
+    """
+    body = "\npknv_noise:" + _read("noise_tone_voice_native_xstate.asm").split(
+        "\npknv_noise:", 1)[1]
+    if "\npknv_refresh:" in shared:
+        die("the resonant tail unexpectedly carries the noise helper")
+    return body
 
 
 def fold_body() -> str:
@@ -363,23 +369,23 @@ def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
     if canon(bass_tail) != canon(snare_tail):
         die("resonant shared tails are not instruction-identical")
     cores = bass_cores
-    # The tail ends in the same exact low32/RNG helper block that
-    # ``resident_primitives`` carries once for Fold and for the envelope
-    # renderer. Keeping both emitted every helper twice; measure the boundary
-    # and drop the duplicate instead.
-    marker = "\npk_u32_add:"
-    if bass_tail.count(marker) != 1:
-        die("resonant tail does not expose exactly one shared math block")
-    tail = bass_tail.split(marker, 1)[0]
-    # ``pk_math_probe`` is the standalone dispatcher the isolated limb probes
-    # call; the shipping renderers call ``pk_u32_*`` directly. Drop the copy
-    # that came in with the resonant recipe -- the primitives section keeps
-    # the one the standalone gates and out-of-image probes still exercise.
-    probe_start = tail.find("\npk_math_probe:")
-    probe_end = tail.find("\n; Exact modulo-2^32 add.")
+    # The tail carries the shared low32/RNG/envelope helper block. Its scratch
+    # displacements are already CENTERED (``r5-$40`` style) by the recipe's
+    # ``center_scratch`` pass, which is the convention every composed caller
+    # uses because the composed resonant/adapter prologues re-center r5
+    # themselves. Keeping this copy -- and NOT re-emitting an uncentered one --
+    # is what makes the composed helper threads agree with the qualified
+    # standalone builds. Measured: an uncentered duplicate makes the composed
+    # ``pk_rng_step`` read ``r5+$0`` where the qualified build reads
+    # ``r5-$40``, i.e. a different word.
+    if "\npk_u32_add:" not in bass_tail:
+        die("resonant tail does not carry the shared low32 helper block")
+    probe_start = bass_tail.find("\npk_math_probe:")
+    probe_end = bass_tail.find("\n; Exact modulo-2^32 add.")
     if probe_start < 0 or probe_end < 0 or probe_end < probe_start:
         die("could not locate the standalone math dispatcher in the shared tail")
-    tail = tail[:probe_start] + "\n" + tail[probe_end + 1:]
+    tail = bass_tail[:probe_start] + "\n" + bass_tail[probe_end + 1:]
+
     # The envelope renderer carries its two table bases as absolute
     # immediates. Substitute the shipping addresses; the renderer's own label
     # remains the branch target, so no new forward branch is introduced.
@@ -412,8 +418,9 @@ def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
     # The RNG limbs are an absolute address inside the shared helper. If a
     # future edit moves them, the ledger and every gate would silently read a
     # different stream, so the composition refuses instead.
+    rng_body = extra_body(bass_tail)
     for low, high in ((0x38E8, 0x38E9), (0x38EA, 0x38EB)):
-        if f"x:>${low:04x}" not in extra_body() or f"x:>${high:04x}" not in extra_body():
+        if f"x:>${low:04x}" not in rng_body or f"x:>${high:04x}" not in rng_body:
             die(f"shared RNG limbs are not at X:${low:04x}/X:${high:04x}")
     if RNG_BASE != 0x38E8:
         die("the composed RNG base no longer matches the shared helper")
@@ -425,7 +432,7 @@ def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
         _section("resident_cores.asm", cores),
         _section("resident_tail.asm", tail),
         _section("fold_drum_1.asm", fold_body()),
-        _section("resident_primitives.asm", extra_body()),
+        _section("resident_primitives.asm", extra_body(bass_tail)),
     ])
     return text
 
