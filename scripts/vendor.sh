@@ -84,6 +84,10 @@ vendor_mc68k() {
   # this is a throughput-priced table -- add.l is priced at its 1-cycle issue
   # too). The 5206E table over-charges the multiply-heavy Perky renderers ~6x;
   # the dependent-chain latency is ~3 cycles (modules/perky/CF_FRAME_COST.md).
+  # Also price branches at the 5445x's 2-level branch predictor (BRA 1, Bcc 2),
+  # not the 5206E's predictor-less 2/3. The renderers' branches (envelope state
+  # machine, decay countdowns, clamps, phase-wrap) and the stock frame handler's
+  # are ~90% predictable, so the 5206E fixed 3-cycle Bcc over-charges them ~1.5x.
   apply_patch vendor/mc68k "$(pwd)/tools/patches/mc68k-cycles.patch"
 }
 

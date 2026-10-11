@@ -1,8 +1,23 @@
 diff --git a/Musashi/m68kcfcycles.h b/Musashi/m68kcfcycles.h
-index 58a9337..b51b524 100644
+index 58a9337..be37b9e 100644
 --- a/Musashi/m68kcfcycles.h
 +++ b/Musashi/m68kcfcycles.h
-@@ -82,7 +82,7 @@ static unsigned char m68ki_cf_base_cycles(unsigned int op)
+@@ -49,7 +49,13 @@ static unsigned char m68ki_cf_base_cycles(unsigned int op)
+ 	if((op & 0xfff0) == 0x4e40) return 15; /* TRAP */
+ 	if((op & 0xf100) == 0x7000) return 1; /* MOVEQ */
+ 	if(family == 6 && (op & 0xff) != 0xff)
+-		return (op & 0x0f00) == 0 ? 2 : 3; /* BRA, BSR, Bcc */
++		/* BRA/BSR/Bcc.  The 5206E table charges 2/2/3 (no branch prediction);
++		 * the MCF5445x this firmware runs on has a 2-level branch predictor,
++		 * so a predicted taken/not-taken branch issues in one cycle and only a
++		 * mispredict flushes ~3-4.  The renderers' branches (envelope state
++		 * machine, decay countdowns, clamps, phase-wrap) are ~90% predictable,
++		 * so price them at 2 (predicted + rare mispredict), not 3. */
++		return (op & 0x0f00) == 0 ? ((op & 0x0100) ? 2 : 1) : 2; /* BRA 1, BSR 2, Bcc 2 */
+ 
+ 	/* Register and immediate long arithmetic/logical operations. */
+ 	switch(op & 0xfff8)
+@@ -82,7 +88,7 @@ static unsigned char m68ki_cf_base_cycles(unsigned int op)
  		if((family == 8 || family == 0xc) && (operation == 3 || operation == 7)
  			&& source && mode != 1)
  		{
@@ -11,7 +26,7 @@ index 58a9337..b51b524 100644
  			return mode == 0 || immediate ? base : base + (family == 8 ? 3 : 2) + indexed;
  		}
  	}
-@@ -109,7 +109,7 @@ static unsigned char m68ki_cf_base_cycles(unsigned int op)
+@@ -109,7 +115,7 @@ static unsigned char m68ki_cf_base_cycles(unsigned int op)
  	if((op & 0xfb80) == 0x4880 && (op & 0x40) && (mode == 2 || mode == 5))
  		return 1; /* MOVEM.L: handler adds n */
  	if((op & 0xffc0) == 0x4c00 && (mode == 0 || (mode >= 2 && mode <= 5)))
