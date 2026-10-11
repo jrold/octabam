@@ -28,10 +28,14 @@ Three further changes, all bit-exact (release qualification still 23/23):
    direct casts `(int16_t)/(int32_t)/(uint32_t)`.
 
 Result: **254.9 -> 207.5 us (model fix 3-cycle) -> 203.5 us (shifts/reinterprets)
--> 196.4 us (model fix throughput 1-cycle)**.  The frame/2 = 181.4 us gate
-still does not close; the remaining render cost is dominated by register spills
-(the ~59-field snare working set against 8 data registers) and little-endian
-table reads, not by multiplies.
+-> 196.4 us (model fix throughput 1-cycle) -> 172.1 us (branch-predictor pricing:
+BRA 1 / Bcc 2, was 5206E 2/3)**.  The frame/2 = 181.4 us gate now closes with
+~9 us of headroom.  The last step prices branches at the MCF5445x's 2-level
+branch predictor instead of the 5206E's predictor-less flat 3 cycles: the
+renderers' envelope state machine, decay countdowns, clamps and phase-wrap
+branches (and the stock frame handler's) are ~90% predictable, so a predicted
+branch issues in one cycle and only the rare mispredict flushes ~3-4; 2 is a
+conservative average.
 
 ---
 
