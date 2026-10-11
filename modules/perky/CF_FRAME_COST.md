@@ -29,9 +29,9 @@ Three further changes, all bit-exact (release qualification still 23/23):
 
 Result: **254.9 -> 207.5 us (model fix 3-cycle) -> 203.5 us (shifts/reinterprets)
 -> 196.4 us (model fix throughput 1-cycle) -> 172.1 us (flat BRA 1 / Bcc 2)
--> 117.3 us (MCF5445x 2-level branch predictor: 8-entry branch cache + 128-entry
-prediction table, 0/1/8-cycle dynamic timing, 92.0% accuracy)**.  The frame/2 =
-181.4 us gate passes with ~64 us of headroom.  The processor-faithful predictor
+-> 115.2 us (MCF5445x 2-level branch predictor: 8-entry branch cache + 128-entry
+prediction table, each with 2-bit state, 0/1/8-cycle dynamic timing, 91.3% accuracy)**.  The frame/2 =
+181.4 us gate passes with ~66 us of headroom.  The processor-faithful predictor
 (not the flat Bcc=2 approximation) is the defensible number: it prices each Bcc
 at the reference-manual 0/1/8 cycles by whether the 8-entry branch cache or the
 128-entry table predicted it, instead of a flat per-branch charge.
