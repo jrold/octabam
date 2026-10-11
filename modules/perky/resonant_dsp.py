@@ -15,7 +15,19 @@ import resonant_snare_compact as snare
 import resonant_fast_dsp
 
 PERKY = Path(__file__).resolve().parent
+# Standalone probe placement (the qualified gates pin it).
 INTERP_A, INTERP_B = 0x3000, 0x3200
+
+# The exact order the shared decoder cores first ask for their r4 temporaries.
+_CORE_VARIABLE_ORDER = (
+    'd_value', 'd_count', 'd_sign', 'd_abs',
+    'r_ca', 'r_cb', 'r_pos', 'r_vel', 'r_mod', 'r_scale', 'r_temp', 'r_filtered',
+    'r_input',
+)
+# First family-variable slot when the core block is pinned (0x00..0x18 core).
+_FAMILY_SLOT_BASE = 14
+# Deepest slot a family's own variables reach (bass 26 slots, snare 30).
+FAMILY_SLOT_END = _FAMILY_SLOT_BASE + 30
 
 
 def decay(e, base, output, *, sign_flip=True, constant=0):
@@ -197,9 +209,30 @@ def bass_sample(e):
     return mixed
 
 
-def source(family):
+def source(family, *, core_variables_fixed=False, interp_a=None, interp_b=None):
+    """Emit one family recipe.
+
+    ``core_variables_fixed`` pins the twelve decoder temporaries to a private
+    slot block and moves the family's own variables above it, so two families
+    emitted with it address byte-identical r4 displacements in
+    ``pk_resonant_decay`` / ``pk_resonant_core``: a composer can keep ONE copy
+    of those cores while both voices still get their own variable words.
+    The defaults reproduce the standalone probe exactly, which the standalone
+    gates pin.
+    """
     assert family in ('bass', 'snare')
     e = Emitter()
+    global INTERP_A, INTERP_B
+    if core_variables_fixed:
+        # The composer relocates the two interpolation tables with the rest of
+        # its Y ledger. The defaults are the standalone probe's addresses.
+        if interp_a is not None:
+            INTERP_A = interp_a
+        if interp_b is not None:
+            INTERP_B = interp_b
+        for index, name in enumerate(_CORE_VARIABLE_ORDER):
+            e.variables[name] = ('r4', 2 * index, 32)
+        e.variables['output'] = ('r4', 2 * _FAMILY_SLOT_BASE, 32)
     e.lines.append(f'pk_resonant_{family}_voice:')
     e.emit('move r5,a', 'add #>$80,a', 'move a1,r4',
            'move r6,a', 'move a1,x:(r5+$7e)', 'do n7,pkr_samples_done',
@@ -227,4 +260,6 @@ def source(family):
     text = ('; Exact v1.2.1 resonant ' + family + ' DSP recipe; direct interpolation tables.\n'
             + '\n'.join(e.lines) + noise + (PERKY / 'noise_hat_envelope.asm').read_text()
             + (PERKY / 'noise_tone_math.asm').read_text())
-    return center_scratch(text, f'pk_resonant_{family}_voice', variables=True), 0x80 + len(e.variables) * 2
+    return (center_scratch(text, f'pk_resonant_{family}_voice', variables=True),
+            0x80 + max(len(e.variables),
+                       FAMILY_SLOT_END if core_variables_fixed else 0) * 2)
