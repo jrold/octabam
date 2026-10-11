@@ -164,6 +164,29 @@ static int32_t res_core_step(res_core_l*m,int32_t input,
      return position;}
 }
 
+/* The snare's three resonators have modulation=0 and bypass=0 for the whole
+ * block (res_init_snare zeroes both and nothing rewrites them), so the two
+ * runtime branches in res_core_step are dead code there.  This variant drops
+ * them; the arithmetic is identical. */
+static int32_t res_core_step_fast(res_core_l*m,int32_t input,
+                                  const uint8_t*ia,const uint8_t*ib,int32_t*out_velocity){
+    if(m->dirty){
+        m->coeff_b=(uint32_t)res_interp(ia,(uint32_t)m->pitch_a<<17);
+        m->coeff_a=(uint32_t)res_interp(ib,(uint32_t)m->pitch_b<<17);
+        m->dirty=0;
+    }
+    {int32_t coeff_a=s32(m->coeff_a),position=s32(m->position),coeff_b=s32(m->coeff_b),velocity,filtered;
+     velocity=s32(m->velocity);
+     filtered=sub(input,asr(mullo(velocity,coeff_a),15));
+     position=clamp32767(add(position,asr(mullo(velocity,coeff_b),15)));
+     m->position=u32(position);
+     filtered=sub(filtered,position);
+     velocity=clamp32767(add(velocity,asr(mullo(coeff_b,filtered),15)));
+     m->velocity=u32(velocity);
+     *out_velocity=velocity;
+     return position;}
+}
+
 /* --- multiplicative decay ramp ------------------------------------------ */
 typedef struct { size_t mul,count,value,sign,min; } dec_map;
 
@@ -265,7 +288,7 @@ int pk_cf_res_bass_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables*
         level=res_dec_step(&ll,0,0u);
         res_state=add(res_state,asr(mullo((int32_t)mix_ec,res_delta),15));
         {int32_t nv=res_noise_step(&nz,rng);
-         (void)res_core_step(&noise,nv,t->interp_a,t->interp_b,&noise_velocity);}
+         (void)res_core_step_fast(&noise,nv,t->interp_a,t->interp_b,&noise_velocity);}
         product=mullo(noise_velocity,s32(level));
         mixed=add(res_state,asr(product,16));
         tripled=add(mixed,add(mixed,mixed));
@@ -310,14 +333,14 @@ int pk_cf_res_snare_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables
         a=res_dec_step(&da,0,0u);
         b=res_dec_step(&db,1,0x0A3Du);
         first_drive=add(s32(a),s32(b));
-        (void)res_core_step(&r1,first_drive,t->interp_a,t->interp_b,&velocity1);
+        (void)res_core_step_fast(&r1,first_drive,t->interp_a,t->interp_b,&velocity1);
         cv=res_dec_step(&dc,1,0x3333u);
         first_mix=add(velocity1,asr(first_drive,4));
-        (void)res_core_step(&r2,s32(cv),t->interp_a,t->interp_b,&velocity2);
+        (void)res_core_step_fast(&r2,s32(cv),t->interp_a,t->interp_b,&velocity2);
         second_mix=add(velocity2,asr(s32(cv),4));
         dd=res_dec_step(&dd_,0,0u);
         random_value=res_noise_step(&nz,rng);
-        (void)res_core_step(&r3,random_value,t->interp_a,t->interp_b,&velocity3);
+        (void)res_core_step_fast(&r3,random_value,t->interp_a,t->interp_b,&velocity3);
         term1=asr(mullo(second_mix,mix168),15);
         term2=asr(mullo(mix164,first_mix),15);
         term3=asr(mullo(velocity3,s32(dd)),15);
