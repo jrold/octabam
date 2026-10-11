@@ -111,30 +111,52 @@ tables; placement of the resonant banks is the next measurement (see below).
 Two things are open, and the first is a real implementation item rather than a
 harness problem.
 
-**(1) The scratch convention is not unified.** The composed machine hands every
-algorithm the same scratch base, but its pieces do not agree on what that base
-means:
+**(1) The scratch convention is not unified — fully characterized.**
 
-| Body | `x:(r5+n)` convention | Required `r5` |
+The composed machine hands every algorithm the same scratch base, but its
+pieces were written against two different conventions. Measured displacement
+windows (against each body's own base):
+
+| Body | Window | Native convention |
 | --- | --- | --- |
-| resonant voices + `resident_cores` | centred (`r5-$40`-style) | ABI + 0x40 |
-| shared low32/RNG/envelope block (from the resonant tail) | centred | ABI + 0x40 |
-| Fold/Simple set (`pk_fold_voice`, `pk_simple_base`, `_delta_at`, `_envelope`, `_frequency`, `_oscillator`) | uncentred (`r5+$0..$62`) | ABI |
-| noise sample-and-hold (`pknv_noise`) | uncentred (`r5+$0..$61`) | ABI |
+| `fold_drum_voice.asm` | `0x5d .. 0x61` | uncentred (`r5+$n`) |
+| `simple_drum_delta.asm` | `0x48 .. 0x60` | uncentred |
+| `pknv_noise` (noise helper) | `0x00 .. 0x61` | uncentred |
+| `noise_tone_math.asm` (shared low32/RNG) | `-0x40 .. +0x02` | CENTRED |
+| resonant voice | `-0x40 .. +0x3e` | CENTRED |
+| resonant cores | `-0x40 .. +0x3a` | CENTRED |
 
-The Fold voice and the shared helper block therefore name different words for
-`x:(r5+n)`. That is why the composed Fold renderer is silent while the
-standalone one renders the same fixture, and it is the next concrete fix: put
-every body on the centred convention (advance `r5` by 0x40 at the Fold and
-noise entries and subtract 0x40 from their displacements), or parameterise
-`pk_simple_base`'s absolute `r4` so the cache follows the layout. Either way it
-is a source change, not a harness change -- and the equivalence gate below
-must stay green through it.
+Two additional hard facts:
 
-**(2) The execution harness.** `tools/verify/verify_perky_3algo_exec.py`
-assembles the composition twice and drives each renderer entry point directly.
-It is not green yet. A real composer defect was found and fixed while building
-the equivalence gate (below), and the remaining failure is item (1).
+* every body's window fits inside the DSP's one-word `-64..63` displacement
+  range only under its own convention, so a single scratch block cannot host
+  a mixed set;
+* `pk_simple_base` names its second-difference cache by **absolute** address
+  (the literal `$3964`, with `r4` fixed there) rather than relative to the
+  caller's base, and `pk_simple_delta_at` shares that cache.
+
+**The intended fix** (worked out but not yet landed; it needs one more
+measurement round because the two obvious variants both silently rendered
+zero):
+
+1. put the Fold/Simple bodies and `pknv_noise` on the centred convention by
+   advancing `r5` by `0x40` at each entry label and subtracting `0x40` from
+   every displacement (this is exactly what
+   `dsp_source_layout.center_scratch` does for the resonant recipes);
+2. set the composed `SCRATCH_BASE` so the *centred* ABI lands at `0x3940`;
+   the Fold primitives then read their own documented field map
+   (`0x3940..0x39a2`) and their absolute cache at `0x3964` with no relocation;
+3. relocate the single absolute `#>$003964` literal at compose time to
+   `#>$0039a4` if the centred ABI is instead kept at `0x3940` while the
+   scratch block starts at `0x38c0` — whichever of (2)/(3) the next
+   measurement shows is consistent.
+
+The point of recording this is that the numbers, not the approach, were the
+missing piece: the composed scratch block is 188 words, the private X region
+below it is `0x3800..0x38e7`, and the whole question is where the 128-word
+`-64..63` window can sit so that all six bodies and the absolute cache fall
+inside it. Step 1 plus a `SCRATCH_BASE` of `0x38c0` is the candidate that
+satisfies every window simultaneously and is the next thing to build.
 
 ### The equivalence gate
 

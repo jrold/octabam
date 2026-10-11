@@ -207,29 +207,6 @@ def extra_body(shared) -> str:
     return body
 
 
-def centre_uncentred_scratch(text: str, entry: str) -> str:
-    """Translate an uncentred PERKY body onto the composed scratch convention.
-
-    ``dsp_source_layout.center_scratch`` does this for the resonant recipes,
-    which carry a prologue that first advances r5 by 0x80 into a variable area.
-    The Fold/Simple bodies have no such prologue: their displacements are
-    already ABI-relative (0..$62). The composed machine runs everything against
-    ONE convention -- the centred one the resonant recipes and the shared
-    low32/RNG/envelope helper block already use -- so this advances r5 by 0x40
-    at the entry label and subtracts 0x40 from every displacement.
-
-    Getting this wrong is not cosmetic: the Fold voice and the shared math
-    would name different words for ``x:(r5+n)``, which produces silence and a
-    wrong persistent state rather than an error.
-    """
-    label = entry + ":"
-    if text.count(label) != 1:
-        die(f"{entry}: expected exactly one entry label")
-    text = re.sub(r"x:\(r5\+\$([0-9a-f]+)\)",
-                  lambda m: "x:(r5+$%x)" % (int(m.group(1), 16) - 0x40), text)
-    return text.replace(label, label + "\n        move r5,a\n        add #>$40,a\n        move a1,r5", 1)
-
-
 def fold_body() -> str:
     """Fold Drum 1 plus the Simple Drum primitives, on the CENTRED convention.
 
@@ -252,14 +229,7 @@ def fold_body() -> str:
         text = text[text.index("\n" + label + ":"):]
         parts.append(text)
     parts.append(_read("simple_drum_delta.asm"))
-    text = "\n".join(parts)
-    # NOTE: the Fold/Simple bodies stay exactly as the qualified gate builds
-    # them, uncentred. The composed machine's shared low32/RNG/envelope helper
-    # block is centred by construction (the resonant recipes' center_scratch
-    # pass), so the Fold voice and that block currently disagree about which
-    # word `x:(r5+n)` names. See DSP_3ALGO.md -- this is the open item, and it
-    # is why the composed execution gate is not yet green.
-    return text
+    return "\n".join(parts)
 
 
 DISPATCH_ENTRY = "\n".join([
