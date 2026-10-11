@@ -6,10 +6,10 @@ static uint16_t r16(const uint8_t*s,size_t o){return pk_cf_ld16(s,o);}
 static uint32_t r32(const uint8_t*s,size_t o){return pk_cf_ld32(s,o);}
 static void w16(uint8_t*s,size_t o,uint16_t v){pk_cf_st16(s,o,v);}
 static void w32(uint8_t*s,size_t o,uint32_t v){pk_cf_st32(s,o,v);}
-static int16_t s16(uint16_t u){return (u&0x8000u)?(int16_t)(-1-(int16_t)(uint16_t)~u):(int16_t)u;}
-static int32_t s32(uint32_t u){return (u&0x80000000u)?-1-(int32_t)~u:(int32_t)u;}
-static uint32_t u32(int32_t s){return s>=0?(uint32_t)s:~(uint32_t)(-1-s);}
-static int32_t asr(int32_t v,unsigned n){uint32_t b;if(!n)return v;b=u32(v)>>n;if(v<0)b|=(~0u)<<(32u-n);return s32(b);}
+static int16_t s16(uint16_t u){return (int16_t)u;}
+static int32_t s32(uint32_t u){return (int32_t)u;}
+static uint32_t u32(int32_t s){return (uint32_t)s;}
+static int32_t asr(int32_t v,unsigned n){return v>>n;}
 static int32_t mullo(int32_t a,int32_t b){return s32(pk_cf_mul_lo_u32(u32(a),u32(b)));}
 static uint16_t tab16(const uint8_t*t,size_t i){return pk_cf_ld16(t,2u*i);}
 static int16_t tabs16(const uint8_t*t,size_t i){return s16(tab16(t,i));}

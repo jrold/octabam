@@ -1,0 +1,22 @@
+diff --git a/Musashi/m68kcfcycles.h b/Musashi/m68kcfcycles.h
+index 58a9337..7dd8692 100644
+--- a/Musashi/m68kcfcycles.h
++++ b/Musashi/m68kcfcycles.h
+@@ -82,7 +82,7 @@ static unsigned char m68ki_cf_base_cycles(unsigned int op)
+ 		if((family == 8 || family == 0xc) && (operation == 3 || operation == 7)
+ 			&& source && mode != 1)
+ 		{
+-			const int base = family == 8 ? 20 : 9; /* DIV.W, MUL.W */
++			const int base = family == 8 ? 20 : 3; /* DIV.W, MUL.W (V4e EMAC) */
+ 			return mode == 0 || immediate ? base : base + (family == 8 ? 3 : 2) + indexed;
+ 		}
+ 	}
+@@ -109,7 +109,7 @@ static unsigned char m68ki_cf_base_cycles(unsigned int op)
+ 	if((op & 0xfb80) == 0x4880 && (op & 0x40) && (mode == 2 || mode == 5))
+ 		return 1; /* MOVEM.L: handler adds n */
+ 	if((op & 0xffc0) == 0x4c00 && (mode == 0 || (mode >= 2 && mode <= 5)))
+-		return mode == 0 ? 18 : 20; /* MUL.L upper bound; early termination not modeled */
++		return mode == 0 ? 3 : 5; /* MUL.L on the MCF5445x V4e EMAC (was MCF5206E 18/20) */
+ 	if((op & 0xffc0) == 0x4c40 && (mode == 0 || (mode >= 2 && mode <= 5)))
+ 		return 35; /* DIV.L/REM.L */
+ 

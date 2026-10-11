@@ -11,8 +11,8 @@ static uint16_t r16(const uint8_t *p, size_t o){return pk_cf_ld16(p,o);}
 static uint32_t r32(const uint8_t *p, size_t o){return pk_cf_ld32(p,o);}
 static void w16(uint8_t *p,size_t o,uint16_t v){pk_cf_st16(p,o,v);}
 static void w32(uint8_t *p,size_t o,uint32_t v){pk_cf_st32(p,o,v);}
-static int16_t s16(uint16_t v){return (v&0x8000u)?(int16_t)(-1-(int16_t)(uint16_t)~v):(int16_t)v;}
-static int32_t s32(uint32_t v){return (v&0x80000000u)?-1-(int32_t)~v:(int32_t)v;}
+static int16_t s16(uint16_t v){return (int16_t)v;}
+static int32_t s32(uint32_t v){return (int32_t)v;}
 static uint32_t clamp12s(int32_t v){if(v<0)return 0;if(v>4095)return 4095;return (uint32_t)v;}
 static uint32_t target7(uint8_t v){v&=0x7fu;return v==127u?4095u:(uint32_t)v<<5;}
 static uint32_t smooth(uint32_t old,uint32_t target){return (3u*target+5u*old)>>3;}
@@ -262,7 +262,7 @@ static void prepare_res(pk4_control*c,uint8_t*s,int bass,const uint8_t raw[4],ui
  * The wrapper update stores PARAM1 into the post-engine delay mix at +0x2DD4.
  */
 #define NH_LIMB0 0x0c4u
-static uint32_t u32(int32_t s){return s>=0?(uint32_t)s:~(uint32_t)(-1-s);}
+static uint32_t u32(int32_t s){return (uint32_t)s;}
 #define NH_LIMB1 0x318u
 #define NH_PULSE 0x2c98u
 #define NH_DELAY_MIX 0x2dd4u
