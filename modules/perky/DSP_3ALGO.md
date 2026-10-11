@@ -110,27 +110,44 @@ tables; placement of the resonant banks is the next measurement (see below).
 
 `tools/verify/verify_perky_3algo_exec.py` assembles the shipping composition
 twice (with and without the seam entry) and drives each renderer entry point
-directly. It currently reports the composed **Fold** renderer as silent while
-the standalone binary renders the same fixture correctly.
+directly. It currently reports the composed renderers as **silent** while the
+standalone binaries render the same fixtures correctly.
 
-Measured, in `out/perky/dsp-3algo`:
+This round narrowed it to the **Fold primitive set as it lands in the
+composition**, and it is not the fixture:
 
-* the composed `pk_fold_voice`, `pk_simple_base`, `pk_simple_envelope`,
-  `pk_simple_frequency`, `pk_simple_oscillator` and `pk_simple_delta_at` are
-  **word-for-word** the standalone bodies; the only differing words are the
-  relocated DO-loop and JSR targets;
-* `pk_simple_frequency` called directly returns identical values from both
-  binaries (`0x237`, `0x5777`, `0xffffeb`);
-* X and Y reads/writes at the composed bases work; the host's audio read works;
-* the same composed binary renders `0x10` through a minimal probe and `0`
-  through the full gate's data file, so the remaining difference is in the
-  **harness's fixture/envelope seeding**, not the renderer.
+* the fixture is sound: `state[0x13]` (amplitude-envelope attack) is `0x2aaa`,
+  the envelope's `state` word is `1`, and instrumenting the composed
+  `pk_fold_voice` shows both `pk_simple_envelope` calls receiving exactly those
+  values;
+* yet the composed `pk_simple_base` writes **zero** to `x:(r6+$34)` / `$35`
+  (the prepared base frequency) and **zero** to the second-difference cache at
+  `x:$3964`, and the composed `pk_simple_delta_at` returns `0` for index `0`
+  and `1` instead of the `0x148000` / `0x5a00` the qualified gate sees;
+* `pk_simple_frequency` and `pk_simple_envelope` called directly from the
+  composed image return the **same** values as the standalone;
+* the composed `pk_simple_base` / `pk_simple_delta_at` / `pk_simple_envelope`
+  / `pk_simple_frequency` / `pk_simple_oscillator` / `pk_fold_voice` bodies are
+  word-for-word the standalone ones -- the only differing words are relocated
+  `DO`-loop and `JSR` targets;
+* X and Y reads and writes at the composed bases work, the host's audio read
+  works, and `Y:$0efb` reads back the correct pitch-basis word.
 
-The fixture's Fold state has both envelopes in `state=1` (attack) with
-`attack=1` and `value=0`, which the standalone gate carries through
-`LiveSimpleDrum`-shaped preparation. The composed gate currently loads the raw
-`FoldDrum1.from_arm` words, so the next step is to port that preparation
-instead of bisecting the renderer further. No renderer change is implied.
+So a body that is byte-identical to a passing standalone routine returns a
+different value for the same inputs and the same table base. That points at
+the composed image's **assembled layout** rather than the source: the
+`pk_simple_delta_at` body is the first place a *composed-only* second label
+(`pk3b_*` / `pk3s_*` / `pk3d_*`) sits between it and its caller, and this
+repository has a documented assembler trap for exactly that shape -- `dsp_asm`
+resolves a label by PREFIX, so a `DO`/`JSR` operand whose resolved address has a
+neighbouring label can silently take the wrong target. The next step is to
+disassemble the composed `DO`/`JSR` operands inside `pk_simple_base` and
+`pk_simple_delta_at` and compare each one against the symbol it was written
+with, rather than to keep bisecting the renderer.
+
+The standalone gates stay green, so the per-renderer qualification is
+unaffected: `verify_perky_fold_drum_exec.py` and
+`verify_perky_resonant_dsp_exec.py` both pass unchanged.
 
 ## Reproducing
 
