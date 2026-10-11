@@ -187,6 +187,46 @@ static int32_t res_core_step_fast(res_core_l*m,int32_t input,
      return position;}
 }
 
+/* The snare's resonators also keep coeff_a/coeff_b in 0..65535 (res_interp's
+ * range) and position/velocity clamped to +-32767, so their loop-carried state
+ * fits in 16-bit halves.  Packing halves the register footprint of the three
+ * resonators (the snare's biggest spill source). */
+typedef struct { uint16_t coeff_a,coeff_b; int16_t position,velocity; int32_t pitch_a,pitch_b; uint8_t dirty; } res_core_fast_l;
+static void res_core_fast_load(res_core_fast_l*m,const uint8_t*s,const res_map*rm){
+    m->dirty=s[rm->dirty];
+    m->pitch_a=s16(r16(s,rm->pitch_a));
+    m->pitch_b=s16(r16(s,rm->pitch_b));
+    m->coeff_a=(uint16_t)r32(s,rm->coeff_a);
+    m->coeff_b=(uint16_t)r32(s,rm->coeff_b);
+    m->position=(int16_t)r32(s,rm->position);
+    m->velocity=(int16_t)r32(s,rm->velocity);
+}
+static void res_core_fast_store(uint8_t*s,const res_map*rm,const res_core_fast_l*m){
+    w32(s,rm->coeff_a,(uint32_t)m->coeff_a);
+    w32(s,rm->coeff_b,(uint32_t)m->coeff_b);
+    w32(s,rm->position,(uint32_t)(int32_t)m->position);
+    w32(s,rm->velocity,(uint32_t)(int32_t)m->velocity);
+    s[rm->dirty]=m->dirty;
+}
+static int32_t res_core_step_fast_packed(res_core_fast_l*m,int32_t input,
+                                         const uint8_t*ia,const uint8_t*ib,int32_t*out_velocity){
+    if(m->dirty){
+        m->coeff_b=(uint16_t)res_interp(ia,(uint32_t)m->pitch_a<<17);
+        m->coeff_a=(uint16_t)res_interp(ib,(uint32_t)m->pitch_b<<17);
+        m->dirty=0;
+    }
+    {int32_t coeff_a=(int32_t)m->coeff_a,position=(int32_t)m->position,coeff_b=(int32_t)m->coeff_b,velocity,filtered;
+     velocity=(int32_t)m->velocity;
+     filtered=sub(input,asr(mullo(velocity,coeff_a),15));
+     position=clamp32767(add(position,asr(mullo(velocity,coeff_b),15)));
+     m->position=(int16_t)position;
+     filtered=sub(filtered,position);
+     velocity=clamp32767(add(velocity,asr(mullo(coeff_b,filtered),15)));
+     m->velocity=(int16_t)velocity;
+     *out_velocity=velocity;
+     return position;}
+}
+
 /* --- multiplicative decay ramp ------------------------------------------ */
 typedef struct { size_t mul,count,value,sign,min; } dec_map;
 
@@ -329,7 +369,7 @@ static const dec_map SNARE_C={0x1A4,0x1A8,0x1AC,0x1B0,0x1B4};
 static const dec_map SNARE_D={0x1BC,0x1C0,0x1C4,0x1C8,0x1CC};
 
 int pk_cf_res_snare_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables*t,pk_cf_res_rng*rng){
-    res_env_l env;res_dec_l da,db,dc,dd_;res_core_l r1,r2,r3;res_noise_l nz;
+    res_env_l env;res_dec_l da,db,dc,dd_;res_core_fast_l r1,r2,r3;res_noise_l nz;
     uint32_t i;
     int32_t mix164,mix168;
     uint8_t vel_byte;
@@ -337,7 +377,7 @@ int pk_cf_res_snare_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables
     res_env_load(&env,s,0x74u,t);
     res_dec_load(&da,s,&SNARE_A);res_dec_load(&db,s,&SNARE_B);
     res_dec_load(&dc,s,&SNARE_C);res_dec_load(&dd_,s,&SNARE_D);
-    res_core_load(&r1,s,&RES1_MAP);res_core_load(&r2,s,&RES2_MAP);res_core_load(&r3,s,&RES3_MAP);
+    res_core_fast_load(&r1,s,&RES1_MAP);res_core_fast_load(&r2,s,&RES2_MAP);res_core_fast_load(&r3,s,&RES3_MAP);
     res_noise_load(&nz,s);
     mix164=s32(r32(s,0x164u));mix168=s32(r32(s,0x168u));
     vel_byte=s[6];
@@ -349,14 +389,14 @@ int pk_cf_res_snare_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables
         a=res_dec_step_pos(&da,0,0u);
         b=res_dec_step_pos(&db,1,0x0A3Du);
         first_drive=add(s32(a),s32(b));
-        (void)res_core_step_fast(&r1,first_drive,t->interp_a,t->interp_b,&velocity1);
+        (void)res_core_step_fast_packed(&r1,first_drive,t->interp_a,t->interp_b,&velocity1);
         cv=res_dec_step_pos(&dc,1,0x3333u);
         first_mix=add(velocity1,asr(first_drive,4));
-        (void)res_core_step_fast(&r2,s32(cv),t->interp_a,t->interp_b,&velocity2);
+        (void)res_core_step_fast_packed(&r2,s32(cv),t->interp_a,t->interp_b,&velocity2);
         second_mix=add(velocity2,asr(s32(cv),4));
         dd=res_dec_step(&dd_,0,0u);
         random_value=res_noise_step(&nz,rng);
-        (void)res_core_step_fast(&r3,random_value,t->interp_a,t->interp_b,&velocity3);
+        (void)res_core_step_fast_packed(&r3,random_value,t->interp_a,t->interp_b,&velocity3);
         term1=asr(mullo(second_mix,mix168),15);
         term2=asr(mullo(mix164,first_mix),15);
         term3=asr(mullo(velocity3,s32(dd)),15);
@@ -366,7 +406,7 @@ int pk_cf_res_snare_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables
     res_env_store(s,0x74u,&env);
     res_dec_store(s,&SNARE_A,&da);res_dec_store(s,&SNARE_B,&db);
     res_dec_store(s,&SNARE_C,&dc);res_dec_store(s,&SNARE_D,&dd_);
-    res_core_store(s,&RES1_MAP,&r1);res_core_store(s,&RES2_MAP,&r2);res_core_store(s,&RES3_MAP,&r3);
+    res_core_fast_store(s,&RES1_MAP,&r1);res_core_fast_store(s,&RES2_MAP,&r2);res_core_fast_store(s,&RES3_MAP,&r3);
     res_noise_store(s,&nz);
     return 1;
 }
