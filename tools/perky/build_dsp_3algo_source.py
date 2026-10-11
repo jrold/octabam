@@ -198,81 +198,12 @@ def fold_body() -> str:
     return "\n".join(parts)
 
 
-def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
-            interp_a: int = Y_INTERP_A, interp_b: int = Y_INTERP_B) -> str:
-    """Build the composed shipping source text (with @CONT@ unresolved)."""
-    bass_text, snare_text = resonant_bodies()
-    bass_voice, bass_cores, bass_tail = split_resonant(bass_text, "bass")
-    snare_voice, snare_cores, snare_tail = split_resonant(snare_text, "snare")
-
-    # Both recipes emit the decoder cores as the same instruction sequence; the
-    # only textual difference is how their local labels are numbered (bass and
-    # snare reach the decoder-generator with different label counters). Rewrite
-    # both to a canonical numbering and require exact equality, then keep ONE
-    # copy. Anything else -- a different guard, a different shift, a different
-    # slot -- fails the build rather than being silently deduplicated.
-    def canon(text: str) -> str:
-        mapping: dict[str, str] = {}
-
-        def repl(match: re.Match[str]) -> str:
-            return mapping.setdefault(match.group(1),
-                                      f"pkr_label_{len(mapping):05d}")
-
-        return re.sub(r"\b(pkr_label_\d+)\b", repl, text)
-
-    if canon(bass_cores) != canon(snare_cores):
-        die("resonant resonator/decay cores are not instruction-identical; "
-            "deduplication would not be exact")
-    if canon(bass_tail) != canon(snare_tail):
-        die("resonant shared tails are not instruction-identical")
-    cores = bass_cores
-    # The tail ends in the same exact low32/RNG helper block that
-    # ``resident_primitives`` carries once for Fold and for the envelope
-    # renderer. Keeping both emitted every helper twice; measure the boundary
-    # and drop the duplicate instead.
-    marker = "\npk_u32_add:"
-    if bass_tail.count(marker) != 1:
-        die("resonant tail does not expose exactly one shared math block")
-    tail = bass_tail.split(marker, 1)[0]
-    # ``pk_math_probe`` is the standalone dispatcher the isolated limb probes
-    # call; the shipping renderers call ``pk_u32_*`` directly. Drop the copy
-    # that came in with the resonant recipe -- the primitives section keeps
-    # the one the standalone gates and out-of-image probes still exercise.
-    probe_start = tail.find("\npk_math_probe:")
-    probe_end = tail.find("\n; Exact modulo-2^32 add.")
-    if probe_start < 0 or probe_end < 0 or probe_end < probe_start:
-        die("could not locate the standalone math dispatcher in the shared tail")
-    tail = tail[:probe_start] + "\n" + tail[probe_end + 1:]
-    # The envelope renderer carries its two table bases as absolute
-    # immediates. Substitute the shipping addresses; the renderer's own label
-    # remains the branch target, so no new forward branch is introduced.
-    if tail.count("#>$000c51,r1") != 1 or tail.count("#>$0009a5,r1") != 1:
-        die("envelope renderer's embedded table bases moved")
-    tail = tail.replace("#>$000c51,r1", f"#>${env2_base:06x},r1")
-    tail = tail.replace("#>$0009a5,r1", f"#>${env1_base:06x},r1")
-
-    b = rename_family(bass_voice, "bass")
-    s = rename_family(snare_voice, "snare")
-
-    # Point both voices at the single copies of the shared cores and helpers.
-    for family, text in (("bass", b), ("snare", s)):
-        pass
-    b = b.replace(f"{family_prefix('bass')}pk_resonant_decay", "pk_resonant_decay")
-    b = b.replace(f"{family_prefix('bass')}pk_resonant_core", "pk_resonant_core")
-    b = b.replace(f"{family_prefix('bass')}pk_resonant_noise", "pk_resonant_noise")
-    b = b.replace(f"{family_prefix('bass')}pk_noise_hat_envelope", "pk_noise_hat_envelope")
-    b = b.replace(f"{family_prefix('bass')}pk_u32_", "pk_u32_")
-    s = s.replace(f"{family_prefix('snare')}pk_resonant_decay", "pk_resonant_decay")
-    s = s.replace(f"{family_prefix('snare')}pk_resonant_core", "pk_resonant_core")
-    s = s.replace(f"{family_prefix('snare')}pk_resonant_noise", "pk_resonant_noise")
-    s = s.replace(f"{family_prefix('snare')}pk_noise_hat_envelope", "pk_noise_hat_envelope")
-    s = s.replace(f"{family_prefix('snare')}pk_u32_", "pk_u32_")
-    b = b.replace(f"{family_prefix('bass')}pk_resonant_bass_voice:", f"{P}bass_voice:")
-    s = s.replace(f"{family_prefix('snare')}pk_resonant_snare_voice:", f"{P}snare_voice:")
-    if f"{P}bass_voice:" not in b or f"{P}snare_voice:" not in s:
-        die("resonant entry points were not renamed")
-
-    text = "\n".join([
+# The seam entry point. It validates the PK/Y1 record, enforces the
+# one-Perky-track-per-core admission, resolves this core's single voice block,
+# applies the block's prepared controls and dispatches on the masked engine id.
+# It is kept separate from the three renderer bodies so a qualification gate can
+# assemble the exact shipping renderers without the seam.
+DISPATCH_ENTRY = "\n".join([
         "; Composed reduced Perky DSP machine: Fold Drum 1 + Resonant Bass +",
         "; Resonant Snare, one algorithm per track, one Perky track per core.",
         f"{P}source:",
@@ -378,6 +309,92 @@ def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
         "        move    ssh,x0",
         "        jmp     @CONT@",
         "",
+])
+
+
+def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
+            interp_a: int = Y_INTERP_A, interp_b: int = Y_INTERP_B,
+            *, with_source: bool = True) -> str:
+    """Build the composed shipping source text (with @CONT@ unresolved).
+
+    ``with_source=False`` omits the seam entry point and keeps the three
+    renderer bodies plus every shared helper. A qualification gate then
+    assembles the EXACT shipping renderers (shared cores and all) and drives
+    each entry directly.
+    """
+    bass_text, snare_text = resonant_bodies()
+    bass_voice, bass_cores, bass_tail = split_resonant(bass_text, "bass")
+    snare_voice, snare_cores, snare_tail = split_resonant(snare_text, "snare")
+
+    # Both recipes emit the decoder cores as the same instruction sequence; the
+    # only textual difference is how their local labels are numbered (bass and
+    # snare reach the decoder-generator with different label counters). Rewrite
+    # both to a canonical numbering and require exact equality, then keep ONE
+    # copy. Anything else -- a different guard, a different shift, a different
+    # slot -- fails the build rather than being silently deduplicated.
+    def canon(text: str) -> str:
+        mapping: dict[str, str] = {}
+
+        def repl(match: re.Match[str]) -> str:
+            return mapping.setdefault(match.group(1),
+                                      f"pkr_label_{len(mapping):05d}")
+
+        return re.sub(r"\b(pkr_label_\d+)\b", repl, text)
+
+    if canon(bass_cores) != canon(snare_cores):
+        die("resonant resonator/decay cores are not instruction-identical; "
+            "deduplication would not be exact")
+    if canon(bass_tail) != canon(snare_tail):
+        die("resonant shared tails are not instruction-identical")
+    cores = bass_cores
+    # The tail ends in the same exact low32/RNG helper block that
+    # ``resident_primitives`` carries once for Fold and for the envelope
+    # renderer. Keeping both emitted every helper twice; measure the boundary
+    # and drop the duplicate instead.
+    marker = "\npk_u32_add:"
+    if bass_tail.count(marker) != 1:
+        die("resonant tail does not expose exactly one shared math block")
+    tail = bass_tail.split(marker, 1)[0]
+    # ``pk_math_probe`` is the standalone dispatcher the isolated limb probes
+    # call; the shipping renderers call ``pk_u32_*`` directly. Drop the copy
+    # that came in with the resonant recipe -- the primitives section keeps
+    # the one the standalone gates and out-of-image probes still exercise.
+    probe_start = tail.find("\npk_math_probe:")
+    probe_end = tail.find("\n; Exact modulo-2^32 add.")
+    if probe_start < 0 or probe_end < 0 or probe_end < probe_start:
+        die("could not locate the standalone math dispatcher in the shared tail")
+    tail = tail[:probe_start] + "\n" + tail[probe_end + 1:]
+    # The envelope renderer carries its two table bases as absolute
+    # immediates. Substitute the shipping addresses; the renderer's own label
+    # remains the branch target, so no new forward branch is introduced.
+    if tail.count("#>$000c51,r1") != 1 or tail.count("#>$0009a5,r1") != 1:
+        die("envelope renderer's embedded table bases moved")
+    tail = tail.replace("#>$000c51,r1", f"#>${env2_base:06x},r1")
+    tail = tail.replace("#>$0009a5,r1", f"#>${env1_base:06x},r1")
+
+    b = rename_family(bass_voice, "bass")
+    s = rename_family(snare_voice, "snare")
+
+    # Point both voices at the single copies of the shared cores and helpers.
+    for family, text in (("bass", b), ("snare", s)):
+        pass
+    b = b.replace(f"{family_prefix('bass')}pk_resonant_decay", "pk_resonant_decay")
+    b = b.replace(f"{family_prefix('bass')}pk_resonant_core", "pk_resonant_core")
+    b = b.replace(f"{family_prefix('bass')}pk_resonant_noise", "pk_resonant_noise")
+    b = b.replace(f"{family_prefix('bass')}pk_noise_hat_envelope", "pk_noise_hat_envelope")
+    b = b.replace(f"{family_prefix('bass')}pk_u32_", "pk_u32_")
+    s = s.replace(f"{family_prefix('snare')}pk_resonant_decay", "pk_resonant_decay")
+    s = s.replace(f"{family_prefix('snare')}pk_resonant_core", "pk_resonant_core")
+    s = s.replace(f"{family_prefix('snare')}pk_resonant_noise", "pk_resonant_noise")
+    s = s.replace(f"{family_prefix('snare')}pk_noise_hat_envelope", "pk_noise_hat_envelope")
+    s = s.replace(f"{family_prefix('snare')}pk_u32_", "pk_u32_")
+    b = b.replace(f"{family_prefix('bass')}pk_resonant_bass_voice:", f"{P}bass_voice:")
+    s = s.replace(f"{family_prefix('snare')}pk_resonant_snare_voice:", f"{P}snare_voice:")
+    if f"{P}bass_voice:" not in b or f"{P}snare_voice:" not in s:
+        die("resonant entry points were not renamed")
+
+    text = "\n".join([
+        DISPATCH_ENTRY if with_source else "",
         _section("resonant_bass.asm", b),
         _section("resonant_snare.asm", s),
         _section("resident_cores.asm", cores),
