@@ -348,7 +348,7 @@ def main() -> None:
     print(f"  project load + real sequencer completed {args.frames} frames")
     print("  PERKY T1/T2/T3/T4 all emitted nonzero DSP-bound source PCM")
     print("  PERKY tracks used their stock recorder buffers as silent FLEX donors")
-    print("  Wavetable V1 (T1), Fold2 (T2), Resonant Drums (T3) and Acoustic Hats (T4) "
+    print("  Wavetable V1 (T1), Fold2 (T2), Resonant Drums (T3) and Noise Tone (T4) "
           "exercised simultaneously and remained independent")
     print("  ordinary FLEX T3/T7 continued rendering the staged stock sample")
     print("  later sequencer trigs observed on all four PERKY tracks")

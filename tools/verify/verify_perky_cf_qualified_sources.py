@@ -74,7 +74,7 @@ EXPECTED = {
     'tools/verify/verify_perky_cf_runtime_memory_final.py': 'ddc1a6c18a9227e7cab992d9bbe33e7f432ac54281c005e16127b2d574ab3465',
     'tools/verify/verify_perky_cf_runtime_reset.py': '4a5710b1a4795f21d5a2c4966f2f7eb8d4609c318a1d125f7942f6800ced6d67',
     'tools/verify/verify_perky_cf_stock_record_abi.py': 'git:050b46893fdda12ddd45ea40a0e0395a68eda034',
-    'tools/verify/verify_perky_cf_userpath.py': 'git:4548e54af0e96c7b6738d5038c858ed52fde66e0',
+    'tools/verify/verify_perky_cf_userpath.py': 'git:d33c479d7c749e7d027e69ff4afda419ab3c01b1',
     'tools/verify/verify_perky_final_wrappers.py': '4de6495980d1c9b413a4e7242a34ce68ffcf1b0d7afaab4dd852a9e32f89ca63',
     'tools/verify/verify_perky_cf_voice_silo.py': 'a98abbed07961232c26d5e3c09d2eb9ac1891493dba812139d9afee546497d38',
     'modules/perky/cf_simple_drum.c': '3f60e09c127da21ac9d036beb1aa2df1f0b8e0987fea98f45f46bd9805b1be16',

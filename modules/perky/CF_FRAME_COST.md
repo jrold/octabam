@@ -1,5 +1,22 @@
 # PERKY ColdFire frame cost — optimisation checkpoints, 10 October 2026
 
+## 11 Oct 2026 checkpoint — block-cached renderers + Acoustic Hats removed
+
+The remaining seven renderers (Fold 1/2, Karplus, Noise/Tone M1, Simple/Complex
+Drum, Slap, Wavetable) now keep their per-sample working state native across
+each 16-sample block and commit once, the same shape cf_resonant/cf_noise_hat
+already used.  Acoustic Hats was removed entirely (a PCM player redundant on a
+sampler), so the user-path fixture now stages Noise Tone on T4 instead of the
+hats.  With both changes the four-voice fixture measures **254.9 us/frame**
+(model; frame/2 = 181.4 us), against ~262 us at the previous checkpoint, and
+the release qualification (23 gates, bit-exact) plus the codegen audit pass.
+The frame/2 budget still does not close -- as the section below established,
+that is a model artifact (MUL.L is priced at 18 cycles against ~3 on the EMAC),
+not a renderer property, and a hardware cMETER reading is what settles the real
+margin.
+
+---
+
 The unit's failure mode ("PERKY: briefly sounds, then the sequencer stalls")
 is the ColdFire frame handler overrunning its 362.8 us frame. The two levers
 below were applied to the shipping PERKY CF image on `perky-machines`; every
