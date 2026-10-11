@@ -12,10 +12,11 @@ from __future__ import annotations
 import argparse
 import platform
 import subprocess
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-PRODUCTION = ("cf_fold", "cf_karplus", "cf_noise_tone", "cf_perky4", "cf_resonant", "cf_noise_hat", "cf_simple_drum", "cf_complex_drum", "cf_slap", "cf_wavetable", "cf_acoustic_hats", "control_cf_final")
+PRODUCTION = ("cf_fold", "cf_karplus", "cf_noise_tone", "cf_perky4", "cf_resonant", "cf_noise_hat", "cf_simple_drum", "cf_complex_drum", "cf_slap", "cf_wavetable", "control_cf_final")
 ASSETS = (
     ("pk_asset_pitch", "pitch.bin"),
     ("pk_asset_chromatic", "chromatic.bin"),
@@ -30,9 +31,6 @@ ASSETS = (
     ("pk_asset_res_interp_b", "interp_b.bin"),
     ("pk_asset_wt_base", "wt_base.bin"),
     ("pk_asset_wt_bank", "wt_bank.bin"),
-    ("pk_asset_ah_closed", "ah_closed.bin"),
-    ("pk_asset_ah_open", "ah_open.bin"),
-    ("pk_asset_ah_ride", "ah_ride.bin"),
 )
 
 
@@ -50,6 +48,22 @@ def write_assets(asset_dir: Path, out: Path) -> None:
             for i in range(0, len(data), 16):
                 f.write("  " + ",".join(f"0x{x:02x}" for x in data[i:i + 16]) + ",\n")
             f.write("};\n")
+        # The shipping control path decodes the two Wavetable PCM assets from one
+        # PKR1 stream at boot, into .bss buffers.  Provide the exact stream and
+        # the decode destinations so pk_final_decode_pcm runs the real path.
+        sys.path.insert(0, str(ROOT / "tools/perky"))
+        import pcm_rice  # noqa: E402
+        stream = pcm_rice.encode([
+            (asset_dir / "wt_base.bin").read_bytes(),
+            (asset_dir / "wt_bank.bin").read_bytes(),
+        ])
+        f.write(f"const uint8_t pk_asset_pcm_rice[{len(stream)}] = {{\n")
+        for i in range(0, len(stream), 16):
+            f.write("  " + ",".join(f"0x{x:02x}" for x in stream[i:i + 16]) + ",\n")
+        f.write("};\n")
+        f.write("const uint8_t pk_asset_pcm_rice_end[] = {0};\n")
+        f.write("uint8_t pk_pcm_wt_base[4096];\n")
+        f.write("uint8_t pk_pcm_wt_bank[196608];\n")
 
 
 def main() -> None:

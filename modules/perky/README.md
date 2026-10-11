@@ -1,14 +1,16 @@
 # PERKY — PĒRKONS-style source machines (work in progress)
 
 This directory is the development home for a native Octatrack source-machine
-port of the twelve PerkyBits / PĒRKONS HD-01 engine families.
+port of the PerkyBits / PĒRKONS HD-01 engine families.  Acoustic Hats was
+removed: it is a PCM sample player whose ~450 KB of hat samples duplicate what
+the Octatrack's own sampler already does.
 
-**Status:** PERKY2 synthetic Noise/Tone audio works on the user's Octatrack
-(user confirmation, 6 Oct 2026). The native renderer, boot, timing and full
-sequencer gates pass. PERKY4 locally integrates Fold Drum 1 and Simple Drum; all twelve families now have exact
-DSP renderer candidate gates. All-family production integration, timing, physical memory
-placement and hardware qualification remain incomplete. Current timing-qualified layout:
-one PERKY per DSP core (T1–T4 / T5–T8), FX1/FX2 NONE on all tracks.
+**Status:** the ColdFire four-voice build renders ten engine families
+(Fold 1/2, Wavetable, Simple/Complex Drum, Resonant Drums, Slap, Karplus,
+Noise Hat, Noise/Tone) directly on the MCF54455 into ordinary stock source
+segments, with Tune/Decay/Algo/Prm1/Prm2/Mode p-locked on SRC A–F.  The PCM,
+control and state qualification passes bit-exactly against the pinned PerkyBits
+native references; hardware qualification is still pending.
 
 The tracked `manifest.py` is an impulse probe. The full audible machine is
 composed by `tools/perky/build_machine_canary.py`; use the full builder to test

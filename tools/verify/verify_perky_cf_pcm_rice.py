@@ -3,11 +3,10 @@
 
 The Octatrack's card upgrade refuses an ELUP `.bin` whose payload exceeds
 1 MiB (`0x4007f748`: `filesize - 12 > 0x100000` -> the error whose message is
-"LENGTH ERROR").  PerkyMachines' Wavetable bank and Acoustic Hats samples are
-648 KB of incompressible PCM, which pushed the payload past that.  This gate
-packs those assets with the production coder (tools/perky/pcm_rice.py),
-decodes them back with the production ColdFire decoder
-(modules/perky/cf_pcm_rice.h) and requires every byte to come back.
+"LENGTH ERROR").  PerkyMachines' Wavetable bank is ~200 KB of incompressible
+PCM.  This gate packs those assets with the production coder
+(tools/perky/pcm_rice.py), decodes them back with the production ColdFire
+decoder (modules/perky/cf_pcm_rice.h) and requires every byte to come back.
 
 It also prices the result, because the size is the whole point.
 """
@@ -29,10 +28,6 @@ ASSETS = (
     ("wt_base", 0x080222A0, 4096),
 ) + tuple(
     (f"wt_bank_{k}", 0x080327CC + k * 0x1000, 4096) for k in range(48)
-) + (
-    ("ah_closed", 0x080CBEF0, 20202),
-    ("ah_open", 0x080A1BF0, 172800),
-    ("ah_ride", 0x080627CC, 259106),
 )
 
 # The card OS-upgrade payload ceiling: filesize - 12 must not exceed 0x100000.

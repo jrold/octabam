@@ -70,31 +70,25 @@ extern const uint8_t pk_asset_res_interp_b[];
 extern const uint8_t pk_asset_pcm_rice[];
 extern const uint8_t pk_asset_pcm_rice_end[];
 
-/* The five big PCM assets travel as one lossless PKR1 stream, because the card
- * OS upgrade refuses an ELUP .bin whose payload exceeds 1 MiB and these
- * 652,812 bytes are effectively incompressible.  They are decoded once into
+/* The two Wavetable PCM assets travel as one lossless PKR1 stream, because the
+ * card OS upgrade refuses an ELUP .bin whose payload exceeds 1 MiB and these
+ * 200,704 bytes are effectively incompressible.  They are decoded once into
  * these .bss buffers (never loaded, so they cost the image nothing) before any
  * render can ask for them. */
 extern uint8_t pk_pcm_wt_base[];
 extern uint8_t pk_pcm_wt_bank[];
-extern uint8_t pk_pcm_ah_closed[];
-extern uint8_t pk_pcm_ah_open[];
-extern uint8_t pk_pcm_ah_ride[];
 
 static uint8_t pk_final_pcm_ready;
 
 static void pk_final_decode_pcm(void)
 {
-    static const pk_cf_rice_target targets[5] = {
+    static const pk_cf_rice_target targets[2] = {
         { 2048u,   (int16_t *)(void *)pk_pcm_wt_base },
         { 98304u,  (int16_t *)(void *)pk_pcm_wt_bank },
-        { 10101u,  (int16_t *)(void *)pk_pcm_ah_closed },
-        { 86400u,  (int16_t *)(void *)pk_pcm_ah_open },
-        { 129553u, (int16_t *)(void *)pk_pcm_ah_ride },
     };
     if (pk_cf_rice_unpack(pk_asset_pcm_rice,
                           (uint32_t)(pk_asset_pcm_rice_end - pk_asset_pcm_rice),
-                          targets, 5u))
+                          targets, 2u))
         pk_final_pcm_ready = 1u;
 }
 
@@ -139,9 +133,6 @@ static const pk4_assets pk_final_assets = {
     .res_interp_b = pk_asset_res_interp_b,
     .wt_base = pk_pcm_wt_base,
     .wt_bank = pk_pcm_wt_bank,
-    .ah_closed = pk_pcm_ah_closed,
-    .ah_open = pk_pcm_ah_open,
-    .ah_ride = pk_pcm_ah_ride,
     .m1_wave_address = 0x080310e0u,
 };
 

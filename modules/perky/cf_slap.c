@@ -44,46 +44,52 @@ static uint16_t slap_env(uint8_t*s,size_t b,const pk_cf_fold_tables*t){
 /* --- shared 32-bit PRNG, identical to cf_fold's --------------------------- */
 static uint32_t slap_rnd(pk_cf_fold_rng*r){const uint32_t a=0x5851f42d,b=0x4c957f2d;uint32_t ol=r->low,oh=r->high,acc=pk_cf_mul_lo_u32(ol,a),pl=pk_cf_mul_lo_u32(ol,b),ph=pk_cf_mul_hi_u32(ol,b),nl,carry,nh;acc+=pk_cf_mul_lo_u32(oh,b);nl=pl+1u;carry=nl<pl;nh=acc+ph+carry;r->low=nl;r->high=nh;return nh&0x7fffffffu;}
 
-/* Noise source: a countdown of held samples then a fresh PRNG draw. */
-static int16_t slap_noise(uint8_t*s,pk_cf_fold_rng*r){
-    uint16_t c=r16(s,0x60);
-    if(c){w16(s,0x60,(uint16_t)(c-1u));return s16(r16(s,0x70));}
-    w16(s,0x60,r16(s,0x62));
-    {int16_t x=s16((uint16_t)slap_rnd(r));w16(s,0x70,(uint16_t)x);return x;}
+typedef struct {
+    uint16_t count,reload;
+    int16_t held;
+} slap_noise_state;
+static int16_t slap_noise_step(slap_noise_state*n,pk_cf_fold_rng*r){
+    if(n->count){n->count=(uint16_t)(n->count-1u);return n->held;}
+    n->count=n->reload;n->held=s16((uint16_t)slap_rnd(r));return n->held;
 }
 
-/* One filter stage advance (the firmware's helper, run twice per sample). */
-static void slap_filter(uint8_t*s,int32_t in){
-    int32_t coeff=(int32_t)r16(s,0xaa);
-    int32_t velocity=s32(r32(s,0xb4));
-    int32_t product=mullo(velocity,coeff),first,second,fb;
+typedef struct {
+    int32_t coeff,damp;
+    int32_t first,second,velocity;
+} slap_filter_state;
+/* One filter stage advance (the firmware's helper, run twice per sample),
+ * with the history kept native across the block. */
+static void slap_filter_step(slap_filter_state*f,int32_t in){
+    int32_t product=mullo(f->velocity,f->coeff),fb;
     if(product<0)product=s32(u32(product)+0xffffu);
-    first=clamp32767(add(s32(r32(s,0xac)),asr(product,16)));
-    w32(s,0xac,u32(first));
-    second=clamp32767(sub(sub(in,first),asr(mullo(velocity,(int32_t)r16(s,0xa8)),10)));
-    w32(s,0xb0,u32(second));
-    fb=mullo(second,coeff);
+    f->first=clamp32767(add(f->first,asr(product,16)));
+    f->second=clamp32767(sub(sub(in,f->first),asr(mullo(f->velocity,f->damp),10)));
+    fb=mullo(f->second,f->coeff);
     if(fb<0)fb=s32(u32(fb)+0xffffu);
-    velocity=clamp32767(add(velocity,asr(fb,16)));
-    w32(s,0xb4,u32(velocity));
+    f->velocity=clamp32767(add(f->velocity,asr(fb,16)));
 }
 
-/* Five-tap feedback delay ring into the object's own 0x12C5-word ring. */
-static int32_t slap_delay(uint8_t*s,int32_t in){
-    uint32_t index=r16(s,0x266a),next=index+1u,tap;
+typedef struct {
+    uint16_t index,mix;
+    uint16_t delay[5],gain[5];
+} slap_delay_state;
+/* Five-tap feedback delay ring.  The ring itself still receives each sample
+ * immediately; only invariant tap metadata and the running index stay native. */
+static int32_t slap_delay_step(uint8_t*s,slap_delay_state*q,int32_t in){
+    uint32_t next=(uint32_t)q->index+1u,tap;
     int32_t stage=in;
     if(next>PK_CF_SLAP_RING_LEN-1u)next=0u;
     for(tap=0;tap<5u;tap++){
-        uint32_t delay=(uint32_t)r16(s,0xcc+2u*tap);
-        int32_t gain=s32((uint32_t)r16(s,0xd6+2u*tap));
-        uint32_t ri=index>=delay?(index-delay):(PK_CF_SLAP_RING_LEN+index-delay);
+        uint32_t delay=(uint32_t)q->delay[tap];
+        int32_t gain=(int32_t)q->gain[tap];
+        uint32_t ri=(uint32_t)q->index>=delay?((uint32_t)q->index-delay):(PK_CF_SLAP_RING_LEN+(uint32_t)q->index-delay);
         int32_t acc=mullo(stage,gain-0x10);
         acc=add(acc,mullo(gain,(int32_t)s16(r16(s,PK_CF_SLAP_RING_OFF+2u*ri))));
         stage=clamp32767(asr(acc,4));
     }
     w16(s,PK_CF_SLAP_RING_OFF+2u*next,(uint16_t)stage);
-    w16(s,0x266a,(uint16_t)next);
-    {int32_t mix=s16(r16(s,0x266c)),wet=asr(mullo(stage,5),1);
+    q->index=(uint16_t)next;
+    {int32_t mix=s16(q->mix),wet=asr(mullo(stage,5),1);
      int32_t out=mullo(in,0x0fff-mix);
      out=add(out,mullo(mix,wet));
      return asr(out,12);}
@@ -164,28 +170,43 @@ void pk_cf_slap_trigger(uint8_t*s,uint8_t velocity,uint8_t note){
 }
 
 int pk_cf_slap_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_fold_tables*t,pk_cf_fold_rng*rng){
-    uint32_t i;
+    uint32_t i,k;
+    slap_noise_state ns;
+    slap_filter_state fs;
+    slap_delay_state ds;
+    uint16_t first_count,second_count,second_limit,target;
+    uint8_t velocity;
     if(!s||!d||!t||!t->envelope1||!rng)return 0;
+
+    ns.count=r16(s,0x60);ns.reload=r16(s,0x62);ns.held=s16(r16(s,0x70));
+    fs.coeff=(int32_t)r16(s,0xaa);fs.damp=(int32_t)r16(s,0xa8);
+    fs.first=s32(r32(s,0xac));fs.second=s32(r32(s,0xb0));fs.velocity=s32(r32(s,0xb4));
+    ds.index=r16(s,0x266a);ds.mix=r16(s,0x266c);
+    for(k=0;k<5u;k++){ds.delay[k]=r16(s,0xcc+2u*k);ds.gain[k]=r16(s,0xd6+2u*k);}
+    first_count=r16(s,0xc2);second_count=r16(s,0xc4);second_limit=r16(s,0xc6);target=r16(s,0xca);
+    velocity=s[6];
+
     for(i=0;i<n;i++){
-        int16_t nv=slap_noise(s,rng);
-        uint32_t first=r16(s,0xc2);
+        int16_t nv=slap_noise_step(&ns,rng);
         uint16_t a;
         int32_t scaled;
-        slap_filter(s,(int32_t)nv);
-        slap_filter(s,(int32_t)nv);
-        if((uint32_t)r16(s,0xca)>first){
-            w16(s,0xc2,(uint16_t)((first+1u)&0xffffu));
-        }else{
-            uint32_t second=r16(s,0xc4);
-            if((uint32_t)r16(s,0xc6)>second){
-                w16(s,0xc4,(uint16_t)((second+1u)&0xffffu));
-                w16(s,0xc2,0u);
-                slap_retrigger(s);
-            }
+        slap_filter_step(&fs,(int32_t)nv);
+        slap_filter_step(&fs,(int32_t)nv);
+        if((uint32_t)target>(uint32_t)first_count){
+            first_count=(uint16_t)(first_count+1u);
+        }else if((uint32_t)second_limit>(uint32_t)second_count){
+            second_count=(uint16_t)(second_count+1u);
+            first_count=0u;
+            slap_retrigger(s);
         }
         a=slap_env(s,0x74,t);
-        scaled=asr(mullo(s32(r32(s,0xac)),(int32_t)a),16);
-        d[i]=slap_velocity(s[6],slap_delay(s,scaled));
+        scaled=asr(mullo(fs.first,(int32_t)a),16);
+        d[i]=slap_velocity(velocity,slap_delay_step(s,&ds,scaled));
     }
+
+    w16(s,0x60,ns.count);w16(s,0x70,(uint16_t)ns.held);
+    w32(s,0xac,u32(fs.first));w32(s,0xb0,u32(fs.second));w32(s,0xb4,u32(fs.velocity));
+    w16(s,0xc2,first_count);w16(s,0xc4,second_count);
+    w16(s,0x266a,ds.index);
     return 1;
 }

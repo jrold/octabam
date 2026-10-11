@@ -23,6 +23,10 @@ extern const uint8_t pk_asset_wave0[];
 extern const uint8_t pk_asset_wave1[];
 extern const uint8_t pk_asset_wave2[];
 extern const uint8_t pk_asset_wave3[];
+extern const uint8_t pk_asset_res_interp_a[];
+extern const uint8_t pk_asset_res_interp_b[];
+extern const uint8_t pk_asset_wt_base[];
+extern const uint8_t pk_asset_wt_bank[];
 }
 
 #define U8(a) (*(volatile uint8_t *)(uintptr_t)(a))
@@ -63,6 +67,10 @@ static pk4_assets make_assets() {
     a.waves[3] = {0x080228a0u, pk_asset_wave3};
     a.m1_wave = pk_asset_m1_wave;
     a.m1_wave_address = 0x080310e0u;
+    a.res_interp_a = pk_asset_res_interp_a;
+    a.res_interp_b = pk_asset_res_interp_b;
+    a.wt_base = pk_asset_wt_base;
+    a.wt_bank = pk_asset_wt_bank;
     return a;
 }
 
@@ -233,8 +241,12 @@ int main() {
         }
     }
 
-    if (cases != 44u) {
-        std::cerr << "coverage mismatch cases=" << cases << '\n';
+    uint64_t expected = 0u;
+    for (unsigned v = 0; v < 4u; ++v)
+        expected += (uint64_t)pk4_voice_len(v) * 3u - 1u;
+    if (cases != expected) {
+        std::cerr << "coverage mismatch cases=" << cases
+                  << " expected=" << expected << '\n';
         return 110;
     }
     std::cout << "PERKY p-lock reversion: PASS " << cases << " voice/lock cases / "

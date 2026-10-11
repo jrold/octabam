@@ -23,6 +23,10 @@ extern const uint8_t pk_asset_wave0[];
 extern const uint8_t pk_asset_wave1[];
 extern const uint8_t pk_asset_wave2[];
 extern const uint8_t pk_asset_wave3[];
+extern const uint8_t pk_asset_res_interp_a[];
+extern const uint8_t pk_asset_res_interp_b[];
+extern const uint8_t pk_asset_wt_base[];
+extern const uint8_t pk_asset_wt_bank[];
 }
 
 #define U8(a) (*(volatile uint8_t *)(uintptr_t)(a))
@@ -83,6 +87,10 @@ int main()
     assets.waves[3] = {0x080228a0u, pk_asset_wave3};
     assets.m1_wave = pk_asset_m1_wave;
     assets.m1_wave_address = 0x080310e0u;
+    assets.res_interp_a = pk_asset_res_interp_a;
+    assets.res_interp_b = pk_asset_res_interp_b;
+    assets.wt_base = pk_asset_wt_base;
+    assets.wt_bank = pk_asset_wt_bank;
 
     pk4_engine reference{};
     pk4_init(&reference, &assets);

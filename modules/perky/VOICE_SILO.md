@@ -22,7 +22,7 @@ That buys three things:
 | T1 | V1 | Fold Drum 1 / Wavetable V1 / Simple Drum | **Fold Drum 1** |
 | T2 | V2 | Fold Drum 2 / Wavetable V2 / Complex Drum | **Fold Drum 2** |
 | T3 | V3 | Resonant Drums / Slap / Karplus | **Resonant Drums, Karplus** |
-| T4 | V4 | Noise Hat / Noise Tone / Acoustic Hats | **Noise Hat, Noise Tone** |
+| T4 | V4 | Noise Hat / Noise Tone | **Noise Hat, Noise Tone** |
 
 Only the implemented algorithms are listed, compacted into a contiguous knob
 range — the ALGO control on each track has exactly as many positions as that
@@ -53,11 +53,14 @@ release note has to say so.
 
 Order by what each family is missing:
 
-1. `Slap` (V3) and `Acoustic Hats` (V4) complete two families to their full
-   three algorithms.
+1. `Slap` (V3) completes that family to its full three algorithms.  `Acoustic
+   Hats` (V4) was removed: it is a PCM sample player whose ~450 KB of hat
+   samples duplicate what the Octatrack's own sampler already does, and it cost
+   the ColdFire frame and image budget out of proportion to the synthesis it
+   added.
 2. `Simple Drum` (V1) and `Complex Drum` (V2) give T1/T2 a second machine.
 3. `Wavetable V1` / `Wavetable V2` need the wavetable asset codec ported to
-   ColdFire as well, so they are the largest of the six.
+   ColdFire as well, so they are the largest of the remaining five.
 
 ## What this does not fix
 

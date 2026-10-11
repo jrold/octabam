@@ -46,37 +46,47 @@ static uint16_t env(uint8_t*s,size_t b,const pk_cf_fold_tables*t){
 static int32_t pitch(uint16_t raw,const uint8_t*t){
     int32_t p=(int32_t)s16(raw);int neg=0;uint32_t v=0;
     if(p<0){uint16_t m=(uint16_t)(0u-raw);p=(int32_t)s16(m);if(p>=0x1000)neg=1;}
-    if(p<0x1000){
-        v=tab16(t,(uint16_t)p);
-    } else {
+    if(p<0x1000){v=tab16(t,(uint16_t)p);}else{
         uint16_t q=(uint16_t)p;uint32_t sh=((q-0x1000u)>>9)&0x7fu,ad=sh*127u;int16_t ix;
         sh=(sh+1u)&0xffu;ix=s16((uint16_t)((uint32_t)q+(ad<<9)-0x200u));
         v=(uint32_t)tab16(t,(uint16_t)ix)<<sh;
     }
-    if(neg)
-        v=0u-v;
+    if(neg)v=0u-v;
     return s32(v);
 }
 
-static void setfreq(uint8_t*s,size_t b,uint32_t f){
+static uint32_t frequency_step(uint32_t f){
     int32_t shifted=s32(f<<20);
     int32_t hi=pk_cf_mul_hi_s32(shifted,s32(0x057619f1u));
     int32_t result=asr(hi,10)-asr(shifted,31);
-    w32(s,b+8,u32(result));
+    return u32(result);
 }
+static void setfreq(uint8_t*s,size_t b,uint32_t f){w32(s,b+8,frequency_step(f));}
 
-static int osc(uint8_t*s,size_t b,const pk_cf_fold_tables*t,int16_t*out){
-    uint32_t ph=r32(s,b+4)+r32(s,b+8),cur;const uint8_t*tb;uint32_t i,j;int32_t f,a,z;
-    w32(s,b+4,ph);
-    cur=r32(s,b+0xc);
-    if(s32(ph)>0x100000){
-        uint32_t nx=r32(s,b+0x10);
-        ph-=0x100000;w32(s,b+4,ph);
-        if(nx!=cur){cur=nx;w32(s,b+0xc,cur);}
-    }
-    tb=wave(t,cur);if(!tb)return 0;
-    i=(ph>>12)&0xffu;j=(i+1)&0xffu;f=(int32_t)(ph&0xfffu);
-    a=(int32_t)tabs16(tb,i);z=(int32_t)tabs16(tb,j);
+typedef struct {
+    const uint8_t *table;
+    uint32_t table_address;
+    uint32_t phase;
+    uint32_t step;
+    uint32_t current;
+    uint32_t next;
+} cd_osc_state;
+
+static void osc_load(cd_osc_state*o,const uint8_t*s,size_t b){
+    o->table=0;o->table_address=0xffffffffu;
+    o->phase=r32(s,b+4);o->step=r32(s,b+8);o->current=r32(s,b+0xc);o->next=r32(s,b+0x10);
+}
+static void osc_store(const cd_osc_state*o,uint8_t*s,size_t b){
+    w32(s,b+4,o->phase);w32(s,b+8,o->step);w32(s,b+0xc,o->current);
+}
+static int osc_step(cd_osc_state*o,const pk_cf_fold_tables*t,int16_t*out){
+    uint32_t i,j;int32_t f,a,z;
+    o->phase+=o->step;
+    if(s32(o->phase)>0x100000){o->phase-=0x100000u;if(o->next!=o->current)o->current=o->next;}
+    if(o->current!=o->table_address){o->table=wave(t,o->current);o->table_address=o->current;}
+    if(!o->table)return 0;
+    i=(o->phase>>12)&0xffu;j=(i+1)&0xffu;f=(int32_t)(o->phase&0xfffu);
+    a=(int32_t)tabs16(o->table,i);z=(int32_t)tabs16(o->table,j);
     *out=s16((uint16_t)(a+asr(mullo(z-a,f),12)));
     return 1;
 }
@@ -144,28 +154,36 @@ void pk_cf_cd_trigger(uint8_t*s,uint8_t velocity,uint8_t note){
 
 int pk_cf_cd_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_fold_tables*t){
     uint32_t i;
+    cd_osc_state main_osc,mod_osc;
+    uint32_t base;
+    uint16_t amount;
+    uint8_t mute,velocity;
     if(!s||!d||!t||!t->pitch)return 0;
     if(r32(s,0x58)!=PK_CF_CD_OSC_RENDER)return 0;
-    {
-        const uint32_t base=(uint32_t)mullo(pitch(r16(s,0xba),t->pitch),0xbb80u)>>20;
-        const uint16_t amount=r16(s,0x120);
-        for(i=0;i<n;i++){
-            uint16_t a=env(s,0x74,t),pe=env(s,0xf8,t);
-            int16_t o=0,mo=0;
-            uint32_t lo,hi,factor,freq;
-            int32_t out;
-            if(!osc(s,0xc4,t,&mo))return 0;
-            lo=(uint32_t)pe&0x1fffu;hi=(uint32_t)pe>>13;
-            factor=((lo+0x2000u)>>(13u-hi))-1u;
-            freq=base+((uint32_t)amount*factor>>10)+u32(asr((int32_t)s16((uint16_t)mo),6));
-            setfreq(s,0x2c,freq);
-            if(!osc(s,0x2c,t,&o))return 0;
-            if(s[0xb8]){d[i]=0;continue;}
-            out=asr(mullo((int32_t)o,(int32_t)a),16);
-            out=asr(mullo(out,(int32_t)s[6]),8);
-            if(out>INT16_MAX)out=INT16_MAX;else if(out<INT16_MIN)out=INT16_MIN;
-            d[i]=(int16_t)out;
+    base=(uint32_t)mullo(pitch(r16(s,0xba),t->pitch),0xbb80u)>>20;
+    amount=r16(s,0x120);mute=s[0xb8];velocity=s[6];
+    osc_load(&main_osc,s,0x2c);osc_load(&mod_osc,s,0xc4);
+    for(i=0;i<n;i++){
+        uint16_t a=env(s,0x74,t),pe=env(s,0xf8,t);
+        int16_t o=0,mo=0;
+        uint32_t lo,hi,factor,freq;
+        int32_t out;
+        if(!osc_step(&mod_osc,t,&mo)){
+            osc_store(&main_osc,s,0x2c);osc_store(&mod_osc,s,0xc4);return 0;
         }
+        lo=(uint32_t)pe&0x1fffu;hi=(uint32_t)pe>>13;
+        factor=((lo+0x2000u)>>(13u-hi))-1u;
+        freq=base+((uint32_t)amount*factor>>10)+u32(asr((int32_t)s16((uint16_t)mo),6));
+        main_osc.step=frequency_step(freq);
+        if(!osc_step(&main_osc,t,&o)){
+            osc_store(&main_osc,s,0x2c);osc_store(&mod_osc,s,0xc4);return 0;
+        }
+        if(mute){d[i]=0;continue;}
+        out=asr(mullo((int32_t)o,(int32_t)a),16);
+        out=asr(mullo(out,(int32_t)velocity),8);
+        if(out>INT16_MAX)out=INT16_MAX;else if(out<INT16_MIN)out=INT16_MIN;
+        d[i]=(int16_t)out;
     }
+    osc_store(&main_osc,s,0x2c);osc_store(&mod_osc,s,0xc4);
     return 1;
 }

@@ -39,10 +39,6 @@ ASSETS = (
     # 48-table secondary crossfade bank the panel PARAM1 walk indexes.
     ("pk_asset_wt_base",     0x080222A0, 4096, "cd152c38143fd71b7d465a6f62abfb723a454a314cb94ef09384204925102b7c"),
     ("pk_asset_wt_bank",     0x080327CC, 196608, "98bbb3e2622d3e11b255537d53245f6631d82431dea08c3857ef1f77ff102937"),
-    # Acoustic Hats' three hat samples, selected by PANEL MODE.
-    ("pk_asset_ah_closed",   0x080CBEF0, 20202, "d9caeb79cc5c105bd13dd2b58dccde5bef3e1e17e15d2efeb34d15af6ed463be"),
-    ("pk_asset_ah_open",     0x080A1BF0, 172800, "0cffaca235777f058c065567b420143b506b62f07b3fdd13f87fe5f4623f893c"),
-    ("pk_asset_ah_ride",     0x080627CC, 259106, "0803c1873d5c255dd334c1e775f2d86e17e8d1a337bebcef2508160a5454f29f"),
 )
 
 
@@ -92,25 +88,18 @@ def _byte_rows(blob: bytes, width: int = 16) -> list[str]:
     ]
 
 
-# The five big firmware assets are carried as ONE lossless PKR1 stream
+# The two big Wavetable firmware assets are carried as ONE lossless PKR1 stream
 # (tools/perky/pcm_rice.py) instead of raw image rodata.  The card OS upgrade
-# refuses an ELUP .bin whose payload exceeds 1 MiB, and these 652,812 bytes are
-# effectively incompressible PCM: they cost the image ~1:1 and pushed the
-# payload to 1.2 MB.  The stream is 368,895 bytes and is decoded at boot into
-# .bss buffers (pk_pcm_*) by modules/perky/cf_pcm_rice.h.
+# refuses an ELUP .bin whose payload exceeds 1 MiB, and these 200,704 bytes are
+# effectively incompressible PCM.  The stream is decoded at boot into .bss
+# buffers (pk_pcm_*) by modules/perky/cf_pcm_rice.h.
 PCM_ASSETS = (
     ("pk_asset_wt_base",   0x080222A0, 4096),
     ("pk_asset_wt_bank",   0x080327CC, 196608),
-    ("pk_asset_ah_closed", 0x080CBEF0, 20202),
-    ("pk_asset_ah_open",   0x080A1BF0, 172800),
-    ("pk_asset_ah_ride",   0x080627CC, 259106),
 )
 PCM_SYMBOLS = (
     ("pk_pcm_wt_base",   4096),
     ("pk_pcm_wt_bank",   196608),
-    ("pk_pcm_ah_closed", 20202),
-    ("pk_pcm_ah_open",   172800),
-    ("pk_pcm_ah_ride",   259106),
 )
 PCM_STREAM_LABEL = "pk_asset_pcm_rice"
 

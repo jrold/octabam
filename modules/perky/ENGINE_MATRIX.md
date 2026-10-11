@@ -30,7 +30,7 @@ All twelve families now have executable DSP renderer candidates with original AR
 | Karplus | V3 / A3 | `1,0,2` | `NativeV121Karplus` | `0x10e0`; 2 envelopes + large delay/state + RNG | Exact DSP/ARM PCM/state/full-ring/RNG; physical ring allocation and production controls pending |
 | Noise Hat | V4 / A1 | `1,0,2` | `NativeV121NoiseHatClassic` / `NativeV121NoiseHatPulseStack` + wrapper modes | classic `0x2dd8`, pulse `0x160`; envelopes, filters/delays/pulse stack | **All three modes exact DSP/original ARM PCM/state/ring/hold/RNG; classic timing, physical placement and production integration pending** |
 | Noise / Tone | V4 / A2 | `1,0,2` | `NativeV121NoiseTone*` | `0x120`; pitch/envelopes/waves/filter/noise + RNG | **PERKY2 physical audio works; authentic shared and Waveform2 DSP candidates now exact; production controls/assets remain synthetic** |
-| Acoustic Hats | V4 / A3 | `1,0,2` | `NativeV121AcousticHats` | `0x10c`; 2 envelopes + sample asset up to `0x40000` bytes | Exact DSP/ARM PCM/state/IEEE754 history/global hold; test-only sample bank; physical assets, code size, timing and controls pending |
+| ~~Acoustic Hats~~ | ~~V4 / A3~~ | — | — | — | **Removed**: a PCM sample player (~450 KB of hat samples) redundant on a sampler; deleted from the ColdFire port and the DSP candidates |
 
 ## Shared-port clusters
 

@@ -25,7 +25,7 @@ import perky_cf_assets  # noqa:E402
 
 PRODUCTION_C = ("cf_fold", "cf_karplus", "cf_noise_tone", "cf_perky4",
                 "cf_resonant", "cf_noise_hat", "cf_simple_drum", "cf_complex_drum",
-                "cf_slap", "cf_wavetable", "cf_acoustic_hats")
+                "cf_slap", "cf_wavetable")
 NATIVE_CPP = (
     "NativeV121FoldDrums.cpp",
     "NativeV121Karplus.cpp",
@@ -206,13 +206,14 @@ def main() -> None:
     print("  SRC=A Decay,B Tune,C Param1,D Param2,E Mode,F Algo; all p-lock sequence/split gates passed")
     print("  supported Algo=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3),"
           "ResonantDrums(M1 snare/M2 bass/M3 noise-tone),"
-          "NoiseHat(M1 white/M2 metallic/M3 pulse stack)")
+          "NoiseHat(M1 white/M2 metallic/M3 pulse stack),"
+          "SimpleDrum,ComplexDrum,Slap,Wavetable")
     print("  production control->PCM=196608 exact samples per Algo (786432 total)")
     print("  long-tail continuity=144 cases / 1179648 exact samples / 512 consecutive 16-sample blocks per case")
-    print("  parameter coverage=6 algos x 3 modes x 4 controls x 128 OT positions, all audible")
-    print("  production pk_render=1024 simultaneous four-voice frames / 4096 voice events / 65536 samples; all 4x4 voice/algo pairs and all 16 split offsets")
-    print("  p-lock reversion=44 voice/lock cases / 132 events / 2112 exact samples; default->lock->default non-sticky")
-    print("  runtime reset=16 voice/algo cases across Part A0->A1->A0 and Bank A->B; exact cold PCM")
+    print("  parameter coverage=10 algos x 3 modes x 4 controls x 128 OT positions, all audible")
+    print("  production pk_render=1024 simultaneous four-voice frames / 4096 voice events / 65536 samples; all voice/algo pairs and all 16 split offsets")
+    print("  p-lock reversion=29 voice/lock cases / 87 events / 1392 exact samples; default->lock->default non-sticky")
+    print("  runtime reset=11 voice/algo cases across Part A0->A1->A0 and Bank A->B; exact cold PCM")
     print("  stock DSP module declaration=no DSP section/ranges/arena; stock source record transport exact")
 
 
