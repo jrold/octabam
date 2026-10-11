@@ -146,6 +146,9 @@ void pk4_init(pk4_engine *engine, const pk4_assets *assets);
  * controls/mode/algorithm and, when trig != 0, performs the authentic trigger
  * plus mandatory v1.2.1 update-after-trigger.
  */
+void pk4_preinit_voice(pk4_engine *engine, unsigned track,
+                       uint8_t velocity, uint8_t note);
+
 int pk4_prepare_event(pk4_engine *engine, unsigned track,
                       uint8_t decay, uint8_t tune,
                       uint8_t param1, uint8_t param2,

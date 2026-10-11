@@ -161,6 +161,9 @@ static void pk_final_reset_runtime_if_needed(void)
     if (pk_final_runtime_cookie != PK_FINAL_RUNTIME_READY
         || pk_final_bank != bank || pk_final_part != part) {
         pk4_init(&pk_final_engine, &pk_final_assets);
+        for (unsigned voice = 0; voice < 4u; ++voice)
+            pk4_preinit_voice(&pk_final_engine, voice,
+                              PK_FINAL_VELOCITY, PK_FINAL_NOTE);
         for (unsigned voice = 0; voice < 4u; ++voice) {
             pk_final_trigger_latch[voice] = 0u;
             pk_final_frame_started[voice] = 0u;
