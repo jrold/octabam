@@ -110,44 +110,37 @@ tables; placement of the resonant banks is the next measurement (see below).
 
 `tools/verify/verify_perky_3algo_exec.py` assembles the shipping composition
 twice (with and without the seam entry) and drives each renderer entry point
-directly. It currently reports the composed renderers as **silent** while the
-standalone binaries render the same fixtures correctly.
+directly. Its Fold case currently fails against the ARM expected PCM, and the
+investigation so far says this is a **gate/fixture-modelling problem, not a
+composed-renderer problem**. Measured this round:
 
-This round narrowed it to the **Fold primitive set as it lands in the
-composition**, and it is not the fixture:
+* the composed `pk_simple_base`, `pk_simple_delta_at`, `pk_simple_envelope`,
+  `pk_simple_frequency`, `pk_simple_oscillator` and `pk_fold_voice` bodies are
+  the standalone bodies exactly -- byte comparison differs only in the
+  relocated `DO`/`JSR` target words;
+* driven with **matched register setup, matched state and matched tables**, the
+  composed and the standalone binaries produce **identical** results. In
+  particular the second-difference decoder returns the same `0x594d` from both
+  for the same `sc4c`/`sc50`/`sc51` words;
+* the delta cache's first entry is also the voice's prepared-base word
+  (`x:r4+0 == x:r6+$34` when `r4 = r6 + 0x14`), so a first call with
+  `index == 0` legitimately takes the decoder's cache-hit path. That is a
+  property of the qualified primitive, not of the composition;
+* the ARM fixtures under `out/perky/engine-fixtures` carry
+  `raw_pitch = 0` and `pitch_env_amount = 0` (bytes `0xBA` / `0xEC`), which is
+  not the state a triggered Fold voice renders from. The standalone gate feeds
+  the renderer a state the fixture alone does not describe; the composed gate
+  currently feeds the raw `from_arm` words instead.
 
-* the fixture is sound: `state[0x13]` (amplitude-envelope attack) is `0x2aaa`,
-  the envelope's `state` word is `1`, and instrumenting the composed
-  `pk_fold_voice` shows both `pk_simple_envelope` calls receiving exactly those
-  values;
-* yet the composed `pk_simple_base` writes **zero** to `x:(r6+$34)` / `$35`
-  (the prepared base frequency) and **zero** to the second-difference cache at
-  `x:$3964`, and the composed `pk_simple_delta_at` returns `0` for index `0`
-  and `1` instead of the `0x148000` / `0x5a00` the qualified gate sees;
-* `pk_simple_frequency` and `pk_simple_envelope` called directly from the
-  composed image return the **same** values as the standalone;
-* the composed `pk_simple_base` / `pk_simple_delta_at` / `pk_simple_envelope`
-  / `pk_simple_frequency` / `pk_simple_oscillator` / `pk_fold_voice` bodies are
-  word-for-word the standalone ones -- the only differing words are relocated
-  `DO`-loop and `JSR` targets;
-* X and Y reads and writes at the composed bases work, the host's audio read
-  works, and `Y:$0efb` reads back the correct pitch-basis word.
+The concrete next step is therefore to port the standalone gate's state
+preparation (and only that) into the composed gate, rather than to change any
+renderer. `resonant_control_update.py` / `fold_control_update.py` /
+`simple_drum_control.py` are the exact v1.2.1 oracles for the preparation that
+is missing.
 
-So a body that is byte-identical to a passing standalone routine returns a
-different value for the same inputs and the same table base. That points at
-the composed image's **assembled layout** rather than the source: the
-`pk_simple_delta_at` body is the first place a *composed-only* second label
-(`pk3b_*` / `pk3s_*` / `pk3d_*`) sits between it and its caller, and this
-repository has a documented assembler trap for exactly that shape -- `dsp_asm`
-resolves a label by PREFIX, so a `DO`/`JSR` operand whose resolved address has a
-neighbouring label can silently take the wrong target. The next step is to
-disassemble the composed `DO`/`JSR` operands inside `pk_simple_base` and
-`pk_simple_delta_at` and compare each one against the symbol it was written
-with, rather than to keep bisecting the renderer.
-
-The standalone gates stay green, so the per-renderer qualification is
-unaffected: `verify_perky_fold_drum_exec.py` and
-`verify_perky_resonant_dsp_exec.py` both pass unchanged.
+The standalone per-renderer gates stay green:
+`verify_perky_fold_drum_exec.py` and `verify_perky_resonant_dsp_exec.py` both
+pass unchanged, so per-renderer qualification is unaffected.
 
 ## Reproducing
 
