@@ -1,8 +1,8 @@
 diff --git a/Musashi/m68kcpu.c b/Musashi/m68kcpu.c
-index 03e0fb6..4616610 100644
+index 03e0fb6..30ac173 100644
 --- a/Musashi/m68kcpu.c
 +++ b/Musashi/m68kcpu.c
-@@ -47,6 +47,11 @@ extern void m68040_fpu_op1(m68ki_cpu_core* m68ki_cpu);
+@@ -47,6 +47,12 @@ extern void m68040_fpu_op1(m68ki_cpu_core* m68ki_cpu);
  extern void m68881_mmu_ops(m68ki_cpu_core* m68ki_cpu);
  extern unsigned char m68ki_cycles[][0x10000];
  static unsigned char m68ki_cf_cycles[0x10000];
@@ -10,11 +10,12 @@ index 03e0fb6..4616610 100644
 +uint8  m68k_bht_state[128];
 +uint32 m68k_btb_tag[8];
 +uint8  m68k_btb_valid[8];
++uint8  m68k_btb_state[8];
 +uint64 m68k_bcc_count, m68k_btb_hits, m68k_bht_hits, m68k_mispredicts;
  extern void (*m68ki_instruction_jump_table[0x10000])(m68ki_cpu_core*); /* opcode handler jump table */
  extern void m68ki_build_opcode_table(void);
  
-@@ -988,7 +993,7 @@ int m68k_execute(m68ki_cpu_core* m68ki_cpu, int num_cycles)
+@@ -988,7 +994,7 @@ int m68k_execute(m68ki_cpu_core* m68ki_cpu, int num_cycles)
  	if(!CPU_STOPPED)
  	{
  		/* Return point if we had an address error */
@@ -23,7 +24,7 @@ index 03e0fb6..4616610 100644
  
  #if M68K_SUPPORT_BUS_ERROR
  		m68ki_check_bus_error_trap();
-@@ -1051,7 +1056,7 @@ int m68k_execute_one(m68ki_cpu_core* m68ki_cpu)
+@@ -1051,7 +1057,7 @@ int m68k_execute_one(m68ki_cpu_core* m68ki_cpu)
  
  	if(!CPU_STOPPED)
  	{
@@ -32,7 +33,7 @@ index 03e0fb6..4616610 100644
  #if M68K_SUPPORT_BUS_ERROR
  		m68ki_check_bus_error_trap();
  #endif
-@@ -1149,7 +1154,7 @@ void m68k_init(m68ki_cpu_core* m68ki_cpu)
+@@ -1149,7 +1155,7 @@ void m68k_init(m68ki_cpu_core* m68ki_cpu)
  		for(op = 0; op < 0x10000; ++op)
  		{
  			const unsigned char cycles = m68ki_cf_base_cycles(op);
@@ -42,7 +43,7 @@ index 03e0fb6..4616610 100644
  		emulation_initialized = 1;
  	}
 diff --git a/Musashi/m68kcpu.h b/Musashi/m68kcpu.h
-index 71627d5..9c83f97 100644
+index 71627d5..1a6d3ed 100644
 --- a/Musashi/m68kcpu.h
 +++ b/Musashi/m68kcpu.h
 @@ -614,9 +614,9 @@ extern sigjmp_buf m68ki_aerr_trap;
@@ -80,7 +81,7 @@ index 71627d5..9c83f97 100644
  			} \
  		}
  
-@@ -1504,20 +1504,60 @@ static inline void m68ki_branch_32(m68ki_cpu_core* m68ki_cpu, uint offset)
+@@ -1504,20 +1504,56 @@ static inline void m68ki_branch_32(m68ki_cpu_core* m68ki_cpu, uint offset)
  	m68ki_pc_changed(REG_PC);
  }
  
@@ -91,6 +92,7 @@ index 71627d5..9c83f97 100644
 +extern uint8  m68k_bht_state[128];
 +extern uint32 m68k_btb_tag[8];
 +extern uint8  m68k_btb_valid[8];
++extern uint8  m68k_btb_state[8];
 +extern uint64 m68k_bcc_count, m68k_btb_hits, m68k_bht_hits, m68k_mispredicts;
 +
 +/* MCF5445x branch timing: 0 cycles branch-cache correctly-taken, 1 cycle
@@ -102,15 +104,16 @@ index 71627d5..9c83f97 100644
 +	const uint32 btb_idx = (pc >> 1) & 7;
 +	const uint32 btb_tag = pc >> 4;
 +	const uint32 bht_idx = (pc >> 1) & 127;
-+	uint8 st = m68k_bht_state[bht_idx];
-+	const int predicted_taken = st >= 2;
++	uint8 bts = (m68k_btb_valid[btb_idx] && m68k_btb_tag[btb_idx] == btb_tag) ? m68k_btb_state[btb_idx] : 1;
++	uint8 bhs = m68k_bht_state[bht_idx];
++	const int btb_taken = bts >= 2;
 +
 +	m68k_bcc_count++;
-+	if(m68k_btb_valid[btb_idx] && m68k_btb_tag[btb_idx] == btb_tag && taken)
++	if(btb_taken && taken)
 +	{
 +		m68k_btb_hits++;            /* branch-cache correctly taken: 0 cycles */
 +	}
-+	else if(predicted_taken == taken)
++	else if((bhs >= 2) == taken)
 +	{
 +		m68k_bht_hits++;            /* prediction-table correct: 1 cycle */
 +		ADD_CYCLES(1);
@@ -121,18 +124,12 @@ index 71627d5..9c83f97 100644
 +		ADD_CYCLES(8);
 +	}
 +
-+	if(taken)
-+	{
-+		if(st < 3) st++;
-+		if(!m68k_btb_valid[btb_idx] || m68k_btb_tag[btb_idx] != btb_tag)
-+		{
-+			m68k_btb_valid[btb_idx] = 1;
-+			m68k_btb_tag[btb_idx] = btb_tag;
-+		}
-+	}
-+	else if(st > 0)
-+		st--;
-+	m68k_bht_state[bht_idx] = st;
++	if(taken) { if(bts < 3) bts++; if(bhs < 3) bhs++; }
++	else      { if(bts > 0) bts--; if(bhs > 0) bhs--; }
++	m68k_btb_valid[btb_idx] = 1;
++	m68k_btb_tag[btb_idx] = btb_tag;
++	m68k_btb_state[btb_idx] = bts;
++	m68k_bht_state[bht_idx] = bhs;
 +
  	if(taken)
  	{
