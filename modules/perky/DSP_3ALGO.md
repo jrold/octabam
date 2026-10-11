@@ -151,12 +151,25 @@ zero):
    scratch block starts at `0x38c0` — whichever of (2)/(3) the next
    measurement shows is consistent.
 
-The point of recording this is that the numbers, not the approach, were the
-missing piece: the composed scratch block is 188 words, the private X region
-below it is `0x3800..0x38e7`, and the whole question is where the 128-word
-`-64..63` window can sit so that all six bodies and the absolute cache fall
-inside it. Step 1 plus a `SCRATCH_BASE` of `0x38c0` is the candidate that
-satisfies every window simultaneously and is the next thing to build.
+**That fix was built and measured this round, and it does not resolve the
+silence.** With the Fold/Simple bodies and `pknv_noise` centred, the shared
+math kept centred, and `SCRATCH_BASE = 0x38c0` (so the centred ABI lands at
+`0x3940`, the Fold field map occupies `0x3940..0x39a2`, and the absolute cache
+sits at `0x3964`), the composed Fold renderer still returns all-zero PCM for a
+fixture the standalone binary renders as `-1, -1, -2, -2, ...`. So the scratch
+convention is a real latent hazard -- it is still worth unifying -- but it is
+**not sufficient** to explain the composed silence, and the search has to move
+on rather than iterate on the layout.
+
+The strongest remaining lead is that the composed and standalone binaries
+differ in exactly one structural way that this round did not eliminate: the
+composed `pk_fold_voice` is entered through `build_dsp_3algo_source`'s
+dispatcher-adjacent layout, while the standalone one is a self-contained
+program. The next experiment should therefore be to build the composed source
+with the dispatcher and seam entry **removed entirely** (`with_source=False`,
+which the composer already supports) and drive the renderers from that, so the
+comparison is against the smallest possible image -- then re-introduce the seam
+one piece at a time.
 
 ### The equivalence gate
 
