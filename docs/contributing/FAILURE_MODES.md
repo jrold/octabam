@@ -13,94 +13,181 @@ host stops audio setup", "A track button pressed within about 250 ms of a patter
 change halts in Octakit's Part-refresh wrapper", "USB MIDI clock moves the
 sequencer and not the tempo", and every entry after the line "Entries from here to the end of the file (5 Oct 2026)".
 
-## PERKY was SILENT on the unit and in the port: the record header's count byte ✅ measured, fixed (10 Oct 2026)
-
-- **Seen:** Perky selected on T1/T2/T5/T6 with trigs, the CF rendering (the frame interrupt grows by 186.8 us over a stock baseline of 97.1 us, measured with CF METER, `out/perky-cfmeter`), the record in the slot correct -- and no sound on the unit and none in the port.
-- **Cause (measured):** the published source record's first header long carries the segment's sample count in its LOW byte as well as above it: a stock FLEX record's header long 4 is `0x00001010` for a 16-sample segment (16 above, 16 below). This encoder wrote only `n << 8` = `0x00001000`, because its shape was taken from ANALOG BD, which writes a magic word (`0xab090000`) in that long instead of a stock header. With the low byte zero the stock chain played nothing: the per-track post-FX2 **read-back** was **zero** for the Perky tracks while the stock FLEX tracks on the same run were full audio.
-- **Why every gate missed it for a whole session:** they all checked the RECORD -- the bytes the ColdFire publishes -- and never the chain's output. The record was perfect (147,866 significant samples, 32,510 distinct) and the track was silent. `tools/verify/verify_perky_cf_userpath.py` now also requires the per-track read-back (`require_readback`) and runs the emulator WITHOUT `--dsp-dirty` (a dirtied DSP seeds the read-back, which hides exactly this).
-- **Fix:** `d[0] = (n << 8) | n` in `cf_perky4.c`'s `pk4_encode_stock_segment`. One line. All four voices then produce real chain output (peak 4.2-7.8 M, 12k-32k distinct samples), and the full qualification, both user-path gates and the wrapper round-trip pass.
-- **Ruled out on the way (each changed the chain output not at all):** making the source read position match stock (`d[1] = k<<4`, `d[3] = k<<30`); trimming the published PCM by 12 dB; and the frame budget (the meter shows 283.9 us of a 362.8 us frame). Copying a stock FLEX record byte-for-byte into a Perky slot DID sound, which is what proved the delivery, slot and routing were fine and the contents were the whole problem.
-
-## PERKY: briefly sounds, then the sequencer stalls ✅ the ColdFire outruns its frame 🔴 open on the unit
-
-- **Seen:** the CF-only Perky Machines images (PK4DIAG2 silent, PK4TONE1 "faint pop at the trig, then no audio and the sequencer will not advance"). Same family as PERKY1/PERKY2.
-- **Cause (measured in the model):** the ColdFire's per-16-sample-frame work does not fit the 362.8 us frame. `tools/verify/verify_perky_cf_realtime_budget.py` prices it at 260.6 us/frame of MODEL cycles against the 181.4 us the gate allows (frame / 2). The vendored core prices each instruction with cache hits and zero-wait-state operand accesses, and the project's own hardware reading (`modules/cfmeter/README.md`: the stock frame prices at 126 us in the model against 213.5 us on the unit, image 92, Sam's MKII) says that is ~1.7x low -- so the unit's real cost is ~443 us/frame: the frame never completes before the DSP's next boundary and the exchange desynchronises.
-- **Why the lock-step port could not see it:** ot_emu's whole machine, DSP included, is slaved to the ColdFire's instruction stream, so the ColdFire can never be "late" -- a slow frame is absorbed (the frame edge is a latch and the missed edges are dropped). Measured 9 Oct 2026: the production image renders four independent PERKY records for 12000 frames, no fault, even at `--ips 800`.
-- **The firmware's own overrun paths (read from the image, 9 Oct 2026):** the frame handler at `0x4000aad0` reads the DSP's bank id with no ready check (`0x4000aafa  movew 0x2000001c,%d0`, sign-extended into `0x800000e0`) and then **halts if it is not 0 or 1** (`0x4000ab38  cmpl #1,0x800000e0 / bccs / 0x4000ab40 halt`). That is the fatal path O9b saw with a free-running frame timer, and it is the one an overrun would reach. There is also a re-entrancy guard (`0x46104d4e`, set `0x4000ab32`, cleared `0x4000d9a0`) whose entry test `0x4000aae0 tstl / beq / 0x4000aae8 halt` looks like the overrun detector -- but it is UNREACHABLE: the frame source is priority 5 (`0xfc048041` written at `0x4001fc30`) and the handler lowers SR to `0x2500` (mask 5, `0x4000aeca`), so the source cannot preempt its own handler. Measured under the port: with the overrun edge delivered, every frame ack still sees the guard clear, and no halt follows.
-- **Neither fatal path is reachable by a late frame ✅ measured 9 Oct 2026.** The bank-id read is not stale either: `OT_DEADLINE_TRACE=1` shows the read (pc `0x4000ab00`, i.e. `0x4000aafa`) returning 0 or 1 in **every** frame, with the DSP's RX FIFO empty right after each take -- the port is host-paced in both directions (the ColdFire's reads drive `DspPair::catchUp`, and the DSP's frame loop waits for the host take at `P:0x97`), so the two sides cannot drift. That holds even with the overrun delivered every frame. The only other reads of `0x2000001c` are the boot's DSP-upload handshake (pc `0x40001ba6`, values 0-2) and these are not range-checked. So the halt O9b saw came from a *free-running* timer putting a second, out-of-phase edge inside one DSP frame -- a modelling artefact, not the overrun's consequence.
-- **What is left:** the ColdFire simply falls behind (one frame's work costing more than one frame period, every frame), so the sequencer position, advanced per ColdFire frame, stops tracking the audio clock. `ot_emu --cf-cycles-clock 1.7` now expresses that: the audio clock is driven by the ColdFire's cycles instead of the fitted `1/--ips` per instruction, so the frame period really is 16 samples of 96,505 cycles and the ColdFire can be late. Measured 9 Oct 2026, 400 frames: the Perky image's frames take **22.5 samples** each against the 16-sample frame, the stock image's 18.9 -- a **3.6-sample (~22 %) gap**, which is the Perky synthesis cost and agrees with the budget gate's 22 % over. The stock side is 18.9 rather than 16 because the model's DSP pacing (`--dsp-ips`) adds its own constant, so only the DELTA is trustworthy; a genuinely independent DSP clock means `--dsp-rt`, which still cannot start on native Windows (see `tools/emu/README.md`, the `--dsp-rt` bullet: the vendored MMU helper's reservation blocks the shared-window alias).
-- **Fix:** open, and the first pass is in (9 Oct 2026): two bit-exact invariant hoists (`cf_fold.c`'s pitch term, `cf_karplus.c`'s filter coefficients) took the frame 260.6 -> 256.2 us. That is the honest size of this class of change -- the renderers' cost is the arithmetic plus the byte-wise state traffic, not recomputed invariants; `-O2` and dropping `-funroll-loops` are both worse. The one big lever left is typed state access, which needs the state base provably 4-aligned (a ColdFire address errors otherwise) and is worth maybe another 8-10%.
-- **⚠️ THE 1.7 CALIBRATION IS A STOCK NUMBER AND MAY NOT APPLY TO THE RENDERERS.** It comes from cache-inhibited traffic: `CACR`'s `DDCM_P` plus an `ACR0` that covers only `0x40000000..0x47ffffff`, so the delay rings (through the uncached alias `0x4f502c10`) and the shared RAM (`0x80000000`) are the expensive part of the stock frame. The Perky renderers live entirely inside `ACR0` (`0x40a9b230..0x40a9e000`, state small and sequential), so their real cost should be close to the model's. Re-pricing only the uncached pieces puts the frame at ~360 us against a 362.8 us frame -- **right at the limit**, not 22% over, which fits "briefly sounds then stalls" better than either extreme. One reading of the `cfmeter` module in a PERKY build settles it.
-- **Check:** `ot_emu --cf-frame-deadline 1.7 --dsp --sequencer ...` reports the overrun live ("the frame handler was still in its exchange 390.3 us after the frame began") and delivers the late edge; the stock image reports none under the same flag, and `--cf-frame-deadline 1.0` (the model at face value) reports none either -- which is exactly the blindness this entry is about. `OT_DEADLINE_TRACE=1` prints the per-frame guard/mask state.
-
-## Three Perky machines on a unit: stutter, audio cut-out, then the transport sits on step 1 ✅ measured in the model, 10 Oct 2026
-
-- **Seen:** Sam's unit, 10 Oct 2026, image PK4AH2 (all twelve algorithms, the
-  card-size fix). Two Perky machines played; **adding a third** made the
-  sequence stutter and the audio cut out. Stopping and playing again left the
-  trig lit on step 1 with no playback. The project was saved and handed over
-  as `PRESETS MKII/PROJECT 261010`.
-- **The project, read back:** bank A part 1 has exactly three Perky machines --
-  **T1 (FLEX slot 129 = R1), T3 (131 = R3), T4 (132 = R4)**; everything else on
-  the part is STATIC. The pattern is intact (T1 steps 1/7/11, T3 steps
-  5/8/11/13, T4 step 8), so nothing was lost on save; the trig LEDs lighting
-  with no playback is a *transport* state, not an empty pattern.
-- **Cause (measured in the model): the ColdFire's frame handler overruns the
-  362.8 us frame once the Perky voices trig.** Same project, only the number of
-  Perky machines changed, run under the unit's own deadline
-  (`ot_emu --cf-frame-deadline 1.7 --sequencer --dsp --dsp-dirty 123`):
-
-  | Perky machines | overrun |
-  |---|---|
-  | 0 (stock tracks only) | none |
-  | 1 (T1) | none |
-  | 2 (T1, T3) | **404.7 us late** |
-  | 3 (T1, T3, T4) | **375.1 us late** |
-
-  and the average frame cost rises with each machine:
-  `--cf-frame-budget-us` 120.5 -> 151.2 -> 195.7 -> 221.3 us/frame of 362.8.
-- **It is the EVENT frames, not the per-frame rendering ✅ measured.** The same
-  three machines with every trig mask erased: **no overrun**. So the frames
-  that overrun are the ones carrying a trig -- the first-event engine creation,
-  the control settle (16-18 smoother passes) and the trigger, all inside the
-  audio callback.
-- **Why the symptom is a permanent stall and not just dropouts:** an overrun
-  desynchronises the CF/DSP exchange, and the frame handler at `0x4000aad0`
-  reads the DSP bank id with no ready check and **halts if it is not 0 or 1**
-  (`0x4000ab38`). "The firmare halted ... its own frame-handler guard" is the
-  path the emulator prints as `cf stall`; it did not trip in these runs (the
-  port is host-paced, see the entry above), so the model shows the *cause* and
-  the unit shows the *hang*.
-- **Confidence:** the model says the frame does not fit; the project's own
-  calibration for that model (x1.7) is a STOCK number and the entry above warns
-  it may not apply to the renderers, whose state is cached. One `cfmeter`
-  reading from a PERKY build settles the real per-frame cost.
-- **Fix:** open, and it is the frame-cost work, not the algorithms: every
-  engine's hand-off in this table is still bit-exact against the firmware. The
-  next lever is the event frame -- hoisting the one-time engine creation and
-  the control settle out of the audio callback -- plus the typed state access
-  named in the entry above.
-- **Check:** `C:\temp4495\perky-deepseek-20261009-072423\octabam\work\budget_variants.py`
-  (3->2->1->0 machines, budget and deadline modes) and
-  `work/notrigs.py` (the no-trig control).
-
-## PERKY1 briefly sounded, then froze the sequencer — timing defect measured locally
-
-- **Seen:** user's Octatrack, 6 Oct 2026: brief sound, sequencer stops.
-- **Cause:** the generated limb renderer measures 79,000–84,000 nominal cycles
-  per 16-sample default block, exceeding the ~72,512-cycle hardware deadline
-  before stock audio work. This is a concrete defect; the exact hardware halt
-  PC is unavailable. The normal full emulator schedules instructions and did
-  not reproduce the stall even over 32,000 frames.
-- **Fix built:** PERKY2 native arithmetic/direct state, exact synthetic curve
-  specialization, and one admitted PERKY voice per core. Excess signed tracks
-  receive a cleared source block. FX NONE is the qualified development layout.
-- **Check:** independent PCM/state/RNG parity, `verify_perky_realtime_budget.py`
-  (2x decoded opcode cost plus the stock reserve), and mandatory project-loaded
-  `verify_perky_synth_port.py` with dirty memory and later trigs. On 6 Oct 2026,
-  the user reported that PERKY2 works on their Octatrack after the failed
-  PERKY1 test. No duration or extended stress results were supplied; emulator
-  timing remains a conservative local model, not a hardware burn sweep.
+## PERKY was SILENT on the unit and in the port: the record header's count byte ✅ measured, fixed (10 Oct 2026)
+
+
+
+- **Seen:** Perky selected on T1/T2/T5/T6 with trigs, the CF rendering (the frame interrupt grows by 186.8 us over a stock baseline of 97.1 us, measured with CF METER, `out/perky-cfmeter`), the record in the slot correct -- and no sound on the unit and none in the port.
+
+- **Cause (measured):** the published source record's first header long carries the segment's sample count in its LOW byte as well as above it: a stock FLEX record's header long 4 is `0x00001010` for a 16-sample segment (16 above, 16 below). This encoder wrote only `n << 8` = `0x00001000`, because its shape was taken from ANALOG BD, which writes a magic word (`0xab090000`) in that long instead of a stock header. With the low byte zero the stock chain played nothing: the per-track post-FX2 **read-back** was **zero** for the Perky tracks while the stock FLEX tracks on the same run were full audio.
+
+- **Why every gate missed it for a whole session:** they all checked the RECORD -- the bytes the ColdFire publishes -- and never the chain's output. The record was perfect (147,866 significant samples, 32,510 distinct) and the track was silent. `tools/verify/verify_perky_cf_userpath.py` now also requires the per-track read-back (`require_readback`) and runs the emulator WITHOUT `--dsp-dirty` (a dirtied DSP seeds the read-back, which hides exactly this).
+
+- **Fix:** `d[0] = (n << 8) | n` in `cf_perky4.c`'s `pk4_encode_stock_segment`. One line. All four voices then produce real chain output (peak 4.2-7.8 M, 12k-32k distinct samples), and the full qualification, both user-path gates and the wrapper round-trip pass.
+
+- **Ruled out on the way (each changed the chain output not at all):** making the source read position match stock (`d[1] = k<<4`, `d[3] = k<<30`); trimming the published PCM by 12 dB; and the frame budget (the meter shows 283.9 us of a 362.8 us frame). Copying a stock FLEX record byte-for-byte into a Perky slot DID sound, which is what proved the delivery, slot and routing were fine and the contents were the whole problem.
+
+
+
+## PERKY: briefly sounds, then the sequencer stalls ✅ the ColdFire outruns its frame 🔴 open on the unit
+
+
+
+- **Seen:** the CF-only Perky Machines images (PK4DIAG2 silent, PK4TONE1 "faint pop at the trig, then no audio and the sequencer will not advance"). Same family as PERKY1/PERKY2.
+
+- **Cause (measured in the model):** the ColdFire's per-16-sample-frame work does not fit the 362.8 us frame. `tools/verify/verify_perky_cf_realtime_budget.py` prices it at 260.6 us/frame of MODEL cycles against the 181.4 us the gate allows (frame / 2). The vendored core prices each instruction with cache hits and zero-wait-state operand accesses, and the project's own hardware reading (`modules/cfmeter/README.md`: the stock frame prices at 126 us in the model against 213.5 us on the unit, image 92, Sam's MKII) says that is ~1.7x low -- so the unit's real cost is ~443 us/frame: the frame never completes before the DSP's next boundary and the exchange desynchronises.
+
+- **Why the lock-step port could not see it:** ot_emu's whole machine, DSP included, is slaved to the ColdFire's instruction stream, so the ColdFire can never be "late" -- a slow frame is absorbed (the frame edge is a latch and the missed edges are dropped). Measured 9 Oct 2026: the production image renders four independent PERKY records for 12000 frames, no fault, even at `--ips 800`.
+
+- **The firmware's own overrun paths (read from the image, 9 Oct 2026):** the frame handler at `0x4000aad0` reads the DSP's bank id with no ready check (`0x4000aafa  movew 0x2000001c,%d0`, sign-extended into `0x800000e0`) and then **halts if it is not 0 or 1** (`0x4000ab38  cmpl #1,0x800000e0 / bccs / 0x4000ab40 halt`). That is the fatal path O9b saw with a free-running frame timer, and it is the one an overrun would reach. There is also a re-entrancy guard (`0x46104d4e`, set `0x4000ab32`, cleared `0x4000d9a0`) whose entry test `0x4000aae0 tstl / beq / 0x4000aae8 halt` looks like the overrun detector -- but it is UNREACHABLE: the frame source is priority 5 (`0xfc048041` written at `0x4001fc30`) and the handler lowers SR to `0x2500` (mask 5, `0x4000aeca`), so the source cannot preempt its own handler. Measured under the port: with the overrun edge delivered, every frame ack still sees the guard clear, and no halt follows.
+
+- **Neither fatal path is reachable by a late frame ✅ measured 9 Oct 2026.** The bank-id read is not stale either: `OT_DEADLINE_TRACE=1` shows the read (pc `0x4000ab00`, i.e. `0x4000aafa`) returning 0 or 1 in **every** frame, with the DSP's RX FIFO empty right after each take -- the port is host-paced in both directions (the ColdFire's reads drive `DspPair::catchUp`, and the DSP's frame loop waits for the host take at `P:0x97`), so the two sides cannot drift. That holds even with the overrun delivered every frame. The only other reads of `0x2000001c` are the boot's DSP-upload handshake (pc `0x40001ba6`, values 0-2) and these are not range-checked. So the halt O9b saw came from a *free-running* timer putting a second, out-of-phase edge inside one DSP frame -- a modelling artefact, not the overrun's consequence.
+
+- **What is left:** the ColdFire simply falls behind (one frame's work costing more than one frame period, every frame), so the sequencer position, advanced per ColdFire frame, stops tracking the audio clock. `ot_emu --cf-cycles-clock 1.7` now expresses that: the audio clock is driven by the ColdFire's cycles instead of the fitted `1/--ips` per instruction, so the frame period really is 16 samples of 96,505 cycles and the ColdFire can be late. Measured 9 Oct 2026, 400 frames: the Perky image's frames take **22.5 samples** each against the 16-sample frame, the stock image's 18.9 -- a **3.6-sample (~22 %) gap**, which is the Perky synthesis cost and agrees with the budget gate's 22 % over. The stock side is 18.9 rather than 16 because the model's DSP pacing (`--dsp-ips`) adds its own constant, so only the DELTA is trustworthy; a genuinely independent DSP clock means `--dsp-rt`, which still cannot start on native Windows (see `tools/emu/README.md`, the `--dsp-rt` bullet: the vendored MMU helper's reservation blocks the shared-window alias).
+
+- **Fix:** open, and the first pass is in (9 Oct 2026): two bit-exact invariant hoists (`cf_fold.c`'s pitch term, `cf_karplus.c`'s filter coefficients) took the frame 260.6 -> 256.2 us. That is the honest size of this class of change -- the renderers' cost is the arithmetic plus the byte-wise state traffic, not recomputed invariants; `-O2` and dropping `-funroll-loops` are both worse. The one big lever left is typed state access, which needs the state base provably 4-aligned (a ColdFire address errors otherwise) and is worth maybe another 8-10%.
+
+- **⚠️ THE 1.7 CALIBRATION IS A STOCK NUMBER AND MAY NOT APPLY TO THE RENDERERS.** It comes from cache-inhibited traffic: `CACR`'s `DDCM_P` plus an `ACR0` that covers only `0x40000000..0x47ffffff`, so the delay rings (through the uncached alias `0x4f502c10`) and the shared RAM (`0x80000000`) are the expensive part of the stock frame. The Perky renderers live entirely inside `ACR0` (`0x40a9b230..0x40a9e000`, state small and sequential), so their real cost should be close to the model's. Re-pricing only the uncached pieces puts the frame at ~360 us against a 362.8 us frame -- **right at the limit**, not 22% over, which fits "briefly sounds then stalls" better than either extreme. One reading of the `cfmeter` module in a PERKY build settles it.
+
+- **Check:** `ot_emu --cf-frame-deadline 1.7 --dsp --sequencer ...` reports the overrun live ("the frame handler was still in its exchange 390.3 us after the frame began") and delivers the late edge; the stock image reports none under the same flag, and `--cf-frame-deadline 1.0` (the model at face value) reports none either -- which is exactly the blindness this entry is about. `OT_DEADLINE_TRACE=1` prints the per-frame guard/mask state.
+
+
+
+## Three Perky machines on a unit: stutter, audio cut-out, then the transport sits on step 1 ✅ measured in the model, 10 Oct 2026
+
+
+
+- **Seen:** Sam's unit, 10 Oct 2026, image PK4AH2 (all twelve algorithms, the
+
+  card-size fix). Two Perky machines played; **adding a third** made the
+
+  sequence stutter and the audio cut out. Stopping and playing again left the
+
+  trig lit on step 1 with no playback. The project was saved and handed over
+
+  as `PRESETS MKII/PROJECT 261010`.
+
+- **The project, read back:** bank A part 1 has exactly three Perky machines --
+
+  **T1 (FLEX slot 129 = R1), T3 (131 = R3), T4 (132 = R4)**; everything else on
+
+  the part is STATIC. The pattern is intact (T1 steps 1/7/11, T3 steps
+
+  5/8/11/13, T4 step 8), so nothing was lost on save; the trig LEDs lighting
+
+  with no playback is a *transport* state, not an empty pattern.
+
+- **Cause (measured in the model): the ColdFire's frame handler overruns the
+
+  362.8 us frame once the Perky voices trig.** Same project, only the number of
+
+  Perky machines changed, run under the unit's own deadline
+
+  (`ot_emu --cf-frame-deadline 1.7 --sequencer --dsp --dsp-dirty 123`):
+
+
+
+  | Perky machines | overrun |
+
+  |---|---|
+
+  | 0 (stock tracks only) | none |
+
+  | 1 (T1) | none |
+
+  | 2 (T1, T3) | **404.7 us late** |
+
+  | 3 (T1, T3, T4) | **375.1 us late** |
+
+
+
+  and the average frame cost rises with each machine:
+
+  `--cf-frame-budget-us` 120.5 -> 151.2 -> 195.7 -> 221.3 us/frame of 362.8.
+
+- **It is the EVENT frames, not the per-frame rendering ✅ measured.** The same
+
+  three machines with every trig mask erased: **no overrun**. So the frames
+
+  that overrun are the ones carrying a trig -- the first-event engine creation,
+
+  the control settle (16-18 smoother passes) and the trigger, all inside the
+
+  audio callback.
+
+- **Why the symptom is a permanent stall and not just dropouts:** an overrun
+
+  desynchronises the CF/DSP exchange, and the frame handler at `0x4000aad0`
+
+  reads the DSP bank id with no ready check and **halts if it is not 0 or 1**
+
+  (`0x4000ab38`). "The firmare halted ... its own frame-handler guard" is the
+
+  path the emulator prints as `cf stall`; it did not trip in these runs (the
+
+  port is host-paced, see the entry above), so the model shows the *cause* and
+
+  the unit shows the *hang*.
+
+- **Confidence:** the model says the frame does not fit; the project's own
+
+  calibration for that model (x1.7) is a STOCK number and the entry above warns
+
+  it may not apply to the renderers, whose state is cached. One `cfmeter`
+
+  reading from a PERKY build settles the real per-frame cost.
+
+- **Fix:** the one-time engine creation is now hoisted (11 Oct 2026, commit
+  `735c6b29`): `pk4_preinit_voice` primes every family algorithm in the UI
+  tick, the same way `pk4_init` already was, so the first trig frame no longer
+  carries the per-algorithm state zero/init.  Simple/Complex Drum stay in the
+  callback (their `s[0x5c]` object-wave-view is mode-dependent and not re-set
+  by update).  Measured under `--cf-frame-deadline 1.7`: the event frame no
+  longer overruns (was 368.1 us, now within 362.8 us); 23/23 bit-exact.  The
+  control settle was NOT hoisted -- it turned out not to be the dominant cost
+  once the engine creation was out of the callback.
+- **Check:** `C:\temp4495\perky-deepseek-20261009-072423\octabam\work\budget_variants.py`
+
+  (3->2->1->0 machines, budget and deadline modes) and
+
+  `work/notrigs.py` (the no-trig control).
+
+
+
+## PERKY1 briefly sounded, then froze the sequencer — timing defect measured locally
+
+
+
+- **Seen:** user's Octatrack, 6 Oct 2026: brief sound, sequencer stops.
+
+- **Cause:** the generated limb renderer measures 79,000–84,000 nominal cycles
+
+  per 16-sample default block, exceeding the ~72,512-cycle hardware deadline
+
+  before stock audio work. This is a concrete defect; the exact hardware halt
+
+  PC is unavailable. The normal full emulator schedules instructions and did
+
+  not reproduce the stall even over 32,000 frames.
+
+- **Fix built:** PERKY2 native arithmetic/direct state, exact synthetic curve
+
+  specialization, and one admitted PERKY voice per core. Excess signed tracks
+
+  receive a cleared source block. FX NONE is the qualified development layout.
+
+- **Check:** independent PCM/state/RNG parity, `verify_perky_realtime_budget.py`
+
+  (2x decoded opcode cost plus the stock reserve), and mandatory project-loaded
+
+  `verify_perky_synth_port.py` with dirty memory and later trigs. On 6 Oct 2026,
+
+  the user reported that PERKY2 works on their Octatrack after the failed
+
+  PERKY1 test. No duration or extended stress results were supplied; emulator
+
+  timing remains a conservative local model, not a hardware burn sweep.
+
 ## USB MIDI clock moves the sequencer and not the tempo: time stretch, LFOs and FX ignore it ✅ fixed (#633), confirmed on Kazeko's MKI
 
 - **Seen:** reported on Discord, 6 Oct 2026, a remix carrying USB MIDI: USB clock reaches the sequencer, not time stretch, LFOs or FX; DIN clock drives all of them.
