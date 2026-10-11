@@ -45,21 +45,31 @@ const uint8_t *pk_cf_wt_wave(const pk_cf_wt_tables *t, uint32_t address)
     return 0;
 }
 
-/* --- shared common envelope, identical to cf_fold's ----------------------- */
-static uint16_t env(uint8_t*s,size_t b,const pk_cf_wt_tables*t){
-    uint8_t st=s[b];int32_t v=s32(r32(s,b+0xc));
-    switch(st){
-    case 0:if(s[b+7]||s[b+4])s[b]=1;break;
-    case 1:v=s32(u32(v)+(uint32_t)r16(s,b+0x20));w32(s,b+0xc,u32(v));if(s[b+4]){if(v>0xffffe){s[b]=4;if(v>=0x100000){v=0xfffff;w32(s,b+0xc,u32(v));}}}else if(v>0xffffe){s[b]=s[b+6]?4:3;if(v>=0x100000){v=0xfffff;w32(s,b+0xc,u32(v));}}break;
+/* --- shared common envelope, identical to cf_fold's, block-cached --------- */
+typedef struct { uint8_t st; int32_t v; } wt_env;
+typedef struct { uint8_t curve,f4,f6,f7,f10; uint16_t rate_up,rate_dn; const uint8_t*e1,*e2; } wt_env_cfg;
+static void wt_env_load(wt_env_cfg*c,wt_env*e,const uint8_t*s,size_t b,const pk_cf_wt_tables*t){
+    e->st=s[b];
+    e->v=s32(r32(s,b+0xc));
+    c->f4=s[b+4];c->f6=s[b+6];c->f7=s[b+7];c->f10=s[b+0x10];
+    c->curve=s[b+1];
+    c->rate_up=r16(s,b+0x20);c->rate_dn=r16(s,b+0x22);
+    c->e1=t->envelope1;c->e2=t->envelope2;
+}
+static void wt_env_store(uint8_t*s,size_t b,const wt_env*e){s[b]=e->st;w32(s,b+0xc,u32(e->v));}
+static uint16_t wt_env_step(const wt_env_cfg*c,wt_env*e){
+    switch(e->st){
+    case 0:if(c->f7||c->f4)e->st=1;break;
+    case 1:e->v=s32(u32(e->v)+(uint32_t)c->rate_up);if(c->f4){if(e->v>0xffffe){e->st=4;if(e->v>=0x100000)e->v=0xfffff;}}else if(e->v>0xffffe){e->st=c->f6?4:3;if(e->v>=0x100000)e->v=0xfffff;}break;
     case 2:break;
-    case 3:if(!s[b+7]&&(s[b+4]||!s[b+0x10]))s[b]=4;break;
-    case 4:if(s[b+7])s[b]=1;else{v=s32(u32(v)-(uint32_t)r16(s,b+0x22));w32(s,b+0xc,u32(v));if(v<=0){v=0;w32(s,b+0xc,0);s[b]=s[b+4]?1:0;}}break;
+    case 3:if(!c->f7&&(c->f4||!c->f10))e->st=4;break;
+    case 4:if(c->f7)e->st=1;else{e->v=s32(u32(e->v)-(uint32_t)c->rate_dn);if(e->v<=0){e->v=0;e->st=c->f4?1:0;}}break;
     default:break;}
-    if(s[b+1]!=1&&s[b+1]!=2)return (uint16_t)((u32(v)>>4)&0xffffu);
-    {const uint8_t*c=s[b+1]==1?t->envelope1:t->envelope2;uint32_t raw,idx,nx;int32_t f,a,z;
-     if(!c)return 0;
-     raw=u32(v);idx=(raw>>10)&0x7ffu;nx=(idx+1)&0x7ffu;f=(int32_t)(raw&0x3ffu);
-     a=(int32_t)tab16(c,idx);z=(int32_t)tab16(c,nx);
+    if(c->curve!=1&&c->curve!=2)return (uint16_t)((u32(e->v)>>4)&0xffffu);
+    {const uint8_t*ct=c->curve==1?c->e1:c->e2;uint32_t raw,idx,nx;int32_t f,a,z;
+     if(!ct)return 0;
+     raw=u32(e->v);idx=(raw>>10)&0x7ffu;nx=(idx+1)&0x7ffu;f=(int32_t)(raw&0x3ffu);
+     a=(int32_t)tab16(ct,idx);z=(int32_t)tab16(ct,nx);
      return (uint16_t)(a+asr(mullo(z-a,f),10));}
 }
 
@@ -102,6 +112,8 @@ int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
     uint32_t pe_amount,half_rate,phase,step,cur,sec,target_cur,target_sec;
     uint16_t mix,target_mix;
     uint8_t velocity,mute;
+    wt_env_cfg ea_cfg,ep_cfg;
+    wt_env ea,ep;
     if(!s||!d||!t||!t->pitch||!t->base_wave||!t->bank)return 0;
     pe_amount=r16(s,0xec);half_rate=(s[0x128]==1u)?1u:0u;
     phase=r32(s,0xf4);step=r32(s,0xf8);
@@ -109,10 +121,12 @@ int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
     sec=r32(s,0x108);target_sec=r32(s,0x10c);
     mix=r16(s,0x112);target_mix=r16(s,0x114);
     velocity=s[6];mute=s[0xb8];
+    wt_env_load(&ea_cfg,&ea,s,0x74,t);
+    wt_env_load(&ep_cfg,&ep,s,0xc4,t);
     base=(uint32_t)mullo(pitch(r16(s,0xba),t->pitch),0xbb80u)>>20;
     for(i=0;i<n;i++){
-        const uint16_t amp=env(s,0x74,t);
-        const uint16_t pe=env(s,0xc4,t);
+        const uint16_t amp=wt_env_step(&ea_cfg,&ea);
+        const uint16_t pe=wt_env_step(&ep_cfg,&ep);
         const uint32_t lo=(uint32_t)pe&0x1fffu,sh=13u-(uint32_t)(pe>>13);
         const int32_t factor=(int32_t)(((lo+0x2000u)>>sh)-1u);
         uint32_t frequency=base+((pe_amount*(uint32_t)factor)>>9);
@@ -135,6 +149,7 @@ int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
         if(!wc||!wn||!sc||!sn){
             w32(s,0xf4,phase);w32(s,0xf8,step);
             w32(s,0x100,cur);w32(s,0x108,sec);w16(s,0x112,mix);
+            wt_env_store(s,0x74,&ea);wt_env_store(s,0xc4,&ep);
             return 0;
         }
         {
@@ -159,5 +174,6 @@ int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
     }
     w32(s,0xf4,phase);w32(s,0xf8,step);
     w32(s,0x100,cur);w32(s,0x108,sec);w16(s,0x112,mix);
+    wt_env_store(s,0x74,&ea);wt_env_store(s,0xc4,&ep);
     return 1;
 }

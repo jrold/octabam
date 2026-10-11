@@ -15,22 +15,36 @@ static uint16_t tab16(const uint8_t*t,size_t i){return pk_cf_ld16(t,2u*i);}
 static int16_t tabs16(const uint8_t*t,size_t i){return s16(tab16(t,i));}
 static const uint8_t* wave(const pk_cf_fold_tables*t,uint32_t a){unsigned i;for(i=0;i<4;i++)if(t->waves[i].table&&t->waves[i].address==a)return t->waves[i].table;return 0;}
 
-static uint16_t env(uint8_t*s,size_t b,const pk_cf_fold_tables*t){
-    uint8_t st=s[b];int32_t v=s32(r32(s,b+0xc));
-    switch(st){
-    case 0:if(s[b+7]||s[b+4])s[b]=1;break;
-    case 1:v=s32(u32(v)+(uint32_t)r16(s,b+0x20));w32(s,b+0xc,u32(v));if(s[b+4]){if(v>0xffffe){s[b]=4;if(v>=0x100000){v=0xfffff;w32(s,b+0xc,u32(v));}}}else if(v>0xffffe){s[b]=s[b+6]?4:3;if(v>=0x100000){v=0xfffff;w32(s,b+0xc,u32(v));}}break;
+/* The common envelope, block-cached: only st and v change across the 16-sample
+ * block, so the byte flags / rates / curve tables are loaded once and the
+ * sample loop reads them from locals instead of the little-endian object. */
+typedef struct { uint8_t st; int32_t v; } fold_env;
+typedef struct { uint8_t curve,f4,f6,f7,f10; uint16_t rate_up,rate_dn; const uint8_t*e1,*e2; } fold_env_cfg;
+
+static void fold_env_load(fold_env_cfg*c,fold_env*e,const uint8_t*s,size_t b,const pk_cf_fold_tables*t){
+    e->st=s[b];
+    e->v=s32(r32(s,b+0xc));
+    c->f4=s[b+4];c->f6=s[b+6];c->f7=s[b+7];c->f10=s[b+0x10];
+    c->curve=s[b+1];
+    c->rate_up=r16(s,b+0x20);c->rate_dn=r16(s,b+0x22);
+    c->e1=t->envelope1;c->e2=t->envelope2;
+}
+static void fold_env_store(uint8_t*s,size_t b,const fold_env*e){s[b]=e->st;w32(s,b+0xc,u32(e->v));}
+static uint16_t fold_env_step(const fold_env_cfg*c,fold_env*e){
+    switch(e->st){
+    case 0:if(c->f7||c->f4)e->st=1;break;
+    case 1:e->v=s32(u32(e->v)+(uint32_t)c->rate_up);if(c->f4){if(e->v>0xffffe){e->st=4;if(e->v>=0x100000)e->v=0xfffff;}}else if(e->v>0xffffe){e->st=c->f6?4:3;if(e->v>=0x100000)e->v=0xfffff;}break;
     case 2:break;
-    case 3:if(!s[b+7]&&(s[b+4]||!s[b+0x10]))s[b]=4;break;
-    case 4:if(s[b+7])s[b]=1;else{v=s32(u32(v)-(uint32_t)r16(s,b+0x22));w32(s,b+0xc,u32(v));if(v<=0){v=0;w32(s,b+0xc,0);s[b]=s[b+4]?1:0;}}break;
+    case 3:if(!c->f7&&(c->f4||!c->f10))e->st=4;break;
+    case 4:if(c->f7)e->st=1;else{e->v=s32(u32(e->v)-(uint32_t)c->rate_dn);if(e->v<=0){e->v=0;e->st=c->f4?1:0;}}break;
     default:break;
     }
-    if(s[b+1]!=1&&s[b+1]!=2)return (uint16_t)((u32(v)>>4)&0xffffu);
+    if(c->curve!=1&&c->curve!=2)return (uint16_t)((u32(e->v)>>4)&0xffffu);
     {
-        const uint8_t*c=s[b+1]==1?t->envelope1:t->envelope2;uint32_t raw,idx,nx;int32_t f,a,z;
-        if(!c)return 0;
-        raw=u32(v);idx=(raw>>10)&0x7ffu;nx=(idx+1)&0x7ffu;f=(int32_t)(raw&0x3ffu);
-        a=(int32_t)tab16(c,idx);z=(int32_t)tab16(c,nx);
+        const uint8_t*ct=c->curve==1?c->e1:c->e2;uint32_t raw,idx,nx;int32_t f,a,z;
+        if(!ct)return 0;
+        raw=u32(e->v);idx=(raw>>10)&0x7ffu;nx=(idx+1)&0x7ffu;f=(int32_t)(raw&0x3ffu);
+        a=(int32_t)tab16(ct,idx);z=(int32_t)tab16(ct,nx);
         return (uint16_t)(a+asr(mullo(z-a,f),10));
     }
 }
@@ -112,37 +126,45 @@ static int16_t vel8(uint8_t velocity,int32_t in){int32_t o=asr(mullo(in,(int32_t
  * block, the pitch envelope's own term stays per sample. Numerically identical
  * -- the qualification suite compares PCM, not cycles. */
 static uint32_t freq_base(uint8_t*s,const uint8_t*t){int32_t p=pitch(r16(s,0xba),t);return(uint32_t)mullo(p,0xbb80)>>20;}
-static uint32_t freq_env(const uint8_t*s,uint16_t pe){uint32_t lo=pe&0x1fffu,hi=pe>>13,factor=(uint16_t)(((lo+0x2000u)>>(13u-hi))-1u);return((uint32_t)r16(s,0xee)*factor)>>9;}
+static uint32_t freq_env(uint32_t amount,uint16_t pe){uint32_t lo=pe&0x1fffu,hi=pe>>13,factor=(uint16_t)(((lo+0x2000u)>>(13u-hi))-1u);return(amount*factor)>>9;}
 static int support1(const uint8_t*s){return r32(s,0x58)==PK_CF_FOLD_SIMPLE_OSC_RENDER;}
 static int support2(const uint8_t*s,uint32_t o){uint32_t p1=r32(s,0x128),p2=r32(s,0x12c),a=o+0x2c,b=o+0xf4;if(!((p1==a&&p2==b)||(p1==b&&p2==a)))return 0;return r32(s,0x58)==PK_CF_FOLD_SIMPLE_OSC_RENDER&&r32(s,0x120)==PK_CF_FOLD_SIMPLE_OSC_RENDER;}
 
 int pk_cf_fold1_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_fold_tables*t,pk_cf_fold_rng*r){
     uint32_t i;
     fold_osc_state osc;
-    uint32_t fb;
+    fold_env_cfg ea_cfg,ep_cfg;
+    fold_env ea,ep;
+    uint32_t fb,pe_amount;
     int32_t amount;
     uint8_t mute,velocity;
     if(!s||!d||!t||!r||!t->pitch||!support1(s))return 0;
     fb=freq_base(s,t->pitch);
     amount=(int32_t)s16(r16(s,0xf0))+0x100;
     mute=s[0xb8];velocity=s[6];
+    pe_amount=r16(s,0xee);
+    fold_env_load(&ea_cfg,&ea,s,0x74,t);
+    fold_env_load(&ep_cfg,&ep,s,0xc4,t);
     osc_load(&osc,s,0x2c);
     for(i=0;i<n;i++){
-        uint16_t a=env(s,0x74,t),pe=env(s,0xc4,t);int16_t o=0;int32_t driven,folded,mixed,shaped;
-        osc.step=frequency_step(fb+freq_env(s,pe));
-        if(!osc_step(&osc,t,&o)){osc_store(&osc,s,0x2c);return 0;}
+        uint16_t a=fold_env_step(&ea_cfg,&ea),pe=fold_env_step(&ep_cfg,&ep);int16_t o=0;int32_t driven,folded,mixed,shaped;
+        osc.step=frequency_step(fb+freq_env(pe_amount,pe));
+        if(!osc_step(&osc,t,&o)){osc_store(&osc,s,0x2c);fold_env_store(s,0x74,&ea);fold_env_store(s,0xc4,&ep);return 0;}
         driven=asr(mullo(o,amount),8);folded=tri(driven);transient(s,&folded,r);
         if(mute){d[i]=0;continue;}
         mixed=asr(s32(u32(folded)+u32((int32_t)o)),1);shaped=asr(mullo((int32_t)a,mixed),16);d[i]=vel8(velocity,shaped);
     }
     osc_store(&osc,s,0x2c);
+    fold_env_store(s,0x74,&ea);fold_env_store(s,0xc4,&ep);
     return 1;
 }
 
 int pk_cf_fold2_render(uint8_t*s,uint32_t obj,int16_t*d,uint32_t n,const pk_cf_fold_tables*t,pk_cf_fold_rng*r){
     uint32_t i;
     fold_osc_state o1s,o2s;
-    uint32_t fb;
+    fold_env_cfg ea_cfg,ep_cfg;
+    fold_env ea,ep;
+    uint32_t fb,pe_amount;
     int32_t amount;
     uint8_t mute,velocity;
     size_t p1,p2;
@@ -153,19 +175,22 @@ int pk_cf_fold2_render(uint8_t*s,uint32_t obj,int16_t*d,uint32_t n,const pk_cf_f
     mute=s[0xb8];velocity=s[6];
     p1=(size_t)(r32(s,0x128)-obj);p2=(size_t)(r32(s,0x12c)-obj);
     fade=r16(s,0x132);last_a=r16(s,0x130);
+    pe_amount=r16(s,0xee);
+    fold_env_load(&ea_cfg,&ea,s,0x74,t);
+    fold_env_load(&ep_cfg,&ep,s,0xc4,t);
     osc_load(&o1s,s,p1);osc_load(&o2s,s,p2);
     for(i=0;i<n;i++){
-        uint16_t a=env(s,0x74,t),pe=env(s,0xc4,t),fc;
+        uint16_t a=fold_env_step(&ea_cfg,&ea),pe=fold_env_step(&ep_cfg,&ep),fc;
         int16_t o1=0,o2=0;
         int32_t fp,sp,sum,orig,driven,folded,mixed;
-        const uint32_t fx=fb+freq_env(s,pe);
+        const uint32_t fx=fb+freq_env(pe_amount,pe);
         o1s.step=frequency_step(fx);
         if(fade<a)a=(uint16_t)(a-fade);
         if(!osc_step(&o1s,t,&o1)){
-            osc_store(&o1s,s,p1);osc_store(&o2s,s,p2);w16(s,0x130,last_a);w16(s,0x132,fade);return 0;
+            osc_store(&o1s,s,p1);osc_store(&o2s,s,p2);w16(s,0x130,last_a);w16(s,0x132,fade);fold_env_store(s,0x74,&ea);fold_env_store(s,0xc4,&ep);return 0;
         }
         if(!osc_step(&o2s,t,&o2)){
-            osc_store(&o1s,s,p1);osc_store(&o2s,s,p2);w16(s,0x130,last_a);w16(s,0x132,fade);return 0;
+            osc_store(&o1s,s,p1);osc_store(&o2s,s,p2);w16(s,0x130,last_a);w16(s,0x132,fade);fold_env_store(s,0x74,&ea);fold_env_store(s,0xc4,&ep);return 0;
         }
         fp=mullo((int32_t)a,(int32_t)o1);
         sp=mullo((int32_t)fade,(int32_t)o2);
@@ -179,5 +204,6 @@ int pk_cf_fold2_render(uint8_t*s,uint32_t obj,int16_t*d,uint32_t n,const pk_cf_f
         mixed=asr(s32(u32(folded)+u32(orig)),1);d[i]=vel8(velocity,mixed);
     }
     osc_store(&o1s,s,p1);osc_store(&o2s,s,p2);w16(s,0x130,last_a);w16(s,0x132,fade);
+    fold_env_store(s,0x74,&ea);fold_env_store(s,0xc4,&ep);
     return 1;
 }
