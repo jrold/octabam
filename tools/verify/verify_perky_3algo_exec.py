@@ -202,15 +202,19 @@ def run(binary: Path, entry: int, words: list[int], rng, ytext: str,
         blocks: int, tag: str, out: Path) -> tuple[list[int], list[list[int]], int]:
     """Render `blocks` 16-sample blocks; return PCM, per-block X state, worst."""
     limbs = rng_limbs(rng)
-    if len(words) > RNG - STATE:
+    # The composer's voice block ends well before the RNG limbs; write the two
+    # regions separately so the gap in between stays zero and the ledger is
+    # explicit rather than implied by a long zero run.
+    if len(words) > composed.RNG_GAP_START - STATE:
         die(f"{tag}: {len(words)} state words overrun the composed voice block")
-    out_words = words + [0] * (RNG - STATE - len(words)) + limbs
+    out_words = words + [0] * (composed.RNG_GAP_START - STATE - len(words))
     data = out / "case.data"
     data.write_text(
         f"X {STATE:x} " + " ".join(f"{v:06x}" for v in out_words) + "\n"
         # The scratch block and the Fold second-difference cache must start
         # known: a garbage block is not a renderer input, and the cache is
         # seeded with the 'no block decoded' sentinel the standalone gate uses.
+        + f"X {composed.RNG_GAP_END:x} " + " ".join(f"{v:06x}" for v in limbs) + "\n"
         + f"X {SCRATCH:x} " + " ".join(["000000"] * composed.SCRATCH_WORDS) + "\n"
         + f"X {FOLD_CACHE:x} " + " ".join(["000000"] * FOLD_CACHE_WORDS) + "\n"
         + ytext)

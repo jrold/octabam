@@ -58,9 +58,18 @@ VOICE_BASE = 0x3800
 VOICE_BYTES = 108            # Resonant Snare's 101-word object plus guard
 VOICE_STRIDE = VOICE_BYTES
 VOICES = 4
-RNG_BASE = VOICE_BASE + VOICES * VOICE_STRIDE          # $3954
-EVENT_OFFSET = RNG_BASE + 4                            # $3958
-ADMIT_LATCH = EVENT_OFFSET + 1                         # $3959
+# The shared RNG stream is a FIXED absolute address: the RNG/noise helper every
+# renderer calls stores its two u32 limbs at X:$38e8..$38eb, which is part of
+# the qualified PERKY2 source layout and is not a register-relative slot. A
+# composer that moved it would silently give every renderer a different stream,
+# so it stays where the helper puts it and the ledger below starts after it.
+RNG_BASE = 0x38E8                                      # $38e8..$38eb
+# The voice block stops at RNG_GAP_START; the RNG limbs start at RNG_GAP_END.
+# A gate seeds both regions instead of relying on an implied zero run.
+RNG_GAP_START = VOICE_BASE + VOICE_BYTES               # $386c
+RNG_GAP_END = RNG_BASE
+EVENT_OFFSET = RNG_BASE + 4                            # $38ec
+ADMIT_LATCH = EVENT_OFFSET + 1                         # $38ed
 SCRATCH_BASE = 0x3900
 SCRATCH_WORDS = 188
 
@@ -72,20 +81,27 @@ APPLIED_OFFSET = 103    # last record word 4 (control word) applied
 # ---------------------------------------------------------------------------
 # Y table layout. All absolute bases are payload-relative and rewritten per
 # payload by build_bus (the stock tables shift by sixteen between A and B).
+# The Fold/Simple bodies carry their table bases as ABSOLUTE immediates
+# (``pk_simple_envelope`` -> X's shape-0 curve, ``pk_simple_oscillator`` ->
+# the wave stream, ``pk_simple_base`` -> the packed pitch basis), so their
+# addresses are fixed by the qualified renderer and the ledger has to fit
+# around them rather than the other way round.
+Y_WAVES = 0x07A5        # three 256-point Fold/Simple waves, 512 DSP words
+Y_SIMPLE_ENV = 0x0C50   # shape-0 direct amplitude curve, 683 words
+Y_PITCH = 0x0EFB        # 68-word packed pitch basis (+1 padding)
+# The resonant recipes read their two curve banks and two interpolation tables
+# through composer-supplied bases, so these four are the composer's choice.
 Y_ENV1 = 0x2000         # 1025 u16, packed 3-in-2 -> 683 DSP words
 Y_ENV2 = 0x2280         # same
 Y_INTERP_A = 0x2500     # 257 u16 direct
 Y_INTERP_B = 0x2600     # 257 u16 direct
-Y_WAVES = 0x07A5        # three 256-point Fold/Simple waves, 512 DSP words
-Y_SIMPLE_ENV = 0x0A50   # 1024-point direct amplitude envelope, 683 words
-Y_PITCH = 0x0EFB        # 67-word packed pitch basis
 Y_TOTAL_END = Y_INTERP_B + 257
 
 ENV1_WORDS = 683
 ENV2_WORDS = 683
 WAVE_WORDS = 512
 SIMPLE_ENV_WORDS = 683
-PITCH_WORDS = 67
+PITCH_WORDS = 68
 
 # Generated composite label prefix; avoids every existing PERKY label.
 P = "pk3d_"   # composer dispatch namespace
@@ -392,6 +408,15 @@ def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
     s = s.replace(f"{family_prefix('snare')}pk_resonant_snare_voice:", f"{P}snare_voice:")
     if f"{P}bass_voice:" not in b or f"{P}snare_voice:" not in s:
         die("resonant entry points were not renamed")
+
+    # The RNG limbs are an absolute address inside the shared helper. If a
+    # future edit moves them, the ledger and every gate would silently read a
+    # different stream, so the composition refuses instead.
+    for low, high in ((0x38E8, 0x38E9), (0x38EA, 0x38EB)):
+        if f"x:>${low:04x}" not in extra_body() or f"x:>${high:04x}" not in extra_body():
+            die(f"shared RNG limbs are not at X:${low:04x}/X:${high:04x}")
+    if RNG_BASE != 0x38E8:
+        die("the composed RNG base no longer matches the shared helper")
 
     text = "\n".join([
         DISPATCH_ENTRY if with_source else "",
