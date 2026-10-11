@@ -207,8 +207,43 @@ def extra_body(shared) -> str:
     return body
 
 
+def centre_uncentred_scratch(text: str, entry: str) -> str:
+    """Translate an uncentred PERKY body onto the composed scratch convention.
+
+    ``dsp_source_layout.center_scratch`` does this for the resonant recipes,
+    which carry a prologue that first advances r5 by 0x80 into a variable area.
+    The Fold/Simple bodies have no such prologue: their displacements are
+    already ABI-relative (0..$62). The composed machine runs everything against
+    ONE convention -- the centred one the resonant recipes and the shared
+    low32/RNG/envelope helper block already use -- so this advances r5 by 0x40
+    at the entry label and subtracts 0x40 from every displacement.
+
+    Getting this wrong is not cosmetic: the Fold voice and the shared math
+    would name different words for ``x:(r5+n)``, which produces silence and a
+    wrong persistent state rather than an error.
+    """
+    label = entry + ":"
+    if text.count(label) != 1:
+        die(f"{entry}: expected exactly one entry label")
+    text = re.sub(r"x:\(r5\+\$([0-9a-f]+)\)",
+                  lambda m: "x:(r5+$%x)" % (int(m.group(1), 16) - 0x40), text)
+    return text.replace(label, label + "\n        move r5,a\n        add #>$40,a\n        move a1,r5", 1)
+
+
 def fold_body() -> str:
-    """Fold Drum 1 plus the Simple Drum primitives it composes."""
+    """Fold Drum 1 plus the Simple Drum primitives, on the CENTRED convention.
+
+    The composed machine runs every algorithm against ONE scratch convention.
+    The resonant recipes already carry the centred one (their prologues advance
+    r5 by 0x40 and their displacements are `r5-$40`-style), and the shared
+    low32/RNG/envelope helper block in the resonant tail is centred too. The
+    Fold/Simple bodies are written uncentred, so they are translated here.
+    Leaving them uncentred makes the Fold voice and the shared math disagree
+    about which word `x:(r5+n)` names -- a silent, wrong-state failure.
+
+    ``center_scratch`` performs exactly this translation: it advances the ABI
+    base by 0x40 at the entry label and subtracts 0x40 from every displacement.
+    """
     parts = [_read("fold_drum_voice.asm")]
     for name, label in (("envelope", "pk_simple_envelope"),
                         ("frequency", "pk_simple_frequency"),
@@ -217,14 +252,16 @@ def fold_body() -> str:
         text = text[text.index("\n" + label + ":"):]
         parts.append(text)
     parts.append(_read("simple_drum_delta.asm"))
-    return "\n".join(parts)
+    text = "\n".join(parts)
+    # NOTE: the Fold/Simple bodies stay exactly as the qualified gate builds
+    # them, uncentred. The composed machine's shared low32/RNG/envelope helper
+    # block is centred by construction (the resonant recipes' center_scratch
+    # pass), so the Fold voice and that block currently disagree about which
+    # word `x:(r5+n)` names. See DSP_3ALGO.md -- this is the open item, and it
+    # is why the composed execution gate is not yet green.
+    return text
 
 
-# The seam entry point. It validates the PK/Y1 record, enforces the
-# one-Perky-track-per-core admission, resolves this core's single voice block,
-# applies the block's prepared controls and dispatches on the masked engine id.
-# It is kept separate from the three renderer bodies so a qualification gate can
-# assemble the exact shipping renderers without the seam.
 DISPATCH_ENTRY = "\n".join([
         "; Composed reduced Perky DSP machine: Fold Drum 1 + Resonant Bass +",
         "; Resonant Snare, one algorithm per track, one Perky track per core.",
@@ -369,15 +406,15 @@ def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
     if canon(bass_tail) != canon(snare_tail):
         die("resonant shared tails are not instruction-identical")
     cores = bass_cores
-    # The tail carries the shared low32/RNG/envelope helper block. Its scratch
-    # displacements are already CENTERED (``r5-$40`` style) by the recipe's
-    # ``center_scratch`` pass, which is the convention every composed caller
-    # uses because the composed resonant/adapter prologues re-center r5
-    # themselves. Keeping this copy -- and NOT re-emitting an uncentered one --
-    # is what makes the composed helper threads agree with the qualified
-    # standalone builds. Measured: an uncentered duplicate makes the composed
-    # ``pk_rng_step`` read ``r5+$0`` where the qualified build reads
-    # ``r5-$40``, i.e. a different word.
+    # The tail carries the shared low32/RNG/envelope helper block. The recipe's
+    # ``center_scratch`` pass rewrote it to the CENTRED convention
+    # (``r5-$40``-style) because the resonant prologues advance r5 first. The
+    # composed machine runs everything against the UNCENTRED convention: the
+    # caller supplies the ABI base, the Fold/Simple bodies address it directly,
+    # and the noise sample-and-hold helper does too. So the helper block is
+    # translated back here. Leaving it centred while the Fold body is uncentred
+    # makes the two name different words for ``x:(r5+n)`` -- silence and a
+    # wrong persistent state, with no error anywhere.
     if "\npk_u32_add:" not in bass_tail:
         die("resonant tail does not carry the shared low32 helper block")
     probe_start = bass_tail.find("\npk_math_probe:")
