@@ -125,7 +125,10 @@ int main(int argc, char** argv)
 
         std::uint64_t total = 0;
         for (unsigned mode = 1; mode <= 3; ++mode) {
-            for (unsigned corner = 0; corner < 3; ++corner) {
+            // corner 3 is the independently captured all-64 control point (the
+            // corner that the long-running T3 fixture uses); corners 0-2 are the
+            // original 0/2048/4095 diagonal.
+            for (unsigned corner = 0; corner < 5; ++corner) {
                 const std::string dir = fd + "/engine-8-mode-" + std::to_string(mode)
                                       + "-corner-" + std::to_string(corner);
                 char label[32];
@@ -136,7 +139,7 @@ int main(int argc, char** argv)
             }
         }
         std::printf("Slap: PASS %llu exact samples "
-                    "(M1/M2/M3, 3 control corners, continuation + retrigger)\n",
+                    "(M1/M2/M3, 5 control corners, continuation + retrigger)\n",
                     (unsigned long long)total);
     } catch (const std::exception& e) {
         std::fprintf(stderr, "%s\n", e.what());

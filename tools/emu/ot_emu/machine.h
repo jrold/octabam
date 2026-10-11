@@ -393,7 +393,7 @@ namespace ot
 		// The timestamp is the INSTRUCTION COUNT rather than the sample clock,
 		// because the boot has no sample clock -- `Rtos` prints its own sample
 		// beside it for hits it saw.
-		struct PcHit { uint64_t instruction; uint32_t pc, d0, d1, a0, a1, sp, stack[5]; uint32_t d[8], a[7]; };	// d/a: every register (O9b: a watch that showed four of them could not say which record a routine read)
+		struct PcHit { uint64_t instruction; uint64_t cycles; uint32_t pc, d0, d1, a0, a1, sp, stack[5]; uint32_t d[8], a[7]; };	// d/a: every register (O9b: a watch that showed four of them could not say which record a routine read)
 		void watchPc(std::vector<uint32_t> _addrs) { m_watchPc = std::move(_addrs); }
 		// One counted address, compared before every instruction on every step
 		// path (an odd address never matches): the Rtos counts the engine's

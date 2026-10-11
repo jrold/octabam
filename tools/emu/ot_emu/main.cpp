@@ -897,7 +897,8 @@ namespace
 				{
 					const auto& h = hs[i];
 					std::snprintf(rec, sizeof rec, " %llx:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x:%x",
-						static_cast<unsigned long long>(h.instruction), h.pc, h.d0, h.d1, h.a0, h.a1, h.sp,
+						static_cast<unsigned long long>(h.instruction),
+					static_cast<unsigned long long>(h.cycles), h.pc, h.d0, h.d1, h.a0, h.a1, h.sp,
 						h.stack[0], h.stack[1], h.stack[2], h.stack[3], h.stack[4],
 						h.d[2], h.d[3], h.d[4], h.d[5], h.d[6], h.d[7], h.a[2], h.a[3], h.a[4], h.a[5], h.a[6]);
 					out += rec;
@@ -1252,6 +1253,7 @@ int main(int _argc, char** _argv)
 	int frames = 400;			// with --sequencer: DSP frames to run after the transport start
 	double cfFrameBudgetUs = 0.0;	// --cf-frame-budget-us: fail the run when the ColdFire's per-16-sample-frame cost exceeds this many microseconds (0 = off)
 	bool cfOverBudget = false;	// set when --cf-frame-budget-us is exceeded
+	bool cfFrameHist = false;	// --cf-frame-hist: report the per-frame ColdFire cost distribution
 	double cfFrameDeadline = 0.0;	// --cf-frame-deadline F: model the unit's real-time frame deadline; F is the model-to-hardware cycle factor (0 = off)
 	double cfCycleClock = 0.0;	// --cf-cycles-clock F: drive the audio clock from ColdFire cycles (x F) instead of a fixed instructions/sample -- the diagnostic that lets the ColdFire fall behind (0 = off)
 	bool cfDeadlineHit = false;	// set when the deadline model stops the run (the unit's stall)
@@ -1351,6 +1353,7 @@ int main(int _argc, char** _argv)
 		else if(a == "--frames" && i + 1 < _argc)	frames = std::atoi(_argv[++i]);
 		else if(a == "--cf-frame-budget-us" && i + 1 < _argc)	cfFrameBudgetUs = std::atof(_argv[++i]);
 		else if(a == "--cf-frame-deadline" && i + 1 < _argc)	cfFrameDeadline = std::atof(_argv[++i]);
+		else if(a == "--cf-frame-hist")	cfFrameHist = true;
 		else if(a == "--cf-cycles-clock" && i + 1 < _argc)	cfCycleClock = std::atof(_argv[++i]);
 		else if(a == "--poke-trig" && i + 1 < _argc)	pokeTrig = std::atoi(_argv[++i]);
 		else if(a == "--internal-clock")			internalClock = true;
@@ -2396,11 +2399,13 @@ int main(int _argc, char** _argv)
 					std::printf("live script: cannot open %s\n", liveScript.c_str());
 					return 1;
 				}
+				size_t liveMaxPending = 0;
 				const auto f0 = rtos.frameCount();
 				if(pcRing)
 					rtos.armPcRingNow(pcRing);
 				std::string line;
 				size_t n = 0;
+				std::vector<bool> liveStepDone(parsedSteps.size(), false);
 				bool early = false;
 				while(std::getline(in, line) && !live.quit)
 				{
@@ -2411,7 +2416,7 @@ int main(int _argc, char** _argv)
 					std::string rest;
 					std::getline(is, rest);
 					const auto at = f0 + static_cast<uint64_t>(ms / 1000.0 * ot::g_sampleHz / ot::g_framePeriod);
-					if(rtos.runUntil(ms * 5 + 60000.0, [&] { return rtos.frameCount() >= at; }, ot::Rtos::Changes::OnEvent) != ot::Rtos::Stop::Gate)
+						if(rtos.runUntil(ms * 5 + 60000.0, [&] { liveMaxPending = std::max(liveMaxPending, rtos.panelPending()); return rtos.frameCount() >= at; }, ot::Rtos::Changes::OnEvent) != ot::Rtos::Stop::Gate)
 					{
 						std::printf("live script: stopped before %.0f ms -- %s\n", ms, rtos.why().c_str());
 						early = true;
@@ -2419,10 +2424,54 @@ int main(int _argc, char** _argv)
 					}
 					liveLine(rest);
 					++n;
+					// INSTRUMENT: honour positive-frame --step requests on the live-script
+					// path too (they were only applied in the sequencer/frames phase).
+					for(size_t k = 0; k < parsedSteps.size(); ++k)
+						if(parsedSteps[k].frame >= 0 && !liveStepDone[k]
+						   && static_cast<uint64_t>(parsedSteps[k].frame) <= rtos.frameCount())
+						{
+							liveStepDone[k] = true;
+							runStep(parsedSteps[k], "live script");
+						}
 				}
 				std::printf("live script: %zu line(s) from %s over %llu frames, ended %s -- %s\n", n, liveScript.c_str(),
 					static_cast<unsigned long long>(rtos.frameCount() - f0), early ? "early" : (live.quit ? "on quit" : "at the end"),
 					rtos.why().c_str());
+				std::printf("live script: %zu panel byte(s) still queued, MAX queue depth %zu byte(s)\n",
+					rtos.panelPending(), liveMaxPending);
+				if(!watchPc.empty() && !m.pcHits().empty())
+				{
+					std::printf("watch-pc compact: %zu hit(s) -- 'cycle pc'\n", m.pcHits().size());
+					for(const auto& h : m.pcHits())
+						std::printf("   %llu %#x\n", static_cast<unsigned long long>(h.cycles), h.pc);
+				}
+				if(!watchMem.empty())
+				{
+					std::printf("watch-mem compact: %zu write(s) -- 'instr addr value pc'\n", rtos.memWrites().size());
+					for(const auto& w : rtos.memWrites())
+						std::printf("   %llu %#x %#x %#x\n", static_cast<unsigned long long>(w.instr), w.addr, w.val, w.pc);
+				}
+				if(cfFrameHist && !rtos.frameCycles().empty())
+				{
+					auto v = rtos.frameCycles();
+					const size_t nn = v.size();
+					uint64_t sum = 0, mx = 0; size_t mxi = 0;
+					for(size_t k = 0; k < nn; ++k) { sum += v[k]; if(v[k] > mx) { mx = v[k]; mxi = k; } }
+					std::sort(v.begin(), v.end());
+					const auto pct = [&](const double _p) { return v[static_cast<size_t>(_p / 100.0 * static_cast<double>(nn - 1))]; };
+					const double us = 1e6 / ot::g_cfClockHz;
+					std::printf("cf frames  : %zu frames sampled; mean %.0f us  p50 %.0f  p90 %.0f  p99 %.0f  p99.9 %.0f  MAX %.0f us\n",
+						nn, static_cast<double>(sum) / static_cast<double>(nn) * us, pct(50)*us, pct(90)*us, pct(99)*us, pct(99.9)*us, mx*us);
+					std::vector<std::pair<uint64_t,size_t>> top;
+					for(size_t k = 0; k < nn; ++k) top.push_back({rtos.frameCycles()[k], k});
+					std::partial_sort(top.begin(), top.begin() + std::min<size_t>(5, top.size()), top.end(),
+						[](const auto& a, const auto& b) { return a.first > b.first; });
+					std::printf("             five worst frames:");
+					for(size_t k = 0; k < std::min<size_t>(5, top.size()); ++k) std::printf("  #%zu %.0f", top[k].second, top[k].first * us);
+					int over = 0; for(size_t k = 0; k < nn; ++k) if(rtos.frameCycles()[k] * us > ot::g_framePeriod / ot::g_sampleHz * 1e6) ++over;
+					std::printf("   worst #%zu %.0f us   frames over the %.1f us period: %d\n",
+						mxi, mx*us, ot::g_framePeriod / ot::g_sampleHz * 1e6, over);
+				}
 				if(!midiOut.empty())
 				{
 					// MIDI OUT as the firmware wrote it over the live script (CC FEEDBACK's stream, stock's knob echo)
@@ -2448,9 +2497,10 @@ int main(int _argc, char** _argv)
 				rtos.setFrame(true);
 				pokeBytes(pokeAfterLoad, "after the load");
 				std::printf("live       : running until 'quit' (transport stopped; PLAY is key 0x%02x on your panel)\n", 0x3f);
-				const auto rs = rtos.runUntil(1e15, [&] { return live.quit; }, ot::Rtos::Changes::OnEvent);	// the live poll wakes
-				std::printf("live       : %llu event(s), %zu panel byte(s) still queued, ended %s -- %s\n", static_cast<unsigned long long>(live.events),
-					rtos.panelPending(), rs == ot::Rtos::Stop::Gate ? "on quit" : "early", rtos.why().c_str());
+				size_t liveMaxPending = 0;
+				const auto rs = rtos.runUntil(1e15, [&] { liveMaxPending = std::max(liveMaxPending, rtos.panelPending()); return live.quit; }, ot::Rtos::Changes::OnEvent);	// the live poll wakes
+				std::printf("live       : %llu event(s), %zu panel byte(s) still queued, MAX queue depth %zu byte(s), ended %s -- %s\n", static_cast<unsigned long long>(live.events),
+					rtos.panelPending(), liveMaxPending, rs == ot::Rtos::Stop::Gate ? "on quit" : "early", rtos.why().c_str());
 			}
 
 			// -- M6c: the sequencer, for real (milestone O6) -----------------
@@ -2654,6 +2704,42 @@ int main(int _argc, char** _argv)
 					ran > 0 ? static_cast<double>(m.instructions() - instr0) / ran : 0.0, ot::g_framePeriod,
 					wall, static_cast<double>(m.instructions() - instr0) / wall / 1e6,
 					ran > 0 ? wall / (ran * ot::g_framePeriod / ot::g_sampleHz) : 0.0);
+				if(cfFrameHist && !rtos.frameCycles().empty())
+				{
+					// INSTRUMENT (not a gate): the individual frame cost, not the run
+					// average -- a steady load and a spiky one share a mean and have
+					// completely different p99 and max.
+					auto v = rtos.frameCycles();
+					const size_t n = v.size();
+					uint64_t sum = 0, mx = 0; size_t mxi = 0;
+					for(size_t k = 0; k < n; ++k) { sum += v[k]; if(v[k] > mx) { mx = v[k]; mxi = k; } }
+					std::sort(v.begin(), v.end());
+					const auto pct = [&](const double _p) { return v[static_cast<size_t>(_p / 100.0 * static_cast<double>(n - 1))]; };
+					const double us = 1e6 / ot::g_cfClockHz;
+					std::printf("cf frames  : %zu frames sampled; mean %.0f us  p50 %.0f  p90 %.0f  p99 %.0f  p99.9 %.0f  MAX %.0f us\n",
+						n, static_cast<double>(sum) / static_cast<double>(n) * us,
+						pct(50) * us, pct(90) * us, pct(99) * us, pct(99.9) * us, mx * us);
+					std::printf("             worst frame #%zu (%llu cycles = %.0f us); frame period %.1f us\n",
+						mxi, static_cast<unsigned long long>(mx), mx * us,
+						ot::g_framePeriod / ot::g_sampleHz * 1e6);
+					{ // the five worst frames, in order, with their index
+						std::vector<std::pair<uint64_t,size_t>> top;
+						for(size_t k = 0; k < n; ++k) top.push_back({rtos.frameCycles()[k], k});
+						std::partial_sort(top.begin(), top.begin() + std::min<size_t>(5, top.size()), top.end(),
+							[](const auto& a, const auto& b) { return a.first > b.first; });
+						std::printf("             five worst frames (frame #, us):");
+						for(size_t k = 0; k < std::min<size_t>(5, top.size()); ++k)
+							std::printf("  #%zu %.0f", top[k].second, top[k].first * us);
+						std::printf("\n");
+						// and the steady tail, ignoring the load/init frames
+						uint64_t smx = 0; size_t smxi = 0;
+						for(size_t k = 50; k < n; ++k) if(rtos.frameCycles()[k] > smx) { smx = rtos.frameCycles()[k]; smxi = k; }
+						std::printf("             worst after frame 50: #%zu %.0f us\n", smxi, smx * us);
+					}
+					int over = 0; for(size_t k = 0; k < n; ++k) if(v[k] * us > ot::g_framePeriod / ot::g_sampleHz * 1e6) ++over;
+					std::printf("             frames over the %.1f us period: %d\n",
+						ot::g_framePeriod / ot::g_sampleHz * 1e6, over);
+				}
 				// The ColdFire's real-time budget: the hardware must fit one
 				// 16-sample frame's work into one frame period (362.8 us at
 				// 266 MHz). The lock-step model runs faster than real time and
@@ -2893,9 +2979,10 @@ int main(int _argc, char** _argv)
 				"the BOOT has no sample clock, and a watch that could not see the boot "
 				"reported 0 for a boot address whether it ran or not)\n", m.pcHits().size());
 			for(const auto& h : m.pcHits())
-				std::printf("   [%12llu] at %#x d0=%#x d1=%#x a0=%#x a1=%#x "
+				std::printf("   [%12llu cyc %10llu] at %#x d0=%#x d1=%#x a0=%#x a1=%#x "
 					"[sp %#x: %#x %#x %#x %#x %#x] d2-7 %#x %#x %#x %#x %#x %#x a2-6 %#x %#x %#x %#x %#x\n",
-					static_cast<unsigned long long>(h.instruction), h.pc, h.d0, h.d1, h.a0, h.a1,
+					static_cast<unsigned long long>(h.instruction),
+					static_cast<unsigned long long>(h.cycles), h.pc, h.d0, h.d1, h.a0, h.a1,
 					h.sp, h.stack[0], h.stack[1], h.stack[2], h.stack[3], h.stack[4],
 					h.d[2], h.d[3], h.d[4], h.d[5], h.d[6], h.d[7], h.a[2], h.a[3], h.a[4], h.a[5], h.a[6]);
 		}

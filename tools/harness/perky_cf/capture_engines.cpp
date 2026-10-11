@@ -36,8 +36,8 @@ int main(int argc,char**argv){
  std::ofstream meta(out/"cases.tsv");meta<<"engine\tmode\tcorner\tname\twrapper_address\tcontrol_values\n";
  constexpr std::uint32_t wrappers[]={0x20000280,0x200006d4,0x20003930,0x20000b58};
  constexpr unsigned noiseHatIndex=9;
- constexpr std::array<std::array<std::uint16_t,4>,3> corners={{{0,0,0,0},{2048,2048,2048,2048},{4095,4095,4095,4095}}};
- for(unsigned i=0;i<kPerkyEngines.size();++i)for(unsigned mode=0;mode<3;++mode)for(unsigned corner=0;corner<3;++corner){
+ constexpr std::array<std::array<std::uint16_t,4>,5> corners={{{0,0,0,0},{2048,2048,2048,2048},{4095,4095,4095,4095},{64,64,64,64},{2046,2046,2046,2046}}};
+ for(unsigned i=0;i<kPerkyEngines.size();++i)for(unsigned mode=0;mode<3;++mode)for(unsigned corner=0;corner<5;++corner){
   PerkonsM7 cpu;PerkonsVoices v(cpu);const auto& e=kPerkyEngines[i];
   if(!cpu.load(fw,error)||!v.initialise(fw,error)||!v.setAlgorithm(e.slot,e.panelAlgorithm,error)||!v.setMode(e.slot,e.panelModeToFirmware[mode],error)||!v.setSoundParameters(e.slot,corners[corner],error)){std::cerr<<error;return 4;}
   std::ostringstream tag;tag<<"engine-"<<i+1<<"-mode-"<<mode+1<<"-corner-"<<corner;

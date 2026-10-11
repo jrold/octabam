@@ -366,6 +366,13 @@ namespace ot
 			{
 				m_framePending = false;
 				++m_frameCount;
+				// INSTRUMENT: the individual frame's ColdFire cost.
+				{
+					const uint64_t now = m_machine.getCycles();
+					if(m_lastAckCycles != 0 && now > m_lastAckCycles)
+						m_frameCycles.push_back(now - m_lastAckCycles);
+					m_lastAckCycles = now;
+				}
 				// THE FRAME DEADLINE (see setFrameDeadline): each frame starts
 				// its own clock here, at the ack.
 				if(m_deadlineArmed)

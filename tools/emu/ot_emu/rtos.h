@@ -495,6 +495,10 @@ namespace ot
 		uint64_t dtimFired(size_t _n) const { return m_dtim[_n & 3].fired(); }
 		uint64_t dtim1Fired() const { return m_dtim[1].fired(); }	// the UI tick (#424)
 		uint64_t frameCount() const { return m_frameCount; }
+		// INSTRUMENT (not a gate): the ColdFire cycles between consecutive frame
+		// acks -- the individual frame cost, kept so the caller can report the
+		// distribution (max, p99, p99.9) instead of only the run's average.
+		const std::vector<uint64_t>& frameCycles() const { return m_frameCycles; }
 		bool framePending() const { return m_framePending; }
 		// -- the ColdFire real-time frame deadline (the hardware stall) -------
 		// The ColdFire has to finish one 16-sample frame's exchange before the
@@ -823,6 +827,8 @@ namespace ot
 		bool m_dspEdgeLatched = false;	// the DSP wrote its bank id while the frame clock was off (it waits at P:0x97 for the host to take it)
 		double m_nextFrame = g_framePeriod;
 		uint64_t m_frameCount = 0;
+		std::vector<uint64_t> m_frameCycles;   // INSTRUMENT: per-frame coldfire cycles
+		uint64_t m_lastAckCycles = 0;          // INSTRUMENT: cycles at the previous ack
 		// -- the frame deadline (see setFrameDeadline) ----------------------
 		bool m_deadlineArmed = false;
 		double m_deadlineHwFactor = 1.0;

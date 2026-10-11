@@ -154,6 +154,24 @@ static volatile uint32_t *pk_final_fixed_slot(unsigned track, unsigned ping)
          + PK_FINAL_SLOT_BYTES * track);
 }
 
+/* Commit `n` encoded longs into the volatile per-track record slot from two
+ * genuinely separate source and destination pointers.
+ *
+ * This is its own function, and deliberately not inlined, because inside
+ * pk_render's register pressure the allocator otherwise addresses the
+ * destination off the very register the source post-increments
+ * (`move.l (%a0)+,(%a3,%a0.l)` at the record commit).  The stock firmware never
+ * emits that form: of its 76 `move.l (aN)+,(d8,Am,Xn)` sites, none reuses the
+ * source register as the destination base or index.  Here the loop has only
+ * src/dst/i/n live, so it lowers to the two-pointer form the stock uses.  The
+ * arithmetic and the committed bytes are unchanged. */
+static void __attribute__((noinline))
+pk_final_commit_longs(volatile uint32_t *dst, const uint32_t *src, uint32_t n)
+{
+    for (uint32_t i = 0; i < n; ++i)
+        dst[i] = src[i];
+}
+
 static void pk_final_reset_runtime_if_needed(void)
 {
     const uint32_t bank = U32(BANK);
@@ -383,16 +401,14 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
             encoded, pk_final_frame_pcm[voice], split);
         if (!pre_longs)
             return 0;
-        for (uint32_t i = 0; i < pre_longs; ++i)
-            record[i] = encoded[i];
+        pk_final_commit_longs(record, encoded, pre_longs);
 
         uint32_t post_longs = pk4_encode_stock_segment(
             encoded, pk_final_frame_pcm[voice] + split,
             PK_FINAL_BLOCK_SAMPLES - split);
         if (!post_longs)
             return 0;
-        for (uint32_t i = 0; i < post_longs; ++i)
-            record[pre_longs + i] = encoded[i];
+        pk_final_commit_longs(record + pre_longs, encoded, post_longs);
 
         /* Two unity-rate callbacks must occupy exactly 40 longs / 160 bytes.
          * Leave the remaining 176 bytes of the stock 336-byte track slot alone. */

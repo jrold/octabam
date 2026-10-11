@@ -633,7 +633,7 @@ namespace ot
 		for(const auto a : m_watchPc)
 			if(a == _pc)
 			{
-				PcHit h{m_instructions, _pc, getD(0), getD(1), getA(0), getA(1), getA7(), {}};
+				PcHit h{m_instructions, getCycles(), _pc, getD(0), getD(1), getA(0), getA(1), getA7(), {}};
 				for(int i = 0; i < 5; ++i)
 					h.stack[i] = peek32(h.sp + 4 * static_cast<uint32_t>(i));
 				for(int i = 0; i < 8; ++i)
