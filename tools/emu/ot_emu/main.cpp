@@ -54,6 +54,10 @@
 #ifdef __APPLE__
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
+
+extern "C" {
+extern uint64_t m68k_bcc_count, m68k_btb_hits, m68k_bht_hits, m68k_mispredicts;
+}
 #endif
 
 namespace
@@ -2671,7 +2675,14 @@ int main(int _argc, char** _argv)
 							cfOverBudget = true;
 					}
 				}
-				if(rtos.frameDeadlineEdges() != 0)
+				{
+				const uint64_t bc = m68k_bcc_count, tb = m68k_btb_hits, pb = m68k_bht_hits, mp = m68k_mispredicts;
+				const uint64_t total = bc > 0 ? bc : 1;
+				std::printf("bcc predict: %llu Bcc, BTB-hit %llu (0c), BHT-hit %llu (1c), mispredict %llu (8c); accuracy %.2f%%\n",
+					(unsigned long long)bc, (unsigned long long)tb, (unsigned long long)pb, (unsigned long long)mp,
+					(double)(tb + pb) / (double)total * 100.0);
+			}
+			if(rtos.frameDeadlineEdges() != 0)
 				{
 					// THE OVERRUN: the model handed the machine the frame edge
 					// the hardware would have sent. What happens next is the

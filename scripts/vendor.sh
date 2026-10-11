@@ -87,8 +87,17 @@ vendor_mc68k() {
   # Also price branches at the 5445x's 2-level branch predictor (BRA 1, Bcc 2),
   # not the 5206E's predictor-less 2/3. The renderers' branches (envelope state
   # machine, decay countdowns, clamps, phase-wrap) and the stock frame handler's
-  # are ~90% predictable, so the 5206E fixed 3-cycle Bcc over-charges them ~1.5x.
+  # Also price branches at the 5445x's 2-level branch predictor, not the
+  # 5206E's predictor-less flat cost. The static table contributes the Bcc
+  # base; the dynamic 0/1/8 cost comes from the predictor in mc68k-predictor.
   apply_patch vendor/mc68k "$(pwd)/tools/patches/mc68k-cycles.patch"
+  # octabam: implement the MCF5445x conditional-branch predictor (8-entry
+  # direct-mapped branch cache + 128-entry direct-mapped prediction table,
+  # 2-bit each). Timing per the reference manual: 0 cycles branch-cache
+  # correctly-taken, 1 cycle prediction-table correctly-taken/not-taken,
+  # 8 cycles misprediction. Also carries the m68kcpu.h/c fixes the macOS
+  # sigsetjmp path needs once M68K_EMULATE_ADDRESS_ERROR is on.
+  apply_patch vendor/mc68k "$(pwd)/tools/patches/mc68k-predictor.patch"
 }
 
 # Two local changes are needed to reproduce this build:
