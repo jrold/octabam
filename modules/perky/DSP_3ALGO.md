@@ -1092,6 +1092,46 @@ It is also the answer to a question worth asking on the unit: on real hardware
 `X:0x3800..0x386b` holds whatever ran before, and this says that does not reach
 the output on silence.
 
+### Checked and SOUND: the composed path's x256 output scale
+
+The composed machine's `pk3z_scale` multiplies the renderer's output by 256
+(eight `asl a`), and **the qualified seam has no such stage** -- it wrote its
+impulse straight to `X:0`. That looks alarming from the outside: the direct
+renderer reproduces the ARM capture EXACTLY,
+
+```
+DIRECT renderer (no scale stage) vs ARM:  first diff None
+   head [-1, -2, -4, -6]      arm [-1, -2, -4, -6]
+```
+
+while the dispatch path carries those same words through `x256` to
+`[-256, -512, -1024, -1536]`. A 48 dB discrepancy between "what the capture says"
+and "what the machine ships" is exactly the shape of a gain defect.
+
+**It is not one, and the measurement says why.** The renderer's full range, over
+the captured ARM cases, is
+
+```
+largest |renderer output| over the ARM cases: 32598
+x256 = 8345088      full-scale 24-bit = 8388607      fits: True
+headroom factor: 1.01x
+```
+
+The renderer emits a **16-bit-scaled** word (its maximum, 32,598, is a 16-bit
+figure) and `x256` maps that onto **24-bit full scale**, landing at 8,345,088
+against a limit of 8,388,607. The **1.01x headroom is the evidence**: the scale
+was chosen to fit this renderer's range exactly, not picked round.
+
+So `arm-pcm.bin` is the capture at the RENDERER's stage, not the machine's output
+stage, and the two are related by precisely this conversion.
+
+**Why this is recorded rather than left implicit.** The engine-join gate asserts
+`dispatch == direct x 2^8` -- i.e. it asserts what the code DOES, which would be
+equally true if the scale were wrong. Only comparing the SCALE against the
+renderer's range establishes that it is right. A gate that encodes the
+implementation cannot also validate it, and this is the clearest instance of that
+in the branch.
+
 ### The dispatcher gate now also proves non-Perky tracks are left to STOCK
 
 Definition of done #4 -- "T2-T4 and T6-T8 remain normal Octatrack tracks" -- rested
