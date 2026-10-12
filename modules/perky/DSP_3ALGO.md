@@ -171,6 +171,44 @@ which the composer already supports) and drive the renderers from that, so the
 comparison is against the smallest possible image -- then re-introduce the seam
 one piece at a time.
 
+### Isolating the composed Fold silence
+
+The composed Fold renderer returns silence for a fixture the standalone binary
+renders as `-1,-1,-2,-2,...`. This round isolated it further, by measurement:
+
+* a full 2x2 matrix -- {standalone, composed} x {state at `X:200`, `X:3800`} --
+  gives `-1,-1,-2,-2,...` at **both** addresses for the standalone and zeros at
+  **both** for the composed build, so it is not an addressing artifact;
+* stubbing **both** resonant voices to a bare `rts` and re-running the composed
+  Fold entry still returns silence, so the resonant renderers are not the
+  cause: the composed **Fold path itself** is;
+* the composed `pk_fold_voice` disassembles correctly (`do n7`, the envelope
+  and frequency calls, `pk_simple_base` writing `x:(r6+$34)`) and is
+  instruction-identical to the standalone body.
+
+So the fault is in the Fold path *as composed* -- something about the shared
+helpers and layout as they are emitted together -- and not in any single
+renderer body. The next step is to bisect the composed Fold path by rebuilding
+it from the standalone pieces one section at a time (fold body first, then the
+shared low32/RNG block, then the resonant tail) until the silence appears.
+
+### What an image would have to give up
+
+The 150-word gap matters because it decides whether SPATIALIZER survives. The
+options measured for closing it, none of them a renderer change:
+
+* dead routine removal: `pk_u32_sub` (9), `pk_u32_asr` (6), `pk_noise_step`
+  (14), `pknhe_read_r2` (5) are defined and never reached -- but removing all
+  of them measured as **inert** (3,936 words before and after), so the
+  assembler was already not paying for them and this avenue is closed;
+* genuine cross-path duplication does exist and is small: `pknhe_read_r1` /
+  `pksde_read_r1` (11 instructions each), `pknhe_commit` / `pksde_commit` (6),
+  and the `read_r0`/`read_r2` pairs. Sharing those is a few tens of words, not
+  150;
+* the remaining distance has to come from how the Fold and resonant paths each
+  carry their own envelope entry sequence, or from a smaller table
+  representation.
+
 ### The equivalence gate
 
 `tools/verify/verify_perky_3algo_equivalence.py` is the gate that now carries
