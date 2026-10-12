@@ -116,6 +116,11 @@ def main() -> None:
     ap.add_argument("--track", type=int, default=1, choices=(1, 5))
     ap.add_argument("--algorithm", default="bass", choices=tuple(ALGOS))
     ap.add_argument("--deadline", default="1.7")
+    ap.add_argument("--cycle-clock", default=None,
+                    help="--cf-cycles-clock F: drive the audio clock from real "
+                         "ColdFire cycles, which BREAKS THE LOCK-STEP and lets the "
+                         "ColdFire be late -- the one thing the register says the "
+                         "port otherwise cannot show")
     ap.add_argument("--work", type=pathlib.Path, default=ROOT / "out/perky/3algo-ui")
     ap.add_argument("--all", action="store_true",
                     help="run all six variants (T1/T5 x fold/bass/snare) in "
@@ -147,18 +152,19 @@ def main() -> None:
                 # falling off its end is a pass and a None return means exactly
                 # that -- but `None | 0` is a TypeError, so normalise here.
                 sub = run_one(image, project, work / f"T{tr}-{alg}", tr, alg,
-                              args.deadline) or 0
+                              args.deadline, args.cycle_clock) or 0
                 print(f"  {'PASS' if sub == 0 else 'FAIL'}  T{tr} {alg}")
                 rc |= sub
         print(f"perky-3algo-ui-repro: {'PASS' if rc == 0 else 'FAIL'} "
               f"(six variants through the real panel)")
         raise SystemExit(rc)
     return run_one(image, project, work, args.track, args.algorithm,
-                   args.deadline)
+                   args.deadline, args.cycle_clock)
 
 
 def run_one(image: pathlib.Path, project: pathlib.Path, work: pathlib.Path,
-            track: int, algorithm: str, deadline: str) -> int:
+            track: int, algorithm: str, deadline: str,
+            cycle_clock: str | None = None) -> int:
     if not (project / "project.work").is_file():
         raise SystemExit(f"{project} is not an Octatrack project")
     if work.exists():
@@ -170,9 +176,11 @@ def run_one(image: pathlib.Path, project: pathlib.Path, work: pathlib.Path,
     row, label = ALGOS[algorithm]
     want_engine = ENGINE_OF[algorithm]
 
+    extra = ["--cf-frame-deadline", str(deadline)]
+    if cycle_clock is not None:
+        extra += ["--cf-cycles-clock", str(cycle_clock)]
     with MenuPort(image, card, "OCTABAM", "RIG", mkii=True,
-                  log_path=work / "port.log",
-                  extra=("--cf-frame-deadline", str(deadline))) as p:
+                  log_path=work / "port.log", extra=tuple(extra)) as p:
         p.settle()
         p.press(tk)
         p.run(250)

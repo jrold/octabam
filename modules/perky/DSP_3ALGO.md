@@ -711,6 +711,42 @@ user workflow then runs -- select T1, assign, return, audition, `REC`, trigs at
 1/5/9/13, `PLAY` -- with the transport reading **1 (playing)** and staying 1
 across 4 s of polling.
 
+### The lock-step CAN be broken -- `--cf-cycles-clock` -- and still no stall
+
+There is an option the register's own "the port is host-paced" note does not
+mention, and it is the one that addresses the complaint directly:
+
+```
+--cf-cycles-clock F   drive the audio clock from ColdFire cycles (x F) instead of
+                      a fixed instructions/sample -- THE DIAGNOSTIC THAT LETS THE
+                      COLDFIRE FALL BEHIND (0 = off)
+```
+
+`periph.h` gives the real budget: `g_cfClockHz = 266 MHz`, `g_sampleHz = 44100`,
+so one sample is **6032 ColdFire cycles** and a 16-sample frame is 96,512.
+`rtos.h` says the same thing ("g_sampleHz = 6032 cycles"). With the clock driven
+from real cycles, a ColdFire whose per-frame work exceeds that budget genuinely
+falls behind -- which is the failure the register says a lock-step port cannot
+show.
+
+**The gate now carries it** (`--cycle-clock F`). Running the full panel route on
+T1/RES BASS at `F = 1.0, 0.9, 0.75, 0.5`:
+
+| F | transport |
+|---|---|
+| 1.0 | `[1,1,1,1,1,1,1,1]` |
+| 0.9 | `[1,1,1,1,1,1,1,1]` |
+| 0.75 | `[1,1,1,1,1,1,1,1]` |
+| 0.5 | `[1,1,1,1,1,1,1,1]` |
+
+**No stall at any rate, and the record stays correct throughout.** One caveat
+stated plainly: `MenuPort` captures only 335 bytes of the port's stdout, so the
+port's own `cycle clock: on, x...` line is not visible in the gate's log and **the
+flag's engagement is unconfirmed**. The honest reading is "no stall under four
+attempts to break the lock-step", not "the lock-step was proven broken four
+times". A `--live-script` run would show the line; that is the next step if this
+route is pursued.
+
 ### THE AUDIO IS CONFIRMED -- symptom #1 does not reproduce either
 
 The `MenuPort` harness cannot show the DSP's own report (it runs the port's line
