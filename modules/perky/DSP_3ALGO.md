@@ -245,50 +245,33 @@ every existing caller is unchanged. The composed gate passes `-statebase 3800`.
 * Fold PCM: corners and lengths now match (`lengths 256/256`), and **corner 0
   passes exactly** -- the composed renderer reproduces the captured ARM fixture
   through the composed build.
-* **block 0 is exact for every corner; the state it carries out is not.**
-  Rendering a single block reproduces the captured ARM fixture exactly:
+* **the composed and standalone builds are IDENTICAL in both block-0 PCM and
+  post-block-0 state.** Running both with the same probe, the same base
+  (`X:0x0200`) and their own table ledgers:
 
 ```
-corner 0 BLOCK 0 exact: True
-corner 1 BLOCK 0 exact: True
-corner 2 BLOCK 0 exact: True
+block-0 PCM identical:        True
+post-block-0 state identical: True
+state diffs:                  []
 ```
 
-  But the voice block the composed run leaves behind differs from the fixture's
-  `wrapper-window-after` in ten words, and the differences are a consistent
-  factor:
+  Both leave `[2]=0xb170, [4]=0x0b17, [15]=0xaaa0, [35]=0x0010` where the
+  fixture's `wrapper-window-after` has `0x839b, 0x540d, 0xedfc, 0x0100`.
 
-```
-word   composed   fixture     ratio
-0x02   0xb170     0x839b      ~0.72
-0x04   0x0b17     0x540d      ~0.13
-0x0f   0xaaa0     0xedfc      ~0.72
-0x1a   0x5550     0xdd3a      ~0.39
-0x23   0x0010     0x0100      16x  (fixture = composed << 4)
-```
+**Correction to an earlier note in this record.** The "the carried state is
+scaled wrong" finding was measured against that fixture window and is WRONG as
+stated: the composed run does not disagree with the qualified standalone build
+at all, so whatever the fixture window holds, it is not a word-for-word image of
+the voice's live 40-word state. Both the composed and the standalone differ from
+it in the same way.
 
-  Reading it against the fixture's BEFORE state sharpens it further: for
-  several slots the composed run leaves the BEFORE value entirely, and for
-  others it leaves an intermediate-looking value:
-
-```
-idx  before   after(fixture)  composed
-  2  0x0000  0x839b           0xb170
-  4  0x0b21  0x540d           0x0b17     <- still at BEFORE
- 15  0x0000  0xedfc           0xaaa0
- 35  0x0000  0x0100           0x0010
-```
-
-  `[4]` is unchanged from BEFORE (`0x0b21` -> `0x0b17`, a 10-LSB change) while
-  the fixture advances it to `0x540d`. `[35]` is the cleanest single lead: the
-  fixture writes `0x0100` where the composed run writes `0x0010` -- exactly
-  16x, i.e. a shift of four bit positions.
-
-  So the composed voice renders block 0 correctly and carries state, but
-  several persistent words it writes out are on a different scale from the
-  fixture's -- and that is what makes block 1 diverge from its 13th sample
-  onward. It is a **precision/scale** difference in the state the voice stores,
-  not a lost sample or a wrong table.
+So the outstanding divergence is not "the composition computes different state".
+Every composed artifact measured equals the qualified standalone artifact. What
+is left is how the fixture's 40-word window is IMPORTED as the next block's
+starting state: the same import that makes block 0 exact for all three corners
+must be slightly wrong for the block-1 carry, since the standalone gate passes
+the same fixture through the same import and succeeds. That comparison -- the
+standalone gate's import path versus this gate's -- is the next thing to read.
 
 ### The equivalence gate
 
