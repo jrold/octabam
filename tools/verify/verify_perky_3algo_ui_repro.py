@@ -47,7 +47,13 @@ if not PY.is_file():
 
 LIVE_PART = 0x40170F60
 T1_MACHINE = LIVE_PART + 0x22
-T1_MARK = LIVE_PART + 60
+def mark_offset(track: int) -> int:
+    """The PK/1 mark is PER TRACK: part record + 60 + 30*(track-1).
+    Printing T1's offset for a T5 run reads zeros and looks like a
+    failed assignment, while the assertion (which scans the whole part)
+    is right."""
+    return LIVE_PART + 60 + 30 * (track - 1)
+
 TRANSPORT = 0x800065B8
 RECBASE = 0x80001C90
 PING_STRIDE = 0xA80
@@ -186,11 +192,12 @@ def run_one(image: pathlib.Path, project: pathlib.Path, work: pathlib.Path,
         p.press("no")
         p.run(300)
 
+        mark = bytes(p.peek(mark_offset(track), 3))
         if b"PK\x01" not in p.peek(LIVE_PART, 4096):
             print("  !! NO PK/1 SIGNATURE -- PERKY WAS NEVER ASSIGNED; this run "
                   "says nothing about the Perky machine")
             raise SystemExit(2)
-        print(f"  T{track} signed: sig={bytes(p.peek(T1_MARK, 3))!r}")
+        print(f"  T{track} signed: sig={mark!r} at part+{60 + 30 * (track - 1)}")
 
         # --- 7/8/9. choose the algorithm in the engine pool
         p.press(tk, hold=40, settle=30)
