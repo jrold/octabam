@@ -29,6 +29,52 @@ sequencer and not the tempo", and every entry after the line "Entries from here 
 
 
 
+## PERKY 3ALGO (perky-dsp-2voice-3algo): the same wedge returned, from a NEW per-event cost 🟡 fix in, measurement pending
+
+**Seen:** user's unit, this branch. With a Perky machine assigned: no sound, and
+pressing PLAY while the sequencer ran stopped it advancing; STOP/PLAY left it on
+step 1. **This is the entry below, on a different branch** -- and the reason it
+returned is worth recording, because the branch contained the fix.
+
+- **Cause:** `735c6b29` ("hoist per-algo engine creation out of the audio
+  callback") IS an ancestor of this branch. But the entry below records what it
+  deliberately left behind -- *"The control settle was NOT hoisted"* -- and this
+  branch then added a NEW per-event cost into that same callback. On every event
+  for a resonant track, `pk_render` (the audio callback) ran a 468-byte fresh-ARM
+  copy, the family reset, and `pk_cf_res_update_bass/_snare`: the control settle.
+  Event frames are the ones that overrun, so the wedge returned by the same route.
+
+- **The lesson:** a documented fix covers the cost it MOVED, not the cost the
+  mechanism EXISTS FOR. The hoist established "per-event engine work belongs in
+  the UI tick"; the branch added new per-event work and nobody re-applied the
+  rule. Check a branch's new per-event work against this register whenever it
+  touches the audio callback.
+
+- **Fix in (this branch):** `pk_resonant_sync`/`pk_resonant_prime` run the family
+  reset and the control law from `pk_ui_tick`, which `pk_tick_hook` detours into
+  the stock UI tick at `0x4005221E` -- outside the frame, at UI rate. The
+  **trigger** (it mutates the ARM object) and the **compact** (it reads what the
+  trigger wrote) deliberately stay on the audio path, with a one-cookie guard so
+  a render arriving before the first tick recomputes inline. 17/17 gates pass,
+  `verify_perky_3algo_compact_cf` bit-exact -- the change moves WHEN the work
+  happens, not WHAT it computes.
+
+- **Confidence:** the wedge's cause is measured in the register below and the
+  callback location is read from the source. **The reduction is NOT measured:**
+  no `OT_PROJECT` is configured here, so `verify_perky_cf_realtime_budget` and
+  `--cf-frame-deadline` cannot run. The trigger and compact are still on the
+  event frame, so this may be partial.
+
+- **Check:** `out/OCTATRACK_OCTABAM79X_HWTEST.bin` (remix
+  `perky-dsp-3algo-hwtest`, CF METER wrapping vector 0x41, the frame handler's
+  epilogue and both HC poll loops; `tools/harness/cfmeter.py` decodes it). If the
+  event frames now fit 362.8 us, this entry closes; if not, the trigger and
+  compact are the next candidates and the same hoist applies to them.
+
+- **Also for whoever reads this first:** AGENTS.md says check this file FIRST when
+  the unit misbehaves. Four rounds were spent re-deriving this entry's cause from
+  the DSP side before anyone read it. The entry below was already here.
+
 ## PERKY: briefly sounds, then the sequencer stalls ✅ the ColdFire outruns its frame 🔴 open on the unit
 
 

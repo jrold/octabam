@@ -211,6 +211,10 @@ uint32_t pk_track_page(const volatile uint8_t *type_ptr)
     return page_for(model);
 }
 
+#if PK_RESONANT_CANDIDATE
+static void pk_resonant_prime(void);   /* defined below, called from the tick */
+#endif
+
 void pk_ui_tick(void)
 {
     if (U32(BANK) < 0x40000000u || U32(BANK) >= 0x48000000u)
@@ -222,6 +226,10 @@ void pk_ui_tick(void)
     volatile uint8_t *part = part_base();
     U32(0x400d5f38u + PERKY_ROW * 4u) =
         pk_track_page(part + 0x22u + (U8(0x100b14ccu) & 7u));
+
+#if PK_RESONANT_CANDIDATE
+    pk_resonant_prime();
+#endif
 }
 
 /* Stock validates the underlying FLEX parameter ranges, not our descriptor.
@@ -298,6 +306,31 @@ static uint8_t  pk_trig_count[8];
 static unsigned char pk_res_arm[PK_RES_ARM_BYTES];
 static uint16_t      pk_res_compact[101];
 static unsigned      pk_res_arm_family;      /* 0 = none loaded yet */
+
+/* THE PER-EVENT CONTROL SETTLE IS PRIMED IN THE UI TICK, NOT THE FRAME.
+ *
+ * `pk_render` is the audio callback. Running the resonant control law there put
+ * it inside the frame, on the one frame class the failure register measures as
+ * the one that overruns:
+ *
+ *   docs/contributing/FAILURE_MODES.md, "Three Perky machines on a unit":
+ *   "It is the EVENT frames, not the per-frame rendering -- measured." With
+ *   every trig erased there is no overrun; with 2-3 machines the event frames
+ *   run 375-405 us against a 362.8 us frame, and an overrun desynchronises the
+ *   CF/DSP exchange until the frame handler halts on a bank id it cannot read.
+ *
+ * The same register records what was deliberately left behind by 735c6b29:
+ * "The control settle was NOT hoisted." This branch then added it here.
+ *
+ * So prime it in the UI tick, outside the frame -- exactly the pattern
+ * `pk4_preinit_voice` uses for the 119 KB engine creation -- and keep a cookie
+ * guard so a render that arrives first (or before a bank/part change is seen)
+ * still computes it inline. The TRIGGER and the COMPACT stay in the callback:
+ * the trigger mutates the ARM object, so what it produces cannot be precomputed.
+ */
+static unsigned      pk_res_prime_track = ~0u;   /* which track is primed */
+static unsigned      pk_res_prime_targets[4];    /* and against which targets */
+static uint32_t      pk_res_prime_cookie;        /* 0 = nothing primed yet */
 #endif
 static uint32_t simple_bank;
 static unsigned simple_part;
@@ -413,6 +446,58 @@ void pk_resonant_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig,
  * fixed per-track record with PERKY magic + trigger flag + twelve source bytes.
  * probe_glue.asm turns that record into one timing impulse on the DSP.
  */
+#if PK_RESONANT_CANDIDATE
+/* The UI tick's half of the split. Load the fresh ARM object on a family change
+ * and run the control law's smoother HERE, outside the frame. What stays in the
+ * callback is the trigger (it mutates the object) and the compact (it reads
+ * what the trigger wrote).
+ *
+ * The cookie is a deep copy of the four targets the law smoothed against: if
+ * they have not moved since the last prime, the render reuses the primed object
+ * verbatim; if they have, `pk_resonant_sync` recomputes inline. That is the
+ * one-cookie guard the precedent leaves on the audio path.
+ */
+static void pk_resonant_sync(unsigned track, const uint32_t targets[4],
+                             unsigned family)
+{
+    unsigned i;
+    if (pk_res_arm_family != family) {
+        const unsigned char *fresh_obj =
+            (family == PK_RESONANT_BASS) ? PK_RES_ARM_BASS : PK_RES_ARM_SNARE;
+        for (i = 0; i < PK_RES_ARM_BYTES; ++i)
+            pk_res_arm[i] = fresh_obj[i];
+        pk_res_arm_family = family;
+        pk_res_prime_cookie = 0u;
+    }
+    for (i = 0; i < 4u; ++i)
+        if (pk_res_prime_targets[i] != targets[i]) pk_res_prime_cookie = 0u;
+    if (pk_res_prime_cookie && pk_res_prime_track == track) return;
+    if (family == PK_RESONANT_BASS)
+        pk_cf_res_update_bass(pk_res_arm, targets, PK_RES_CHROMATIC);
+    else
+        pk_cf_res_update_snare(pk_res_arm, targets, PK_RES_CHROMATIC);
+    for (i = 0; i < 4u; ++i) pk_res_prime_targets[i] = targets[i];
+    pk_res_prime_track = track;
+    pk_res_prime_cookie = 1u;
+}
+
+static void pk_resonant_prime(void)
+{
+    const volatile uint8_t *part = part_base();
+    unsigned track, slot;
+    for (track = 0; track < 8u; ++track) {
+        if (!signed_track(part, track)) continue;
+        slot = (unsigned)part[0x22u + track];
+        if (slot != PK_RESONANT_BASS && slot != PK_RESONANT_SNARE) continue;
+        pk_resonant_sync(track, simple_controls[track].targets, slot);
+        return;
+    }
+    /* No resonant track on this part: drop the cookie so a later one re-primes. */
+    pk_res_prime_cookie = 0u;
+    pk_res_prime_track = ~0u;
+}
+#endif
+
 int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
 {
     if (track >= 8u || !signed_track(part_base(), track))
@@ -525,22 +610,12 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
                  */
                 if (p[11] == PK_RESONANT_BASS || p[11] == PK_RESONANT_SNARE) {
                     const unsigned is_bass = (p[11] == PK_RESONANT_BASS);
-                    unsigned i;
-                    if (pk_res_arm_family != p[11]) {
-                        const unsigned char *fresh_obj =
-                            is_bass ? PK_RES_ARM_BASS : PK_RES_ARM_SNARE;
-                        for (i = 0; i < PK_RES_ARM_BYTES; ++i)
-                            pk_res_arm[i] = fresh_obj[i];
-                        pk_res_arm_family = p[11];
-                    }
-                    if (is_bass)
-                        pk_cf_res_update_bass(pk_res_arm,
-                                              simple_controls[track].targets,
-                                              PK_RES_CHROMATIC);
-                    else
-                        pk_cf_res_update_snare(pk_res_arm,
-                                               simple_controls[track].targets,
-                                               PK_RES_CHROMATIC);
+                    /* The control settle ran in the UI tick. This is a no-op
+                     * when the targets have not moved since -- see
+                     * pk_resonant_sync -- and otherwise the inline fallback. */
+                    pk_resonant_sync(track, simple_controls[track].targets,
+                                     p[11]);
+                    (void)is_bass;
                     if (trig) {
                         if (is_bass) pk_cf_res_trigger_bass(pk_res_arm, 255u, 45u);
                         else         pk_cf_res_trigger_snare(pk_res_arm, 255u, 45u);

@@ -570,6 +570,52 @@ kind of cost that can approach or exceed the renderer's own 35,753.
 settles it is now well defined: run `P:0x39e..P:0x425` on the host with a real
 ring and meter it, or meter a stock frame with the region `nop`ed.
 
+## FIX: the resonant control settle is hoisted out of the audio callback
+
+The retraction above names the wedge: this branch ran per-event work inside the
+frame on the one frame class the failure register measures as the one that
+overruns. The fix follows the branch's own precedent -- `735c6b29`,
+"hoist per-algo engine creation out of the audio callback", whose comment says
+it plainly:
+
+> "The 119 KB pk4_init used to run on the first render, i.e. inside the frame
+> handler, where it cost roughly 4 ms of ColdFire time -- an order of magnitude
+> past the 362.8 us frame the unit's own 0x4000aae0 guard test allows, and the
+> reason a freshly loaded PERKY bank stalled the transport on its first step.
+> The UI tick runs in the UI task, outside the frame, so prime the engine there
+> ... and leave the one-cookie guard on the audio path."
+
+**What moved.** `pk_render` -- the audio callback -- used to run, per event on a
+resonant track: the 468-byte fresh-ARM copy, the family reset, and
+`pk_cf_res_update_bass/_snare` (the control law, i.e. the "control settle" the
+register records as never having been hoisted). All of that is now
+`pk_resonant_sync`/`pk_resonant_prime`, called from `pk_ui_tick`, which
+`pk_tick_hook` detours into the stock UI tick at `0x4005221E` -- **outside the
+frame, at UI rate rather than per audio frame.**
+
+**What deliberately stayed.** The **trigger** (it mutates the ARM object, so what
+it produces cannot be precomputed) and the **compact** (it reads what the trigger
+wrote). Those are the parts that must be on the audio path.
+
+**The one-cookie guard.** `pk_resonant_sync` compares the four targets against
+what the prime smoothed against. Unchanged -> return immediately; changed, or a
+render arrives before the first UI tick, or the family changed -> recompute
+inline. So the audio path is a no-op between UI ticks and a correct fallback
+otherwise.
+
+**What is proven and what is not.** All 17 gates pass, including
+`verify_perky_3algo_compact_cf`, which checks the ARM-to-compact bridge is
+bit-exact -- so the change moved **when** the work happens, not **what** it
+computes. The two compile failures this introduced (an unguarded call in the
+Fold-only build, and a now-unused `i` under `-Werror`) were caught by
+`verify_perky_fold_transport` and `verify_perky_3algo_control_join` and fixed.
+
+**NOT PROVEN: that the frame now fits.** That needs the reading the register
+names, and no `OT_PROJECT` is configured here, so `verify_perky_cf_realtime_budget`
+and `--cf-frame-deadline` cannot run. The trigger and compact are still on the
+event frame, so this may be a partial reduction. `out/OCTATRACK_OCTABAM79X_HWTEST.bin`
+is the build that measures it.
+
 ## RETRACTION: I SPENT THIS SESSION ON THE WRONG LAYER
 
 **AGENTS.md says: "When the unit misbehaves, check
