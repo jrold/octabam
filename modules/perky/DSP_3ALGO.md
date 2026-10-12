@@ -388,6 +388,52 @@ This branch touches 22 files -- `tools/verify`, `modules/perky`, `tools/perky`,
 and **none** of the assembler, `build_bus.py` or SPECTRUM. So the failure is in
 the tree, not here, and it blocks `verify-shared` for every remix.
 
+### The fixture<->model correspondence is itself unverified -- and my round-18 claim needed this check
+
+Round 18 concluded "the model does not reproduce the ARM capture". Before letting
+that stand I checked it two ways, because that section's own method note says the
+previous three errors came from checks blind to something.
+
+**Check 1 -- is it the tables?** The comparison used the model's GENERATED
+envelope/interpolation tables, while the standalone ARM gate uses the FIRMWARE's
+original ones. That is exactly the apples-to-oranges trap flagged earlier in this
+record, so it had to be ruled out. It is ruled out: word 14 is **table-independent**.
+
+```
+model vs ARM, generated tables    diffs=11  word14=39631
+model vs ARM, all-zero tables     diffs=11  word14=39631
+model vs ARM, e1 only             diffs=11  word14=39631
+ARM expects word14 = 59070
+```
+
+**Check 2 -- is the fixture pair even a matched pair?** The ARM capture holds
+three windows per corner. Running the model across each transition:
+
+```
+corner 0/1/2 (identical):
+  model(before, 16 samples) vs AFTER             diffs = 20 / 21 / 20
+  model(after,  16 samples) vs CONTINUATION-AFTER diffs = 11 / 12 / 10
+  word 14:  before->11346   after=65066   continuation-after=59070
+```
+
+**The model reproduces NEITHER transition.** Not the forward one
+(`wrapper-window-before` -> `wrapper-window-after`), and not the continuation one
+(`after` -> `continuation-after`). Every corner fails both, by two different
+amounts, and `word 14` is a different value in all three windows.
+
+**What that means.** The fixture<->model correspondence is not established. The
+gates that compare the DSP against this model, or against these fixtures, rest on
+a pairing that has never been shown to hold -- and the one gate that would have
+shown it (`verify_perky_resonant_dsp_exec.py --firmware`) has never run here,
+because it needs the stock 1.40C image for the original Y tables.
+
+**So the round-18 conclusion survives, strengthened and re-scoped.** It is not
+"the model is wrong about word 14"; it is that **neither transition of the
+captured fixture is reproduced by the reference model at all**, which means the
+resonant state assertion is not a usable oracle in either direction. That is a
+statement about the ORACLE, not about this branch's composition -- and it is the
+reason this item cannot be closed from the repository alone.
+
 ### The MODEL does not reproduce the ARM capture either -- so that comparison is not an oracle
 
 After three wrong framings I stopped theorising and ran the test that should have
