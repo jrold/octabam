@@ -620,6 +620,34 @@ documented cause of the other PERKY entry): the DSP-side machine -- the hook, it
 continuation, or what it calls -- is jumping to a garbage address, and that is
 also why no sound is produced.
 
+### The reproduction is REAL BUT NOT YET DETERMINISTIC -- say so plainly
+
+The workflow above hung the DSP at `PC 0xe2c48f` on **three** runs and not on
+**six** others, with **byte-identical arguments**. That is recorded here rather
+than smoothed over, because a gate that fires one time in three is not a
+regression test and this branch has already been burned once by a measurement
+that could not fail.
+
+What IS established, and stands on the runs that did fail:
+
+* the panel path itself works end to end -- machine assignment through
+  `SRC SETUP`, trigs entered in grid-record, transport started by `PLAY` -- since
+  the runs that fault also produce transport audio and a much lower interrupt
+  count than the control;
+* the **control never faults**: the same workflow with the assignment key presses
+  removed has run clean every time;
+* the failing PC, `0xe2c48f`, is far outside P memory and the last-PC ring shows
+  it repeating -- a hang, not a pass-through;
+* and the seam's own stack contract is **exonerated** (below).
+
+The obvious non-determinism candidate is `--dsp-dirty 123`, which fills X/Y and
+the shared window of both cores with garbage before the boot. The machine reads
+X:0x3800 for voice state, so at the moment of the first admitted event that block
+is whatever the dirty fill left, and the run's outcome could depend on it. That is
+**testable**: run with `--dsp-dirty 0` (a clean fill) and with several seeds, and
+see whether the fault tracks the fill. Until that is done the honest statement is
+"reproduced, cause not yet isolated, rate roughly one run in three".
+
 ### `0xe2c48f` is not the seam's stack: `move ssh,x0` DOES pop
 
 The first hypothesis -- that the admitted path's `move ssh,x0` fails to discard
