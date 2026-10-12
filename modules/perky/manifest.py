@@ -64,21 +64,19 @@ MODULE = Module(
         # @CONT@ is where the ADMITTED path resumes: the stock code past the
         # source render, which sets r7/r6/n7 from x:$20a/$208/$20c and mixes.
         #
-        # @NEXT@ is the instruction AFTER the hook site, and it is the
-        # NOT-ADMITTED path. It has to exist because the hook sits in
-        # STRAIGHT-LINE stock code reached by fall-through, so there is no
-        # return address belonging to us and an `rts` there jumps to
-        # hyperspace -- the DSP never finishes the frame, the ColdFire waits
-        # for a handshake that never arrives, and the SEQUENCER STOPS. The
-        # displaced `move a,x:>$20e` is replayed first, so continuing at the
-        # next instruction is exactly right.
-        #
-        # The hook replaces the 2-word `move a,x:>$20e`, so +2 words:
-        #   A: 0x0039C + 2 = 0x0039E
-        #   B: 0x001A2 + 2 = 0x001A4
+        # The seam is planted as a `jsr`, so BOTH exits must balance the stack
+        # and they do it differently on purpose:
+        #   not admitted -> `rts`, which pops the seam's return and resumes at
+        #                   the instruction after the hook (stock source runs)
+        #   admitted     -> `move ssh,x0` DISCARDS that return (measured: with
+        #                   it, a following `rts` does not return; without it,
+        #                   it does), then `jmp @CONT@` skips the stock source.
+        # Neither path may simply `jmp`: that would leak one stack level per
+        # track per frame, wrap the 15-deep hardware stack and destroy stock's
+        # return addresses.
         subst={
-            "A": {"@CONT@": "$000426", "@NEXT@": "$00039e"},
-            "B": {"@CONT@": "$000221", "@NEXT@": "$0001a4"},
+            "A": {"@CONT@": "$000426"},
+            "B": {"@CONT@": "$000221"},
         },
     ),
     conflicts=((

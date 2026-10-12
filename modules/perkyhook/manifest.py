@@ -17,8 +17,8 @@ MODULE = Module(
     key="PERKY HOOKDBG",
     kind=Kind.DSP_CLIENT,
     doc=("Source-hook debug insert: replays the displaced stock instruction, "
-         "applies the admission test, and continues stock at the instruction "
-         "after the hook when the event is not ours. Renders nothing."),
+         "applies the admission test, and returns to stock (rts, popping the "
+         "seam's JSR return) when the event is not ours. Renders nothing."),
     menu=None,
     params=(),
     dsp=DspSection(
@@ -43,8 +43,8 @@ MODULE = Module(
             ),
         ),
         subst={
-            "A": {"@CONT@": "$000426", "@NEXT@": "$00039e"},
-            "B": {"@CONT@": "$000221", "@NEXT@": "$0001a4"},
+            "A": {"@CONT@": "$000426"},
+            "B": {"@CONT@": "$000221"},
         },
         max_per_core=None,
     ),

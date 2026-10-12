@@ -186,8 +186,38 @@ def main() -> None:
           f"vs the {FRAME_DEADLINE}-cycle window => "
           f"{'FITS' if report['peak_fits'] else 'EXCEEDS'}")
     (OUT / "timing.json").write_text(json.dumps(report, indent=2) + "\n")
+
+    # THIS GATE USED TO MEASURE AND EXIT 0. It printed EXCEEDS and the build was
+    # green, because nothing turned the number into a verdict -- and the gate was
+    # not in any module's gate list, so it did not even run.
+    #
+    # THAT IS THE GATE GAP BEHIND THE HARDWARE WEDGE. A renderer that cannot
+    # finish inside 72,512 cycles cannot finish the frame: the frame ISR
+    # overruns, the next interrupt is missed, and the ColdFire waits for a
+    # handshake that never arrives. On the unit that is the sequencer stopping,
+    # which is exactly what was reported. A measurement that cannot fail is not a
+    # gate, and this one is now a gate.
+    #
+    # The verdict uses the REACHABLE bound (the captured ARM fixtures), not the
+    # synthetic stress states, which the control path cannot produce.
+    if not report["peak_fits"]:
+        over = report["peak_2x_plus_stock"] - FRAME_DEADLINE
+        raise SystemExit(
+            "verify-perky-3algo-timing: THE RENDERER DOES NOT FIT THE FRAME. "
+            f"peak reachable {peak} modeled cycles/16 + stock = "
+            f"{report['peak_2x_plus_stock']} cycles against the "
+            f"{FRAME_DEADLINE}-cycle hardware window, OVER by {over} "
+            f"({over * 100 // FRAME_DEADLINE}%). A frame that cannot complete "
+            f"stalls the DSP handshake and stops the sequencer on the unit. "
+            f"Per-algorithm: "
+            + ", ".join(f"{k} {v['worst_cycles']}"
+                        for k, v in sorted(report["algorithms"].items()))
+            + f". Report at {OUT / 'timing.json'}")
+
     print()
-    print(f"perky-3algo-timing: measured (report at {OUT / 'timing.json'})")
+    print(f"perky-3algo-timing: PASS (every algorithm's reachable cost, doubled "
+          f"and added to stock's reserve, fits the {FRAME_DEADLINE}-cycle window; "
+          f"report at {OUT / 'timing.json'})")
 
 
 if __name__ == "__main__":

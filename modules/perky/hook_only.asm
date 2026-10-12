@@ -2,30 +2,32 @@
 ; MINIMAL HARDWARE-DEBUG SOURCE HOOK -- no renderer, no state, no audio.
 ;
 ; WHY THIS EXISTS. On the physical Octatrack, with a Perky machine assigned,
-; pressing PLAY stopped the sequencer advancing. The production hook ended its
-; not-admitted path with `rts`, but the hook site is STRAIGHT-LINE stock code
-; reached by fall-through -- nothing called it -- so that `rts` popped a return
-; address that was never ours and the DSP left for hyperspace. The frame never
-; completed, the ColdFire waited for a handshake that never came, and the
-; sequencer stopped. Every track that was not the admitted one took that path.
+; pressing PLAY stopped the sequencer advancing. The production hook is the
+; suspect, and this image isolates it from every other part of the machine.
 ;
-; This image isolates the QUESTION from the ANSWER. It keeps the hook, the site,
-; the admission test and BOTH continuations, and throws away everything else:
+; THE STACK IS THE THING TO GET RIGHT, and both exits balance it differently on
+; purpose. The seam is planted as a `jsr`, so one return address is pushed:
 ;
-;   ADMITTED      -> jmp @CONT@   (take the track over; render nothing at all)
-;   NOT ADMITTED  -> jmp @NEXT@   (continue stock at the instruction after the
-;                                  hook, with the displaced op already replayed)
+;   NOT ADMITTED -> `rts`, which POPS that return and resumes stock at the
+;                   instruction after the hook. The displaced instruction has
+;                   been replayed, so the stock source renderer runs normally.
+;   ADMITTED     -> `move ssh,x0` DISCARDS the return -- measured on this
+;                   emulator: with it, a following `rts` does not return;
+;                   without it, it does -- and then `jmp @CONT@` skips the
+;                   stock source and resumes after it.
+;
+; NEITHER PATH MAY SIMPLY `jmp`. That leaks one stack level per track per frame,
+; wraps the 15-deep hardware stack, and destroys stock's return addresses. An
+; earlier attempt to "fix" the not-admitted path by jumping to the next
+; instruction was exactly that mistake and has been reverted.
 ;
 ; WHAT EACH OUTCOME MEANS when this is flashed:
-;   * sequencer runs normally, Perky track silent  -> the hook mechanism, the
-;     continuation addresses and the admission test are all sound, and the
-;     wedge is inside the RENDERER (the sample loop, the state load, register
-;     or buffer use). Next debug target: the hook plus a renderer that writes
-;     nothing.
-;   * sequencer STILL stops -> the fault is in the hook MECHANISM itself: the
-;     patch at the site, the placement, the displaced-instruction replay, or an
-;     address the build bound. The renderer is not implicated and must not be
-;     touched until this is understood.
+;   * sequencer runs normally -> the hook, its stack balance, its site and its
+;     continuations are all sound, and the wedge is inside the RENDERER or the
+;     state the dispatcher loads. Next target: the hook plus a renderer that
+;     renders but writes nothing.
+;   * sequencer STILL stops -> the fault is in the hook MECHANISM or in how the
+;     seam is planted, and the renderer is not implicated.
 ;
 ; Either outcome is a result. Neither is a shipping image.
 ; ===========================================================================
@@ -50,7 +52,8 @@ pk3d_source:
         cmp     x0,b
         bne     pk3d_not_admitted
 
+        move    ssh,x0                  ; discard the seam's JSR return
         jmp     @CONT@                  ; ours: take over, render nothing
 
 pk3d_not_admitted:
-        jmp     @NEXT@                  ; not ours: continue stock, do not return
+        rts                             ; not ours: pop and run the stock source
