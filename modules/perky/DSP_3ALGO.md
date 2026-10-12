@@ -337,6 +337,84 @@ is not written yet.
 evidenced, the audio is unaffected, the worst-case timing is unaffected, and the
 implementation has a named hazard that must be handled before anyone tries it.
 
+## THE RESONANT NOISE USED A PRIVATE RNG THAT NOTHING SEEDED
+
+This is the bug behind the state mismatch at **words 14 and 84..87** that this
+branch had carried as "unresolved". It is fixed, and it was two bugs deep.
+
+`pk_resonant_noise` / `pkr_noise_refresh` are **borrowed from the Slap voice**
+(`resonant_dsp.py`: it takes `slap_voice.asm` after `pk_slap_noise:` and renames
+only the label). Slap keeps the RNG in its own frame slots `r5+$72..$75`, which
+`center_scratch` relocates to `r5+$32..$35`. **In the resonant renderer nothing
+ever writes those slots** -- so the noise drew from whatever the block happened to
+hold, while the reference model drew from the shared RNG. The two diverged only
+where the noise reaches the output, which is exactly where the gate looked: the
+noise sample-and-hold value (`NOISE+2`, word 14) and the noise resonator's
+position and velocity (`NOISE_RES+10..13`, words 84..87).
+
+**Fixed** by pointing the routine at the canonical limbs `X:0x38e8..0x38eb`, the
+convention `pknv_refresh` already uses. The absolute form is deliberate:
+`center_scratch` relocates only the `r5`-relative slots, so these must not look
+like one.
+
+**Measured effect**: `verify_perky_3algo_exec` used to stop at **case 0** on the
+voice-block comparison. It now passes **cases 0..28 including the full X state AND
+the RNG comparison**, and stops at case 29 on a PCM-only difference -- see below.
+
+**A second, unrelated bug in the same gate.** The RNG read-back compared
+`state[block][0x72]` (X:0x3872) while `run()` seeds the limbs at
+`composed.RNG_GAP_END` = X:0x38e8. That address was stale from an older layout and
+**had never executed**, because the X comparison above it failed first. It now reads
+`composed.RNG_BASE - STATE`, the bytes it actually seeds.
+
+## STILL OPEN: the envelope curve drops the seventeenth bit of its table delta
+
+`pksde_shape1` in `modules/perky/simple_drum_envelope.asm` interpolates the
+envelope curve with
+
+```
+        sub     x0,a
+        move    a1,x0      ; <-- 16 bits of a 17-bit delta
+```
+
+The endpoints are **unsigned u16**, so `b - a` spans -65535..+65535, and the comment
+directly above the line already says "signed17 delta". The top bit is dropped.
+
+**This is NOT the interpolation tables' problem, and the two must not be
+confused.** The Resonant interpolators use the same 16-bit register form, and the
+REAL v1.2.1 tables satisfy it -- measured: `interp_a`'s largest adjacent delta is
+**1326** and `interp_b`'s is **16368**, both inside 16 bits. The gate's synthetic
+fixture used to wrap from 65024 to 256 (a delta of 64964) and failed a renderer that
+is exact for every real table; the fixture is now smooth and asserts the contract.
+
+The ENVELOPE is the opposite case. The real tables EXCEED it: `envelope1`'s largest
+adjacent delta is **65535** and `envelope2`'s is **64255**. Comparing the model
+against the truncated form over the whole (index, fraction) domain:
+
+| table | pairs diverging | share of the domain |
+|---|---|---|
+| envelope1 (shape 1) | 2,046 | 0.098% |
+| **envelope2 (shape 2)** | **535,029** | **25.5%** |
+
+and the gate's failure tracks it exactly: case 0 is shape 0, case 1 shape 1 (both
+pass), **case 29 is shape 2** and is the first to fail.
+
+**Not fixed here.** An exact correction exists and is written down: with
+`D = b - a = D16 + 65536*H`, `floor(D*f/1024) = floor(D16*f/1024) + 64*H*f`,
+because 65536/1024 = 64 is an integer, so the shift distributes over the H term with
+no remainder to carry. **It is blocked by an assembler constraint, not by the
+arithmetic.** `dsp_asm`'s pass 1 substitutes every label with a LONG dummy address,
+so a **near** branch sizes at 2 words there and 1 word in pass 2, and it refuses the
+build with "pass-1 sizing drift". Every branch in that file is far enough to size
+the same in both passes; the correction needs near branches, so it has to be written
+branchlessly. That is a real piece of work, not a one-line change, and it is the
+next task.
+
+**Consequence for the hardware deliverable**: a Resonant hit whose ENV control
+selects curve 2 renders a materially wrong amplitude envelope. It still sounds, and
+the timing sweep is unaffected (the cycle cost is the same); the voicing is not
+correct.
+
 ## THE ACCEPTANCE GATE: an end-to-end production simulation, all six cases
 
 `tools/verify/verify_perky_3algo_production_sim.py` runs the machine the way the

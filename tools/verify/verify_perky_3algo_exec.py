@@ -437,8 +437,34 @@ def main() -> None:
     shipping_words = binary.stat().st_size // 3
 
     e1, e2, _, _ = make_envelopes()
-    interp_a = struct.pack("<257H", *[(i * 257 + i * i) & 0xFFFF for i in range(257)])
-    interp_b = struct.pack("<257H", *[(65535 - i * 251) & 0xFFFF for i in range(257)])
+    # THE FIXTURE INTERPOLATION TABLES MUST RESPECT THE RENDERER'S CONTRACT.
+    #
+    # The DSP interpolator takes the table delta through a 16-bit register
+    # (`sub a,b / move b1,x0`), so it is faithful only while |t[i+1] - t[i]| fits
+    # in 16 bits. The MODEL uses the full 32-bit delta. THE REAL v1.2.1 TABLES
+    # SATISFY THE CONTRACT, measured: interp_a's largest adjacent delta is 1326
+    # and interp_b's is 16368. The fixture used to be `(i*257 + i*i) & 0xFFFF`,
+    # whose last entry wraps from 65024 to 256 -- a delta of 64964, 17 bits --
+    # so it failed a renderer that is correct for every real table. A fixture
+    # outside the contract proves nothing about the contract.
+    #
+    # These are smooth and non-trivial, and the assertion below keeps the
+    # property from being lost again.
+    def _smooth(phase: float, amplitude: int) -> list[int]:
+        import math
+        return [int(32768 + amplitude * math.sin(2.0 * math.pi * (i + phase) / 257.0))
+                for i in range(257)]
+
+    _a = _smooth(0.0, 30000)
+    _b = _smooth(0.37, 20000)
+    for _name, _t in (("interp_a", _a), ("interp_b", _b)):
+        _worst = max(abs(_t[i + 1] - _t[i]) for i in range(256))
+        if _worst > 32767:
+            die(f"fixture {_name} has an adjacent delta of {_worst}, which is "
+                f"outside the 16-bit range the DSP interpolator is built for; "
+                f"the real v1.2.1 tables stay within 16368")
+    interp_a = struct.pack("<257H", *[v & 0xFFFF for v in _a])
+    interp_b = struct.pack("<257H", *[v & 0xFFFF for v in _b])
     ytext = tables_text(e1, e2, interp_a, interp_b, assets)
 
     report = {"schema": "perky-3algo-composed-exec-v1",
@@ -503,9 +529,17 @@ def main() -> None:
                 want = voice.render(16, e1, e2, interp_a, interp_b, rng)
                 equal(got[block * 16:(block + 1) * 16], want, f"{tag} block {block} PCM")
                 equal(state[block][:model.WORDS], voice.words, f"{tag} block {block} X")
-                equal([state[block][0x72] | state[block][0x73] << 16,
-                       state[block][0x74] | state[block][0x75] << 16], rng,
-                      f"{tag} block {block} RNG")
+                # The RNG limbs are X:0x38e8..0x38eb -- the address `run()`
+                # SEEDS (`composed.RNG_GAP_END`) and the one `pknv_refresh`
+                # reads and writes. This comparison used to read voice+0x72,
+                # which is inside the zeroed gap between the voice block and
+                # the limbs: a stale address from an older layout. It never ran,
+                # because the X comparison above it failed first, so it went
+                # unnoticed until that was fixed.
+                rng_at = composed.RNG_BASE - STATE
+                equal([state[block][rng_at] | state[block][rng_at + 1] << 16,
+                       state[block][rng_at + 2] | state[block][rng_at + 3] << 16],
+                      rng, f"{tag} block {block} RNG")
             blocks += 4
             worst = max(worst, meter)
             cases.append({"case": tag, "blocks": 4, "worst_cycles": meter})

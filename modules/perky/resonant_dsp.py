@@ -255,6 +255,24 @@ def source(family, *, core_variables_fixed=False, interp_a=None, interp_b=None):
     e.emit('rts')
     noise = '\npk_resonant_noise:' + (PERKY / 'slap_voice.asm').read_text().split('\npk_slap_noise:', 1)[1]
     noise = noise.replace('pkslv_noise_refresh', 'pkr_noise_refresh')
+    # THE RNG MUST BE THE CANONICAL ONE, NOT A PRIVATE FRAME COPY.
+    #
+    # This body is borrowed from the Slap voice, and Slap keeps the RNG in its
+    # own frame slots (r5+$72..$75, relocated to r5+$32..$35 by center_scratch
+    # below). NOTHING seeds those here: the resonant renderer never writes them,
+    # so the noise drew from whatever the block happened to hold, while the
+    # reference model draws from the shared RNG. The two therefore diverged, and
+    # only where the noise reaches the output -- the noise sample-and-hold value
+    # and the noise resonator's position and velocity, which is exactly the
+    # mismatch verify_perky_3algo_exec reported at words 14 and 84..87.
+    #
+    # `pknv_refresh` (the Noise/Tone renderer) already uses the canonical limbs
+    # at X:0x38e8..0x38eb, so this is the established convention rather than a
+    # new one. The absolute form is deliberate: center_scratch relocate only the
+    # r5-relative slots, so these must not look like one. The r5+$0..$3 working
+    # copy stays as it is and is relocated normally.
+    for _i in range(4):
+        noise = noise.replace(f'x:(r5+${0x72 + _i:02x})', f'x:>${0x38e8 + _i:04x}')
     fields = {'d': 'c', 'e': 'd', 'f': 'e'}
     noise = re.sub(r'(r6\+\$)([0-9a-f]+)', lambda m: m[1] + fields.get(m[2], m[2]), noise)
     text = ('; Exact v1.2.1 resonant ' + family + ' DSP recipe; direct interpolation tables.\n'

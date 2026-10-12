@@ -2201,23 +2201,23 @@ pk_resonant_noise:
 pkr_noise_refresh:
         move    x:(r6+$d),a
         move    a1,x:(r6+$c)
-        move    x:(r5+$32),a
+        move    x:>$38e8,a
         move    a1,x:(r5-$40)
-        move    x:(r5+$33),a
+        move    x:>$38e9,a
         move    a1,x:(r5-$3f)
-        move    x:(r5+$34),a
+        move    x:>$38ea,a
         move    a1,x:(r5-$3e)
-        move    x:(r5+$35),a
+        move    x:>$38eb,a
         move    a1,x:(r5-$3d)
         jsrl     pk_rng_step
         move    x:(r5-$40),a
-        move    a1,x:(r5+$32)
+        move    a1,x:>$38e8
         move    x:(r5-$3f),a
-        move    a1,x:(r5+$33)
+        move    a1,x:>$38e9
         move    x:(r5-$3e),a
-        move    a1,x:(r5+$34)
+        move    a1,x:>$38ea
         move    x:(r5-$3d),a
-        move    a1,x:(r5+$35)
+        move    a1,x:>$38eb
         move    x:(r5-$30),a
         and     #>$00ffff,a
         move    a1,x:(r6+$e)
