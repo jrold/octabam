@@ -46,27 +46,34 @@ ENGINE_LABELS = {
     ENGINE_BASS: "RES BASS",
     ENGINE_SNARE: "RES SNARE",
 }
-# WHERE THE ENGINE ID LIVES IN THE FLEX RECORD.
+# WHERE THE ENGINE ID LIVES IN THE FLEX RECORD -- DERIVED, NOT GUESSED.
 #
-# The dispatcher reads the record with `move x:(r4+$OFF),b` and masks the low
-# half, so the id it dispatches on is the LOW 16 bits of the DSP word starting
-# at byte offset OFF.
+# control.c's pk_render builds p[12] (p[0..5] from the DSP control words,
+# p[6..11] from the track's page slots) and packs it into record[10]:
 #
-# The record is built by modules/perky/control.c's pk_render as
-#     record[4+k] = ((uint32_t)p[2k] << 16) | p[2k+1];
-# so p[6]/p[7] land in record[3] and p[10]/p[11] land in record[5]. Byte offset
-# 6 is record[3], whose low half is p[7] -- while the engine chooser
-# (pk_engine_select) persists its choice at MODEL_SLOT = 11, i.e. p[11], which
-# lands in record[5].
+#     record[0] = 0x504b0000u;  record[1] = 0x59310000u | trig;
+#     record[2] = record[3] = 0;
+#     for (k = 0; k < 6; ++k)
+#         record[4+k] = ((uint32_t)p[2k] << 16) | p[2k+1];
 #
-# So a dispatcher reading offset 6 dispatches on p[7] (the MODE parameter) and
-# never sees the selected engine at all. Two ways to join them:
-#   ENGINE_ID_OFFSET = 0x6  -> pk_render must copy the model byte into p[7]
-#   ENGINE_ID_OFFSET = 0xa  -> read record[5]; low half is p[11], where the
-#                              chooser already writes it
-# The second needs no change to pk_render's packing, only that the byte is not
-# clobbered by the prepare paths. Set here so both sides can be tested.
-ENGINE_ID_OFFSET = 0x6
+# The transport splits each ColdFire long into TWO DSP words (high, low), so the
+# words the DSP addresses as x:(r4+N) are:
+#
+#     N : 0     1     2     3      4  5  6  7 | 8   9   10  11  12  13  14  15  16  17  18  19
+#         'PK'  0    'Y1'  trig    0  0  0  0 | p0  p1  p2  p3  p4  p5  p6  p7  p8  p9  p10 p11
+#
+# That mapping is CONFIRMED by the qualified seam itself, which reads
+#     move x:(r4),b    / cmp #>$00504b      -> word 0 = 'PK'
+#     move x:(r4+$2),b / cmp #>$005931      -> word 2 = 'Y1'
+#     move x:(r4+$3),b                      -> word 3 = the trigger flag
+# (modules/perky/probe_glue.asm). All three line up, so the rest of the table
+# can be trusted.
+#
+# p[11] is the FAMILY byte: pk_fold_prepare stamps 0, pk_simple_prepare stamps 2,
+# and the engine chooser (pk_engine_select) persists the selected model into the
+# page slot that feeds p[11] in the first place. p[11] therefore carries the
+# selection end to end, and it lands at DSP word 19.
+ENGINE_ID_OFFSET = 0x13
 
 # x:$418 is stock's per-core track position. Payload A carries tracks 5-8 and
 # payload B tracks 1-4; the reduced machine admits ONLY the first slot of each

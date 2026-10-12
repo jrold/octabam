@@ -764,7 +764,60 @@ that `probe_glue.asm` reads the trigger at `x:(r4+$3)` and matches `'Y1'` at
 and therefore exactly which byte the engine id must occupy, must be settled by
 an end-to-end test rather than by arithmetic on `record[]` indices.
 
-**The offset is now a single constant so the question is testable in one edit.**
+**RESOLVED: ENGINE_ID_OFFSET = 0x13, derived and proven.**
+
+The offset is not guessed. `pk_render` packs `record[10]` as
+
+```c
+record[0] = 0x504b0000u;  record[1] = 0x59310000u | trig;
+record[2] = record[3] = 0;
+for (k = 0; k < 6u; ++k)
+    record[4u+k] = ((uint32_t)p[2u*k] << 16) | p[2u*k+1u];
+```
+
+and the transport splits each ColdFire long into TWO DSP words (high, low), so
+the words the DSP addresses as `x:(r4+N)` are:
+
+```
+N :  0     1     2     3      4  5  6  7 | 8   9   10  11  12  13  14  15  16  17  18  19
+    'PK'   0    'Y1'  trig    0  0  0  0 | p0  p1  p2  p3  p4  p5  p6  p7  p8  p9  p10 p11
+```
+
+That table is **confirmed by the qualified seam's own code**, which reads
+`x:(r4)` against `#>$00504b` (`'PK'`), `x:(r4+$2)` against `#>$005931` (`'Y1'`)
+and `x:(r4+$3)` for the trigger -- three independent agreements, so the rest can
+be trusted. `p[11]` is the **family byte** (`pk_fold_prepare` stamps 0,
+`pk_simple_prepare` stamps 2, and `pk_engine_select` persists the selected model
+into the very page slot that feeds `p[11]`), and it lands at **word 19**.
+
+`tools/verify/verify_perky_3algo_engine_join.py` proves the join end to end. It
+**replicates `pk_render`'s packing line for line** in Python, feeds that record
+to the real composed dispatcher, and compares the result against a DIRECT call
+to the same renderer passed through the seam's own output stage:
+
+```
+direct  engine  0 (FOLD DRUM ) PCM[:4] = [-1, -2, -4, -6]
+direct  engine 10 (RES BASS  ) PCM[:4] = [-32768, ...]
+direct  engine 11 (RES SNARE ) PCM[:4] = [0, 0, 0, 0]
+
+dispatch engine  0 (FOLD DRUM ) PCM[:4] = [-256, -512, -1024, -1536]   MATCH
+dispatch engine 10 (RES BASS  ) PCM[:4] = [-8388608, ...]              MATCH
+dispatch engine 11 (RES SNARE ) PCM[:4] = [0, 0, 0, 0]                 MATCH
+```
+
+with `expected = signed24((direct & 0xffffff) << 8)` -- the seam's `pk3z_scale`
+stage, eight `asl a` then a 24-bit store, which a direct renderer call does not
+go through. All three engine ids dispatch correctly and the fixture is proven to
+discriminate them (three distinct direct results).
+
+**What that closes and what it does not.** The consumer side and the producer's
+packing now provably agree: the byte the chooser selects is the byte the
+dispatcher reads, at word `0x13`. Still required on the ColdFire side is a
+**prepare path for the two Resonant families** -- `pk_render` today dispatches
+only `p[11]==0` (Fold) and `p[11]==2` (Simple Drum), and both overwrite `p[11]`,
+so `control.c` must gain the two Resonant prepare paths that stamp 10 and 11.
+
+**The offset is a single constant**, formerly the open question:
 `build_dsp_3algo_source.ENGINE_ID_OFFSET` (default `0x6`) drives the dispatcher's
 `move x:(r4+$OFF),b`, and the comment records the two candidates:
 
