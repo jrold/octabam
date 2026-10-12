@@ -570,6 +570,97 @@ kind of cost that can approach or exceed the renderer's own 35,753.
 settles it is now well defined: run `P:0x39e..P:0x425` on the host with a real
 ring and meter it, or meter a stock frame with the region `nop`ed.
 
+## RETRACTION: I SPENT THIS SESSION ON THE WRONG LAYER
+
+**AGENTS.md says: "When the unit misbehaves, check
+`docs/contributing/FAILURE_MODES.md` first." I did not, for four rounds.** I
+investigated the DSP renderer while the register already carried the reported
+symptom, twice, with the cause measured and the project named.
+
+### What the register says, verbatim
+
+**"PERKY: briefly sounds, then the sequencer stalls ✅ the ColdFire outruns its
+frame 🔴 open on the unit."** Seen: `PK4TONE1`, *"faint pop at the trig, then no
+audio and the sequencer will not advance."*
+
+**"Three Perky machines on a unit: stutter, audio cut-out, then the transport
+sits on step 1 ✅ measured in the model, 10 Oct 2026."** Seen on Sam's unit:
+*"Stopping and playing again left the trig lit on step 1 with no playback."*
+Same project, only the machine count changed, under `--cf-frame-deadline 1.7`:
+
+| Perky machines | overrun |
+|---|---|
+| 0 (stock) | none |
+| 1 | none |
+| 2 | **404.7 us late** |
+| 3 | **375.1 us late** |
+
+**"It is the EVENT frames, not the per-frame rendering ✅ measured."** With every
+trig erased there is **no overrun**: the frames that overrun are the ones
+carrying a trig.
+
+**Why a permanent stall and not dropouts:** an overrun desynchronises the CF/DSP
+exchange, and the frame handler at `0x4000aad0` reads the DSP bank id with no
+ready check and **halts if it is not 0 or 1** (`0x4000ab38`). The model shows the
+cause; the unit shows the hang.
+
+**That is this branch's report, in the register, with the project handed over as
+`PRESETS MKII/PROJECT 261010` -- the exact path `price_project.py`'s docstring
+reproduces against.** My asks for `OT_PROJECT` were asks for that project.
+
+### This branch re-adds the per-event cost the fix had removed
+
+`735c6b29` ("hoist per-algo engine creation out of the audio callback") **is** an
+ancestor of this branch, and so is `62e9154d` which marks it as the fix. But the
+register records what was deliberately left behind:
+
+> **"The control settle was NOT hoisted -- it turned out not to be the dominant
+> cost once the engine creation was out of the callback."**
+
+**This branch then added a NEW per-event cost into that same callback.**
+`modules/perky/control.c`, on every event for a resonant track: a 468-byte
+`PK_RES_ARM_BYTES` copy, `pk_cf_res_update_bass/_snare` (the control law and its
+smoother), the trigger, and `pk_cf_res_compact_bass/_snare` emitting **88 or 101
+words** -- all inside the audio callback, on the one frame class the register
+measured as the one that overruns.
+
+### And the DSP finding is a SEPARATE documented cause, not this one
+
+My renderer figures (bass 76,461, snare 82,383 modeled against a 72,512-cycle
+deadline) are real and match the register's own **"PERKY1 briefly sounded, then
+froze the sequencer"** entry almost exactly: *"the generated limb renderer
+measures 79,000-84,000 nominal cycles per 16-sample block, exceeding the
+~72,512-cycle hardware deadline."*
+
+**So there are two causes and I proved the second one, on a branch whose report
+is about the first.** Both are real; only one of them is the wedge.
+
+### What settles it, and it is built
+
+The register's own check: *"**One `cfmeter` reading from a PERKY build settles
+the real per-frame cost.**"* That is the minimal hardware-debug image the
+objective asks for, and it already exists:
+
+```
+out/OCTATRACK_OCTABAM79X_HWTEST.bin   (remix perky-dsp-3algo-hwtest)
+  452,892 B  sha256 8c3799a979cf2f3dab5088262f980f1fdffb5e1cc1aaaf4c463d39f3f7422596
+```
+
+CF METER wraps vector `0x41` (the frame interrupt), its epilogue on every exit
+path, and both HC poll loops inside the frame handler, and prints the frame
+period, ESAI under/overruns and the spin count; `tools/harness/cfmeter.py`
+decodes it. **That reading decides whether the frame fits and whether the 1.7
+calibration -- a STOCK number the register warns may not apply to these cached
+renderers -- is right.**
+
+### The fix, by the branch's own precedent
+
+Hoist the resonant law's update and compact out of the audio callback into the
+UI tick, exactly as `pk4_preinit_voice` did for engine creation, leaving only the
+trigger in the callback. **Not done here: it is ColdFire work the objective
+sequences behind the explanation, and the last two times I "fixed" something
+this session on reasoning rather than measurement I was wrong.**
+
 ## THE BUDGET NEVER CREDITS THE STOCK RENDER THIS HOOK REPLACES
 
 The 38% overrun above is computed against `MAX_MODELED_BLOCK = 23040`, and that
