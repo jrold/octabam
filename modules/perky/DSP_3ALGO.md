@@ -1092,6 +1092,30 @@ It is also the answer to a question worth asking on the unit: on real hardware
 `X:0x3800..0x386b` holds whatever ran before, and this says that does not reach
 the output on silence.
 
+### The dispatcher gate now also proves non-Perky tracks are left to STOCK
+
+Definition of done #4 -- "T2-T4 and T6-T8 remain normal Octatrack tracks" -- rested
+on the slot check alone. With a working dispatcher harness it is now tested
+directly: seed `X:0` (the stock source block) with a marker, drive a record the
+machine must NOT take, and require the marker back untouched, because
+`pk3v_not_admitted` returns and the STOCK source runs instead.
+
+```
+rejection: a record this machine must NOT take is left to STOCK, so
+X:0 still holds the marker 0x5a5a it was seeded with
+  no 'PK' at word 0            X:0 =    23130  untouched
+  'PK' but no 'Y1'             X:0 =    23130  untouched
+  slot 1 (a different track)   X:0 =    23130  untouched
+  CONTROL: admitted record     X:0 =     -256  TOUCHED (expected -- the renderer wrote it)
+```
+
+The last line is the **positive control**: an admitted record DOES overwrite that
+word, so the test can tell "untouched" from "the check never ran". Three rejection
+paths, one discriminating control.
+
+That covers every way a track can fail to be this machine's: wrong magic, right
+magic but not the second, and the wrong track slot.
+
 ### LANDED: the dispatcher-driven test, and the mode is verified end to end
 
 Third attempt, and it passes. `tools/verify/verify_perky_3algo_dispatch.py` drives
