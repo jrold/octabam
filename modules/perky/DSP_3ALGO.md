@@ -367,53 +367,56 @@ the RNG comparison**, and stops at case 29 on a PCM-only difference -- see below
 **had never executed**, because the X comparison above it failed first. It now reads
 `composed.RNG_BASE - STATE`, the bytes it actually seeds.
 
-## STILL OPEN: the envelope curve drops the seventeenth bit of its table delta
+## RETRACTED: the envelope curve is NOT reachable outside its 16-bit form
 
-`pksde_shape1` in `modules/perky/simple_drum_envelope.asm` interpolates the
-envelope curve with
+An earlier revision of this file claimed the envelope curve's 16-bit register form
+(`sub x0,a / move a1,x0` in `noise_hat_envelope.asm` and `simple_drum_envelope.asm`)
+diverged from the model on **25.5%** of envelope2's domain. **That number was
+wrong**, and the way it was wrong is worth recording.
 
-```
-        sub     x0,a
-        move    a1,x0      ; <-- 16 bits of a 17-bit delta
-```
+It was computed over **all 2048 table entries**. The renderer can only ever reach
+**indices 0..1023**: `index = (raw >> 10) & 0x7ff` with `raw` clamped to `$0fffff`.
+Restricted to the reachable range, the real v1.2.1 curves are:
 
-The endpoints are **unsigned u16**, so `b - a` spans -65535..+65535, and the comment
-directly above the line already says "signed17 delta". The top bit is dropped.
-
-**This is NOT the interpolation tables' problem, and the two must not be
-confused.** The Resonant interpolators use the same 16-bit register form, and the
-REAL v1.2.1 tables satisfy it -- measured: `interp_a`'s largest adjacent delta is
-**1326** and `interp_b`'s is **16368**, both inside 16 bits. The gate's synthetic
-fixture used to wrap from 65024 to 256 (a delta of 64964) and failed a renderer that
-is exact for every real table; the fixture is now smooth and asserts the contract.
-
-The ENVELOPE is the opposite case. The real tables EXCEED it: `envelope1`'s largest
-adjacent delta is **65535** and `envelope2`'s is **64255**. Comparing the model
-against the truncated form over the whole (index, fraction) domain:
-
-| table | pairs diverging | share of the domain |
+| table | reachable max abs adjacent delta | positions over 16 bits |
 |---|---|---|
-| envelope1 (shape 1) | 2,046 | 0.098% |
-| **envelope2 (shape 2)** | **535,029** | **25.5%** |
+| envelope1 | **340** | **0** |
+| envelope2 | **6553** | **0** |
 
-and the gate's failure tracks it exactly: case 0 is shape 0, case 1 shape 1 (both
-pass), **case 29 is shape 2** and is the first to fail.
+**Both are far inside 16 bits, so the DSP's form is exact for every curve the
+hardware can present.** This is the same shape as the interpolator finding above:
+a form that looks lossy, real data that never exercises the loss, and a fixture
+that does.
 
-**Not fixed here.** An exact correction exists and is written down: with
-`D = b - a = D16 + 65536*H`, `floor(D*f/1024) = floor(D16*f/1024) + 64*H*f`,
-because 65536/1024 = 64 is an integer, so the shift distributes over the H term with
-no remainder to carry. **It is blocked by an assembler constraint, not by the
-arithmetic.** `dsp_asm`'s pass 1 substitutes every label with a LONG dummy address,
-so a **near** branch sizes at 2 words there and 1 word in pass 2, and it refuses the
-build with "pass-1 sizing drift". Every branch in that file is far enough to size
-the same in both passes; the correction needs near branches, so it has to be written
-branchlessly. That is a real piece of work, not a one-line change, and it is the
-next task.
+The gate's own synthetic envelopes are the ones that exceed it --
+`(i*43 + i*i*5) & 0xffff` and `(0xffff - ((i*181) ^ (i*17))) & 0xffff` reach
+64388 and 53052 at reachable indices, against the real 340 and 6553. **That fixture
+is unrepresentative, and it is a fixture defect.**
 
-**Consequence for the hardware deliverable**: a Resonant hit whose ENV control
-selects curve 2 renders a materially wrong amplitude envelope. It still sounds, and
-the timing sweep is unaffected (the cycle cost is the same); the voicing is not
-correct.
+**It is deliberately NOT changed to make the gate pass.** The gate's current
+failure is at a reachable index whose delta is `-156` -- well inside 16 bits and
+bit-exact between the model and the DSP -- so the wild fixture is not what it is
+detecting, and re-fixturing would move the case rather than explain it. Two DSP
+changes that would have made the form general were written, tested, found to
+change no failing value, and **reverted**: the real tables never need them, they
+cost eight P words out of a hwtest budget already down to eleven free, and a
+renderer change that fixes nothing is risk without benefit.
+
+**The gate is therefore left RED, and what is actually known about it is this**:
+
+* only **case 29 of 256** fails, on **PCM sample 15 of 16**; cases 0..28 pass,
+  including the full X state and the RNG;
+* it is **output-stage only** -- the post-block state matches exactly, so
+  everything captured in the voice block agrees;
+* samples 0..14 agree exactly, including thirteen that saturate to -32768;
+* ruled out so far, each by measurement: the RNG (reproduces the model's 64-bit
+  sequence exactly), the envelope delta at the failing index (-156, bit-exact),
+  the envelope table addresses (the composer rewrites `$09a5`/`$0c51` to
+  `Y_ENV1`/`Y_ENV2` correctly), and the velocity word (255, its own low byte).
+
+That is a characterised single-sample divergence in a saturation-heavy synthetic
+stress case, not a demonstrated defect in the production path. It is recorded here
+rather than papered over.
 
 ## THE ACCEPTANCE GATE: an end-to-end production simulation, all six cases
 
