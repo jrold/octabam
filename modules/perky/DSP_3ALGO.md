@@ -570,6 +570,42 @@ kind of cost that can approach or exceed the renderer's own 35,753.
 settles it is now well defined: run `P:0x39e..P:0x425` on the host with a real
 ring and meter it, or meter a stock frame with the region `nop`ed.
 
+## OPEN: the hoist has no equivalence gate yet, and two attempts failed
+
+**Stated plainly because it is the weakest part of the fix.** All 17 gates pass,
+and `verify_perky_3algo_compact_cf` proves the ARM-to-compact bridge bit-exact --
+but **not one of them exercises the primed path**, because
+`tools/harness/perky_cf/production_transport.c` and `production_sim.c` drive
+`pk_render` and never call `pk_ui_tick`. A change that broke the primed path
+entirely would leave the whole suite green.
+
+Two attempts at an equivalence gate (`pk_render` with and without the tick) were
+written and **both withdrawn rather than committed**, because **both passed with
+the UI tick deliberately disabled** -- a gate that cannot fail:
+
+1. **It primed itself.** `pk_resonant_sync` sets the cookie, so the "no tick" run
+   primed its own cookie and **both runs took the same path.**
+2. **The fast path was never taken anyway.** The sequence moved a knob every
+   event, so the cookie was invalidated every event. Holding the knobs still for
+   runs fixed that, and then the gate correctly refused -- **0 fast-path hits of
+   1200** -- which is the guard working, not a pass.
+
+The third attempt's work is still in the tree and is worth keeping:
+`production_sim.c` gained a tick mode, and `control.c` gained
+`PK_RESONANT_PRIME_TEST` (to link the prime), `PK_RESONANT_FORCE_INLINE` (the
+pre-hoist path: recompute every event), `PK_RESONANT_FORCE_FAST` (never recompute
+in the render) and a `PK_RESONANT_PRIME_TEST` fast-path counter. **The remaining
+unknown is why the primed build still reported zero hits**; the last hypothesis,
+that `pk_simple_prepare` clobbers `p[11]`, was **measured false** -- driving the
+real producer path gives count=88 engine 10 for bass, 101/11 for snare and 40/0
+for Fold, so the resonant block does run and does see the selected engine.
+
+**Also fixed as part of this, and it is load-bearing:** `pk_resonant_prime` used
+to scan the part for the first resonant slot. The render reads the engine from the
+panel and the two can disagree, so it primed a track the render was not using and
+**every event fell back**. It is now keyed off the track and family the last
+render recorded.
+
 ## FIX: the resonant control settle is hoisted out of the audio callback
 
 The retraction above names the wedge: this branch ran per-event work inside the

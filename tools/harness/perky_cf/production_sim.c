@@ -39,6 +39,14 @@
 extern int  pk_render(unsigned, unsigned, unsigned, unsigned);
 extern void pk_engine_select(unsigned model);
 extern void pk_engine_open(void);
+#ifdef PK_RESONANT_PRIME_TEST
+/* The equivalence gate drives the UI-tick half of the split. See
+ * tools/verify/verify_perky_resonant_tick_equivalence.py: without a tick this
+ * harness only ever reaches pk_render's inline fallback, so the primed path is
+ * invisible to every other gate. */
+extern void pk_resonant_prime(void);
+extern unsigned pk_res_fast_hits;
+#endif
 void pk_stock_pool_open(void) { abort(); }
 int  pk_stock_validate(void *p) { abort(); }
 
@@ -120,6 +128,14 @@ int main(int argc, char **argv)
         U32(0x80001c80u) = 0x80010000u;
         assert(pk_render(track, ping, 0, 16) == 0);
 
+#ifdef PK_RESONANT_PRIME_TEST
+        /* Run the UI tick between events when asked. Real order: pk_render fills
+         * simple_controls[].targets, the tick primes the law against them, and
+         * the NEXT event takes the primed fast path. */
+        if (argc > 3 && argv[3][0] == '1') pk_resonant_prime();
+        if (argc > 3 && argv[3][0] == '2') { pk_resonant_prime(); pk_res_fast_hits = 0u; }
+#endif
+
         const volatile uint32_t *rec = (const volatile uint32_t *)(uintptr_t)
             (0x80001c90u + ping * 0xa80u + 336u * track);
         assert(rec[0] == 0x504b0000u);
@@ -135,5 +151,8 @@ int main(int argc, char **argv)
     }
     fclose(f);
     fclose(g);
+#ifdef PK_RESONANT_PRIME_TEST
+    if (argc > 3 && argv[3][0] == '2') fprintf(stderr, "fast_hits %u\n", pk_res_fast_hits);
+#endif
     return 0;
 }

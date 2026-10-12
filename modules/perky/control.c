@@ -212,7 +212,11 @@ uint32_t pk_track_page(const volatile uint8_t *type_ptr)
 }
 
 #if PK_RESONANT_CANDIDATE
+#ifdef PK_RESONANT_PRIME_TEST
+void pk_resonant_prime(void);          /* the equivalence gate calls it directly */
+#else
 static void pk_resonant_prime(void);   /* defined below, called from the tick */
+#endif
 #endif
 
 void pk_ui_tick(void)
@@ -331,6 +335,14 @@ static unsigned      pk_res_arm_family;      /* 0 = none loaded yet */
 static unsigned      pk_res_prime_track = ~0u;   /* which track is primed */
 static unsigned      pk_res_prime_targets[4];    /* and against which targets */
 static uint32_t      pk_res_prime_cookie;        /* 0 = nothing primed yet */
+static unsigned      pk_res_last_track;          /* what the last render used */
+static unsigned      pk_res_last_family;
+#ifdef PK_RESONANT_PRIME_TEST
+/* Counts how often the primed fast path was taken, so the equivalence gate can
+ * assert the path it is comparing was actually exercised. A gate that cannot
+ * tell "compared the primed path" from "fell back every time" has no teeth. */
+unsigned             pk_res_fast_hits;
+#endif
 #endif
 static uint32_t simple_bank;
 static unsigned simple_part;
@@ -471,7 +483,25 @@ static void pk_resonant_sync(unsigned track, const uint32_t targets[4],
     }
     for (i = 0; i < 4u; ++i)
         if (pk_res_prime_targets[i] != targets[i]) pk_res_prime_cookie = 0u;
-    if (pk_res_prime_cookie && pk_res_prime_track == track) return;
+#ifdef PK_RESONANT_FORCE_INLINE
+    /* The equivalence gate's baseline: the path this branch shipped before the
+     * hoist, i.e. recompute on EVERY event. Without a way to force this, the
+     * "no tick" run primes itself (the sync below sets the cookie) and both runs
+     * take the same path -- which is exactly how this gate's first version
+     * passed with the UI tick deliberately disabled. */
+    pk_res_prime_cookie = 0u;
+#endif
+#ifdef PK_RESONANT_FORCE_FAST
+    /* The gate's other half: act as though the tick has primed us, so the next
+     * event MUST use the primed object and cannot silently fall back. */
+    if (pk_res_prime_track == track) { ++pk_res_fast_hits; return; }
+#endif
+    if (pk_res_prime_cookie && pk_res_prime_track == track) {
+#ifdef PK_RESONANT_FORCE_FAST
+        ++pk_res_fast_hits;
+#endif
+        return;
+    }
     if (family == PK_RESONANT_BASS)
         pk_cf_res_update_bass(pk_res_arm, targets, PK_RES_CHROMATIC);
     else
@@ -481,20 +511,31 @@ static void pk_resonant_sync(unsigned track, const uint32_t targets[4],
     pk_res_prime_cookie = 1u;
 }
 
+#ifdef PK_RESONANT_PRIME_TEST
+void pk_resonant_prime(void)
+#else
 static void pk_resonant_prime(void)
+#endif
 {
-    const volatile uint8_t *part = part_base();
-    unsigned track, slot;
-    for (track = 0; track < 8u; ++track) {
-        if (!signed_track(part, track)) continue;
-        slot = (unsigned)part[0x22u + track];
-        if (slot != PK_RESONANT_BASS && slot != PK_RESONANT_SNARE) continue;
-        pk_resonant_sync(track, simple_controls[track].targets, slot);
+    /* KEYED OFF THE LAST RENDER, not a scan of the part.
+     *
+     * The render reads the selected engine from the panel (p[11]); the part's
+     * slot is a different thing and the two can disagree. Priming from a scan
+     * therefore primed a track the render was not using, every event fell back,
+     * and the equivalence gate measured ZERO fast-path hits -- which is exactly
+     * how a gate that cannot fail gets written. The render records what it used;
+     * the tick primes that, and nothing else.
+     *
+     * One ARM object serves one voice, this branch's own premise ("two voices,
+     * one per core"), so there is no ambiguity to resolve. */
+    if (pk_res_last_family != PK_RESONANT_BASS
+        && pk_res_last_family != PK_RESONANT_SNARE) {
+        pk_res_prime_cookie = 0u;
+        pk_res_prime_track = ~0u;
         return;
     }
-    /* No resonant track on this part: drop the cookie so a later one re-primes. */
-    pk_res_prime_cookie = 0u;
-    pk_res_prime_track = ~0u;
+    pk_resonant_sync(pk_res_last_track, simple_controls[pk_res_last_track].targets,
+                     pk_res_last_family);
 }
 #endif
 
@@ -613,12 +654,25 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
                     /* The control settle ran in the UI tick. This is a no-op
                      * when the targets have not moved since -- see
                      * pk_resonant_sync -- and otherwise the inline fallback. */
+                    pk_res_last_track = track;
+                    pk_res_last_family = p[11];
                     pk_resonant_sync(track, simple_controls[track].targets,
                                      p[11]);
                     (void)is_bass;
                     if (trig) {
                         if (is_bass) pk_cf_res_trigger_bass(pk_res_arm, 255u, 45u);
                         else         pk_cf_res_trigger_snare(pk_res_arm, 255u, 45u);
+                        /* THE TRIGGER MUTATES THE OBJECT, SO THE PRIME IS NO
+                         * LONGER WHAT THE LAW WOULD PRODUCE. The old code ran
+                         * the update on EVERY event, so the event after a trig
+                         * smoothed the trigger's own mutation. Skipping it here
+                         * would silently change that -- the behaviour would
+                         * still be deterministic and the gates still green, but
+                         * it would not be the behaviour this branch shipped.
+                         * Invalidate, so the next event recomputes exactly as
+                         * before. The trigger frame itself still skips the
+                         * update, which is the frame that overruns. */
+                        pk_res_prime_cookie = 0u;
                     }
                     if (is_bass) {
                         pk_cf_res_compact_bass(pk_res_arm, pk_res_compact);
