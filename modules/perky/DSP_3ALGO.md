@@ -388,6 +388,58 @@ This branch touches 22 files -- `tools/verify`, `modules/perky`, `tools/perky`,
 and **none** of the assembler, `build_bus.py` or SPECTRUM. So the failure is in
 the tree, not here, and it blocks `verify-shared` for every remix.
 
+### FX sacrifice: WHY it cannot be reduced (item 8, answered)
+
+Two independent constraints, each established rather than assumed.
+
+**1. A module must fit inside a SINGLE run -- multi-run harvesting is impossible
+here.** The placer states it outright (`tools/remix/app.py`):
+
+> ⚠️ A GAP IS A WALL. What you gave up becomes one or more contiguous RUNS, and a
+> module is one code stream, so it must fit inside a SINGLE run -- 3,880 words
+> spread over three runs will not take a 3,500-word module. Harvesting an effect
+> that sits BETWEEN two runs joins them into one.
+
+The composed machine is **one** DSP source in **one** `DspSection`, i.e. one code
+stream. So the idea of closing the 82-word gap from a small second opening is
+closed by the architecture, not by the gate: the sacrifice must be a single
+contiguous run, and the run that fits is `P:0x1000..0x1fdf` on payload A
+(`P:0x0dc0..0x1d9f` on B) -- PLATE through COMB FILTER.
+
+**2. Dead code is real, safe, and still not enough.** A reachability walk from
+`pk3d_source` that **models fallthrough** -- following `jsr`/`jsrl`/`jmp`/`bra`/
+`bcc` targets and each `do` loop's end label, and continuing linearly past
+anything that does not end a routine -- finds **51 unreachable instructions**:
+
+```
+pk_u32_shift_sign_ready  13      pk_noise_refresh   9
+pk_noise_step            10      pk_u32_sub         6
+pk_sub_no_borrow          9      pk_u32_asr         4
+```
+
+That is **67 P words**: the composed program goes 3,868 -> 3,801, and the Fold
+ARM corpus is **15/15 exact** with the removal in place, so it is a real,
+bit-exact saving -- unlike the earlier attempt, which matched NAMES and broke the
+fold renderer precisely because `pksde_read_r2` / `pksdo_read_r2` /
+`pknhe_read_r2` are reached by fallthrough and no `jsr` points at them.
+
+**It does not reduce the sacrifice.** The breakpoint to keep SPATIALIZER is
+3,786 words; 3,801 is still **15 words short**. Dead code alone cannot pay for a
+fourth effect.
+
+**And it is deliberately NOT shipped.** 67 words buys nothing -- the sacrificed
+set is unchanged -- while perturbing the equivalence gate's basis (that gate
+assembles a renderer-only build with no single entry point, and compares
+instruction COUNTS against the standalone recipes). Trading a gate that currently
+proves renderer equivalence for a saving with no functional effect is a bad
+bargain, so the composer is unchanged and the measurement stands as the answer.
+
+**Conclusion.** Given a 3,868-word machine and the single-run rule, the
+seven-effect sacrifice is forced. The only remaining lever is making the
+renderers genuinely smaller -- which is the same work as the timing
+optimisation, and is blocked by the same finding: the resonant arithmetic IS the
+algorithm.
+
 ### The canonical build now reproduces the deliverable
 
 The gap recorded in the previous round -- `make bus REMIX=perky-dsp-3algo`
