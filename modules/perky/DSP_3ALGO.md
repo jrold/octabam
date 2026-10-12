@@ -254,9 +254,14 @@ That leaves two honest ways forward, and the choice should be made on the
 numbers:
 
 1. **Shrink the composed image by 150 words** (3,936 -> 3,786). Then the
-   sacrifice stops at DJ EQ and COMB FILTER and SPATIALIZER survives. The
-   easiest 150 words are in the shared helper block, not the renderers: the
-   standalone `pk_math_probe` dispatcher is still emitted, for instance.
+   sacrifice stops at DJ EQ and COMB FILTER and SPATIALIZER survives. Measured
+   candidates in the shared helper block, not the renderers: `pk_u32_sub`
+   (9 words), `pk_u32_asr` (6) and `pk_noise_step` (14) are emitted by the
+   composition and referenced by nothing -- 29 words, not enough on its own.
+   The remaining ~121 have to come from better helper sharing between the Fold
+   and resonant paths (they currently each carry their own envelope entry
+   sequence) or from a smaller asset/table representation, and any of it must
+   keep `verify_perky_3algo_equivalence.py` green.
 2. Reclaim a **different seven effects** -- COMPRESSOR, LO-FI, DJ EQ and COMB
    FILTER total 1,339 words where SPATIALIZER+EQUALIZER+PHASER+FLANGER+CHORUS
    total 1,368 -- if a differently-composed code layout ever makes its budget
