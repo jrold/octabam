@@ -681,6 +681,45 @@ Two further routes do nothing at all, confirmed by **pixel-identical screenshots
 (same sha256 as the untouched T1 screen): pressing `yes` on the MACHINE>> field,
 and double-tapping the track key.
 
+### The sequence I inherited was validated on a module that is NOT in this worktree
+
+`tools/verify/verify_perky_cf_ui_userpath.py` is the source of the six-scroll
+recipe (`0x2d` held + `0x22`, six `0x20`s, `YES`, `NO`). Its own final check is:
+
+```python
+fail(f"live Part did not commit PERKY through panel path: "
+     f"type={live[0x22]} sig={live[60:63]!r}")
+```
+
+**This gate's very first run produced exactly `type=4, sig=b'\x00\x00\x00'`** --
+the state that check is written to catch. So the recipe did not "nearly work" and
+need a timing nudge; it **never worked**, and the gate that owns it would have said
+so immediately.
+
+**And it was never runnable here anyway.** That gate targets `perky-cf`; the remixes
+in this worktree are `perky-dsp-3algo`, `perky-dsp-3algo-hwtest`, `perky-hookdebug`
+and `perky-statedebug`. There is no `perky-cf` module or remix on this branch, so
+the sibling's sequence was carried across from a different branch, with a different
+module and a different chooser, and adopted on the assumption that a shared
+`pkmachine` unit means a shared UI route. It does not.
+
+**That is the root of the five rounds spent sweeping.** The lesson is the one this
+branch keeps re-learning: a recipe from another module is not a measurement of this
+one, and the way to settle it is to read this module's own code and screens --
+which is what finally happened.
+
+### The three lists, and which one PERKY is in
+
+| list | opened by | rows | PERKY? |
+|---|---|---|---|
+| SRC SETUP `MACHINE>>` | `func+pg_playback` | STATIC / FLEX / THRU / NEIGHBOR / PICKUP | no -- stock five types |
+| `<< MACHINE:FLEX` | track double-tap, **30 ms** gap | sample slots (`R4>RECORDING4` ... `3 ---` ... `8 ---`) | no |
+| the main chooser | **not yet found** | formatted by `pk_machine_name` | **yes -- out-of-range index 5** |
+
+`pk_machine_name` formats the third list, and `pk_main_commit` admits PERKY at its
+commit, so the third list is the route. What is still missing is the key sequence
+that opens it.
+
 ### `pk_machine_name`: PERKY is the OUT-OF-RANGE index 5 of a six-name list
 
 `0x400334D8`, the function the manifest annotates "format machine row 5 as PERKY":
