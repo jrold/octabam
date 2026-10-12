@@ -221,12 +221,34 @@ Everything below has been checked and is NOT the cause:
   explicitly;
 * duplicate label definitions (none).
 
-The remaining difference between the two harnesses is that the composed gate
-drives state at `X:0x3800` while the standalone gate drives it at `X:0x0200`,
-and `pk_simple_base` both reads `x:(r6+$20)` and writes `x:(r6+$34)`. The next
-step is to run the composed binary with the standalone gate's exact fixture and
-bases; if that renders, the fault is in the composed gate's fixture, and if it
-does not, the difference is in the composed *image* rather than the routine.
+**The harness is now excluded.** Driving the composed source with the
+**standalone gate's own probe body** (state at `X:0x0200`, scratch at
+`X:0x3900`, `jsrl` to the composed entries) still stores zeros, while the same
+probe body over the standalone source stores `-1,-1,-2,-2`. So the difference
+is in the composed **source**, not in either gate's fixture.
+
+That points at the one convention difference left in the composition. The
+resonant recipes' `center_scratch` pass advances `r5` by `0x40` and rewrites
+every displacement as `centred - 0x40`; the Fold/Simple bodies and the noise
+sample-and-hold helper are written against the raw ABI base and are **not**
+centred. The shared low32/RNG/envelope block travels with the resonant tail, so
+it arrives centred while its Fold callers are not -- and the two then name
+different words for `x:(r5+n)`.
+
+**Uncentring the tail block was built and measured, and it does not fix this
+either.** Moving the block onto the raw ABI base (`displacement + 0x40`) pushes
+its window to `0..117`, which no longer fits the DSP's one-word `-64..63`
+displacement range, and the composed Fold still stores zeros. That change has
+been reverted; the branch is back at the verified composition (3,936 P words,
+equivalence gate green).
+
+So the state of this item is: the composed **routines** are byte-identical to
+the qualified standalone ones, the difference is demonstrably in the composed
+**source** rather than either harness, and the two conventions cannot simply be
+moved onto each other because the centred window and the raw window need 128
+words each while the block they share is 128 words. Resolving it needs a layout
+where the Fold path and the shared block genuinely address the same words --
+most likely by re-basing one side rather than re-writing displacements.
 
 ### The equivalence gate
 
