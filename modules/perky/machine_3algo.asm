@@ -89,6 +89,33 @@ pk3s_same:
         move    #>$ffffff,m5
         move    #>$ffffff,m6
         move    #$0,r0                  ; stock source buffer X:0
+        ; n7 IS THE RENDER LENGTH AND MUST BE SET HERE, NOT ASSUMED.
+        ;
+        ; The renderers' sample loop is `do n7,...`, and on this DSP a `do`
+        ; with LC = 0 runs 65,536 iterations, so n7 must be a defined
+        ; positive number at every entry. It was NOT: the composed machine
+        ; inherited whatever the stock caller left, and stock's last write
+        ; before the hook is `move #$14,n7` on payload A -- TWENTY. Measured
+        ; through pk3d_source with n7 = 20 the machine writes 40 X words,
+        ; eight of them at X:32..X:39, past the 16-frame source buffer and
+        ; into the stock scratch at X:0x20 that stock uses every block; the
+        ; render also cost 23,063 modeled cycles against 19,011 at n7 = 16,
+        ; so every timing figure taken before this fix UNDERSTATED
+        ; production by about 21%.
+        ;
+        ; 16 is the value every gate and captured ARM fixture was validated
+        ; at, so pinning it preserves the known-good audio while making the
+        ; length explicit.
+        ;
+        ; THE STOCK CONTRACT IS n7 = X:$20c (payload A 0x42a), the trig's
+        ; sample position a = 0..15, with the continuation taking 16 - a
+        ; from X:$20d. Adopting it would shorten the render and cut the
+        ; cost, but it is NOT adopted here deliberately: it changes which
+        ; samples the source owns, and whether the continuation overwrites
+        ; a..15 is not established. Anyone adopting it must guard a = 0
+        ; explicitly AND prove the frame audio is unchanged. See
+        ; tools/verify/verify_perky_3algo_n7.py.
+        move    #>$10,n7
         ; Record words 4..7 carry this block's prepared controls.
         move    x:(r4+$8),a
         move    a1,x:(r6+$67)
@@ -163,7 +190,6 @@ pk3z_scale:
         move    a1,x:(r0)+
 pk3x_scaled:
         nop
-        move    #>$10,n7
         move    ssh,x0
         jmp     @CONT@
 
@@ -2455,48 +2481,6 @@ pk_add_no_carry:
         move    b1,x:(r5-$37)
         rts
 
-; Exact modulo-2^32 subtract. For 16-bit inputs N on low diff means borrow.
-pk_u32_sub:
-        move    x:(r5-$40),a
-        move    x:(r5-$3e),x0
-        sub     x0,a
-        move    #>$0,y0
-        bpl     pk_sub_no_borrow
-        move    #>$1,y0
-pk_sub_no_borrow:
-        and     #>$00ffff,a
-        move    a1,x:(r5-$38)
-        move    x:(r5-$3f),b
-        move    x:(r5-$3d),x0
-        sub     x0,b
-        sub     y0,b
-        and     #>$00ffff,b
-        move    b1,x:(r5-$37)
-        rts
-
-; Signed 32-bit arithmetic right shift by 0..31. y0 is a sign-extended high
-; limb. Each iteration shifts low logically, high arithmetically, then uses
-; the high shift's carry to inject old high bit0 into low bit15.
-pk_u32_asr:
-        move    x:(r5-$3f),a
-        btst    #15,a1
-        bcc     pk_u32_shift_sign_ready
-        sub     #>$010000,a
-pk_u32_shift_sign_ready:
-        move    x:(r5-$40),b
-        lsl     #$8,b
-        move    b1,a0
-        move    x:(r5-$3c),x0
-        asr     x0,a,a
-        move    a1,b
-        and     #>$00ffff,b
-        move    b1,x:(r5-$37)
-        move    a0,b
-        lsr     #$8,b
-        and     #>$00ffff,b
-        move    b1,x:(r5-$38)
-        rts
-
 ; Low 32 bits of unsigned 32x32 multiply using three 16x16 products:
 ; lo=low16(al*bl), hi=low16(high16(al*bl)+al*bh+ah*bl).
 pk_u32_mul_low:
@@ -2770,43 +2754,6 @@ pk_rng_no_carry:
         move    a1,x:(r5-$2f)
         rts
 
-; Noise/Tone sample-and-hold source primitive. This is the renderer's
-; renderNoise() reduced to its exact state transition. +40/+41/+42 are direct
-; 16-bit probe words corresponding to firmware count/reload/held-sample u16s.
-; +12 receives the returned sample bit-pattern.
-pk_noise_step:
-        move    x:(r5+$0),a
-        tst     a
-        beq     pk_noise_refresh
-
-        sub     #>$1,a
-        and     #>$00ffff,a
-        move    a1,x:(r5+$0)
-        move    x:(r5+$2),a
-        and     #>$00ffff,a
-        move    a1,x:(r5-$2e)
-        rts
-
-pk_noise_refresh:
-        move    x:(r5+$1),a
-        and     #>$00ffff,a
-        move    a1,x:(r5+$0)
-        jsrl     pk_rng_step
-
-        ; renderNoise casts low16(nextRandom()) to int16. nextRandom() is
-        ; newHigh & $7fffffff, so its low16 is exactly newHigh.low at +10.
-        move    x:(r5-$30),a
-        and     #>$00ffff,a
-        move    a1,x:(r5+$2)
-        move    a1,x:(r5-$2e)
-        rts
-
-; ===== END resident_tail.asm =====
-
-; ===== BEGIN fold_drum_1.asm =====
-; Fold Drum 1 candidate renderer: shared exact Simple Drum primitives.
-; 40 live words, prepared base at +$34/$35. Private scratch as Simple Drum.
-; Not dispatched by PERKY3 until controls/trigger/integration gates qualify it.
 pk_fold_voice:
         move r6,a
         move a1,x:(r5+$20)

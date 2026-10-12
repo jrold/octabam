@@ -337,6 +337,113 @@ is not written yet.
 evidenced, the audio is unaffected, the worst-case timing is unaffected, and the
 implementation has a named hazard that must be handled before anyone tries it.
 
+## THE n7 BUG: the render length was never set, and every gate hid it
+
+**The most serious defect found in this branch, and it was in the shipping path.**
+
+The renderers' sample loop is `do n7,...`. On this DSP a `do` with `LC = 0` runs
+**65,536** iterations, so n7 must be a defined positive number at every entry. It
+was not. The composed machine inherited whatever the stock caller left, and
+stock's last write before the hook is `move #$14,n7` on payload A — **twenty**.
+The composer's own `move #>$10,n7` sat at the END of the dispatch, where stock
+overwrites it at the continuation's own entry (payload A `0x42a`/`0x434`, payload
+B `0x225`/`0x22f`): dead code that concealed the missing setup.
+
+**Measured through `pk3d_source`:**
+
+```
+-frames 16:  X words written 32/64; beyond X:31 -> 0    meter 19011
+-frames 20:  X words written 40/64; beyond X:31 -> 8    meter 23063
+```
+
+With n7 = 20 the machine wrote **eight words past the 16-frame source buffer**, at
+`X:32..X:39` — and `X:0x20` is the stock scratch AGENTS.md says stock uses every
+block — and cost **23,063 modeled cycles against 19,011**. So every timing figure
+taken before this fix **understated production by ~21%**, and the buffer overrun
+would have been live on the unit.
+
+**Why every gate missed it:** the host's `-frames 16` set n7 for them. The gates
+test the renderer; none tested the entry condition the renderer depends on.
+
+**The fix**, in `pk3d_source`, before the dispatch:
+
+```asm
+        move    #>$10,n7
+```
+
+16 is the value every gate and every captured ARM fixture was validated at, so the
+known-good audio is preserved. After it:
+
+```
+-frames 16:  words 32, beyond 0, meter 19011
+-frames 20:  words 32, beyond 0, meter 19011
+-frames 24:  words 32, beyond 0, meter 19011
+```
+
+The machine is now immune to the caller's n7, and `tools/verify/verify_perky_3algo_n7.py`
+pins that: exactly the 32-word interleaved buffer for every caller n7 tried, never
+past X:31, and an identical modeled cost each time.
+
+**The stock contract, recorded and deliberately NOT adopted.** `n7 = X:$20c`
+(payload A `0x42a`) is the trig's sample position `a` = 0..15, with the continuation
+taking `16 - a` from `X:$20d`. Adopting it would shorten the render and cut the
+cost. It is not adopted because it changes which samples the source owns, whether
+the continuation overwrites `a..15` is not established, and `a = 0` would hand `do`
+an LC of 0. The source says all of that where the next person will read it.
+
+## DEAD CODE SHIPPED: 67 words, because the instrumented build needed them
+
+The reachability analysis (`tools/perky/reach_3algo.py`) finds 51 unreachable
+instructions in six blocks, all starting immediately after an `rts` — the
+structural reason no fallthrough reaches them. That matches, exactly, the 51
+established long before by actually removing them and confirming 15/15 Fold ARM
+parity.
+
+They are now removed in `compose()`. **Why now, when the removal was declined
+earlier as "no functional gain":** the instrumented hardware build adds CF METER's
+206-word DSP insert and was **35 words over**. The 67 fit it, and they make the
+shipping build smaller too: **3,892 -> 3,825 words**. Unreachable code cannot change
+behaviour, and all gates were re-run to prove it — `reach_3algo.py` now reports
+**0 unreachable**, and every gate passes.
+
+## THE RESONANT ORACLE: precisely what is missing and what it blocks
+
+Chased to ground rather than left as "needs the stock image". The absent artifact
+is **not** the stock Octatrack OS. It is the **PĒRKONS v1.2.1 image**, sha256
+`adcdbc4a2c660ffb6477f202211ae3cb70170bfe6ddfaecc3df0e4cb7db398c6`, referenced as
+`FIRMWARE_SHA256` by twelve `verify_perky_cf_*.py` gates. They are supplied it via
+`PERKONS_FIRMWARE` or `--firmware`, and without it they stop with:
+
+```
+set PERKONS_FIRMWARE or pass --firmware with exact PĒRKONS v1.2.1
+```
+
+**What those gates are:** the **ColdFire** PĒRKONS renderer translations — a
+different port from this branch's DSP machine. They read the interpolation tables
+out of the SHA-pinned image at `0x0803237C`/`0x08032178`.
+
+**What is NOT blocked by it:**
+
+* the **captured fixtures ARE present and hash-pinned** — `out/perky/engine-fixtures/`
+  holds engines 1..12, nine cases each, and `CAPTURE_SHA256` in the gates pins them.
+  The Fold ARM parity (15/15) and the **reachable timing figures** are built on
+  those fixtures and are real.
+* every one of this branch's twelve gates.
+
+**The remaining real gap, stated plainly:** `verify_perky_3algo_exec.py` — the
+parity gate, and **not one of the twelve** — **FAILS on the Resonant section** and
+did so before this session's changes (verified by stashing them: byte-identical
+failure). The PCM comparison passes; the **post-block STATE** comparison fails on
+the first synthetic bass case at words 14 (`40210` vs `61392`) and 84–87 (nonzero
+vs `0`). Word 14 is the tail of `NOISE`; 84–87 are the tail of `NOISE_RES`
+(74..87). So the shipped resonant renderer's **state layout** differs from the
+model's on stress states, at the first case tried — it never reaches the ARM
+comparison. Resolving that needs the PĒRKONS image to re-derive what the renderer
+should write there.
+
+**And it does not block the hardware timing sweep**, which measures cycles, not
+sample parity.
+
 ## THE TIMING LEDGER, audited row by row
 
 A reviewer's arithmetic gave **31.6% / 36.9%** where this document said **36.5% /

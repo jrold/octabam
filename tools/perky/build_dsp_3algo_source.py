@@ -410,6 +410,33 @@ DISPATCH_ENTRY = "\n".join([
         "        move    #>$ffffff,m5",
         "        move    #>$ffffff,m6",
         "        move    #$0,r0                  ; stock source buffer X:0",
+        "        ; n7 IS THE RENDER LENGTH AND MUST BE SET HERE, NOT ASSUMED.",
+        "        ;",
+        "        ; The renderers' sample loop is `do n7,...`, and on this DSP a `do`",
+        "        ; with LC = 0 runs 65,536 iterations, so n7 must be a defined",
+        "        ; positive number at every entry. It was NOT: the composed machine",
+        "        ; inherited whatever the stock caller left, and stock's last write",
+        "        ; before the hook is `move #$14,n7` on payload A -- TWENTY. Measured",
+        "        ; through pk3d_source with n7 = 20 the machine writes 40 X words,",
+        "        ; eight of them at X:32..X:39, past the 16-frame source buffer and",
+        "        ; into the stock scratch at X:0x20 that stock uses every block; the",
+        "        ; render also cost 23,063 modeled cycles against 19,011 at n7 = 16,",
+        "        ; so every timing figure taken before this fix UNDERSTATED",
+        "        ; production by about 21%.",
+        "        ;",
+        "        ; 16 is the value every gate and captured ARM fixture was validated",
+        "        ; at, so pinning it preserves the known-good audio while making the",
+        "        ; length explicit.",
+        "        ;",
+        "        ; THE STOCK CONTRACT IS n7 = X:$20c (payload A 0x42a), the trig's",
+        "        ; sample position a = 0..15, with the continuation taking 16 - a",
+        "        ; from X:$20d. Adopting it would shorten the render and cut the",
+        "        ; cost, but it is NOT adopted here deliberately: it changes which",
+        "        ; samples the source owns, and whether the continuation overwrites",
+        "        ; a..15 is not established. Anyone adopting it must guard a = 0",
+        "        ; explicitly AND prove the frame audio is unchanged. See",
+        "        ; tools/verify/verify_perky_3algo_n7.py.",
+        "        move    #>$10,n7",
         "        ; Record words 4..7 carry this block's prepared controls.",
         "        move    x:(r4+$8),a",
         "        move    a1,x:(r6+$" + format(APPLIED_OFFSET, "x") + ")",
@@ -484,7 +511,11 @@ DISPATCH_ENTRY = "\n".join([
         "        move    a1,x:(r0)+",
         'pk3x_scaled:',
         "        nop",
-        "        move    #>$10,n7",
+        # NOTE: a `move #>$10,n7` used to sit HERE. It was dead -- stock
+        # overwrites n7 at the continuation's own entry (payload A
+        # 0x42a/0x434, payload B 0x225/0x22f) -- and it hid the fact that
+        # OUR renderers read whatever n7 the stock caller left. See the
+        # n7 setup in pk3d_source, and tools/verify/verify_perky_3algo_n7.py.
         "        move    ssh,x0",
         "        jmp     @CONT@",
         "",
@@ -611,7 +642,58 @@ def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
         _section("resident_primitives.asm",
                  centre_displacements(extra_body(bass_tail))),
     ])
-    return text
+    return drop_dead_code(text)
+
+
+# ---------------------------------------------------------------------------
+# DEAD CODE: 51 unreachable instructions in six blocks, removed.
+#
+# The production image enters the machine at exactly ONE place -- the source hook
+# `pk3d_source` -- so a block no path reaches is weight in P and nothing else.
+# `tools/perky/reach_3algo.py` finds them by label-level reachability from that
+# entry (label-level, not address-level: an earlier address-tracking version
+# drifted from the assembler's layout and pruned the whole Resonant half of the
+# dispatcher, reporting the demonstrably-live `pk3d_snare_voice` as dead). Its
+# 51-instruction answer matches the 51 established long before by actually
+# removing them and confirming 15/15 Fold ARM parity, so the SET is trusted.
+#
+# Each group begins immediately after an `rts`, which is the structural reason no
+# fallthrough reaches it -- the trap that broke an earlier name-based attempt
+# (`drop_unreached()`), where routines reachable by FALLTHROUGH were removed and
+# the Fold renderer stopped working.
+#
+# WHY THIS IS SHIPPED NOW: the instrumented hardware build (`perky-dsp-3algo-hwtest`)
+# adds CF METER's 206-word DSP insert and was 35 words over the region. The 67
+# words here fit it, and they make the shipping build smaller too. Unreachable
+# code cannot change behaviour, and every gate is re-run to prove it.
+DEAD_BLOCKS = ("pk_u32_sub", "pk_sub_no_borrow", "pk_u32_asr",
+               "pk_u32_shift_sign_ready", "pk_noise_step", "pk_noise_refresh")
+
+
+def drop_dead_code(text: str) -> str:
+    """Remove the unreachable blocks, with the comment block above each."""
+    lines = text.splitlines()
+    dead = set(DEAD_BLOCKS)
+    keep = [True] * len(lines)
+    i = 0
+    while i < len(lines):
+        s = lines[i].strip()
+        if s.endswith(":") and s[:-1] in dead:
+            # walk back over the contiguous comment block that documents it
+            j = i
+            while j > 0 and lines[j - 1].strip().startswith(";"):
+                j -= 1
+            # forward to the last non-blank line before the next label
+            k = i
+            while k + 1 < len(lines) and not (
+                    lines[k + 1].strip() and not lines[k + 1][0].isspace()
+                    and lines[k + 1].strip().endswith(":")):
+                k += 1
+            for n in range(j, k + 1):
+                keep[n] = False
+            i = k
+        i += 1
+    return "\n".join(l for l, k in zip(lines, keep) if k) + "\n"
 
 
 def normalize(text: str) -> str:
