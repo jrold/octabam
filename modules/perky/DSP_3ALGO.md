@@ -667,11 +667,28 @@ always 0, the dispatcher always takes the Fold branch, and **neither Resonant
 Bass nor Resonant Snare can be selected** -- not because they are unprepared,
 but because the field that selects them is never written.
 
-**The fix is small and well-specified**, and both halves are already known:
+**A caveat on the byte arithmetic, recorded so it is not overclaimed.** The
+"byte offset 6 falls inside record[2]" reading above assumes one byte per
+`record[]` word position, and a direct byte-probe of the composition returned
+all zeros for offsets 0..15 -- so that experiment did not confirm the assumption
+and is not evidence either way. What IS established from the qualified seam is
+that `probe_glue.asm` reads the trigger at `x:(r4+$3)` and matches `'Y1'` at
+`x:(r4+$2)`, which pins bytes 2 and 3 to `0x59`/`0x31`. The mapping beyond that,
+and therefore exactly which byte the engine id must occupy, must be settled by
+an end-to-end test rather than by arithmetic on `record[]` indices.
 
-1. `pk_render` must copy the model/family byte into the byte offset the
-   dispatcher reads (or both sides must agree on a new offset), so that
-   `pk_engine_select`'s choice actually reaches the DSP;
+An attempt to settle it by driving the composed dispatcher with a controlled
+record at a known address produced a zero voice state for both candidate
+offsets, because the dispatcher's admission gate (`x:$418`) and the record
+pointer at `x:$209` were not both satisfied by the fixture. That test needs the
+admission seeded correctly before it can distinguish the candidates.
+
+**The fix is small and well-specified in outline**, and both halves are known
+independently of the byte question:
+
+1. the control path must deliver the selected model/family byte into whatever
+   byte the dispatcher reads, so that `pk_engine_select`'s choice reaches the
+   DSP at all -- today the value it writes is not copied into the record;
 2. `control.c` needs prepare paths for the two Resonant families, which today
    fall into the `else` that zeroes the prepared controls.
 
