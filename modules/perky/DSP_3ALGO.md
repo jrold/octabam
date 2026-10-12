@@ -527,61 +527,79 @@ held     trig=1  peak 8388352     a held note continues instead of reloading
 The snare's release peak differing from its hit is the same fact from the audio
 side: the release does not restart the voice.
 
-## RETRACTED: the envelope curve is NOT reachable outside its 16-bit form
+## RETRACTED TWICE OVER: case 29 is a STATE divergence, and the gate hid it
 
-An earlier revision of this file claimed the envelope curve's 16-bit register form
-(`sub x0,a / move a1,x0` in `noise_hat_envelope.asm` and `simple_drum_envelope.asm`)
-diverged from the model on **25.5%** of envelope2's domain. **That number was
-wrong**, and the way it was wrong is worth recording.
+Two earlier statements in this file were wrong, and the second is the more
+serious because a gate was hiding it.
 
-It was computed over **all 2048 table entries**. The renderer can only ever reach
-**indices 0..1023**: `index = (raw >> 10) & 0x7ff` with `raw` clamped to `$0fffff`.
-Restricted to the reachable range, the real v1.2.1 curves are:
+**WRONG: "it is output-stage only -- the post-block state matches exactly."**
+`verify_perky_3algo_exec` compared **PCM first**, and `equal` raises on the first
+mismatch -- so for case 29 the X and RNG comparisons **never ran at all**. The
+claim was written from a failure message that had not checked the state. The
+comparison order is now **state, then RNG, then PCM**, so a case is described as
+what it actually is; the audio is derived from the state, so the state is the
+thing to name first.
+
+**With the order corrected, the real failure is the STATE:**
+
+```
+bass synthetic 29 block 0 X: [(77, 32111, 31661), (84, 14429, 14440), (86, 6122, 5950)]
+```
+
+Words 77, 84 and 86 are the **noise resonator's coefficient, position and
+velocity** (`NOISE_RES` + 3/10/12). Rendering it **one sample per block** -- the
+sample loop driven with `do #$1` instead of `do n7` -- shows it diverging at
+**step 0**, not at sample 15. Nothing about this was output-stage only.
+
+**The divergence is in the resonator's coefficient interpolation.** With case 29's
+noise-resonator pitch (`0xFFBF`), index and fraction agree between the model and
+the DSP (255 and 32256, so the DSP's "index and fraction come from the raw low
+sixteen bits" comment holds); it is the arithmetic that differs. The model returns
+**31661**, which is exactly what the gate reports as `want`:
+
+```
+a = table[255] = 31301, b = table[256] = 32034, b - a = 733
+model = a + ((fraction * (b - a)) >> 16) = 31301 + (23640832 >> 16) = 31661
+```
+
+The DSP returns 32111, an added term of **810** where the model adds **360**. The
+DSP's form is `mpy y0,x0,a / asr #$b,a,a / move a0,a` -- reading the accumulator's
+LOW word, which AGENTS.md documents as exposing what `a1` hides, so its scale
+cannot be predicted from the source and a hand-simulation of it does not reproduce
+the hardware value. **That is why this is characterised rather than fixed**: the
+next step is to probe the routine with a known pitch and read the coefficient back,
+which needs the `pk_resonant_core` probe to set its registers correctly first.
+
+**Ruled out by measurement so far**, each by running it: the RNG (reproduces the
+model's 64-bit sequence exactly), the N7 render length, the envelope delta at the
+failing index, the envelope table addresses (the composer rewrites `$09a5`/`$0c51`
+to `Y_ENV1`/`Y_ENV2` correctly), the velocity word, and the decay fast path --
+forcing `resonant_fast_dsp.decay` to jump straight to the general path leaves the
+failure byte-identical, so the hand-optimised shortcut is exact and is now known
+to be.
+
+**AND THE ORIGINAL ENVELOPE CLAIM, retracted as before.** An earlier revision said
+the envelope curve's 16-bit register form diverged on **25.5%** of envelope2's
+domain. That was computed over all 2048 entries; the renderer can only reach
+indices **0..1023**, where the real curves stay well inside 16 bits:
 
 | table | reachable max abs adjacent delta | positions over 16 bits |
 |---|---|---|
 | envelope1 | **340** | **0** |
 | envelope2 | **6553** | **0** |
 
-**Both are far inside 16 bits, so the DSP's form is exact for every curve the
-hardware can present.** This is the same shape as the interpolator finding above:
-a form that looks lossy, real data that never exercises the loss, and a fixture
-that does.
+Both are far inside 16 bits, so the DSP's form is exact for every curve the
+hardware can present. The 25.5% came from the gate's *synthetic* envelopes
+(64388 and 53052), which are unrepresentative. Two DSP changes that would have
+made the form general were written, tested, found to change no failing value, and
+**reverted** -- the real tables never need them and they cost eight P words.
 
-The gate's own synthetic envelopes are the ones that exceed it --
-`(i*43 + i*i*5) & 0xffff` and `(0xffff - ((i*181) ^ (i*17))) & 0xffff` reach
-64388 and 53052 at reachable indices, against the real 340 and 6553. **That fixture
-is unrepresentative, and it is a fixture defect.**
-
-**It is deliberately NOT changed to make the gate pass.** The gate's current
-failure is at a reachable index whose delta is `-156` -- well inside 16 bits and
-bit-exact between the model and the DSP -- so the wild fixture is not what it is
-detecting, and re-fixturing would move the case rather than explain it. Two DSP
-changes that would have made the form general were written, tested, found to
-change no failing value, and **reverted**: the real tables never need them, they
-cost eight P words out of a hwtest budget already down to eleven free, and a
-renderer change that fixes nothing is risk without benefit.
-
-**The gate is therefore left RED, and what is actually known about it is this**:
-
-* only **case 29 of 256** fails, on **PCM sample 15 of 16**; cases 0..28 pass,
-  including the full X state and the RNG;
-* it is **output-stage only** -- the post-block state matches exactly, so
-  everything captured in the voice block agrees;
-* samples 0..14 agree exactly, including thirteen that saturate to -32768;
-* ruled out so far, each by measurement: the RNG (reproduces the model's 64-bit
-  sequence exactly), the envelope delta at the failing index (-156, bit-exact),
-  the envelope table addresses (the composer rewrites `$09a5`/`$0c51` to
-  `Y_ENV1`/`Y_ENV2` correctly), the velocity word (255, its own low byte), and
-  **the decay fast path** -- forcing `resonant_fast_dsp.decay` to jump straight to
-  the general path leaves the failure byte-identical (`(15, 19603, 17792)`), so
-  the hand-optimised shortcut is exact and is NOT the divergence. That is worth
-  having: the fast path is the kind of code that is easy to get subtly wrong, and
-  it is now known to agree with the reference on this case at least.
-
-That is a characterised single-sample divergence in a saturation-heavy synthetic
-stress case, not a demonstrated defect in the production path. It is recorded here
-rather than papered over.
+**WHERE THIS LEAVES THE OBJECTIVE.** The authentic initialization is reconstructed,
+implemented and gated end-to-end; all nine production requirements pass; the panel
+reaches the renderer; hits restart the voice. What does **not** hold is the blanket
+"post-block state differs" condition, for **1 of 256 synthetic stress cases**, in a
+noise resonator's interpolation arithmetic. It is a real renderer divergence and it
+is left red rather than argued away.
 
 ## THE ACCEPTANCE GATE: an end-to-end production simulation, all six cases
 

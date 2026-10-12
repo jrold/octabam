@@ -527,19 +527,32 @@ def main() -> None:
                                     4, tag, OUT)
             for block in range(4):
                 want = voice.render(16, e1, e2, interp_a, interp_b, rng)
-                equal(got[block * 16:(block + 1) * 16], want, f"{tag} block {block} PCM")
+                # STATE FIRST, then the RNG, then the PCM.
+                #
+                # The order is not cosmetic. `equal` raises on the first
+                # mismatch, so whichever comparison runs first decides how a
+                # failing case is DESCRIBED -- and the others never run at all.
+                # With PCM first, a case whose audio diverged was reported as an
+                # output problem while its state went unchecked, which is how
+                # "case 29 is output-stage only, the state matches" was written
+                # into DSP_3ALGO.md. It was not true: case 29's state diverges on
+                # the FIRST SAMPLE, in the noise resonator, and only the PCM
+                # comparison had ever run. The state is the more fundamental
+                # quantity -- the audio is derived from it -- so it is checked
+                # first and a failure is described as what it is.
                 equal(state[block][:model.WORDS], voice.words, f"{tag} block {block} X")
                 # The RNG limbs are X:0x38e8..0x38eb -- the address `run()`
                 # SEEDS (`composed.RNG_GAP_END`) and the one `pknv_refresh`
                 # reads and writes. This comparison used to read voice+0x72,
                 # which is inside the zeroed gap between the voice block and
                 # the limbs: a stale address from an older layout. It never ran,
-                # because the X comparison above it failed first, so it went
+                # because the comparison above it failed first, so it went
                 # unnoticed until that was fixed.
                 rng_at = composed.RNG_BASE - STATE
                 equal([state[block][rng_at] | state[block][rng_at + 1] << 16,
                        state[block][rng_at + 2] | state[block][rng_at + 3] << 16],
                       rng, f"{tag} block {block} RNG")
+                equal(got[block * 16:(block + 1) * 16], want, f"{tag} block {block} PCM")
             blocks += 4
             worst = max(worst, meter)
             cases.append({"case": tag, "blocks": 4, "worst_cycles": meter})
