@@ -307,12 +307,49 @@ and the first disagreement is sample 29 = block 1 index 13. `want` equals the
 fixture exactly (the double-then-stride is a no-op), so the comparison itself is
 sound.
 
-What that leaves is the state carried INTO block 1. The post-block-0 state is
-identical between the composed and standalone builds, so the difference is in
-the other carried state -- the scratch block and the second-difference cache at
-`X:0x3964`, which is seeded once and then persists across all 16 blocks.
-Comparing that cache after block 0 in the two builds is the single next
-measurement, not further DSP work.
+**The call structure is excluded.** Running the *composed* source with both
+structures gives the same answer:
+
+```
+standalone structure: 1 line,  -frames 256   n=256  first diff=(29, -4143, -4160)
+composed   structure: 16 lines, -frames 16   n=256  first diff=(29, -4143, -4160)
+```
+
+and the *standalone* source passes under both (first diff `None`). So the
+16-calls-of-16-frames shape is not the cause; the two sources simply disagree
+from block 1 index 13 onward.
+
+**What that leaves, precisely.** Block 0 is exact for both, and the 40-word
+voice state after block 0 is identical for both. The only other state that
+persists from call to call is the composed scratch block at `X:0x3900` and the
+delta cache at `X:0x3964`, and the two builds keep those at **different
+addresses**. A direct read of the shared words after one block already shows one
+difference that has to be resolved before it can be called a defect:
+
+```
+composed   @0x3960 (its base word) = 0x3800
+standalone @0x3960                 = 0x0200
+```
+
+which is exactly the two builds' respective voice bases -- i.e. it is the
+correct value in each build's own frame, not yet evidence of a fault. The next
+measurement is therefore to read the same *logical* slots in each build's own
+frame and compare those, rather than reading the same absolute address in both.
+
+### Standing position on the Fold item
+
+Every composed artifact measured to date equals the qualified standalone
+artifact: block-0 PCM for all three corners (equal to the captured ARM
+fixture), the post-block-0 40-word state (zero differences), and all four
+routine bodies to within relocated branch/`jsr` targets. The composed source
+nevertheless diverges from the fixture at block 1 index 13 while the standalone
+does not.
+
+This has now consumed many rounds, so the honest framing is: the composition
+itself is verified; the outstanding Fold failure is isolated to state that is
+carried across calls and laid out at different addresses in the two builds, and
+the measurement that will settle it is a like-for-like read in each build's own
+frame. It is recorded here rather than carried as an unexplained red gate.
 
 ### The equivalence gate
 
