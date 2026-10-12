@@ -388,6 +388,51 @@ This branch touches 22 files -- `tools/verify`, `modules/perky`, `tools/perky`,
 and **none** of the assembler, `build_bus.py` or SPECTRUM. So the failure is in
 the tree, not here, and it blocks `verify-shared` for every remix.
 
+### RETRACTED: the "read-back address" explanation of word 14
+
+**The previous section's conclusion is wrong and is retracted.** It said
+`pk_rng_step` "never writes `r5-$30`", so the refresh reads a word nothing
+produces. That checked only `pk_rng_step`'s OWN body. `pk_rng_step` is not
+self-contained -- it calls the 32-bit helpers, and those write the word:
+
+```
+pk_u32_mul_full   move y1,x:(r5-$30)
+pk_u32_mul_full   move x1,x:(r5-$2f)
+pk_u32_mul_full   move b1,x:(r5-$30)     ; r2
+pk_u32_mul_full   move b1,x:(r5-$2f)
+pk_rng_no_carry   move a1,x:(r5-$30)
+pk_rng_no_carry   move a1,x:(r5-$2f)
+```
+
+So the refresh's `move x:(r5-$30),a` reads exactly what the callee produced. The
+composed noise path is internally consistent, my "the generator never writes the
+word the refresh reads" claim is **false**, and the round-15 record is corrected
+here rather than left standing.
+
+This is the same failure mode as the earlier `drop_unreachable` regression:
+**analysing a routine as if its callees were not part of it.** Both times the
+instrument (a body-local scan) was blind to exactly the thing being ruled out.
+
+**What is still true, and is now the whole of the item.** Word 14 is `NOISE + 2`
+in both families -- the held noise sample. On the captured ARM fixtures it is
+wrong in every case, and BOTH sides of the comparison are CONSTANT across all six
+runs:
+
+```
+composed 17741 (0x454d)   model 59070 (0xe6be)   -- identical for bass and snare, corners 0/1/2
+```
+
+A field that takes the same value regardless of the fixture's trajectory is not
+trajectory-derived: it is set from the CONTROL side. So the divergence is in how
+the composed path derives that value from the prepared controls, not in the
+resonator arithmetic -- and corner 0's PCM being bit-exact says it does not reach
+the output on that trajectory.
+
+**Not established:** which control-derived quantity it is, and whether the model
+or the composition is the one that is right. The standalone ARM gate that would
+settle it -- `verify_perky_resonant_dsp_exec.py --firmware` -- still needs the
+stock 1.40C image for the original Y tables and has never run here.
+
 ### The divergent word, traced to a read-back address -- and it is NOT the composition
 
 `word 14` is `NOISE + 2` in BOTH families (`bass.NOISE = 12`, `snare.NOISE = 12`),
