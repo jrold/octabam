@@ -169,8 +169,17 @@ algorithm per core, only one of the three runs on a core at a time.
 ## 6. The blocker, restated on the reachable domain
 
 **Resonant Bass and Resonant Snare do not fit the frame at one voice per core.**
-On the reachable figures: Bass 35,713 against a 23,040 allowance (a **35%**
-reduction needed) and Snare 38,737 (a **41%** reduction).
+On the reachable figures, with the measured dispatcher wrapper of **547** modeled
+cycles/block added:
+
+| engine | reachable | + wrapper 547 | vs 23,040 | hardware window |
+| --- | ---: | ---: | --- | --- |
+| Fold Drum 1 | 25,393 | 25,940 | 11.2% over | **+2.7%** |
+| Resonant Bass | 35,713 | 36,260 | needs **36.5%** | +31.1% |
+| Resonant Snare | 38,737 | 39,284 | needs **41.4%** | +39.5% |
+
+**Fold Drum 1 is not part of the blocker** -- 2.7% over the hardware window is
+inside what bit-exact work could reach.
 
 **The optimisation ceiling is measured, not argued.** Ablating one routine at a
 time in the composed source and diffing executed instructions:
@@ -198,6 +207,30 @@ Avenues from the brief's list were attempted and measured, not skipped:
   reach the 82-word breakpoint that would keep SPATIALIZER, and it is deliberately
   not shipped.
 * **redundant reloads**: 5 composition-wide under a call-clobber-aware scan.
+
+## 7. Safe algorithm switching (fixed on this branch)
+
+The three engines share `X:0x3800` with DIFFERENT layouts -- word 34 is `MODE` for
+Fold, `DECAY_A` for Resonant Bass and inside `RES2` for Resonant Snare -- so a
+switch handed the new engine the old engine's fields as if they were its own.
+**Measured, before the fix:** switching Fold -> Resonant Bass produced `-8388608`
+= `-2^23` exactly, railed at the 24-bit limit, on the first block after the
+switch; Fold -> Snare rendered silence.
+
+The dispatcher now keeps an **ENGINE LEDGER** at `x:$38ed` (the old admission
+latch word, free since that was removed), compares the incoming engine id against
+it, and **re-seeds the shared voice block when the engine changes**. The id is
+tagged `0x8000` so a boot word of zero can never match. Cost: **+20 P words** and
+**+13 modeled cycles** on the steady-state wrapper, plus **+129** on the single
+block where a switch happens (the 108-word clear). It did not move the blocker:
+36.4% -> 36.5% and 41.3% -> 41.4%.
+
+`verify_perky_3algo_switch` drives all three engines in sequence through
+`pk3d_source` and asserts **no block rails**; a silent block after a switch is the
+re-seed working, not a defect. There is **no oracle** for any switched block -- the
+captured fixtures are per-engine and the dispatcher stages controls through
+registers the stock caller owns -- and the gate says so rather than implying
+coverage.
 
 **What would unblock it** is a decision this branch is not authorised to take:
 a deliberately smaller resonant algorithm (the target forbids this branch
