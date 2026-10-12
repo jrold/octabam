@@ -1092,6 +1092,72 @@ It is also the answer to a question worth asking on the unit: on real hardware
 `X:0x3800..0x386b` holds whatever ran before, and this says that does not reach
 the output on silence.
 
+### FIXED: the Fold MODE is now delivered (`p[8]` -> voice word 34)
+
+Both open questions are answered from the repository, and the fix is in.
+
+**Question 1 -- which side applies the `[1,2,0]` mapping?** The DSP. The
+qualified transport gate pins `[1,2,0][record[8]] == v.words[34]` where
+`record[8]` is the ColdFire's panel mode and `words[34]` is the ARM hardware's
+value, and `pk_render`'s output is fixed by that same gate -- so the mapping
+happens between the two records, on the DSP side. Reading the fixtures confirms
+the mapping exactly:
+
+```
+engine-1-mode-1 -> words[34] = 1        panel 1 (0-based 0) -> (0+1)%3 = 1
+engine-1-mode-2 -> words[34] = 2        panel 2 (0-based 1) -> (1+1)%3 = 2
+engine-1-mode-3 -> words[34] = 0        panel 3 (0-based 2) -> (2+1)%3 = 0
+```
+
+so **firmware mode = `(panel + 1) % 3`**.
+
+**Question 2 -- do the Resonant families use word 34?** NO, and writing it there
+would be a bug:
+
+```
+fold  MODE  = 34
+bass  DECAY_A = 34     <- word 34 is the decay block's base
+snare RES1 = 15, RES2 = 29, RES3 = 43   <- word 34 is inside RES2
+```
+
+So the delivery is **Fold-path only**, which is why it lives in `pk3e_entry`.
+
+The emitted sequence, in the Fold dispatch before `pk_simple_base`:
+
+```
+move    x:>$209,r4          ; RELOAD the record: pk_simple_base points r4 at
+                            ; the second-difference cache, so it no longer
+                            ; addresses the record
+move    x:(r4+$10),a        ; p[8], the panel mode
+add     #>$1,a              ; (panel + 1)
+move    a,x1
+move    x1,a                ; clean a -- the low-word trap
+move    #>$0,x0             ; a move sets no condition codes
+cmp     #>$3,a
+tge     x0,a                ; ... wrap 3 back to 0
+move    a1,x:(r6+$22)       ; the Fold voice's MODE word
+```
+
+Costs 13 P words (3,859 -> 3,872, both payloads FREE 191). Image
+`f7781914db8f0511c77ad098f634e1f484e3f68372fafaf566295ff583abec1d`, reproduced
+byte-for-byte by both build paths, all gates PASS.
+
+**What is verified and what is not, stated plainly.** Verified: the emitted
+instruction sequence, the arithmetic for panel 0/1/2 checked by hand
+(1, 2, 0), the mapping against all three captured fixture modes, that word 34 is
+MODE for Fold and a decay/resonator field for the others, and every existing
+gate. **Not verified end to end:** I could not get a dispatcher-driven run to
+dump the voice block back -- my harness attempt failed parsing the state file --
+so the mode's arrival at `X:0x3812` is established by the code and the mapping,
+not by an executed end-to-end dispatch. That is the honest boundary.
+
+**The coverage gap this exposes, which is the real lesson.** The Fold ARM parity
+is proven by driving `pk3t_fold`, a DIRECT probe into the renderer -- which
+bypasses the dispatcher entirely. That is why 640 blocks and 15/15 ARM cases
+passed while the production path never delivered a mode: **the gate tests the
+renderer, not the path that calls it.** A dispatcher-driven ARM case is the
+missing test, and it would have caught all three of this audit's findings.
+
 ### The composed machine DROPS the MODE: `p[8]` never reaches the renderer
 
 Third finding from the same audit, and the sharpest of the three.
