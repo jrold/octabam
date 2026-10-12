@@ -711,6 +711,50 @@ user workflow then runs -- select T1, assign, return, audition, `REC`, trigs at
 1/5/9/13, `PLAY` -- with the transport reading **1 (playing)** and staying 1
 across 4 s of polling.
 
+## RETRACTED within one round: that "reproduction" was a boot artefact
+
+**The control killed it.** The same runs with and without the Perky machine, at
+three cycle-clock rates:
+
+| F | perky | HALT | frames | project |
+|---|---|---|---|---|
+| 0.5 | **no** | **True** | 1 | `card ready: 0, LOAD PROJECT posted: no` |
+| 0.5 | yes | True | 1 | same |
+| 0.75 | **no** | **True** | 1 | same |
+| 0.75 | yes | True | 1 | same |
+| 1.0 | **no** | **True** | 1 | same |
+| 1.0 | yes | True | 1 | same |
+
+**The halt happens on frame 1, before any panel key is pressed, with no Perky
+machine assigned, and the project never loads at all** (`card ready: 0, LOAD
+PROJECT posted: no, PART_PTR: 0, 0.0 ms emulated`). So `--frame` breaks the *boot*:
+the frame clock starts before the card is mounted, the handler reads a bank id that
+is not yet 0 or 1, and reaches `0x4000ab40`. That is a harness artefact, not the
+unit's wedge, and the previous section's claim that the user's symptom "is
+reproducible after all" is **withdrawn**.
+
+**What went wrong in my reasoning, precisely: I matched a specific, plausible
+detail -- the halt address the register names -- and stopped checking.** The
+register's sentence was about the unit's *post-load* overrun; my run died at 0.0 ms
+emulated, which that sentence does not describe. The control cost one command and
+would have caught it immediately. This is the sixth instrument/reasoning error of
+the session and the same species as the other five: a specific, credible, wrong
+result accepted because it fit the story.
+
+**The two flags' real status:**
+
+* `--frame` -- the DSP frame clock -- starts it too early for a card boot in this
+  configuration, so it cannot simply be turned on for the panel workflow. Whatever
+  enables it must wait for the mount.
+* `--cf-cycles-clock` -- only readable once `--frame` is on, so its engagement is
+  still unconfirmed, exactly as the earlier caveat said.
+
+**The honest position on reproduction is therefore unchanged from round 24: the
+panel workflow reproduces completely and correctly (six variants, real panel,
+engine + trigs + audio), and the unit's hang does not reproduce in it.** The
+`0x4000ab40` halt is reachable and is the right address to watch, but reaching it
+at 0.0 ms emulated is not the same event.
+
 ## THE HANG IS REPRODUCED -- at the exact halt address the register names
 
 **The missing flag was `--frame`.** `main.cpp:1250` has `bool frame = false;  //
