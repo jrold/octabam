@@ -112,6 +112,8 @@ def main() -> None:
     ap.add_argument("--image", type=pathlib.Path, required=True)
     ap.add_argument("--project", type=pathlib.Path, required=True)
     ap.add_argument("--track", type=int, default=1)
+    ap.add_argument("--pcwatch", action="append", default=[],
+                    help="core:pc for --dsp-pcwatch (repeatable)")
     ap.add_argument("--no-assign", action="store_true",
                     help="control: same run, no machine assignment")
     ap.add_argument("--factor", default="1.7")
@@ -150,6 +152,8 @@ def main() -> None:
            # "frame : off ... --frame-timer restores the 16-sample timer".
            "--frame-timer",
            "--live-script", str(script)]
+    for w in args.pcwatch:
+        cmd += ["--dsp-pcwatch", w]
     if args.deadline:
         cmd += ["--cf-frame-deadline", str(args.factor)]
     with log.open("w") as f:

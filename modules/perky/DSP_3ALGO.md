@@ -620,6 +620,33 @@ documented cause of the other PERKY entry): the DSP-side machine -- the hook, it
 continuation, or what it calls -- is jumping to a garbage address, and that is
 also why no sound is produced.
 
+### `0xe2c48f` is not the seam's stack: `move ssh,x0` DOES pop
+
+The first hypothesis -- that the admitted path's `move ssh,x0` fails to discard
+the seam's `jsr` return, so a later `rts` returns into the middle of the source
+render -- is **refuted, from the vendored core**:
+
+```cpp
+// vendor/dsp56300/source/dsp56kEmu/dsp.h
+TReg24 ssh() { TReg24 res = hiword(reg.ss[ssIndex()]); decSP(); return res; }
+void   ssh(const TReg24& v) { incSP(); hiword(reg.ss[ssIndex()], v); }
+void   pushPCSR() { ssh(reg.pc); ssl(getSR()); }
+void   popPC()    { setPC(ssh()); }
+```
+
+`ssh()` reads the stack top **and decrements SP**, so `move ssh,x0` is a genuine
+pop and the admitted path balances the seam exactly as its comment claims. The
+encoding is right too: `dsp_asm` emits `0444bc` for `move ssh,x0` and `04c4bc` for
+`move x0,ssh`, byte-identical to stock, and stock uses the pair at `P:0x5c1` /
+`P:0x5c8` as a push/pop inside the handler `@CONT@` can branch to. **So the hook,
+its displaced-instruction replay and both exits are all doing what they say.**
+
+That leaves the rest of the machine, and it narrows the search usefully: the fault
+is not the seam contract, the not-admitted return, or the stack discipline. The
+remaining candidates inside the first invocation are what the machine *calls* --
+`pk_simple_base`, `pk_fold_voice`, `pk3d_bass_voice`, `pk3d_snare_voice` and the
+shared helpers -- or a computed jump using a register the entry did not set.
+
 ### Where the investigation goes next
 
 `0xe2c48f` is the shape of a **corrupted return address**: a `jsr`/`rts` pair
