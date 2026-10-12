@@ -488,6 +488,53 @@ and re-proving every renderer against the oracles. That is a substantial,
 well-scoped piece of work, not a tweak, and it is the largest single item
 between this branch and a flashable image.
 
+### The timing bound is not met, and it is not a composition problem
+
+The repository's own realtime gate
+(`tools/verify/verify_perky_realtime_budget.py`) states the model and applies it
+to the shipping one-voice-per-core case:
+
+> the interpreter host counts decoded opcode cycles ... **Use a 2x margin on
+> that model (hardware MOVE timings exceed its nominal counts), and reserve
+> stock's measured 1410 cycles/sample.** Only one PERKY voice per core is
+> admitted, with FX1/FX2 NONE for this hardware canary.
+
+So a voice may model **23,040 cycles per 16-sample block**. Applying that same
+model to the **qualified standalone** gates -- which pass on correctness and
+assert no timing bound at all -- gives:
+
+| source | modeled/16 | 2x+stock | vs 72,512 | verdict |
+| --- | ---: | ---: | ---: | --- |
+| Fold Drum 1 (standalone) | 26,121 | 74,802 | +2,290 | OVER |
+| Resonant Bass (standalone) | 76,319 | 175,198 | +102,686 | OVER |
+| Resonant Snare (standalone) | 82,263 | 187,086 | +114,574 | OVER |
+
+and the composed build measures 26,112 / 74,515 / 80,722 -- within 9 cycles of
+the standalone for Fold.
+
+**Two conclusions follow, and both matter:**
+
+1. **The overage is not caused by composing.** The composed source is
+   instruction-identical to the standalone renderers and lands within 9 cycles
+   of them. Every algorithm was already over this bound on its own, in the
+   branch it was qualified in; the standalone gates simply do not assert it.
+2. **Meeting it requires reductions that bit-exact instruction-level
+   optimization cannot deliver.** Bass needs 51,475 cycles off (69%) and Snare
+   57,682 (71%). Those figures are of the order of removing most of the
+   resonator work, which is an *algorithmic* change -- the opposite of the
+   bit-exactness the target requires and of its "do not redesign" instruction.
+
+Fold is the one tractable case: 3,072 cycles (12%) off a single path (mode-2
+noise), where `pk_rng_step` is 145 instructions of 32-bit arithmetic assembled
+from 16-bit words. That is real, well-scoped work.
+
+For Bass and Snare the honest engineering position is that the current
+resonant algorithm does not fit one-voice-per-core on this budget, and no
+instruction-level optimization closes a 70% gap. The options are a deliberately
+smaller resonant algorithm (a redesign the target forbids, and therefore a
+decision for the user) or accepting a higher per-voice budget than the canary
+model assumes. Neither is something this branch should decide silently.
+
 ### The equivalence gate
 
 `tools/verify/verify_perky_3algo_equivalence.py` is the gate that now carries
