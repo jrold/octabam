@@ -125,3 +125,20 @@ suite rather than moving the boundary.
 the unit. Locally the emulator runs every rung — including rung 1, which cannot run
 the renderer at all — with byte-identical DSP audio, because a lock-step machine
 cannot be late. That is why the bisection is a flash sheet and not a gate.
+
+## Before building a third axis: `pk_tick_hook` is measured and cheap
+
+The obvious third suspect is the 19 ColdFire UI detours, and the biggest of those by
+**frequency** is `pk_tick_hook`, which runs on **every UI tick**. Its target
+`pk_ui_tick` compiles to **65 instructions** -- a bank-range check and a
+`pk_track_page` lookup -- and `pk_resonant_prime` is **absent**, confirming the
+control-settle hoist added in an earlier round really was reverted.
+
+**So the per-tick cost is trivial**: a UI tick at roughly 50 Hz against an audio frame
+at 2,750 Hz. That does not prove the detours are innocent, but it **removes the only
+one of them that runs continuously** -- the one that could plausibly stall a transport
+-- and leaves the assignment-time detours, a weaker suspect than the per-event work
+`CFMIN` already targets.
+
+**Flash `CFMIN` and `LADDER1` before building any detour variant.** They answer more
+per flash, and they are already built, verified and packaged above.
