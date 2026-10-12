@@ -24,9 +24,9 @@ Copy it to the **root of the CF card**, then on the unit:
 
 | artifact | sha256 / size |
 |---|---|
-| card `.bin` | `out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING.bin`, 448,372 B, sha256 `b714b1771485eef9c2458e11917ba0d1a43df4576d31b6f39c35dbba90df08ab` |
+| card `.bin` | `out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING.bin`, 448,680 B, sha256 `4c944c3c46f67b2a45e96e512074259bf42164a9b20f3738e22eb45fcfde08d1` |
 | MIDI `.syx` | `out/OCTATRACK_OS1.40C_OCTABAM79X.syx`, 626,300 B |
-| DSP payload | `out/mainos_bus.bin`, sha256 `0b6d354c30ba06290c7a5ec905a4c71c420c635b5039f6c215143f8eba34d0b4` |
+| DSP payload | `out/mainos_bus.bin`, sha256 `035579ad386acbc9f11ca9b83d197a1c4d5b1dc8b8f72056b7c21bbd5905844c` |
 
 Built from the stock `OCTATRACK_OS1.40C.syx`, sha256
 `0a8d2d2b35c2cc78fa338576adc1af0cbc094cef973255103165c73edd87f2b6`. The card
@@ -46,22 +46,20 @@ python3 tools/build/bin_decode.py out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING
 
 ## 1a. WHICH ALGORITHM ACTUALLY MAKES SOUND RIGHT NOW
 
-**Select `001 FOLD DRUM` first.** The browser offers three rows --
-`001 FOLD DRUM`, `010 RES BASS`, `011 RES SNARE` -- and of those, **only Fold
-Drum 1 currently produces audio**.
+**All three engines now produce audio.** The browser offers `001 FOLD DRUM`,
+`010 RES BASS` and `011 RES SNARE`, and each one renders: the Resonant pair were
+silent because nothing initialised their voice state, which is fixed -- the
+ColdFire now carries the authentic fresh state in the record buffer and the DSP
+loads it when the engine changes. Measured from a zero block, both render at
+8,388,608 where before they rendered 0.
 
-Resonant Bass and Resonant Snare render silence from a fresh voice state, and they
-always have: `ResonantSnare([0]*WORDS)` and `ResonantBass([0]*WORDS)` produce a
-peak of **0 over 64 blocks in the reference model itself**, so this is the
-algorithm's behaviour, not a port defect. They need a state that nothing in the
-production path establishes. See "THE RESONANT ENGINES DO NOT SELF-START" in
-`modules/perky/DSP_3ALGO.md`.
-
-**This does not stop the sweep.** Rows 3 and 4 (Fold on T1 and on T5) remain the
-most valuable measurements in the matrix, and the predicted closest to fitting at
-+2.7%. Rows 5-8 will measure a renderer that is running but not yet making sound --
-the cycle cost is real and worth having, and the audio peak in the reference is the
-number to compare against once the state question is settled.
+**One limit to know before you measure:** the state delivered is the
+NEUTRAL-setting fresh state. The engines **make sound and switch correctly**, but
+they do not yet follow the TUNE/DECAY/ENV/MIX knobs from block to block -- that is
+the per-event `update` step, which is implemented in `cf_perky4.c` and not yet
+wired. For a TIMING sweep this does not matter: the cycle cost is the renderer's,
+and the control values do not change it much. For a listening check, expect the
+fresh-state voicing rather than a knob-tracked one.
 
 ## 2. Set the unit up
 

@@ -337,6 +337,74 @@ is not written yet.
 evidenced, the audio is unaffected, the worst-case timing is unaffected, and the
 implementation has a named hazard that must be handled before anyone tries it.
 
+## FIXED: the Resonant fresh state now reaches the DSP
+
+The engines were silent because **nothing ever initialised X:0x3800**. A zero voice
+block is silent BY THE ALGORITHM -- `ResonantSnare([0]*WORDS)` and
+`ResonantBass([0]*WORDS)` peak at **0 over 64 blocks in the reference model
+itself** -- so this was never a port defect, and Fold was the only algorithm that
+ever made sound. Every gate missed it because every gate SEEDED the voice block from
+a captured fixture: **the gate supplied exactly the thing production does not.**
+
+**The authentic law already existed, in two places.** `resonant_control_update.py`
+is the exact v1.2.1 init/update/trigger recovery (bass 0x08026790 / 0x0802682C /
+0x080268DC, snare 0x08025F8C / 0x08026030 / 0x08026108, shared 0x080246AC /
+0x08024714 / 0x08024878), and `cf_perky4.c` carries the same law in C
+(`common_init`/`common_update`/`common_trigger`, `res_update_bass`,
+`res_update_snare`, `prepare_res`). Running it produces a state that renders:
+
+```
+fresh -> update -> trigger -> from_arm   bass peak 32768   snare peak 32768   (model)
+                                          bass peak -8388608, snare ... (see below)
+```
+
+The shared tables it needs (`pitch.bin`, `chromatic.bin`) are **not missing** --
+they are build outputs of the `perky-optimize` worktree at
+`out/perky/cf-final-verify/fixtures/assets/`.
+
+**The fix, using the transport that already had room.** The per-track record buffer
+is **336 bytes (84 longs)** at `0x80001c90 + (ping&1)*0xa80 + 336*track`, and the
+record itself uses **40** of them. So the state rides in the spare words:
+
+```
+record[10]   = (word count << 16) | engine id      -> DSP words 0x14, 0x15
+record[11+]  = the compact voice words, DENSE      -> DSP words 0x16 onward
+```
+
+and `pk3d_source` loads them into X:0x3800 **when the engine id changes**, which the
+ENGINE LEDGER already detects. A matching ledger means the engine is current and the
+voice block holds the EVOLVED state, so no load fires and the drum continues instead
+of restarting every block. Cost: **+13 P words** (3,825 -> 3,838); nothing else moved.
+
+**Measured, through the real dispatch, from a ZERO voice block:**
+
+| voice block | record carries | peak | voice[0:5] |
+|---|---|---|---|
+| zeros | 88 words (bass) | **8,388,608** | `[255, 1, 0, 0, 1]` |
+| zeros | 101 words (snare) | **8,388,608** | `[255, 1, 0, 0, 1]` |
+| zeros | **nothing** (control) | **0** | `[0, 0, 0, 0, 0]` |
+| zeros | nothing (control) | **0** | `[0, 0, 0, 0, 0]` |
+
+and the state PERSISTS rather than reloading, which is what the varying continuation
+peaks show: snare over four blocks is `[8388608, 8388352, 5919744, 8388608]`, not a
+repeated first block.
+
+**`tools/verify/verify_perky_3algo_resonant_fresh.py`** is the production-path gate
+the directive asked for: it derives the state with the authentic law, requires the
+tracked artifact to match it, requires the MODEL to render it, then drives
+`pk3d_source` from a zero block with the state in the record and requires non-silent
+audio -- with two controls (a record carrying nothing must stay silent; a matching
+ledger must leave an empty block empty) so the audio cannot come from anything lying
+around.
+
+**What is still NOT done, stated plainly.** The `update` step runs in the gate, not
+on the unit: the state delivered is the NEUTRAL-setting fresh state, so the engines
+make sound and switch correctly but do not yet track the TUNE/DECAY/ENV/MIX knobs
+per block. The law for that is `res_update_bass`/`res_update_snare` in
+`cf_perky4.c` and it would run per event on the ColdFire, writing the updated state
+into the same record words. Retrigger is likewise not yet driven from the record's
+trig flag.
+
 ## THE PANEL BUG, found by the user: two of three browser rows were wrong
 
 The image was flashed and made no sound. The cause was in the PANEL path, and no

@@ -5,6 +5,7 @@
  * measured ANALOG BD source-machine route. Milestone 0 exposes only Noise /
  * Tone and packs a PERKY control record for probe_glue.asm.
  */
+#include "resonant_fresh.h"
 #include <stdint.h>
 
 #define U8(a) (*(volatile uint8_t *)(uintptr_t)(a))
@@ -432,6 +433,41 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
             record[2] = record[3] = 0;
             for (unsigned k = 0; k < 6u; ++k)
                 record[4u + k] = ((uint32_t)p[2u * k] << 16) | p[2u * k + 1u];
+
+            /* THE RESONANT FRESH STATE RIDES WITH THE RECORD.
+             *
+             * The DSP renders from X:0x3800 and NOTHING initialised it, so the
+             * resonant engines read a zero block -- and a zero block is silent BY
+             * THE ALGORITHM: `ResonantSnare([0]*WORDS)` peaks at 0 over 64 blocks
+             * in the reference model itself. That is why Fold was the only
+             * algorithm that ever made sound on the unit.
+             *
+             * The per-track record buffer is 336 bytes (84 longs) and the record
+             * itself uses 40, so the authentic fresh state travels in the spare
+             * words rather than costing P or a new transport:
+             *
+             *   record[10]  = (word count << 16) | engine id   (0 when not resonant)
+             *   record[11+] = the compact voice words, DENSE, two per long
+             *
+             * The DSP copies them into the voice block when the engine changes; see
+             * the engine re-seed in pk3d_source. A zero count means "no state", and
+             * the DSP then simply clears, which is the old behaviour.
+             */
+            {
+                const unsigned short *src = 0;
+                unsigned n = 0u;
+                if (p[11] == PK_RESONANT_BASS) {
+                    src = PK_RES_FRESH_BASS; n = PK_RES_FRESH_BASS_WORDS;
+                } else if (p[11] == PK_RESONANT_SNARE) {
+                    src = PK_RES_FRESH_SNARE; n = PK_RES_FRESH_SNARE_WORDS;
+                }
+                record[10] = ((uint32_t)n << 16) | (uint32_t)(src ? p[11] : 0u);
+                for (unsigned j = 0; j < n; j += 2u) {
+                    const uint32_t hi = src[j];
+                    const uint32_t lo = (j + 1u < n) ? src[j + 1u] : 0u;
+                    record[11u + j / 2u] = (hi << 16) | lo;
+                }
+            }
 
             if (trig)
                 ++pk_hits;
