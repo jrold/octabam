@@ -24,7 +24,7 @@ Copy it to the **root of the CF card**, then on the unit:
 
 | artifact | sha256 / size |
 |---|---|
-| card `.bin` | `out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING.bin`, 448,372 B |
+| card `.bin` | `out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING.bin`, 448,372 B, sha256 `ea4e1a6d1899da7bc489ed44f3be4e3d1b9e2d548806c21c6827a25485c96cc2` |
 | MIDI `.syx` | `out/OCTATRACK_OS1.40C_OCTABAM79X.syx`, 626,300 B |
 | DSP payload | `out/mainos_bus.bin`, sha256 `a18f86e42ded4527620cfb428d0d2bd6b0232869aaabde7802d6f7421a3aa05d` |
 
@@ -32,6 +32,15 @@ Built from the stock `OCTATRACK_OS1.40C.syx`, sha256
 `0a8d2d2b35c2cc78fa338576adc1af0cbc094cef973255103165c73edd87f2b6`. The card
 image round-trips: `python3 tools/build/bin_decode.py <the .bin>` reports
 **CHECKSUM: matches — de-obfuscation correct**.
+
+Verify before you flash:
+
+```bash
+shasum -a 256 out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING.bin
+# ea4e1a6d1899da7bc489ed44f3be4e3d1b9e2d548806c21c6827a25485c96cc2
+python3 tools/build/bin_decode.py out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING.bin
+# CHECKSUM: matches -- de-obfuscation correct
+```
 
 **Before flashing: back the card up.** This is an experimental OS image.
 
