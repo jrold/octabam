@@ -572,7 +572,12 @@ renderer change that fixes nothing is risk without benefit.
 * ruled out so far, each by measurement: the RNG (reproduces the model's 64-bit
   sequence exactly), the envelope delta at the failing index (-156, bit-exact),
   the envelope table addresses (the composer rewrites `$09a5`/`$0c51` to
-  `Y_ENV1`/`Y_ENV2` correctly), and the velocity word (255, its own low byte).
+  `Y_ENV1`/`Y_ENV2` correctly), the velocity word (255, its own low byte), and
+  **the decay fast path** -- forcing `resonant_fast_dsp.decay` to jump straight to
+  the general path leaves the failure byte-identical (`(15, 19603, 17792)`), so
+  the hand-optimised shortcut is exact and is NOT the divergence. That is worth
+  having: the fast path is the kind of code that is easy to get subtly wrong, and
+  it is now known to agree with the reference on this case at least.
 
 That is a characterised single-sample divergence in a saturation-heavy synthetic
 stress case, not a demonstrated defect in the production path. It is recorded here
