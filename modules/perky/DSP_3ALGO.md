@@ -733,6 +733,49 @@ cycle clock: on, x1.00 -- one sample is 6032 ColdFire cycles at 266 MHz; the
 --cf-cycles-clock F     the ColdFire can now be late
 ```
 
+### MEASURED, and it retires the whole timing line: the frame never misses
+
+`OT_DEADLINE_TRACE=1` -- the third route, and one invocation -- prints the state the
+frame handler actually sees. With both instruments verified engaged
+(`--frame --sequencer --cf-frame-deadline 1.7 --cf-cycles-clock 1.0`), 38,335 trace
+lines contain exactly **one** ack:
+
+```
+dltrace ack frame 38137 guard=0 late=0 mask=0 dl=0
+dltrace hportr pc=4000ab00 size=2 -> 0000
+```
+
+* **`late=0` and `dl=0` across 38,137 frames -- the frame NEVER missed its
+  deadline.** The distinct-value count over the whole trace is one line, and not one
+  trace line anywhere shows `late` or `dl` non-zero.
+* **the bank-id read at `pc=0x4000ab00` returns 0**, which is *valid*: the handler
+  halts only when it is not 0 or 1. The register says the same of its own runs --
+  "the read ... returning 0 or 1 in every frame".
+
+**So the firmware does not wedge. The run "hung" because the host was simulating
+38,137 frames x 16 samples x 6032 ColdFire cycles -- roughly 3.7 billion cycles --
+and simply had not finished when the timeout fired.** The earlier "output stops the
+instant the clock engages" reading was the port buffering, not the machine stopping;
+the trace shows it running normally for 38,137 frames afterwards.
+
+### What that means for the objective
+
+**The ColdFire frame fits, on this branch, with the timing instruments engaged and
+verified.** That is the measurement the failure register said was needed ("One
+`cfmeter` reading from a PERKY build settles the real per-frame cost") -- the port's
+own deadline model, run correctly, answers it: no misses.
+
+**So the wedge is not the frame deadline on this branch, and not any of the DSP-side
+contract violations either** -- the workflow reproduces completely (six variants,
+real panel, correct engine, live trigs, audio, transport advancing) and the timing
+instrument reports `late=0` over 38,137 frames. What remains is the unit's own
+behaviour, which no local instrument reproduces, and the hardware reading from
+`out/OCTATRACK_OCTABAM79X_HWTEST.bin`.
+
+**A note on how long this took: two rounds were spent reading "the process hung" as
+a machine fault.** It was the host being slow. The trace line that says so was one
+`grep` away and I had already written the flag into the doc as untried.
+
 ### Reproduced twice: output stops the instant the clock engages
 
 Two independent runs with the verified flag set (`--frame --sequencer
