@@ -1065,6 +1065,63 @@ So the precondition fails on reachable data, and this branch cannot take that
 optimisation. Recorded as a measured negative result rather than left as an
 untried idea.
 
+### CRITICAL: the one-voice-per-core latch is SET and NEVER CLEARED
+
+Found while auditing item 6's remaining sub-items. This is a functional defect in
+the shipped machine, and it is not a timing or oracle issue.
+
+The composed dispatcher implements "one Perky voice per core" with a latch at
+`X:$38ED`:
+
+```
+move    x:>$38ed,a        ; read the latch
+tst     a
+bne     pk3c_silence      ; already admitted -> render silence
+move    #>$1,a
+move    a1,x:>$38ed       ; SET it, once
+...
+```
+
+Its own comment says *"the first admitted PERKY record wins for the whole
+frame"* -- so a per-frame reset is intended. **There isn't one.** Measured:
+
+```
+any mention of 38ed / 38ec in the composed source:
+     25: move    x:>$38ed,a
+     29: move    a1,x:>$38ed
+     38: move    x:>$38ec,a
+     39: move    a,x:>$38ec
+```
+
+One read, one write, no clear. `pk3c_silence` zeroes `X:0` and nothing else.
+And it is not cleared anywhere else either -- searching the BUILT IMAGE for the
+`x:$38ed` extension word finds **4 references, 2 per payload = one read and one
+write each**, i.e. exactly this code and no other.
+
+`X:$38ED` is inside the module's OWN claimed range
+(`DspRange("x", 0x38EC, 2, "PERKY source event-offset and admission staging")`),
+so stock does not own it and does not reset it.
+
+**Consequence.** The first block that admits a PERKY record sets the latch, and
+every subsequent entry takes the `bne pk3c_silence` path. The Perky track renders
+one admitted block and then **silence, permanently**. This is invisible to every
+gate in this branch because they each seed `X:$38ED = 0` and run a single call --
+so the latch is exercised exactly once and never observed across a frame
+boundary.
+
+**What is established versus inferred.** Established: the write sets 1; nothing
+in the composed source or in the built image clears it; the word is ours; the
+dispatcher silences whenever it is non-zero. Inferred (not measured here):
+that the hook is entered once per track per block on hardware, and therefore
+that blocks after the first are silent. The fix needs to know where a
+once-per-block reset belongs -- the composed machine is installed only at the
+per-track source hook, so there is no obviously-correct place inside it -- and
+guessing one is how this session's earlier mistakes happened. It is recorded as
+a defect with its evidence, not patched blind.
+
+**This would have made the flashed image useless**, which is exactly what the
+brief's "do not stop after emulator-only tests" is about.
+
 ### T1/T5 mapping: now evidenced and gated, from the STOCK payloads
 
 The definition of done asks for "T1 mapping to its correct DSP payload/core" and
