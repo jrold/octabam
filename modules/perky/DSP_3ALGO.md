@@ -388,6 +388,45 @@ This branch touches 22 files -- `tools/verify`, `modules/perky`, `tools/perky`,
 and **none** of the assembler, `build_bus.py` or SPECTRUM. So the failure is in
 the tree, not here, and it blocks `verify-shared` for every remix.
 
+### Word 14: the fixtures seed it with NOISE_RATE, and three parties disagree
+
+Measured directly -- seeded value, composed value after the run, and the model's
+expectation, for all six ARM cases:
+
+```
+bass  c0..c2:  seeded 65066   composed 17741   model 59070
+snare c0..c2:  seeded 65066   composed 17741   model 59070
+```
+
+Three things fall out, and the first is the interesting one.
+
+**The fixture seeds `NOISE + 2` with 65066 -- which is `NOISE_RATE`.** That is
+exactly the value the brief singles out ("the fact that `NOISE_RATE = 65066`
+appears in captured fixtures proves that value is reachable; retain support for
+it"). So in the REAL captured hardware state, this word holds the noise RATE.
+
+**The composition writes 17741 over it.** `pkr_noise_refresh` stores the RNG
+output's low half into `r6+$e` -- the same word -- so the composed path treats
+`NOISE + 2` as the held noise SAMPLE.
+
+**The model writes 59070**, a third value, and treats the word as something else
+again.
+
+So all three disagree about what this word is, and the composition appears to
+overwrite a RATE with a SAMPLE. The composed writes the same 17741 in every case
+even though the counter/reload seeds differ per corner, which is itself odd and
+suggests the refresh fires on a schedule the fixtures do not vary.
+
+**Not established:** which of the three readings is correct, and whether the
+model's 59070 is the RATE transformed, the SAMPLE, or a third quantity. Settling
+it needs the recipe's own reference -- and the standalone ARM gate that would
+provide it (`verify_perky_resonant_dsp_exec.py --firmware`) has never run here,
+because it needs the stock 1.40C image for the original Y tables.
+
+This is a concrete, falsifiable lead rather than a resolved finding: **the
+composed noise path may be writing its sample into the word the hardware uses for
+the noise rate.** It is recorded as such.
+
 ### RETRACTED: the "read-back address" explanation of word 14
 
 **The previous section's conclusion is wrong and is retracted.** It said
