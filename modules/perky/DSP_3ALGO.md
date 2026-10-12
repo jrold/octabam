@@ -193,6 +193,67 @@ engines do not call `pk_simple_base`, so their overhead will differ and must be
 measured separately before the table above is quoted as final. One seeded state
 (Fold ARM mode-1 corner-0), one block.
 
+## THE REAL ANSWER (item 5): the production bound is the REACHABLE figure, and I was quoting STRESS
+
+**This corrects the headline number of the entire investigation.** The directive's
+item 5 says, in terms: "Do not use impossible randomized states to impose a
+production timing bound." The repository's own timing report has been carrying
+both figures all along:
+
+```
+schema: perky-3algo-timing-v2
+fold    worst=25393  stress=25393  reachable=None   from=arm-fixtures
+bass    worst=35713  stress=74511  reachable=35713  from=arm-fixtures
+snare   worst=38737  stress=80718  reachable=38737  from=arm-fixtures
+```
+
+**74,515 and 80,722 are `worst_stress`.** They come from `resonant_state()`, whose
+own docstring says it covers "both sides of every bounded-path guard" with
+`DECAY_COUNT` up to `0xffffffff` and random coefficients -- states the production
+control path cannot produce. The timing gate's docstring says it plainly:
+
+> The verdict uses the REACHABLE figure. Reporting the stress figure as the
+> production cost is the error this split exists to prevent.
+
+**I quoted the stress figure as the production cost, round after round.** So did
+the blocker report the directive is about. That is the error, and it is larger
+than the unit error I spent three rounds on.
+
+**The correct budget:**
+
+| engine | reachable (production bound) | + wrapper 534 | vs 23,040 allowance | hardware window |
+|---|---|---|---|---|
+| Fold Drum 1 | 25,393 | 25,927 | **11.1% over** | 74,414 / 72,512 = **+2.6%** |
+| Resonant Bass | 35,713 | 36,247 | needs **36.4%** | 95,054 / 72,512 = **+31.1%** |
+| Resonant Snare | 38,737 | 39,271 | needs **41.3%** | 101,102 / 72,512 = **+39.4%** |
+
+**So the answer to item 3 is 36.4% and 41.3%, not 69-72%.** That is roughly *half*
+the reduction the blocker report demanded, and it is the direct answer to the
+directive's question of whether case A (~2.8%/11.3%) or case B (~69-71%) applies:
+**neither.** The truth is a third case the framing did not name -- about 36-41%,
+because the numerator was stress-inflated and the denominator was a real derived
+allowance.
+
+**And Fold Drum 1 is only 2.6% over the hardware window.** It is not blocked at
+all; it is a hair over, which is why it was never the subject of the directive.
+
+**What this changes for the blocker bar (item 9).** The bar's clause "resulting
+minimum production cost still exceeds 72,512 cycles including mandatory
+continuation and justified margin" must be evaluated on the **reachable** figure.
+On that reading:
+
+* Fold Drum 1: **+2.6%** -- within reach of bit-exact optimization, not a blocker;
+* Resonant Bass: **+31.1%**, Resonant Snare: **+39.4%** -- genuinely over, and the
+  ablation ceiling (the algorithm is 76% of the snare renderer) says bit-exact
+  optimization cannot close 31-39% without touching the algorithm.
+
+**The lesson, and it is the sharpest of the session.** I verified *units*, I
+verified *measurement boundaries*, I verified *which side of the wrapper a cost
+belongs to* -- and never once asked **whether the number I was quoting was the
+one the tool designated as the verdict**. The repository had the right figure
+written in its own report the whole time, on a line labelled `reachable`, next to
+the one I kept reading.
+
 ## RECONCILED: where 23,040 comes from, and why the "2.76% over" claim was the error
 
 Item 1 of the directive asked precisely what 74,515 and 80,722 contain and how
