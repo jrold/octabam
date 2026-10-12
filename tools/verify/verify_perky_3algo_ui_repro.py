@@ -91,8 +91,13 @@ def main() -> None:
     card = stage_card(project, work)
     shots = work / "shots"
 
+    # STEP 10: the unit's own frame deadline. MenuPort's argv has no
+    # --cf-frame-deadline, so it rides `extra`; without it the port measures
+    # nothing (the frame interrupt is what settle() turns on, and the deadline
+    # model needs it).
+    extra = ("--cf-frame-deadline", "1.7")
     with MenuPort(image, card, "OCTABAM", "RIG", mkii=True,
-                  log_path=work / "port.log") as p:
+                  log_path=work / "port.log", extra=extra) as p:
         p.settle()
         p.png(shots / "00-main.png")
         p.press("t1")
@@ -100,58 +105,42 @@ def main() -> None:
         p.png(shots / "01-t1.png")
         baseline = p.screen()
 
-        # ---- 3/4. OPEN THE MACHINE LIST.
+        # ---- 3/4. ASSIGN PERKY THROUGH THE PANEL. THE ROUTE, screen-derived:
         #
-        # SCREEN-CONFIRMED so far: `func+pg_playback` opens SRC SETUP, whose
-        # MACHINE>> field lists STATIC/FLEX/THRU/NEIGHBOR/PICKUP -- five machine
-        # TYPES, with PERKY absent. Six `down`s there move the VALUE and clamp at
-        # PICKUP, which is the `T1 = 4` an earlier gate reported as a Perky
-        # assignment. `yes` on that field and a track double-tap both leave the
-        # screen PIXEL-IDENTICAL, so neither opens anything.
+        #   t1 (already selected)
+        #   -> track DOUBLE-TAP, 30 ms gap   .. the FLEX engine pool
+        #   -> LEFT                          .. the machine chooser
+        #   -> down x5                       .. STATIC/FLEX/THRU/NEIGHBOR/PICKUP/PERKY
+        #   -> YES                           .. commit (pk_main_commit admits it)
+        #   -> NO                            .. back to Tracks
         #
-        # The gesture is documented in tools/panel/KEYMAP.md off key `up`:
-        #   "0x26.3 up -- held + track key opens the sample slot list
-        #    << MACHINE:STATIC (E3 h26_3_t2.png)"
-        # and `pk_machine_name` formats "machine row 5 as PERKY", so that list is
-        # where PERKY lives.
-        opened = False
-        for label, go in (
-            ("up+t1", lambda: p.chord("up", "t1", settle=400)),
-            ("up+t1 twice", lambda: (p.chord("up", "t1", settle=300),
-                                     p.chord("up", "t1", settle=400))),
-        ):
-            go()
-            p.run(400)
-            shot = shots / f"02-open-{label.replace('+', '-').replace(' ', '-')}.png"
-            p.png(shot)
-            print(f"  route {label:12s} -> {shot.name}  "
-                  f"T1 machine={p.peek(PART_T1_MACHINE, 1)[0]}")
-            if p.screen() != baseline:
-                opened = True
-                print(f"  the screen CHANGED for route {label}")
-                break
-            p.press("no")
-            p.run(200)
-
-        if not opened:
-            print("  !! no route changed the screen; nothing opened the list")
-            print(f"     screens in {shots}")
-            raise SystemExit(2)
-
-        # 4. walk to row 5 = PERKY and commit
-        for _ in range(5):
-            p.press("down")
-        p.png(shots / "03-on-row5.png")
-        p.press("yes")
-        p.run(400)
-        p.png(shots / "04-committed.png")
-        p.press("no")
+        # Every element was established by reading a screen or the firmware, not by
+        # inheriting a recipe: the 30 ms gap because the default 260 ms leaves the
+        # display pixel-identical; LEFT because the build reports
+        # `ref 0x400ce10e -> pkcontrol:pk_engine_left  LEFT from PERKY engine pool
+        # to machine chooser`; and row 5 because `pk_machine_name` returns PERKY for
+        # the index that falls off the five-entry stock table, and the build pokes
+        # 0x40079248 from 5 to 6 with the note "machine chooser has six rows, PERKY
+        # last".
+        p.press("t1", hold=40, settle=30)      # double-tap, 30 ms
+        p.press("t1", hold=40, settle=400)
         p.run(300)
-        p.png(shots / "05-back.png")
+        p.press("left")                        # FLEX pool -> machine chooser
+        p.run(300)
+        p.png(shots / "02-chooser.png")
+        for _ in range(5):                     # down to row 5 = PERKY
+            p.press("down")
+            p.run(120)
+        p.png(shots / "03-on-perky.png")
+        p.press("yes")                         # commit
+        p.run(600)
+        p.png(shots / "04-committed.png")
+        p.press("no")                          # back to Tracks
+        p.run(300)
 
-        mark = p.peek(PART_T1_MARK, 3)
-        machine = p.peek(PART_T1_MACHINE, 1)[0]
-        print(f"  after commit: T1 machine = {machine}, PK mark = {bytes(mark)!r}")
+        typ = p.peek(PART_T1_MACHINE, 1)[0]
+        mark = bytes(p.peek(PART_T1_MARK, 3))
+        print(f"  after commit: T1 type={typ} (1=FLEX), PK sig={mark!r}")
         if b"PK\x01" not in p.peek(LIVE_PART, 4096):
             print("  !! NO PK/1 SIGNATURE IN THE LIVE PART -- PERKY WAS NEVER "
                   "ASSIGNED. The run says nothing about the Perky machine.")
@@ -169,8 +158,24 @@ def main() -> None:
         for i in range(6):
             p.run(500)
             p.png(shots / f"06-play-{i}.png")
-        print(f"  transport word 0x800065b8 = {p.long(0x800065B8)}  "
-              f"(1 = playing)")
+        # ---- 11. VERIFY: does the transport keep advancing past step 1?
+        seen = []
+        for i in range(10):
+            p.run(400)
+            tw = p.long(0x800065B8)
+            seen.append(tw)
+            if i in (0, 4, 9):
+                p.png(shots / f"07-advance-{i}.png")
+        print(f"  transport over 4 s: {seen}")
+        if any(t_ == 0 or t_ == 2 for t_ in seen):
+            print("  !! TRANSPORT STOPPED/PAUSED during the run")
+        elif all(t_ == 1 for t_ in seen):
+            print("  transport advanced: still PLAYING after 4 s (1 throughout)")
+        log = (work / "port.log").read_text(errors="replace")
+        for line in log.splitlines():
+            if any(k in line for k in ("STALL", "still in its exchange",
+                                       "outside P memory", "deadline")):
+                print("   |", line.strip()[:150])
         print(f"  screens in {shots}")
 
 

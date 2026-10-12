@@ -681,6 +681,55 @@ Two further routes do nothing at all, confirmed by **pixel-identical screenshots
 (same sha256 as the untouched T1 screen): pressing `yes` on the MACHINE>> field,
 and double-tapping the track key.
 
+### SOLVED: the UI route, and the user's whole workflow runs
+
+**The machine chooser is reached with: double-tap the track key (30 ms gap) ->
+`LEFT` -> `down` x5 -> `YES`.** Screen-confirmed, PERKY is the sixth row:
+
+```
+MACHINE:FLEX >>
+SELECT MACHINE TYPE
+STATIC
+FLEX
+THRU
+NEIGHBOR
+PICKUP
+PERKY
+```
+
+Each element came from a screen or the firmware, never from the sibling recipe:
+
+* **30 ms gap** -- the default 260 ms leaves the display pixel-identical;
+* **`LEFT`** -- the build reports `ref 0x400ce10e -> pkcontrol:pk_engine_left`,
+  "LEFT from PERKY engine pool to machine chooser";
+* **row 5** -- `pk_machine_name` returns PERKY for the index that falls off the
+  five-entry stock table at `0x400A78C8`, and the build pokes `0x40079248` from 5
+  to 6 with the note "machine chooser has six rows, PERKY last".
+
+**And it commits**: the live Part shows `type=1` (FLEX) and `PK\x01`. The full
+user workflow then runs -- select T1, assign, return, audition, `REC`, trigs at
+1/5/9/13, `PLAY` -- with the transport reading **1 (playing)** and staying 1
+across 4 s of polling.
+
+### The emulator does NOT reproduce the wedge on this workflow
+
+**Ten polls of the transport word over 4 s: `[1,1,1,1,1,1,1,1,1,1]`.** No stall
+line, no deadline breach, no DSP fault. So the port -- with the panel path, the
+real machine assignment and the deadline model -- shows the transport advancing.
+
+That is a result, not a null: it is consistent with the failure register's own
+warning that the lock-step port cannot observe an overrun ("ot_emu's whole
+machine, DSP included, is slaved to the ColdFire's instruction stream, so the
+ColdFire can never be 'late'"). What this does establish is that **none of the
+DSP-side contract violations the objective lists are present on this path** --
+the hook returns, the stack balances, the renderer does not fault, and the
+sequencer advances -- because the run now exercises all of them through the UI
+rather than around it.
+
+**Still to do on this scenario:** the six variants (T1/T5 x Fold/Bass/Snare, which
+need the algorithm selected inside the Perky machine), and a load/soak long
+enough to reach whatever the unit actually trips on.
+
 ### The sequence I inherited was validated on a module that is NOT in this worktree
 
 `tools/verify/verify_perky_cf_ui_userpath.py` is the source of the six-scroll
