@@ -104,16 +104,55 @@ def record(p: MenuPort, ping: int = 0, track: int = 0) -> tuple[bool, int]:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--image", type=pathlib.Path, required=True)
-    ap.add_argument("--project", type=pathlib.Path, required=True)
+    ap.add_argument("--project", type=pathlib.Path, default=None,
+                    help="an Octatrack project; SKIPS without one, because "
+                         "AGENTS.md forbids committing one")
     ap.add_argument("--track", type=int, default=1, choices=(1, 5))
     ap.add_argument("--algorithm", default="bass", choices=tuple(ALGOS))
     ap.add_argument("--deadline", default="1.7")
     ap.add_argument("--work", type=pathlib.Path, default=ROOT / "out/perky/3algo-ui")
+    ap.add_argument("--all", action="store_true",
+                    help="run all six variants (T1/T5 x fold/bass/snare) in "
+                         "sequence; the per-variant flags are ignored")
     args = ap.parse_args()
 
+    # A REAL GATE STILL NEEDS A PROJECT, AND ONE MAY NOT BE COMMITTED.
+    # AGENTS.md: never an Elektron byte in the repo. So this gate SKIPS when no
+    # project is supplied -- the way verify_analog_bassdrum_port.py does -- rather
+    # than failing, and it takes one from OT_PROJECT so `make check` can carry it.
+    if args.project is None:
+        env = __import__("os").environ.get("OT_PROJECT")
+        if not env:
+            print("perky-3algo-ui-repro: SKIP -- no --project and no OT_PROJECT "
+                  "(an Octatrack project may not be committed)")
+            return
+        args.project = pathlib.Path(env)
     image = args.image.expanduser().resolve()
     project = args.project.expanduser().resolve()
     work = args.work.expanduser().resolve()
+    if args.all:
+        # SIX VARIANTS, ONE INVOCATION. Each is the whole panel route on one core
+        # (T1 on payload B, T5 on payload A -- the mapping is inverted), so a run
+        # of six is a per-core result and not one core exercised twice.
+        rc = 0
+        for tr in (1, 5):
+            for alg in ALGOS:
+                # `or 0`: run_one signals failure by RAISING (SystemExit), so
+                # falling off its end is a pass and a None return means exactly
+                # that -- but `None | 0` is a TypeError, so normalise here.
+                sub = run_one(image, project, work / f"T{tr}-{alg}", tr, alg,
+                              args.deadline) or 0
+                print(f"  {'PASS' if sub == 0 else 'FAIL'}  T{tr} {alg}")
+                rc |= sub
+        print(f"perky-3algo-ui-repro: {'PASS' if rc == 0 else 'FAIL'} "
+              f"(six variants through the real panel)")
+        raise SystemExit(rc)
+    return run_one(image, project, work, args.track, args.algorithm,
+                   args.deadline)
+
+
+def run_one(image: pathlib.Path, project: pathlib.Path, work: pathlib.Path,
+            track: int, algorithm: str, deadline: str) -> int:
     if not (project / "project.work").is_file():
         raise SystemExit(f"{project} is not an Octatrack project")
     if work.exists():
@@ -121,13 +160,13 @@ def main() -> None:
     work.mkdir(parents=True)
     shots = work / "shots"
     card = stage_card(project, work)
-    tk = TRACK_KEY[args.track]
-    row, label = ALGOS[args.algorithm]
-    want_engine = ENGINE_OF[args.algorithm]
+    tk = TRACK_KEY[track]
+    row, label = ALGOS[algorithm]
+    want_engine = ENGINE_OF[algorithm]
 
     with MenuPort(image, card, "OCTABAM", "RIG", mkii=True,
                   log_path=work / "port.log",
-                  extra=("--cf-frame-deadline", str(args.deadline))) as p:
+                  extra=("--cf-frame-deadline", str(deadline))) as p:
         p.settle()
         p.press(tk)
         p.run(250)
@@ -151,7 +190,7 @@ def main() -> None:
             print("  !! NO PK/1 SIGNATURE -- PERKY WAS NEVER ASSIGNED; this run "
                   "says nothing about the Perky machine")
             raise SystemExit(2)
-        print(f"  T{args.track} signed: sig={bytes(p.peek(T1_MARK, 3))!r}")
+        print(f"  T{track} signed: sig={bytes(p.peek(T1_MARK, 3))!r}")
 
         # --- 7/8/9. choose the algorithm in the engine pool
         p.press(tk, hold=40, settle=30)
@@ -163,7 +202,7 @@ def main() -> None:
         for _ in range(row):
             p.press("down")
             p.run(120)
-        p.png(shots / f"03-on-{args.algorithm}.png")
+        p.png(shots / f"03-on-{algorithm}.png")
         p.press("yes")
         p.run(600)
         p.png(shots / "04-algo-set.png")
@@ -183,7 +222,7 @@ def main() -> None:
         engines, counts, transport, published = [], [], [], []
         for i in range(8):
             p.run(500)
-            ok, w = record(p, track=args.track - 1)
+            ok, w = record(p, track=track - 1)
             published.append(ok)
             engines.append(w & 0xFF)
             counts.append((w >> 8) & 0xFF)
@@ -191,7 +230,7 @@ def main() -> None:
             if i in (0, 3, 7):
                 p.png(shots / f"06-play-{i}.png")
 
-    print(f"  algorithm    : {args.algorithm} ({label}) -- engine should be {want_engine}")
+    print(f"  algorithm    : {algorithm} ({label}) -- engine should be {want_engine}")
     print(f"  record engine: {engines}")
     print(f"  trig count   : {counts}")
     print(f"  transport    : {transport}")
@@ -208,7 +247,7 @@ def main() -> None:
         print("  !! TRANSPORT DID NOT STAY PLAYING")
         raise SystemExit(2)
     advancing = len(set(counts)) > 1
-    print(f"  PASS: engine {want_engine} on T{args.track}, transport 1 "
+    print(f"  PASS: engine {want_engine} on T{track}, transport 1 "
           f"throughout, trig count {'advancing' if advancing else 'STATIC'}")
 
 
