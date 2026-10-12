@@ -527,6 +527,57 @@ held     trig=1  peak 8388352     a held note continues instead of reloading
 The snare's release peak differing from its hit is the same fact from the audio
 side: the release does not restart the voice.
 
+## FIXED: the interpolation tables overlapped by one word
+
+**The case-29 divergence was a LAYOUT bug, not an arithmetic one.** The
+interpolator reads `table[index]` AND `table[index+1]`, and `index` reaches 255, so
+each table needs **257** words. They were spaced **256** apart:
+
+```
+Y_INTERP_A = 0x2500   occupies 0x2500..0x2600   (257 entries)
+Y_INTERP_B = 0x2600                             <- B[0] lands ON A[256]
+```
+
+So at **index 255** the interpolator read INTERP_B's first entry instead of
+INTERP_A's last one, and every resonator coefficient derived from that pitch was
+wrong. It is invisible at every other index, which is why it survived several
+rounds and dozens of passing cases: **the failure needed `index == 255` exactly.**
+
+Case 29's noise resonator has pitch `0xFFBF`, whose index is 255. Found by probing
+the interpolator through the real renderer with a handful of chosen pitches:
+
+| pitch | index | model | DSP (before) |
+|---|---|---|---|
+| 0x00C0 | 1 | 33867 | 33867 |
+| 0x1234 | 36 | 56079 | 56079 |
+| 0x8000 | 0 | 32768 | 32768 |
+| **0x7FFF** | **255** | 32028 | **32935** |
+| **0xFFBF** | **255** | 31661 | **32111** |
+
+Two failures, both at 255, and no failures anywhere else. That is the whole bug.
+
+**Fixed** by `Y_INTERP_B = Y_INTERP_A + 257` (0x2601), moving the block end to
+0x2702. **The overlap was in the SHIPPING image, not only in the gate's fixture** --
+the addresses come from one place, `build_dsp_3algo_source.py`, and both the gate
+and the real payload read them.
+
+**`verify_perky_3algo_exec` now passes outright:**
+
+```
+Fold Drum 1:      PASS (640 blocks; worst 25393 modeled cycles/16)
+Resonant bass:    PASS (1024 blocks; 88 X words; worst 76461)
+Resonant snare:   PASS (1024 blocks; 101 X words; worst 82383)
+all three algorithms bit-exact in the shipping composition
+```
+
+**What this says about the earlier retractions.** The gate compared PCM before the
+state, so a case whose state was wrong was described as an audio problem and its
+state was never examined. Reordering it to check the state first is what turned
+"one sample of audio differs" into "the resonator coefficient is wrong", which is
+what made the table overlap findable at all. Two rounds were spent on arithmetic
+hypotheses (the envelope's 16-bit form, the decay fast path) while the real bug was
+an address.
+
 ## RETRACTED TWICE OVER: case 29 is a STATE divergence, and the gate hid it
 
 Two earlier statements in this file were wrong, and the second is the more

@@ -1599,7 +1599,7 @@ pk_resonant_core:
         lsr #$7,a
         and #>$0000ff,a
         move a1,n1
-        move #>$002600,r1
+        move #>$002601,r1
         lua (r1+n1),r2
         move y:(r2),a
         move a1,x:(r5+$3a)

@@ -129,8 +129,23 @@ Y_PITCH = 0x0EFB        # 68-word packed pitch basis (+1 padding)
 # through composer-supplied bases, so these four are the composer's choice.
 Y_ENV1 = 0x2000         # 1025 u16, packed 3-in-2 -> 683 DSP words
 Y_ENV2 = 0x2280         # same
+# THE INTERPOLATION TABLES ARE 257 ENTRIES, NOT 256.
+#
+# The interpolator reads `table[index]` AND `table[index+1]`, with index up to
+# 255 -- so it needs 257 words, and the last one is reachable. INTERP_B used to
+# start at 0x2600, exactly 256 words after INTERP_A, so B's FIRST entry landed on
+# A's 257th.
+#
+# The overlap is invisible until the index actually reaches 255, which is why it
+# survived: the interpolator is exact for every other index. It showed up as
+# `verify_perky_3algo_exec` failing on exactly one synthetic case, and only after
+# the gate was reordered to check the STATE before the PCM -- the divergence is in
+# the resonator's coefficient (word 77), not in the audio.
+#
+# 257 + 257 = 514 = 0x202, so INTERP_B moves to 0x2601 and the block ends at
+# 0x2702.
 Y_INTERP_A = 0x2500     # 257 u16 direct
-Y_INTERP_B = 0x2600     # 257 u16 direct
+Y_INTERP_B = Y_INTERP_A + 257   # 0x2601 -- NOT 0x2600: see above
 Y_TOTAL_END = Y_INTERP_B + 257
 
 ENV1_WORDS = 683
