@@ -47,6 +47,40 @@ transport stops advancing, or the track produces no sound.
 **Rung 1 is the safest first flash**: it carries the hook with no renderer, so if it
 runs, the seam is exonerated in one flash and rung 2 is already the next question.
 
+## A SECOND AXIS, because the DSP ladder alone is ambiguous
+
+**The DSP rungs all leave the ColdFire running its entire per-event work** — the
+resonant law on every event, the trigger, and the 88- or 101-word state handed to the
+transport. So a rung-1 stall could not distinguish the seam from the ColdFire's
+per-event cost, and the failure register's own measurement points at the ColdFire
+("the ColdFire outruns its frame").
+
+`PK_CF_MINIMAL=1` removes that work: the resonant condition is false, a resonant
+engine falls through to the zeroed-controls branch, and **the record goes out with
+`n = 0`** — the "no state" case the DSP already handles. The seam, the record and the
+DSP machine are all untouched; only the per-event ColdFire arithmetic is gone.
+
+Verified by the record itself, not by reading the source:
+
+| build | `record[10]` |
+|---|---|
+| shipping | **count = 88, engine = 10** |
+| `PK_CF_MINIMAL=1` | **count = 0, engine = 0** |
+
+and the shipping build is byte-identical (`c389cfab`), so the switch is inert at its
+default.
+
+**Read it as a pair.** Flash `CFMIN` first: if the transport still stalls with **no
+ColdFire per-event work and no state delivered**, then the fault is in the seam, the
+record traffic, or the admission itself — not in the arithmetic the register blames.
+If `CFMIN` runs and `LADDER5` stalls, the per-event ColdFire work is the fault and the
+whole DSP-side ladder is exonerated in one flash.
+
+| flash | what it removes |
+|---|---|
+| **CFMIN** | every per-event ColdFire resonant operation; the record carries no state |
+| LADDER1 | the DSP machine entirely (the hook is present, never admits) |
+
 ## Artifacts
 
 ```
@@ -55,6 +89,10 @@ out/OCTATRACK_OCTABAM79X_LADDER2.bin   e052366e63c6a2f97c06e4a68db84c42ddd35f78d
 out/OCTATRACK_OCTABAM79X_LADDER3.bin   3e4c7ad6651bcab23db68cf436259a9526afcb34e662adab57a6d6369f826757
 out/OCTATRACK_OCTABAM79X_LADDER4.bin   d254c06e6ed765128d39ab89278344ea0045565fe61adadc7877a6c1d9b15af6
 out/OCTATRACK_OCTABAM79X_LADDER5.bin   581ed2ce6957bd8245c8a5c4659638862dc22fa9a7db49b180d628558fc72680
+```
+
+```
+out/OCTATRACK_OCTABAM79X_CFMIN.bin    e334a5bdbeec456400bd5c1fbcd19419e02ba19e50be977f90d0feb97f0a5f02
 ```
 
 `.syx` beside each. **LADDER5 is the shipping build**, so flashing it is no worse

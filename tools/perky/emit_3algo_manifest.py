@@ -90,7 +90,13 @@ def render() -> tuple[str, str, str]:
     composer = _load("emit_composer", ROOT / "tools/perky/build_dsp_3algo_source.py")
     machine = _load("emit_machine", ROOT / "tools/perky/perky_machine_module.py")
 
-    control_text = generate.generate_text(defines=generate.THREE_ALGORITHM_DEFINES)
+    import os as _os
+    _defines = generate.THREE_ALGORITHM_DEFINES
+    if _os.environ.get("PK_CF_MINIMAL"):
+        # the ColdFire-side ladder rung; see PK_CF_MINIMAL in control.c
+        _defines = tuple(_defines) + ("PK_CF_MINIMAL=1",)
+        print("  PK_CF_MINIMAL=1: COLDFIRE-SIDE RUNG -- no per-event resonant work")
+    control_text = generate.generate_text(defines=_defines)
     # `@CONT@` is left in place: the build substitutes it per payload.
     dsp_text = composer.normalize(composer.compose())
 

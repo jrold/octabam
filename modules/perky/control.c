@@ -49,6 +49,9 @@
 #ifndef PK_RESONANT_CANDIDATE
 #define PK_RESONANT_CANDIDATE 0
 #endif
+#ifndef PK_CF_MINIMAL
+#define PK_CF_MINIMAL 0
+#endif
 #define PK_RESONANT_BASS 10u   /* the family byte this machine dispatches on */
 #define PK_RESONANT_SNARE 11u
 #define MODE_SLOT 4u      /* visible main SRC-page MODE parameter */
@@ -523,7 +526,27 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
                  * object's stored value is what it smooths from. Passing
                  * `prepared` here instead would smooth twice.
                  */
+#if PK_CF_MINIMAL
+                /* PK_CF_MINIMAL -- THE COLDFIRE-SIDE LADDER RUNG. NOT A SHIPPING
+                 * OPTION.
+                 *
+                 * The DSP-side ladder (PK_LADDER) cannot separate the seam from the
+                 * ColdFire's per-event work, because every one of its rungs leaves
+                 * the ColdFire running the whole resonant law on every event: the
+                 * law, the trigger, and the 88- or 101-word state handed to the
+                 * transport. With this define the condition is false, so a
+                 * resonant engine falls through to the zeroed-controls branch and
+                 * the record goes out with n = 0 -- the "no state" case the DSP
+                 * already handles. The seam, the record and the DSP machine are all
+                 * untouched; ONLY the per-event ColdFire arithmetic is removed.
+                 *
+                 * That is the axis the failure register points at ("the ColdFire
+                 * outruns its frame"), and it is the one the DSP ladder is blind to.
+                 */
+                if (0) {
+#else
                 if (p[11] == PK_RESONANT_BASS || p[11] == PK_RESONANT_SNARE) {
+#endif
                     const unsigned is_bass = (p[11] == PK_RESONANT_BASS);
                     unsigned i;
                     if (pk_res_arm_family != p[11]) {
