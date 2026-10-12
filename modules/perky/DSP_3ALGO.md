@@ -1092,6 +1092,41 @@ It is also the answer to a question worth asking on the unit: on real hardware
 `X:0x3800..0x386b` holds whatever ran before, and this says that does not reach
 the output on silence.
 
+### The missing test: identified and designed, NOT landed
+
+The coverage gap named above is the dispatcher-driven test. I wrote it
+(`tools/verify/verify_perky_3algo_dispatch.py`) and **removed it again rather than
+leave a broken gate in the tree**. Recording where it stands, because the next
+attempt should not repeat this ground.
+
+**Design.** Assemble the composed source WITH the dispatcher, add a probe that
+sets `r4` to a `pk_render`-shaped record and calls `pk3d_source`, then read the
+voice block back and assert `X:0x3800+34 == (panel + 1) % 3` for Fold and
+*unchanged* for the two Resonant engines. That single test would have caught all
+three of this audit's findings.
+
+**Where it fails.** When the record is ADMITTED -- which is the whole point of the
+test -- the host writes **zero bytes** of PCM and state and exits 3 with
+
+```
+no return from 1000 (pc=1c1e)
+```
+
+The cause of the non-return is understood and benign: the machine hands control
+back with `jmp @CONT@` (the stock continuation) rather than returning to the
+probe, so the host's "no return from entry" is expected -- and
+`verify_perky_3algo_engine_join` tolerates exactly that and works. **What is not
+understood is why that gate gets its PCM and this one gets none**, on a record
+that is byte-identical for `panel = 0`. It is a harness difference I did not
+isolate, and after several attempts I stopped rather than keep guessing.
+
+**Ruled out along the way:** the record shape (`pk_render_record` produces word 19
+= the engine id and word 16 = `p[8]`, confirmed by printing it); the probe's
+trailing `move #>0,r0`; and `check=True` on the host invocation.
+
+So this is the one piece of identified, designed, non-hardware-dependent work that
+is still open, and it is a harness problem, not a machine problem.
+
 ### FIXED: the Fold MODE is now delivered (`p[8]` -> voice word 34)
 
 Both open questions are answered from the repository, and the fix is in.
