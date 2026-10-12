@@ -137,7 +137,59 @@ reachable control/state domains rather than randomized impossible states,
 before any timing claim is made. Because load is the **maximum** of the
 selected algorithm per core, only one of the three runs on a core at a time.
 
-## 6. What is not done, stated plainly
+## 6. The blocker: two algorithms exceed the physical frame deadline
+
+This is measured, not estimated, and it is the single fact that decides whether
+this target is achievable as written.
+
+The target's runtime policy says: *"Never exceed the physical full-core DSP
+deadline."* That deadline is **72,512 cycles per 16-sample block**
+(`docs/firmware/CHIP.md`). Measured on the composed production renderer
+(`tools/verify/verify_perky_3algo_timing.py`, report at
+`out/perky/dsp-3algo/timing.json`):
+
+| algorithm | modeled worst | vs 72,512 physical deadline | vs 23,040 model allowance |
+| --- | ---: | --- | --- |
+| Fold Drum 1 | 26,112 | under (46,400 headroom) | over by 3,072 (12%) |
+| **Resonant Bass** | **74,515** | **OVER by 2,003** | over by 51,475 (69%) |
+| **Resonant Snare** | **80,722** | **OVER by 8,210** | over by 57,682 (71%) |
+
+**Resonant Bass and Resonant Snare do not fit the frame at one voice per core.**
+This is not a composition artefact and not a host-timing artefact:
+
+* the composed source is **instruction-identical** to the qualified standalone
+  renderers (word-level proof in `DSP_3ALGO.md`), and lands within 9 cycles of
+  the standalone Fold figure;
+* the same overage is present in the **standalone** gates that qualified these
+  renderers, which pass because they assert **no timing bound at all**;
+* the figures are already over the physical 72,512-cycle deadline *before* the
+  repository's 2x model margin and stock reserve are applied, so no
+  interpretation of the model rescues them.
+
+**Why this blocks rather than delays the work.** Closing it needs 51,475 cycles
+off Bass and 57,682 off Snare -- the order of removing most of the resonator
+work per sample. That is an **algorithmic** change, and the target explicitly
+forbids it ("Do not redesign the project", "Do not reopen discarded
+architectures", "Preserve bit-exact behavior ... for every optimization"). The
+code is already deduplicated and already executes the qualified instructions, so
+there is no instruction-level headroom of that magnitude.
+
+**What would unblock it** is a decision this branch is not authorised to take:
+
+1. a deliberately smaller resonant algorithm (a redesign -- the target forbids
+   this branch from choosing it); or
+2. accepting a per-voice budget above the 72,512-cycle frame for the resonant
+   algorithms, which contradicts "never exceed the physical full-core DSP
+   deadline"; or
+3. reducing the target to the algorithms that do fit -- **Fold Drum 1 does**, at
+   36% of the frame with 46,400 cycles of headroom.
+
+Option 3 is worth stating plainly because the target's own framing prefers it:
+*"Prefer a working, tightly scoped T1/T5 machine over preserving abandoned
+ambitions."* A T1/T5 Fold-only machine is achievable; a three-algorithm one is
+not, on the measured numbers.
+
+## 7. What is not done, stated plainly
 
 This image is **not yet ready to flash**. Two things remain, and neither is a
 formality:
@@ -151,11 +203,13 @@ formality:
    renderer bodies, not the scratch convention (built and measured), not the
    resonant voices (stubbed out and still silent), not addressing, not
    duplicate labels and not dead code. It is still open.
-2. **The ColdFire-side algorithm-selection control law is not written.** The
-   composed DSP machine selects on a source record and enforces one voice per
-   core, but the T1/T5 admission, the three-algorithm selection through the
-   existing Perky control path, and per-step p-lock compatibility are not yet
-   implemented on the control side.
+2. **The control side does not deliver the algorithm selection.** `pk_render`
+   has prepare paths for exactly two families (Fold and Simple Drum) and writes
+   the record fields the dispatcher reads as zero; the two Resonant families
+   have no prepare path at all. So Bass and Snare are not merely over budget,
+   they are unselectable in the image as it stands. The exact byte the
+   dispatcher must read still needs an end-to-end test to pin down (see
+   `DSP_3ALGO.md`).
 
 ## 7. Remaining physical-hardware validation
 
