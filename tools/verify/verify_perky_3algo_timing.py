@@ -32,10 +32,22 @@ sys.path[:0] = [str(ROOT), str(ROOT / "tools"), str(ROOT / "tools/perky"),
 
 OUT = ROOT / "out/perky/dsp-3algo"
 
-# The physical full-core frame deadline and the historical development
-# allowance, both quoted in the target specification.
-FRAME_DEADLINE = 72512
-DEV_ALLOWANCE = 23040
+# THE BUDGET IS NOT "MODELED CYCLES <= 72512".
+#
+# Same model as the repository's own realtime gate
+# (tools/verify/verify_perky_realtime_budget.py): the interpreter host counts
+# decoded opcode cycles, hardware MOVE timings exceed those counts, so the model
+# carries a 2x margin; stock reserves its measured 1410 cycles/sample. The
+# hardware window for a 16-sample block is 16 * 4532 = 72,512 cycles, so:
+#
+#   2 * modeled + 16 * 1410 <= 72,512   ->   modeled <= 23,040
+#
+# Comparing a raw modeled figure against 72,512 is simply the wrong test, and
+# an earlier revision of this tool did exactly that.
+FRAME_DEADLINE = 72512          # hardware window, 16 samples
+STOCK_PER_SAMPLE = 1410         # stock reserve, measured
+MODEL_MARGIN = 2                # hardware MOVE timings exceed the model
+DEV_ALLOWANCE = 23040           # what the window leaves for one Perky voice
 
 
 def load_gate():
@@ -58,15 +70,18 @@ def main() -> None:
     ytext = g.tables_text(e1, e2, interp_a, interp_b,
                           ROOT / "out/perky/simple-drum-assets")
 
-    report = {"schema": "perky-3algo-timing-v1",
+    report = {"schema": "perky-3algo-timing-v2",
               "frame_deadline": FRAME_DEADLINE,
-              "dev_allowance": DEV_ALLOWANCE,
+              "stock_reserved": 16 * STOCK_PER_SAMPLE,
+              "model_margin": MODEL_MARGIN,
+              "max_modeled_block": DEV_ALLOWANCE,
               "policy": "one Perky algorithm per core; load is the MAXIMUM of "
                         "the three, never the sum",
               "algorithms": {}}
 
-    print(f"frame deadline: {FRAME_DEADLINE} cycles   "
-          f"historical development allowance: {DEV_ALLOWANCE}\n")
+    print(f"hardware window: {FRAME_DEADLINE} cycles/16 samples   "
+          f"stock reserve: {16 * STOCK_PER_SAMPLE}   model margin: {MODEL_MARGIN}x")
+    print(f"=> a voice may model at most {DEV_ALLOWANCE} cycles/16 samples\n")
 
     # ---- Fold Drum 1: the captured ARM corpus plus the randomized native set.
     fold_worst, fold_n = 0, 0
@@ -97,24 +112,24 @@ def main() -> None:
                 blocks += 1
         report["algorithms"][family] = {"blocks": blocks, "worst_cycles": worst}
 
-    print(f"{'algorithm':10s} {'blocks':>7s} {'worst cycles/16':>17s} "
-          f"{'% of frame':>11s} {'headroom':>9s}")
+    print(f"{'algorithm':10s} {'blocks':>7s} {'modeled/16':>11s} "
+          f"{'2x+stock':>10s} {'vs window':>10s} {'verdict':>9s}")
     for name, row in report["algorithms"].items():
-        frac = 100.0 * row["worst_cycles"] / FRAME_DEADLINE
-        head = FRAME_DEADLINE - row["worst_cycles"]
-        print(f"{name:10s} {row['blocks']:7d} {row['worst_cycles']:17d} "
-              f"{frac:10.2f}% {head:9d}")
+        cyc = row["worst_cycles"]
+        total = MODEL_MARGIN * cyc + 16 * STOCK_PER_SAMPLE
+        verdict = "FITS" if cyc <= DEV_ALLOWANCE else "OVER"
+        print(f"{name:10s} {row['blocks']:7d} {cyc:11d} {total:10d} "
+              f"{total - FRAME_DEADLINE:+10d} {verdict:>9s}")
 
     peak = max(row["worst_cycles"] for row in report["algorithms"].values())
-    report["peak_cycles"] = peak
-    report["peak_percent_of_frame"] = round(100.0 * peak / FRAME_DEADLINE, 4)
-    report["peak_over_dev_allowance"] = peak > DEV_ALLOWANCE
+    report["peak_modeled"] = peak
+    report["peak_2x_plus_stock"] = MODEL_MARGIN * peak + 16 * STOCK_PER_SAMPLE
+    report["peak_fits"] = peak <= DEV_ALLOWANCE
     print()
-    print(f"peak (one algorithm per core): {peak} cycles = "
-          f"{100.0 * peak / FRAME_DEADLINE:.2f}% of the frame deadline, "
-          f"headroom {FRAME_DEADLINE - peak} cycles")
-    print(f"peak exceeds the historical {DEV_ALLOWANCE}-cycle development "
-          f"allowance: {peak > DEV_ALLOWANCE}")
+    print(f"peak modeled (one algorithm per core): {peak}")
+    print(f"  worst case 2x + stock = {report['peak_2x_plus_stock']} cycles "
+          f"vs the {FRAME_DEADLINE}-cycle window => "
+          f"{'FITS' if report['peak_fits'] else 'EXCEEDS'}")
     (OUT / "timing.json").write_text(json.dumps(report, indent=2) + "\n")
     print()
     print(f"perky-3algo-timing: measured (report at {OUT / 'timing.json'})")

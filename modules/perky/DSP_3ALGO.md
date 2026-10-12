@@ -351,47 +351,78 @@ carried across calls and laid out at different addresses in the two builds, and
 the measurement that will settle it is a like-for-like read in each build's own
 frame. It is recorded here rather than carried as an unexplained red gate.
 
-### Timing qualification (measured)
+### Timing qualification (measured) -- and a corrected budget model
 
 `tools/verify/verify_perky_3algo_timing.py` measures the composed production
 renderer per algorithm. It deliberately does NOT assert PCM parity -- the parity
 gate does that -- because a timing number must be obtainable while a parity item
-is open, and a tool that stops on a parity mismatch can never produce the number.
+is open.
 
-Load policy from the target: T1 and T5 are on **separate** DSP cores, so a core
-runs at most ONE Perky algorithm at a time and the load is the **maximum**, never
-the sum.
+**The first revision of this tool used the wrong budget test, and that is worth
+recording.** It compared raw modeled cycles against the 72,512-cycle hardware
+window. The repository's own realtime gate
+(`tools/verify/verify_perky_realtime_budget.py`) applies the correct model:
 
 ```
-frame deadline: 72512 cycles   historical development allowance: 23040
+hardware window for a 16-sample block : 16 * 4532 = 72,512 cycles
+stock reserve (measured)              : 16 * 1410 = 22,560 cycles
+model margin                          : 2x  (hardware MOVE timings exceed
+                                             the interpreter's decoded counts)
 
-algorithm   blocks   worst cycles/16  % of frame  headroom
-fold           640             26112      36.01%     46400
-bass          1024             74515     102.76%     -2003
-snare         1024             80722     111.32%     -8210
-
-peak (one algorithm per core): 80722 cycles = 111.32% of the frame deadline
+  2 * modeled + 22,560 <= 72,512   =>   modeled  <=  23,040 cycles/16 samples
 ```
 
-**Conclusion, stated plainly:**
+So a voice's measured figure must be compared against **23,040**, not against
+72,512, and the composed gate previously reported 26,112 for Fold without that
+comparison ever failing -- consistent with the parity assertions being what stops
+that gate.
 
-* **Fold Drum 1 fits comfortably** -- 26,112 worst cycles, 36% of the frame,
-  46,400 cycles of headroom, and it also fits the historical 23,040-cycle
-  development allowance.
-* **Resonant Bass and Resonant Snare do NOT.** Both exceed the physical
-  full-core frame deadline (74,515 and 80,722 against 72,512), by 2,003 and
-  8,210 cycles. Per the target's runtime policy this is not grounds to drop them
-  -- it means their **reachable production paths must be optimized** and
-  re-measured, with bit-exactness preserved against the existing oracles.
+Corrected measurements:
+
+```
+hardware window: 72512   stock reserve: 22560   model margin: 2x
+=> a voice may model at most 23040 cycles/16 samples
+
+algorithm   blocks  modeled/16   2x+stock  vs window   verdict
+fold           640       26112      74784      +2272      OVER
+bass          1024       74515     171590     +99078      OVER
+snare         1024       80722     184004    +111492      OVER
+```
+
+**Conclusion, stated plainly:** the composed machine does not satisfy the
+production timing bound. Per the target's runtime policy this is not grounds to
+drop any algorithm -- their reachable production paths must be optimized and
+re-measured, with bit-exactness preserved against the existing oracles and the
+equivalence and standalone gates kept green.
+
+Targets, relative to the 23,040-cycle model allowance:
+
+| algorithm | modeled | must come down by | as a fraction |
+| --- | ---: | ---: | ---: |
+| Fold Drum 1 | 26,112 | 3,072 | 12% |
+| Resonant Bass | 74,515 | 51,475 | 69% |
+| Resonant Snare | 80,722 | 57,682 | 71% |
 
 The states measured are the ones the production renderers actually reach: the
 captured ARM corpus plus the randomized native set for Fold, and
-`resonant_state`, which covers both sides of every bounded-path guard for the
-resonant families. They are not arbitrary impossible states.
+`resonant_state` (both sides of every bounded-path guard) for the resonant
+families.
 
-The optimizations that follow must keep `verify_perky_3algo_equivalence.py` and
-the standalone resonant gates green; the 23,040-cycle allowance is historical
-and is not itself the constraint -- the 72,512-cycle frame deadline is.
+**Hot-path breakdown for Snare** (per sample, weighted by call count), as a
+starting point for that work:
+
+```
+pk_resonant_core    x3   66 instr   weight 198
+pk_u32_mul_low      x4   33 instr   weight 132
+pk_resonant_decay   x4   19 instr   weight  76
+pk_noise_hat_env    x1   10 instr   weight  10
+pk_resonant_noise   x1    8 instr   weight   8
+                                  ----------
+per-sample call cost                424 of 831 instructions
+```
+
+The resonant cores and the shared low-word multiply dominate, which is where an
+optimization that preserves bit-exactness has to look.
 
 ### The equivalence gate
 
