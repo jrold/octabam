@@ -724,7 +724,15 @@ proven to reach the DSP rather than merely to change a screen.
 | T1 bass | **10** | 1 throughout | **advancing (3,4,5,7,8,9,10,12)** |
 | T1 snare | **11** | 1 throughout | static |
 | T5 fold | **0** | 1 throughout | static |
-| T5 bass / T5 snare | (in progress) | | |
+| T5 bass | **10** | 1 throughout | static |
+| T5 snare | **11** | 1 throughout | static |
+
+**All six pass, on both cores, and none of them stalls.** The user's six-variant
+request is complete at the UI/record level: every variant is reached by driving the
+stock panel -- select the track, sign it with PERKY, choose the algorithm in the
+engine pool, grid-record four trigs, PLAY -- and the record the transport publishes
+carries the engine the chosen row names. T1 is on payload B and T5 on payload A
+(the inverted mapping), so this is a per-core result, not one core twice.
 
 **FOLD 0, RES BASS 10, RES SNARE 11** -- the panel mapping, arriving at the record
 because the engine pool's three rows were selected through the UI on both cores.
