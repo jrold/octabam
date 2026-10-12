@@ -193,6 +193,53 @@ engines do not call `pk_simple_base`, so their overhead will differ and must be
 measured separately before the table above is quoted as final. One seeded state
 (Fold ARM mode-1 corner-0), one block.
 
+## FIXED AND CALIBRATED: the reachability tool works, and there is NO more dead code
+
+The withdrawn tool is fixed. Its bug was tracking instruction ADDRESSES by adding
+word counts, which drifts from the assembler's real layout; a target whose computed
+address matched no instruction silently ended the walk, pruning the entire
+Resonant half of the dispatcher. **Label-level reachability needs no address
+arithmetic at all, so that failure mode cannot occur** (`tools/perky/reach_3algo.py`).
+
+**Calibration, against the one independent number available.** The verified dead
+code is **51 instructions**, established by actually removing them and confirming
+15/15 Fold ARM parity:
+
+```
+UNREACHABLE: 51 instructions in 6 blocks
+   pk_u32_sub               6
+   pk_sub_no_borrow         9
+   pk_u32_asr               4
+   pk_u32_shift_sign_ready 13
+   pk_noise_step           10
+   pk_noise_refresh         9
+1 call/branch target was NOT label-form and was not followed:
+   pk3x_scaled: jmp @CONT@        <- the external continuation, correctly excluded
+```
+
+**51, exactly, and the same six blocks.** 142 of 149 labels are reachable. The one
+unfollowed target is `jmp @CONT@`, the external continuation -- correct.
+
+**Its word estimate is approximate** -- 54 here against the verified 67 -- because
+it guesses which instructions carry an extension word. Use it for the SET, quote
+the verified 67 for the SIZE. Stated in the tool and here rather than quietly
+rounded.
+
+### THE ANSWER FOR ITEM 8: dead code cannot recover DJ EQ
+
+**These six blocks ARE the whole dead set.** There is no more dead code to find, so
+**67 words is a ceiling, not a milestone** -- and DJ EQ needs 86. Dead-code removal
+therefore **cannot** close the gap, whatever the 19-word arithmetic suggested.
+
+The remaining route to a smaller sacrifice is ~19+ words of genuine bit-exact
+COMPRESSION of live code, which is a different and much harder task than deletion,
+and one where the ablation ceiling already says the dense parts are the algorithm
+itself.
+
+**What this round is worth.** It replaces "the tool is wrong, the question is open"
+with a calibrated negative result: the avenue is exhausted, the number is 67, and
+the next attempt should not be another reachability scan.
+
 ## The 19 missing words: a static dead-code tool was written, and is NOT trustworthy
 
 The concrete remaining non-hardware work after item 8 is ~19 more words (the
