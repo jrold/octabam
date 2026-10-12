@@ -677,11 +677,29 @@ that `probe_glue.asm` reads the trigger at `x:(r4+$3)` and matches `'Y1'` at
 and therefore exactly which byte the engine id must occupy, must be settled by
 an end-to-end test rather than by arithmetic on `record[]` indices.
 
-An attempt to settle it by driving the composed dispatcher with a controlled
-record at a known address produced a zero voice state for both candidate
-offsets, because the dispatcher's admission gate (`x:$418`) and the record
-pointer at `x:$209` were not both satisfied by the fixture. That test needs the
-admission seeded correctly before it can distinguish the candidates.
+**The offset is now a single constant so the question is testable in one edit.**
+`build_dsp_3algo_source.ENGINE_ID_OFFSET` (default `0x6`) drives the dispatcher's
+`move x:(r4+$OFF),b`, and the comment records the two candidates:
+
+```
+ENGINE_ID_OFFSET = 0x6  -> dispatches on p[7]; pk_render must copy the model
+                           byte into p[7] for the choice to arrive
+ENGINE_ID_OFFSET = 0xa  -> reads record[5], whose low half is p[11] -- exactly
+                           where pk_engine_select already persists MODEL_SLOT
+```
+
+Both values build and both keep the equivalence and image gates green, so the
+constant is safe to switch.
+
+**What would not settle it.** Driving `pk3d_source` directly with a controlled
+record at a known address returned a zero voice state for offsets 6, 10 *and*
+11. That is a fixture failure, not a result: the dispatcher bails before reaching
+the voice unless the admission gate at `x:$418` and the record pointer at
+`x:$209` are both satisfied the way the real seam satisfies them, and my
+hand-built fixture does not reproduce that. So the candidates remain
+undistinguished, and the honest next step is to drive the **real** seam
+(`probe_glue.asm`'s own harness) with the two offsets rather than a synthetic
+record.
 
 **The fix is small and well-specified in outline**, and both halves are known
 independently of the byte question:

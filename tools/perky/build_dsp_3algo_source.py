@@ -46,6 +46,28 @@ ENGINE_LABELS = {
     ENGINE_BASS: "RES BASS",
     ENGINE_SNARE: "RES SNARE",
 }
+# WHERE THE ENGINE ID LIVES IN THE FLEX RECORD.
+#
+# The dispatcher reads the record with `move x:(r4+$OFF),b` and masks the low
+# half, so the id it dispatches on is the LOW 16 bits of the DSP word starting
+# at byte offset OFF.
+#
+# The record is built by modules/perky/control.c's pk_render as
+#     record[4+k] = ((uint32_t)p[2k] << 16) | p[2k+1];
+# so p[6]/p[7] land in record[3] and p[10]/p[11] land in record[5]. Byte offset
+# 6 is record[3], whose low half is p[7] -- while the engine chooser
+# (pk_engine_select) persists its choice at MODEL_SLOT = 11, i.e. p[11], which
+# lands in record[5].
+#
+# So a dispatcher reading offset 6 dispatches on p[7] (the MODE parameter) and
+# never sees the selected engine at all. Two ways to join them:
+#   ENGINE_ID_OFFSET = 0x6  -> pk_render must copy the model byte into p[7]
+#   ENGINE_ID_OFFSET = 0xa  -> read record[5]; low half is p[11], where the
+#                              chooser already writes it
+# The second needs no change to pk_render's packing, only that the byte is not
+# clobbered by the prepare paths. Set here so both sides can be tested.
+ENGINE_ID_OFFSET = 0x6
+
 # x:$418 is stock's per-core track position. Payload A carries tracks 5-8 and
 # payload B tracks 1-4; the reduced machine admits ONLY the first slot of each
 # core, which is track 5 on A and track 1 on B.
@@ -266,8 +288,8 @@ DISPATCH_ENTRY = "\n".join([
         "        move    x:>$20b,a",
         "        add     #>$80,a",
         "        move    a,x:>$20b",
-        "        ; Engine id lives in record word 3 (p[11]).",
-        "        move    x:(r4+$6),b",
+        "        ; Engine id: low half of the record word at ENGINE_ID_OFFSET.",
+        "        move    x:(r4+$" + format(ENGINE_ID_OFFSET, "x") + "),b",
         "        and     #>$ffff,b",
         "        move    b1,x0                   ; x0 = engine id",
         "        move    x:>$" + format(EVENT_OFFSET, "x") + ",a",
