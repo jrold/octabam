@@ -72,7 +72,38 @@ def drive(exe: Path, rows: list[bytes], tag: str) -> bytes:
     return dst.read_bytes()
 
 
+def check_generated_artifact() -> None:
+    """Assert the ARTIFACT the build links, not just the source.
+
+    `control.c` guards the Fold dispatch behind `PK_FOLD_CANDIDATE` and the
+    Resonant family behind `PK_RESONANT_CANDIDATE`, and both default to 0. A
+    generator invocation that forgets them produces a file that still assembles
+    and still links -- and that silently contains no fold and no resonant path,
+    so all three of this machine's algorithms fall through to the zeroing
+    `else`. The build generates the control with `THREE_ALGORITHM_DEFINES` and
+    refuses if the text lacks the routines; this repeats that check as a gate so
+    a regression is caught here too.
+    """
+    sys.path.insert(0, str(ROOT / "modules/perky"))
+    import importlib
+    generate = importlib.import_module("generate")
+    text = generate.generate_text(defines=generate.THREE_ALGORITHM_DEFINES)
+    missing = [s for s in ("pk_fold_prepare", "pk_resonant_prepare")
+               if s not in text]
+    if missing:
+        die("the generated control assembly lacks " + ", ".join(missing)
+            + " -- it was compiled without the three-algorithm defines, so the "
+              "shipped ColdFire path has no dispatch for this machine")
+    sample = generate.generate_text()
+    if "pk_resonant_prepare" in sample:
+        die("the DEFAULT generator output contains pk_resonant_prepare; the "
+            "candidate guard is not doing its job")
+    print(f"artifact: generated control.s carries both prepares with "
+          f"{generate.THREE_ALGORITHM_DEFINES} and neither without them")
+
+
 def main() -> None:
+    check_generated_artifact()
     exe = build()
     rng = random.Random(0x33414c47)     # "3ALG"
 

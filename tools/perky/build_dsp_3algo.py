@@ -113,13 +113,25 @@ def build(work: Path, mainos: Path, *, build_number: int, version: str) -> None:
     print(f"=== {REMIX} 1/4: composed DSP source: {words} P words ===")
 
     # The ColdFire side is the repository's existing source-machine plumbing:
-    # machine.s plus the generated control ABI. The reduced machine's T1/T5
-    # admission and per-algorithm dispatch are the next implementation step;
-    # the DSP composition and its placement are what this stage validates.
+    # The ColdFire side is generated from the authoritative `control.c`, and it
+    # MUST be generated with the three-algorithm defines: the Fold dispatch is
+    # behind PK_FOLD_CANDIDATE and the Resonant family behind
+    # PK_RESONANT_CANDIDATE, and both default to 0. Built without them the
+    # artifact silently contains no fold and no resonant path, and all three of
+    # this machine's algorithms fall through to the `else` that zeroes every
+    # prepared control -- the source would look right and the image would not be.
     control_source = work / "control.s"
-    load("perky_control_generate", ROOT / "modules/perky/generate.py").write(control_source)
+    generator = load("perky_control_generate", ROOT / "modules/perky/generate.py")
+    generator.write(control_source, defines=generator.THREE_ALGORITHM_DEFINES)
     if not control_source.exists() or control_source.stat().st_size == 0:
         die("ColdFire generator returned no control assembly")
+    # Assert the ARTIFACT, not the intent: a define that did not reach the
+    # compiler leaves a file that still assembles and still links.
+    control_text = control_source.read_text()
+    for symbol in ("pk_fold_prepare", "pk_resonant_prepare"):
+        if symbol not in control_text:
+            die(f"generated control.s does not contain {symbol} -- it was "
+                f"compiled without the three-algorithm defines")
 
     print(f"=== {REMIX} 2/4: install the composed source and build ===")
     # The tracked manifest is the impulse probe. The composed machine is

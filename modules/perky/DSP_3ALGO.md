@@ -351,6 +351,67 @@ carried across calls and laid out at different addresses in the two builds, and
 the measurement that will settle it is a like-for-like read in each build's own
 frame. It is recorded here rather than carried as an unexplained red gate.
 
+### THE ARTIFACT DID NOT CONTAIN THE CONTROL PATH -- found and fixed
+
+The gates above compile `control.c` themselves, with the candidate defines set.
+**The shipping image did not.** `control.c` guards the Fold dispatch behind
+`PK_FOLD_CANDIDATE` and the Resonant family behind `PK_RESONANT_CANDIDATE`, both
+defaulting to 0, and `modules/perky/generate.py` -- which compiles the
+authoritative `control.c` into the ColdFire assembly the image links -- passed
+**no defines at all**. So the generated artifact contained neither routine, and
+every one of this machine's three algorithms fell through to the `else` that
+zeroes the prepared controls.
+
+Measured, on the generator's own output:
+
+```
+default defines : pk_fold_prepare=False  pk_resonant_prepare=False   24,823 B
+3-algo defines  : pk_fold_prepare=True   pk_resonant_prepare=True    30,221 B
+```
+
+This is the "the binary is not the source" family the repository's own history
+warns about: the source read correctly, every gate that compiled it itself
+passed, and the file that actually shipped was missing the code.
+
+**Fixed.** `generate.py` now takes `defines`, exposes
+`THREE_ALGORITHM_DEFINES`, and records the defines it was given in the produced
+assembly's header so a wrong configuration is visible in the artifact rather
+than only in its symbols. `build_dsp_3algo.py` passes them and then **asserts the
+generated text contains `pk_fold_prepare` and `pk_resonant_prepare`**, refusing
+the build otherwise -- a define that did not reach the compiler leaves a file
+that still assembles and still links, so the check has to be on the text.
+
+`verify_perky_3algo_control_join.py` now repeats that check as a gate, and also
+asserts the DEFAULT output contains neither routine, so the candidate guard
+itself cannot silently stop working.
+
+Image rebuilt: `f0f4505dcd5cdb150d325d5adf3b79e521f15b5fe6ec999bb0b79239905e9c37`.
+
+**The boot/image gates, run against this image:**
+
+| gate | result |
+| --- | --- |
+| `verify_perky_preboot_reserve` | PASS |
+| `verify_perky_stock_dsp_boot_path` | PASS (1,000 uploader/boot bytes byte-identical) |
+| `verify_perky_cf_loader_contract` | PASS |
+| `verify_perky_image_tables` | PASS |
+| `verify_perky_3algo_image` | PASS |
+| `verify_perky_3algo_control_join` | PASS |
+
+**Two perky gates are not applicable to this artifact, and one is stale in the
+repo** -- recorded so they are not mistaken for passes:
+
+* `verify_perky_machine_boot.py` wants `out/mainos_perky_machine.bin`, an
+  artifact the multi-machine canary builds, not this one.
+* `verify_perky_table_image.py` refuses any image carrying the platform-loader
+  append; it is an isolated table canary and this is a shipping image.
+* `verify_perky_image_legacy_identity.py` cannot run at all: it imports
+  `perky_image`, which does not resolve, and a `runtime_build` module the tree
+  records as removed on 6 Oct 2026 ("runtime_build.py when Octakit was
+  removed"). That is a pre-existing broken gate, unrelated to this branch.
+* `verify_dram_boot.py` reports "perky-dsp-3algo carries no DRAM payload" -- a
+  gate that keys on a DRAM runtime this remix does not declare.
+
 ### Optimisation ceiling: measured by ablation, and it is short
 
 The brief's item 4 asks for bit-exact optimisation avenues to be attempted and
