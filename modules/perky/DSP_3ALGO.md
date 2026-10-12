@@ -337,6 +337,107 @@ is not written yet.
 evidenced, the audio is unaffected, the worst-case timing is unaffected, and the
 implementation has a named hazard that must be handled before anyone tries it.
 
+## THE TIMING LEDGER, audited row by row
+
+A reviewer's arithmetic gave **31.6% / 36.9%** where this document said **36.5% /
+41.4%**. The discrepancy is real and it is the **safety margin, which this document
+never named**. The full ledger, units explicit on every row:
+
+| # | quantity | value | unit |
+|---|---|---|---|
+| 1 | frame deadline | **72,512** | hardware cycles (16 samples x 4,532) |
+| 2 | stock reserve | **22,560** | hardware cycles (16 samples x 1,410) |
+| 3 | available to the source | **49,952** | hardware cycles (1 - 2) |
+| 4 | model->hardware conversion | **2x** | modeled -> hardware |
+| 5 | available to the source | **24,976** | modeled cycles (3 / 4, exact) |
+| 6 | safety margin | **3,872** | hardware cycles (1 - (4 x 7 + 2)) |
+| 7 | safety margin | **5.34%** of the frame deadline; **7.75%** of row 3; **1,936** modeled | -- |
+| 8 | source allowance, WITH margin | **23,040** | modeled cycles (the repository's `MAX_MODELED_BLOCK`) |
+| 9 | dispatcher wrapper | **547** | modeled cycles (measured on this firmware) |
+| 10 | renderer allowance, WITH margin | **22,493** | modeled cycles (8 - 9) |
+| 11 | renderer allowance, WITHOUT margin | **24,429** | modeled cycles (5 - 9) |
+| 12 | Bass reachable cost | **35,713** | modeled cycles |
+| 13 | Snare reachable cost | **38,737** | modeled cycles |
+
+**Required reductions, wrapper held fixed (the physically right form -- the wrapper
+does not shrink when the renderer does):**
+
+| | WITH margin | WITHOUT margin |
+|---|---|---|
+| Resonant Bass | **37.0%** | **31.6%** |
+| Resonant Snare | **41.9%** | **36.9%** |
+
+**Why the document said 36.5% / 41.4%.** Those came from comparing
+`(renderer + wrapper)` against the 23,040 allowance -- i.e. from shrinking the
+WRAPPER as well as the renderer, which is not physically what happens. It is
+optimistic by **0.5 percentage points** on each engine. The reviewer's 31.6% / 36.9%
+is the correct **without-margin** figure; 37.0% / 41.9% is the correct
+**with-margin** figure. Both are right, for different budgets.
+
+### Where the margin came from, and what kind of thing it is
+
+`tools/verify/verify_perky_realtime_budget.py` line 16:
+
+```python
+MAX_MODELED_BLOCK = 23040  # 2x + stock = 68,640 / 72,512 cycles, >5% headroom
+```
+
+**Chosen conservatively, not measured.** The exact modeled budget is 24,976; 23,040
+is that value ROUNDED DOWN to leave ">5% headroom", and it is a round number
+(`0x5A00`) rather than a derived one. It is neither a measurement nor an inherited
+development allowance -- it is a deliberate hold-back of 1,936 modeled cycles
+(3,872 hardware) on top of the two measured inputs (row 2's stock reserve and
+row 4's conversion factor).
+
+The conversion factor itself is a second, separate conservatism: measured at
+**1.89 / 1.89 / 1.94 / 1.97** on four instruction forms and rounded UP to 2x, which
+adds ~1.5% of extra reserve on its own. Rows 4 and 6 are therefore two independent
+holds, not one.
+
+### Was 22,560 measured with THIS branch's retained-FX configuration? NO.
+
+The constant is `STOCK_SHARE = CORE_TOTAL - USABLE` in `tools/build/cycle_count.py`,
+with the comment *"STOCK FILTER'S OWN LOAD IS INSIDE STOCK_SHARE"* and
+`BURN_SPARE = 1392  # measured, worst realistic FX1 load, 7 Aug 2026`. It descends
+from hardware sweeps, and **`make cycles` says so for this remix in its own words**:
+
+```
+  This remix carries none of the modules the 7 Aug hardware sweep
+  was measured with, so the headroom arithmetic below does not
+  apply to it. ... -- and the wall is a CLIFF, not a slope.
+  Only a burn sweep measures it.
+```
+
+So the 22,560 is a **stock-share constant from a sweep whose FX configuration is
+not this branch's**. This branch retains six stock FX (FILTER, EQUALIZER, PHASER,
+FLANGER, CHORUS, SPATIALIZER); the sweep measured a particular FX1 load and stock
+FILTER's 192 cycles/sample specifically. **No measurement on this branch establishes
+that 22,560 holds for exactly these six.** That is a genuine open item, and it cuts
+one way only: a different FX load can only make the reserve LARGER, so the renderer
+budget is an upper bound.
+
+### Two constant inconsistencies inside the corpus
+
+They are small but should be named, since this audit is about exactness:
+
+* **stock reserve**: `verify_perky_realtime_budget.py` and the timing gate use
+  **1410** (22,560/frame); `cycle_count.py` computes `4535 - 3120` = **1415**
+  (22,640/frame) under a comment that says "~1410".
+* **core total**: the perky budget uses **4,532** cycles/sample (72,512/frame);
+  `cycle_count.py` uses `CORE_TOTAL = 4535` (72,560/frame).
+
+Using the `cycle_count.py` pair instead moves the ledger by **0.1 percentage points
+at most** (Bass 31.6% either way; Snare 36.9% -> 37.0% without margin; 41.9% with,
+unchanged), and the margin from 5.34% to 5.29%. Neither choice changes any decision.
+
+### The one-line answer
+
+**The document's 36.5% / 41.4% was wrong in form, not in magnitude of error: it
+charged the wrapper against a budget that already excluded it. The correct figures
+are 37.0% / 41.9% WITH the repository's 5.34% (3,872 hardware cycle) conservative
+hold-back, or 31.6% / 36.9% WITHOUT it.** The hold-back is a conservative choice,
+not a measurement, and it is the entire discrepancy.
+
 ## RE-MEASURED after the firmware change: the wrapper is 547, and the blocker did not move
 
 **Changing the firmware invalidates every figure measured on the old source**, so
