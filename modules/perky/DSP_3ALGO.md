@@ -357,6 +357,48 @@ The measurement is reproducible from the repository: `tools/remix/stock.py`
 gives the spans and `tools/perky/build_dsp_3algo_source.py --measure` gives the
 requirement. Nothing here is inferred from a standalone sum.
 
+## The composed image (achieved)
+
+`tools/perky/build_dsp_3algo.py` builds the reduced machine end to end:
+
+```
+$ python3 tools/perky/build_dsp_3algo.py
+=== perky-dsp-3algo 0/4: composed-renderer and sacrifice preflight ===
+  -> composed renderer equivalence
+  -> measured FX sacrifice
+=== perky-dsp-3algo 1/4: composed DSP source: 3936 P words ===
+=== perky-dsp-3algo 2/4: install the composed source and build ===
+  region P:0x01000..0x01fdf (4063 words)  used 3936  FREE 127     [payload A]
+  region P:0x00dc0..0x01d9f (4063 words)  used 3936  FREE 127     [payload B]
+=== perky-dsp-3algo 3/4: image structure ===
+  MAIN OS  : out/mainos_bus.bin (1,116,588 bytes)
+  sha256   : b18e202c0406a6ac20de4fccdaf332c3be3332b0b118e61af2be8f709d313342
+```
+
+The composed DSP program lands in **both** payloads with 127 words free, which
+is the placement milestone. Two things had to be right first, and both were
+found by building rather than by reasoning:
+
+1. **The FX1 list is load-bearing.** `_listed` is the module list *union* every
+   effect whose `fx2_id` is on the pristine FX1 chooser, so with the auto-add
+   rule in force the harvest collapses to the three reverbs (2,724 < 3,936).
+   Naming `fx1` explicitly replaces that rule. The list may contain only
+   **stock** effects the pristine FX1 chooser already lists: a module of ours
+   needs a descriptor clone, and a stock effect FX1 does not list is FX2-only
+   because it does not fit a 3,072-word FX1 allocation.
+2. The module declaration's `DspHook` names `pk_probe_source`; the composed
+   source's entry is the same seam under the composer's name, so the build
+   publishes an alias at that label.
+
+**What this image is and is not.** It is a structurally complete MAIN OS with
+the composed machine placed in both payloads. It is **not** yet ready to
+flash: the composed renderer's *execution* still has to be proven (the
+equivalence gate proves the instructions, not the rendering), and the
+ColdFire-side T1/T5 algorithm-selection control law is still to be written.
+The boot/port gates additionally need the composed source's own `--packed`
+layout, which the existing `verify_perky_machine_boot.py` expects in the older
+packed-machine shape.
+
 ## Reproducing
 
 ```bash
