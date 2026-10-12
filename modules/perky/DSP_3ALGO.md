@@ -620,6 +620,53 @@ documented cause of the other PERKY entry): the DSP-side machine -- the hook, it
 continuation, or what it calls -- is jumping to a garbage address, and that is
 also why no sound is produced.
 
+### RETRACTION: that reproduction was FALSE -- PERKY was never assigned
+
+**The gate never selected the PERKY machine.** The live Part -- dumped from
+`0x40170f60`, which is the only place that shows what the panel actually stored,
+as opposed to the fixture on disk -- says:
+
+```
++0x022: [4, 1, 1, 1, 1, 1, 1, 1]      T1 = 4 (PICKUP), T2..T8 = 1 (FLEX)
+PK/1 marks anywhere in the part: []   <- the admission signature is absent
+```
+
+`ot_project.MACHINES` gives `{0:STATIC, 1:FLEX, 2:THRU, 3:NEIGHBOR, 4:PICKUP}`, so
+the key sequence drove T1 to **PICKUP** and wrote **no signature at all**. Every
+conclusion drawn from those runs about "the Perky machine" is therefore void:
+`pk3v_hit` requires the `PK`/`Y1` record words, so with no signature the machine
+never took the admitted path, and the DSP fault at `0xe2c48f` came from some
+other path entirely.
+
+**This is the same mistake in a new costume.** Four earlier rounds were spent
+testing components instead of the user's path. This round tested the right path
+with the wrong keystrokes, and the tell was reading the wrong artefact -- the
+staged fixture on disk rather than the live Part in RAM. `--mem-dump
+0x40170f60,...` is what a machine-assignment test must read.
+
+**What survives**: the panel transport works (the emulator boots the card, the
+live script runs, PLAY starts transport and the DSP produces output), and the
+`--frame-timer` requirement stands -- without it the deadline model measures
+nothing.
+
+**What does not**: the reproduction, the "PERKY-specific" claim, and the
+`0xe2c48f` fault as evidence about this machine.
+
+### The next step is mechanical: make the gate actually assign PERKY
+
+The sibling gate's sequence (six `0x20` scrolls then `YES`) reaches a machine and
+commits one, but on this module it lands on PICKUP. The commit detours this
+module declares are `pk_setup_row`, `pk_setup_edit6`, `pk_setup_draw6`
+("SETUP editor stores PERKY row in the track FLEX slot"), `pk_src_commit`,
+`pk_src_commit2` and `pk_validate`, with `pk_src_names` ("point SRC SETUP at six
+machine names") and `pk_machine_name` ("format machine row 5 as PERKY"). So PERKY
+is a row of the SRC SETUP list on this module, and the row index and the scroll
+count have to be read from the firmware rather than inherited.
+
+**The gate is not a reproduction until the live Part shows `PK\x01`.** Assert
+that, and fail loudly if it is absent -- a machine-assignment test that does not
+verify the assignment is exactly the gate that cannot fail.
+
 ### The reproduction is REAL BUT NOT YET DETERMINISTIC -- say so plainly
 
 The workflow above hung the DSP at `PC 0xe2c48f` on **three** runs and not on

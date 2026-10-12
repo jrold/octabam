@@ -112,6 +112,8 @@ def main() -> None:
     ap.add_argument("--image", type=pathlib.Path, required=True)
     ap.add_argument("--project", type=pathlib.Path, required=True)
     ap.add_argument("--track", type=int, default=1)
+    ap.add_argument("--dirty", default="123",
+                    help="--dsp-dirty seed; 0 = a clean fill")
     ap.add_argument("--pcwatch", action="append", default=[],
                     help="core:pc for --dsp-pcwatch (repeatable)")
     ap.add_argument("--no-assign", action="store_true",
@@ -143,14 +145,20 @@ def main() -> None:
     write_script(script, T1 if args.track == 1 else T5,
                  assign=not args.no_assign)
     log = work / "port.log"
+    part = work / "part.bin"
+    shadow = work / "shadow.bin"
     cmd = [str(EMU), "--image", str(image), "--card", str(card),
            "--set", "OCTABAM", "--project", "RIG", "--load-ms", "90000",
-           "--mkii", "--dsp", "--dsp-dirty", "123", "--main-level", "64",
+           "--mkii", "--dsp", "--dsp-dirty", str(args.dirty), "--main-level", "64",
            # THE FRAME INTERRUPT MUST FIRE. Route A's default unmasks source 1
            # unconditionally and takes 0 frame interrupts, which leaves the
            # deadline model measuring nothing -- the port says so itself:
            # "frame : off ... --frame-timer restores the 16-sample timer".
            "--frame-timer",
+           # THE LIVE PART AND ITS SAVED SHADOW. Reading the staged fixture on
+           # disk proves nothing: the panel writes the Part in RAM, so this is
+           # the only way to see what the machine assignment actually stored.
+           "--mem-dump", f"0x40170f60,6322={part};0x100a4ece,6322={shadow}",
            "--live-script", str(script)]
     for w in args.pcwatch:
         cmd += ["--dsp-pcwatch", w]
@@ -168,6 +176,13 @@ def main() -> None:
     stall = "STALL" in text.upper()
     print(f"  deadline     : {'MODEL ON' if args.deadline else 'off'}"
           f"  -> {'STALL REPORTED' if stall else 'no stall line'}")
+    if part.is_file():
+        raw = part.read_bytes()
+        # the part record starts 9 bytes in; T1's machine byte is at +0x22 and
+        # the PK/1 mark the admission path looks for at +60
+        live = 9
+        print(f"  live Part: T1 machine byte = {raw[live + 0x22]:#04x} "
+              f"(1 = FLEX), PK mark = {raw[live + 60:live + 63]!r}")
     if "LOAD PROJECT handled" not in text:
         print("  !! project load never completed")
     if "ended on quit" not in text:
