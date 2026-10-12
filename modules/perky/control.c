@@ -474,9 +474,36 @@ void pk_engine_select(unsigned model)
     ((void (*)(void))0x4004d948u)();
 }
 
+#if !(PK_FOLD_CANDIDATE && PK_RESONANT_CANDIDATE)
+/* Only the non-three-algorithm builds offer these; the three-algorithm browser
+ * replaces them with the Resonant pair, and -Werror refuses an unused static. */
 static void engine_simple_drum(void) { pk_engine_select(2u); }
 static void engine_noise_tone(void) { pk_engine_select(DEFAULT_ENGINE); }
-#if PK_FOLD_CANDIDATE
+#endif
+#if PK_FOLD_CANDIDATE && PK_RESONANT_CANDIDATE
+/* THE THREE-ALGORITHM TARGET. This machine dispatches on the family byte in
+ * p[11], and the DSP renders EXACTLY three values: 0 (Fold Drum 1), 10
+ * (Resonant Bass) and 11 (Resonant Snare). Anything else falls through to the
+ * silence path. The browser below is therefore not cosmetic -- it is the only
+ * way a family reaches the DSP, and a row that offers a family the DSP does not
+ * render is a row that makes NO SOUND.
+ *
+ * Measured before this fix, driving the production dispatcher with each model
+ * the browser offered:
+ *
+ *   "001 FOLD DRUM"  model  0   renders
+ *   "003 SIMPLE DRUM" model  2   SILENCE   <- no family-2 case in the DSP
+ *   "011 NOISE/TONE"  model 10   renders   <- and it is RESONANT BASS, not Noise/Tone
+ *   (no row)          model 11   --       <- RESONANT SNARE WAS UNREACHABLE
+ *
+ * So the old labels both mislabelled Bass and left Snare selectable only by
+ * never being selectable at all. The three rows below are the three algorithms,
+ * in family order, and every one of them renders. */
+static void engine_fold_drum(void)      { pk_engine_select(0u); }
+static void engine_resonant_bass(void)  { pk_engine_select(PK_RESONANT_BASS); }
+static void engine_resonant_snare(void) { pk_engine_select(PK_RESONANT_SNARE); }
+static const char *const engine_labels[] = { "001 FOLD DRUM", "010 RES BASS", "011 RES SNARE" };
+#elif PK_FOLD_CANDIDATE
 static void engine_fold_drum(void) { pk_engine_select(0u); }
 static const char *const engine_labels[] = { "001 FOLD DRUM", "003 SIMPLE DRUM", "011 NOISE/TONE" };
 #else
@@ -509,7 +536,9 @@ unsigned pk_engine_draw(void)
 
 void pk_engine_open(void)
 {
-#if PK_FOLD_CANDIDATE
+#if PK_FOLD_CANDIDATE && PK_RESONANT_CANDIDATE
+    static void (*const handlers[])(void) = { engine_fold_drum, engine_resonant_bass, engine_resonant_snare };
+#elif PK_FOLD_CANDIDATE
     static void (*const handlers[])(void) = { engine_fold_drum, engine_simple_drum, engine_noise_tone };
 #else
     static void (*const handlers[])(void) = { engine_simple_drum, engine_noise_tone };

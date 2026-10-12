@@ -1502,21 +1502,21 @@ pk_engine_select:
 	jmp 1074059592
 	.size	pk_engine_select, .-pk_engine_select
 	.align	2
-	.type	engine_noise_tone, @function
-engine_noise_tone:
+	.type	engine_resonant_snare, @function
+engine_resonant_snare:
+	pea 11.w
+	jsr pk_engine_select
+	addq.l #4,%sp
+	rts
+	.size	engine_resonant_snare, .-engine_resonant_snare
+	.align	2
+	.type	engine_resonant_bass, @function
+engine_resonant_bass:
 	pea 10.w
 	jsr pk_engine_select
 	addq.l #4,%sp
 	rts
-	.size	engine_noise_tone, .-engine_noise_tone
-	.align	2
-	.type	engine_simple_drum, @function
-engine_simple_drum:
-	mov3q.l #2,-(%sp)
-	jsr pk_engine_select
-	addq.l #4,%sp
-	rts
-	.size	engine_simple_drum, .-engine_simple_drum
+	.size	engine_resonant_bass, .-engine_resonant_bass
 	.align	2
 	.type	engine_fold_drum, @function
 engine_fold_drum:
@@ -1741,8 +1741,8 @@ pk_engine_right:
 	.size	handlers.0, 12
 handlers.0:
 	.long	engine_fold_drum
-	.long	engine_simple_drum
-	.long	engine_noise_tone
+	.long	engine_resonant_bass
+	.long	engine_resonant_snare
 	.section	.rodata.str1.1
 .LC9:
 	.string	"TUNE"
@@ -1773,9 +1773,9 @@ names.1:
 .LC13:
 	.string	"001 FOLD DRUM"
 .LC14:
-	.string	"003 SIMPLE DRUM"
+	.string	"010 RES BASS"
 .LC15:
-	.string	"011 NOISE/TONE"
+	.string	"011 RES SNARE"
 	.section	.rodata
 	.align	2
 	.type	engine_labels, @object

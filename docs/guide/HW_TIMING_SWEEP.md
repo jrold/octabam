@@ -24,9 +24,9 @@ Copy it to the **root of the CF card**, then on the unit:
 
 | artifact | sha256 / size |
 |---|---|
-| card `.bin` | `out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING.bin`, 448,372 B, sha256 `ea4e1a6d1899da7bc489ed44f3be4e3d1b9e2d548806c21c6827a25485c96cc2` |
+| card `.bin` | `out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING.bin`, 448,372 B, sha256 `b714b1771485eef9c2458e11917ba0d1a43df4576d31b6f39c35dbba90df08ab` |
 | MIDI `.syx` | `out/OCTATRACK_OS1.40C_OCTABAM79X.syx`, 626,300 B |
-| DSP payload | `out/mainos_bus.bin`, sha256 `a18f86e42ded4527620cfb428d0d2bd6b0232869aaabde7802d6f7421a3aa05d` |
+| DSP payload | `out/mainos_bus.bin`, sha256 `0b6d354c30ba06290c7a5ec905a4c71c420c635b5039f6c215143f8eba34d0b4` |
 
 Built from the stock `OCTATRACK_OS1.40C.syx`, sha256
 `0a8d2d2b35c2cc78fa338576adc1af0cbc094cef973255103165c73edd87f2b6`. The card
@@ -43,6 +43,25 @@ python3 tools/build/bin_decode.py out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING
 ```
 
 **Before flashing: back the card up.** This is an experimental OS image.
+
+## 1a. WHICH ALGORITHM ACTUALLY MAKES SOUND RIGHT NOW
+
+**Select `001 FOLD DRUM` first.** The browser offers three rows --
+`001 FOLD DRUM`, `010 RES BASS`, `011 RES SNARE` -- and of those, **only Fold
+Drum 1 currently produces audio**.
+
+Resonant Bass and Resonant Snare render silence from a fresh voice state, and they
+always have: `ResonantSnare([0]*WORDS)` and `ResonantBass([0]*WORDS)` produce a
+peak of **0 over 64 blocks in the reference model itself**, so this is the
+algorithm's behaviour, not a port defect. They need a state that nothing in the
+production path establishes. See "THE RESONANT ENGINES DO NOT SELF-START" in
+`modules/perky/DSP_3ALGO.md`.
+
+**This does not stop the sweep.** Rows 3 and 4 (Fold on T1 and on T5) remain the
+most valuable measurements in the matrix, and the predicted closest to fitting at
++2.7%. Rows 5-8 will measure a renderer that is running but not yet making sound --
+the cycle cost is real and worth having, and the audio peak in the reference is the
+number to compare against once the state question is settled.
 
 ## 2. Set the unit up
 

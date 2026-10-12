@@ -337,6 +337,83 @@ is not written yet.
 evidenced, the audio is unaffected, the worst-case timing is unaffected, and the
 implementation has a named hazard that must be handled before anyone tries it.
 
+## THE PANEL BUG, found by the user: two of three browser rows were wrong
+
+The image was flashed and made no sound. The cause was in the PANEL path, and no
+gate in this branch could see it: every one of them builds a record by hand and
+calls `pk3d_source` directly, so **none tested how a family byte gets chosen**.
+
+The engine browser's labels and handlers, as shipped:
+
+```
+"001 FOLD DRUM"   model  0  -> family  0   renders
+"003 SIMPLE DRUM" model  2  -> family  2   SILENCE  (no family-2 case in the DSP)
+"011 NOISE/TONE"  model 10  -> family 10   renders -- and it is RESONANT BASS
+(no row)          model 11  -> RESONANT SNARE WAS UNREACHABLE
+```
+
+The DSP dispatches on the family byte in `p[11]` and renders exactly 0, 10 and 11;
+anything else reaches `pk3c_silence`. So the browser offered a row that could only
+ever be silent, mislabelled Resonant Bass, and left Resonant Snare with no way to
+be selected at all -- **the one thing the target requires (all three algorithms
+selectable on T1 and T5) was not satisfied by the shipping image.**
+
+**Fixed** in `modules/perky/control.c`, guarded on both candidates so every other
+remix is untouched: the three rows are now Fold Drum 1, Resonant Bass and Resonant
+Snare, mapping to 0, 10 and 11.
+
+**And gated**, by `tools/verify/verify_perky_3algo_panel.py` -- the gate this branch
+was missing. It reads the browser's labels and handlers out of `control.c`, checks
+they are the same length, resolves each handler's family, requires the set to equal
+the composer's own engine set (so the two cannot drift), requires all three
+algorithms to be offered, and then drives each offered family through the real
+dispatch and requires it to REACH A RENDERER (meter > 5,000; the silence path costs
+~534). It reports the audio peak but does not assert on it -- see the next section
+for why.
+
+## THE RESONANT ENGINES DO NOT SELF-START -- the deeper reason the track is quiet
+
+Chasing the silence past the panel bug produced something larger, and it is
+verified in the MODEL, not just the port:
+
+```
+MODEL snare from zeros : peak over 64 blocks = 0; first nonzero block = None
+MODEL bass  from zeros : peak over 64 blocks = 0; first nonzero block = None
+MODEL snare from STRESS: peak 32768
+```
+
+**A zero voice block is silent by the algorithm.** `ResonantSnare([0]*WORDS)` and
+`ResonantBass([0]*WORDS)` never produce a sample, in sixty-four blocks, in the
+reference model itself. So this is **not** a port defect -- the DSP agrees with the
+model exactly -- and the resonant engines are silent on a unit for the same reason.
+
+**They need a state, and nothing in the production path establishes one.** Measured
+through `pk3d_source`, one block each:
+
+| engine | voice state | audio peak |
+|---|---|---|
+| Snare (11) | a SNARE state | 8,388,608 |
+| Snare (11) | a FOLD state | **0** |
+| Snare (11) | zeros | **0** |
+| Snare (11) | a FOLD state, with the engine-change re-seed | **0** |
+| Bass (10) | a BASS state | 8,388,608 |
+
+**So Fold Drum 1 is the only one of the three that works from a fresh state**, which
+is why the one browser row that ever made sound was "001 FOLD DRUM".
+
+**What this means.** Every gate in this branch passed because the gates SEED the
+voice block from a captured fixture -- the same shape of gap as the n7 bug and the
+panel bug: the gate supplies exactly the thing production does not. The engine-change
+re-seed added earlier stops the rail by CLEARING the block, which for these two
+engines means clearing the only thing that could have made them sound; that trade is
+now explicit rather than hidden.
+
+**Not fixed here.** Establishing the resonant voice's initial state is a real piece
+of work -- it needs either a DSP-side initialisation on engine change, or a
+ColdFire-side state seed, and it needs the PĒRKONS oracle to say what the state
+should be. It is the reason a hardware timing sweep should be run with **Fold Drum 1
+first**, and it is recorded here rather than papered over.
+
 ## THE n7 BUG: the render length was never set, and every gate hid it
 
 **The most serious defect found in this branch, and it was in the shipping path.**
