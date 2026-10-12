@@ -1,4 +1,27 @@
-"""One harness, one seeded state, one assembly -- only the entry differs.
+"""Measure what the production dispatch path costs over the renderer alone.
+
+Item 2 of the timing directive asks for the dispatcher/wrapper overhead that the
+renderer-only timing figure omits. This is that measurement, built as ONE
+harness, ONE seeded state, ONE assembly, with three entries differing only in
+what they call -- because two measurements taken in different setups disagreed by
+6,919 cycles for a 12-instruction routine, which is how a bogus 3x ratio almost
+got published.
+
+The harness validates itself: `m_quoted` adds exactly the gate's 12-instruction
+RNG dump over `m_render`, so a small, known difference must come out small. If
+that delta is not tens of cycles, the run is not measuring what it claims.
+
+MEASURED (Fold ARM mode-1 corner-0, one block):
+
+    m_render    :  13279   base + voice
+    m_quoted    :  13300   + the gate's 12-instruction RNG dump   (+21)
+    m_dispatch  :  18998   pk3d_source: admission + dispatch + mode
+                           delivery + the x256 scale  (+5,698 = +42.9%)
+
+NOTE the instruction form: an immediate to a REGISTER is `#$0038e8`; `#>` is for
+accumulators. `#>` here is InvalidInstruction, the assembler exits non-zero, and
+a driver that ignores that reads a STALE meter file from a previous run -- which
+is exactly what happened once and produced the bogus number.
 
 Three entries over the SAME composed source and the SAME data:
   m_render   : base + voice            (the renderer alone)
