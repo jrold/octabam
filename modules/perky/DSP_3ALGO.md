@@ -375,9 +375,14 @@ already worked, so it is exact by construction. Three things had to be true and
 each was found by the build refusing:
 
 1. **`@CONT@` must stay in the source.** The build substitutes it per payload
-   (`$000426` for A, `$000221` for B) and refuses a `subst` key that does not
-   occur. `build_dsp_3algo.py` had been substituting the A value up front, which
-   would have been wrong on payload B.
+   -- `$000426` for A and `$000221` for B, read off the emitted `DspSection` --
+   and refuses a `subst` key that does not occur in the source. Writing the
+   source with the A value already substituted is therefore rejected outright.
+   *Not established:* whether the earlier front-end path, which did substitute
+   up front, was producing a wrong payload B; the two build paths now agree
+   byte for byte, so whatever it did it landed on the same bytes. What IS
+   established is that the per-payload substitution is real and that the tracked
+   source must leave the marker in place for it to happen.
 2. **The DSP hook must name this machine's own entry.** The in-memory helper
    inherits the probe's `pk_probe_source`; the composition defines `pk3d_source`.
 3. **The module needs its own key.** It is `PERKY 3ALGO`, so it sits beside the
