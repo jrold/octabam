@@ -711,6 +711,44 @@ user workflow then runs -- select T1, assign, return, audition, `REC`, trigs at
 1/5/9/13, `PLAY` -- with the transport reading **1 (playing)** and staying 1
 across 4 s of polling.
 
+### THE COMPLETE UI PATH -- screen-verified at every step
+
+**The six-variant path is now fully mapped.** Every step below is confirmed by a
+rendered screen, not inferred:
+
+```
+1.  t1                                    select the track
+2.  t1 double-tap, 30 ms gap              -> "<< MACHINE:FLEX", the FLEX pool
+3.  LEFT                                  -> the machine chooser
+4.  down x5                               -> STATIC/FLEX/THRU/NEIGHBOR/PICKUP/PERKY
+5.  YES                                   COMMIT -- the track is now SIGNED
+6.  NO                                    back to Tracks
+7.  t1 double-tap, 30 ms gap              -> "<< MACHINE:PERKY", the ENGINE POOL
+8.  down / up                             -> FOLD DRUM / RES BASS / RES SNARE
+9.  YES                                   select the algorithm
+10. REC; trig1/5/9/13; PLAY               program and play
+```
+
+The engine pool, which is the step the six variants need:
+
+```
+<< MACHINE:PERKY
+001 FOLD DRUM
+010 RES BASS
+011 RES SNARE
+```
+
+**Note the order and the ids:** FOLD first, then BASS, then SNARE, matching the
+panel mapping already gated elsewhere (FOLD 0, RES BASS 10, RES SNARE 11). The
+same double-tap opens **two different lists depending on whether the track is
+signed**: before signing it is the FLEX sample-slot list, after signing it is the
+PERKY engine pool. That is why the gesture looked useless for five rounds -- it was
+being tried on an unsigned track.
+
+And **SRC SETUP on the signed track now lists PERKY as its sixth row with the
+cursor on it**, which is `pk_setup_row` ("SRC SETUP row highlights PERKY on a
+signed FLEX track") doing exactly what its note says.
+
 ### MEASURED: the whole Perky chain is alive through the panel workflow
 
 Reading the ColdFire record buffer the transport publishes
