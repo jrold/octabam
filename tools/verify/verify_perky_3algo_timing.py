@@ -13,9 +13,16 @@ never produce the number at all.
 
 Reported per algorithm:
 
-* worst modeled cycles for a 16-sample block, over the reachable control/state
-  domain the fixtures and generators actually produce (not randomized
-  impossible states);
+* worst modeled cycles for a 16-sample block, reported TWICE and separately:
+  - ``worst_reachable`` -- the captured ARM fixtures, i.e. states the production
+    control path actually produced on hardware. **This is the production bound.**
+  - ``worst_stress`` -- ``resonant_state()``'s synthetic states, whose own
+    docstring says they cover "both sides of every bounded-path guard" and which
+    write 24-bit decay fields, ``DECAY_COUNT`` up to 0xffffffff and random
+    coefficients. Those are STRESS states the control path cannot produce, and
+    they are reported as stress, never as the production number.
+  The verdict uses the REACHABLE figure. Reporting the stress figure as the
+  production cost is the error this split exists to prevent;
 * the same figure as a fraction of the full-core frame deadline, so the
   remaining headroom is explicit.
 """
@@ -97,9 +104,23 @@ def main() -> None:
                             case["rng"], ytext, 1, case["tag"], OUT)
         fold_worst = max(fold_worst, worst)
         fold_n += 1
-    report["algorithms"]["fold"] = {"blocks": fold_n, "worst_cycles": fold_worst}
+    # Fold's own measurement already runs the captured ARM cases, so its figure
+    # IS the reachable one; there is no separate stress set for it here.
+    report["algorithms"]["fold"] = {
+        "blocks": fold_n, "worst_cycles": fold_worst,
+        "worst_stress_cycles": fold_worst, "bound_from": "arm-fixtures"}
 
-    # ---- Resonant bass / snare: every reachable control/state index.
+    # ---- Resonant bass / snare.
+    # `resonant_state` builds STRESS states (its own docstring says so: both
+    # sides of every bounded-path guard, DECAY_COUNT up to 0xffffffff, random
+    # coefficients). They bound what the code can be asked to do, NOT what
+    # production asks of it. The captured ARM fixtures are the reachable domain
+    # -- the same oracle the standalone resonant gate uses -- so they are
+    # measured too, and they are what the verdict is keyed on.
+    ARM = {  # family -> (panel, byte offset, byte size) in the engine-7 fixtures
+        "bass": (2, 0x39E8, 0x178),
+        "snare": (1, 0x2734, 0x1D4),
+    }
     for family, model in (("bass", g.bass), ("snare", g.snare)):
         worst, blocks = 0, 0
         for index in range(256):
@@ -110,23 +131,57 @@ def main() -> None:
                                     f"{family} {index}", OUT)
                 worst = max(worst, meter)
                 blocks += 1
-        report["algorithms"][family] = {"blocks": blocks, "worst_cycles": worst}
+        cls = model.ResonantBass if family == "bass" else model.ResonantSnare
+        panel, offset, size = ARM[family]
+        reachable, rblocks, detail = 0, 0, []
+        for corner in range(3):
+            case = g.FIX / f"engine-7-mode-{panel}-corner-{corner}"
+            if not case.exists():
+                continue
+            voice = cls.from_arm(
+                (case / "wrapper-window-after.bin").read_bytes()[offset:offset + size])
+            rng = list(struct.unpack(
+                "<II", (case / "rng-continuation-before.bin").read_bytes()))
+            _, _, meter = g.run(renderers, rlabels[f"pk3t_{family}"],
+                                voice.words, rng, ytext, 1,
+                                f"{family} arm {corner}", OUT)
+            reachable = max(reachable, meter)
+            rblocks += 1
+            detail.append({"corner": corner, "worst_cycles": meter})
+        report["algorithms"][family] = {
+            "blocks": blocks, "worst_stress_cycles": worst,
+            "arm_blocks": rblocks, "worst_reachable": reachable,
+            "arm_corners": detail,
+            # The production bound is the reachable one. Fall back to the
+            # stress figure only if no ARM fixture was available, and say so.
+            "worst_cycles": reachable or worst,
+            "bound_from": "arm-fixtures" if reachable else "stress-only",
+        }
 
-    print(f"{'algorithm':10s} {'blocks':>7s} {'modeled/16':>11s} "
-          f"{'2x+stock':>10s} {'vs window':>10s} {'verdict':>9s}")
+    print(f"{'algorithm':10s} {'stress/16':>10s} {'REACHABLE/16':>13s} "
+          f"{'2x+stock':>10s} {'vs window':>10s} {'verdict':>7s}  bound")
     for name, row in report["algorithms"].items():
         cyc = row["worst_cycles"]
         total = MODEL_MARGIN * cyc + 16 * STOCK_PER_SAMPLE
         verdict = "FITS" if cyc <= DEV_ALLOWANCE else "OVER"
-        print(f"{name:10s} {row['blocks']:7d} {cyc:11d} {total:10d} "
-              f"{total - FRAME_DEADLINE:+10d} {verdict:>9s}")
+        stress = row.get("worst_stress_cycles", row["worst_cycles"])
+        print(f"{name:10s} {stress:10d} {cyc:13d} {total:10d} "
+              f"{total - FRAME_DEADLINE:+10d} {verdict:>7s}  {row.get('bound_from','')}")
+    print()
+    print("  REACHABLE = captured ARM fixtures = the production bound; the verdict")
+    print("  uses it. stress = resonant_state()'s synthetic guard-coverage states,")
+    print("  which the control path cannot produce.")
 
     peak = max(row["worst_cycles"] for row in report["algorithms"].values())
+    peak_stress = max(row.get("worst_stress_cycles", row["worst_cycles"])
+                      for row in report["algorithms"].values())
     report["peak_modeled"] = peak
+    report["peak_modeled_stress"] = peak_stress
     report["peak_2x_plus_stock"] = MODEL_MARGIN * peak + 16 * STOCK_PER_SAMPLE
     report["peak_fits"] = peak <= DEV_ALLOWANCE
     print()
-    print(f"peak modeled (one algorithm per core): {peak}")
+    print(f"peak modeled (one algorithm per core): {peak} reachable "
+          f"({peak_stress} on stress states)")
     print(f"  worst case 2x + stock = {report['peak_2x_plus_stock']} cycles "
           f"vs the {FRAME_DEADLINE}-cycle window => "
           f"{'FITS' if report['peak_fits'] else 'EXCEEDS'}")

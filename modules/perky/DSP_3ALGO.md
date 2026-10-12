@@ -1065,6 +1065,32 @@ So the precondition fails on reachable data, and this branch cannot take that
 optimisation. Recorded as a measured negative result rather than left as an
 untried idea.
 
+### The TIMING TOOL now reports the reachable bound as the production number
+
+The reachable-versus-stress split was measured, but the tool that ships the
+number still headlined the STRESS figure -- which is precisely what made the
+original blocker report wrong to challenge. Fixed:
+
+```
+algorithm   stress/16  REACHABLE/16   2x+stock  vs window verdict  bound
+fold            25393         25393      73346       +834    OVER  arm-fixtures
+bass            74511         35713      93986     +21474    OVER  arm-fixtures
+snare           80718         38737     100034     +27522    OVER  arm-fixtures
+```
+
+`worst_reachable` comes from the captured ARM fixtures -- the same oracle the
+standalone resonant gate uses -- and the VERDICT is keyed on it;
+`worst_stress_cycles` is the synthetic guard-coverage set, reported beside it and
+labelled as stress. `timing.json` carries both, plus `peak_modeled_stress`, and
+each row says which bound it used (`bound_from`). The tool's docstring, which had
+claimed the synthetic states were "the reachable control/state domain", is
+corrected -- that claim was the source of the confusion.
+
+The verdict does not change: every algorithm is still OVER the allowance on the
+reachable domain, and the peak is 38,737 modeled (snare). What changes is that
+the shipped report can no longer be read as quoting a stress state as the
+production cost.
+
 ### REACHABLE vs STRESS: the timing figures were taken on stress states
 
 **This materially changes the timing picture and is the answer to the brief's
