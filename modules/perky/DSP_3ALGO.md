@@ -642,11 +642,43 @@ Consequences, stated plainly:
 * **Resonant Bass and Resonant Snare are unreachable through the control path in
   the image as it stands** -- not merely unprepared, but unselectable.
 
-That is the single highest-value finding for this target, and it is a fixable
-one: the dispatcher's engine-id byte and the control path's model byte have to
-be made the same byte, and the two Resonant families need prepare paths in
-`control.c`. The `p[]`/`record[]` ABI, the chooser, `source_offset`, paging and
-the p-lock path are all reusable; what is missing is the join between them.
+**And the byte-offset arithmetic is not the 4:1 mapping an earlier note assumed.**
+The qualified seam settles it: `probe_glue.asm` matches `'Y1'` with
+`move x:(r4+$2),b` / `cmp #>$005931,b`, which means the record's bytes 2 and 3
+are `0x59` and `0x31`. But `pk_render` writes `record[1] = 0x59310000u | trig`,
+i.e. 0x59 into bits 31-24, 0x31 into 23-16, and the trigger into 15-8. So the
+record's byte offset N maps to a DSP word's bytes and NOT one-per-byte:
+
+```
+record[0] = 0x504b0000  -> bytes 0,1 = 'P','K'
+record[1] = 0x59310000|trig -> byte 2 = 'Y', byte 3 = '1', byte 4 = trig
+record[2] = record[3] = 0   -> bytes 5..10 = 0
+record[4..7] = p[0..7] pairs -> later bytes
+```
+
+So byte offset **6** -- what `pk3d_source` reads with `move x:(r4+$6),b` --
+falls inside `record[2]`, which `pk_render` sets to **zero**. The composer's
+comment says the engine id is "record word 3 (p[11])", but `record[3]` is also
+zeroed and `p[11]` is never copied into the record at all.
+
+**Conclusion, and it is unambiguous:** the composed dispatcher reads a byte that
+the control path explicitly zeroes. On the image as it stands the engine id is
+always 0, the dispatcher always takes the Fold branch, and **neither Resonant
+Bass nor Resonant Snare can be selected** -- not because they are unprepared,
+but because the field that selects them is never written.
+
+**The fix is small and well-specified**, and both halves are already known:
+
+1. `pk_render` must copy the model/family byte into the byte offset the
+   dispatcher reads (or both sides must agree on a new offset), so that
+   `pk_engine_select`'s choice actually reaches the DSP;
+2. `control.c` needs prepare paths for the two Resonant families, which today
+   fall into the `else` that zeroes the prepared controls.
+
+Everything else -- the `p[]`/`record[]` ABI, the chooser, `source_offset`, the
+page/paging machinery and the p-lock path -- is reusable as the target requires.
+What is missing is exactly this join, and it is the reason the functional target
+("select Resonant Bass / Resonant Snare") cannot yet be demonstrated end to end.
 
 ### The equivalence gate
 
