@@ -388,6 +388,51 @@ This branch touches 22 files -- `tools/verify`, `modules/perky`, `tools/perky`,
 and **none** of the assembler, `build_bus.py` or SPECTRUM. So the failure is in
 the tree, not here, and it blocks `verify-shared` for every remix.
 
+### The MODEL does not reproduce the ARM capture either -- so that comparison is not an oracle
+
+After three wrong framings I stopped theorising and ran the test that should have
+come first: **apply the reference model to the ARM fixture and see whether IT
+reproduces the hardware.** It does not.
+
+```
+bass  c0: model-vs-ARM continuation-state diffs = 11   word 14: model 39631  ARM 59070
+bass  c1: diffs = 12                                    word 14: model 39631  ARM 59070
+bass  c2: diffs = 10                                    word 14: model 39631  ARM 59070
+snare c0: diffs = 11                                    word 14: model 39631  ARM 59070
+snare c1: diffs = 13                                    word 14: model 39631  ARM 59070
+snare c2: diffs = 10                                    word 14: model 39631  ARM 59070
+```
+
+So word 14 has **three different values**, and they belong to three different
+things:
+
+| | word 14 |
+| --- | ---: |
+| the composed DSP renderer | 17741 |
+| the reference Python model | 39631 |
+| the captured ARM hardware | 59070 |
+
+**What that means for the item.** The composed execution gate asserts
+`state[:WORDS] == voice.words` -- the DSP's state against the model. For Fold that
+holds exactly (640 blocks). For the resonant family **the model does not satisfy
+it against the hardware it was derived from** -- 10 to 13 words differ, on every
+corner. So that assertion is not a valid oracle for the resonant renderers, and
+the "five divergent words" I reported two rounds ago is **not evidence of a
+composition defect**. It is the DSP, the model and the hardware disagreeing three
+ways, with the model itself already failing to match the hardware.
+
+**This is the correct reading of the item, and it removes the implication that
+this branch's composition is at fault.** What remains genuinely open is which of
+the three is right about `NOISE+2`, and answering that needs the standalone ARM
+gate (`verify_perky_resonant_dsp_exec.py --firmware`), which has never run here
+because it needs the stock 1.40C image for the original Y tables.
+
+**A note on method.** Three framings of this word were wrong before this one,
+each because the check was blind to something -- the callees, the model's own
+source, and which artifact the "expected" value came from. The test that settled
+it was the one that compared THE ORACLE TO THE HARDWARE. Running that first would
+have cost one step instead of four.
+
 ### Word 14, corrected again: the semantics AGREE, so it is the RNG sequence
 
 **The previous section's framing is also wrong and is corrected here.** It said
