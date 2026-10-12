@@ -29,6 +29,68 @@ sequencer and not the tempo", and every entry after the line "Entries from here 
 
 
 
+## PERKY 3ALGO: the wedge is NOT in the DSP machine -- a bisection ladder is ready to flash 🟡 needs one flash
+
+**The symptom resists every local instrument**, so the method is inverted: instead of
+measuring a machine that dies, flash configurations that RUN and add functionality
+until it breaks.
+
+**READ `modules/perky/LADDER.md` -- it is the flash sheet, with the decision table.**
+
+### Two axes, six images, all checksum-verified and distinct
+
+| flash | what it removes | hash (short) |
+|---|---|---|
+| **CFMIN** | **every per-event ColdFire resonant operation**; the record carries no state (`n = 0`) | `e334a5bd` |
+| **LADDER1** | the DSP machine entirely -- the hook is present and **never admits** | `eb543833` |
+| LADDER2 | + admission, record read, state load, silence | `e052366e` |
+| LADDER3 | + Fold renderer | `3e4c7ad6` |
+| LADDER4 | + Bass | `d254c06e` |
+| LADDER5 | + Snare -- the shipping machine | `581ed2ce` |
+
+**Flash CFMIN first.** It is the shipping machine byte-for-byte except that the
+per-event arithmetic is gone, so it isolates the one axis the failure register's own
+measurement blames ("the ColdFire outruns its frame").
+
+* **CFMIN runs, LADDER5 stalls** -> the per-event ColdFire work is the fault and the
+  **whole DSP-side ladder is exonerated in one flash**;
+* **CFMIN still stalls** -> the fault is in the seam, the record traffic or the
+  admission -- **not the arithmetic the register blames** -- and the DSP rungs take
+  over (rung 1 first, which tests the seam alone).
+
+### What is already established, so the flash is not starting from nothing
+
+* the **complete UI route** is solved and screen-derived: `t1` -> double-tap **30 ms**
+  -> `LEFT` -> `down x5` -> `YES` signs the track; the same double-tap then opens the
+  **PERKY engine pool** (FOLD/BASS/SNARE). The gesture opens **two different lists
+  depending on whether the track is signed**, which is why it looked dead for five
+  rounds.
+* **all six algorithm variants run through the real panel** locally: correct engine on
+  both cores, live trig counts, non-zero audio, transport advancing;
+* the port's **timing instruments are mapped and verified in its own log**
+  (`--frame` yes, `--frame-timer` kills the boot, `--sequencer` enables the cycle
+  clock) -- but a lock-step machine cannot be late, so the port cannot show this class
+  of fault.
+
+### Two traps, recorded because each cost an hour
+
+* **`PK_LADDER` / `PK_CF_MINIMAL` must be set when REGENERATING the manifest, not when
+  building.** The build reads `modules/perky/machine_3algo.asm` and
+  `control_3algo.s` from disk; setting the variable on `make bus` alone produced five
+  byte-identical images.
+* **`out/cache/` does not key on the environment.** Use `OCTABAM_NO_CACHE=1`.
+
+`tools/verify/verify_perky_3algo_ladder.py` regenerates all five DSP rungs and reads
+the instructions back, so a rung that silently stopped disabling its renderer fails
+the suite rather than moving the boundary.
+
+### A third axis, NOT yet built, if the two above do not localise it
+
+**The 19 ColdFire UI detours** (`pk_pool_open`, `pk_main_commit`, `pk_chooser_open`,
+**`pk_tick_hook`** -- which runs on every UI tick -- and the rest). The user's symptom
+is a *transport* stop, which is a ColdFire-level event, and nothing so far has tested
+the detours' ongoing cost with the machine assigned but idle.
+
 ## PERKY 3ALGO (perky-dsp-2voice-3algo): the same wedge returned, from a NEW per-event cost 🟡 fix in, measurement pending
 
 **Seen:** user's unit, this branch. With a Perky machine assigned: no sound, and
