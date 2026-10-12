@@ -58,17 +58,40 @@ instruction forms), so the two are not comparable without the factor.
   written down**. It is `(72512 - 22560) / 2`, less margin -- a real derivation
   from the physical deadline. That is now recorded.
 
-**THE CAVEAT THAT CUTS AGAINST THE OPTIMISTIC READING.** The stock reserve of
-1,410 cycles/sample was measured with **"FX1/FX2 NONE"** -- the canary
-configuration. The shipping remix **loads six FX** (FILTER, EQUALIZER, PHASER,
-FLANGER, CHORUS, SPATIALIZER), and a loaded FX costs cycles the canary did not
-pay. So the real stock reserve is **larger** than 22,560 and the real Perky
-allowance is **smaller** than 23,040.
+**RETRACTED, one commit later: my own "FX NONE" caveat was wrong.** I wrote that
+the 1,410 cycles/sample stock reserve was measured with FX1/FX2 NONE, so the real
+reserve must be larger and the real allowance smaller. `tools/build/cycle_count.py`
+says the opposite, in its own words:
 
-That is the legitimate form of the concern the directive raised -- and it points
-the opposite way: the true shortfall is **worse** than 69-72%, not better than
-2.76%. Measuring the retained-FX delta is the next step; it needs the full stock
-continuation under the meter, not the seam canary.
+```python
+BURN_SPARE = 1392       # measured, worst realistic FX1 load, 7 Aug 2026
+CORE_TOTAL = 4535       # 200 MIPS / 44100, arithmetic
+USABLE = 3120           # what our code may actually spend, per core
+STOCK_SHARE = CORE_TOTAL - USABLE      # ~1410, by subtraction
+...
+# STOCK FILTER'S OWN LOAD IS INSIDE STOCK_SHARE: the 23 Aug budget was
+...
+print(f"... [{', '.join(stock_rows)}] -- stock code; FILTER measured 192")
+```
+
+**"STOCK FILTER'S OWN LOAD IS INSIDE STOCK_SHARE"** -- the reserve already
+contains stock FX load, measured at 192 cycles/sample per FILTER instance, and
+`BURN_SPARE = 1392` is "the worst realistic FX1 load". The "FX1/FX2 NONE" phrase
+belongs to `verify_perky_realtime_budget.py`'s canary CONFIGURATION -- the
+per-voice harness deliberately runs with no FX so it measures the voice, not the
+bank -- and I read it as a statement about the 1,410 reserve. It is not one.
+
+So the allowance of 23,040 **stands as derived**: `(72512 - 22560) / 2` less
+margin, with stock FX load already inside the 22,560. There is no hidden larger
+shortfall from the retained effects.
+
+**What the residual uncertainty actually is**, in the repository's own terms:
+`make cycles` prints "the counter reads ~270 LOW on the reverb (CHIP.md s2); the
+wall is a CLIFF" and, for a remix like this one, "the headroom arithmetic below
+does not apply to it ... Only a burn sweep measures it." So the ceiling is a
+hardware burn sweep on a CLIFF, not a slope, and the local counter under-reads by
+a documented ~270 cycles on the reverb. That is the limit of what local tooling
+can say -- not an FX-loading error in the budget.
 
 ## Final architecture
 
