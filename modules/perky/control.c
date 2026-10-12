@@ -21,6 +21,14 @@
 #ifndef PK_FOLD_CANDIDATE
 #define PK_FOLD_CANDIDATE 0
 #endif
+/* Reduced three-algorithm machine (Fold Drum 1 / Resonant Bass / Resonant
+ * Snare). Off by default so the module's other configurations are unchanged;
+ * the three-algorithm build compiles a wrapper that sets it. */
+#ifndef PK_RESONANT_CANDIDATE
+#define PK_RESONANT_CANDIDATE 0
+#endif
+#define PK_RESONANT_BASS 10u   /* the family byte this machine dispatches on */
+#define PK_RESONANT_SNARE 11u
 #define MODE_SLOT 4u      /* visible main SRC-page MODE parameter */
 #define MODEL_SLOT 11u    /* hidden persisted source parameter */
 #define MODE_FORMATTER 0x4003c718u /* stock stepped select: prints value+1 */
@@ -307,6 +315,39 @@ void pk_fold_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig)
     p[11]=0;
 }
 #endif
+#if PK_RESONANT_CANDIDATE
+/* Resonant Bass / Resonant Snare.
+ *
+ * The shared v1.2.1 update (`karplus_control_update.common_update`, the oracle
+ * for the ARM routines at 0x08024714 / 0x080246AC) takes the four SMOOTHED
+ * panel controls and reads them straight out as `tune, decay, p1, p2`:
+ *
+ *     prepared = tuple(smooth_control(...) for ...)
+ *     tune, decay, p1, p2 = (value & 0xffff for value in prepared)
+ *
+ * So unlike Simple Drum and Fold -- which rescale each parameter on this side
+ * (`simple_rate(simple_time(...), ...)`) -- the resonant path publishes the
+ * prepared words UNCHANGED and lets the DSP renderer derive the coefficients,
+ * which is this branch's whole architecture: the ColdFire side transports
+ * controls, the DSP side synthesises.
+ *
+ * `family` is stamped into p[11], which `pk_render` packs into the record word
+ * the DSP dispatcher reads (word 0x13); the smoother's own state is reset when
+ * the family changes, so switching algorithm cannot carry a stale envelope.
+ */
+void pk_resonant_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig,
+                         unsigned family)
+{
+    pk_simple_prepare(s,p,trig);
+    for(unsigned i=0;i<4;++i) {          /* prepared[] IS tune/decay/p1/p2 */
+        p[2*i]=(uint8_t)(s->prepared[i]>>8);
+        p[2*i+1]=(uint8_t)(s->prepared[i]&0xffu);
+    }
+    p[8]=(uint8_t)(p[6]>2u ? 2u : p[6]);
+    p[9]=0; p[10]=0;
+    p[11]=(uint8_t)family;
+}
+#endif
 
 /* Native source renderer ABI at 0x4000d430/0x4000d518. Milestone 0 does not
  * synthesize here: it reserves exactly FLEX's record span, then replaces the
@@ -363,6 +404,12 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
             if(p[11]==2u) pk_simple_prepare(&simple_controls[track],p,trig);
 #if PK_FOLD_CANDIDATE
             else if(p[11]==0u) pk_fold_prepare(&simple_controls[track],p,trig);
+#endif
+#if PK_RESONANT_CANDIDATE
+            else if(p[11]==PK_RESONANT_BASS)
+                pk_resonant_prepare(&simple_controls[track],p,trig,PK_RESONANT_BASS);
+            else if(p[11]==PK_RESONANT_SNARE)
+                pk_resonant_prepare(&simple_controls[track],p,trig,PK_RESONANT_SNARE);
 #endif
             else {
                 simple_controls[track].valid=0;
