@@ -43,17 +43,28 @@ REMIX = Remix(
         "Reduced Perky DSP machine: T1/T5 only, one voice per core, three "
         "algorithms each. FX sacrifice measured at 3,936 composed P words."
     ),
-    # DELAY is deliberately NOT listed. Its FX1 id (0x08) is in
-    # `stock.fx1_ids()`, and `_listed` adds every effect whose id appears
-    # there, so listing it silently pulls the whole FX1 row back in and the
-    # harvest collapses to just the three reverbs (2,724 words -- measured,
-    # and the reason the first attempt at this remix overran). DELAY's DSP
-    # dispatch is stock's null stub anyway; the row is written by the build's
-    # own DELAY rule without being listed here.
     modules=(
         "PERKY PROBE",
         "FILTER", "EQUALIZER", "PHASER", "FLANGER", "CHORUS",
         "SPATIALIZER",
     ),
+    # THE FX1 LIST IS LOAD-BEARING, NOT COSMETIC.
+    #
+    # `_listed` is the module list UNION every effect whose fx2_id appears on
+    # the stock FX1 chooser (`stock.fx1_ids()`, read from the pristine image).
+    # The DSP dispatch table is indexed by the raw id and shared by both menus,
+    # so an effect on FX1 cannot have its code harvested without taking it off
+    # FX1. With the auto-add rule in force the harvest collapses to the three
+    # reverbs -- 2,724 words against the composed program's 3,936, a measured
+    # 1,212-word shortfall.
+    #
+    # Naming fx1 EXPLICITLY replaces that auto-add rule, which is how the four
+    # extra effects below are given up. The five omitted (COMPRESSOR, LO-FI,
+    # DJ EQ, COMB FILTER and the three reverbs) are exactly what the sacrifice
+    # gate measures; the choosers below still carry every effect that survives.
+    # Only STOCK effects that the pristine FX1 chooser already lists (a stock
+    # entry names the stock descriptor directly; a module of ours would need a
+    # descriptor clone). These are exactly the survivors.
+    fx1=("FILTER", "EQUALIZER", "PHASER", "FLANGER", "CHORUS", "SPATIALIZER"),
     fallback="NONE",
 )

@@ -96,8 +96,18 @@ def build(work: Path, mainos: Path, *, build_number: int, version: str) -> None:
     work.mkdir(parents=True, exist_ok=True)
 
     builder = load("three_algo_builder", ROOT / "tools/perky/build_dsp_3algo_source.py")
+    composed_entry = builder.P.rstrip("_") + "_source"
     dsp_source = work / "perky_3algo.asm"
     text = builder.normalize(builder.compose())
+    # The module declaration's DspHook names the probe's seam label. The
+    # composed machine's entry point is the same seam under the composer's
+    # name, so publish it under the label the hook expects.
+    if "\npk_probe_source:" in text:
+        die("the composed source already defines pk_probe_source")
+    text = text.replace("\n" + composed_entry + ":",
+                        "\n" + composed_entry + ":\npk_probe_source:", 1)
+    if "\npk_probe_source:" not in text:
+        die(f"could not publish pk_probe_source from {composed_entry}")
     dsp_source.write_text(text)
     words = builder.measure(text, dsp_source)
     print(f"=== {REMIX} 1/4: composed DSP source: {words} P words ===")
