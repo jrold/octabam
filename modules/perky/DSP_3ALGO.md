@@ -1065,6 +1065,47 @@ So the precondition fails on reachable data, and this branch cannot take that
 optimisation. Recorded as a measured negative result rather than left as an
 untried idea.
 
+### FIXED: the one-voice-per-core latch is removed
+
+The defect recorded below is fixed. `x:$38ED` is no longer used at all: the
+latch is **removed**, not cleared, because the composed machine is installed only
+at the per-track source site and has no once-per-block hook to clear it from.
+
+**Why removing it is correct rather than merely expedient.** The latch guarded a
+case the target cannot produce. `x:$418` is this core's track slot and only
+slot 0 is admitted -- verified against the stock walk, which steps it `0x20` to
+`0x80` over the core's four tracks -- and the target gives each core exactly ONE
+Perky-capable track. So at most one record per core can reach the admission test,
+and in fact exactly one can pass the `PK`/`Y1` test at all. The latch's only
+observable effect was to silence every block after the first.
+
+Measured after the removal:
+
+```
+x:$38ed extension-word occurrences in the shipped image: 0
+composed : 3859 P words   (was 3868)   both payloads FREE 204 (was 195)
+make bus REMIX=perky-dsp-3algo   9388afd5215af35ca34a433e9af1e670b07bb2c7fff832797d6e7803004b649b
+tools/perky/build_dsp_3algo.py   9388afd5215af35ca34a433e9af1e670b07bb2c7fff832797d6e7803004b649b
+```
+
+`verify_perky_3algo_core_mapping.py` now **guards the defect** rather than
+asserting the latch: it refuses any build in which the admission word is written
+without being cleared, with the reasoning in the failure message.
+
+**What was established on the way, and is worth keeping:**
+
+* The dispatcher's site is INSIDE the per-track loop, not once per block --
+  payload B's `P:0x001a2` and payload A's `P:0x0039c` are the `move a,x:>$20e`
+  reached from `bne` at `0x331 -> 0x18b` (B) and `0x53c -> 0x385` (A). So the
+  dispatcher runs four times per block per core.
+* Payload A re-enters its `x:$418` init every block (`0x586: bra 0x102`, landing
+  before the `move x0,x:$418` at `0x373`). **Payload B shows no such re-entry**
+  anywhere in the disassembly -- every backward branch was checked -- which is
+  either a real asymmetry in the two payloads or a limit of matching targets
+  printed as `func_XXXX`. That question is now moot for this fix, because the
+  latch is gone and nothing depends on `x:$418` restarting, but it is recorded
+  rather than dropped.
+
 ### CRITICAL: the one-voice-per-core latch is SET and NEVER CLEARED
 
 Found while auditing item 6's remaining sub-items. This is a functional defect in

@@ -20,13 +20,23 @@ pk3d_source:
 pk3v_not_admitted:
         rts                             ; stock/other source runs
 pk3v_hit:
-        ; One Perky voice per core: the first admitted PERKY record wins
-        ; for the whole frame; every later one renders silence.
-        move    x:>$38ed,a
-        tst     a
-        bne     pk3c_silence
-        move    #>$1,a
-        move    a1,x:>$38ed
+        ; ONE PERKY VOICE PER CORE, WITHOUT A LATCH.
+        ;
+        ; x:$418 is this core's track slot and only slot 0 is admitted
+        ; (verified against the stock walk, which steps it 0x20 -> 0x80
+        ; over the core's four tracks), so at most ONE track per core
+        ; can reach here -- and the target gives each core exactly one
+        ; Perky-capable track, so in fact exactly one record per core
+        ; can pass the PK/Y1 test at all.
+        ;
+        ; There used to be a latch at x:$38ed here: set to 1 on the first
+        ; admission and NEVER CLEARED, so the first admitted block set it
+        ; and every later entry took the silence path -- the Perky track
+        ; rendered one block and then silence forever. It guarded a case
+        ; that cannot arise, and its only observable effect was that.
+        ; Removed rather than cleared, because there is no once-per-block
+        ; hook to clear it from: the machine is installed only at the
+        ; per-track source site.
         ; Consume the same FLEX ring slot advance as the qualified seam.
         move    x:>$20b,a
         add     #>$80,a

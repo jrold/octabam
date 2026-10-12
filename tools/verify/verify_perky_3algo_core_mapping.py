@@ -111,13 +111,28 @@ def main() -> None:
                  source) is None:
         die("the composed dispatcher does not read x:$418 and refuse a "
             "non-zero slot; the admission rule is not in the artifact")
-    # The latch is a one-voice-per-core flag (set to 1), not the slot value.
-    if not re.search(r"move\s+#>\$1,a\s*\n\s*move\s+a1,x:>\$%x"
-                     % composed.ADMIT_LATCH, source):
-        die("the composed dispatcher does not set its one-voice-per-core latch "
-            f"at x:${composed.ADMIT_LATCH:04x}")
-    print(f"latch      : composed sets x:${composed.ADMIT_LATCH:04x} = 1 on the "
-          f"first admitted record (one voice per core)")
+    # NO SET-AND-NEVER-CLEARED LATCH -- guard the defect, do not re-introduce it.
+    #
+    # The machine used to latch `x:$38ed = 1` on the first admission and NEVER
+    # clear it, so the first admitted block silenced every later one: the Perky
+    # track rendered one block and then nothing, for good. It guarded a case the
+    # target cannot produce -- each core has exactly ONE Perky-capable track, so
+    # exactly one record per core can pass the PK/Y1 test -- and its only
+    # observable effect was that silence. Removing it is the fix; this check
+    # refuses to let it come back.
+    writes = re.findall(r"move\s+\S+,x:>\$%04x" % composed.ADMIT_LATCH, source)
+    clears = re.findall(r"move\s+#>?\$0+,?\w*\s*\n\s*move\s+\w+,x:>\$%04x"
+                        % composed.ADMIT_LATCH, source)
+    if writes and not clears:
+        die(f"the composed dispatcher WRITES x:${composed.ADMIT_LATCH:04x} "
+            f"({len(writes)} time(s)) and never clears it -- an admission latch "
+            f"like that silences every block after the first, because the "
+            f"machine is installed only at the per-track source site and has no "
+            f"once-per-block hook to reset it from")
+    print(f"latch      : x:${composed.ADMIT_LATCH:04x} is "
+          f"{'unused' if not writes else 'written and cleared'} -- no "
+          f"set-and-never-cleared admission latch (one voice per core is "
+          f"already guaranteed by admitting slot 0 only)")
     print(f"admission  : composed dispatcher admits x:$418 == {admitted:#x} "
           f"(the core's first track)")
 
