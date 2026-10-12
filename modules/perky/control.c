@@ -246,6 +246,22 @@ typedef struct {
     uint8_t last[4], mode, valid, family;
 } PKSimpleControl;
 static PKSimpleControl simple_controls[8];
+
+/* PER-TRACK TRIGGER EDGE STATE.
+ *
+ * A drum voice must RESTART on every hit, and must NOT restart between hits:
+ * a note held across four 16-sample blocks is one hit, not four. So what the
+ * DSP needs is not "is the track triggered" but "how many hits have there
+ * been" -- a value that changes on a RISING edge and is otherwise constant.
+ * A plain flag cannot say that: with a flag, the note's RELEASE also changes
+ * the value, and the release would restart the voice.
+ *
+ * `pk_trig_last` carries the previous state of the track's trig bit so the edge
+ * can be found; `pk_trig_count` is the monotonic count that actually travels.
+ * Both reset with the bank/part, beside `simple_controls[].valid`.
+ */
+static uint8_t  pk_trig_last[8];
+static uint8_t  pk_trig_count[8];
 static uint32_t simple_bank;
 static unsigned simple_part;
 static void simple_update(PKSimpleControl *s)
@@ -401,11 +417,13 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
             if(simple_bank!=bank || simple_part!=part) {
                 for(unsigned t=0;t<8;++t) simple_controls[t].valid=0;
                 simple_bank=bank; simple_part=part;
-                for(unsigned t=0;t<8;++t)
+                for(unsigned t=0;t<8;++t) {
+                    pk_trig_last[t]=0u; pk_trig_count[t]=0u;
                     for(unsigned k=0;k<4;++k) {
                         simple_controls[t].prepared[k]=0;
                         simple_controls[t].targets[k]=0;
                     }
+                }
             }
             if(p[11]==2u) pk_simple_prepare(&simple_controls[track],p,trig);
 #if PK_FOLD_CANDIDATE
@@ -467,7 +485,28 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
                      * no envelope and no noise state. */
                     src = PK_RES_FRESH_FOLD; n = PK_RES_FRESH_FOLD_WORDS;
                 }
-                record[10] = ((uint32_t)n << 16) | (uint32_t)(src ? p[11] : 0u);
+                /* THE TRIGGER COUNT RIDES IN THE SAME WORD AS THE ENGINE.
+                 *
+                 * Word 0x15 used to carry the engine id alone, and the DSP
+                 * ignored it. Packing the count into its high byte lets the
+                 * dispatcher fold "a new hit happened" into the ONE comparison
+                 * it already makes, instead of adding a second branch -- which
+                 * matters because a near branch cannot be used there at all
+                 * (dsp_asm sizes every label long in pass 1, so a near branch
+                 * drifts between passes and the build refuses).
+                 *
+                 * A rising edge bumps the count; a held note and its release do
+                 * not. The counter is 8 bits, so it wraps every 256 hits -- and
+                 * a wrap could make a hit look like no change. It cannot be
+                 * widened here: the low nibble is the engine id and the top bit
+                 * is the ledger's "tagged" marker.
+                 */
+                if (trig && !pk_trig_last[track])
+                    ++pk_trig_count[track];
+                pk_trig_last[track] = (uint8_t)(trig ? 1u : 0u);
+                record[10] = ((uint32_t)n << 16)
+                           | ((uint32_t)(pk_trig_count[track] & 0xFFu) << 8)
+                           | (uint32_t)(src ? (p[11] & 0xFFu) : 0u);
                 for (unsigned j = 0; j < n; j += 2u) {
                     const uint32_t hi = src[j];
                     const uint32_t lo = (j + 1u < n) ? src[j + 1u] : 0u;

@@ -138,6 +138,55 @@ def main() -> None:
         binary, labels = join.assemble(composer, probe + "\n" + src, f"sim{tag}")
         payloads[tag] = (binary, labels)
 
+    def run_one(tag, binary, labels, rec, voice_in, ledger_in):
+        """One block through the real dispatch, from a given voice state.
+
+        Returns (peak, voice after, ledger after). Used to carry the voice AND
+        the engine ledger across a SEQUENCE of records, which is how the unit
+        runs: each frame builds a record and the voice persists between them.
+
+        Carrying the LEDGER is not optional. Resetting it per block made every
+        block look like an engine change, so every block reloaded the template
+        and a held note was indistinguishable from a fresh hit -- the harness
+        was measuring its own reset, not the trigger logic.
+        """
+        # SIX hex digits per word, like every other region in this file. The
+        # dump format is positional, so a narrower field shifts everything after
+        # it: the scratch, ledger and record below all landed one word early and
+        # the machine took the stock path instead of the Perky one (a 20-sample
+        # block where 16 was expected), which read as "the render produced the
+        # wrong number of bytes" rather than "the data file is malformed".
+        vs = list(voice_in) + [0] * max(0, 108 - len(voice_in))
+        data = (f"X {V:x} " + " ".join(f"{w:06x}" for w in vs[:108]) + "\n"
+                + f"X {composer.SCRATCH_BASE:x} "
+                + " ".join(["000000"] * composer.SCRATCH_WORDS) + "\n"
+                + "X 3964 " + " ".join(["ffffff"] * 17) + "\n"
+                + f"X {composer.RNG_GAP_END:x} 000000 000000 000000 000000\n"
+                + "P 400 00000c\n" + ytext
+                + f"X {composer.ENGINE_LEDGER:x} {ledger_in:06x}\n"
+                + f"X 300 " + " ".join(f"{w:04x}" for w in rec) + "\n"
+                + f"X 209 000300\nX 418 {composer.ADMITTED_SLOT:06x}\nX 20e 000000\n"
+                + f"X 10 {STOCK_N7:06x}\n"
+                + "X 0 " + " ".join(["000000"] * 32) + "\n")
+        (OUT / f"{tag}.data").write_text(data)
+        (OUT / f"{tag}.script").write_text(" ".join(["0"] * 12 + ["-1"]) + "\n")
+        subprocess.run(
+            [str(join.OUT / "bd909_host"), "-code", str(binary), "-org",
+             format(composer.DSP_ORG, "x"), "-entry", format(labels["sim_enter"], "x"),
+             "-data", str(OUT / f"{tag}.data"), "-script", str(OUT / f"{tag}.script"),
+             "-out", str(OUT / f"{tag}.raw"), "-state", str(OUT / f"{tag}.state"),
+             # 0x3800..0x38ed inclusive, so the dump reaches the engine ledger at
+             # 0x38ed and the sequence can carry it forward.
+             "-state-words", str(composer.ENGINE_LEDGER - V + 1),
+             "-statebase", format(V, "x"),
+             "-frames", str(STOCK_N7), "-meter", str(OUT / f"{tag}.meter"),
+             "-cycle-meter", "1"], check=True, capture_output=True, timeout=300)
+        raw = (OUT / f"{tag}.raw").read_bytes()
+        pcm = struct.unpack("<32i", raw[:128])[::2]
+        words = [int(x, 16) for x in (OUT / f"{tag}.state").read_text().split()]
+        st = words[:108]
+        return max(abs(v) for v in pcm), st, words[composer.ENGINE_LEDGER - V]
+
     failures = []
     print()
     print(f"{'payload':8s} {'track':6s} {'row':18s} {'model':>5s} {'count':>5s} "
@@ -194,9 +243,21 @@ def main() -> None:
                  "-meter", str(OUT / f"{ptag}-{model}.meter"), "-cycle-meter", "1"],
                 check=True, capture_output=True, timeout=300)
             raw = (OUT / f"{ptag}-{model}.raw").read_bytes()
+            # THE BLOCK STRIDE IS THE HOST'S -frames, NOT THE MACHINE'S n7.
+            # `-frames 20` makes the host capture 20 samples per block, so each
+            # block is 160 bytes; the machine's own n7 (16, which it sets) only
+            # decides how many of them the RENDERER wrote. Slicing at 128 read
+            # every block after the first from a misaligned offset and still
+            # produced plausible-looking non-zero peaks, which is how this went
+            # unnoticed. Read STRIDE bytes per block and take the first 16
+            # samples of each -- the ones the renderer actually produced.
+            STRIDE = STOCK_N7 * 8
+            if len(raw) < BLOCKS * STRIDE:
+                die(f"payload {ptag} model {model}: {len(raw)} bytes of PCM for "
+                    f"{BLOCKS} blocks of {STRIDE} -- the host wrote short")
             peaks = []
             for b in range(BLOCKS):
-                pcm = struct.unpack("<32i", raw[b * 128:(b + 1) * 128])[::2]
+                pcm = struct.unpack("<32i", raw[b * STRIDE:b * STRIDE + 128])[::2]
                 peaks.append(max(abs(v) for v in pcm))
             states = [[int(v, 16) for v in line.split()]
                       for line in (OUT / f"{ptag}-{model}.state").read_text().splitlines()]
@@ -223,6 +284,72 @@ def main() -> None:
             print(f"{ptag:8s} {tname:6s} {label:18s} {model:5d} {rec[0x14]:5d} "
                   f"{str(peaks):>34s}  {continuity}{note}")
 
+    # ---- REPEATED TRIGGERS AND A HELD NOTE, through the same path
+    #
+    # The simulator keeps the ColdFire's statics across the rows of ONE run, so
+    # feeding it a hit/release/hit/held sequence builds the records the unit
+    # would build across those frames -- including the trigger count the
+    # dispatcher folds into its ledger. Each record then drives the DSP with the
+    # voice state carried forward, which is what production does.
+    print()
+    print("repeated triggers and a held note, payload B / T1:")
+    binary, labels = payloads["B"]
+    for label, model in rows[1:]:                       # the Resonant pair
+        seq = [(1, "hit"), (0, "release"), (1, "hit"), (1, "held")]
+        (OUT / f"seq-{model}.in").write_bytes(
+            b"".join(bytes([0, trig, model]) for trig, _ in seq))
+        r = subprocess.run([str(exe), str(OUT / f"seq-{model}.in"),
+                            str(OUT / f"seq-{model}.rec")],
+                           capture_output=True, text=True)
+        if r.returncode:
+            die(f"the simulator failed on the trigger sequence for model {model}: "
+                f"{(r.stderr or '')[-300:]!r}")
+        blob = (OUT / f"seq-{model}.rec").read_bytes()
+        recs = [list(struct.unpack(f"<{WORDS}H", blob[i * WORDS * 2:(i + 1) * WORDS * 2]))
+                for i in range(len(seq))]
+        counts = [rec[0x15] >> 8 for rec in recs]
+        # The count must rise on a HIT and only on a hit -- not on the release,
+        # and not while the note is held.
+        if counts != [1, 1, 2, 2]:
+            failures.append(f"{label}: trigger counts {counts}, expected "
+                            f"[1, 1, 2, 2] (a rise on each hit, nothing on the "
+                            f"release or the hold)")
+        template = [recs[2][0x16 + i] for i in range(recs[2][0x14])]
+        voice = [0] * 108                               # reset state
+        ledger = 0                                      # nothing loaded yet
+        seen = []
+        for i, (trig, name) in enumerate(seq):
+            peak, voice, ledger = run_one(f"sq{model}{i}", binary, labels, recs[i],
+                                          voice, ledger)
+            seen.append((name, trig, peak, list(voice)))
+            print(f"  {label:18s} {name:8s} trig={trig}  peak {peak:9d}")
+            if peak == 0:
+                failures.append(f"{label}: the '{name}' block rendered SILENCE")
+        # A HIT MUST RESTART THE VOICE, and the way to see that is NOT to compare
+        # the block's dumped state against the template: the dump happens AFTER
+        # sixteen rendered samples, so it has already evolved. Compare like with
+        # like instead.
+        #
+        # The first hit starts from a ZERO voice and loads the template. The
+        # second hit starts from an EVOLVED voice -- but if it reloads, the
+        # render begins from the same template, and with the RNG reset per block
+        # (as this harness does, so the two are otherwise identical) it must end
+        # in EXACTLY the same state. A continuation could not: it would carry the
+        # first hit's evolution forward.
+        hits = [st for name, trig, peak, st in seen if name == "hit"]
+        if len(hits) == 2 and hits[0] != hits[1]:
+            failures.append(f"{label}: the second hit did not restart the voice -- "
+                            f"it ended in a different state than the first, so the "
+                            f"template was not reloaded")
+        # ... and the HELD block must NOT restart: it continues from the second
+        # hit, so it must end somewhere else.
+        held = [st for name, trig, peak, st in seen if name == "held"]
+        if held and hits and held[0] == hits[1]:
+            failures.append(f"{label}: a held note restarted the voice -- the block "
+                            f"after the hit ended in the hit's own state, so the "
+                            f"voice was reloaded instead of continuing")
+
+
     print()
     if failures:
         die("; ".join(failures))
@@ -232,7 +359,11 @@ def main() -> None:
           "by the real pk_render, the voice block starting at ZERO and n7 left at "
           "the stock 20. ALL THREE algorithms render non-zero audio on the first "
           "block from reset state on BOTH payloads, keep rendering, and their "
-          "voice state evolves across blocks rather than replaying)")
+          "voice state evolves across blocks rather than replaying. REPEATED "
+          "TRIGGERS are covered too: the ColdFire's rising-edge count rises on "
+          "each hit and on nothing else -- not the release, not a held note -- "
+          "each hit restarts the voice from the template, and a held note "
+          "continues instead of reloading)")
 
 
 if __name__ == "__main__":

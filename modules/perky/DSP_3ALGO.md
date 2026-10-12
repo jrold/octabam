@@ -367,6 +367,65 @@ the RNG comparison**, and stops at case 29 on a PCM-only difference -- see below
 **had never executed**, because the X comparison above it failed first. It now reads
 `composed.RNG_BASE - STATE`, the bytes it actually seeds.
 
+## REPEATED TRIGGERS: item 6, and a defect in the gate that hid it
+
+A drum voice must **restart on every hit** and **must not restart between them**:
+a note held across four 16-sample blocks is one hit, not four. Nothing did that
+before -- the template was loaded only when the ENGINE changed, so a second hit on
+the same engine continued the first one's decay.
+
+**A flag cannot express it.** The obvious design -- send the track's trig bit and
+reload when it changes -- is wrong in the other direction: with a flag, the note's
+RELEASE also changes the value, and the release would restart the voice.
+
+**So a monotonic rising-edge COUNT travels instead.** `control.c` keeps
+`pk_trig_last`/`pk_trig_count` per track, bumps the count on a rising edge only,
+and packs it into record word 0x15's high byte beside the engine id. The
+dispatcher folds `count << 4` into the ledger it ALREADY compares, so "a new hit
+happened" costs no extra branch -- which matters, because a near branch cannot be
+used there at all (`dsp_asm` sizes every label long in pass 1, so the two passes
+disagree and the build refuses). The count sits in bits 4..11 because the low
+nibble is the engine id and bit 15 is the ledger's tagged marker.
+
+Counts are 8 bits, so the counter wraps every 256 hits and a hit exactly 256 later
+could look like no change. Widening it would collide with the engine id and the
+tag, so the wrap is accepted and recorded rather than hidden.
+
+**Two defects in the harness had to be fixed before it could test any of this, and
+both had been reporting plausible numbers:**
+
+1. **The block stride is the HOST's `-frames`, not the machine's n7.** `-frames 20`
+   makes the host emit **160 bytes per block**; the machine's own n7 (16, which it
+   sets) only decides how many of those the RENDERER wrote. The gate sliced at 128,
+   so every block after the first was read from a **misaligned offset** and still
+   produced non-zero, plausible-looking peaks. Fold's peaks moved from
+   `[23040, 70400, 143360, 242176]` to `[23040, 91648, 206080, 366336]` once the
+   stride was right -- the earlier figures were an artifact of the misread.
+
+2. **The ledger has to be carried between blocks.** The first version of the
+   trigger test reset it per block, so every block looked like an engine change,
+   every block reloaded the template, and a held note was indistinguishable from a
+   fresh hit. The harness was measuring its own reset. The dump window now runs to
+   X:0x38ed so the ledger travels with the voice.
+
+**And the first restart assertion was wrong too**: it compared the block's dumped
+state against the template, but the dump happens AFTER sixteen rendered samples, so
+it has already evolved. The correct comparison is like with like -- the first hit
+(starting from a zero voice) and the second hit (starting from an evolved one but
+reloading) must end in **exactly the same state**, and a held block must not.
+
+**Verified now, on payload B/T1 through the real path:**
+
+```
+hit      trig=1  peak 8388608     counts [1, 1, 2, 2]
+release  trig=0  peak 8388352     the count rises on a HIT and on nothing else
+hit      trig=1  peak 8388608     a hit restarts the voice (both hits end identically)
+held     trig=1  peak 8388352     a held note continues instead of reloading
+```
+
+The snare's release peak differing from its hit is the same fact from the audio
+side: the release does not restart the voice.
+
 ## RETRACTED: the envelope curve is NOT reachable outside its 16-bit form
 
 An earlier revision of this file claimed the envelope curve's 16-bit register form
