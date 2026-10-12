@@ -107,7 +107,7 @@ def main() -> None:
         "        jsrl    pk_simple_base\n"
         "        jsrl    pk_fold_voice\n"
         "        rts\n")
-    src = composer.normalize(composer.compose()).replace("@CONT@", "$000400")
+    src = composer.normalize(composer.compose()).replace("@CONT@", "$000400").replace("@NEXT@", "$000400")
     binary, labels = join.assemble(composer, probe + "\n" + src, "switch")
 
     rec = [0] * 20

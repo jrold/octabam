@@ -69,7 +69,15 @@ def main() -> None:
     import fold_drum_compact as fold
 
     join.OUT.mkdir(parents=True, exist_ok=True)
-    source = composer.normalize(composer.compose()).replace("@CONT@", "$000426")
+    # `@NEXT@` is the NOT-ADMITTED continuation. In a probe there is no stock
+    # code after the hook, so it goes to this harness's own trampoline at
+    # P:0x400 -- the target the other gates use. Binding it to the ADMITTED
+    # address sends the rejection cases into whatever happens to sit at 0x426;
+    # the old `rts` returned immediately, which is exactly the shipping bug and
+    # it made these rejection cases look correct.
+    source = (composer.normalize(composer.compose())
+              .replace("@CONT@", "$000426")
+              .replace("@NEXT@", "$000400"))
     # THE JOIN GATE'S OWN PROBE AND ENTRY, not a new one. A probe placed first
     # in the binary puts the entry at P:0x1000, and that run fails with "no
     # return from 1000 (pc=1c20)" while the join gate's identical dispatch at
@@ -129,6 +137,10 @@ def main() -> None:
             # Seed the engine ledger so no re-seed fires: this gate tests the
             # steady-state renderer and the mode delivery, not the switching.
             + f"X {composer.ENGINE_LEDGER:x} {0x8000 | engine:06x}\n"
+            # P:0x400 = `rts`, the NOT-ADMITTED target. Without it the rejection
+            # cases jump into zeros, run on into the renderer and write X:0,
+            # which reads as "the machine took a record it should have refused".
+            + "P 400 00000c\n"
             + "X 20e 000000\n")
         pcm, words = join.drive(composer, binary, labels, "join_dispatch", data, tag)
         if len(words) <= MODE_WORD:

@@ -94,7 +94,7 @@ def main() -> None:
 
     probe = ("meas_disp:\n        move    #$000300,r4\n"
              "        jsrl    pk3d_source\n        rts\n")
-    src_text = composer.normalize(composer.compose()).replace("@CONT@", "$000400")
+    src_text = composer.normalize(composer.compose()).replace("@CONT@", "$000400").replace("@NEXT@", "$000400")
     binary, labels = join.assemble(composer, probe + "\n" + src_text, "n7gate")
 
     rec = [0] * 20

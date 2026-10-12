@@ -155,7 +155,7 @@ def main() -> None:
     st = st + [0] * (composer.RNG_GAP_START - V - len(st))
     probe = ("meas_one:\n        move    #$000300,r4\n        jsrl    pk3d_source\n"
              "        rts\n")
-    src = composer.normalize(composer.compose()).replace("@CONT@", "$000400")
+    src = composer.normalize(composer.compose()).replace("@CONT@", "$000400").replace("@NEXT@", "$000400")
     binary, labels = join.assemble(composer, probe + "\n" + src, "panel")
 
     print()

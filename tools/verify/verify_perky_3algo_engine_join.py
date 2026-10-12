@@ -128,7 +128,7 @@ def main() -> None:
         (case / "wrapper-window-before.bin").read_bytes()[0xC4:0xC4 + 0xF4]).words
     state = state + [0] * 24
 
-    source = composer.normalize(composer.compose()).replace("@CONT@", "$000426")
+    source = composer.normalize(composer.compose()).replace("@CONT@", "$000426").replace("@NEXT@", "$000426")
 
     # ---- direct renderer calls (the reference for each engine) -------------
     direct_probe = (

@@ -60,7 +60,7 @@ def composed_words() -> int:
     builder = importlib.util.module_from_spec(spec)
     sys.modules["builder"] = builder
     spec.loader.exec_module(builder)
-    text = builder.normalize(builder.compose()).replace("@CONT@", "$000426")
+    text = builder.normalize(builder.compose()).replace("@CONT@", "$000426").replace("@NEXT@", "$000426")
     out = OUT / "sacrifice-measure"
     out.parent.mkdir(parents=True, exist_ok=True)
     asm, binary = out.with_suffix(".asm"), out.with_suffix(".bin")

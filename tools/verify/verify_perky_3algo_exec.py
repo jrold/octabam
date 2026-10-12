@@ -166,7 +166,7 @@ def assemble(with_source: bool, out: Path) -> tuple[Path, dict[str, int]]:
     # legal absolute address here (the seam contract is exercised elsewhere).
     text = (probe + "\n"
             + composed.normalize(composed.compose(with_source=with_source))
-            .replace("@CONT@", "$000426"))
+            .replace("@CONT@", "$000426").replace("@NEXT@", "$000426"))
     asm, binary, symbols = (out / f"composed.{ext}" for ext in ("asm", "bin", "sym"))
     asm.write_text(text)
     result = subprocess.run(

@@ -18,7 +18,20 @@ pk3d_source:
         bne     pk3v_not_admitted
         bra     pk3v_hit
 pk3v_not_admitted:
-        rts                             ; stock/other source runs
+        ; THE NOT-ADMITTED PATH MUST CONTINUE STOCK, NOT RETURN.
+        ;
+        ; The hook site is STRAIGHT-LINE code reached by fall-through
+        ; (payload A runs 0x379 -> 0x39a -> the displaced
+        ; `move a,x:$20e` -> 0x39e). Nothing CALLED it, so there is no
+        ; return address on the stack that belongs to us: an `rts` here
+        ; pops whatever the enclosing routine left and the DSP jumps to
+        ; hyperspace. It never finishes the frame, the ColdFire waits
+        ; for a handshake that never comes, and the SEQUENCER STOPS --
+        ; on every track that is not the admitted one.
+        ;
+        ; The displaced instruction is replayed above, so the correct
+        ; continuation is the instruction AFTER the hook site.
+        jmp     @NEXT@
 pk3v_hit:
         ; ONE PERKY VOICE PER CORE, WITHOUT A LATCH.
         ;

@@ -352,7 +352,20 @@ DISPATCH_ENTRY = "\n".join([
         "        bne     pk3v_not_admitted",
         "        bra     pk3v_hit",
         "pk3v_not_admitted:",
-        "        rts                             ; stock/other source runs",
+        "        ; THE NOT-ADMITTED PATH MUST CONTINUE STOCK, NOT RETURN.",
+        "        ;",
+        "        ; The hook site is STRAIGHT-LINE code reached by fall-through",
+        "        ; (payload A runs 0x379 -> 0x39a -> the displaced",
+        "        ; `move a,x:$20e` -> 0x39e). Nothing CALLED it, so there is no",
+        "        ; return address on the stack that belongs to us: an `rts` here",
+        "        ; pops whatever the enclosing routine left and the DSP jumps to",
+        "        ; hyperspace. It never finishes the frame, the ColdFire waits",
+        "        ; for a handshake that never comes, and the SEQUENCER STOPS --",
+        "        ; on every track that is not the admitted one.",
+        "        ;",
+        "        ; The displaced instruction is replayed above, so the correct",
+        "        ; continuation is the instruction AFTER the hook site.",
+        "        jmp     @NEXT@",
         "pk3v_hit:",
         "        ; ONE PERKY VOICE PER CORE, WITHOUT A LATCH.",
         "        ;",
@@ -760,6 +773,20 @@ def drop_dead_code(text: str) -> str:
             i = k
         i += 1
     return "\n".join(l for l, k in zip(lines, keep) if k) + "\n"
+
+
+def resolve_seams(text: str, cont: str = "$000400",
+                  next_: str = "$000400") -> str:
+    """Bind the two build-time control-flow sentinels to concrete addresses.
+
+    BOTH must be bound together, and that is the point of having a function:
+    `@CONT@` is where the ADMITTED path resumes, `@NEXT@` is the instruction
+    after the hook site for the NOT-ADMITTED path, and a caller that binds only
+    one leaves the other in the text for the assembler to choke on. Standalone
+    probes point both at a local `rts` trampoline; the shipping build binds them
+    per payload through the manifest's `subst`.
+    """
+    return text.replace("@CONT@", cont).replace("@NEXT@", next_)
 
 
 def normalize(text: str) -> str:

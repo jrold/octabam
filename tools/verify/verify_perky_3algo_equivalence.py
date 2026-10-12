@@ -253,7 +253,7 @@ def main() -> None:
     # The seam's continuation address is build_bus's per-payload substitution.
     # This gate compares renderer bodies, so any legal absolute address serves;
     # the seam contract itself is exercised by the boot/seam gates.
-    shipping_asm = shipping.replace("@CONT@", "$000426")
+    shipping_asm = shipping.replace("@CONT@", "$000426").replace("@NEXT@", "$000426")
     composed_binary, composed_labels = assemble(shipping_asm, composed.DSP_ORG,
                                                 OUT / "equiv-shipping")
 
