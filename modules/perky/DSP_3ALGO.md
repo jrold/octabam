@@ -711,6 +711,68 @@ user workflow then runs -- select T1, assign, return, audition, `REC`, trigs at
 1/5/9/13, `PLAY` -- with the transport reading **1 (playing)** and staying 1
 across 4 s of polling.
 
+## THE BISECTION LADDER -- the right instrument for a machine that dies
+
+**CF METER is not the instrument for this, and the user is right to say so.**
+Reading its implementation: the readout is an **audio** signal (a square wave per
+125 ms slot on track 8, decoded by `tools/harness/cfmeter.py` from a capture), and
+the slots are split by who measures them --
+
+| slots | measured by | survives a ColdFire halt? |
+|---|---|---|
+| 0-7 | the **ColdFire** | **no** -- freezes at its last value |
+| **8-15** | **the DSP's own meter**, once per frame | **yes** -- separate core |
+
+Slots 8-15 carry the spin count, TUE/ROE, ESAI_1 and **period min/max and the frame
+count**, so a ColdFire halt does leave them live and the pre-halt values are latched
+in the recording. **But if the DSP itself wedges the audio stops, and either way it
+costs a flash and a power cycle and measures ONE image** -- it cannot say which
+increment caused the wedge. So the ladder replaces it.
+
+### PK_LADDER in `tools/perky/build_dsp_3algo_source.py`
+
+Same panel-selectable module at every rung, so the user's workflow (assign PERKY
+through the UI, choose the algorithm, program trigs, PLAY) is **identical** and the
+only variable is DSP behaviour:
+
+| rung | DSP behaviour |
+|---|---|
+| 5 | full machine (the shipping build) |
+| 4 | Snare's entry silenced -- Fold + Bass |
+| 3 | Bass and Snare silenced -- Fold only |
+| 2 | every renderer silenced -- admission + record read + state load + silence |
+| 1 | **NEVER ADMITTED** -- the seam's `rts` path only; the stock source renderer runs |
+
+Rung 1 tests the seam, rung 2 the admission and state load, rungs 3-5 each renderer.
+**The first rung that wedges names the culprit.** Every substitution swaps a two-word
+relative branch for another two-word relative branch, so pass-1/pass-2 sizing cannot
+drift.
+
+### Two traps found in building it, both worth recording
+
+1. **`PK_LADDER` must be set when REGENERATING, not when building.** The build reads
+   `modules/perky/machine_3algo.asm`, a file on disk; `compose()` only reaches it
+   through `emit_3algo_manifest.py`. Setting the variable on `make bus` alone
+   produced five byte-identical images.
+2. **`out/cache/` does not key on the environment.** Five rungs came back with one
+   hash until `OCTABAM_NO_CACHE=1` -- and then still one hash, because of trap 1.
+   AGENTS.md's "`OCTABAM_NO_CACHE=1` builds cold when a build result is in doubt" is
+   the right reflex, but it is not sufficient for an env-var-driven variant.
+
+**The working invocation is:**
+
+```
+PK_LADDER=<n> python3 tools/perky/emit_3algo_manifest.py
+OCTABAM_NO_CACHE=1 make bus REMIX=perky-dsp-3algo
+```
+
+**Rung 5 reproduces the shipping hash exactly** (`c389cfab...`), so the ladder
+changed nothing at the default. All five hashes are distinct:
+
+```
+1 834d4cec   2 cbc1efd0   3 808c7351   4 e5beae3f   5 c389cfab
+```
+
 ## THE INSTRUMENT IS NOW CONFIGURED CORRECTLY -- verified in the port's own log
 
 `--sequencer` is what enables the cycle clock (`main.cpp:2633`), and with it both

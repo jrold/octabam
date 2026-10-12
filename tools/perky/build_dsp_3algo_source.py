@@ -588,6 +588,76 @@ DISPATCH_ENTRY = "\n".join([
 ])
 
 
+# ---------------------------------------------------------------------------
+# PK_LADDER -- THE HARDWARE BISECTION LADDER. NOT A SHIPPING OPTION.
+#
+# Why this exists. On the unit the machine wedges immediately, and a wedged unit
+# cannot report anything: CF METER's ColdFire-side slots freeze with the CPU and
+# its DSP-side slots stop when the audio does. Measuring the wedge is therefore
+# the wrong instrument for finding it. The method that works on a machine that
+# dies is the opposite one -- start from a configuration that RUNS, and add
+# functionality until it stops.
+#
+# Each rung is the SAME panel-selectable module, so the user's own workflow
+# (assign PERKY through the UI, choose the algorithm, program trigs, PLAY) is
+# identical at every rung and the only variable is DSP behaviour:
+#
+#   5  full machine (the shipping build)
+#   4  Snare's entry silenced       -- Fold + Bass only
+#   3  Bass and Snare silenced      -- Fold only
+#   2  every renderer silenced      -- admission + record read + state load
+#                                      + silence, i.e. no per-sample work
+#   1  NEVER ADMITTED               -- the seam's `rts` path only; the stock
+#                                      source renderer runs, so the hook is
+#                                      present but does nothing
+#
+# Rung 1 tests the seam itself, rung 2 the admission and state load, rungs 3-5
+# each renderer in turn. THE FIRST RUNG THAT WEDGES NAMES THE CULPRIT.
+#
+# Every substitution swaps a two-word relative branch for another two-word
+# relative branch, so pass-1/pass-2 sizing cannot drift (the assembler sizes
+# every label long in pass 1 and a size change is a build refusal).
+LADDER_DEFAULT = 5
+
+
+def apply_ladder(text: str, rung: int) -> str:
+    """Rewrite the composed source for rung `rung`. 5 = unchanged."""
+    if rung >= LADDER_DEFAULT:
+        return text
+    if rung <= 1:
+        # Never admit: the very first test (the track-slot check) always takes
+        # the not-admitted branch. `tst b` stays; only its branch is forced.
+        old = "        bne     pk3v_not_admitted"
+        new = "        bra     pk3v_not_admitted   ; PK_LADDER=1: never admit"
+        assert text.count(old) >= 1, "ladder 1: admission branch not found"
+        return text.replace(old, new, 1)
+    if rung == 2:
+        # Every renderer silenced: jump away before the engine compares.
+        old = "        cmp     #>$0,a"
+        new = "        bra     pk3c_silence        ; PK_LADDER=2: no renderer\n" + old
+        assert old in text, "ladder 2: engine compare not found"
+        return text.replace(old, new, 1)
+    if rung == 3:
+        # Fold only: Bass and Snare fall through to the silence path.
+        for lbl in ("pk3n_entry", "pk3a_entry"):
+            old = "        beq     " + lbl
+            new = "        bra     pk3c_silence        ; PK_LADDER=3"
+            assert old in text, f"ladder 3: {lbl} branch not found"
+            text = text.replace(old, new, 1)
+        return text
+    if rung == 4:
+        old = "        beq     pk3a_entry"
+        new = "        bra     pk3c_silence        ; PK_LADDER=4: no Snare"
+        assert old in text, "ladder 4: snare branch not found"
+        return text.replace(old, new, 1)
+    raise ValueError(f"PK_LADDER={rung} is not a rung (1..5)")
+
+
+def ladder_rung() -> int:
+    import os
+    return int(os.environ.get("PK_LADDER", str(LADDER_DEFAULT)))
+
+
 def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
             interp_a: int = Y_INTERP_A, interp_b: int = Y_INTERP_B,
             *, with_source: bool = True) -> str:
@@ -708,7 +778,11 @@ def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
         _section("resident_primitives.asm",
                  centre_displacements(extra_body(bass_tail))),
     ])
-    return drop_dead_code(text)
+    rung = ladder_rung()
+    if rung != LADDER_DEFAULT:
+        import sys as _sys
+        print(f'  PK_LADDER={rung}: DSP-SIDE BISECTION RUNG -- NOT A SHIPPING BUILD', file=_sys.stderr)
+    return drop_dead_code(apply_ladder(text, rung))
 
 
 # ---------------------------------------------------------------------------
