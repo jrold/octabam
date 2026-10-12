@@ -24,7 +24,7 @@ Copy it to the **root of the CF card**, then on the unit:
 
 | artifact | sha256 / size |
 |---|---|
-| card `.bin` | `out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING.bin`, 448,680 B, sha256 `4c944c3c46f67b2a45e96e512074259bf42164a9b20f3738e22eb45fcfde08d1` |
+| card `.bin` | `out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING.bin`, 448,680 B, sha256 `7c290e3a136aac8c0c3bc605cf0b05083a99af279a9eb5af875b7d82d63e5bae` |
 | MIDI `.syx` | `out/OCTATRACK_OS1.40C_OCTABAM79X.syx`, 626,300 B |
 | DSP payload | `out/mainos_bus.bin`, sha256 `035579ad386acbc9f11ca9b83d197a1c4d5b1dc8b8f72056b7c21bbd5905844c` |
 
@@ -47,18 +47,19 @@ python3 tools/build/bin_decode.py out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING
 ## 1a. WHICH ALGORITHM ACTUALLY MAKES SOUND RIGHT NOW
 
 **All three engines now produce audio.** The browser offers `001 FOLD DRUM`,
-`010 RES BASS` and `011 RES SNARE`, and each one renders: the Resonant pair were
-silent because nothing initialised their voice state, which is fixed -- the
-ColdFire now carries the authentic fresh state in the record buffer and the DSP
-loads it when the engine changes. Measured from a zero block, both render at
-8,388,608 where before they rendered 0.
+`010 RES BASS` and `011 RES SNARE`, and each one renders. All three were silent
+because nothing initialised their voice state -- fixed by carrying each engine's
+authentic fresh state in the record buffer and loading it when the engine changes.
+`verify_perky_3algo_production_sim.py` proves it end to end for all six cases
+(T1 and T5 x three algorithms): real panel mapping, real `pk_render`, zero voice
+block, four consecutive blocks, non-zero PCM and evolving state.
 
 **One limit to know before you measure:** the state delivered is the
 NEUTRAL-setting fresh state. The engines **make sound and switch correctly**, but
 they do not yet follow the TUNE/DECAY/ENV/MIX knobs from block to block -- that is
-the per-event `update` step, which is implemented in `cf_perky4.c` and not yet
-wired. For a TIMING sweep this does not matter: the cycle cost is the renderer's,
-and the control values do not change it much. For a listening check, expect the
+the per-event `update` step, which is implemented (`cf_perky4.c` for the Resonant
+pair, `fold_control_update.py` for Fold) and not yet wired. For a TIMING sweep this
+does not matter: the cycle cost is the renderer's. For a listening check, expect the
 fresh-state voicing rather than a knob-tracked one.
 
 ## 2. Set the unit up

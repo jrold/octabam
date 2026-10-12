@@ -460,6 +460,12 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
                     src = PK_RES_FRESH_BASS; n = PK_RES_FRESH_BASS_WORDS;
                 } else if (p[11] == PK_RESONANT_SNARE) {
                     src = PK_RES_FRESH_SNARE; n = PK_RES_FRESH_SNARE_WORDS;
+                } else if (p[11] == 0u) {
+                    /* FOLD DRUM 1 too. It was silent from a reset state for the
+                     * same reason: its renderer decodes from a voice block that
+                     * nothing initialised, and a zero block has no block index,
+                     * no envelope and no noise state. */
+                    src = PK_RES_FRESH_FOLD; n = PK_RES_FRESH_FOLD_WORDS;
                 }
                 record[10] = ((uint32_t)n << 16) | (uint32_t)(src ? p[11] : 0u);
                 for (unsigned j = 0; j < n; j += 2u) {

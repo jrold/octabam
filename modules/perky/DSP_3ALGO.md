@@ -337,6 +337,60 @@ is not written yet.
 evidenced, the audio is unaffected, the worst-case timing is unaffected, and the
 implementation has a named hazard that must be handled before anyone tries it.
 
+## THE ACCEPTANCE GATE: an end-to-end production simulation, all six cases
+
+`tools/verify/verify_perky_3algo_production_sim.py` runs the machine the way the
+unit runs it, and is the check that decides whether an artifact is flashable:
+
+```
+PANEL          pk_engine_open() then the picked row, which is `pk_engine_select`
+               with the model read OUT OF control.c's own browser arrays -- so a
+               mapping change moves the gate with it and cannot be bypassed
+CONTROL PATH   pk_render(track, ping, 0, 16) -- the real one, which prepares the
+               controls and writes the record
+RESET STATE    the voice block starts at ZERO
+RENDER         pk3d_source on the real payload, FOUR consecutive blocks
+ASSERT         non-zero PCM on every block, and state continuity
+```
+
+It seeds no fixture state, calls no renderer directly, and **runs with `-frames 20`**
+-- what stock leaves in n7 at the hook -- because the machine is required to set its
+own render length; a host-forced 16 would hide exactly the bug that made the render
+overrun X:31.
+
+```
+payload track row                model count  peaks                                  continuity
+B       T1    001 FOLD DRUM          0    40  [23040, 70400, 143360, 242176]        evolves
+B       T1    010 RES BASS          10    88  [8388608, 8388608, 8388608, 8388608]  evolves
+B       T1    011 RES SNARE         11   101  [8388608, 8388352, 6009344, 8388608]  evolves
+A       T5    001 FOLD DRUM          0    40  [23040, 70400, 143360, 242176]        evolves
+A       T5    010 RES BASS          10    88  [8388608, 8388608, 8388608, 8388608]  evolves
+A       T5    011 RES SNARE         11   101  [8388608, 8388352, 6009344, 8388608]  evolves
+```
+
+**ALL THREE algorithms sound on BOTH payloads, from reset state and through the real
+panel entry.** Fold's peaks RISE (23040 -> 70400 -> 143360 -> 242176), which is a
+drum attack rather than a held value; the snare's vary, which is its state evolving
+rather than replaying.
+
+### FOLD WAS SILENT TOO, and the same fix covers it
+
+The first run of this gate showed **Fold at `[0, 0, 0, 0]`** -- silent from reset for
+the same reason the Resonant pair were: a zero voice block has no block index, no
+envelope and no noise state, so the decoder had nothing to decode. `fold_control_update.py`
+has the same init/trigger/update recovery (`fresh_fold1`, `trigger_fold1`), so Fold's
+fresh state is generated and carried identically: **40 words**, `record[10]` = 40,
+model 0. The P budget did not move, because the state rides the record buffer.
+
+**THE HARNESS IS NEW AND DELIBERATELY SO.** `tools/harness/perky_cf/production_sim.c`
+drives the real `pk_engine_open`/`pk_engine_select`/`pk_render` and emits the whole
+record as DSP words. Three details cost real time and are recorded so they are not
+rediscovered: the two stock UI calls `pk_engine_select` makes must be executable
+`ret` stubs; `0x4005829c` must return **0** so `pk_engine_open` takes its
+`if (!window) return` path after capturing the bank/part/track (a bare `ret` leaves
+garbage in `rax`, the draws run, and the harness faults); and `trigger_fold1`
+**mutates in place and returns None**, unlike the resonant pair.
+
 ## FIXED: the Resonant fresh state now reaches the DSP
 
 The engines were silent because **nothing ever initialised X:0x3800**. A zero voice
