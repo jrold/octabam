@@ -245,23 +245,31 @@ every existing caller is unchanged. The composed gate passes `-statebase 3800`.
 * Fold PCM: corners and lengths now match (`lengths 256/256`), and **corner 0
   passes exactly** -- the composed renderer reproduces the captured ARM fixture
   through the composed build.
-* corner 1 diverges -- and the divergence is **block-index dependent**.
-  Measured across the three mode-1 corners, which differ only in the packed
-  sample index the voice starts from:
+* **the first block is always exact; the divergence starts inside the SECOND
+  block.** Running the gate's own cases one at a time:
 
-| corner | `state[0x20]` | block index | composed result |
-| ---: | ---: | ---: | --- |
-| 0 | `0x0000` | 0 | **passes exactly** |
-| 1 | `0x07fe` | non-zero | silent |
-| 2 | `0x0ffc` | non-zero | (untested) |
+```
+tag                        got[:4]                     want[:4]                    first diff
+fold arm mode 1 corner 0   [-1, -2, -4, -6]            [-1, -2, -4, -6]            none (PASSES)
+fold arm mode 1 corner 1   [-29, -115, -257, -457]     [-29, -115, -257, -457]     sample 29
+fold arm mode 1 corner 2   [105, 313, 310, 197]        [105, 313, 310, 197]        sample 29
+```
 
-  The standalone source passes all three and the composed and standalone
-  `pk_fold_voice` loops are byte-identical, so the composed machine is correct
-  while it decodes **block 0** and diverges as soon as the decoder must fetch a
-  later block from the packed Y stream. The delta decoder is the only component
-  that takes a different path between those two cases, and its block cursor
-  derives from the table base it is handed (`x:0x0efb` in the composition).
-  That is the next thing to check.
+  Corner 0 passes all 256 samples. Corners 1 and 2 match their fixtures exactly
+  for the first block (samples 0--15) and then diverge at sample 29, which is
+  inside the second 16-sample block.
+
+  It is **not** a one-sample shift (testing shifts of -2..+2 matches 0--13 of
+  224 samples) and it is **not** the scratch/Y seeding: driving the composed
+  binary directly with the composition's own ledger addresses reproduces all
+  three corners exactly for a single block, so the renderer, the tables and the
+  first-block path are all correct.
+
+  What is left is state carried BETWEEN blocks. Corner 0 starts at packed index
+  0 and the others at `0x07fe`/`0x0ffc`, so the difference between the passing
+  and failing cases is the block-1 decode, and the divergence begins exactly
+  where the second block starts. The oscillator's `x:(r6+$21)` phase accumulator
+  and the delta decoder's cursor are the two candidates.
 
 ### The equivalence gate
 
