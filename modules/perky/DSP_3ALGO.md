@@ -570,6 +570,73 @@ kind of cost that can approach or exceed the renderer's own 35,753.
 settles it is now well defined: run `P:0x39e..P:0x425` on the host with a real
 ring and meter it, or meter a stock frame with the region `nop`ed.
 
+## REPRODUCED: the physical failure, through the real panel workflow
+
+**The blocker is no longer "explained but unreproducible".** The physical
+workflow hangs the DSP under the port, and the control does not.
+
+### The strategy was wrong, and this is the correction
+
+Every earlier attempt reached the renderer by prewriting machine state into a
+project, poking RAM, or calling `pk_render` directly -- all three bypass the
+firmware transitions the user actually performs. The port has a real panel path
+(`--live-script`, key codes from `tools/panel/KEYMAP.md`, live code =
+`row*8 + bit - 0x100`), and `verify_perky_cf_ui_userpath.py` already drove it for
+a sibling module. **The test now does what the hand does:**
+
+1. boot with T1 as stock FLEX, no Perky signature, **no trigs**;
+2. `T1` = key `0x10`;
+3. open SRC SETUP = `0x2d` held + `0x22`;
+4. walk 6 rows (`0x20`) to the PERKY row and commit with `YES` (`0x31`);
+5. leave with `NO` (`0x32`);
+6. audition with trig 1 (`0x00`);
+7. grid-record = `REC` (`0x29`);
+8. trigs at steps 1/5/9/13 = keys `0x00 0x04 0x08 0x0c`;
+9. `PLAY` = key `0x28` (row 0x25 bit 0 -- **not** `0x3f`, which is an encoder
+   push and never starts the transport);
+10. `--cf-frame-deadline 1.7`, and **the frame timer must be on**.
+
+That last one is the trap: the port defaults to *"frame : off ... 0 frame
+interrupt(s) taken"*, so the deadline model measures **nothing** until
+`--frame-timer` restores the 16-sample timer. A deadline run without it looks
+clean and proves nothing.
+
+### The result
+
+| run | interrupt vectors | DSP |
+|---|---|---|
+| **Perky assigned through the panel** | 0x10 x163761, 0x12 x40941 | **`FAULT: PC 0xe2c48f is outside P memory` -- HUNG** |
+| **control, same run, no assignment** | 0x10 x222700, 0x12 x55675 | clean |
+
+`0xe2c48f` is 14,861,455 -- far beyond P memory's 0x80000 -- and the last-PC ring
+shows it **repeating**, so the core is stuck, not merely passing through. The
+control fires **more** interrupts than the failing run precisely because the
+failing run stops early.
+
+**So the failure is not the frame deadline at all.** The deadline model never
+trips, because the core leaves P memory first. That retires the whole
+"event-frame overrun" line of reasoning for THIS symptom (it remains the
+documented cause of the other PERKY entry): the DSP-side machine -- the hook, its
+continuation, or what it calls -- is jumping to a garbage address, and that is
+also why no sound is produced.
+
+### Where the investigation goes next
+
+`0xe2c48f` is the shape of a **corrupted return address**: a `jsr`/`rts` pair
+whose pop no longer matches its push. The hook is explicitly a `jsr` planted in
+stock code (`schema.DspHook`), and the DSP machine makes many nested calls, so
+the candidates are the ones this session already touched and then left alone:
+
+* a return that is not balanced on some path (the admitted path's exit is
+  `move ssh,x0` then `jmp`, the not-admitted path is `rts`);
+* the System Stack wrapping (15 entries) because a path pushes more than it pops;
+* a computed jump into the renderer with a bad register.
+
+The gate is `tools/verify/verify_perky_3algo_ui_repro.py` -- panel workflow,
+deadline model, `--frame-timer`, and it **fails on the DSP fault**. The control
+is the same gate with `--no-assign`. **Fix against this, and the reproduction is
+the regression test.**
+
 ## THE MEASUREMENT PATH, MAPPED (and the project confirmed absent)
 
 Nine rounds of asking for `OT_PROJECT` produced the search this round instead:
