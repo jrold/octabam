@@ -585,9 +585,40 @@ reads for its engine id (`move x:(r4+$6),b`).
   still much less than a from-scratch control law -- but it is real work, not
   a configuration change.
 
-`p[11]` is the family byte, `p[6]`/`p[7]` the mode, and the DSP's `$6` offset
-is `record[3]`; the exact byte the dispatcher needs must therefore be confirmed
-against a real build rather than assumed, which is the next step.
+**The record layout, resolved.** `pk_render` builds `p[12]` as `p[0..5]` from
+the DSP control words and `p[6..11]` from the track's page slots
+(`0x80000810 + 72*track + 0x20 + k - 6`), then overrides `p[6] = p[MODE_SLOT]`
+and writes:
+
+```c
+record[4+k] = ((uint32_t)p[2k] << 16) | p[2k+1];
+```
+
+So the pair written at `record[3]` is `(p[6], p[7])` -- and byte offset 6, which
+is what `pk3d_source` reads with `move x:(r4+$6),b`, is exactly `p[6]`. But
+`p[6]` has just been overwritten with `p[MODE_SLOT]`, the visible main-page MODE
+parameter.
+
+**That is the crux, and it is a real defect against this target.** The composed
+dispatcher treats byte 6 as the ENGINE ID and compares it against 0/10/11, while
+the existing control path puts the MODE parameter there. The two disagree about
+what that byte means. Fold happens to work because family 0 and mode 0 coincide
+numerically; Bass and Snare cannot be selected at all, because mode never takes
+the values 10 or 11.
+
+So the control-side work is now precisely specified rather than a general "add
+two prepare paths":
+
+1. decide the engine-id encoding the dispatcher will read (a dedicated byte, or
+   `p[6]` carrying family rather than mode);
+2. have the ColdFire side publish the selected family for exactly the three
+   target algorithms, and only on the tracks the admission rule admits;
+3. add the Resonant Bass / Resonant Snare control preparation itself, which does
+   not exist in `control.c` today.
+
+Item 1 is a layout decision that touches the already-qualified renderers, so it
+should be taken deliberately rather than by editing the dispatcher to match
+whatever byte is free.
 
 ### The equivalence gate
 
