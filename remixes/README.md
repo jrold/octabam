@@ -30,6 +30,6 @@ A remix is a named selection of modules; `make image REMIX=<name> BUILD=<n>` bui
 
 | remix | contains | proof |
 |---|---|---|
-| [`perky-dsp-3algo`](perky-dsp-3algo/README.md) | Reduced Perky DSP machine: T1/T5 only, one voice per core, three algorithms each. FX sacrifice measured at 3,936 composed P words. | `make check`: composed reduced Perky DSP machine; renderer equivalence and sacrifice measured, execution/placement qualification pending |
+| [`perky-dsp-3algo`](perky-dsp-3algo/README.md) | Reduced Perky DSP machine: T1/T5 only, one voice per core, three algorithms each. FX sacrifice measured at 3,868 composed P words. | `make check`: composed reduced Perky DSP machine; renderer equivalence, engine/control join, placement and sacrifice all measured; execution qualification pending |
 
 Never share a built image: it contains Elektron's OS.

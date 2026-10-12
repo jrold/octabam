@@ -13,14 +13,14 @@ THE FX SACRIFICE IS MEASURED, NOT CHOSEN. `tools/verify/verify_perky_3algo_sacri
 links the composed source and compares it against the stock effect spans read
 out of the pristine 1.40C MAIN OS:
 
-    composed Perky DSP program .............. 3,936 P words (per payload)
+    composed Perky DSP program .............. 3,868 P words (per payload)
 
-    nothing removed ......................... short 3,936
-    SPRING REV only ......................... short 2,873
-    PLATE + SPRING + DARK (the stock donor) .. short 1,212
-    + COMPRESSOR ............................ short 1,032
-    + LO-FI ................................. short   495
-    + DJ EQ ................................. short   150
+    nothing removed ......................... short 3,868
+    SPRING REV only ......................... short 2,805
+    PLATE + SPRING + DARK (the stock donor) .. short 1,144
+    + COMPRESSOR ............................ short   964
+    + LO-FI ................................. short   427
+    + DJ EQ ................................. short    82
     + COMB FILTER ........................... FITS
 
 So Spring alone is not enough, and this is the first configuration that fits.
@@ -37,11 +37,12 @@ REMIX = Remix(
     name="perky-dsp-3algo",
     family="probes",
     proof=Proof.CHECK,
-    proof_note="composed reduced Perky DSP machine; renderer equivalence and "
-               "sacrifice measured, execution/placement qualification pending",
+    proof_note="composed reduced Perky DSP machine; renderer equivalence, "
+               "engine/control join, placement and sacrifice all measured; "
+               "execution qualification pending",
     doc=(
         "Reduced Perky DSP machine: T1/T5 only, one voice per core, three "
-        "algorithms each. FX sacrifice measured at 3,936 composed P words."
+        "algorithms each. FX sacrifice measured at 3,868 composed P words."
     ),
     modules=(
         "PERKY 3ALGO",
