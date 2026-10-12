@@ -535,58 +535,59 @@ smaller resonant algorithm (a redesign the target forbids, and therefore a
 decision for the user) or accepting a higher per-voice budget than the canary
 model assumes. Neither is something this branch should decide silently.
 
-### The ColdFire control law already exists -- do not rebuild it
+### CORRECTION: the control law is NOT already done
 
-The target says, in the "use the existing repository work first" list,
-*"control/trigger/update transport work"* and *"do not rebuild systems that
-already exist"*. It does, and this branch had not been using it:
+An earlier cut of this record (and the commit that added it) claimed the ColdFire
+control law already exists and "routes Fold Drum 1, Resonant Bass and Resonant
+Snare". **That was wrong, and it is retracted here.** The mistake was reading
+`modules/perky/cf_perky4.c` -- `pk4_algo_init` / `pk4_prepare` / `pk4_render` --
+as the control path. It is the **abandoned ColdFire synthesiser**: `pk4_render`
+has **zero** callers outside its own file, and the file's callers are the
+`control_cf_*` bridge, i.e. the path this target explicitly forbids ("Do NOT move
+synthesis back to ColdFire").
 
-| piece | where it already lives |
-| --- | --- |
-| engine selection + chooser/UI | `modules/perky/control.c` (`pk_engine_select`, `pk_engine_draw`, `engine_labels`) |
-| per-track engine state machine | `modules/perky/cf_perky4.c` (`pk4_engine`, `pk4_track`, `pk4_algo_init`, `pk4_prepare`, `pk4_render`) |
-| algorithm ids | `modules/perky/cf_perky4.h` (`PK4_ALGO_FOLD1 = 0`, `PK4_ALGO_RESONANT = 4`, ...) |
-| restricted-engine build | `tools/perky/build_multi_machine_canary.py` (`engine_ids=...` parameter) |
-| one-voice-per-core admission | already in the canary manifest: `voice_limit=one PERKY track per core, lowest selected wins` |
+**The real control path** is `modules/perky/control.c`, and its actual state is:
 
-`pk4_engine` already routes **Fold Drum 1** (`PK4_ALGO_FOLD1`), **Resonant
-Bass** (`PK4_ALGO_RESONANT`, mode 1) and **Resonant Snare**
-(`PK4_ALGO_RESONANT`, mode 0) -- exactly this target's three algorithms -- as a
-subset of a larger set. `build_fold_machine_canary.py` already demonstrates the
-restriction pattern this target needs:
-
-```python
-multi.build_image(work, 4, 'PERKY4', control_input=control_input,
-                  engine_ids=(10, 2, 0),
-                  engine_description='001 FOLD DRUM ...; 003 SIMPLE DRUM ...; ...')
+```c
+void pk_render(unsigned track, unsigned ping, unsigned start, unsigned end) {
+    ...
+    if      (p[11] == 2u) pk_simple_prepare(&simple_controls[track], p, trig);
+#if PK_FOLD_CANDIDATE
+    else if (p[11] == 0u) pk_fold_prepare(&simple_controls[track], p, trig);
+#endif
+    else {                       /* every other family */
+        simple_controls[track].valid = 0;
+        ... prepared[k] = targets[k] = 0;
+    }
+    record[0] = 0x504b0000u;     /* 'PK' */
+    record[1] = 0x59310000u | trig;   /* 'Y1' + trigger flag */
+    record[2] = record[3] = 0;
+    for (unsigned k = 0; k < 6u; ++k)
+        record[4+k] = ((uint32_t)p[2*k] << 16) | p[2*k+1];
+}
 ```
 
-**What that means for this branch.** The engine-ids for this target are
-`(0, 10, 11)` -- Fold, Bass, Snare -- and the outstanding "ColdFire T1/T5
-algorithm-selection control law" is not a from-scratch implementation. It is:
+So the control law has a prepare path for **Fold** (family 0) and **Simple
+Drum** (family 2) and **nothing else**: Resonant Bass would need family byte 10
+and Resonant Snare 11, and both currently fall into the `else`, which zeroes the
+prepared controls and writes `record[3] = 0` -- the very word the composed DSP
+reads for its engine id (`move x:(r4+$6),b`).
 
-1. select exactly those three engine ids instead of the canary's current set;
-2. keep the existing per-track admission and one-voice-per-core rule;
-3. wire it to the composed DSP source that is already built and placed.
+**What is therefore actually true:**
 
-That is a much smaller piece of work than this record previously implied, and it
-reuses the transport, chooser, parameter paging and p-lock plumbing that the
-target explicitly points at.
+* the DSP-side dispatch, admission and storage are complete and validated
+  (equivalence + image gates);
+* the ColdFire side has **no path at all** for two of the three target
+  algorithms, so selecting Bass or Snare would currently write engine id 0 and
+  render Fold's dispatch branch with zeroed controls;
+* the transport, chooser, paging and p-lock plumbing *is* reusable
+  (`pk_engine_select`, `source_offset`, the `p[]`/`record[]` ABI), so this is
+  still much less than a from-scratch control law -- but it is real work, not
+  a configuration change.
 
-**The T1/T5 mapping falls out of the existing admission rule, and it is
-already correct.** The composed DSP source admits `ADMITTED_SLOT = 0x00` of the
-per-core track slot at `x:$418`, i.e. the FIRST Perky track on each core. The
-repository's own rule is *"one PERKY track per core, lowest selected wins"*
-(the canary manifest states it verbatim). The lowest track on payload B is
-**T1** and the lowest on payload A is **T5** -- which is exactly this target's
-mapping, and it is the repository's measured payload↔core assignment (A serves
-tracks 5-8, B serves 1-4).
-
-So no new admission logic is needed either: selecting the three engine ids and
-letting the existing lowest-wins rule operate puts Fold/Bass/Snare on T1 and T5
-and leaves T2-T4 and T6-T8 ordinary. What remains is to make that restriction
-explicit in this branch's own build front end and prove it with the port gates
-that `build_multi_machine_canary.build_image` already runs.
+`p[11]` is the family byte, `p[6]`/`p[7]` the mode, and the DSP's `$6` offset
+is `record[3]`; the exact byte the dispatcher needs must therefore be confirmed
+against a real build rather than assumed, which is the next step.
 
 ### The equivalence gate
 
