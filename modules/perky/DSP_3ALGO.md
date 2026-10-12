@@ -265,25 +265,34 @@ at all, so whatever the fixture window holds, it is not a word-for-word image of
 the voice's live 40-word state. Both the composed and the standalone differ from
 it in the same way.
 
-**Both gates' own generated data files are the lead.** Diffing the state seed
-the two gates actually write:
+**One more correction.** The `0x7f` seen in the standalone gate's leftover
+`case.data` is not a seed difference: that file is overwritten once per case and
+what remained was from a different case. Every fixture window checked decodes
+`word0 = 0x00ff`, which is what the composed gate seeds. So the two gates agree
+on the seed and the seed is not the lead after all.
 
-```
-standalone gate  X 200  00007f 000001 000000 ...
-composed   gate  X 3800 0000ff 000000 000000 ...
-```
+### Where the Fold item actually stands
 
-They seed **different values for the first state word** (`0x7f` vs `0xff`),
-and the fixture's own `wrapper-window-before` decodes to `0x00ff`. So at least
-one of the two gates is not seeding what the fixture expects, and whichever one
-is wrong will render its first block from a different amp-envelope state.
+Everything the composed build produces has now been measured against the
+qualified standalone build and found **identical**:
 
-That is the concrete thing to settle next: the standalone gate passes all
-fifteen ARM cases with `0x7f` in its seed, while the composed gate seeds `0xff`
-and passes corner 0 but diverges in corner 1's second block. Reading how each
-gate builds that first word -- both call `FoldDrum1.from_arm(...).words`, so the
-difference must be in the window or the padding each applies -- is the next
-step.
+| measurement | composed vs standalone |
+| --- | --- |
+| block-0 PCM, corners 0/1/2 | identical (and equal to the ARM fixture) |
+| post-block-0 40-word state | identical (`state diffs: []`) |
+| `pk_simple_base` (36 words) | 35 identical, 1 relocated `jsr` target |
+| `pk_fold_voice` (60 words) | 55 identical, 5 relocated branch targets |
+| `pk_simple_envelope` / `_frequency` / `_oscillator` | 100% identical |
+| `pk_simple_delta_at` (70 instructions) | only 4 relocated targets |
+
+The remaining gate failure is therefore **not** the composed DSP code: it is a
+difference between the composed gate's harness and the standalone gate's, in
+how the block-to-block carry is driven. The standalone gate passes all fifteen
+ARM cases through the same fixtures while this gate diverges at sample 29 of
+corners 1 and 2, and the two gates differ in exactly one relevant respect --
+`run()` unpacks `16 * blocks * 2` int32 and returns `stereo[::2]`, and the host
+writes `2 * frames` per block with `frames` taken from `-frames`. Reading that
+arithmetic against `blocks` is the next step, not further DSP work.
 
 ### The equivalence gate
 
