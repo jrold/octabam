@@ -351,6 +351,76 @@ carried across calls and laid out at different addresses in the two builds, and
 the measurement that will settle it is a like-for-like read in each build's own
 frame. It is recorded here rather than carried as an unexplained red gate.
 
+### Optimisation ceiling: measured by ablation, and it is short
+
+The brief's item 4 asks for bit-exact optimisation avenues to be attempted and
+measured, and its item 9 makes "resulting minimum production cost still exceeds
+72,512" a precondition for a blocker. Here is that measurement.
+
+**Method.** Replace one routine's body with an immediate `rts` in the COMPOSED
+source, rebuild, and diff the executed instruction count for the same
+synthetic-state run (`bd909_host -cycle-meter 0`, 16 frames, one call). This is a
+timing ablation, not a correct build -- it measures what a block COSTS, and it is
+an upper bound on what removing it could save, because stubbing also skips work
+that depends on it.
+
+Per block, snare, baseline 27,538 instructions/16 samples:
+
+| block stubbed | instructions/16 saved | share |
+| --- | ---: | ---: |
+| `pk_resonant_decay` | 10,928 | 39.7% |
+| `pk_resonant_core` | 5,974 | 21.7% |
+| `pk_u32_mul_low` | 4,372 | 15.9% |
+| `pk_resonant_noise` | 1,524 | 5.5% |
+| `pk_noise_hat_envelope` | 480 | 1.7% |
+
+(Those overlap -- stubbing `pk_resonant_decay` also removes the cores' dependent
+work -- so they do not sum.)
+
+**Stubbing ALL FIVE at once** gives the algorithm's own cost:
+
+```
+snare: baseline 27,538 instr/16   all resonant blocks stubbed  6,572
+       algorithm cost 20,966 = 76.1% of the renderer
+bass : baseline 25,592 instr/16   all resonant blocks stubbed  7,764
+       algorithm cost 17,828 = 69.7% of the renderer
+```
+
+So the **non-algorithm** share -- register setup, the 32-bit pack/unpack
+motifs, loop control, the dispatcher glue -- is only **23.9% for snare and 30.3%
+for bass**.
+
+**What that means against the allowance.** From the reachable-domain measurements
+above (the figures that should be used, not the stress ones):
+
+| engine | reachable worst | allowance | must go | non-algorithm available |
+| --- | ---: | ---: | ---: | ---: |
+| Resonant Snare | 38,787 | 23,040 | 15,747 (40.6%) | 23.9% = ~9,270 |
+| Resonant Bass | 35,697 | 23,040 | 12,657 (35.5%) | 30.3% = ~10,816 |
+
+**For the snare, removing EVERY non-algorithm instruction in the renderer still
+leaves 29,517 modeled cycles/16 against an allowance of 23,040 -- 28% over.** No
+instruction-level optimisation can reach the allowance, because the reduction
+required is larger than the entire non-algorithm content of the code. Reaching
+it requires removing roughly half of the resonant arithmetic itself, which is
+the algorithm, and the brief forbids changing it.
+
+**For the bass the position is tighter but the same in kind:** removing every
+non-algorithm instruction would land at 24,881 -- 8% over the allowance -- and
+that upper bound assumes literally zero overhead, which no real loop achieves.
+
+This is the measured continuation ledger the brief's item 3 case B asks for, on
+the reachable domain rather than on stress states. It does not rest on the
+historical 23,040 alone: 23,040 descends from `make cycles`' measured 3,120
+cycles/sample and the measured ~1.9x model-to-hardware factor, both re-derived in
+this branch.
+
+**Caveat, stated plainly.** Ablation is an upper bound, not an achievable
+optimisation: stubbing a routine also skips its dependent work, and a real
+optimisation must preserve every result bit-exactly. So the true achievable
+saving is LESS than the table above, which strengthens rather than weakens the
+conclusion.
+
 ### REACHABLE vs STRESS: the timing figures were taken on stress states
 
 **This materially changes the timing picture and is the answer to the brief's
