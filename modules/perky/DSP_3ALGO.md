@@ -193,6 +193,57 @@ engines do not call `pk_simple_base`, so their overhead will differ and must be
 measured separately before the table above is quoted as final. One seeded state
 (Fold ARM mode-1 corner-0), one block.
 
+## ITEM 8: the FX sacrifice, revisited -- architectural answer plus a threshold
+
+The directive asks whether code placement, fragmentation, shared-P tails,
+relocation or **overlaying the mutually exclusive renderers** can reduce the
+stock FX sacrifice. Both halves have answers.
+
+**Overlaying: not available, and not because it was not tried.** The placement
+schema is `DspSection` (`tools/remix/schema.py`), whose fields are exactly:
+
+```
+asm, priority, payloads, bus_role, ybase, dev_pin_ybase, r7_latch_slot, gate_label
+```
+
+`priority` is documented as BYTE-LOAD-BEARING packing order. **There is no
+overlay, segment, bank, relocation or load-address field**, so the architecture
+has no mechanism to overlaid code even if the semantics allowed it -- and they do
+not: the algorithm is chosen PER TRACK PER BLOCK, so any of the three bodies can
+be required on a switch that must not load code. Overlaying them would require
+runtime loading, which the directive itself rules out, and `verify_perky_3algo_image`
+plus the "A GAP IS A WALL" single-run placement rule mean the section must be one
+contiguous blob regardless.
+
+So the three complete renderer bodies genuinely must be resident.
+
+**The threshold, which is the actionable half.** `verify_perky_3algo_sacrifice`
+measures, for the CURRENT composition (3,872 words after the mode delivery):
+
+```
+composed Perky DSP program: 3872 P words per payload
+  nothing removed (preserve all stock FX)   0     short 3872
+  SPRING REV only                        1063     short 2809
+  PLATE + SPRING + DARK                  2724     short 1148
+  + COMPRESSOR                           2904     short  968
+  + LO-FI                                3441     short  431
+  + DJ EQ                                3786     short   86
+  + COMB FILTER                          4063     FITS
+```
+
+**86 words is the whole distance to a smaller sacrifice**: shrink the composition
+to 3,786 and DJ EQ comes back, leaving only the three reverbs, COMPRESSOR, LO-FI
+and COMB FILTER sacrificed. That is a concrete, measurable target rather than a
+hope.
+
+**And 67 of those 86 words are already found.** The dead-code removal measured
+earlier is worth 67 words (51 unreachable instructions, verified 15/15 Fold ARM
+exact) and is deliberately NOT shipped because it gives no functional gain on its
+own and perturbs the equivalence gate's basis. **It is 19 words short of the
+threshold.** So the remaining question for item 8 is whether ~19 further words of
+bit-exact reduction exist -- a far smaller and better-posed task than "reduce the
+sacrifice", and one worth doing only if DJ EQ is worth 19 words of risk.
+
 ## THE REAL ANSWER (item 5): the production bound is the REACHABLE figure, and I was quoting STRESS
 
 **This corrects the headline number of the entire investigation.** The directive's
