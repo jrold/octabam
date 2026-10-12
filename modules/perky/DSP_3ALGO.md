@@ -7,6 +7,69 @@ core, three selectable algorithms each.** It is deliberately smaller than the
 superseded twelve-family / four-voice target and it does **not** move synthesis
 back to ColdFire.
 
+## RECONCILED: where 23,040 comes from, and why the "2.76% over" claim was the error
+
+Item 1 of the directive asked precisely what 74,515 and 80,722 contain and how
+they relate to 72,512. It is answerable from the repository, and the answer
+corrects BOTH framings in the blocker report.
+
+**Provenance.** `tools/verify/verify_perky_realtime_budget.py`:
+
+```python
+"""The interpreter host counts decoded opcode cycles rather than instructions.
+Use a 2x margin on that model (hardware MOVE timings exceed its nominal counts),
+and reserve stock's measured 1410 cycles/sample. Only one PERKY voice per core is
+admitted, with FX1/FX2 NONE for this hardware canary."""
+MAX_MODELED_BLOCK = 23040  # 2x + stock = 68,640 / 72,512 cycles, >5% headroom
+...
+report = dict(modeled_cycles_max=worst[0], ..., block_limit=MAX_MODELED_BLOCK,
+              model_margin=2, stock_reserved=16 * 1410,
+              deadline=16 * 4532, max_voices_per_core=1)
+```
+
+So the allowance is **derived from the physical deadline**, not a historical
+development figure:
+
+```
+deadline        = 16 x 4532 = 72512
+stock reserve   = 16 x 1410 = 22560   (stock's MEASURED 1410 cycles/sample)
+hardware budget = 72512 - 22560 = 49952
+modeled budget  = 49952 / 2 = 24976   (the host model undercounts hardware ~2x)
+allowance       = 23040               (a 7.8% haircut on the modeled budget)
+check: 2x23040 + 22560 = 68640 / 72512 = 94.7%  ->  5.3% headroom
+```
+
+**Units, stated once.** 74,515 and 80,722 are the interpreter host's
+`modeled_cycles` per 16-sample block. 72,512 is HARDWARE cycles per block. The
+model undercounts hardware by ~2x (measured 1.89/1.89/1.94/1.97 on four
+instruction forms), so the two are not comparable without the factor.
+
+**Therefore:**
+* the blocker report's "Bass is over the PHYSICAL deadline by 2.76%" compared
+  MODELED against HARDWARE. That is the arithmetic error, and it is already
+  retracted. In hardware terms bass is `2 x 74515 + 22560 = 171590` against
+  72,512 -- over by 137%, not 2.76%.
+* the "51,475 / 57,682 must be removed" figures are `modeled - 23040` and are
+  **correctly computed**, because both sides are in the host model's units. The
+  honest reduction figure is therefore **69.1% (bass) and 71.5% (snare)**, and it
+  is the same fraction in either unit:
+  `1 - 2x23040/(2x74515) = 69.1%`.
+* what made 23,040 look like a silent revert is that **its provenance was not
+  written down**. It is `(72512 - 22560) / 2`, less margin -- a real derivation
+  from the physical deadline. That is now recorded.
+
+**THE CAVEAT THAT CUTS AGAINST THE OPTIMISTIC READING.** The stock reserve of
+1,410 cycles/sample was measured with **"FX1/FX2 NONE"** -- the canary
+configuration. The shipping remix **loads six FX** (FILTER, EQUALIZER, PHASER,
+FLANGER, CHORUS, SPATIALIZER), and a loaded FX costs cycles the canary did not
+pay. So the real stock reserve is **larger** than 22,560 and the real Perky
+allowance is **smaller** than 23,040.
+
+That is the legitimate form of the concern the directive raised -- and it points
+the opposite way: the true shortfall is **worse** than 69-72%, not better than
+2.76%. Measuring the retained-FX delta is the next step; it needs the full stock
+continuation under the meter, not the seam canary.
+
 ## Final architecture
 
 | | |
