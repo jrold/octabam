@@ -711,6 +711,47 @@ user workflow then runs -- select T1, assign, return, audition, `REC`, trigs at
 1/5/9/13, `PLAY` -- with the transport reading **1 (playing)** and staying 1
 across 4 s of polling.
 
+### What the panel harness can and cannot show
+
+`MenuPort` runs the port on its line protocol, so the port's own end-of-run DSP
+report (`audio (O9): ... TX0 non-zero per RING WORD ...`) is **not** in
+`log_path` -- that file held 335 bytes, just the port's startup lines. The audio
+side has to come from either `peek` on ColdFire memory or a port run outside
+MenuPort; `--audio-out` did not produce a WAV under MenuPort either.
+
+**So the current gate proves the UI path and the transport, not the audio.** That
+distinction matters because the first symptom is "no sound", and a transport that
+advances is not the same claim. Options for the next pass, cheapest first:
+
+1. `peek` a ColdFire buffer the DSP writes per block, if one is mapped;
+2. run the same script under the plain port (`--live-script`) with
+   `--cf-frame-deadline` and the frame timer, which does print the DSP report,
+   accepting the non-determinism that MenuPort removes;
+3. read the shared window at `0x30000-0x3ffff` after play -- the report says the
+   port already reports `32482 non-zero words` there after boot.
+
+### CONCLUSION SO FAR: the port cannot show this hang, and that is the answer
+
+The demand was to reproduce "assign PERKY -> program 1/5/9/13 -> PLAY ->
+transport stalls at step 1". **The UI half of that is now genuinely reproducible
+and reproduced** (the route above, with `PK\x01` asserted). **The stall is not**,
+and the failure register already says why, in its own words:
+
+> "ot_emu's whole machine, DSP included, is slaved to the ColdFire's instruction
+> stream, so the ColdFire can never be 'late' -- a slow frame is absorbed (the
+> frame edge is a latch and the missed edges are dropped). Measured 9 Oct 2026:
+> the production image renders four independent PERKY records for 12000 frames,
+> no fault, even at `--ips 800`."
+>
+> "[the emulator prints] `cf stall`; it did not trip in these runs (the port is
+> host-paced ...), so the model shows the *cause* and the unit shows the *hang*."
+
+**That is the objective's own premise, confirmed from the other side.** The
+instrument that answers it is the one built for that purpose and already in the
+tree: `out/OCTATRACK_OCTABAM79X_HWTEST.bin` -- PERKY 3ALGO plus CF METER, which
+measures the unit's real per-frame cost and whether the event frames fit 362.8 us.
+A lock-step port cannot; a cfmeter reading can.
+
 ### The emulator does NOT reproduce the wedge on this workflow
 
 **Ten polls of the transport word over 4 s: `[1,1,1,1,1,1,1,1,1,1]`.** No stall
