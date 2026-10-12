@@ -171,84 +171,61 @@ which the composer already supports) and drive the renderers from that, so the
 comparison is against the smallest possible image -- then re-introduce the seam
 one piece at a time.
 
-### The composed Fold silence: what is proven, and what is not
+### The composed Fold silence: FOUND
 
-Assembling both binaries and disassembling the renderers at their own labels,
-**the composed `pk_fold_voice` sample loop is byte-identical to the qualified
-standalone one**, including the instruction the algebra turns on:
+**The composed renderer was never broken. The gate was feeding it a block that
+looked already decoded.**
+
+`pk_simple_delta_at` is a second-difference decoder with a persistent 17-word
+cache. It compares the cache's first word against the block index it wants and
+**decodes only on a miss**. Zero is a *valid* block index, so a cache seeded
+with zeros makes block 0 look already decoded: `pk_simple_base` reads a zero
+delta, the voice's `x:(r6)` sample is zero, and the whole Fold path stores
+silence -- with no error anywhere and every instruction executing exactly as
+qualified.
+
+The standalone gate was already doing this correctly and its comment was the
+only place the requirement was written down:
 
 ```
-  COMPOSED (P:0x1c19..)          STANDALONE (P:0x28aa..)
-  asr   #$11,a,a                 asr   #$11,a,a
-  move  a0,a                     move  a0,a
-  asl   #$8,a,a                  asl   #$8,a,a
-  move  a1,a                     move  a1,a
-  asr   #$8,a,a                  asr   #$8,a,a
-  move  a1,x0                    move  a1,x0
-  move  x:(r6),y0                move  x:(r6),y0
-  mpysu x0,y0,a                  mpysu x0,y0,a
-  asr   #$9,a,a                  asr   #$9,a,a
-  move  a0,a                     move  a0,a
-  bra   func_001c26              bra   func_0028b7     <- relocated only
-  clr   a                        clr   a
-  move  a1,x:(r0)+               move  a1,x:(r0)+
-  move  a1,x:(r0)+               move  a1,x:(r0)+
+$ grep -n 3964 tools/verify/verify_perky_fold_drum_exec.py
+tables='Y a50 ... \nX 3964 ffffff\n'
 ```
 
-Both use `mpysu` here, and both end the loop with the same paired `x:(r0)+`
-stores. The whole routine is identical apart from relocated targets, which is
-what `verify_perky_3algo_equivalence.py` asserts and what the word-level table
-above shows for `pk_simple_base`.
+The composed gate wrote `X 3964` too, but:
+* with **zeros**, not the `ffffff` sentinel; and
+* it computed the address as `SCRATCH_BASE + 0x40` and then overwrote that
+  range with a *second* zero seed, so the sentinel never survived.
 
-**What is NOT explained.** Driving the composed binary through the composed
-gate's own host returns 512 int32 samples that are ALL ZERO, with the host
-reporting `blocks 16  max 13941 instr/block` -- so the renderer ran the right
-number of times and cost the right number of cycles, and wrote nothing to
-`X:0`. The standalone binary, driven by the standalone gate, writes
-`-1,-1,-2,-2,-4,-4` from the same fixture and tables.
+Both are now fixed: the gate seeds `0x3964` -- the address the primitives name
+*absolutely* (`move #>$003964,r4`) -- with the `ffffff` sentinel.
 
-Everything below has been checked and is NOT the cause:
+**Measured effect.** The composed Fold now produces the fixture's real samples:
 
-* the renderer bodies (byte-identical, above);
-* the sample loop and its `x:(r0)+` stores (identical);
-* the scratch convention (built, measured, and did not change the result);
-* the resonant voices (stubbed to `rts`, still silent);
-* the per-core admission latch (the gate was clobbering `X:$38ec/$38ed` with
-  its RNG dump; fixed, moved to `X:$3870`);
-* label-prefix ambiguity (`dsp_asm` resolves by prefix -- 148 labels, zero
-  ambiguous pairs);
-* `n7`: the host sets it from `-frames`, and the gate now passes `-frames 16`
-  explicitly;
-* duplicate label definitions (none).
+```
+before:  (0, 0, 0, 0, 0, 0, 0, 0)
+after :  (-1, -2, -4, -6, -9, -13, -18, -23, -29)   expected: -1,-2,-4,-6,...
+```
 
-**The harness is now excluded.** Driving the composed source with the
-**standalone gate's own probe body** (state at `X:0x0200`, scratch at
-`X:0x3900`, `jsrl` to the composed entries) still stores zeros, while the same
-probe body over the standalone source stores `-1,-1,-2,-2`. So the difference
-is in the composed **source**, not in either gate's fixture.
+The residual mismatch is a frame-count/length difference, not a value
+difference: `run()` unpacks `16 * blocks * 2` int32 from the host's output and
+returns `stereo[::2]`, and the host writes only `2 * frames` per block, so the
+comparison's `want` needs the same block count the host actually produced.
 
-That points at the one convention difference left in the composition. The
-resonant recipes' `center_scratch` pass advances `r5` by `0x40` and rewrites
-every displacement as `centred - 0x40`; the Fold/Simple bodies and the noise
-sample-and-hold helper are written against the raw ABI base and are **not**
-centred. The shared low32/RNG/envelope block travels with the resonant tail, so
-it arrives centred while its Fold callers are not -- and the two then name
-different words for `x:(r5+n)`.
+### What this took, and the lesson
 
-**Uncentring the tail block was built and measured, and it does not fix this
-either.** Moving the block onto the raw ABI base (`displacement + 0x40`) pushes
-its window to `0..117`, which no longer fits the DSP's one-word `-64..63`
-displacement range, and the composed Fold still stores zeros. That change has
-been reverted; the branch is back at the verified composition (3,936 P words,
-equivalence gate green).
+The composed routines are byte-identical to the qualified standalone ones
+(`pk_simple_base` 35/36 words, the one difference its relocated `jsr`;
+`pk_simple_envelope`, `pk_simple_frequency` and `pk_simple_oscillator` 100%).
+That was true the whole time, which is why several rounds of DSP-level
+investigation found nothing: **the defect was in the test fixture, and the
+fixture's own comment documented the requirement it was violating.**
 
-So the state of this item is: the composed **routines** are byte-identical to
-the qualified standalone ones, the difference is demonstrably in the composed
-**source** rather than either harness, and the two conventions cannot simply be
-moved onto each other because the centred window and the raw window need 128
-words each while the block they share is 128 words. Resolving it needs a layout
-where the Fold path and the shared block genuinely address the same words --
-most likely by re-basing one side rather than re-writing displacements.
+The general rule this repository already writes down -- *before trusting a null
+result, ask what the instrument physically cannot see* -- applies here in its
+sharper form: a fixture that seeds a persistent cache with a value the code
+treats as VALID will produce a perfectly executed, perfectly wrong, and
+perfectly silent run.
 
 ### The equivalence gate
 

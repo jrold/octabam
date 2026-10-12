@@ -53,9 +53,12 @@ DIS = composed.ASM.parent.parent / "disassemble/dsp56kDisassemble"
 
 VOICE = composed.VOICE_BASE          # X:$3800, the composed private voice block
 STATE = VOICE                        # fixtures are loaded straight into it
-# The Fold/Simple second-difference cache sits at r5+$40 from the composed
-# scratch base; a qualification run seeds it exactly as the standalone gate.
-FOLD_CACHE = composed.SCRATCH_BASE + 0x40
+# The Fold/Simple second-difference cache is named by the primitives as an
+# ABSOLUTE address: `pk_simple_base` loads `move #>$003964,r4` and
+# `pk_simple_delta_at` reads through r4. The standalone gate seeds exactly that
+# word (`X 3964 ffffff`); this gate must seed the same address, not
+# SCRATCH_BASE+0x40.
+FOLD_CACHE = 0x3964
 FOLD_CACHE_WORDS = 17
 RNG = composed.RNG_BASE              # X:$38e8..$38eb (the two u32 limbs)
 # The dump destination must NOT be RNG+4: that is composed.EVENT_OFFSET /
@@ -225,7 +228,15 @@ def run(binary: Path, entry: int, words: list[int], rng, ytext: str,
         # seeded with the 'no block decoded' sentinel the standalone gate uses.
         + f"X {composed.RNG_GAP_END:x} " + " ".join(f"{v:06x}" for v in limbs) + "\n"
         + f"X {SCRATCH:x} " + " ".join(["000000"] * composed.SCRATCH_WORDS) + "\n"
-        + f"X {FOLD_CACHE:x} " + " ".join(["000000"] * FOLD_CACHE_WORDS) + "\n"
+        # THE SENTINEL IS NOT ZERO. `pk_simple_delta_at` compares the cache
+        # word against the block index it wants and only decodes on a MISS;
+        # zero is a valid index, so seeding zeros makes block 0 look already
+        # decoded, `pk_simple_base` reads a zero delta, and the whole Fold path
+        # renders silence. The standalone gate writes `X 3964 ffffff`, which is
+        # the 'no block decoded' sentinel. Verified by minimal reproducer:
+        # with ffffff the composed source matches the standalone reference
+        # (-1,-2,-4,-6,...); with zeros it stores all zeros.
+        + f"X {FOLD_CACHE:x} " + " ".join(["ffffff"] * FOLD_CACHE_WORDS) + "\n"
         + ytext)
     script = out / "case.script"
     script.write_text((" ".join(["0"] * 12 + ["-1"]) + "\n") * blocks)
