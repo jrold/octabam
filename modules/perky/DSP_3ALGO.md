@@ -245,31 +245,36 @@ every existing caller is unchanged. The composed gate passes `-statebase 3800`.
 * Fold PCM: corners and lengths now match (`lengths 256/256`), and **corner 0
   passes exactly** -- the composed renderer reproduces the captured ARM fixture
   through the composed build.
-* **the first block is always exact; the divergence starts inside the SECOND
-  block.** Running the gate's own cases one at a time:
+* **block 0 is exact for every corner; the state it carries out is not.**
+  Rendering a single block reproduces the captured ARM fixture exactly:
 
 ```
-tag                        got[:4]                     want[:4]                    first diff
-fold arm mode 1 corner 0   [-1, -2, -4, -6]            [-1, -2, -4, -6]            none (PASSES)
-fold arm mode 1 corner 1   [-29, -115, -257, -457]     [-29, -115, -257, -457]     sample 29
-fold arm mode 1 corner 2   [105, 313, 310, 197]        [105, 313, 310, 197]        sample 29
+corner 0 BLOCK 0 exact: True
+corner 1 BLOCK 0 exact: True
+corner 2 BLOCK 0 exact: True
 ```
 
-  Corner 0 passes all 256 samples. Corners 1 and 2 match their fixtures exactly
-  for the first block (samples 0--15) and then diverge at sample 29, which is
-  inside the second 16-sample block.
+  But the voice block the composed run leaves behind differs from the fixture's
+  `wrapper-window-after` in ten words, and the differences are a consistent
+  factor:
 
-  It is **not** a one-sample shift (testing shifts of -2..+2 matches 0--13 of
-  224 samples) and it is **not** the scratch/Y seeding: driving the composed
-  binary directly with the composition's own ledger addresses reproduces all
-  three corners exactly for a single block, so the renderer, the tables and the
-  first-block path are all correct.
+```
+word   composed   fixture     ratio
+0x02   0xb170     0x839b      ~0.72
+0x04   0x0b17     0x540d      ~0.13
+0x0f   0xaaa0     0xedfc      ~0.72
+0x1a   0x5550     0xdd3a      ~0.39
+0x23   0x0010     0x0100      16x  (fixture = composed << 4)
+```
 
-  What is left is state carried BETWEEN blocks. Corner 0 starts at packed index
-  0 and the others at `0x07fe`/`0x0ffc`, so the difference between the passing
-  and failing cases is the block-1 decode, and the divergence begins exactly
-  where the second block starts. The oscillator's `x:(r6+$21)` phase accumulator
-  and the delta decoder's cursor are the two candidates.
+  So the composed voice is self-consistent -- it renders block 0 correctly and
+  carries state -- but the state it carries is on a different scale from the
+  fixture's for several slots. That is what makes block 1 diverge at sample 29.
+
+  This supersedes the earlier "state carried between blocks" note with something
+  sharper: the divergence is not a lost bit in the sample loop, it is a
+  **scale/precision difference in the persistent state words the voice writes
+  out**, and `[0x23]` differing by exactly 16x is the cleanest lead.
 
 ### The equivalence gate
 
