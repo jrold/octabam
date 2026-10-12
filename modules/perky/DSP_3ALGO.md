@@ -652,6 +652,37 @@ nothing.
 **What does not**: the reproduction, the "PERKY-specific" claim, and the
 `0xe2c48f` fault as evidence about this machine.
 
+### The instruments now exist, and the gate refuses to lie
+
+Three versions of this gate "tested the Perky machine" while the live Part held
+no signature. The fix is not another guess at the UI; it is to make the gate
+incapable of that failure:
+
+* **the live Part is dumped** (`--mem-dump 0x40170f60,6322=...`) and
+  `PK\x01` must be present, or the gate exits **2** with
+  "NO PK/1 SIGNATURE IN THE LIVE PART -- PERKY WAS NEVER ASSIGNED. The run below
+  says nothing about the Perky machine." A machine-assignment test that does not
+  verify the assignment is exactly the gate that cannot fail;
+* **the list cursor is dumped** (`0x460e738e`, the address `control.c` itself
+  compares against `PERKY_ROW`), so a scroll that does not take is visible as a
+  number rather than inferred;
+* and `PERKY_ROW` is `5u` **read from `modules/perky/control.c`**, not inherited
+  from the sibling gate's six scrolls.
+
+### Measured so far, with those instruments
+
+| sequence | live Part (T1) | cursor | signature |
+|---|---|---|---|
+| `0x2d` held + `0x22`, 6 scrolls, YES | `4` = PICKUP | -- | absent |
+| track double-tap, 5 scrolls, YES | `1` = FLEX | **1** | absent |
+
+**The cursor reading is what settles it: it sat at `1` through all five scrolls,
+so the engine list never opened** -- the double-tap did not do it, and the scrolls
+went nowhere. PERKY has to be row 5 of a list that is actually on screen before
+any scroll or commit can mean anything. The next attempt should assert the cursor
+has moved *before* pressing YES, so a dead open is caught at the open rather than
+after the commit.
+
 ### The next step is mechanical: make the gate actually assign PERKY
 
 The sibling gate's sequence (six `0x20` scrolls then `YES`) reaches a machine and

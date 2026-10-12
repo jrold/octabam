@@ -81,16 +81,18 @@ def write_script(path: pathlib.Path, track_key: int, assign: bool = True) -> Non
     events = []
     events += key(track_key)                       # 2. select T1/T5
     if assign:
-        events += [                                 # 3. open SRC SETUP
-            (0.6, "key 0x2d down"),
-            (0.3, "key 0x22 down"),
-            (0.3, "key 0x22 up"),
-            (0.3, "key 0x2d up"),
-        ]
-        for _ in range(6):                          # 4. walk to the PERKY row
-            events += key(0x20, 0.25, 0.25)
-        events += key(YES)                          #    commit the machine
-        events += key(NO)                           # 5. back to Tracks
+        # OPEN THE ENGINE LIST THE WAY THE UNIT DOES: a DOUBLE-TAP of the track
+        # key. `pk_pool_open` is detoured with the note "track double-tap opens
+        # the PERKY engine list", and the previous sequence (`0x2d` held + `0x22`)
+        # opened the machine-TYPE list instead -- five entries, so six scrolls
+        # landed on index 4 and the live Part showed T1 = 4 (PICKUP) with no PK/1
+        # signature. The scroll count matters for the same reason: PERKY is
+        # "machine row 5", so it is index 5 of a six-entry list.
+        events += key(track_key, 0.15, 0.05)        # first tap
+        events += key(track_key, 0.15, 0.05)        # second tap -- opens the list
+        events += [(0.8, "key 0x20 down"), (0.3, "key 0x20 up")] * 5
+        events += key(YES)                          # commit the machine
+        events += key(NO)                           # back to Tracks
     events += key(TRIG1)                            # 6. audition the track
     events += key(REC, 0.7, 0.5)                    # 7. grid-record mode
     for trig in (TRIG1, TRIG5, TRIG9, TRIG13):      # 8. the four trigs
@@ -158,7 +160,8 @@ def main() -> None:
            # THE LIVE PART AND ITS SAVED SHADOW. Reading the staged fixture on
            # disk proves nothing: the panel writes the Part in RAM, so this is
            # the only way to see what the machine assignment actually stored.
-           "--mem-dump", f"0x40170f60,6322={part};0x100a4ece,6322={shadow}",
+           "--mem-dump", f"0x40170f60,6322={part};0x100a4ece,6322={shadow}"
+                         f";0x460e738e,16={work / 'rowsel.bin'}",
            "--live-script", str(script)]
     for w in args.pcwatch:
         cmd += ["--dsp-pcwatch", w]
@@ -176,13 +179,20 @@ def main() -> None:
     stall = "STALL" in text.upper()
     print(f"  deadline     : {'MODEL ON' if args.deadline else 'off'}"
           f"  -> {'STALL REPORTED' if stall else 'no stall line'}")
+    assigned = False
     if part.is_file():
         raw = part.read_bytes()
+        assigned = b"PK\x01" in raw
         # the part record starts 9 bytes in; T1's machine byte is at +0x22 and
         # the PK/1 mark the admission path looks for at +60
         live = 9
         print(f"  live Part: T1 machine byte = {raw[live + 0x22]:#04x} "
               f"(1 = FLEX), PK mark = {raw[live + 60:live + 63]!r}")
+    sel = work / "rowsel.bin"
+    if sel.is_file():
+        raw = sel.read_bytes()
+        print(f"  list cursor 0x460e738e = {int.from_bytes(raw[:4], 'big')}"
+              f"  (PERKY_ROW is 5)")
     if "LOAD PROJECT handled" not in text:
         print("  !! project load never completed")
     if "ended on quit" not in text:
@@ -203,6 +213,16 @@ def main() -> None:
         if any(k in line for k in ("STALL", "still in its exchange", "frame handler",
                                    "deadline", "transport", "frame budget")):
             print("   |", line.strip()[:150])
+    # THE ASSIGNMENT MUST BE VERIFIED BEFORE ANY VERDICT ABOUT IT.
+    # Three earlier versions of this gate "tested the Perky machine" while the
+    # live Part contained no PK/1 signature at all -- T1 was FLEX, or PICKUP.
+    # A machine-assignment test that does not check the assignment is exactly the
+    # gate that cannot fail, and this one was wrong three times for that reason.
+    if not args.no_assign and not assigned:
+        print("  !! NO PK/1 SIGNATURE IN THE LIVE PART -- PERKY WAS NEVER ASSIGNED.")
+        print("     The run below says nothing about the Perky machine.")
+        raise SystemExit(2)
+
     # THE FAILURE IS THE DSP HANG, not a printed STALL line: the deadline model
     # never tripped here because the core left P memory first. A run that faults
     # is the reproduction of "transport stalls at step 1".
