@@ -209,6 +209,54 @@ options measured for closing it, none of them a renderer change:
   carry their own envelope entry sequence, or from a smaller table
   representation.
 
+### Why the harvest is capped at 2,724 words (measured)
+
+`stock.harvested()` is `{effects with DSP code} - listed`, and the build's
+`_listed` is not just the remix's module list:
+
+```python
+_listed = set(REMIX.modules) | set(REMIX.fx1 or [
+    k for k in stock.p_spans("A")
+    if _MODS[k].menu.fx2_id in stock_mod.fx1_ids()])
+```
+
+`stock.fx1_ids()` is read from the pristine image's **FX1 chooser**, and the
+DSP dispatch table is indexed by the raw id and shared by both menus, so an
+effect on FX1 cannot have its code harvested without taking it off FX1 as well.
+Measured membership:
+
+| Effect | fx2 id | on the stock FX1 chooser? | harvestable? |
+| --- | ---: | :---: | :---: |
+| PLATE REV | 0x14 | no | **yes** |
+| SPRING REV | 0x15 | no | **yes** |
+| DARK REV | 0x16 | no | **yes** |
+| COMPRESSOR | 0x18 | yes | no (FX1 needs it) |
+| LO-FI | 0x1c | yes | no |
+| DJ EQ | 0x0d | yes | no |
+| COMB FILTER | 0x13 | yes | no |
+| FILTER / EQUALIZER / PHASER / FLANGER / CHORUS / SPATIALIZER | 0x04/0x0c/0x10/0x11/0x12/0x05 | yes | no |
+
+The **only** DSP code on neither chooser is the three reverbs, so the maximum
+free contiguous region is **2,724 words** -- and the composed Perky program
+needs **3,936**. The measured shortfall against the whole available region is
+therefore **1,212 words**, not zero.
+
+This is why the earlier attempt to build with the seven-effect remix overran:
+listing `DELAY` in `modules` pulled its FX1 id (0x08) into `_listed`, the
+auto-add rule then listed every effect whose id is on the FX1 chooser, and the
+harvest collapsed back to the three reverbs. The remix no longer lists DELAY,
+but that alone cannot raise the cap -- the cap is the chooser membership, not
+the listing.
+
+**Consequence for the target.** Fitting the composed machine as it stands
+requires taking **COMPRESSOR, LO-FI, DJ EQ and COMB FILTER off the FX1 chooser
+as well** (4,063 words total, re-measured and contiguous in both payloads).
+That is a real loss of stock functionality -- those four would no longer be
+selectable on FX1 -- so it is a product decision, not one to take silently.
+The alternative is to bring the composed program down from 3,936 to 2,724
+words, a 1,212-word (31%) reduction, which cannot come from dead code (measured
+inert) and would have to come from a materially different composition.
+
 ### The equivalence gate
 
 `tools/verify/verify_perky_3algo_equivalence.py` is the gate that now carries

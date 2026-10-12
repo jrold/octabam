@@ -43,10 +43,17 @@ REMIX = Remix(
         "Reduced Perky DSP machine: T1/T5 only, one voice per core, three "
         "algorithms each. FX sacrifice measured at 3,936 composed P words."
     ),
+    # DELAY is deliberately NOT listed. Its FX1 id (0x08) is in
+    # `stock.fx1_ids()`, and `_listed` adds every effect whose id appears
+    # there, so listing it silently pulls the whole FX1 row back in and the
+    # harvest collapses to just the three reverbs (2,724 words -- measured,
+    # and the reason the first attempt at this remix overran). DELAY's DSP
+    # dispatch is stock's null stub anyway; the row is written by the build's
+    # own DELAY rule without being listed here.
     modules=(
         "PERKY PROBE",
         "FILTER", "EQUALIZER", "PHASER", "FLANGER", "CHORUS",
-        "SPATIALIZER", "DELAY",
+        "SPATIALIZER",
     ),
     fallback="NONE",
 )
