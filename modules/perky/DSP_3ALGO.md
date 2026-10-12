@@ -711,6 +711,50 @@ user workflow then runs -- select T1, assign, return, audition, `REC`, trigs at
 1/5/9/13, `PLAY` -- with the transport reading **1 (playing)** and staying 1
 across 4 s of polling.
 
+## ISOLATED: `--frame` works, `--frame-timer` is what breaks the boot
+
+Five flag combinations, same card, same trivial script:
+
+| flags | HALT | project loaded | frame report |
+|---|---|---|---|
+| none | False | **yes** | off |
+| **`--frame` alone** | **False** | **yes** | **on -- 32 frame interrupt(s)** |
+| `--frame-timer` alone | False | yes | off (it needs `--frame`) |
+| `--frame` + `--frame-timer` | **True** | **no** | on -- 1 frame interrupt |
+| + `--cf-cycles-clock 0.5` | True | no | on -- 1 |
+
+**`--frame-timer` is the culprit, not `--frame`.** It forces the free-running
+16-sample timer instead of the DSP's bank word as the frame edge, and that timer
+fires before the card is mounted, so the handler reads a bank id that is not yet 0
+or 1 and reaches `0x4000ab40`. `--frame` alone uses the bank word and the boot
+completes normally with the frame clock running.
+
+**And with `--frame` alone the Perky difference is visible in the audio**, which is
+the first time the instrument has shown it:
+
+| assignment | TX0 ring words |
+|---|---|
+| **no Perky** | `0 0 697227 697469 15768 13071 0 0` |
+| **Perky on T1** | `0 0 942203 942445 15768 13071 0 0` |
+
+### And a second void sweep, recorded rather than buried
+
+`--cf-cycles-clock F` for F in 0.5, 0.75, 1.0, 0.25, 0.1, 0.05 produced **byte-identical
+audio at every rate** and **no `cycle clock: on` line in the log**. `main.cpp:2633`
+sets the cycle clock inside the **`--sequencer`** path, so without that flag the
+option is inert. **Those six runs measured nothing**, and the "no halt at any rate"
+they appear to show is not a result.
+
+`--sequencer` is the flag the user forbade as a substitute for pressing PLAY -- but
+for the *clock*, not for the transport start, which still comes from the panel's
+PLAY key. Using it to enable the cycle clock while PLAY is pressed at the panel is
+the next step, and it is the only remaining way to make the ColdFire genuinely
+late.
+
+**Both void sweeps this session came from the same mistake: assuming a flag engaged
+because it was on the command line.** The port prints a line when it does engage;
+checking for it costs one `grep`.
+
 ## RETRACTED within one round: that "reproduction" was a boot artefact
 
 **The control killed it.** The same runs with and without the Perky machine, at
