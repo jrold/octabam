@@ -388,6 +388,62 @@ This branch touches 22 files -- `tools/verify`, `modules/perky`, `tools/perky`,
 and **none** of the assembler, `build_bus.py` or SPECTRUM. So the failure is in
 the tree, not here, and it blocks `verify-shared` for every remix.
 
+### Word 14, corrected again: the semantics AGREE, so it is the RNG sequence
+
+**The previous section's framing is also wrong and is corrected here.** It said
+the composition "appears to overwrite a RATE with a SAMPLE" while the model
+treats the word as something else. It does not. The model's own noise step is
+
+```python
+def render_noise(words, base, rng):
+    count = words[base]
+    if count:
+        words[base] = (count - 1) & MASK16
+        return s16(words[base + 2])          # NOISE+2 = the held sample
+    words[base] = words[base + 1]
+    result = s16(next_random(rng))
+    words[base + 2] = result & MASK16        # ...written from the RNG
+    return result
+```
+
+-- the SAME semantics as `pk_resonant_noise` / `pkr_noise_refresh`. Both hold a
+counter at `NOISE+0`, a reload at `NOISE+1`, and the held sample at `NOISE+2`,
+and both overwrite `NOISE+2` with `next_random`'s output. There is no
+rate-versus-sample disagreement between them.
+
+**And 65066 is not special to that word.** The fixture's `rng-continuation-before`
+is `0x0d1ce7c3, 0x59b5fe2a` -- whose low half is `0xfe2a` = 65066 as well. The
+constant appears in more than one field of the ARM capture; my reading of it as
+"the fixture seeds `NOISE+2` with `NOISE_RATE`" was an over-read of a repeated
+constant.
+
+**So the divergence is in the RNG SEQUENCE, not the interpretation.** Stepping
+the model's own generator from the ARM seed:
+
+```
+step 0: low16=0x7a48  high16=0x59cd
+step 1: low16=0x36a9  high16=0x94c2
+step 2: low16=0x72b6  high16=0x6440
+```
+
+Neither observed value -- composed `0x454d`, model `0xe6be` -- is step 0, 1 or 2,
+which is expected: 16 samples with a reload of 0..3 fires the refresh several
+times. `next_random` returns `new_high & 0x7fffffff` and `render_noise` stores its
+low 16 bits, so the model's word is the HIGH half; a first, cheap hypothesis is
+that the composed path stores the LOW half instead (`r5-$30` is a 32-bit low
+word from `pk_u32_mul_full` / `pk_rng_no_carry`), which would be exactly a
+half-word swap.
+
+**That hypothesis is NOT tested and is recorded as a hypothesis**, not a finding
+-- the two previous attempts at this word were both wrong, both times because the
+instrument was blind to the callees.
+
+**Also unexplained, and worth flagging:** the composed value is identical (17741)
+in all six runs and the model's is identical (59070) in all six, even though the
+counter and reload seeds differ per corner. Either both implementations are
+insensitive to those seeds over 16 samples, or something upstream is fixed. That
+is not accounted for.
+
 ### Word 14: the fixtures seed it with NOISE_RATE, and three parties disagree
 
 Measured directly -- seeded value, composed value after the run, and the model's
