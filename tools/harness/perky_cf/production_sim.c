@@ -40,10 +40,15 @@ extern int  pk_render(unsigned, unsigned, unsigned, unsigned);
 extern void pk_engine_select(unsigned model);
 extern void pk_engine_open(void);
 #ifdef PK_RESONANT_PRIME_TEST
-/* The equivalence gate drives the UI-tick half of the split. See
- * tools/verify/verify_perky_resonant_tick_equivalence.py: without a tick this
- * harness only ever reaches pk_render's inline fallback, so the primed path is
- * invisible to every other gate. */
+/* THE UI-TICK HALF OF AN ATTEMPTED SPLIT, kept because the experiment is
+ * repeatable if someone retries it.
+ *
+ * A gate was written to compare pk_render with and without the UI tick. It found
+ * that hoisting the resonant control settle into the tick is NOT
+ * behaviour-preserving: pk_cf_res_update_* is a SMOOTHER, so running it once per
+ * tick instead of once per event converges at a different rate, and the record
+ * differs (word 33, 0x2d00 vs 0x6200). The hoist was reverted and the gate
+ * withdrawn. */
 extern void pk_resonant_prime(void);
 extern unsigned pk_res_fast_hits;
 #endif
@@ -102,6 +107,12 @@ int main(int argc, char **argv)
 
     uint8_t row[7];
     unsigned n = 0;
+#ifdef PK_RESONANT_PRIME_TEST
+    /* ONCE, before the loop. Resetting inside it zeroed the count every
+     * iteration, so the harness reported 0 fast-path hits no matter what the
+     * code did -- which is how a working fix looked like a dead one. */
+    if (argc > 3 && argv[3][0] == '2') pk_res_fast_hits = 0u;
+#endif
     while (fread(row, 1, 7, f) == 7) {
         const unsigned track = row[0], trig = row[1], model = row[2];
         const unsigned ping = n++ & 1u;
@@ -133,7 +144,7 @@ int main(int argc, char **argv)
          * simple_controls[].targets, the tick primes the law against them, and
          * the NEXT event takes the primed fast path. */
         if (argc > 3 && argv[3][0] == '1') pk_resonant_prime();
-        if (argc > 3 && argv[3][0] == '2') { pk_resonant_prime(); pk_res_fast_hits = 0u; }
+        if (argc > 3 && argv[3][0] == '2') pk_resonant_prime();
 #endif
 
         const volatile uint32_t *rec = (const volatile uint32_t *)(uintptr_t)

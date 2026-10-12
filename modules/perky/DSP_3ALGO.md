@@ -570,6 +570,57 @@ kind of cost that can approach or exceed the renderer's own 35,753.
 settles it is now well defined: run `P:0x39e..P:0x425` on the host with a real
 ring and meter it, or meter a stock frame with the region `nop`ed.
 
+## RETRACTED: the hoist was reverted -- the gate proved it changes behaviour
+
+**I applied a fix that a measurement already in the tree said would not be the
+right one, and a working gate then proved it changed behaviour. Both halves are
+worth recording.**
+
+### The gate works now, and it has teeth
+
+Three earlier versions passed with the UI tick disabled. The fourth does not,
+because it stops relying on the cookie to separate the paths and instead forces
+them apart with build-time switches -- `PK_RESONANT_FORCE_INLINE` (recompute every
+event: the shipped path) against `PK_RESONANT_FORCE_FAST` (never recompute in the
+render) -- and refuses to compare at all unless the primed build reports it really
+took the fast path. The reason the first three were blind, in order:
+
+1. `pk_resonant_sync` sets the cookie itself, so the "no tick" run primed its own
+   and both runs took the same path;
+2. the sequence moved a knob every event, invalidating the cookie every event, so
+   the fast path was never taken;
+3. **the harness reset its fast-path counter INSIDE the per-event loop**, so it
+   printed 0 however the code behaved. That one is worth remembering on its own:
+   an instrument that reports zero unconditionally looks exactly like a dead
+   feature.
+
+### And what it found
+
+```
+HOISTING CHANGED A RECORD. event 1, record word 33: baseline 0x2d00 vs primed 0x6200
+```
+
+`pk_cf_res_update_*` is a **smoother**. Running it once per UI tick instead of once
+per event does not produce the same value -- it converges at a different rate, so
+the compact state handed to the DSP differs. **The hoist was not
+behaviour-preserving; it changed the control-settle rate by roughly the audio-to-
+UI ratio.** Reverted.
+
+### The register had already measured this
+
+> **"The control settle was NOT hoisted -- it turned out not to be the dominant
+> cost once the engine creation was out of the callback."**
+
+**That sentence is a measurement, and my fix contradicted it.** The dominant
+per-event cost is therefore something else -- and the remaining candidates are the
+ones that cannot move off the audio path at all: the **trigger** (it mutates the
+ARM object) and the **compact** (88 or 101 words per event). If the event frame
+still overruns, those are where to look, and the answer is to make them cheaper,
+not to move them.
+
+**The instrument that settles it is built**: `out/OCTATRACK_OCTABAM79X_HWTEST.bin`
+(PERKY 3ALGO + CF METER). Until it is read, the wedge is explained and unfixed.
+
 ## OPEN: the hoist has no equivalence gate yet, and two attempts failed
 
 **Stated plainly because it is the weakest part of the fix.** All 17 gates pass,
