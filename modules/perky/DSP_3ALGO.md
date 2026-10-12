@@ -351,6 +351,84 @@ carried across calls and laid out at different addresses in the two builds, and
 the measurement that will settle it is a like-for-like read in each build's own
 frame. It is recorded here rather than carried as an unexplained red gate.
 
+### Boot / image / upload / readback gates -- and a trap that made one run lie
+
+The ColdFire port is not in the tree; it was built (`make emu-cf` ->
+`out/emu/ot_emu`, 2,970,424 B) so the port-side gates could run at all.
+
+**Deliverable image: `out/mainos_bus.bin`, 1,117,092 bytes,
+sha256 `f0f4505dcd5cdb150d325d5adf3b79e521f15b5fe6ec999bb0b79239905e9c37`.**
+
+Every result below was taken with the image hash checked BEFORE and AFTER the
+gate, so a gate that rebuilds cannot be mistaken for a gate that passed on this
+artifact.
+
+| gate | result | artifact |
+| --- | --- | --- |
+| `verify_perky_preboot_reserve` | PASS | unchanged |
+| `verify_perky_stock_dsp_boot_path` | PASS (1,000 uploader/boot bytes byte-identical) | unchanged |
+| `verify_perky_cf_loader_contract` | PASS | unchanged |
+| `verify_perky_image_tables` | PASS | unchanged |
+| `verify_perky_3algo_image` | PASS | unchanged |
+| `verify_perky_3algo_control_join` | PASS | unchanged |
+| `verify_replaces --image` | PASS (OK) | unchanged |
+| `verify_menu` | PASS (ALL CHECKS PASSED) | unchanged |
+| `verify_usb` | PASS (no EP0 stall during enumeration) | unchanged |
+
+**A trap that made the first run of two of those gates meaningless.**
+`verify_dirtystate` does not merely read the image -- it **rebuilds
+`out/mainos_bus.bin` itself** via `make bus REMIX=<remix>`, which the Makefile
+comments say outright. That build links the remix AS DECLARED (`probe_cf.s`, the
+development canary), not the composed machine this branch composes, so it wrote a
+**different, 1,112,560-byte image** over the deliverable. The first
+`verify_replaces` / `verify_menu` run therefore passed against the WRONG
+artifact. Both were re-run after rebuilding and both pass on the real one, but
+the ordering is load-bearing and the tree's own warning ("any verifier that reads
+`out/` must know who wrote it last") applies to this branch too.
+
+**Which is itself a finding about shipping.** `make bus REMIX=perky-dsp-3algo`
+and `tools/perky/build_dsp_3algo.py` produce DIFFERENT images, because the
+composed machine is installed into the module registry **in memory only** -- the
+canary pattern this branch inherited. So the deliverable is not reproducible by
+the canonical build command, which is a real gap against the definition of done
+("a complete firmware image is generated"); the image is generated, but not by
+the path anything else in the repository uses. Making the remix itself carry the
+composed machine is the next build task.
+
+**Gates that pass VACUOUSLY on this remix, recorded so they are not counted as
+coverage:**
+
+```
+verify_dirtystate      verify_dirtystate: 0 renders, 0 failed
+verify_initregs        init-registers: 0 module inits scanned, 0 failure(s)
+module_gates           module gates (isolated remix-only): none declared
+```
+
+All three exit 0, and none of them exercised anything of this machine.
+
+**Gates that cannot run here, with the reason:**
+
+```
+verify_labels / verify_modenames / verify_hidden
+    need .venv/bin/python3; .venv exists but is empty, so the Makefile's
+    `[ -x .venv/bin/python3 ]` test is false and they SKIP.
+verify_dram_boot
+    "perky-dsp-3algo carries no DRAM payload" -- keys on a DRAM runtime this
+    remix does not declare.
+verify_perky_machine_boot
+    wants out/mainos_perky_machine.bin, the multi-machine canary's artifact.
+verify_perky_table_image
+    refuses any image carrying the platform-loader append; it is an isolated
+    table canary and this is a shipping image.
+verify_perky_image_legacy_identity
+    cannot run at all: imports perky_image (does not resolve) and runtime_build,
+    which the tree records as removed 6 Oct 2026. Pre-existing, not this branch.
+```
+
+So definition-of-done item 14 is **partly** met: every in-repo gate that can run
+against this artifact and actually covers it passes, and the ones that do not are
+enumerated above with reasons rather than quietly counted.
+
 ### THE ARTIFACT DID NOT CONTAIN THE CONTROL PATH -- found and fixed
 
 The gates above compile `control.c` themselves, with the candidate defines set.
