@@ -44,6 +44,48 @@ production always runs:**
 That is the honest description of the boundary, and it is **not** the same set as
 the production path in either direction.
 
+### The production-path delta, all three engines -- and my extrapolation was WRONG
+
+Measured with the same one-harness discipline, now covering every engine
+(`tools/perky/measure_3algo_path_cost.py`):
+
+```
+engine        render   quoted  dispatch  overhead   ratio
+FOLD DRUM      13279    13300     18998     +5698  1.431x
+RES BASS       43741    43762     44251      +489  1.012x
+RES SNARE      47567    47588     48051      +463  1.010x
+```
+
+The self-check passes for every engine (the gate's 12-instruction dump measures
++21 each time), so the deltas are real.
+
+**THE OVERHEAD IS FOLD-SPECIFIC, AND I EXTRAPOLATED IT WRONGLY.** One commit ago I
+took the Fold figure and added it to the two Resonant engines, producing a table
+saying they needed 71.3% and 73.3% reductions. **That was wrong:** their actual
+overhead is **+489 and +463 -- about 1%**, not +5,698. The Fold path is the
+outlier, and the reason is not established; the two obvious candidates are the
+`pk_simple_base` block decode (which only the Fold path calls, though BOTH the
+render and dispatch entries call it, so it should cancel) and the `x256` scale
+loop, which is far too small to account for ~5,700. **Flagged as unexplained.**
+
+**Corrected budget:**
+
+| | renderer | + its own overhead | vs 23,040 |
+|---|---|---|---|
+| Resonant Bass | 74,515 | 75,004 | needs **69.3%** |
+| Resonant Snare | 80,722 | 81,185 | needs **71.6%** |
+
+So the figures the original report quoted -- **69.1% and 71.5%** -- were
+essentially right all along, and the dispatcher overhead for the Resonant engines
+is **negligible (~1%)**. The renderer-only measurement boundary is therefore NOT
+materially misleading for these two algorithms, which is the direct answer to
+item 1's concern.
+
+**Also a units error in my own previous table**, worth naming: I wrote "77.6%
+over" where the arithmetic gives `80,213 / 23,040 = 3.48x`. "Over by" and
+"reduction needed" are different numbers and I conflated them in the same table
+whose subject was unit confusion.
+
 ### The production-path delta: MEASURED, with the harness validating itself
 
 The previous attempt was inconclusive because **I read a stale meter file after an
