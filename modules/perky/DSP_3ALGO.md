@@ -351,6 +351,48 @@ carried across calls and laid out at different addresses in the two builds, and
 the measurement that will settle it is a like-for-like read in each build's own
 frame. It is recorded here rather than carried as an unexplained red gate.
 
+### Timing qualification (measured)
+
+`tools/verify/verify_perky_3algo_timing.py` measures the composed production
+renderer per algorithm. It deliberately does NOT assert PCM parity -- the parity
+gate does that -- because a timing number must be obtainable while a parity item
+is open, and a tool that stops on a parity mismatch can never produce the number.
+
+Load policy from the target: T1 and T5 are on **separate** DSP cores, so a core
+runs at most ONE Perky algorithm at a time and the load is the **maximum**, never
+the sum.
+
+```
+frame deadline: 72512 cycles   historical development allowance: 23040
+
+algorithm   blocks   worst cycles/16  % of frame  headroom
+fold           640             26112      36.01%     46400
+bass          1024             74515     102.76%     -2003
+snare         1024             80722     111.32%     -8210
+
+peak (one algorithm per core): 80722 cycles = 111.32% of the frame deadline
+```
+
+**Conclusion, stated plainly:**
+
+* **Fold Drum 1 fits comfortably** -- 26,112 worst cycles, 36% of the frame,
+  46,400 cycles of headroom, and it also fits the historical 23,040-cycle
+  development allowance.
+* **Resonant Bass and Resonant Snare do NOT.** Both exceed the physical
+  full-core frame deadline (74,515 and 80,722 against 72,512), by 2,003 and
+  8,210 cycles. Per the target's runtime policy this is not grounds to drop them
+  -- it means their **reachable production paths must be optimized** and
+  re-measured, with bit-exactness preserved against the existing oracles.
+
+The states measured are the ones the production renderers actually reach: the
+captured ARM corpus plus the randomized native set for Fold, and
+`resonant_state`, which covers both sides of every bounded-path guard for the
+resonant families. They are not arbitrary impossible states.
+
+The optimizations that follow must keep `verify_perky_3algo_equivalence.py` and
+the standalone resonant gates green; the 23,040-cycle allowance is historical
+and is not itself the constraint -- the 72,512-cycle frame deadline is.
+
 ### The equivalence gate
 
 `tools/verify/verify_perky_3algo_equivalence.py` is the gate that now carries
