@@ -84,6 +84,11 @@ renderer's, not the wrapper's.
 
 **So the correct overhead figure is 534, for every engine:**
 
+> **SUPERSEDED.** The percentages below are computed from the STRESS figures
+> (74,515 / 80,722), which are NOT the production bound. See "THE REAL
+> ANSWER (item 5)" for the corrected reachable-domain figures: **36.4%
+> (bass) and 41.3% (snare)** against the same allowance.
+
 | | renderer | + 534 | vs 23,040 |
 |---|---|---|---|
 | Fold Drum 1 | 26,112 | 26,646 | 13.5% over |
@@ -125,6 +130,11 @@ render and dispatch entries call it, so it should cancel) and the `x256` scale
 loop, which is far too small to account for ~5,700. **Flagged as unexplained.**
 
 **Corrected budget:**
+
+> **SUPERSEDED.** The percentages below are computed from the STRESS figures
+> (74,515 / 80,722), which are NOT the production bound. See "THE REAL
+> ANSWER (item 5)" for the corrected reachable-domain figures: **36.4%
+> (bass) and 41.3% (snare)** against the same allowance.
 
 | | renderer | + its own overhead | vs 23,040 |
 |---|---|---|---|
@@ -178,6 +188,11 @@ deltas are real.
 **What that does to the budget.** The allowance is 23,040 modeled for the whole
 source. If 5,698 of it is dispatcher overhead, the share left for the RENDERER is
 **17,342, not 23,040**:
+
+> **SUPERSEDED.** The percentages below are computed from the STRESS figures
+> (74,515 / 80,722), which are NOT the production bound. See "THE REAL
+> ANSWER (item 5)" for the corrected reachable-domain figures: **36.4%
+> (bass) and 41.3% (snare)** against the same allowance.
 
 | | renderer, measured | + overhead | vs 17,342 |
 |---|---|---|---|
@@ -271,6 +286,57 @@ DJ EQ, and the tool that was supposed to close the gap is not yet trustworthy.
 because routines were reachable by FALLTHROUGH. Static reachability in this
 codebase has now fooled me twice, in opposite directions (once removing too much,
 once reporting too much).
+
+## ITEM 9: the next legitimate blocker, stated against its own bar
+
+The directive lists seven preconditions. Each is now satisfied by a measurement in
+this document, and the bar is met **on the reachable domain**, not on stress.
+
+| # | precondition | evidence |
+|---|---|---|
+| 1 | production continuation cost measured or tightly bounded | stock reserve **22,560** cycles/block (16 x 1410, hardware-measured, stock FX load INSIDE it) + wrapper **534** modeled |
+| 2 | exact measurement boundaries documented | "MEASUREMENT BOUNDARIES" above: renderer + a 12-instruction gate-only dump; excludes dispatcher, mode delivery, the x256 scale, and stock |
+| 3 | reachable production timing domain established | the captured ARM fixtures; `timing.json` keys its verdict on `worst_reachable` |
+| 4 | hot path profiled | ablation: `pk_resonant_decay` 39.7%, `pk_resonant_core` 21.7%, `pk_u32_mul_low` 15.9%, `pk_resonant_noise` 5.5% |
+| 5 | reasonable bit-exact avenues attempted AND measured | native-width multiply (closed: max captured width 32 > 24), dead code (exhausted: 51 instructions, 67 words, reachability-calibrated), redundant reloads (5 composition-wide) |
+| 6 | minimum production cost still exceeds 72,512 with continuation and margin | see below |
+| 7 | independent control/integration/parity work completed | prepare paths, engine-ID join, admission, T1/T5 mapping, parameter transport, mode delivery, rejection paths -- all gated |
+
+**Precondition 6, the arithmetic.** On the reachable domain, with the wrapper and
+the stock reserve included:
+
+```
+Resonant Bass   35,713 modeled -> 2x = 71,426 hardware
+                + 22,560 stock  = 93,986  vs 72,512   -> +29.6%
+Resonant Snare  38,737 modeled -> 2x = 77,474
+                + 22,560 stock  = 100,034 vs 72,512   -> +37.9%
+```
+
+and the ablation ceiling says **removing every non-algorithm instruction still
+leaves the snare at 29,517 modeled against a 23,040 allowance -- 28% over** (bass
+24,881, 8% over). Since the non-algorithm content is only 23.9% of the snare
+renderer, no instruction-level optimisation reaches the allowance; closing it
+requires removing roughly half the resonant arithmetic itself, which is the
+algorithm, and the brief forbids changing it.
+
+**So the blocker is legitimate, and it is now precisely this:**
+
+> Resonant Bass and Resonant Snare cannot meet the DSP frame deadline on their
+> reachable production states. The required reductions are **36.4% and 41.3%** of
+> the renderer (not the 69-72% the earlier report claimed, and not the 2.8%/11.3%
+> the earlier report also claimed). **The gap is larger than the entire
+> non-algorithm content of the code**, so it cannot be closed by bit-exact
+> implementation optimisation; and the algorithm itself is off-limits by the
+> brief. A decision is needed: change the algorithm, change the deadline's
+> assumptions, or drop one of the two Resonant engines.
+
+**Fold Drum 1 is NOT part of the blocker** -- at 25,393 reachable + 534 wrapper it
+lands 2.6% over the hardware window, well inside what bit-exact work could reach.
+
+**What is NOT blocked, and should not be folded into this:** the event sample
+offset (`X:$20c`) is a recorded functional gap awaiting a design decision about
+pre-trig behaviour, and the resonant oracle needs the stock 1.40C image, which is
+absent from the tree.
 
 ## ITEM 8: the FX sacrifice, revisited -- architectural answer plus a threshold
 
@@ -426,6 +492,10 @@ instruction forms), so the two are not comparable without the factor.
   MODELED against HARDWARE. That is the arithmetic error, and it is already
   retracted. In hardware terms bass is `2 x 74515 + 22560 = 171590` against
   72,512 -- over by 137%, not 2.76%.
+> **SUPERSEDED by "THE REAL ANSWER (item 5)".** This bullet is arithmetically
+> correct but built on the STRESS numerator. On the reachable bound the
+> figures are **36.4% (bass) and 41.3% (snare)**.
+
 * the "51,475 / 57,682 must be removed" figures are `modeled - 23040` and are
   **correctly computed**, because both sides are in the host model's units. The
   honest reduction figure is therefore **69.1% (bass) and 71.5% (snare)**, and it
