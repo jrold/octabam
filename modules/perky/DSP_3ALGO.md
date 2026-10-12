@@ -681,6 +681,55 @@ Two further routes do nothing at all, confirmed by **pixel-identical screenshots
 (same sha256 as the untouched T1 screen): pressing `yes` on the MACHINE>> field,
 and double-tapping the track key.
 
+### The double-tap OPENS THE LIST -- at a 30 ms gap, not 260 ms
+
+`press("t1")` twice with the default `hold=60, settle=200` does nothing (the
+screen is pixel-identical), which is why the gesture looked absent. Sweeping the
+gap with the screen as the feedback loop:
+
+| tap gap | screen |
+|---|---|
+| 30 ms | **CHANGED -- the list opens** |
+| 60, 100, 150, 250 ms | unchanged |
+
+What opens is `<< MACHINE:FLEX`, the **sample-slot** list:
+
+```
+<< MACHINE:FLEX
+FREE MEM:53.2      BPM  SIZE
+R4>RECORDING4      120  4.04
+R5>RECORDING5      120  4.04
+R6>RECORDING6           4.04
+...
+```
+
+and scrolling it walks the slots (`R4>RECORDING4` ... then bare `3 ---`, `4 ---`
+... `8 ---`), with no PERKY row anywhere in the rows visited. So the double-tap
+route is real but it opens the **slot** list, not an engine pool.
+
+**What is confirmed working, by screenshot:** the panel transport, `settle()`
+(which enables the frame interrupt the deadline model needs), `func+pg_playback`
+-> SRC SETUP, the track double-tap -> `<< MACHINE:FLEX` list, and `down` moving a
+selection inside a list. What is **not** yet confirmed: any route that actually
+puts `PK\x01` on the track.
+
+**The detour sites, for whoever picks this up** (all in
+`tools/perky/perky_machine_module.py`):
+
+| site | symbol | note |
+|---|---|---|
+| `0x400791E4` | `pk_pool_open` | track double-tap opens the PERKY engine list |
+| `0x40078886` | `pk_chooser_open` | the track's machine list opens on PERKY for the signed track |
+| `0x4007981C` | `pk_main_commit` | **admit PERKY at main chooser commit** |
+| `0x4005A616`/`0x4005A850` | `pk_src_commit`/`2` | admit PERKY at SRC SETUP commit |
+| `0x40031E74` | `pk_resolve_pb` | resolve the signed track's PERKY page without changing FLEX |
+| `0x400786C8` | `pk_chooser_row` | main chooser row highlights PERKY on a signed FLEX track |
+
+`pk_main_commit` is the admission, so the route that matters ends in a **main
+chooser commit**, and the double-tap on the track key reaches a *slot* list
+instead. The next pass should read the firmware at `0x40078886` and `0x4007981C`
+to see what actually calls them, rather than sweeping more gestures.
+
 ### And the detours say where it actually is
 
 * `pk_main_commit` -- **"admit PERKY at main chooser commit"**;

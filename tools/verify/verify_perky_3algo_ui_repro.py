@@ -96,41 +96,58 @@ def main() -> None:
         p.settle()
         p.png(shots / "00-main.png")
         p.press("t1")
+        p.run(200)
         p.png(shots / "01-t1.png")
+        baseline = p.screen()
 
-        # ---- 3/4. OPEN SRC SETUP AND GO INTO THE FLEX MACHINE LIST.
+        # ---- 3/4. OPEN THE MACHINE LIST.
         #
-        # SCREEN-CONFIRMED, not guessed. `func+pg_playback` opens SRC SETUP and
-        # the screen shows the machine-TYPE list:
+        # SCREEN-CONFIRMED so far: `func+pg_playback` opens SRC SETUP, whose
+        # MACHINE>> field lists STATIC/FLEX/THRU/NEIGHBOR/PICKUP -- five machine
+        # TYPES, with PERKY absent. Six `down`s there move the VALUE and clamp at
+        # PICKUP, which is the `T1 = 4` an earlier gate reported as a Perky
+        # assignment. `yes` on that field and a track double-tap both leave the
+        # screen PIXEL-IDENTICAL, so neither opens anything.
         #
-        #     MACHINE>>          <- the >> means a sub-list
-        #     STATIC
-        #     FLEX               <- the cursor starts here, index 1
-        #     THRU
-        #     NEIGHBOR
-        #     PICKUP
-        #
-        # PERKY is NOT in that list. Six `down`s from index 1 clamp to PICKUP
-        # (index 4), which is exactly the `T1 = 4` the earlier gate measured and
-        # reported as a Perky assignment. PERKY is one level deeper: the FLEX
-        # machine list, which `pk_src_names` fills with "six machine names" and
-        # `pk_machine_name` formats with "machine row 5 as PERKY".
-        p.chord("func", "pg_playback")
-        p.run(300)
-        p.png(shots / "02-src-setup.png")
-        p.press("yes")                      # enter MACHINE>>  (FLEX is selected)
-        p.run(300)
-        p.png(shots / "03-flex-list.png")
+        # The gesture is documented in tools/panel/KEYMAP.md off key `up`:
+        #   "0x26.3 up -- held + track key opens the sample slot list
+        #    << MACHINE:STATIC (E3 h26_3_t2.png)"
+        # and `pk_machine_name` formats "machine row 5 as PERKY", so that list is
+        # where PERKY lives.
+        opened = False
+        for label, go in (
+            ("up+t1", lambda: p.chord("up", "t1", settle=400)),
+            ("up+t1 twice", lambda: (p.chord("up", "t1", settle=300),
+                                     p.chord("up", "t1", settle=400))),
+        ):
+            go()
+            p.run(400)
+            shot = shots / f"02-open-{label.replace('+', '-').replace(' ', '-')}.png"
+            p.png(shot)
+            print(f"  route {label:12s} -> {shot.name}  "
+                  f"T1 machine={p.peek(PART_T1_MACHINE, 1)[0]}")
+            if p.screen() != baseline:
+                opened = True
+                print(f"  the screen CHANGED for route {label}")
+                break
+            p.press("no")
+            p.run(200)
 
-        for _ in range(5):                  # 4. walk to row 5 = PERKY
+        if not opened:
+            print("  !! no route changed the screen; nothing opened the list")
+            print(f"     screens in {shots}")
+            raise SystemExit(2)
+
+        # 4. walk to row 5 = PERKY and commit
+        for _ in range(5):
             p.press("down")
-        p.png(shots / "04-on-perky.png")
-        p.press("yes")                      #    commit the machine
+        p.png(shots / "03-on-row5.png")
+        p.press("yes")
         p.run(400)
-        p.png(shots / "05-committed.png")
-        p.press("no")                       # 5. back to Tracks
+        p.png(shots / "04-committed.png")
+        p.press("no")
         p.run(300)
-        p.png(shots / "06-back.png")
+        p.png(shots / "05-back.png")
 
         mark = p.peek(PART_T1_MARK, 3)
         machine = p.peek(PART_T1_MACHINE, 1)[0]
