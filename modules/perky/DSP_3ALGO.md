@@ -257,6 +257,36 @@ The alternative is to bring the composed program down from 3,936 to 2,724
 words, a 1,212-word (31%) reduction, which cannot come from dead code (measured
 inert) and would have to come from a materially different composition.
 
+### The composed routines are byte-identical, verified at the word level
+
+The strongest evidence on this branch is now a word-level comparison rather
+than an instruction-name comparison. Assembling the qualified standalone fold
+program and the composed shipping source, then reading `pk_simple_base` out of
+each binary:
+
+| word | standalone | composed |
+| ---: | ---: | ---: |
+| 0–23 | identical | identical |
+| 24 | `0x002ac0` (`jsr` target) | `0x001e8e` (**relocated `jsr`**) |
+| 25–35 | identical | identical |
+
+So the composed Fold primitives are **bit-identical to the qualified standalone
+build except for the one operand that must move when code relocates**. The same
+holds for `pk_fold_voice` and the shared helper block, which is what
+`verify_perky_3algo_equivalence.py` asserts across every renderer.
+
+**This closes the question of whether the composition is correct.** The
+composed machine executes the qualified instructions. What remains open is
+*why the composed test binary renders silence when the standalone test binary
+renders audio from the same state and tables* — and that is now a question
+about the execution harness, not about the composed DSP code. The harness
+detail most likely to be responsible is the voice-block base: the standalone
+gate drives state at `X:0x0200` while the composed gate uses `X:0x3800`, and
+`pk_simple_base` both reads `x:(r6+$20)` and writes `x:(r6+$34)`. The next step
+is to drive the **composed binary** with the **standalone gate's exact fixture
+and bases** (state at `0x0200`), which the equivalence result says must render
+`-1,-1,-2,-2,…`.
+
 ### The equivalence gate
 
 `tools/verify/verify_perky_3algo_equivalence.py` is the gate that now carries
