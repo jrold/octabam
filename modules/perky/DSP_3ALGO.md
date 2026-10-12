@@ -7,6 +7,61 @@ core, three selectable algorithms each.** It is deliberately smaller than the
 superseded twelve-family / four-voice target and it does **not** move synthesis
 back to ColdFire.
 
+## MEASUREMENT BOUNDARIES: exactly what 74,515 and 80,722 contain
+
+Item 1 asked for the beginning and end of the measurement, not a reference to it.
+Read off the code, exactly:
+
+`tools/verify/verify_perky_3algo_timing.py` drives the probe
+`tools/verify/verify_perky_3algo_exec.py` defines:
+
+```asm
+pk3t_fold:
+        move    #>voice,r6
+        move    #>scratch,r5
+        jsrl    pk_simple_base
+        jsrl    pk_fold_voice
+        jsrl    pk3c_rng_out        ; a GATE-ONLY state dump: 12 instructions,
+        rts                         ; four X reads and four X writes
+```
+
+and the composed source is assembled with `@CONT@` replaced by `$000426`, which
+in a probe-only binary is **uninitialised memory**.
+
+**So the quoted figure is: `pk_simple_base` + the voice renderer + a 12-instruction
+gate-only RNG dump, for one 16-sample block, measured by the host's decoded-opcode
+counter. It INCLUDES something production never runs and EXCLUDES three things
+production always runs:**
+
+* includes `pk3c_rng_out`, a diagnostic that exists only so the gate can check RNG
+  state -- production has no such call;
+* excludes `pk3d_source`, i.e. the admission check ('PK'/'Y1', the slot test), the
+  control staging and the mode delivery;
+* excludes `pk3z_scale`, the x256 output stage, which loops over all 32 words;
+* excludes the stock continuation entirely -- which is correct and intended, since
+  the stock share is the separate `16 x 1410` reserve.
+
+That is the honest description of the boundary, and it is **not** the same set as
+the production path in either direction.
+
+### The production-path delta: attempted, and NOT established
+
+I tried to measure what those omissions cost, driving the real `pk3d_source` with
+`@CONT@` redirected to a `rts` trampoline so the meter stops at our work rather
+than running away through uninitialised memory. **The attempt is inconclusive and
+I am not publishing a number from it.**
+
+The two runs disagree with each other by 6,919 cycles for the bare renderer
+(`g.run` via `pk3t_fold`: 13,300; `join.drive` via an equivalent probe without the
+dump: 6,381) -- and `pk3c_rng_out` is only **12 instructions**, so a 6,919-cycle
+difference cannot be that routine. The runs seed different voice state, so they
+are not measuring the same thing, and any ratio computed from them (2.08x, 3x)
+would be an artefact. Two numbers that cannot both be right are worse than none.
+
+**What would settle it:** one harness, one seeded state, the same block, with the
+ONLY difference being which entry is called. That is the next measurement, and it
+must be built before any production-cost figure is quoted.
+
 ## RECONCILED: where 23,040 comes from, and why the "2.76% over" claim was the error
 
 Item 1 of the directive asked precisely what 74,515 and 80,722 contain and how
