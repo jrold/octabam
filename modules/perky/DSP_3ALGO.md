@@ -1013,6 +1013,53 @@ The standalone per-renderer gates stay green, so per-renderer qualification is
 unaffected: `verify_perky_fold_drum_exec.py` and
 `verify_perky_resonant_dsp_exec.py` both pass unchanged.
 
+## REGRESSION FOUND AND REVERTED: unreached-code removal broke the Fold path
+
+**The 45-word saving reported in an earlier round is RETRACTED. It was a bug, and
+the gates did not catch it.**
+
+`drop_unreached()` deleted six routines on the evidence that nothing in the
+composed source *names* them (`pk_u32_sub`, `pk_u32_asr`, `pk_noise_step`,
+`pknhe_read_r2`, `pksde_read_r2`, `pksdo_read_r2`). That evidence was
+insufficient: **a routine can be reachable by FALLTHROUGH** -- if the routine
+physically before it ends without an `rts`/`jmp`/`bra`, control runs straight
+into the next label. Textual reference counting cannot see that, and the
+`pksde_*` / `pksdo_*` / `pknhe_*` helpers sit exactly where an envelope state
+machine falls through.
+
+Measured, same fixture, same probe, one block:
+
+```
+drop_unreached DISABLED : head=[-29, -115, -257, -457]  first_diff=None   (exact)
+drop_unreached ENABLED  : head=[-29,  -83, -144, -419]  first_diff=(1, ...)  (BROKEN)
+```
+
+Two of this branch's own gates passed while this was broken:
+
+* `verify_perky_3algo_equivalence.py` -- it compares instruction *sequences*
+  routine by routine, and deleting whole routines elsewhere leaves the compared
+  routines "identical apart from relocated targets". It has **no model of
+  fallthrough**, so it cannot see this class of defect.
+* `verify_perky_3algo_engine_join.py` -- it compares dispatch *routing*, not
+  rendered audio, and its Fold reference is the same broken code.
+
+**What caught it**: the Fold block-1 parity item. Chasing it exposed that the
+gate's own Fold result had silently changed from `[-29, -115, -257, -457]` to
+`[-29, -83, -144, -419]` since it was last reported -- i.e. the composition
+itself had regressed between rounds, and nothing else noticed.
+
+**Actions taken.** `drop_unreached` is reverted; the composition is back to
+3,936 P words (FREE 127, image sha256 `0079ebed...`), and the Fold arm cases are
+back to corner 0 exact / corners 1-2 diverging at sample 29 -- the state this
+record documented before the regression.
+
+**Consequences to carry forward:**
+
+* the FX-sacrifice gap is back to **150 words**, not 105;
+* the equivalence gate needs a fallthrough audit (a routine whose predecessor
+  can reach it must count as referenced) before any future unreached-code
+  removal is attempted.
+
 ## P-memory and the FX sacrifice: reduced, and the overlay question answered
 
 **A real 45-word reduction, verified bit-exact.** The shipping composition

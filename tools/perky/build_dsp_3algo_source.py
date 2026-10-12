@@ -221,56 +221,6 @@ def rename_family(text: str, family: str) -> str:
     return text
 
 
-# Routines the shipping composition defines but no shipping path reaches.
-# Each is measured (see the report): dropping them is checked by re-measuring
-# and by the equivalence + engine-join gates. `pk3d_source` is NOT here -- it is
-# the seam entry point.
-UNREACHED_IN_SHIPPING = (
-    "pk_u32_sub",
-    "pk_u32_asr",
-    "pk_noise_step",
-    "pknhe_read_r2",
-    "pksde_read_r2",
-    "pksdo_read_r2",
-)
-
-
-def drop_unreached(text: str) -> str:
-    """Remove routines no shipping path can enter.
-
-    A routine is only dropped when its label is defined exactly once and is
-    named nowhere else in the composed source -- so this can only delete code
-    that nothing can call, jump to, or read as a data word. If any reference
-    is found the routine is kept and the build says so, because silently
-    keeping it would hide a real reference and silently dropping it could
-    break a computed dispatch.
-    """
-    lines = text.splitlines()
-    killed: set[int] = set()
-    report = []
-    for name in UNREACHED_IN_SHIPPING:
-        starts = [i for i, l in enumerate(lines) if l.strip() == name + ":"]
-        if len(starts) != 1:
-            die(f"{name}: expected exactly one definition, found {len(starts)}")
-        start = starts[0]
-        end = len(lines)
-        for j in range(start + 1, len(lines)):
-            s = lines[j]
-            if s and not s[0].isspace() and s.endswith(":"):
-                end = j
-                break
-        pattern = re.compile(r"(?<![A-Za-z0-9_])" + re.escape(name) + r"(?![A-Za-z0-9_:])")
-        external = [l for j, l in enumerate(lines)
-                    if (j < start or j >= end) and pattern.search(l)]
-        if external:
-            die(f"{name}: still referenced by {external[0].strip()!r}; refusing to drop")
-        killed.update(range(start, end))
-        report.append(name)
-    if not killed:
-        return text
-    return "\n".join(l for i, l in enumerate(lines) if i not in killed)
-
-
 def extra_body(shared) -> str:
     """Only what the resonant tail does not already carry.
 
@@ -520,7 +470,7 @@ def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
         _section("fold_drum_1.asm", fold_body()),
         _section("resident_primitives.asm", extra_body(bass_tail)),
     ])
-    return drop_unreached(text)
+    return text
 
 
 def normalize(text: str) -> str:
