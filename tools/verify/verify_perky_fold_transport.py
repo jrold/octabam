@@ -22,8 +22,21 @@ def main():
     states=[None]*8;families=[None]*8;rng=random.Random(0xf01d);rows=[];expected=[]
     for i in range(2048):
         track=i%8;engine=(0,2,10)[(i//8)%3];mode=(i//24)%3;trig=i%4!=0
-        raw=tuple(rng.choice([0,127,rng.randrange(128)]) for _ in range(4));params=list(raw)+[0,0,mode,0,0,0,0,engine]
-        if engine==10:want=bytes(params);states[track]=None
+        raw=tuple(rng.choice([0,127,rng.randrange(128)]) for _ in range(4))
+        # The row is row[0..5]=fp[] and row[6..11]=page slots. `pk_render`
+        # takes MODE from p[MODE_SLOT] = p[4] = fp[4] (MODE_SLOT=4, the
+        # visible main SRC-page MODE parameter), NOT from page slot 0 --
+        # so the mode belongs in row[4]. Writing it at row[6] left fp[4]=0
+        # and every row was driven with MODE 0: the oracle was told the
+        # requested mode while the machine was told 0, so every mode!=0
+        # row mismatched on record[8].
+        params=list(raw)+[mode,0,0,0,0,0,0,engine]
+        if engine==10:
+            # No prepare runs for this model, so the record is the row
+            # verbatim EXCEPT that pk_render itself sets p[6]=p[MODE_SLOT]
+            # before it dispatches; nothing overwrites it on this path.
+            passthrough=list(params);passthrough[6]=mode
+            want=bytes(passthrough);states[track]=None
         else:
             if families[track]!=engine or states[track] is None:states[track]=(fold.State if engine==0 else simple.State).fresh()
             want=states[track].prepare(raw,mode,trigger=trig)

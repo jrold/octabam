@@ -338,12 +338,17 @@ void pk_fold_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig)
 void pk_resonant_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig,
                          unsigned family)
 {
+    /* Capture the mode FIRST. `pk_render` puts it in p[6] (= p[MODE_SLOT])
+     * before dispatching, but pk_simple_prepare overwrites p[0..7] with the
+     * four prepared value pairs -- so reading p[6] afterwards reads a
+     * parameter's high byte, not the mode. */
+    const unsigned mode = p[6]>2u ? 2u : p[6];
     pk_simple_prepare(s,p,trig);
     for(unsigned i=0;i<4;++i) {          /* prepared[] IS tune/decay/p1/p2 */
         p[2*i]=(uint8_t)(s->prepared[i]>>8);
         p[2*i+1]=(uint8_t)(s->prepared[i]&0xffu);
     }
-    p[8]=(uint8_t)(p[6]>2u ? 2u : p[6]);
+    p[8]=(uint8_t)mode;
     p[9]=0; p[10]=0;
     p[11]=(uint8_t)family;
 }

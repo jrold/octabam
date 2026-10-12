@@ -77,16 +77,21 @@ def main() -> None:
     rng = random.Random(0x33414c47)     # "3ALG"
 
     # ---- the join, across both engines on eight tracks ---------------------
-    rows, expect = [], []
+    rows, expect, modes = [], [], []
     for index in range(768):
         track = index % 8
         engine = (FOLD, BASS, SNARE)[(index // 8) % 3]
         mode = (index // 24) % 3
         trig = index % 4 != 0
         raw = tuple(rng.choice([0, 64, 127, rng.randrange(128)]) for _ in range(4))
-        params = list(raw) + [0, 0, mode, 0, 0, 0, 0, engine]
+        # The row is row[0..5]=fp[] and row[6..11]=page slots, and `pk_render`
+        # takes MODE from p[MODE_SLOT] = p[4] = fp[4] -- so the mode belongs in
+        # row[4]. (Writing it at row[6] drives every row as MODE 0; that bug
+        # kept verify_perky_fold_transport.py red until it was found.)
+        params = list(raw) + [mode, 0, 0, 0, 0, 0, 0, engine]
         rows.append(bytes(params + [track, int(trig)]))
         expect.append(engine)
+        modes.append(mode)
 
     data = drive(exe, rows, "join")
     if len(data) != 12 * len(rows):
@@ -94,17 +99,31 @@ def main() -> None:
             f"expected {12 * len(rows)}")
 
     failures = []
+    mode_failures = []
     for index, engine in enumerate(expect):
         record = data[12 * index:12 * index + 12]
         got = record[11]                      # p[11] -> DSP word 0x13
         if got != engine:
             failures.append((index, engine, got))
+        # p[8] is the mode the renderer sees. `pk_render` normalises
+        # p[6]=p[MODE_SLOT] before dispatching, and each prepare then publishes
+        # the clamped mode at p[8]; a model that fell through to the zeroing
+        # else would still carry it, so this catches a prepare that ignores it.
+        if record[8] != modes[index]:
+            mode_failures.append((index, engine, modes[index], record[8]))
     print(f"join: drove {len(rows)} rows through pk_render; "
           f"record byte 11 (DSP word 0x13) matched the selected model in "
           f"{len(rows) - len(failures)}/{len(rows)}")
     for index, engine, got in failures[:6]:
         print(f"   row {index}: selected {FAMILY[engine]} ({engine}), "
               f"record byte 11 = {got}")
+    print(f"mode: record byte 8 carried the requested mode in "
+          f"{len(expect) - len(mode_failures)}/{len(expect)} rows")
+    for index, engine, want, got in mode_failures[:6]:
+        print(f"   row {index}: {FAMILY[engine]}, mode {want} -> record byte 8 "
+              f"= {got}")
+    if failures or mode_failures:
+        die(f"{len(failures)} join and {len(mode_failures)} mode mismatches")
 
     # ---- liveness: a non-zero panel must publish non-zero controls ---------
     # The `else` branch that all three models used to fall into ZEROES every
@@ -115,7 +134,7 @@ def main() -> None:
         probe = []
         # drive one track with a full-scale panel, then read its record
         for _ in range(40):
-            probe.append(bytes([127, 127, 127, 127, 0, 0, 1, 0, 0, 0, 0, engine,
+            probe.append(bytes([127, 127, 127, 127, 1, 0, 0, 0, 0, 0, 0, engine,
                                 0, 1]))
         out = drive(exe, probe, f"live-{engine}")
         record = out[12 * (len(probe) - 1):12 * len(probe)]
@@ -132,7 +151,7 @@ def main() -> None:
     # Fold records to agree (the smoother restarts when the family changes).
     seen = {}
     for engine in (FOLD, BASS, FOLD):
-        probe = [bytes([96, 96, 96, 96, 0, 0, 1, 0, 0, 0, 0, engine, 0, 0])
+        probe = [bytes([96, 96, 96, 96, 1, 0, 0, 0, 0, 0, 0, engine, 0, 0])
                  for _ in range(1)]
         out = drive(exe, probe, f"sw-{engine}-{len(seen.get(engine, []))}")
         seen.setdefault(engine, []).append(out[-12:])
