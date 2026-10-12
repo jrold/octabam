@@ -351,7 +351,94 @@ carried across calls and laid out at different addresses in the two builds, and
 the measurement that will settle it is a like-for-like read in each build's own
 frame. It is recorded here rather than carried as an unexplained red gate.
 
-### Timing qualification (measured) -- and a corrected budget model
+### TIMING MODEL RECONCILED -- the blocker report contained a category error
+
+**This retracts the "over the physical deadline by 2,003 / 8,210 cycles" claim
+from the blocker report. Those two numbers compared a MODELED figure against a
+HARDWARE deadline and are meaningless.** The reduction figures derived
+afterwards (51,475 / 57,682 against 23,040) used the correct comparison. The
+report mixed both, and that inconsistency is real.
+
+**The model, from `docs/firmware/CHIP.md` section 2 (all hardware or
+triangulated, not inferred):**
+
+| quantity | value | provenance |
+| --- | --- | --- |
+| whole core, per sample | **4,532 cycles** | hardware, probe 55, 199.9 MHz measured 22 Sep 2026 |
+| stock's own share | **≈1,410 cycles/sample** | hardware, by subtraction (4,532 − 3,120) |
+| DSP-usable budget for module work | **≈3,120 cycles/sample** | hardware, triangulated three ways: 1,652 + 4×192 + 704 = 3,124 |
+| one frame (16 samples) | **72,512 cycles** | 16 × 4,532 |
+
+**AND the host's cycle model undercounts hardware by ≈2x.** That is not an
+assumption; I measured it against CHIP.md's own hardware instruction table
+(`docs/firmware/CHIP.md` section 2) by driving each form in a 256-iteration DO
+loop through `bd909_host -cycle-meter 1`:
+
+| instruction | host modeled | CHIP.md hardware | ratio |
+| --- | ---: | ---: | ---: |
+| `move x0,a` | 1.06 | 2.00 | 1.89x |
+| `move x:(r0),a` | 1.06 | 2.00 | 1.89x |
+| `move x:(r7+$15),a` | 2.05 | 3.98 | 1.94x |
+| `move x:(r7+$70),a` | 3.05 | 6.01 | 1.97x |
+| `nop` | 1.06 | -- | -- |
+
+So the 2x margin in `verify_perky_realtime_budget.py` is **measured, not
+arbitrary**, and it applies to this branch's numbers too (same host, same
+`-cycle-meter 1`).
+
+**The correct production test**, therefore:
+
+```
+hardware for a 16-sample block  =  2 * modeled        (measured ~1.89-1.97x)
+module budget                   =  3,120 * 16  =  49,920 cycles   (hardware)
+=>  modeled allowance           =  49,920 / 2  =  24,960
+```
+
+The repository's `MAX_MODELED_BLOCK = 23,040` is the same test with ~7.7%
+headroom held back (2 × 23,040 = 46,080, leaving 3,840 of the 49,920). So
+**23,040 is the correct production allowance for this configuration**, and it is
+correct because it was derived from the same hardware measurements -- not
+because it is a "historical" number that no longer applies.
+
+**Measurement boundaries, stated exactly.** The 74,515 / 80,722 figures come
+from `verify_perky_3algo_timing.py` driving `pk3t_bass` / `pk3t_snare`, which
+are:
+
+```
+  move #voice,r6          <- 2 register setups (probe glue)
+  move #scratch,r5
+  jsrl <renderer body>    <- the composed renderer under test
+  jsrl pk3c_rng_out       <- TEST-ONLY RNG dump, not production
+  rts
+```
+
+So those numbers are **renderer body + 2 register loads + a test-only dump**.
+They contain NO stock continuation, NO AMP, NO FX1, NO FX2, NO routing, NO
+dispatcher, and they are MODELED cycles, not hardware. Both corrections matter
+and they compound in opposite directions -- which is exactly why comparing
+"74,515" to "72,512" was wrong twice over.
+
+### Consequence: the required reductions
+
+| algorithm | modeled/16 | allowance 23,040 | shortfall | % |
+| --- | ---: | ---: | ---: | ---: |
+| Fold Drum 1 | 26,112 | 23,040 | 3,072 | 11.8% (mode-2 noise path only) |
+| Resonant Bass | 74,515 | 23,040 | 51,475 | 69.1% |
+| Resonant Snare | 80,722 | 23,040 | 57,682 | 71.5% |
+
+These reduction targets stand. What does NOT stand is calling Bass "2.76% over"
+or Snare "11.32% over" the deadline: that comparison put modeled cycles against
+the hardware frame.
+
+**What this does not settle, and what the next measurement must.** The 1,410
+figure is stock's own share for the core; whether a Perky track's source
+REPLACES enough stock work that the effective allowance is larger is not yet
+measured, and neither is the per-track split. That is the honest open item, and
+it is bounded: even granting the Perky source the entire non-stock budget plus
+the replaced track's whole share, the ceiling is 4,532 cycles/sample =
+36,256 modeled, which Snare at 80,722 still exceeds by 2.2x.
+
+
 
 `tools/verify/verify_perky_3algo_timing.py` measures the composed production
 renderer per algorithm. It deliberately does NOT assert PCM parity -- the parity
