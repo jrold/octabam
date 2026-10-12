@@ -44,6 +44,62 @@ production always runs:**
 That is the honest description of the boundary, and it is **not** the same set as
 the production path in either direction.
 
+### The Fold "overhead" EXPLAINED, and the overhead column was not overhead
+
+Closing the loose end flagged above. Decomposing the dispatch path by measuring
+its components in isolation, and by driving the dispatcher down paths that reach
+different amounts of work:
+
+```
+meas_nop                     3     the baseline
+meas_scale                 346     the x256 loop over 32 words
+meas_silence               394     the clear loop
+meas_base                  837     pk_simple_base -- cheap, NOT the culprit
+meas_voice               12419     the Fold voice render dominates
+meas_both                13279     base + voice, and 837 + 12419 + 23 = 13279
+```
+
+and through the dispatcher itself:
+
+```
+fold admitted           18998
+bass admitted           45357
+snare admitted          48592
+unknown engine->silence   534     admission + staging + clear + scale + return
+not admitted (slot 1)      26
+```
+
+**The dispatcher's own fixed cost is 534** -- that is item 2's
+"dispatcher/wrapper overhead", measured directly by driving an engine id it does
+not recognise, so it runs admission, staging, the silence clear, the scale stage
+and the return without rendering anything.
+
+**And the "overhead" column I published one commit ago is NOT overhead.** The
+dispatch-over-render difference is **Fold +5,719, bass +1,616, snare +1,025** --
+not uniform. A fixed dispatcher cost cannot differ by engine, so the column was
+mixing the dispatcher's ~534 with **state- and control-dependent variation in the
+render path**: the two entries see the renderer with different staged control
+words, so they are not running the same code path, and the difference is the
+renderer's, not the wrapper's.
+
+**So the correct overhead figure is 534, for every engine:**
+
+| | renderer | + 534 | vs 23,040 |
+|---|---|---|---|
+| Fold Drum 1 | 26,112 | 26,646 | 13.5% over |
+| Resonant Bass | 74,515 | 75,049 | needs **69.3%** |
+| Resonant Snare | 80,722 | 81,256 | needs **71.7%** |
+
+which leaves last commit's 69.3 / 71.6 essentially intact -- but for the right
+reason now, and with the 5,698 Fold anomaly explained as a render-path difference
+rather than a wrapper cost.
+
+**The measurement lesson, which cost two commits:** to attribute a difference to a
+WRAPPER, both entries must be shown to run the same INNER path. I compared two
+entries with different control words and called the difference "overhead". The
+silence-path measurement is the one that isolates the wrapper, because it
+provably renders nothing.
+
 ### The production-path delta, all three engines -- and my extrapolation was WRONG
 
 Measured with the same one-harness discipline, now covering every engine
