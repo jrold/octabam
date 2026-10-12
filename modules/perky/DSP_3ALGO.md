@@ -1014,6 +1014,77 @@ miss) as laid out in the composition, and the scratch accumulator at
 `0x3952/0x3953` is where to look. That is a much smaller space than "the
 composed renderer misbehaves".
 
+### The shared arithmetic is on a DIFFERENT convention from the standalone
+
+**This corrects an earlier claim in this record.** The equivalence gate asserts
+"every renderer instruction identical apart from relocated DO/JSR/branch
+targets". Comparing **every one of the 80 labels** in the two binaries, not the
+six the gate names, shows that is not true: **14 routines differ by a real
+operand, not a relocation.** They are all in the shared 32-bit arithmetic layer,
+and every difference is a **constant 0x40 in the scratch displacement**:
+
+```
+routine                  standalone          composed
+pk_u32_add               x:(r5+$0)           x:(r5-$40)
+pk_u32_mul_low           x:(r5+$0),x0        x:(r5-$40),x0
+pk_u32_mul_full          x:(r5+$2),y0        x:(r5-$3e),y0
+pk_rng_step              x:(r5+$0),a         x:(r5-$40),a
+pk_rng_no_carry          x:(r5+$24),a        x:(r5-$1c),a
+pk_add_no_carry          a1,x:(r5+$8)        a1,x:(r5-$38)
+pk_sub_no_borrow, pk_u32_sub, pk_u32_asr, pk_u32_shift_sign_ready  (same shape)
+```
+
+**Why.** `dsp_source_layout.center_scratch` subtracts 0x40 from every
+`x:(r5+$N)` displacement **and inserts a prologue that advances r5 by 0x40**, so
+a centred body's absolute addresses are unchanged -- *provided the caller has
+already advanced r5*. The resonant recipes get both halves of that transform.
+The Fold bodies get neither. Measured on the composed source:
+
+```
+pk3d_bass_voice:   move r5,a / add #>$40,a / move a1,r5   <- prologue PRESENT
+pk3d_snare_voice:  move r5,a / add #>$40,a / move a1,r5   <- prologue PRESENT
+pk_fold_voice:     (none)
+pk_simple_base:    (none)
+pk_simple_delta_at:(none)
+pk_simple_envelope:(none)
+```
+
+and the dispatcher sets `r5 = 0x3900`. So the resonant path reaches the shared
+math with `r5 = 0x3940` (correct for centred displacements) while the **Fold
+path reaches it with `r5 = 0x3900`, addressing every shared-arithmetic scratch
+word 0x40 = 64 words away from where the qualified standalone build puts it.**
+
+**Tested as a fix, and it does NOT explain the Fold symptom.** Centring the Fold
+sections' displacements and raising the caller to `r5 = 0x3940` -- which moves
+the shared math's window from `0x38C0..0x3921` to `0x3900..0x3921`, exactly the
+standalone's -- leaves the result bit-identical:
+
+```
+BEFORE fix, r5=0x3900: head=[-29,-115,-257,-457] first_diff_vs_fixture=(29,-4143,-4160)
+AFTER  fix, r5=0x3940: head=[-29,-115,-257,-457] first_diff_vs_fixture=(29,-4143,-4160)
+```
+
+So the convention mismatch is a **real latent defect** worth fixing on its own
+merits, but it is not the cause of the block-1 divergence -- that fixture does
+not exercise the shared-arithmetic scratch.
+
+**Where the block-1 divergence actually lives.** Dumping the full persistent
+region per block, the first differences after block 1 are at
+
+```
+0x3802, 0x3804          the voice's fold/envelope accumulators
+0x3953                  r5+$53 -- written by pksde_shape1 / pksde_next_ready / pksdo_have_wave
+0x395e, 0x395f          r5+$5e/$5f -- the fold amount, written by pk_fold_voice
+```
+
+i.e. the **simple-drum envelope state machine** (`pksde_*` / `pksdo_*`) and the
+Fold voice's own fold accumulator -- not the shared arithmetic.
+
+**Consequence for the gate.** `verify_perky_3algo_equivalence.py` must be
+extended to compare **all** shared labels (and to audit fallthrough), not the
+six it names; until then its "identical" claim covers 6 of 80 labels and missed
+14 real differences.
+
 ### The equivalence gate
 
 `tools/verify/verify_perky_3algo_equivalence.py` is the gate that now carries
