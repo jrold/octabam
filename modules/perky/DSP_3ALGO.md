@@ -527,6 +527,64 @@ held     trig=1  peak 8388352     a held note continues instead of reloading
 The snare's release peak differing from its hit is the same fact from the audio
 side: the release does not restart the voice.
 
+## THE HARDWARE WEDGE: the port models the stall, and no gate runs it
+
+On the physical Octatrack, with a Perky machine assigned, pressing PLAY stopped
+the sequencer advancing. This is what the branch knew and did not act on.
+
+### The port already models the unit's stall
+
+`tools/emu/ot_emu/main.cpp` has `--cf-frame-deadline F`, documented IN THE
+EMULATOR'S OWN USAGE TEXT as *"models the unit's stall: the calibrated frame cost
+must fit the 362.8 us frame"*. It sets `cfDeadlineHit` -- *"set when the deadline
+model stops the run (the unit's stall)"*.
+
+**Exactly one thing calls it: `tools/harness/perky_cf/price_project.py`, a manual
+harness.** `grep -rln cf-frame-deadline tools/verify/` returns **nothing**. Every
+gate measures the frame; **not one models the deadline.** That is the missing
+piece the blocker predicted: the emulator can reproduce the reported symptom and
+the gate set never asks it to.
+
+### And the renderer does not fit the frame
+
+`tools/verify/verify_perky_3algo_timing.py` already computed this, printed
+`measured`, and **exited 0**:
+
+| algorithm | REACHABLE/16 | 2x+stock | vs the 72,512 window | verdict |
+|---|---|---|---|---|
+| fold | 25,393 | 73,346 | +834 | OVER |
+| **bass** | **35,753** | **94,066** | **+21,554** | **OVER** |
+| **snare** | **38,827** | **100,214** | **+27,702** | **OVER** |
+
+**The renderer exceeds the frame window by 38%.** A frame that cannot complete
+overruns the ISR, misses the next interrupt, and leaves the ColdFire waiting for a
+handshake that never arrives.
+
+**Why a stall and not just glitched audio**: the ColdFire *"renders the grains and
+crossfades and ships finished audio to the DSP every frame"*
+(`docs/firmware/DSP.md`), and the DSP's playback engine is `P:0x3a1` -- **inside
+the very region this hook replaces**. The two cores exchange data every frame, so
+a frame that does not finish breaks a per-frame path rather than degrading audio
+gracefully. That is why it stops the machine.
+
+**The gate is now a gate.** It exits non-zero with the per-algorithm figures. It is
+left RED on purpose: the renderer does not fit and a green gate here would be a
+lie.
+
+### What was measured, and a wrong turn that was reverted
+
+An attempt was made to blame the hook's not-admitted `rts`. **It was wrong.** The
+seam is planted as a **`jsr`** (`schema.DspHook`: "A jsr planted in STOCK DSP
+code"), so `rts` pops the return correctly and resumes stock at the instruction
+after the hook -- exactly as `probe_glue.asm` says ("unsigned source: run stock
+path"). The admitted path uses `move ssh,x0` to discard that return.
+
+**`move ssh,x0` pops -- measured, not reasoned.** A `jsr` to a helper whose body
+is `move ssh,x0; rts` leaves the markers after the call **unwritten** (X:0=0,
+X:1=0); with `nop; rts` they are written (1, 2). A bare `jmp` in either path would
+leak one stack level per track per frame and wrap the 15-deep stack. The change
+was reverted, including in the debug image, which had copied it.
+
 ## FIXED: the interpolation tables overlapped by one word
 
 **The case-29 divergence was a LAYOUT bug, not an arithmetic one.** The
