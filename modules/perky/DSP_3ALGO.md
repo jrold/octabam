@@ -1065,6 +1065,44 @@ So the precondition fails on reachable data, and this branch cannot take that
 optimisation. Recorded as a measured negative result rather than left as an
 untried idea.
 
+### T1/T5 mapping: now evidenced and gated, from the STOCK payloads
+
+The definition of done asks for "T1 mapping to its correct DSP payload/core" and
+"T5 mapping" to be tested. Nothing in this branch tested them -- the admission
+rule was asserted, and the track<->core mapping was an inherited assumption. It
+is now read out of the stock payloads themselves
+(`tools/verify/verify_perky_3algo_core_mapping.py`):
+
+```
+track base : payload B x:$420 = 0 (tracks 1-4), payload A x:$420 = 4 (tracks 5-8)
+slot walk  : payload A x:$418 steps 0x20 to 0x80 = 4 tracks per core
+slot walk  : payload B x:$418 steps 0x20 to 0x80 = 4 tracks per core
+latch      : composed sets x:$38ed = 1 on the first admitted record
+admission  : composed dispatcher admits x:$418 == 0x0 (the core's first track)
+```
+
+Three facts, each from the pristine payload rather than from an assumption:
+
+1. **Stock walks `x:$418` as the per-core track slot**: `add #<$20,b` /
+   `cmp #>$80,b` / `bne` (`P:0x537..0x53c` on A, `0x243..` on B). Four steps of
+   `0x20` to `0x80` is exactly **four tracks per core**, one slot each -- so
+   `x:$418 = 0` is that core's FIRST track.
+2. **Each payload records its own track base in `x:$420`**: 0 on payload B and
+   4 on payload A. Payload B serves tracks 1-4 and payload A serves 5-8, so slot
+   0 is **track 1 on B** and **track 5 on A**.
+3. **The composed dispatcher admits slot 0 only** (`move x:>$418,b` / `tst b` /
+   `bne`, then latch `x:$38ed = 1`). Admitting no other slot is what keeps T2-T4
+   and T6-T8 ordinary.
+
+The gate fails if either payload's base changes, if the stride or limit stops
+describing four tracks, or if the admitted slot stops being 0 -- i.e. if the
+mapping this machine depends on ever moves.
+
+Worth recording as a near-miss: my first two attempts at this gate asserted the
+admission rule as a `cmp #>$0,b` and the latch as "store the slot value". Both
+were WRONG -- the rule is a `tst b`, and the latch stores the CONSTANT 1, not the
+slot. The gate only passed once it described what the artifact actually does.
+
 ### The TIMING TOOL now reports the reachable bound as the production number
 
 The reachable-versus-stress split was measured, but the tool that ships the
