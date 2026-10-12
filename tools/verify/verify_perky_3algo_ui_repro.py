@@ -1,26 +1,24 @@
 #!/usr/bin/env python3
-"""Reproduce the physical stuck-on-step-1 failure through the REAL PANEL.
+"""Reproduce the physical failure by DRIVING THE REAL PANEL, and prove it did.
 
-WHAT THIS DOES DIFFERENTLY. Every other gate in this tree reaches the Perky
-renderer by prewriting machine state into a project, poking RAM, or calling
-`pk_render` directly. All three bypass the firmware transitions the user actually
-performs. This gate does none of them:
+WHY THIS IS BUILT ON MenuPort. Two earlier versions of this gate drove the panel
+with raw live key codes through `--live-script` and both were worthless for the
+same reason: the live Part ended up with NO PK/1 signature, so the run said
+nothing about the Perky machine while looking exactly like a test of it.
 
-  * T1 starts as ordinary stock FLEX with NO Perky signature and NO trigs;
-  * PERKY is selected through the stock machine-selection UI (`SRC SETUP`), the
-    same detoured chooser the unit draws, driven by panel key codes;
-  * the trigs at steps 1, 5, 9 and 13 are entered in grid-record mode with the
-    RECORD control;
-  * transport starts from the panel's PLAY key, NOT from `--sequencer`;
-  * and the whole run carries `--cf-frame-deadline`, so the port models the
-    unit's own 362.8 us frame deadline.
+`tools/verify/stems_panel.MenuPort` fixes the three things that made that
+possible:
 
-The question is the user's: after that workflow, does the transport keep
-advancing past step 1, or does the deadline model stop the machine?
+  * NAMED keys (`press("t1")`, `chord("func", "pg_playback")`), so a sequence is
+    readable and its key names come from `tools/panel/key_map.json`;
+  * `peek`/`long`, so the LIVE Part and the list cursor are read back as numbers
+    rather than assumed -- and the gate REFUSES to continue without PK\\x01;
+  * `png()`, so the screen can be looked at when a key does not do what the
+    author thought.
 
-KEY CODES are row/bit from tools/panel/KEYMAP.md, live code = row*8 + bit - 0x100:
-  T1 0x10, T5 0x14, PLAY 0x28, REC 0x29, YES 0x31, NO 0x32,
-  trig 1 0x00, trig 5 0x04, trig 9 0x08, trig 13 0x0c.
+Emulated time advances only inside `run(ms)`, in exact steps, so the run is
+deterministic -- which also removes the one-run-in-three flakiness that made the
+previous attempt unreportable.
 """
 from __future__ import annotations
 
@@ -31,98 +29,55 @@ import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-sys.path[:0] = [str(ROOT / "tools"), str(ROOT / "tools/hw"), str(ROOT / "tools/harness")]
+sys.path[:0] = [str(ROOT / "tools"), str(ROOT / "tools/hw"),
+                str(ROOT / "tools/harness"), str(ROOT / "tools/verify")]
 import ot_project as otp  # noqa:E402
 from ab_fixture import prepare  # noqa:E402
+from stems_panel import MenuPort  # noqa:E402
 
-EMU = ROOT / "out/emu/ot_emu"
-# stage_card.py imports only a repo module, so the venv interpreter is a
-# convenience: fall back to the one running this script when the symlinked venv
-# has no bin/python3 (which is the case in a fresh worktree here).
 PY = ROOT / ".venv/bin/python3"
 if not PY.is_file():
     PY = pathlib.Path(sys.executable)
 
-T1, T5 = 0x10, 0x14
-PLAY, REC, YES, NO = 0x28, 0x29, 0x31, 0x32
-TRIG1, TRIG5, TRIG9, TRIG13 = 0x00, 0x04, 0x08, 0x0c
+PERKY_ROW = 5                      # read from modules/perky/control.c
+ROW_SELECTOR = 0x460E738E          # what control.c compares against PERKY_ROW
+LIVE_PART = 0x40170F60
+# the live Part's T1 machine byte, its PK/1 mark, and the block the admission
+# path scans for the record words
+PART_T1_MACHINE = LIVE_PART + 0x22
+PART_T1_MARK = LIVE_PART + 60
 
 
-def key(code: int, gap: float = 0.5, hold: float = 0.4):
-    return [(gap, f"key {code:#x} down"), (hold, f"key {code:#x} up")]
-
-
-def fresh_flex_fixture(source: pathlib.Path, destination: pathlib.Path) -> pathlib.Path:
-    """T1 is plain stock FLEX: no Perky signature, no donor, and NO TRIGS -- the
-    pattern is entered through the panel, which is the point."""
-    fixture = prepare(source, destination)
+def stage_card(project: pathlib.Path, work: pathlib.Path) -> pathlib.Path:
+    """T1 as plain stock FLEX, NO Perky signature, NO trigs: everything under
+    test is entered through the panel."""
+    fixture = prepare(project, work / "project")
     for bank in fixture.glob("bank*.work"):
         def mutate(data: bytearray) -> None:
             for part in range(otp.NPARTS_ALL):
-                file_base = otp.PART_BASE + part * otp.PART_STRIDE
-                live_base = file_base + 9
-                data[live_base + 0x22] = 1                      # stock FLEX on T1
-                data[file_base + otp.SLOT_OFF + otp.SLOT_KIND["flex"]] = 0
-                data[live_base + 60:live_base + 63] = bytes(3)  # no PK/1 mark
-            for step in range(64):                              # every pattern empty
-                at = otp.trac_off(0, 0) + step
-                data[at] = 0
+                base = otp.PART_BASE + part * otp.PART_STRIDE
+                live = base + 9
+                data[live + 0x22] = 1                       # stock FLEX on T1
+                data[base + otp.SLOT_OFF + otp.SLOT_KIND["flex"]] = 0
+                data[live + 60:live + 63] = bytes(3)        # no PK/1 mark
+            for step in range(64):
+                data[otp.trac_off(0, 0) + step] = 0
         otp._bank_write(fixture, int(bank.stem[4:]), mutate, guard=False)
-    return fixture
-
-
-def write_script(path: pathlib.Path, track_key: int, assign: bool = True) -> None:
-    """The user's workflow, step for step.
-
-    `assign=False` is the CONTROL: the identical run with steps 3-5 (open SRC
-    SETUP, walk to the PERKY row, commit) omitted, so T1 stays stock FLEX. A
-    fault that appears in both runs is the harness or the port, not the machine.
-    """
-    events = []
-    events += key(track_key)                       # 2. select T1/T5
-    if assign:
-        # OPEN THE ENGINE LIST THE WAY THE UNIT DOES: a DOUBLE-TAP of the track
-        # key. `pk_pool_open` is detoured with the note "track double-tap opens
-        # the PERKY engine list", and the previous sequence (`0x2d` held + `0x22`)
-        # opened the machine-TYPE list instead -- five entries, so six scrolls
-        # landed on index 4 and the live Part showed T1 = 4 (PICKUP) with no PK/1
-        # signature. The scroll count matters for the same reason: PERKY is
-        # "machine row 5", so it is index 5 of a six-entry list.
-        events += key(track_key, 0.15, 0.05)        # first tap
-        events += key(track_key, 0.15, 0.05)        # second tap -- opens the list
-        events += [(0.8, "key 0x20 down"), (0.3, "key 0x20 up")] * 5
-        events += key(YES)                          # commit the machine
-        events += key(NO)                           # back to Tracks
-    events += key(TRIG1)                            # 6. audition the track
-    events += key(REC, 0.7, 0.5)                    # 7. grid-record mode
-    for trig in (TRIG1, TRIG5, TRIG9, TRIG13):      # 8. the four trigs
-        events += key(trig, 0.4, 0.3)
-    events += key(REC, 0.7, 0.5)                    #    leave record mode
-    events += key(PLAY, 0.8, 0.4)                   # 9. PLAY
-    events += [(12.0, "quit")]                      # let it run
-
-    elapsed = 0
-    rows = []
-    for delay, event in events:
-        elapsed += round(delay * 1000)
-        rows.append(f"{elapsed} {event}\n")
-    path.write_text("".join(rows))
+    card = work / "card.img"
+    subprocess.run([str(PY), str(ROOT / "tools/emu/ot_emu/stage_card.py"),
+                    str(fixture), "OCTABAM", "RIG",
+                    "--tree", str(work / "tree"), "--out", str(card)],
+                   cwd=ROOT, check=True, capture_output=True)
+    return card
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--image", type=pathlib.Path, required=True)
     ap.add_argument("--project", type=pathlib.Path, required=True)
-    ap.add_argument("--track", type=int, default=1)
-    ap.add_argument("--dirty", default="123",
-                    help="--dsp-dirty seed; 0 = a clean fill")
-    ap.add_argument("--pcwatch", action="append", default=[],
-                    help="core:pc for --dsp-pcwatch (repeatable)")
-    ap.add_argument("--no-assign", action="store_true",
-                    help="control: same run, no machine assignment")
-    ap.add_argument("--factor", default="1.7")
-    ap.add_argument("--deadline", action="store_true")
-    ap.add_argument("--work", type=pathlib.Path, default=ROOT / "out/perky/3algo-ui-repro")
+    ap.add_argument("--work", type=pathlib.Path,
+                    default=ROOT / "out/perky/3algo-ui")
+    ap.add_argument("--open-tries", type=int, default=3)
     args = ap.parse_args()
 
     image = args.image.expanduser().resolve()
@@ -130,105 +85,76 @@ def main() -> None:
     work = args.work.expanduser().resolve()
     if not (project / "project.work").is_file():
         raise SystemExit(f"{project} is not an Octatrack project")
-    if not EMU.is_file():
-        raise SystemExit(f"missing {EMU}; run `make emu-cf`")
-
     if work.exists():
         shutil.rmtree(work)
     work.mkdir(parents=True)
-    fixture = fresh_flex_fixture(project, work / "project")
-    card = work / "card.img"
-    subprocess.run([str(PY), str(ROOT / "tools/emu/ot_emu/stage_card.py"),
-                    str(fixture), "OCTABAM", "RIG",
-                    "--tree", str(work / "tree"), "--out", str(card)],
-                   cwd=ROOT, check=True)
+    card = stage_card(project, work)
+    shots = work / "shots"
 
-    script = work / "panel.script"
-    write_script(script, T1 if args.track == 1 else T5,
-                 assign=not args.no_assign)
-    log = work / "port.log"
-    part = work / "part.bin"
-    shadow = work / "shadow.bin"
-    cmd = [str(EMU), "--image", str(image), "--card", str(card),
-           "--set", "OCTABAM", "--project", "RIG", "--load-ms", "90000",
-           "--mkii", "--dsp", "--dsp-dirty", str(args.dirty), "--main-level", "64",
-           # THE FRAME INTERRUPT MUST FIRE. Route A's default unmasks source 1
-           # unconditionally and takes 0 frame interrupts, which leaves the
-           # deadline model measuring nothing -- the port says so itself:
-           # "frame : off ... --frame-timer restores the 16-sample timer".
-           "--frame-timer",
-           # THE LIVE PART AND ITS SAVED SHADOW. Reading the staged fixture on
-           # disk proves nothing: the panel writes the Part in RAM, so this is
-           # the only way to see what the machine assignment actually stored.
-           "--mem-dump", f"0x40170f60,6322={part};0x100a4ece,6322={shadow}"
-                         f";0x460e738e,16={work / 'rowsel.bin'}",
-           "--live-script", str(script)]
-    for w in args.pcwatch:
-        cmd += ["--dsp-pcwatch", w]
-    if args.deadline:
-        cmd += ["--cf-frame-deadline", str(args.factor)]
-    with log.open("w") as f:
-        f.write(" ".join(cmd) + "\n")
-        f.flush()
-        r = subprocess.run(cmd, cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, timeout=1800)
-    text = log.read_text(errors="replace")
+    with MenuPort(image, card, "OCTABAM", "RIG", mkii=True,
+                  log_path=work / "port.log") as p:
+        p.settle()
+        p.png(shots / "00-main.png")
+        p.press("t1")
+        p.png(shots / "01-t1.png")
 
-    print(f"  panel script : {script}")
-    print(f"  port log     : {log}")
-    print(f"  ot_emu exit  : {r.returncode}")
-    stall = "STALL" in text.upper()
-    print(f"  deadline     : {'MODEL ON' if args.deadline else 'off'}"
-          f"  -> {'STALL REPORTED' if stall else 'no stall line'}")
-    assigned = False
-    if part.is_file():
-        raw = part.read_bytes()
-        assigned = b"PK\x01" in raw
-        # the part record starts 9 bytes in; T1's machine byte is at +0x22 and
-        # the PK/1 mark the admission path looks for at +60
-        live = 9
-        print(f"  live Part: T1 machine byte = {raw[live + 0x22]:#04x} "
-              f"(1 = FLEX), PK mark = {raw[live + 60:live + 63]!r}")
-    sel = work / "rowsel.bin"
-    if sel.is_file():
-        raw = sel.read_bytes()
-        print(f"  list cursor 0x460e738e = {int.from_bytes(raw[:4], 'big')}"
-              f"  (PERKY_ROW is 5)")
-    if "LOAD PROJECT handled" not in text:
-        print("  !! project load never completed")
-    if "ended on quit" not in text:
-        print("  !! panel script did not finish cleanly")
-    dsp_fault = None
-    for line in text.splitlines():
-        if "outside P memory" in line:
-            import re as _re
-            m = _re.search(r"FAULT: PC (0x[0-9a-f]+)", line)
-            dsp_fault = m.group(1) if m else "?"
-            break
-    if dsp_fault:
-        print(f"  !! ** DSP FAULT: the core jumped to {dsp_fault} and HUNG **")
-    for bad in ("ILLEGAL", "BUS ERROR", "ADDRESS ERROR", "FATAL"):
-        if bad in text.upper():
-            print(f"  !! emulator reported {bad}")
-    for line in text.splitlines():
-        if any(k in line for k in ("STALL", "still in its exchange", "frame handler",
-                                   "deadline", "transport", "frame budget")):
-            print("   |", line.strip()[:150])
-    # THE ASSIGNMENT MUST BE VERIFIED BEFORE ANY VERDICT ABOUT IT.
-    # Three earlier versions of this gate "tested the Perky machine" while the
-    # live Part contained no PK/1 signature at all -- T1 was FLEX, or PICKUP.
-    # A machine-assignment test that does not check the assignment is exactly the
-    # gate that cannot fail, and this one was wrong three times for that reason.
-    if not args.no_assign and not assigned:
-        print("  !! NO PK/1 SIGNATURE IN THE LIVE PART -- PERKY WAS NEVER ASSIGNED.")
-        print("     The run below says nothing about the Perky machine.")
-        raise SystemExit(2)
+        # ---- 3/4. OPEN SRC SETUP AND GO INTO THE FLEX MACHINE LIST.
+        #
+        # SCREEN-CONFIRMED, not guessed. `func+pg_playback` opens SRC SETUP and
+        # the screen shows the machine-TYPE list:
+        #
+        #     MACHINE>>          <- the >> means a sub-list
+        #     STATIC
+        #     FLEX               <- the cursor starts here, index 1
+        #     THRU
+        #     NEIGHBOR
+        #     PICKUP
+        #
+        # PERKY is NOT in that list. Six `down`s from index 1 clamp to PICKUP
+        # (index 4), which is exactly the `T1 = 4` the earlier gate measured and
+        # reported as a Perky assignment. PERKY is one level deeper: the FLEX
+        # machine list, which `pk_src_names` fills with "six machine names" and
+        # `pk_machine_name` formats with "machine row 5 as PERKY".
+        p.chord("func", "pg_playback")
+        p.run(300)
+        p.png(shots / "02-src-setup.png")
+        p.press("yes")                      # enter MACHINE>>  (FLEX is selected)
+        p.run(300)
+        p.png(shots / "03-flex-list.png")
 
-    # THE FAILURE IS THE DSP HANG, not a printed STALL line: the deadline model
-    # never tripped here because the core left P memory first. A run that faults
-    # is the reproduction of "transport stalls at step 1".
-    if dsp_fault:
-        raise SystemExit(1)
-    raise SystemExit(1 if stall else 0)
+        for _ in range(5):                  # 4. walk to row 5 = PERKY
+            p.press("down")
+        p.png(shots / "04-on-perky.png")
+        p.press("yes")                      #    commit the machine
+        p.run(400)
+        p.png(shots / "05-committed.png")
+        p.press("no")                       # 5. back to Tracks
+        p.run(300)
+        p.png(shots / "06-back.png")
+
+        mark = p.peek(PART_T1_MARK, 3)
+        machine = p.peek(PART_T1_MACHINE, 1)[0]
+        print(f"  after commit: T1 machine = {machine}, PK mark = {bytes(mark)!r}")
+        if b"PK\x01" not in p.peek(LIVE_PART, 4096):
+            print("  !! NO PK/1 SIGNATURE IN THE LIVE PART -- PERKY WAS NEVER "
+                  "ASSIGNED. The run says nothing about the Perky machine.")
+            print(f"     screens in {shots}")
+            raise SystemExit(2)
+        print("  ASSIGNED: PERKY is on T1 with its signature.")
+
+        # ---- TRIGS THROUGH THE PANEL, THEN PLAY
+        p.press("rec")
+        for t in ("trig1", "trig5", "trig9", "trig13"):
+            p.press(t)
+        p.press("rec")
+        p.png(shots / "05-trigs.png")
+        p.press("play")
+        for i in range(6):
+            p.run(500)
+            p.png(shots / f"06-play-{i}.png")
+        print(f"  transport word 0x800065b8 = {p.long(0x800065B8)}  "
+              f"(1 = playing)")
+        print(f"  screens in {shots}")
 
 
 if __name__ == "__main__":

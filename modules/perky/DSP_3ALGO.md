@@ -652,6 +652,55 @@ nothing.
 **What does not**: the reproduction, the "PERKY-specific" claim, and the
 `0xe2c48f` fault as evidence about this machine.
 
+### SCREEN-CONFIRMED: where PERKY is, and where it is not
+
+The gate is rebuilt on `tools/verify/stems_panel.MenuPort` -- the project's own
+panel harness. It gives named keys (`press("t1")`, `chord("func", "pg_playback")`),
+`peek`/`long` for reading the live Part, `png()` for the screen, and **emulated
+time that advances only inside `run(ms)`, so the run is deterministic** -- which
+also removes the one-run-in-three flakiness that made the previous attempt
+unreportable.
+
+`func+pg_playback` opens **SRC SETUP**, and the screen shows:
+
+```
+MACHINE>>          <- the >> means a sub-list
+STATIC
+FLEX               <- the cursor starts here, index 1
+THRU
+NEIGHBOR
+PICKUP
+```
+
+**PERKY is not in that list.** That is the machine-TYPE list, five entries. Six
+`down`s from index 1 move the *value* (not the cursor) and clamp at PICKUP
+(index 4) -- which is precisely the `T1 = 4` the old gate measured and reported as
+a Perky assignment. **The mystery is closed: the old sequence was setting PICKUP.**
+
+Two further routes do nothing at all, confirmed by **pixel-identical screenshots**
+(same sha256 as the untouched T1 screen): pressing `yes` on the MACHINE>> field,
+and double-tapping the track key.
+
+### And the detours say where it actually is
+
+* `pk_main_commit` -- **"admit PERKY at main chooser commit"**;
+* `pk_chooser_open` -- "the track's machine list opens on PERKY for the **signed**
+  track";
+* `pk_setup_row` -- "SRC SETUP row highlights PERKY on a **signed** FLEX track";
+* `pk_setup_edit6` -- "SETUP editor stores PERKY row in the track FLEX slot".
+
+**Signing happens in the MAIN CHOOSER, and SRC SETUP only displays the PERKY row
+once the track is already signed.** So the sequence is the reverse of what the
+sibling gate implies: the machine is admitted from the main chooser, and SRC
+SETUP is downstream of that. `pk_pool_open` names the gesture -- "track
+double-tap opens the PERKY engine list" -- but a double-tap with `hold=60,
+settle=200` did nothing here, so the gesture's timing or its precondition is not
+yet right.
+
+**Everything above is read off rendered screens, not inferred**, and the gate
+refuses to proceed without `PK\x01` in the live Part, so it cannot report a
+verdict about a track that was never signed.
+
 ### The instruments now exist, and the gate refuses to lie
 
 Three versions of this gate "tested the Perky machine" while the live Part held
