@@ -1065,6 +1065,50 @@ So the precondition fails on reachable data, and this branch cannot take that
 optimisation. Recorded as a measured negative result rather than left as an
 untried idea.
 
+### The composed machine DROPS the frame's event sample offset
+
+Found by auditing the deliverable the same way the latch was. The qualified seam
+documents its own contract:
+
+```asm
+; The stock source builder publishes this frame's event sample offset
+; in X:$20c.  The record flag is still checked so a stale/non-event
+; offset cannot manufacture a hit.
+move    x:>$20c,a
+tst     a
+blt     pk_probe_continue
+cmp     #>$10,a
+bge     pk_probe_continue
+; Convert the frame offset to the interleaved stereo word index ...
+```
+
+The composed machine **never reads `X:$20c` at all** -- the composed source has
+zero references to it, and `tools/perky/build_dsp_3algo_source.py` does not
+mention it anywhere. It renders its 16-sample block from sample 0 every block.
+
+**What that means.** The offset exists because a trig does NOT necessarily fall
+at the start of a block; it is where in the 16-sample frame the event belongs. A
+source that ignores it places every hit at the block boundary, so a trig is up to
+**15 samples (about 0.34 ms at 44.1 kHz) early** and effectively quantised to
+16-sample boundaries. For a drum machine that is a real placement error, not a
+cosmetic one. The seam got this right; the composition inherited a different
+entry and dropped it.
+
+**Established:** the seam reads `X:$20c` as the event sample offset and clamps it
+to `0..15`; the composed machine has no reference to `0x20c`; it renders from
+sample 0. **Inferred, not measured:** the resulting audio timing -- I have not
+measured the placement error in the output, only established that the input is
+ignored.
+
+**Why it is recorded rather than patched.** Honouring the offset means emitting
+`offset` samples of *continuation* -- the voice advancing WITHOUT retriggering --
+before the hit begins, then triggering. The voice block at `X:0x3800` does
+persist across blocks, so that is possible in principle, but which behaviour the
+pre-trig samples should have (continue the previous hit, output silence, or hold)
+is a design question this branch should not answer by guessing. It is the same
+class of finding as the latch -- state or input the machine needs and does not
+use -- and it came from the same audit.
+
 ### FIXED: the one-voice-per-core latch is removed
 
 The defect recorded below is fixed. `x:$38ED` is no longer used at all: the
