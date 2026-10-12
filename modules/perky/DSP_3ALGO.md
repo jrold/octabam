@@ -265,13 +265,25 @@ at all, so whatever the fixture window holds, it is not a word-for-word image of
 the voice's live 40-word state. Both the composed and the standalone differ from
 it in the same way.
 
-So the outstanding divergence is not "the composition computes different state".
-Every composed artifact measured equals the qualified standalone artifact. What
-is left is how the fixture's 40-word window is IMPORTED as the next block's
-starting state: the same import that makes block 0 exact for all three corners
-must be slightly wrong for the block-1 carry, since the standalone gate passes
-the same fixture through the same import and succeeds. That comparison -- the
-standalone gate's import path versus this gate's -- is the next thing to read.
+**Both gates' own generated data files are the lead.** Diffing the state seed
+the two gates actually write:
+
+```
+standalone gate  X 200  00007f 000001 000000 ...
+composed   gate  X 3800 0000ff 000000 000000 ...
+```
+
+They seed **different values for the first state word** (`0x7f` vs `0xff`),
+and the fixture's own `wrapper-window-before` decodes to `0x00ff`. So at least
+one of the two gates is not seeding what the fixture expects, and whichever one
+is wrong will render its first block from a different amp-envelope state.
+
+That is the concrete thing to settle next: the standalone gate passes all
+fifteen ARM cases with `0x7f` in its seed, while the composed gate seeds `0xff`
+and passes corner 0 but diverges in corner 1's second block. Reading how each
+gate builds that first word -- both call `FoldDrum1.from_arm(...).words`, so the
+difference must be in the window or the padding each applies -- is the next
+step.
 
 ### The equivalence gate
 
