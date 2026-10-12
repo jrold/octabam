@@ -535,6 +535,44 @@ smaller resonant algorithm (a redesign the target forbids, and therefore a
 decision for the user) or accepting a higher per-voice budget than the canary
 model assumes. Neither is something this branch should decide silently.
 
+### The ColdFire control law already exists -- do not rebuild it
+
+The target says, in the "use the existing repository work first" list,
+*"control/trigger/update transport work"* and *"do not rebuild systems that
+already exist"*. It does, and this branch had not been using it:
+
+| piece | where it already lives |
+| --- | --- |
+| engine selection + chooser/UI | `modules/perky/control.c` (`pk_engine_select`, `pk_engine_draw`, `engine_labels`) |
+| per-track engine state machine | `modules/perky/cf_perky4.c` (`pk4_engine`, `pk4_track`, `pk4_algo_init`, `pk4_prepare`, `pk4_render`) |
+| algorithm ids | `modules/perky/cf_perky4.h` (`PK4_ALGO_FOLD1 = 0`, `PK4_ALGO_RESONANT = 4`, ...) |
+| restricted-engine build | `tools/perky/build_multi_machine_canary.py` (`engine_ids=...` parameter) |
+| one-voice-per-core admission | already in the canary manifest: `voice_limit=one PERKY track per core, lowest selected wins` |
+
+`pk4_engine` already routes **Fold Drum 1** (`PK4_ALGO_FOLD1`), **Resonant
+Bass** (`PK4_ALGO_RESONANT`, mode 1) and **Resonant Snare**
+(`PK4_ALGO_RESONANT`, mode 0) -- exactly this target's three algorithms -- as a
+subset of a larger set. `build_fold_machine_canary.py` already demonstrates the
+restriction pattern this target needs:
+
+```python
+multi.build_image(work, 4, 'PERKY4', control_input=control_input,
+                  engine_ids=(10, 2, 0),
+                  engine_description='001 FOLD DRUM ...; 003 SIMPLE DRUM ...; ...')
+```
+
+**What that means for this branch.** The engine-ids for this target are
+`(0, 10, 11)` -- Fold, Bass, Snare -- and the outstanding "ColdFire T1/T5
+algorithm-selection control law" is not a from-scratch implementation. It is:
+
+1. select exactly those three engine ids instead of the canary's current set;
+2. keep the existing per-track admission and one-voice-per-core rule;
+3. wire it to the composed DSP source that is already built and placed.
+
+That is a much smaller piece of work than this record previously implied, and it
+reuses the transport, chooser, parameter paging and p-lock plumbing that the
+target explicitly points at.
+
 ### The equivalence gate
 
 `tools/verify/verify_perky_3algo_equivalence.py` is the gate that now carries
