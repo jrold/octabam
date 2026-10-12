@@ -306,10 +306,10 @@ this document, and the bar is met **on the reachable domain**, not on stress.
 the stock reserve included:
 
 ```
-Resonant Bass   35,713 modeled -> 2x = 71,426 hardware
-                + 22,560 stock  = 93,986  vs 72,512   -> +29.6%
-Resonant Snare  38,737 modeled -> 2x = 77,474
-                + 22,560 stock  = 100,034 vs 72,512   -> +37.9%
+Resonant Bass   renderer 35,713 + wrapper 534 = 36,247 modeled
+                -> 2x = 72,494 hardware + 22,560 stock = 95,054 vs 72,512 -> +31.1%
+Resonant Snare  renderer 38,737 + wrapper 534 = 39,271 modeled
+                -> 2x = 78,542 hardware + 22,560 stock = 101,102 vs 72,512 -> +39.4%
 ```
 
 and the ablation ceiling says **removing every non-algorithm instruction still
