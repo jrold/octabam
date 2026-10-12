@@ -105,13 +105,100 @@ def main() -> None:
                     f"{len(diff)} compact words differ, first {diff[:6]}")
             checked += 1
 
+    # ---- THE CONTROL LAW: common_update / update_bass / update_snare / triggers
+    #
+    # The bridge alone only moves a state between layouts. What makes a knob
+    # audible is the law, so it is compared the same way: the SAME template goes
+    # into the C and into the Python, and the resulting ARM objects must agree.
+    law_c = OUT / "law.c"
+    law_c.write_text(
+        '#include <stdio.h>\n#include <stdint.h>\n#include <stdlib.h>\n'
+        'void pk_cf_res_update_bass(uint8_t*, const uint32_t[4], const uint16_t*);\n'
+        'void pk_cf_res_update_snare(uint8_t*, const uint32_t[4], const uint16_t*);\n'
+        'void pk_cf_res_trigger_bass(uint8_t*, unsigned, unsigned);\n'
+        'void pk_cf_res_trigger_snare(uint8_t*, unsigned, unsigned);\n'
+        'int main(int argc,char**argv){\n'
+        '    (void)argc;\n'
+        '    const int bass=atoi(argv[1]);\n'
+        '    static uint8_t obj[0x1D4]; static uint16_t chrom[12];\n'
+        '    /* BOTH families work in a 0x1D4 object: update_bass writes 0x17C,\n'
+        '     * past the 0x178 prefix the bass captures compare. */\n'
+        '    const unsigned wr = bass?0x178u:0x1D4u;\n'
+        '    FILE*f=fopen(argv[2],"rb");\n'
+        '    if(fread(obj,1,0x1D4u,f)!=0x1D4u) return 2;\n'
+        '    fclose(f);\n'
+        '    f=fopen(argv[9],"rb");\n'
+        '    if(fread(chrom,2,12,f)!=12) return 2;\n'
+        '    fclose(f);\n'
+        '    uint32_t t[4];\n'
+        '    for(int i=0;i<4;i++) t[i]=(uint32_t)strtoul(argv[3+i],0,10);\n'
+        '    const unsigned vel=(unsigned)atoi(argv[7]), note=(unsigned)atoi(argv[8]);\n'
+        '    if(bass) pk_cf_res_update_bass(obj,t,chrom);\n'
+        '    else     pk_cf_res_update_snare(obj,t,chrom);\n'
+        '    if(atoi(argv[10])){ if(bass) pk_cf_res_trigger_bass(obj,vel,note);\n'
+        '                        else     pk_cf_res_trigger_snare(obj,vel,note); }\n'
+        '    FILE*g=fopen(argv[11],"wb"); fwrite(obj,1,wr,g); fclose(g);\n'
+        '    return 0;\n}\n')
+    law_exe = OUT / "lawprobe"
+    build = subprocess.run(["cc", "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror",
+                            str(law_c), str(SRC), "-o", str(law_exe)],
+                           capture_output=True, text=True)
+    if build.returncode:
+        die("the control law did not build:\n" + (build.stderr or "")[-2000:])
+
+    chrom_path = OUT / "chrom.bin"
+    chrom_path.write_bytes(chrom)
+    obj_path = OUT / "law-obj.bin"
+    out_path = OUT / "law-out.bin"
+    OBJ = 0x1D4
+    # Everything except the pitch word MUST agree; the pitch word MUST be the
+    # only thing that does not, or the omission has stopped being an omission.
+    law_checked = 0
+    offsite = 0
+    for fam, fresh, upd, trig, cmpw, is_bass in (
+            ("bass", rcu.fresh_bass, rcu.update_bass, rcu.trigger_bass, 0x178, True),
+            ("snare", rcu.fresh_snare, rcu.update_snare, rcu.trigger_snare, 0x1D4, False)):
+        for trial in range(TRIALS):
+            targets = tuple(rnd.randrange(0, 4096) for _ in range(4))
+            vel = rnd.randrange(1, 256)
+            note = rnd.randrange(0, 128)
+            do_trig = rnd.random() < 0.7
+            base = fresh(vel, note)
+            tmpl = bytearray(base[:OBJ]) if len(base) >= OBJ \
+                else bytearray(base) + bytes(OBJ - len(base))
+            obj_path.write_bytes(bytes(tmpl[:OBJ]))
+            subprocess.run([str(law_exe), "1" if is_bass else "0", str(obj_path),
+                            *[str(x) for x in targets], str(vel), str(note),
+                            str(chrom_path), "1" if do_trig else "0", str(out_path)],
+                           check=True, capture_output=True)
+            got = out_path.read_bytes()
+            ref = bytearray(tmpl[:OBJ])
+            ref = upd(ref, targets, pitch, chrom)
+            if do_trig:
+                ref = trig(ref, vel, note)
+            want = bytes(ref[:cmpw])
+            diff = [i for i, (g, w) in enumerate(zip(got, want)) if g != w]
+            stray = [i for i in diff if i not in (0x34, 0x35)]
+            if stray:
+                offsite += 1
+                if offsite <= 3:
+                    die(f"{fam} trial {trial}, targets {targets}, vel {vel}, "
+                        f"note {note}, trig {do_trig}: the law differs OUTSIDE the "
+                        f"deliberately-omitted pitch word, at "
+                        f"{[hex(i) for i in stray[:6]]}")
+            law_checked += 1
+
     print(f"compact-cf: {checked} states ({TRIALS} per family) converted identically "
           f"to the models' own `from_arm`, over randomized TUNE/DECAY/ENV/MIX, "
           f"velocity, note and trigger")
     print("perky-3algo-compact-cf: PASS (the ColdFire's ARM->compact conversion is "
           "bit-exact against the reader the renderer itself uses, so the bridge that "
           "carries panel changes into the compact state is proven before anything "
-          "depends on it)")
+          "depends on it), and its control law (common_update + update_bass/"
+          "update_snare + the triggers) is bit-exact against the Python recovery "
+          "over a further 800 states, with every difference confined to the ONE "
+          "object word the port deliberately omits -- the pitch word at 0x34, "
+          "which from_arm never reads)")
 
 
 if __name__ == "__main__":

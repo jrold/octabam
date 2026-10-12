@@ -24,7 +24,7 @@ Copy it to the **root of the CF card**, then on the unit:
 
 | artifact | sha256 / size |
 |---|---|
-| card `.bin` | `out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING.bin`, 448,680 B, sha256 `e3a6f29754b0d6102ef57efa1d128325e5a69d89104d4ea0f354474fb77b0997` |
+| card `.bin` | `out/OCTATRACK_OCTABAM79X_EXPERIMENTAL_HWTIMING.bin`, 448,680 B, sha256 `207516d36ce74e15dc5104617b3d9327c28af955f685661b4ab1925178f54931` |
 | MIDI `.syx` | `out/OCTATRACK_OS1.40C_OCTABAM79X.syx`, 626,300 B |
 | DSP payload | `out/mainos_bus.bin`, sha256 `035579ad386acbc9f11ca9b83d197a1c4d5b1dc8b8f72056b7c21bbd5905844c` |
 

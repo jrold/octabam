@@ -13,7 +13,12 @@
  * and then dumps the whole DSP record buffer as 16-bit words. Nothing here seeds
  * voice state, forces n7, or calls a renderer: this is the producer side only.
  *
- * Input rows, 3 bytes each: track, trig, model.
+ * Input rows, 7 bytes each: track, trig, model, knob0..knob3.
+ *
+ * The four knobs are not decoration. `pk_simple_prepare` derives the law's
+ * `targets[]` from panel bytes p[0..3], which come from the fp words at
+ * 0x80008000 -- so if the harness never writes them, every render is at knob 0
+ * and "does a knob change the sound" cannot be asked at all.
  * Output: (WORDS * 2) bytes per row, little-endian u16 DSP words, word 0 first.
  *
  * `pk_engine_select` calls two absolute addresses in the stock OS; both are
@@ -87,11 +92,16 @@ int main(int argc, char **argv)
     FILE *g = fopen(argv[2], "wb");
     if (!f || !g) { perror("open"); return 2; }
 
-    uint8_t row[3];
+    uint8_t row[7];
     unsigned n = 0;
-    while (fread(row, 1, 3, f) == 3) {
+    while (fread(row, 1, 7, f) == 7) {
         const unsigned track = row[0], trig = row[1], model = row[2];
         const unsigned ping = n++ & 1u;
+
+        /* the six fp words p[0..5] read from 0x80008000; the four knobs are
+         * p[0..3], which is where targets[] comes from */
+        for (unsigned k = 0; k < 6u; ++k)
+            U16(0x80008000u + 2u * k) = (uint16_t)((k < 4u ? row[3u + k] : 0u) << 8);
 
         /* THE PANEL, in the order the unit does it. The engine list is opened
          * for this track -- which is what captures the bank/part/track the

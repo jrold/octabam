@@ -367,6 +367,68 @@ the RNG comparison**, and stops at case 29 on a PCM-only difference -- see below
 **had never executed**, because the X comparison above it failed first. It now reads
 `composed.RNG_BASE - STATE`, the bytes it actually seeds.
 
+## ITEM 8 DONE: the panel now reaches the renderer
+
+The two halves written last round are wired in. `control.c` includes the law and
+the bridge, keeps ONE live ARM object per family beside the trigger-edge state, and
+on every event runs
+
+```
+fresh object  ->  pk_cf_res_update_bass / _snare  ->  trigger (on a hit)
+              ->  pk_cf_res_compact_bass / _snare  ->  the record
+```
+
+so the compact state the DSP renders from is **computed from the panel**, not a
+template baked at a neutral setting.
+
+**THE DSP P BUDGET DID NOT MOVE.** The region is still 3,852 words with 211 free,
+because the work is on the ColdFire — which is what the objective asked for
+("prefer ColdFire-side control preparation ... avoids spending DSP P/cycles"). The
+DRAM runtime grew from 5,615 to 9,162 appended bytes.
+
+**`targets[]`, NOT `prepared[]`.** `pk_simple_prepare` derives `targets[i]` from
+panel bytes p[0..3] as `v == 127 ? 4095 : v << 5` — the same 0..4095 domain the law
+smooths against — and its own `simple_update` is bit-for-bit the same
+`(3*target + 5*old) >> 3` that `common_update` applies. So the law owns the
+smoothing and smooths FROM the object's stored value. Handing it `prepared[]`
+instead would smooth twice.
+
+**TWO THINGS THE WIRING EXPOSED.**
+
+1. **The simulator never set the panel.** Its input row was (track, trig, model)
+   and it never wrote the fp words at 0x80008000, so `targets[]` was always zero
+   and "does a knob change the sound" could not be asked at all. The row is now
+   seven bytes: track, trig, model, knob0..knob3. Fixing that is what makes the
+   knob corner test below possible in the first place.
+
+2. **An assertion that was valid stopped being valid.** The trigger test used to
+   require both hits to end in an IDENTICAL state — true while the state was a
+   fixed template, and wrong once it is computed: the law smooths a live object,
+   so two hits at different points in its evolution legitimately differ. It is
+   replaced by the assertion that actually has to hold: run the same sequence with
+   the trigger suppressed and the audio must differ, so the trigger reaches
+   something.
+
+**GATED, through the production path, in `verify_perky_3algo_production_sim`:**
+
+```
+knob corners, same algorithm, same trigger, only the panel moves:
+  010 RES BASS   (0,0,0,0)       peak 8388608
+  010 RES BASS   (127,127,127,127) peak 8388608
+  010 RES BASS   (64,20,100,30)  peak 8388608
+  011 RES SNARE  (0,0,0,0)       peak 7678464
+  011 RES SNARE  (127,127,127,127) peak 8388608
+  011 RES SNARE  (64,20,100,30)  peak 8388352
+```
+
+Every corner must leave a different voice state, or the gate fails. Before the law
+was wired in, 3algo drew the record from a neutral template and every corner
+rendered identically -- which is exactly what this asserts against.
+
+**The law's own bit-exactness is gated separately** (800 states against the Python
+recovery, with the only permitted difference the one omitted pitch word), and the
+bridge against the renderer's own `from_arm` (800 more).
+
 ## ITEM 8, HALF BUILT: the ARM->compact bridge is proven
 
 Item 8 asks that panel changes reach the renderer. The authentic machine updates a

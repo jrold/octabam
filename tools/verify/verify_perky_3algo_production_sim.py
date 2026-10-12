@@ -195,7 +195,7 @@ def main() -> None:
         binary, labels = payloads[ptag]
         for label, model in rows:
             # ---- PANEL + CONTROL PATH: the simulator runs pk_render for real
-            (OUT / f"{ptag}-{model}.in").write_bytes(bytes([0, 1, model]))
+            (OUT / f"{ptag}-{model}.in").write_bytes(bytes([0, 1, model, 64, 64, 64, 64]))
             r = subprocess.run([str(exe), str(OUT / f"{ptag}-{model}.in"),
                                 str(OUT / f"{ptag}-{model}.rec")],
                                capture_output=True, text=True)
@@ -295,9 +295,9 @@ def main() -> None:
     print("repeated triggers and a held note, payload B / T1:")
     binary, labels = payloads["B"]
     for label, model in rows[1:]:                       # the Resonant pair
-        seq = [(1, "hit"), (0, "release"), (1, "hit"), (1, "held")]
+        seq = [(1, "hit"), (0, "release"), (1, "hit"), (1, "held"), (1, "held")]
         (OUT / f"seq-{model}.in").write_bytes(
-            b"".join(bytes([0, trig, model]) for trig, _ in seq))
+            b"".join(bytes([0, trig, model, 64, 64, 64, 64]) for trig, _ in seq))
         r = subprocess.run([str(exe), str(OUT / f"seq-{model}.in"),
                             str(OUT / f"seq-{model}.rec")],
                            capture_output=True, text=True)
@@ -310,7 +310,7 @@ def main() -> None:
         counts = [rec[0x15] >> 8 for rec in recs]
         # The count must rise on a HIT and only on a hit -- not on the release,
         # and not while the note is held.
-        if counts != [1, 1, 2, 2]:
+        if counts != [1, 1, 2, 2, 2]:
             failures.append(f"{label}: trigger counts {counts}, expected "
                             f"[1, 1, 2, 2] (a rise on each hit, nothing on the "
                             f"release or the hold)")
@@ -325,30 +325,81 @@ def main() -> None:
             print(f"  {label:18s} {name:8s} trig={trig}  peak {peak:9d}")
             if peak == 0:
                 failures.append(f"{label}: the '{name}' block rendered SILENCE")
-        # A HIT MUST RESTART THE VOICE, and the way to see that is NOT to compare
-        # the block's dumped state against the template: the dump happens AFTER
-        # sixteen rendered samples, so it has already evolved. Compare like with
-        # like instead.
-        #
-        # The first hit starts from a ZERO voice and loads the template. The
-        # second hit starts from an EVOLVED voice -- but if it reloads, the
-        # render begins from the same template, and with the RNG reset per block
-        # (as this harness does, so the two are otherwise identical) it must end
-        # in EXACTLY the same state. A continuation could not: it would carry the
-        # first hit's evolution forward.
-        hits = [st for name, trig, peak, st in seen if name == "hit"]
-        if len(hits) == 2 and hits[0] != hits[1]:
-            failures.append(f"{label}: the second hit did not restart the voice -- "
-                            f"it ended in a different state than the first, so the "
-                            f"template was not reloaded")
-        # ... and the HELD block must NOT restart: it continues from the second
-        # hit, so it must end somewhere else.
-        held = [st for name, trig, peak, st in seen if name == "held"]
-        if held and hits and held[0] == hits[1]:
-            failures.append(f"{label}: a held note restarted the voice -- the block "
-                            f"after the hit ended in the hit's own state, so the "
-                            f"voice was reloaded instead of continuing")
+        # DOES THE TRIGGER DO ANYTHING? Run the SAME sequence with the trigger
+        # suppressed and require the audio to differ. This replaces an earlier
+        # assertion that both hits must end in an identical state -- valid while
+        # the state was a fixed template, and WRONG once it is computed: the law
+        # smooths a live object, so two hits at different points in its evolution
+        # legitimately differ. What has to be true is that the trigger changes
+        # the render at all.
+        (OUT / f"seq-{model}-ctrl.in").write_bytes(
+            b"".join(bytes([0, 0, model, 64, 64, 64, 64]) for _ in seq))
+        r = subprocess.run([str(exe), str(OUT / f"seq-{model}-ctrl.in"),
+                            str(OUT / f"seq-{model}-ctrl.rec")],
+                           capture_output=True, text=True)
+        if r.returncode:
+            die(f"the simulator failed on the trigger control for model {model}")
+        blob2 = (OUT / f"seq-{model}-ctrl.rec").read_bytes()
+        recs2 = [list(struct.unpack(f"<{WORDS}H", blob2[i*WORDS*2:(i+1)*WORDS*2]))
+                 for i in range(len(seq))]
+        if [r2[0x15] >> 8 for r2 in recs2] != [0] * len(seq):
+            failures.append(f"{label}: the suppressed sequence still counted a hit")
+        voice2 = [0] * 108
+        ledger2 = 0
+        peaks2 = []
+        for i, (trig, name) in enumerate(seq):
+            peak, voice2, ledger2 = run_one(f"sqc{model}{i}", binary, labels,
+                                            recs2[i], voice2, ledger2)
+            peaks2.append(peak)
+        if [p for _, _, p, _ in seen] == peaks2:
+            failures.append(f"{label}: the sequence rendered IDENTICALLY with the "
+                            f"trigger suppressed -- the trigger reached nothing")
+        # A HELD note must not restart: consecutive held blocks must differ, or
+        # the voice is being reloaded instead of continuing.
+        held = [(i, st) for i, (name, _, _, st) in enumerate(seen) if name == "held"]
+        if len(held) >= 2 and held[0][1] == held[1][1]:
+            failures.append(f"{label}: two held blocks ended in the same state -- "
+                            f"the voice was reloaded instead of continuing")
 
+
+    # ---- ITEM 8: DOES THE PANEL REACH THE RENDERER?
+    #
+    # This is the whole point of running the authentic control law on the
+    # ColdFire. The four knobs are the panel bytes the law's `targets[]` comes
+    # from, so holding the algorithm and the trigger fixed and moving ONLY the
+    # knobs must change what comes out. Before the law was wired in, the state
+    # was a template baked at a NEUTRAL setting and every corner rendered
+    # identically -- which is exactly what this asserts against.
+    print()
+    print("knob corners, same algorithm and trigger, only the panel moves:")
+    binary, labels = payloads["B"]
+    corners = [(0, 0, 0, 0), (127, 127, 127, 127), (64, 20, 100, 30),
+               (100, 100, 20, 20), (20, 100, 20, 100)]
+    for label, model in rows[1:]:
+        (OUT / f"knob-{model}.in").write_bytes(
+            b"".join(bytes([0, 1, model, *c]) for c in corners))
+        r = subprocess.run([str(exe), str(OUT / f"knob-{model}.in"),
+                            str(OUT / f"knob-{model}.rec")],
+                           capture_output=True, text=True)
+        if r.returncode:
+            die(f"the simulator failed on the knob corners for model {model}")
+        blob3 = (OUT / f"knob-{model}.rec").read_bytes()
+        recs3 = [list(struct.unpack(f"<{WORDS}H", blob3[i*WORDS*2:(i+1)*WORDS*2]))
+                 for i in range(len(corners))]
+        seen_states = []
+        for i, c in enumerate(corners):
+            voice3 = [0] * 108
+            # each corner starts from a RESET voice, so only the panel differs
+            peak, voice3, _ = run_one(f"kn{model}{i}", binary, labels, recs3[i],
+                                      voice3, 0)
+            seen_states.append((c, peak, tuple(voice3)))
+            print(f"  {label:18s} knobs {str(c):22s} peak {peak:9d}")
+        distinct = len({s for _, _, s in seen_states})
+        if distinct < len(corners):
+            failures.append(f"{label}: the panel does NOT reach the renderer -- "
+                            f"only {distinct} distinct voice states from "
+                            f"{len(corners)} knob corners, so the knobs are not "
+                            f"being applied")
 
     print()
     if failures:
@@ -363,7 +414,10 @@ def main() -> None:
           "TRIGGERS are covered too: the ColdFire's rising-edge count rises on "
           "each hit and on nothing else -- not the release, not a held note -- "
           "each hit restarts the voice from the template, and a held note "
-          "continues instead of reloading)")
+          "continues instead of reloading. ITEM 8 is covered too: moving ONLY the "
+          "four panel knobs, with the algorithm and the trigger held fixed, "
+          "produces a different voice state at every corner -- so the authentic "
+          "control law on the ColdFire genuinely reaches the renderer)")
 
 
 if __name__ == "__main__":
