@@ -711,6 +711,52 @@ user workflow then runs -- select T1, assign, return, audition, `REC`, trigs at
 1/5/9/13, `PLAY` -- with the transport reading **1 (playing)** and staying 1
 across 4 s of polling.
 
+### MEASURED: the whole Perky chain is alive through the panel workflow
+
+Reading the ColdFire record buffer the transport publishes
+(`0x80001c90 + ping*0xa80 + 336*track`) after the panel workflow -- assign,
+`REC`, trigs at 1/5/9/13, `PLAY` -- gives, every 500 ms:
+
+```
+w0 = 0x504b0000        'PK'
+w1 = 0x59310000        'Y1'
+w10 = 0x0058030a, 0x0058040a, 0x0058050a, 0x0058070a, 0x0058080a, 0x0058090a
+```
+
+`record[10]` is `(n << 16) | (count & 0xFF) << 8 | engine`, so:
+
+| field | value | meaning |
+|---|---|---|
+| `n` | `0x0058` = **88** | the **authentic Resonant Bass** compact state |
+| `engine` | `0x0a` = **10** | **RESONANT BASS** |
+| `count` | **3, 4, 5, 7, 8, 9** | **monotonic -- the panel-entered trigs are firing** |
+
+**So through the real panel the assignment lands, the record is published every
+frame, the right algorithm is selected, the authentic 88-word BASS state rides
+with it, and the trig count advances.** The transport stays `1` and there is no
+fault.
+
+**One measurement bug of my own, worth recording because it produced a
+plausible-looking wrong answer:** `MenuPort.peek` returns **bytes**, so reading
+offset 20 gave `record[5]` (a panel word, `0x000700fe`) rather than `record[10]`.
+The correct byte offset is 40. A record field read at the wrong stride looks
+exactly like a broken record.
+
+### What that does and does not settle
+
+**Settled:** on this instrument, with this workflow, the Perky path works end to
+end at the ColdFire/record level -- hook, admission, engine selection, authentic
+state, and live trigs. None of the DSP-side contract violations the objective
+lists (hook not returning, unbalanced stack, illegal access, corrupted stock
+state) show up, and the transport advances.
+
+**Not settled:** the unit's hang, and the audio. The lock-step port cannot be
+"late", so it cannot show a timing-induced desync -- the register says so itself,
+and that is why the answer is the hardware instrument rather than more emulator
+rounds.
+
+### What the panel harness can and cannot show
+
 ### What the panel harness can and cannot show
 
 `MenuPort` runs the port on its line protocol, so the port's own end-of-run DSP
