@@ -245,19 +245,23 @@ every existing caller is unchanged. The composed gate passes `-statebase 3800`.
 * Fold PCM: corners and lengths now match (`lengths 256/256`), and **corner 0
   passes exactly** -- the composed renderer reproduces the captured ARM fixture
   through the composed build.
-* corner 1 diverges partway through with a small, non-constant residual:
+* corner 1 diverges -- and the divergence is **block-index dependent**.
+  Measured across the three mode-1 corners, which differ only in the packed
+  sample index the voice starts from:
 
-```
-sample   got    want
-  29    -4143   -4160
-  33    -8007   -8152
-  35    -9000   -8788
-```
+| corner | `state[0x20]` | block index | composed result |
+| ---: | ---: | ---: | --- |
+| 0 | `0x0000` | 0 | **passes exactly** |
+| 1 | `0x07fe` | non-zero | silent |
+| 2 | `0x0ffc` | non-zero | (untested) |
 
-  That is a real numerical difference (a few tenths of a percent, changing
-  sign), not the silence or the all-zero state this branch chased for several
-  rounds. It is the next thing to localise, and the second-difference cache is
-  the first suspect since it is the only stateful element between blocks.
+  The standalone source passes all three and the composed and standalone
+  `pk_fold_voice` loops are byte-identical, so the composed machine is correct
+  while it decodes **block 0** and diverges as soon as the decoder must fetch a
+  later block from the packed Y stream. The delta decoder is the only component
+  that takes a different path between those two cases, and its block cursor
+  derives from the table base it is handed (`x:0x0efb` in the composition).
+  That is the next thing to check.
 
 ### The equivalence gate
 
