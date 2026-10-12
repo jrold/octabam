@@ -276,16 +276,27 @@ holds for `pk_fold_voice` and the shared helper block, which is what
 `verify_perky_3algo_equivalence.py` asserts across every renderer.
 
 **This closes the question of whether the composition is correct.** The
-composed machine executes the qualified instructions. What remains open is
-*why the composed test binary renders silence when the standalone test binary
-renders audio from the same state and tables* — and that is now a question
-about the execution harness, not about the composed DSP code. The harness
-detail most likely to be responsible is the voice-block base: the standalone
-gate drives state at `X:0x0200` while the composed gate uses `X:0x3800`, and
-`pk_simple_base` both reads `x:(r6+$20)` and writes `x:(r6+$34)`. The next step
-is to drive the **composed binary** with the **standalone gate's exact fixture
-and bases** (state at `0x0200`), which the equivalence result says must render
-`-1,-1,-2,-2,…`.
+composed machine executes the qualified instructions.
+
+Two harness defects were found and fixed while chasing the silence, and one
+remains:
+
+* **Fixed — the label-prefix trap.** The composed source has 148 labels and
+  **zero** prefix-ambiguous pairs, which the repo's own assembler trap says
+  must be checked (a label that is a prefix of another silently resolves to
+  the wrong address). No collisions.
+* **Fixed — the gate's RNG dump landed on the machine's own latch.** The gate
+  parked its four RNG words at `RNG+4 = X:$38ec`, which is exactly
+  `EVENT_OFFSET`/`ADMIT_LATCH` (`$38ec`/`$38ed`) -- the composed machine's
+  one-voice-per-core latch. Writing there makes the next frame read a non-zero
+  latch and render silence. The dump now goes to `VOICE+$70` (`X:$3870`),
+  inside the private region, which the composed layout leaves free (the voice
+  block ends at `$386c`, the scratch block starts at `$3900`).
+* **Still open — the remaining harness difference.** The standalone gate
+  passes `-frames 256` and the composed gate does not, and the two disagree on
+  PCM length (256 vs 512 samples). The word-level evidence says the composed
+  code is right; the composed gate's own fixture and host invocation are what
+  still need to match the standalone gate's.
 
 ### The equivalence gate
 

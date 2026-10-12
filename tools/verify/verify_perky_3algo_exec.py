@@ -57,7 +57,16 @@ STATE = VOICE                        # fixtures are loaded straight into it
 # scratch base; a qualification run seeds it exactly as the standalone gate.
 FOLD_CACHE = composed.SCRATCH_BASE + 0x40
 FOLD_CACHE_WORDS = 17
-RNG = composed.RNG_BASE              # X:$3954..$3957 (two u32 limbs)
+RNG = composed.RNG_BASE              # X:$38e8..$38eb (the two u32 limbs)
+# The dump destination must NOT be RNG+4: that is composed.EVENT_OFFSET /
+# composed.ADMIT_LATCH (X:$38ec/$38ed), the machine's OWN one-voice-per-core
+# latch. Parking the four RNG words there overwrites the latch, and the next
+# frame reads a non-zero latch and renders silence -- a harness collision that
+# looks exactly like a broken renderer. The standalone gate dumps to X:$240;
+# this gate keeps its dump inside the private voice block's tail instead, at
+# VOICE+$70 (X:$3870), which the composed layout leaves free: the voice block
+# ends at $386c and the scratch block starts at $3900.
+DUMP = composed.VOICE_BASE + 0x70
 SCRATCH = composed.SCRATCH_BASE
 BLOCK_STATE = 108                    # words dumped back after each block
 
@@ -134,7 +143,7 @@ pk3c_rng_out:
 def assemble(with_source: bool, out: Path) -> tuple[Path, dict[str, int]]:
     build_host()
     out.mkdir(parents=True, exist_ok=True)
-    probe = PROBE.format(voice=VOICE, scratch=SCRATCH, rng0=RNG, dump=RNG + 4,
+    probe = PROBE.format(voice=VOICE, scratch=SCRATCH, rng0=RNG, dump=DUMP,
                          bass=f"{composed.P}bass_voice",
                          snare=f"{composed.P}snare_voice")
     # The seam's continuation address is the build's per-payload substitution;
