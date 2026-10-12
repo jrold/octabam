@@ -570,6 +570,61 @@ kind of cost that can approach or exceed the renderer's own 35,753.
 settles it is now well defined: run `P:0x39e..P:0x425` on the host with a real
 ring and meter it, or meter a stock frame with the region `nop`ed.
 
+## THE MEASUREMENT PATH, MAPPED (and the project confirmed absent)
+
+Nine rounds of asking for `OT_PROJECT` produced the search this round instead:
+
+- **`~/.octabam_project` is not set**; no project directory exists under
+  `$HOME/Documents`, `$HOME/Music`, `$HOME/Downloads` or `$HOME/Desktop`;
+  `/Volumes/TRACKER` and `/Volumes/Sammy Blue` are sample libraries, not cards
+  (no `bank01.ot`). Nothing may be committed (AGENTS.md: never an Elektron byte).
+- **`ot_project.py`, `ab_fixture.py` and `stress_project.py` all REQUIRE a source
+  project.** None can create one. `ab_fixture.prepare` iterates `source.iterdir`;
+  `stress_project.py` takes `--source`.
+- **The card path exists and is not the blocker**: `ot_emu` accepts
+  `--card --set --project`, and `verify_analog_bassdrum_port.py` stages exactly
+  that way -- but `stage_card.py` is fed by `ab_fixture.prepare`, so it needs the
+  same source.
+
+**So the project is a genuine, exhaustively-checked hard requirement**, and it is
+the only thing standing between this branch and a ranked answer.
+
+### The deadline model DOES run without a project
+
+Worth knowing, and it had not been tried: `ot_emu --image out/mainos_bus.bin
+--dsp --sequencer --ms 800 --cf-frame-deadline 1.7` boots, runs both DSP cores
+(8.8M and 4.7M instructions) and reports cleanly. It simply has **no Perky machine
+assigned**, so `pk_render` is never called for one and no event frame exists to
+measure. (The first attempt passed the CARD image where the OS image belongs and
+the DSP sat in "boot ROM WAITING" -- `--image` wants `out/mainos_bus.bin`.)
+
+### The byte layout, confirmed twice
+
+Both `tools/harness/perky_cf/production_sim.c` and `tools/harness/ab_fixture.py`
+assign a track with **`data[PART_BASE + part*PART_STRIDE + 9 + 0x22 + track] = 1`**
+(FLEX), and the PK/1 mark as `'P','K',1` at `+60+30*track`. Two independent
+fixtures agreeing is the closest thing to a project-independent recipe available
+here, and it is what a poke-based fixture would use.
+
+### And the ranking CONTRADICTS the register
+
+Compiled size of the per-event components in this branch:
+
+| component | instructions |
+|---|---|
+| **update (the settle)** | **797** (rc_common_update 378, snare 256, bass 163) |
+| trigger | 581 (bass 371, snare 210) |
+| compact | 184 (bass 93, snare 91) |
+| family reset copy | 468 bytes = 117 long moves, **once per family change**, not per event |
+
+**By size the settle is the largest; the register says it "was NOT the dominant
+cost".** That measurement was taken on **PK4AH2, a different branch with twelve
+algorithms**, and a measurement from another codebase is not a measurement of
+this one. Code size is a proxy -- loops dominate executed work and size does not
+see them -- so this ranks nothing on its own. **It does mean the register's
+sentence should not be inherited as fact here**, which is the mistake made twice
+already this session.
+
 ## RETRACTED: the hoist was reverted -- the gate proved it changes behaviour
 
 **I applied a fix that a measurement already in the tree said would not be the
