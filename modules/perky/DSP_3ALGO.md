@@ -351,6 +351,60 @@ carried across calls and laid out at different addresses in the two builds, and
 the measurement that will settle it is a like-for-like read in each build's own
 frame. It is recorded here rather than carried as an unexplained red gate.
 
+### The canonical build now reproduces the deliverable
+
+The gap recorded in the previous round -- `make bus REMIX=perky-dsp-3algo`
+producing a DIFFERENT image from `tools/perky/build_dsp_3algo.py`, because the
+composed machine was installed into the module registry **in memory only** -- is
+closed.
+
+`tools/perky/emit_3algo_manifest.py` writes the same declaration out as a
+tracked module, so the canonical build links it:
+
+```
+modules/perky3algo/manifest.py       the declaration (dataclass repr of the
+                                     module perky_machine_module.build returns)
+modules/perky/control_3algo.s        generate.py, THREE_ALGORITHM_DEFINES
+modules/perky/machine_3algo.asm      build_dsp_3algo_source.compose(), with
+                                     @CONT@ LEFT IN for the build to substitute
+                                     per payload
+```
+
+Nothing in the manifest is hand-written -- it is generated from the helper that
+already worked, so it is exact by construction. Three things had to be true and
+each was found by the build refusing:
+
+1. **`@CONT@` must stay in the source.** The build substitutes it per payload
+   (`$000426` for A, `$000221` for B) and refuses a `subst` key that does not
+   occur. `build_dsp_3algo.py` had been substituting the A value up front, which
+   would have been wrong on payload B.
+2. **The DSP hook must name this machine's own entry.** The in-memory helper
+   inherits the probe's `pk_probe_source`; the composition defines `pk3d_source`.
+3. **The module needs its own key.** It is `PERKY 3ALGO`, so it sits beside the
+   tracked `PERKY PROBE` probe rather than shadowing it.
+
+Measured, both paths now agreeing byte for byte:
+
+```
+make bus REMIX=perky-dsp-3algo    f0f4505dcd5cdb150d325d5adf3b79e521f15b5fe6ec999bb0b79239905e9c37
+tools/perky/build_dsp_3algo.py    f0f4505dcd5cdb150d325d5adf3b79e521f15b5fe6ec999bb0b79239905e9c37
+```
+
+**A real non-determinism found while guarding it.** The drift check initially
+reported a difference every run: `frozenset({'A', 'B'})` reprs as
+`frozenset({'A', 'B'})` in one process and `frozenset({'B', 'A'})` in the next,
+because set iteration follows string hashing and Python randomises that per
+process. The emitter now canonicalises every `frozenset` repr by sorting it, and
+`render()` is verified deterministic within a process and against the file on
+disk.
+
+**The drift guard is a gate, not a promise.**
+`verify_perky_3algo_control_join.check_generated_artifact` re-runs all three
+generators and refuses on any difference -- because a stale tracked copy means
+`make bus` links and ships something other than what every other gate in this
+branch proves. It also still asserts the DEFAULT generator output contains
+neither prepare, so the candidate guard cannot silently stop working.
+
 ### Boot / image / upload / readback gates -- and a trap that made one run lie
 
 The ColdFire port is not in the tree; it was built (`make emu-cf` ->

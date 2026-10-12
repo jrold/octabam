@@ -44,7 +44,7 @@ REMIX = Remix(
         "algorithms each. FX sacrifice measured at 3,936 composed P words."
     ),
     modules=(
-        "PERKY PROBE",
+        "PERKY 3ALGO",
         "FILTER", "EQUALIZER", "PHASER", "FLANGER", "CHORUS",
         "SPATIALIZER",
     ),

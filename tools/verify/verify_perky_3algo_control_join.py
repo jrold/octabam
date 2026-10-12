@@ -85,7 +85,7 @@ def check_generated_artifact() -> None:
     a regression is caught here too.
     """
     sys.path.insert(0, str(ROOT / "modules/perky"))
-    import importlib
+    import importlib.util
     generate = importlib.import_module("generate")
     text = generate.generate_text(defines=generate.THREE_ALGORITHM_DEFINES)
     missing = [s for s in ("pk_fold_prepare", "pk_resonant_prepare")
@@ -100,6 +100,28 @@ def check_generated_artifact() -> None:
             "candidate guard is not doing its job")
     print(f"artifact: generated control.s carries both prepares with "
           f"{generate.THREE_ALGORITHM_DEFINES} and neither without them")
+
+    # The TRACKED copies the canonical build links must equal a fresh
+    # generation, or `make bus REMIX=perky-dsp-3algo` silently ships something
+    # other than what these gates prove.
+    spec = importlib.util.spec_from_file_location(
+        "emit_3algo_manifest", ROOT / "tools/perky/emit_3algo_manifest.py")
+    emit = importlib.util.module_from_spec(spec)
+    sys.modules["emit_3algo_manifest"] = emit
+    spec.loader.exec_module(emit)
+    manifest, control_text, dsp_text = emit.render()
+    for path, fresh in ((emit.MANIFEST, manifest),
+                        (emit.CONTROL, control_text),
+                        (emit.DSP, dsp_text)):
+        if not path.exists():
+            die(f"the canonical build needs {path.relative_to(ROOT)}, which is "
+                f"missing -- run tools/perky/emit_3algo_manifest.py")
+        if path.read_text() != fresh:
+            die(f"{path.relative_to(ROOT)} has DRIFTED from its generator; "
+                f"`make bus REMIX=perky-dsp-3algo` would link a stale copy. "
+                f"Re-run tools/perky/emit_3algo_manifest.py")
+    print("tracked: manifest.py, control_3algo.s and machine_3algo.asm all "
+          "match a fresh generation (the canonical build links these)")
 
 
 def main() -> None:
