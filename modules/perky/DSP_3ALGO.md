@@ -286,13 +286,33 @@ qualified standalone build and found **identical**:
 | `pk_simple_delta_at` (70 instructions) | only 4 relocated targets |
 
 The remaining gate failure is therefore **not** the composed DSP code: it is a
-difference between the composed gate's harness and the standalone gate's, in
-how the block-to-block carry is driven. The standalone gate passes all fifteen
-ARM cases through the same fixtures while this gate diverges at sample 29 of
-corners 1 and 2, and the two gates differ in exactly one relevant respect --
-`run()` unpacks `16 * blocks * 2` int32 and returns `stereo[::2]`, and the host
-writes `2 * frames` per block with `frames` taken from `-frames`. Reading that
-arithmetic against `blocks` is the next step, not further DSP work.
+difference between the composed gate's harness and the standalone gate's in how
+the block-to-block carry is driven.
+
+**Measured boundary, restated exactly.** The gate's `run` drives 16 blocks of
+16 frames each (`-frames 16`, a 16-line script), and `stereo[::2]` gives 256
+mono samples. For corner 1:
+
+```
+mono samples  0..15 : [-29, -115, -257, -457, -712, -1024, -1267, -1268,
+                       -1222, -1133, -1000, -822, -601, -336, -29, 320]
+mono samples 16..31 : [713, 1147, 1622, 2138, 1981, 1490, 949, 361,
+                       -275, -959, -1687, -2461, -3281, -4143, ...]
+fixture  sample 29  : -4160   (got -4143)
+```
+
+So the FIRST block matches the fixture exactly (and a single-block run matches
+it for all three corners), the second block matches for its first 13 samples,
+and the first disagreement is sample 29 = block 1 index 13. `want` equals the
+fixture exactly (the double-then-stride is a no-op), so the comparison itself is
+sound.
+
+What that leaves is the state carried INTO block 1. The post-block-0 state is
+identical between the composed and standalone builds, so the difference is in
+the other carried state -- the scratch block and the second-difference cache at
+`X:0x3964`, which is seeded once and then persists across all 16 blocks.
+Comparing that cache after block 0 in the two builds is the single next
+measurement, not further DSP work.
 
 ### The equivalence gate
 
