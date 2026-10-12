@@ -424,6 +424,32 @@ per-sample call cost                424 of 831 instructions
 The resonant cores and the shared low-word multiply dominate, which is where an
 optimization that preserves bit-exactness has to look.
 
+**Fold's overage is one path, and it is small.** Measuring the distribution
+rather than only the maximum:
+
+```
+fold modeled cycles/16 over 415 blocks:
+  min 13173   median 14036   p90 18704   max 26112
+  blocks over 23040: 11 of 415   (2.7%)
+```
+
+and **all 11 are `mode = 2`** -- the physical noise sample-and-hold path. The
+drum modes are comfortably inside budget; the overage is 3,072 cycles on one
+path. The cost sits in `pknv_noise` (35 instructions) plus its call into
+`pk_rng_step` (83 instructions), and the over-budget blocks are the ones whose
+`noise_rate`/counter make the refresh path run on most samples:
+
+```
+native fold native 104  26112  mode=2 counter=0   fold=45771 noise_rate=37250
+native fold native  95  25811  mode=2 counter=143 fold=65535 noise_rate=52006
+native fold native  86  25758  mode=2 counter=272 fold=4092  noise_rate=27859
+```
+
+`pknv_noise`'s refresh path moves the four RNG words out to scratch, calls
+`pk_rng_step`, and moves them back -- 26 instructions of shuffling around an
+83-instruction routine -- and that is the concrete place a bit-exact saving on
+the Fold path has to come from.
+
 ### The equivalence gate
 
 `tools/verify/verify_perky_3algo_equivalence.py` is the gate that now carries
