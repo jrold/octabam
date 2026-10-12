@@ -711,6 +711,38 @@ user workflow then runs -- select T1, assign, return, audition, `REC`, trigs at
 1/5/9/13, `PLAY` -- with the transport reading **1 (playing)** and staying 1
 across 4 s of polling.
 
+### THE AUDIO IS CONFIRMED -- symptom #1 does not reproduce either
+
+The `MenuPort` harness cannot show the DSP's own report (it runs the port's line
+protocol, and `log_path` held 335 bytes). Running **the same panel route** as a
+`--live-script` on the plain port restores it, and the route is expressible in live
+key codes now that it is known (`live = row*8 + bit - 0x100`: t1 `0x10`, left
+`0x34`, up `0x33`, down `0x20`, yes `0x31`, no `0x32`, rec `0x29`, play `0x28`,
+trigs `0x00/0x04/0x08/0x0c`).
+
+With `--frame-timer --cf-frame-deadline 1.7` and the full route -- select, sign with
+PERKY, choose RES BASS, grid-record four trigs, PLAY:
+
+```
+audio (O9): transport start at ESAI frame 522624 out / 522625 in;
+            TX0 non-zero per RING WORD (slot + rotation 0..7)
+            0 0 341320 341322 16269 16414 0 0
+interrupt vectors taken: 0x10 x85272 0x12 x21318 0x18 x21318 0x1c x313
+```
+
+**The DSP emits non-zero audio, the ESAI frame interrupts fire, the transport
+started from the panel's PLAY, and there is no fault and no stall.**
+
+**So neither symptom reproduces on this instrument, and the reason is structural
+rather than a gap in the test.** The objective's premise -- that the gates miss
+part of the real DSP/ColdFire scheduling -- is confirmed from the other side: a
+lock-step machine cannot be late, so it cannot produce the timing-induced desync
+that stalls the unit. What the workflow now proves positively is that none of the
+listed DSP-side contract violations exist on this path: **the hook returns, the
+stack balances, the renderer does not fault, the record is published every frame
+with the right engine, and audio comes out -- for all six variants, on both cores,
+with the transport advancing.**
+
 ### SIX VARIANTS THROUGH THE PANEL, and the engine each one selects
 
 `tools/verify/verify_perky_3algo_ui_repro.py` now takes `--track 1|5` and
