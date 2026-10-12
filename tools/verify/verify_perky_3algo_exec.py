@@ -69,9 +69,21 @@ RNG = composed.RNG_BASE              # X:$38e8..$38eb (the two u32 limbs)
 # this gate keeps its dump inside the private voice block's tail instead, at
 # VOICE+$70 (X:$3870), which the composed layout leaves free: the voice block
 # ends at $386c and the scratch block starts at $3900.
-DUMP = composed.VOICE_BASE + 0x70
-SCRATCH = composed.SCRATCH_BASE
-BLOCK_STATE = 108                    # words dumped back after each block
+# The host returns a FIXED 216-word window from the state base, covering
+# X:$3800..$38d7, so the dump must land inside that window and outside both the
+# 108-word voice block ($3800..$386b) and the machine's own latch at $38ec/$38ed.
+# $3880 is free (the gap runs $386c..$38e7) and inside the window.
+DUMP = composed.VOICE_BASE + 0x80
+# r5 carries the CENTRED ABI base; the scratch BLOCK itself is at
+# composed.SCRATCH_BASE, which is what the data lines seed.
+SCRATCH = composed.SCRATCH_ABI
+# The window must cover the RNG at X:$38e8 (offset 232 from the voice base) so
+# the stream can be read from the machine itself rather than from a probe that
+# copies it somewhere else -- the copy is what silently read zeros.
+BLOCK_STATE = 240                    # words dumped back after each block
+# Read the RNG stream from ITS OWN address, not from a copy: the machine writes
+# the limbs at X:$38e8 and the state window now reaches them.
+RNG_DUMP_INDEX = RNG - STATE
 
 HOST = OUT / "bd909_host"
 HOST_SRC = ROOT / "tools/harness/bd909_host/bd909_host.cpp"
@@ -227,7 +239,7 @@ def run(binary: Path, entry: int, words: list[int], rng, ytext: str,
         # known: a garbage block is not a renderer input, and the cache is
         # seeded with the 'no block decoded' sentinel the standalone gate uses.
         + f"X {composed.RNG_GAP_END:x} " + " ".join(f"{v:06x}" for v in limbs) + "\n"
-        + f"X {SCRATCH:x} " + " ".join(["000000"] * composed.SCRATCH_WORDS) + "\n"
+        + f"X {composed.SCRATCH_BASE:x} " + " ".join(["000000"] * composed.SCRATCH_WORDS) + "\n"
         # THE SENTINEL IS NOT ZERO. `pk_simple_delta_at` compares the cache
         # word against the block index it wants and only decodes on a MISS;
         # zero is a valid index, so seeding zeros makes block 0 look already
@@ -446,7 +458,7 @@ def main() -> None:
         equal(got, [v for v in case["pcm"] for _ in range(2)][::2], case["tag"] + " PCM")
         equal(state[-1][:40], case["final"], case["tag"] + " X")
         if case["final_rng"] is not None:
-            equal(state[-1][64:68], case["final_rng"], case["tag"] + " RNG")
+            equal(state[-1][RNG_DUMP_INDEX:RNG_DUMP_INDEX + 4], case["final_rng"], case["tag"] + " RNG")
         fold_meters.append(worst)
         fold_blocks += case["blocks"]
         cases.append({"case": case["tag"], "blocks": case["blocks"], "worst_cycles": worst})
@@ -461,7 +473,7 @@ def main() -> None:
         # is interleaved here rather than the result doubled.
         equal(got, [v for v in case["pcm"] for _ in range(2)][::2], case["tag"] + " PCM")
         equal(state[-1][:40], case["final"], case["tag"] + " X")
-        equal(state[-1][64:68], case["final_rng"], case["tag"] + " RNG")
+        equal(state[-1][RNG_DUMP_INDEX:RNG_DUMP_INDEX + 4], case["final_rng"], case["tag"] + " RNG")
         short_meters.append(worst)
         fold_blocks += 1
         cases.append({"case": case["tag"], "blocks": 1, "worst_cycles": worst})

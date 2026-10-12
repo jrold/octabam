@@ -149,12 +149,56 @@ def instruction_key(text: str) -> str:
     return " ".join(tokens)
 
 
-def compare(name: str, composed_body: list[str], standalone_body: list[str]) -> None:
+def r5_offsets(text: str, advance: int) -> str:
+    """Rewrite `x:(r5+/-$N)` to its offset FROM THE SCRATCH BLOCK BASE.
+
+    The composition uses ONE scratch convention: every body carries centred
+    displacements (`r5-$40`-style) and the CALLER advances r5 by 0x40 before
+    entering it. The standalone recipes carry the uncentred form and no advance.
+    The two name the same words -- so the gate compares the effective offset
+    (advance + signed displacement), not the written displacement. Any real
+    addressing difference still fails; only the bookkeeping convention folds.
+    """
+    def rewrite(match):
+        sign = 1 if match.group(1) == "+" else -1
+        offset = advance + sign * int(match.group(2), 16)
+        return ("x:(r5+$%x)" % offset) if offset >= 0 else ("x:(r5-$%x)" % -offset)
+    return re.sub(r"x:\(r5([+-])\$([0-9a-f]+)\)", rewrite, text)
+
+
+def drop_scratch_prologue(body: list[str]) -> list[str]:
+    """Remove an `r5 += 0x40` ABI prologue, in either spelling.
+
+    The recipes carry it inside the body; this composition hoists it to the
+    single caller. It is an ABI detail, not renderer content, so the gate
+    compares what is left. The `move a1,r4` variables-pointer derivation is NOT
+    a base advance and is deliberately kept.
+    """
+    out, index = [], 0
+    while index < len(body):
+        window = [" ".join(l.split()) for l in body[index:index + 3]]
+        if window == ["move r5,a", "add #>$40,a", "move a1,r5"]:
+            index += 3
+            continue
+        out.append(body[index])
+        index += 1
+    return out
+
+
+def compare(name: str, composed_body: list[str], standalone_body: list[str],
+            composed_advance: int = 0) -> None:
+    composed_body = drop_scratch_prologue(composed_body)
+    standalone_body = drop_scratch_prologue(standalone_body)
     if len(composed_body) != len(standalone_body):
         die(f"{name}: composed has {len(composed_body)} instructions, "
             f"standalone has {len(standalone_body)}")
     for index, (left, right) in enumerate(zip(composed_body, standalone_body)):
-        if instruction_key(left) != instruction_key(right):
+        # The composed side runs one scratch base advanced by 0x40; the
+        # standalone side does not. Fold that convention away and compare the
+        # EFFECTIVE addresses the two builds touch.
+        left_key = instruction_key(r5_offsets(left, composed_advance))
+        right_key = instruction_key(r5_offsets(right, 0))
+        if left_key != right_key:
             die(f"{name}: instruction {index} differs\n"
                 f"  composed   : {left}\n"
                 f"  standalone : {right}\n"
@@ -217,7 +261,7 @@ def main() -> None:
 
     def check(label: str, standalone_source: str, standalone_org: int,
               standalone_out: Path, pairs: list[tuple[str, str]],
-              shared: list[str]) -> dict:
+              shared: list[str], composed_advance: int = 0) -> dict:
         sys.path.insert(0, str(ROOT / "tools/perky"))
         binary, labels = assemble(standalone_source, standalone_org, standalone_out)
         for composed_label, standalone_label in pairs:
@@ -228,13 +272,15 @@ def main() -> None:
             compare(composed_label,
                     routine_lines(composed_binary, composed.DSP_ORG,
                                   composed_labels[composed_label]),
-                    routine_lines(binary, standalone_org, labels[standalone_label]))
+                    routine_lines(binary, standalone_org, labels[standalone_label]),
+                    composed_advance)
         for label in shared:
             if label in composed_labels and label in labels:
                 compare(label,
                         routine_lines(composed_binary, composed.DSP_ORG,
                                       composed_labels[label]),
-                        routine_lines(binary, standalone_org, labels[label]))
+                        routine_lines(binary, standalone_org, labels[label]),
+                        composed_advance)
         return {"standalone_p_words": binary.stat().st_size // 3}
 
     # ---- Fold Drum 1 -----------------------------------------------------
@@ -245,7 +291,10 @@ def main() -> None:
          ("pk_simple_envelope", "pk_simple_envelope"),
          ("pk_simple_frequency", "pk_simple_frequency"),
          ("pk_simple_oscillator", "pk_simple_oscillator")],
-        [])
+        [],
+        # fold_standalone() assembles the raw uncentred bodies; the composition
+        # centres them and hoists the r5 advance to its caller.
+        composed.SCRATCH_ABI - composed.SCRATCH_BASE)
     results["fold"] = fold
     print(f"Fold Drum 1     : identical ({fold['standalone_p_words']} P words standalone)",
           flush=True)

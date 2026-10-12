@@ -100,6 +100,12 @@ RNG_GAP_END = RNG_BASE
 EVENT_OFFSET = RNG_BASE + 4                            # $38ec
 ADMIT_LATCH = EVENT_OFFSET + 1                         # $38ed
 SCRATCH_BASE = 0x3900
+# The ONE scratch base every body in this machine is written against: the
+# shared low32/RNG arithmetic carries `x:(r5-$40)`-style displacements, so the
+# caller advances r5 by 0x40 before entering any renderer. SCRATCH_BASE stays
+# the address of the scratch BLOCK (that is what gets seeded and dumped);
+# SCRATCH_ABI is the register value the bodies expect.
+SCRATCH_ABI = SCRATCH_BASE + 0x40
 SCRATCH_WORDS = 188
 
 # Algorithm tag + last-applied record word kept inside each voice block, past
@@ -236,19 +242,52 @@ def extra_body(shared) -> str:
     return body
 
 
+def centre_displacements(text: str) -> str:
+    """Rewrite the uncentred displacements of a body into the centred form.
+
+    ``dsp_source_layout.center_scratch`` does TWO things: it subtracts 0x40 from
+    every ``x:(r5+$N)``, and it inserts a prologue that advances r5 by 0x40 at
+    the entry label. The pair is address-preserving. This helper does only the
+    first half, because in this composition r5 is advanced ONCE by the caller
+    (the dispatcher, and every gate probe) rather than by each body -- the Fold
+    path is entered twice per block (`pk_simple_base` then `pk_fold_voice`) and
+    two prologues would leave r5 0x80 high on the second entry.
+    """
+    def address(match):
+        displacement = int(match.group(1), 16) - 0x40
+        if not -64 <= displacement <= 63:
+            die(f"centre_displacements: displacement {displacement} is out of "
+                f"the -64..63 range the addressing mode allows ({match[0]})")
+        return "x:(r5%s$%x)" % ("+" if displacement >= 0 else "-",
+                                abs(displacement))
+    return re.sub(r"x:\(r5\+\$([0-9a-f]+)\)", address, text)
+
+
+def strip_scratch_prologue(text: str) -> str:
+    """Remove the r5-advance prologue `center_scratch` inserted.
+
+    The resonant recipes carry it; in this composition the caller advances r5
+    instead, so leaving it in would advance r5 twice.
+    """
+    pattern = re.compile(r"[ \t]*move[ \t]+r5,a\n"
+                         r"[ \t]*add[ \t]+#>\$40,a\n"
+                         r"[ \t]*move[ \t]+a1,r5\n")
+    return pattern.sub("", text)
+
+
 def fold_body() -> str:
     """Fold Drum 1 plus the Simple Drum primitives, on the CENTRED convention.
 
-    The composed machine runs every algorithm against ONE scratch convention.
-    The resonant recipes already carry the centred one (their prologues advance
-    r5 by 0x40 and their displacements are `r5-$40`-style), and the shared
-    low32/RNG/envelope helper block in the resonant tail is centred too. The
-    Fold/Simple bodies are written uncentred, so they are translated here.
-    Leaving them uncentred makes the Fold voice and the shared math disagree
-    about which word `x:(r5+n)` names -- a silent, wrong-state failure.
+    The composed machine runs every algorithm against ONE scratch convention,
+    and it is the CENTRED one: the shared low32/RNG/envelope helper block the
+    resonant tail carries uses ``x:(r5-$40)``-style displacements, so any body
+    that reaches it must have r5 advanced by 0x40. The Fold/Simple bodies are
+    written uncentred, so their displacements are translated here.
 
-    ``center_scratch`` performs exactly this translation: it advances the ABI
-    base by 0x40 at the entry label and subtracts 0x40 from every displacement.
+    The advance itself is done ONCE by the caller (the dispatcher, and every
+    gate probe) -- see ``centre_displacements``. Leaving the bodies uncentred
+    made the Fold voice and the shared math disagree about which word
+    ``x:(r5+n)`` names, which is the fault this function exists to prevent.
     """
     parts = [_read("fold_drum_voice.asm")]
     for name, label in (("envelope", "pk_simple_envelope"),
@@ -256,9 +295,24 @@ def fold_body() -> str:
                         ("oscillator", "pk_simple_oscillator")):
         text = _read(f"simple_drum_{name}.asm")
         text = text[text.index("\n" + label + ":"):]
+        if name == "envelope":
+            # `simple_drum_envelope.asm` reads its shape-0 amplitude curve from
+            # the STANDALONE build's literal `Y:$09a5`, whose meaning is
+            # "wherever that build put the curve". This composition places it
+            # at Y_SIMPLE_ENV, and 0x9a5 is INSIDE the shipped wave region
+            # (Y_WAVES = 0x7a5, 768 words -> 0x7a5..0xaa4), so leaving the
+            # literal alone makes the envelope reader decode WAVE DATA as its
+            # curve. The standalone gates have always made this substitution
+            # (`build_dsp_3algo.py`'s fold/Simple-Drum path); the composer did
+            # not, so the composed machine ran a wrong envelope.
+            count = text.count("#>$0009a5,r1")
+            if count != 1:
+                die("fold envelope: expected exactly one #>$0009a5,r1 "
+                    f"reference, found {count}")
+            text = text.replace("#>$0009a5,r1", f"#>${Y_SIMPLE_ENV:06x},r1")
         parts.append(text)
     parts.append(_read("simple_drum_delta.asm"))
-    return "\n".join(parts)
+    return centre_displacements("\n".join(parts))
 
 
 DISPATCH_ENTRY = "\n".join([
@@ -302,7 +356,9 @@ DISPATCH_ENTRY = "\n".join([
         "        move    x:>$" + format(EVENT_OFFSET, "x") + ",a",
         "        move    a,x:>$" + format(EVENT_OFFSET, "x"),
         "        move    #>$003800,r6            ; this core has exactly one voice",
-        "        move    #>$" + format(SCRATCH_BASE, "x") + ",r5",
+        # r5 is the ONE scratch base; the centred convention every body
+        # in this machine uses expects it advanced by 0x40 here.
+        "        move    #>$" + format(SCRATCH_BASE + 0x40, "x") + ",r5",
         "        move    #>$ffffff,m0",
         "        move    #>$ffffff,m1",
         "        move    #>$ffffff,m2",
@@ -451,6 +507,25 @@ def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
     if f"{P}bass_voice:" not in b or f"{P}snare_voice:" not in s:
         die("resonant entry points were not renamed")
 
+    # The resonant voices carry the r5-advance prologue their recipe's
+    # center_scratch pass inserted. This composition advances r5 ONCE in the
+    # caller instead (the dispatcher and every gate probe), because the Fold
+    # path is entered twice per block and two prologues would leave r5 0x80
+    # high on the second entry. Their displacements stay centred, so removing
+    # the prologue is address-preserving once the caller has advanced.
+    b = strip_scratch_prologue(b)
+    s = strip_scratch_prologue(s)
+    # Only the `move a1,r5` advance belongs to the ABI base and must go. Each
+    # voice also derives its VARIABLES pointer with `move r5,a / add #>$40,a /
+    # move a1,r4`, which must stay -- it is a derived pointer, not the base.
+    base_advance = re.compile(r"move[ \t]+a1,r5")
+    for name, body in (("bass", b), ("snare", s)):
+        head = body.split(f"{P}{name}_voice:")[1][:120]
+        if base_advance.search(head):
+            die(f"{name} voice still advances r5 after its prologue was stripped")
+        if not re.search(r"move[ \t]+a1,r4", head):
+            die(f"{name} voice lost its variables-pointer derivation")
+
     # The RNG limbs are an absolute address inside the shared helper. If a
     # future edit moves them, the ledger and every gate would silently read a
     # different stream, so the composition refuses instead.
@@ -468,7 +543,8 @@ def compose(env1_base: int = Y_ENV1, env2_base: int = Y_ENV2,
         _section("resident_cores.asm", cores),
         _section("resident_tail.asm", tail),
         _section("fold_drum_1.asm", fold_body()),
-        _section("resident_primitives.asm", extra_body(bass_tail)),
+        _section("resident_primitives.asm",
+                 centre_displacements(extra_body(bass_tail))),
     ])
     return text
 

@@ -975,6 +975,80 @@ page/paging machinery and the p-lock path -- is reusable as the target requires.
 What is missing is exactly this join, and it is the reason the functional target
 ("select Resonant Bass / Resonant Snare") cannot yet be demonstrated end to end.
 
+### Fold block-1 parity: FIXED -- two real composition bugs, both found and closed
+
+The item is closed. Two independent defects, each measured, each fixed, and the
+composed Fold gate now passes end to end.
+
+**Bug 1 -- the envelope curve was read from the WRONG TABLE.**
+`simple_drum_envelope.asm`'s shape-0 reader carries the standalone build's
+literal `move #>$0009a5,r1`. The composer reconciled that literal in the shared
+resonant TAIL but never in the Fold section, while its own ledger places the
+curve at `Y_SIMPLE_ENV = 0xc50`. `0x9a5` is **inside the shipped wave region**
+(`Y_WAVES = 0x7a5`, 768 words -> `0x7a5..0xaa4`), so the composed Fold path
+decoded WAVE DATA as its amplitude curve. The standalone gates have always made
+this substitution; the composer did not.
+
+Measured, all 15 ARM fold cases, first differing sample:
+
+```
+BEFORE: mode 1 corners 1,2 -> differ at sample 29
+        12 of 15 cases exact
+AFTER : all 15 cases exact
+```
+
+**Bug 2 -- the Fold bodies were on the WRONG SCRATCH CONVENTION.**
+`fold_body()`'s docstring claimed it applied `center_scratch`; **the code never
+called it.** The composition's shared low32/RNG arithmetic is CENTRED
+(`r5-$40`-style) and therefore requires r5 advanced by 0x40, which is why the
+resonant voices carry an `r5 += 0x40` prologue. The Fold bodies had neither the
+prologue nor the displacement transform, so the mode-2 (noise) path reached the
+shared arithmetic with r5 0x40 low and touched every one of its scratch words 64
+words away from the qualified build. That is exactly the residual divergence,
+and it is why only the noise cases were left:
+
+```
+AFTER bug 1 only : mode 2 continuation x3 still differ at sample 2
+AFTER both       : all 15 cases exact
+```
+
+**The fix, and why the ABI moved to the caller.** `fold_body()` now applies
+`centre_displacements` (the displacement half of `center_scratch`, WITHOUT the
+prologue), `pknv_noise` is centred with it, the resonant voices' now-redundant
+`r5 += 0x40` prologue is stripped, and **the caller advances r5 once** -- the
+dispatcher sets `r5 = SCRATCH_ABI = SCRATCH_BASE + 0x40`, and every gate probe
+does the same. The advance cannot live in the bodies: the Fold path is entered
+TWICE per block (`pk_simple_base` then `pk_fold_voice`) and two prologues would
+leave r5 0x80 high on the second entry. `SCRATCH_BASE` stays the ADDRESS of the
+scratch block (what is seeded and dumped); `SCRATCH_ABI` is the register value
+the bodies expect. The voices keep their separate `move a1,r4` variables-pointer
+derivation, which is a derived pointer, not the base.
+
+**The equivalence gate had to grow up, and now checks more than it did.** It
+compared written displacements, so it could not see either bug and then objected
+to the fix. It now (a) rewrites `x:(r5+/-$N)` to its offset from the scratch
+BLOCK base on both sides and compares EFFECTIVE addresses, folding the
+convention rather than ignoring it, and (b) drops the `r5 += 0x40` prologue from
+both sides as an ABI detail rather than renderer content. The compose-side
+advance is passed per section, because the Fold standalone is assembled
+UNCENTRED while the resonant standalone is centred. This is a STRENGTHENING: the
+gate now compares the addresses the two builds actually touch.
+
+**Result.**
+
+```
+Fold Drum 1 in composition: PASS
+  640 blocks, 400 native randomized; worst 25,393 modeled cycles/16
+  ARM worst 17,377
+composed shipping source : 3,868 P words   (was 3,936)
+deduplicated saving      : 2,220 P words
+both payloads            : used 3,868, FREE 195   (was 127)
+FX-sacrifice gap at +DJ EQ: 82 words   (was 150, then 105)
+```
+
+The composed Fold renderer is now bit-exact against the captured ARM fixtures
+across every mode, every corner, triggers AND continuation blocks.
+
 ### Fold block-1 parity: now characterised to the word and the block
 
 With the regression reverted, the composed and standalone builds are driven
