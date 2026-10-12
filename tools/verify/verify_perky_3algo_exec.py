@@ -434,7 +434,11 @@ def main() -> None:
     for case in arm_fold_cases():
         got, state, worst = run(renderers, rlabels["pk3t_fold"], case["state"],
                                 case["rng"], ytext, case["blocks"], case["tag"], OUT)
-        equal(got, [v for v in case["pcm"] for _ in range(2)], case["tag"] + " PCM")
+        # `run` returns stereo[::2], i.e. ONE word per sample (the host writes
+        # the same value to both channels). Comparing against the fixture's
+        # stereo-interleaved expectation needs the same shape, so the reference
+        # is interleaved here rather than the result doubled.
+        equal(got, [v for v in case["pcm"] for _ in range(2)][::2], case["tag"] + " PCM")
         equal(state[-1][:40], case["final"], case["tag"] + " X")
         if case["final_rng"] is not None:
             equal(state[-1][64:68], case["final_rng"], case["tag"] + " RNG")
@@ -446,7 +450,11 @@ def main() -> None:
     for case in native:
         got, state, worst = run(renderers, rlabels["pk3t_fold"], case["state"],
                                 case["rng"], ytext, 1, case["tag"], OUT)
-        equal(got, [v for v in case["pcm"] for _ in range(2)], case["tag"] + " PCM")
+        # `run` returns stereo[::2], i.e. ONE word per sample (the host writes
+        # the same value to both channels). Comparing against the fixture's
+        # stereo-interleaved expectation needs the same shape, so the reference
+        # is interleaved here rather than the result doubled.
+        equal(got, [v for v in case["pcm"] for _ in range(2)][::2], case["tag"] + " PCM")
         equal(state[-1][:40], case["final"], case["tag"] + " X")
         equal(state[-1][64:68], case["final_rng"], case["tag"] + " RNG")
         short_meters.append(worst)

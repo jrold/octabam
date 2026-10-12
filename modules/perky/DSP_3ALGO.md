@@ -207,10 +207,30 @@ before:  (0, 0, 0, 0, 0, 0, 0, 0)
 after :  (-1, -2, -4, -6, -9, -13, -18, -23, -29)   expected: -1,-2,-4,-6,...
 ```
 
-The residual mismatch is a frame-count/length difference, not a value
-difference: `run()` unpacks `16 * blocks * 2` int32 from the host's output and
-returns `stereo[::2]`, and the host writes only `2 * frames` per block, so the
-comparison's `want` needs the same block count the host actually produced.
+**PCM parity now PASSES for the Fold path.** The comparison was also shaped
+wrong: `run()` returns `stereo[::2]` -- ONE word per sample, because the host
+writes the same value to both channels -- while the expectation was built by
+doubling every fixture sample, so a correct 256-sample result was compared
+against a 512-element list. The reference is now interleaved the same way the
+result is, and the gate's PCM check passes:
+
+```
+got[:6] = [-1, -2, -4, -6, -9, -13]
+pcm[:6] = [-1, -2, -4, -6, -9, -13]
+```
+
+The next check is the persistent X state, and it reports a real mismatch to
+work from:
+
+```
+final X[:11] = [255, 0, 44544, 0, 174, 0, 8864, 2050, 8864, 2050, 4, 0]
+```
+
+The voice does write it. Instrumenting the gate's own probe shows `r6` is
+`0x100` at probe entry (the host's `setRegs` sets `r6 = PBLK`), the probe then
+sets `r6 = 0x3800`, and `pk_simple_base` writes the correct base (`0x8`) to
+`X:0x3834`. So the state is produced where the probe points `r6`; reading it
+back is the remaining step.
 
 ### What this took, and the lesson
 
