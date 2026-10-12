@@ -1065,6 +1065,33 @@ So the precondition fails on reachable data, and this branch cannot take that
 optimisation. Recorded as a measured negative result rather than left as an
 untried idea.
 
+### Dirty state: the repository's gate misses this remix, so it is gated here
+
+`verify_dirtystate.py` is the repository's gate for "a persistent slot that init
+does not clear holds whatever the effect before ours left in the block -- and no
+local render can see it, because the port and `dsp_host` boot zeroed RAM". It
+cost a session on Spectrum's stale h2 poles.
+
+**For this remix it reports "0 renders, 0 failed"** -- the composed machine is
+installed as a source hook and declares no FX init, so that gate never exercises
+it. `tools/verify/verify_perky_3algo_dirtystate.py` does, driving the composed
+renderer from zeroed AND from four garbage patterns on silence:
+
+```
+  all zeros (the control)    nonzero   0/64  peak        0
+  garbage voice block        nonzero   0/64  peak        0
+  garbage, all $ffff         nonzero   0/64  peak        0
+  garbage, alternating       nonzero   0/64  peak        0
+```
+
+**PASS** -- the machine is silent on silence regardless of what the voice block
+held, so it does not leak uninitialised state into its output. This is a
+verification of a property that was assumed, not a defect repaired.
+
+It is also the answer to a question worth asking on the unit: on real hardware
+`X:0x3800..0x386b` holds whatever ran before, and this says that does not reach
+the output on silence.
+
 ### The composed machine DROPS the frame's event sample offset
 
 Found by auditing the deliverable the same way the latch was. The qualified seam
