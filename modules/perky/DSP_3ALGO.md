@@ -527,6 +527,55 @@ held     trig=1  peak 8388352     a held note continues instead of reloading
 The snare's release peak differing from its hit is the same fact from the audio
 side: the release does not restart the voice.
 
+## THE BUDGET NEVER CREDITS THE STOCK RENDER THIS HOOK REPLACES
+
+The 38% overrun above is computed against `MAX_MODELED_BLOCK = 23040`, and that
+number assumes stock still spends its whole `STOCK_SHARE` of ~1410 cycles/sample.
+**On a Perky track it does not.** The hook replaces stock's source render --
+payload A `P:0x39e..P:0x425`, **136 words and 118 instructions** with five nested
+`do` loops, including the timestretch playback engine `docs/firmware/DSP.md`
+names at `P:0x3a1` -- and none of that work is done any more. Its cost is free,
+and **nothing credits it.**
+
+`tools/build/cycle_count.py` derives the allowance by subtraction:
+
+```
+USABLE = 3120           # measured 23 Aug 2026
+STOCK_SHARE = CORE_TOTAL - USABLE      # ~1410, by subtraction
+```
+
+and the block that should say how a REPLACED stock render is accounted for is
+**cut off mid-sentence**:
+
+```
+# STOCK FILTER'S OWN LOAD IS INSIDE STOCK_SHARE: the 23 Aug budget was
+rows = [measure(m["stem"]) for m in mods]
+```
+
+`MenuEntry.replaces` exists, but it is for a module taking over a stock **effect**'s
+dispatch entry. A module that hooks a seam and replaces the code behind it
+declares no replacement, so the accounting has no way to know.
+
+**SO THE 38% VERDICT IS UNRELIABLE, AND I DO NOT KNOW IN WHICH DIRECTION.** The
+replaced region's cost is data-dependent -- `do n2`, `do y1` and `do r7` take their
+counts from the event -- so it cannot be bounded statically, and I have not run it.
+If it is small the overrun stands and the fix is a leaner renderer. If it is large
+the renderer may already fit and the fix is the budget model.
+
+**WHAT WOULD SETTLE IT**, in order of cost:
+1. the replaced region's measured cost per 16 samples. The code is stock and
+   self-contained from `P:0x379`, its branches are relative, so it can be
+   assembled at a convenient origin and metered on the host with a synthetic
+   record and ring;
+2. a frame of the STOCK payload with that region replaced by `nop`, metered, and
+   subtracted -- needs the ColdFire port feeding DMA;
+3. `--cf-frame-deadline` on a real project, which models the unit's stall
+   directly and needs `OT_PROJECT`, which is not configured here.
+
+**Until one of those runs, the honest statement is: the renderer is 38% over an
+allowance that does not credit work it removes.** That is a gap in the budget
+model, not yet a proof that the machine cannot fit.
+
 ## THE HARDWARE WEDGE: the port models the stall, and no gate runs it
 
 On the physical Octatrack, with a Perky machine assigned, pressing PLAY stopped
