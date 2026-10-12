@@ -331,14 +331,34 @@ meters: ['16718', '15914', '15989']
 different renderer each block, in sequence, with no crash and bounded output. The
 id is published exactly as `pk_render` publishes it, into record word `0x13`.
 
-**What this establishes and what it does not.** It establishes that switching
-between the three algorithms works at the dispatch level: the admission check, the
-engine decode and the per-engine entry all behave correctly when the engine changes
-from block to block. It does **NOT** establish that the switched audio is correct,
-because the state used here (`resonant_state('snare', 0)`, a stress state) with
-zero staged controls renders zero -- so the test shows the mechanism runs, not that
-the samples are right. A switching test with NON-zero output needs a reachable
-state and non-zero controls, which is the natural next step.
+**The non-zero version is now a gate.** With a REACHABLE state (the Fold ARM
+fixture) and live staged controls, `tools/verify/verify_perky_3algo_switch.py`
+drives all three engines in sequence and asserts non-zero, bounded, reproducible
+audio:
+
+```
+block engine          peak  nonzero  first-3
+    0 FOLD DRUM     317184    16/16  (-256, -512, -1024)
+    1 RES BASS      663296    16/16  (335360, 353536, 383488)
+    2 RES SNARE    1049600    16/16  (570624, -675840, -698880)
+```
+
+All three switched blocks are live, inside 24-bit (peak 1,049,600 against
+8,388,607), and identical across two identical drives.
+
+**An oracle was attempted and is not constructible.** The natural control is the
+switched FOLD block against a direct render from the same state and controls. It
+**fails at sample 0**, and the reason is structural: the dispatcher stages its
+controls through `x:(r6+$67)` and `x:(r5+$70..$72)`, and `r5`/`r6` there are
+whatever the **STOCK caller** left. A probe cannot replicate that context, so the
+"control" renders from different registers. A control that cannot be constructed is
+not evidence; the gate says so in its own docstring rather than shipping a
+comparison that would be either fake or permanently red.
+
+**So the boundary is: every block is checked for being live, bounded and
+reproducible -- NOT for being the samples hardware would produce.** No oracle
+exists for any of the three in the switched configuration, and the gate states
+that rather than implying coverage it does not have.
 
 ## ITEM 9: the next legitimate blocker, stated against its own bar
 
