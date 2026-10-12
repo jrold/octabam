@@ -267,14 +267,28 @@ word   composed   fixture     ratio
 0x23   0x0010     0x0100      16x  (fixture = composed << 4)
 ```
 
-  So the composed voice is self-consistent -- it renders block 0 correctly and
-  carries state -- but the state it carries is on a different scale from the
-  fixture's for several slots. That is what makes block 1 diverge at sample 29.
+  Reading it against the fixture's BEFORE state sharpens it further: for
+  several slots the composed run leaves the BEFORE value entirely, and for
+  others it leaves an intermediate-looking value:
 
-  This supersedes the earlier "state carried between blocks" note with something
-  sharper: the divergence is not a lost bit in the sample loop, it is a
-  **scale/precision difference in the persistent state words the voice writes
-  out**, and `[0x23]` differing by exactly 16x is the cleanest lead.
+```
+idx  before   after(fixture)  composed
+  2  0x0000  0x839b           0xb170
+  4  0x0b21  0x540d           0x0b17     <- still at BEFORE
+ 15  0x0000  0xedfc           0xaaa0
+ 35  0x0000  0x0100           0x0010
+```
+
+  `[4]` is unchanged from BEFORE (`0x0b21` -> `0x0b17`, a 10-LSB change) while
+  the fixture advances it to `0x540d`. `[35]` is the cleanest single lead: the
+  fixture writes `0x0100` where the composed run writes `0x0010` -- exactly
+  16x, i.e. a shift of four bit positions.
+
+  So the composed voice renders block 0 correctly and carries state, but
+  several persistent words it writes out are on a different scale from the
+  fixture's -- and that is what makes block 1 diverge from its 13th sample
+  onward. It is a **precision/scale** difference in the state the voice stores,
+  not a lost sample or a wrong table.
 
 ### The equivalence gate
 
