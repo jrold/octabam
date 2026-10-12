@@ -468,6 +468,16 @@ It is almost entirely **32-bit arithmetic built out of 16-bit words**, so every
 load, store and constant costs two instructions, and the scratch round-trips are
 pure overhead. `pk_rng_step` is one RNG advance per sample on the noise path.
 
+**The captured hardware fixtures settle the reachability question.** I checked
+whether the over-budget mode-2 states are reachable from the control law by
+enumerating `fold_control_update._rate(offset, scale, param)` over a plausible
+panel range, which yields only 20 values topping out at 21,845 -- apparently
+below the corpus's 37,250. That enumeration was over the WRONG parameter ranges
+and its conclusion is retracted: the captured ARM fixtures themselves carry
+`NOISE_RATE = 65066` in `engine-1-mode-2-*`, so high noise rates are reachable
+on hardware. The over-budget mode-2 states are therefore genuine, and the
+3,072-cycle saving is real work rather than an artefact of randomized sampling.
+
 **Honest sizing of the remaining timing work.** Fold needs 3,072 cycles off one
 path; Bass and Snare need ~69%/71% cuts. The hot paths are the shared 32-bit
 arithmetic layer (`pk_u32_mul_low` 33 instructions, `pk_u32_add`, and the
