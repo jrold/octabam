@@ -193,6 +193,38 @@ engines do not call `pk_simple_base`, so their overhead will differ and must be
 measured separately before the table above is quoted as final. One seeded state
 (Fold ARM mode-1 corner-0), one block.
 
+## The 19 missing words: a static dead-code tool was written, and is NOT trustworthy
+
+The concrete remaining non-hardware work after item 8 is ~19 more words (the
+verified dead code is 67, and 86 buys DJ EQ back). I wrote a reachability
+analysis to find them mechanically -- walk the composed source from the single
+production entry `pk3d_source`, following fallthrough, branches, `do` targets and
+`jsr`/`jsrl`, and report what is never reached.
+
+**It reports 1,028 unreachable instructions = 1,031 words. That is wrong, and I am
+not publishing it.** The decisive refutation is that it marks
+`pk3d_snare_voice` -- **107 instructions, reached from `pk3a_entry` via `jsrl`,
+and demonstrably live** (the dispatcher renders Snare in the gate that passes) --
+as dead. A tool that calls a live renderer dead over-reports by roughly 15x
+against the recorded 67, so every other name on its list is unverified too.
+
+The likely fault is in resolving call targets: the `beq pk3a_entry` /
+`beq pk3n_entry` edges are evidently not being taken, so the whole Resonant half
+of the dispatcher is pruned. I did not isolate it, and **after the last three
+rounds of publishing numbers I had to retract, the correct action is to withdraw
+the tool rather than report its output as a finding.**
+
+**What stands:** the VERIFIED dead code is **67 words** -- 51 unreachable
+instructions, established by actually removing them and confirming 15/15 Fold ARM
+parity, not by static analysis. That is **19 words short** of the 86 needed for
+DJ EQ, and the tool that was supposed to close the gap is not yet trustworthy.
+
+**This is also a repetition of a live trap**, and worth naming: `drop_unreached()`
+-- an earlier name-based removal of six routines -- BROKE the Fold renderer,
+because routines were reachable by FALLTHROUGH. Static reachability in this
+codebase has now fooled me twice, in opposite directions (once removing too much,
+once reporting too much).
+
 ## ITEM 8: the FX sacrifice, revisited -- architectural answer plus a threshold
 
 The directive asks whether code placement, fragmentation, shared-P tails,
