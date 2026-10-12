@@ -733,6 +733,37 @@ cycle clock: on, x1.00 -- one sample is 6032 ColdFire cycles at 266 MHz; the
 --cf-cycles-clock F     the ColdFire can now be late
 ```
 
+### Perky vs plain: the deadline is IDENTICAL, with one caveat I have to state
+
+Both runs, timing instruments verified engaged, `OT_DEADLINE_TRACE=1`:
+
+| run | acks | late/dl non-zero | ack |
+|---|---|---|---|
+| **plain** (T1 selected, no machine) | 1 | **0** | `frame 38137 guard=0 late=0 mask=0 dl=0` |
+| **perky** (full route: assign, engine pool, trigs, PLAY) | 1 | **0** | `frame 38137 guard=0 late=0 mask=0 dl=0` |
+
+**The two are byte-identical, and neither shows a single late or missed frame.**
+
+**THE CAVEAT, and it is not cosmetic:** both runs reached **frame 38137, the same
+number**. `--frames 80` did not bound either of them, and two runs with very
+different panel scripts arriving at the identical frame count is what you would see
+if the live script's keys were **not reaching the UI** -- the perky script's 18
+keypresses leave no trace in the timing. So the honest reading is:
+
+* **established**: a run with the timing instruments engaged, a card mounted and the
+  transport driven, reports `late=0 dl=0` over 38,137 frames;
+* **not established**: that the *Perky* configuration specifically was among those
+  frames. The frame count being equal is evidence *against* it.
+
+**What would close it**: a marker in the run that proves the panel route executed
+under the timing instruments -- the `PK\x01` assertion the UI gate already uses, or
+the record's engine word. Neither is available in a `--live-script` run, which is
+exactly why the two harnesses exist and why they need joining.
+
+**So: the event-frame overrun is not observed on this branch, in the run that was
+made; and the run that was made is not proven to have carried Perky.** The first
+statement is a measurement; the second is a defect in the measurement.
+
 ### MEASURED, and it retires the whole timing line: the frame never misses
 
 `OT_DEADLINE_TRACE=1` -- the third route, and one invocation -- prints the state the
