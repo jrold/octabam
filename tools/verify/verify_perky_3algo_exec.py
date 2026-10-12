@@ -250,6 +250,11 @@ def run(binary: Path, entry: int, words: list[int], rng, ytext: str,
          # wrong n7 runs the loop the wrong number of times and writes the
          # wrong number of samples, which reads as a silent renderer.
          "-frames", "16",
+         # The state window is the composed voice block, X:0x3800, NOT the
+         # stock fixed 0x200. Without this the host dumps a window the machine
+         # never wrote and every state word reads zero -- which looks exactly
+         # like a renderer that produces no persistent state.
+         "-statebase", format(STATE, "x"),
          "-meter", str(meter), "-cycle-meter", "1"],
         check=True, capture_output=True, timeout=180)
     stereo = list(struct.unpack(f"<{16 * blocks * 2}i", pcm.read_bytes()))

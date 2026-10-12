@@ -8,6 +8,7 @@
 //
 //   bd909_host -code gen.bin -org HEX -entry HEX [-init HEX] -data data.txt
 //              -script blocks.txt -out out.raw [-meter meter.txt] [-frames 16]
+//              [-statebase HEX]  (default 200; the state window seeded/dumped)
 //
 // data.txt   lines "X|Y|P <hex addr> <hex word> ..." loaded before init.
 // blocks.txt one line per block: twelve knob values 0..127 and a trigger
@@ -67,6 +68,12 @@ long call(DSP& dsp, TWord pc) {
 int main(int argc, char** argv) {
     std::string code, data, script, out, meterPath, statePath, inputPath;
     TWord org = 0, entry = 0, init = 0; bool haveInit = false; int frames = 16; int stateWords = 64;
+    // The dump/seed base for the state window. Stock callers used the fixed
+    // STATE = 0x200, but a module may keep its voice block elsewhere (the
+    // composed Perky machine uses X:0x3800), and a fixed base then dumps a
+    // window the module never wrote -- which reads exactly like a renderer
+    // that produces no state.
+    TWord stateBase = STATE;
     for (int i = 1; i + 1 < argc; i += 2) {
         std::string k = argv[i], v = argv[i + 1];
         if (k == "-code") code = v;
@@ -79,6 +86,7 @@ int main(int argc, char** argv) {
         else if (k == "-meter") meterPath = v;
         else if (k == "-cycle-meter") cycleMeter = std::atoi(v.c_str()) != 0;
         else if (k == "-frames") frames = std::atoi(v.c_str());
+        else if (k == "-statebase") stateBase = TWord(std::strtoul(v.c_str(), nullptr, 16));
         else if (k == "-state-words") stateWords = std::atoi(v.c_str());
         else if (k == "-state") statePath = v;   // X:STATE..+63 and Y:STATE..+63 after each block
         else if (k == "-input") inputPath = v;   // int32 LE samples, one per frame, into X:AUDIO (L and R)
@@ -112,7 +120,7 @@ int main(int argc, char** argv) {
         }
     }
     auto setRegs = [&] {
-        dsp.regs().r[0].var = AUDIO; dsp.regs().r[5].var = STATE; dsp.regs().r[6].var = PBLK;
+        dsp.regs().r[0].var = AUDIO; dsp.regs().r[5].var = stateBase; dsp.regs().r[6].var = PBLK;
         dsp.regs().n[7].var = frames;
         for (int k = 0; k < 8; ++k) dsp.regs().m[k].var = 0xffffff;
     };
@@ -147,8 +155,8 @@ int main(int argc, char** argv) {
         }
         if (mf) mf << n << "\n";
         if (stf) {
-            for (int k = 0; k < stateWords; ++k) stf << std::hex << mem.get(MemArea_X, STATE + k) << ' ';
-            for (int k = 0; k < stateWords; ++k) stf << std::hex << mem.get(MemArea_Y, STATE + k) << ' ';
+            for (int k = 0; k < stateWords; ++k) stf << std::hex << mem.get(MemArea_X, stateBase + k) << ' ';
+            for (int k = 0; k < stateWords; ++k) stf << std::hex << mem.get(MemArea_Y, stateBase + k) << ' ';
             stf << "\n";
         }
         maxN = std::max(maxN, n); sum += n; ++block;

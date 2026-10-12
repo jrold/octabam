@@ -226,36 +226,38 @@ work from:
 final X[:11] = [255, 0, 44544, 0, 174, 0, 8864, 2050, 8864, 2050, 4, 0]
 ```
 
-The remaining item is exactly this: **the persistent state is not landing at
-`X:0x3800`.**
+### Two more harness bugs, and where the gate now stands
 
-* `r6` is `0x100` at probe entry (the host's `setRegs` sets `r6 = PBLK`,
-  `r5 = STATE = 0x200`), the probe then sets `r6 = 0x3800`, and
-  `pk_simple_base` writes the correct base (`0x8`) to `X:0x3834` -- confirmed
-  by instrumenting the gate's own probe.
-* Yet the host's `-state` dump at base `0x3800` returns all zeros, and the
-  fixture's BEFORE state is not zeros.
+**The host hardcoded its state window at `X:0x200`.** `bd909_host` both seeded
+`r5` and dumped the state block from a fixed `STATE = 0x200`, so a module that
+keeps its voice block anywhere else (the composed machine uses `X:0x3800`) had
+its state dumped from a window it never wrote -- every word read zero, which is
+indistinguishable from a renderer that produces no persistent state. Measured
+directly: seeding a marker at `X:0x0200` came back through the dump, while the
+same marker at `X:0x3800` did not, even though the DSP itself reads `X:0x3800`
+correctly (proved with a `move x:>$3800,a` probe returning the seeded word).
 
-So the voice's writes are going somewhere the dump is not reading, and the
-next step is to find which address they actually land at -- most likely the
-gate's `STATE` base and the address the probe points `r6` at are not the same
-address, which the probe's own instrumentation above shows is worth checking
-directly rather than assuming.
+The host now takes `-statebase HEX`, defaulting to the historical `0x200`, so
+every existing caller is unchanged. The composed gate passes `-statebase 3800`.
 
-### What this took, and the lesson
+**Where the gate stands now:**
 
-The composed routines are byte-identical to the qualified standalone ones
-(`pk_simple_base` 35/36 words, the one difference its relocated `jsr`;
-`pk_simple_envelope`, `pk_simple_frequency` and `pk_simple_oscillator` 100%).
-That was true the whole time, which is why several rounds of DSP-level
-investigation found nothing: **the defect was in the test fixture, and the
-fixture's own comment documented the requirement it was violating.**
+* Fold PCM: corners and lengths now match (`lengths 256/256`), and **corner 0
+  passes exactly** -- the composed renderer reproduces the captured ARM fixture
+  through the composed build.
+* corner 1 diverges partway through with a small, non-constant residual:
 
-The general rule this repository already writes down -- *before trusting a null
-result, ask what the instrument physically cannot see* -- applies here in its
-sharper form: a fixture that seeds a persistent cache with a value the code
-treats as VALID will produce a perfectly executed, perfectly wrong, and
-perfectly silent run.
+```
+sample   got    want
+  29    -4143   -4160
+  33    -8007   -8152
+  35    -9000   -8788
+```
+
+  That is a real numerical difference (a few tenths of a percent, changing
+  sign), not the silence or the all-zero state this branch chased for several
+  rounds. It is the next thing to localise, and the second-difference cache is
+  the first suspect since it is the only stateful element between blocks.
 
 ### The equivalence gate
 
