@@ -388,6 +388,46 @@ This branch touches 22 files -- `tools/verify`, `modules/perky`, `tools/perky`,
 and **none** of the assembler, `build_bus.py` or SPECTRUM. So the failure is in
 the tree, not here, and it blocks `verify-shared` for every remix.
 
+### The divergent word, traced to a read-back address -- and it is NOT the composition
+
+`word 14` is `NOISE + 2` in BOTH families (`bass.NOISE = 12`, `snare.NOISE = 12`),
+i.e. the held noise sample. Traced through the composed source:
+
+* `pk_resonant_noise` DECREMENTS the counter at `r6+$c` and returns the held
+  sample from `r6+$e`; on the counter hitting zero it takes `pkr_noise_refresh`;
+* the refresh path stages four RNG limbs into `r5-$40..-$3d`, calls
+  `pk_rng_step`, writes the limbs back, and then reads the new sample from
+  **`r5-$30`**;
+* `pk_rng_step` (84 instructions) **writes** `-$40 -$3f -$3e -$3d`, `-$20 -$1f
+  -$1e -$1d`, `-$1a -$19 -$18 -$17`, `-$10`, `-$f`, `-$a` -- and **never writes
+  `r5-$30`** at all.
+
+So the refresh reads its result from a word the generator never writes.
+
+**And this is not something the composition introduced.** The STANDALONE
+recipe's `pk_rng_step` has the *same* write set, and its `pk_resonant_noise`
+reads back from the *same* displacement. The two builds agree here; only the
+composition's centred convention moves the numbers, and it moves both sides
+together. So the divergence is a property of the recipe, and the standalone has
+it too.
+
+**Why nothing caught it until now:** the only gate that would have --
+`verify_perky_resonant_dsp_exec.py --firmware`, which compares the STANDALONE
+renderer against the captured ARM fixtures -- has **never run in this tree**,
+because it needs the stock 1.40C image for the original Y tables. Every other
+resonant gate compares synthetic states, and the composed gate compares against
+the model's expectation rather than against a second implementation.
+
+That also explains the shape of the evidence: corner 0's PCM is bit-exact while
+its state word 14 is wrong, because the held noise sample only reaches the output
+when the noise resonator is actually mixed in, which the corner-0 trajectory does
+not do.
+
+**Not established, and stated as such:** whether `r5-$30` is written by some
+other routine in the reachable path, or whether the recipe simply never updates
+the held sample. What IS established is that `pk_rng_step` does not write the
+word the refresh reads, in either build.
+
 ### The last open correctness item: the composed RESONANT state comparison
 
 The composed Fold renderer matches its model in PCM **and** in every state word
