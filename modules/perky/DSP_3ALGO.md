@@ -975,6 +975,45 @@ page/paging machinery and the p-lock path -- is reusable as the target requires.
 What is missing is exactly this join, and it is the reason the functional target
 ("select Resonant Bass / Resonant Snare") cannot yet be demonstrated end to end.
 
+### Fold block-1 parity: now characterised to the word and the block
+
+With the regression reverted, the composed and standalone builds are driven
+through identical probes (same fixture, same state base `X:0x3800`, same scratch
+`X:0x3900`, each with its OWN table bases) and the whole persistent region
+`0x3800..0x39CB` is dumped after every 16-sample block:
+
+```
+standalone[:8] = [-29, -115, -257, -457, -712, -1024, -1267, -1268]
+composed  [:8] = [-29, -115, -257, -457, -712, -1024, -1267, -1268]
+first sample where they differ from EACH OTHER: (29, -4160, -4143)
+
+after block 0: 0 diffs across 0x3800..0x39CB
+after block 1: 5 diffs
+     0x3802  0x63a6 vs 0x62e0
+     0x3804  0x0b59 vs 0x0b17
+     0x3953  0x03a6 vs 0x02e0
+     0x395e  0xbe85 vs 0xbea5
+     0x395f  0xb32f vs 0xb44f
+after block 2: 9 diffs (same words plus 0x3952, 0x3954, 0x3955, 0x3958)
+```
+
+**This is the sharpest statement of the item so far:**
+
+* after block 0 the two builds are **byte-identical everywhere** -- voice block
+  *and* scratch and cache;
+* they first part company **inside block 1**, in the scratch accumulator at
+  `0x3952/0x3953` (a 32-bit value) and at `0x395e/0x395f`;
+* the PCM difference at block-1 index 13 is a consequence of that, not a
+  separate fault;
+* corner 1's packed sample index is `0x07fe`, so block 1 is the first block in
+  which the second-difference decoder must decode a *new* block -- which is why
+  the divergence starts exactly there and why corner 0 (index 0) never shows it.
+
+So the fault is in the decoder's re-decode path (`pk_simple_delta_at` on a cache
+miss) as laid out in the composition, and the scratch accumulator at
+`0x3952/0x3953` is where to look. That is a much smaller space than "the
+composed renderer misbehaves".
+
 ### The equivalence gate
 
 `tools/verify/verify_perky_3algo_equivalence.py` is the gate that now carries
