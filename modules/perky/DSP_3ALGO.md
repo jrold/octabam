@@ -421,6 +421,26 @@ optimisation must preserve every result bit-exactly. So the true achievable
 saving is LESS than the table above, which strengthens rather than weakens the
 conclusion.
 
+**The most promising avenue from the brief's list, closed by measurement.**
+The brief suggests "replacing synthesized multiword arithmetic with native-width
+operations where proven equivalent over reachable domains". The DSP's native
+multiply is 24x24 -> 48, so `pk_u32_mul_low` -- the low 32 bits of a 32x32
+product, built from three 16x16 partials, 15.9% of the snare -- would collapse
+to a single `mpyuu` **if its operands were provably <= 24 bits**.
+
+They are not. Reading every 32-bit word out of the CAPTURED ARM fixtures (the
+reachable oracle, not randomized states), the widest value is **32 bits** for
+both families:
+
+```
+bass : captured-fixture 32-bit word values: max bit width = 32   (24-bit fit: NO)
+snare: captured-fixture 32-bit word values: max bit width = 32   (24-bit fit: NO)
+```
+
+So the precondition fails on reachable data, and this branch cannot take that
+optimisation. Recorded as a measured negative result rather than left as an
+untried idea.
+
 ### REACHABLE vs STRESS: the timing figures were taken on stress states
 
 **This materially changes the timing picture and is the answer to the brief's
