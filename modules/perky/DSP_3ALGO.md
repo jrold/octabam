@@ -351,6 +351,126 @@ carried across calls and laid out at different addresses in the two builds, and
 the measurement that will settle it is a like-for-like read in each build's own
 frame. It is recorded here rather than carried as an unexplained red gate.
 
+### MEASURED CONTINUATION LEDGER (this configuration)
+
+Every number below is either printed by the repository's own cycle tool or
+measured this round. Nothing is inferred from an assumed reserve.
+
+**A. The core budget, printed by `make cycles REMIX=perky-dsp-3algo`:**
+
+```
+budget/core                 4535   (200 MIPS / 44.1 kHz)
+usable by us                3120   measured 23 Aug 2026; stock takes the other ~1415
+headroom                    3120   against the worst core above
+stock rows           NOT COUNTED   [FILTER, EQUALIZER, PHASER, FLANGER, CHORUS,
+                                    SPATIALIZER] -- stock code; FILTER measured 192
+hook sections        NOT COUNTED   [PERKY PROBE] -- reached by a DspHook
+```
+
+So the tool itself states the split: **stock's own share ~1,415 cycles/sample,
+usable by us 3,120 cycles/sample**, and it explicitly reports that our retained
+stock effects are *not* charged against that 3,120 because they are stock code.
+Note also its own warning: *"the wall is a CLIFF, not a slope. Only a burn sweep
+measures it."*
+
+| line | cycles/sample | provenance |
+| --- | ---: | --- |
+| whole core | 4,535 (4,532 measured) | `make cycles`; CHIP.md probe 55, 199.9 MHz |
+| stock's own share | ~1,415 | `make cycles`, measured 23 Aug 2026 |
+| usable by us | 3,120 | `make cycles`, measured 23 Aug 2026 |
+| one frame (16 samples) | 72,512 | 16 x 4,532 |
+
+**B. The host's cycle model to hardware conversion -- MEASURED this round.**
+Driving each instruction form in a 256-iteration DO loop through
+`bd909_host -cycle-meter 1` and comparing against CHIP.md's hardware table:
+
+| instruction | host modeled | CHIP.md hardware | ratio |
+| --- | ---: | ---: | ---: |
+| `move x0,a` | 1.06 | 2.00 | 1.89x |
+| `move x:(r0),a` | 1.06 | 2.00 | 1.89x |
+| `move x:(r7+$15),a` | 2.05 | 3.98 | 1.94x |
+| `move x:(r7+$70),a` | 3.05 | 6.01 | 1.97x |
+
+**C. What the renderer figures actually contain -- the measurement boundary.**
+`verify_perky_3algo_timing.py` drives these entries:
+
+```
+pk3t_snare:  move #voice,r6 / move #scratch,r5 / jsrl pk3d_snare_voice
+             / jsrl pk3c_rng_out / rts
+```
+
+i.e. **2 register setups + the renderer body + a TEST-ONLY RNG dump.** No stock
+continuation, no AMP, no FX1, no FX2, no routing, no dispatcher, no wrapper
+beyond two moves. And they are **modeled cycles, not hardware**.
+
+**D. Dynamic instruction counts, measured this round** (`-cycle-meter 0` vs `1`
+on the same runs, 16 frames, one call):
+
+| engine | instructions/16 | modeled cycles/16 | modeled/instr |
+| --- | ---: | ---: | ---: |
+| fold | 4,790 | 9,735 | 2.03 |
+| bass | 25,627 | 43,802 | 1.71 |
+| snare | 27,556 | 47,599 | 1.73 |
+
+Those are for one control state; the worst over the 1,024-state sweep is higher
+(bass 74,515, snare 80,722 modeled).
+
+**E. ACTUAL_AVAILABLE_PERKY_CYCLES.**
+
+```
+whole core frame                 72,512   hardware cycles / 16 samples
+- stock's own share            - 22,592   (1,412/sample, measured, make cycles)
+= usable by us                   49,920   (3,120/sample, measured)
+- safety margin (repo holds)   -  6,144   (see below)
+= modeled allowance              23,040   (2 x 23,040 = 46,080 hardware)
+```
+
+The repository's `MAX_MODELED_BLOCK = 23,040` converts to 46,080 hardware cycles
+against 49,920 usable, i.e. it holds back **3,840 hardware cycles = 240/sample =
+7.7%** of the module budget. That is the justified margin, and it is the repo's
+own.
+
+**F. The true required reduction**, against that allowance:
+
+| engine | modeled/16 (worst) | allowance | over by | reduction needed |
+| --- | ---: | ---: | ---: | ---: |
+| Fold Drum 1 | 26,112 | 23,040 | 3,072 | 11.8% (mode-2 noise path only) |
+| Resonant Bass | 74,515 | 23,040 | 51,475 | 69.1% |
+| Resonant Snare | 80,722 | 23,040 | 57,682 | 71.5% |
+
+This is **case B** of the brief. It is not a reversion to a stale number: the
+allowance descends from `make cycles`' own measured 3,120/sample and the
+measured ~1.9x model-to-hardware factor, both re-derived this round.
+
+**G. Where the cost actually is -- attributed per sample.** Static expansion of
+the call tree, with each routine's internal DO loops applied at their trip
+counts (the entry's own sample loop counted once per sample):
+
+```
+pk3d_snare_voice   796 instr/sample
+   its own body            372   46.7%
+   pk_resonant_core        198   24.9%
+   pk_u32_mul_low          132   16.6%
+   pk_resonant_decay        76    9.5%
+   pk_noise_hat_envelope    10    1.3%
+   pk_resonant_noise         8    1.0%
+```
+
+The cost is **spread across the whole synthesis path**: the largest single item
+is the voice's own body at 47%, and no one removable block approaches the 69-71%
+that has to come off. That is the evidence that instruction-level optimisation
+of the listed kinds cannot close this gap -- not an assertion, a distribution.
+
+**H. What is genuinely unmeasured, stated plainly.** The *per-track* split of
+stock's 1,415 is not measured: whether a Perky track's source work **replaces**
+some stock continuation (the normal source read for that track) is not
+established. That would *raise* the allowance. Its ceiling is bounded: if the
+Perky source displaced the entire non-stock budget and the replaced track's
+whole share, the ceiling is the whole core 4,532/sample = 72,512 modeled, and
+Snare at 80,722 modeled would still exceed it. So the per-track question cannot
+rescue the gap, but it is honestly still open and is the one measurement worth
+making next.
+
 ### TIMING MODEL RECONCILED -- the blocker report contained a category error
 
 **This retracts the "over the physical deadline by 2,003 / 8,210 cycles" claim
