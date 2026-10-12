@@ -380,12 +380,25 @@ Two caveats, both real, neither of which changes the direction:
 1. Six fixture runs is a small sample of the reachable domain. It is much better
    evidence than randomized impossible states, but it is not a proof of the
    domain's maximum, and the 2x model margin and stock reserve are unchanged.
-2. **Corners 1 and 2 are NOT yet bit-exact** against those fixtures -- bass
-   corner 0 and snare corner 0 are EXACT, bass corner 1 diverges at sample 191,
-   and bass corner 2 / snare corners 1-2 diverge at sample 2. So the timing
-   taken on corners 1-2 is timing of a renderer whose output is not yet trusted.
-   Corner 0's figures are on a bit-exact render and are the ones to rely on:
+2. **Corners 1 and 2 do not match those fixtures** -- bass corner 0 and snare
+   corner 0 are EXACT, bass corner 1 diverges at sample 191, and bass corner 2 /
+   snare corners 1-2 diverge at sample 2. The timing taken on corners 1-2 is
+   therefore timing of a renderer whose output is not yet trusted; corner 0's
+   figures are on a bit-exact render and are the ones to rely on:
    **bass 34,673, snare 38,049**.
+
+   **But this comparison is NOT apples-to-apples, and the divergence is NOT
+   established as a renderer defect.** The standalone resonant gate's own ARM
+   path (`verify_perky_resonant_dsp_exec.py`, under `--firmware`) builds its
+   expectation from the FIRMWARE'S ORIGINAL Y TABLES
+   (`0x08022EA0`/`0x080236A2`/`0x0803237C`/`0x08032178`), not from the model's
+   generated envelope/interp assets. The run above necessarily used the model's
+   assets, because the stock image is not in this tree (only
+   `out/raw/section_3_MAIN_OS.bin`, whose sha256 is not the manifest's
+   `adcdbc4a...`). So corners 1-2 are most likely reading the wrong curve data,
+   exactly the class of fault that broke the Fold path, and the standalone ARM
+   comparison has **never run here at all**. Resolving it needs the user's stock
+   1.40C image; it is not a conclusion this branch can reach from the repo.
 
 So the honest position on the brief's items 2 and 3 is: the required reduction
 on reachable measured states is somewhere near **35-41%**, not 69-71%, and the
