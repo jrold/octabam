@@ -711,6 +711,57 @@ user workflow then runs -- select T1, assign, return, audition, `REC`, trigs at
 1/5/9/13, `PLAY` -- with the transport reading **1 (playing)** and staying 1
 across 4 s of polling.
 
+## THE HANG IS REPRODUCED -- at the exact halt address the register names
+
+**The missing flag was `--frame`.** `main.cpp:1250` has `bool frame = false;  //
+the DSP frame clock; off by default, as in route A`, and `--frame` sets it. It is
+**not** `--frame-timer` (which chooses the timer over the DSP bank word as the
+frame EDGE). Without `--frame` the port reports
+
+```
+frame : off (route A's default: main unmasks source 1 unconditionally)
+        -- 0 frame interrupt(s) taken
+```
+
+**so `--cf-frame-deadline` and `--cf-cycles-clock` both had nothing to act on.**
+Every "no stall" conclusion drawn before this -- including four runs at
+`--cf-cycles-clock 1.0 ... 0.5` -- was measuring nothing. That is recorded here as
+a retraction of those results, not as a footnote to them.
+
+With `--frame --frame-timer --cf-frame-deadline 1.7 --cf-cycles-clock 0.5` and the
+full panel route:
+
+```
+frame      : on -- 1 frame interrupt(s) taken, 0 eDMA transfer(s) started
+card ready: 0, LOAD PROJECT posted: no, PART_PTR: 0, 0.0 ms emulated
+live script: stopped before 120 ms -- unimplemented opcode 4ac8 at 4000ab40
+             after 44186409 instructions
+```
+
+**`0x4000ab40` is the halt the failure register names:**
+
+> "the frame handler at `0x4000aad0` reads the DSP's bank id with no ready check
+> and then **halts if it is not 0 or 1** (`0x4000ab38 cmpl #1,0x800000e0 / bccs /
+> **0x4000ab40 halt**`). That is the fatal path O9b saw with a free-running frame
+> timer, and it is the one an overrun would reach."
+
+and the register also says of it: *"it did not trip in these runs (the port is
+host-paced), so the model shows the cause and the unit shows the hang."* **It trips
+once the lock-step is broken** -- which is what `--cf-cycles-clock` is for, and what
+the register's own note did not connect to this address.
+
+**So the user's symptom is reproducible in the model after all: under the unit's
+frame clock, with the ColdFire able to be late, the firmware reaches its own fatal
+path at `0x4000ab40` and stops.** That is "the sequencer stops advancing" and
+"stuck on step 1" -- the transport cannot advance because the frame handler that
+would advance it has halted.
+
+**Next:** bisect what makes it late. The load this run carries is the whole panel
+route (assign, engine pool, four trigs, PLAY) at `F = 0.5`; the useful sweep is
+`F` from 1.0 downward until the halt appears, and then the same sweep with the
+Perky machine absent, which separates "the ColdFire is too slow in general" from
+"Perky's event frames push it over".
+
 ### The lock-step CAN be broken -- `--cf-cycles-clock` -- and still no stall
 
 There is an option the register's own "the port is host-paced" note does not
