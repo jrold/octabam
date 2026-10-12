@@ -620,6 +620,34 @@ Item 1 is a layout decision that touches the already-qualified renderers, so it
 should be taken deliberately rather than by editing the dispatcher to match
 whatever byte is free.
 
+**The model byte never reaches the dispatcher at all.** Tracing every writer of
+byte 6:
+
+* `pk_fold_prepare` ends with `p[11] = 0;`
+* `pk_simple_prepare` ends with `p[11] = 2;` (and `p[10] = 0;`)
+* `p[6]` is written only by `pk_render`'s `p[6] = p[MODE_SLOT]`
+
+and `record[4+k] = (p[2k] << 16) | p[2k+1]` places `p[6]` at byte offset 6, while
+`p[11]` lands at `record[5]`'s low byte -- byte offset **11**. The composed
+dispatcher reads byte **6**. So the value the engine chooser actually selects
+(`p[MODEL_SLOT]`, the persisted model byte) is written to byte 11 and **never
+read by anything**.
+
+Consequences, stated plainly:
+
+* byte 6 can only ever hold **0 or 2** (Fold's or Simple Drum's family), because
+  those are the only two writers and they overwrite what `pk_render` put there;
+* the composed dispatcher's `cmp x0,b` against 0/10/11 therefore only ever
+  matches **0**, so the DSP always takes the Fold branch;
+* **Resonant Bass and Resonant Snare are unreachable through the control path in
+  the image as it stands** -- not merely unprepared, but unselectable.
+
+That is the single highest-value finding for this target, and it is a fixable
+one: the dispatcher's engine-id byte and the control path's model byte have to
+be made the same byte, and the two Resonant families need prepare paths in
+`control.c`. The `p[]`/`record[]` ABI, the chooser, `source_offset`, paging and
+the p-lock path are all reusable; what is missing is the join between them.
+
 ### The equivalence gate
 
 `tools/verify/verify_perky_3algo_equivalence.py` is the gate that now carries
