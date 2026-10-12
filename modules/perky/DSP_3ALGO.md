@@ -446,9 +446,37 @@ native fold native  86  25758  mode=2 counter=272 fold=4092  noise_rate=27859
 ```
 
 `pknv_noise`'s refresh path moves the four RNG words out to scratch, calls
-`pk_rng_step`, and moves them back -- 26 instructions of shuffling around an
-83-instruction routine -- and that is the concrete place a bit-exact saving on
-the Fold path has to come from.
+`pk_rng_step`, and moves them back, and `pk_rng_step` itself measures **145
+instructions**, not the ~83 an earlier cut of this record claimed -- that figure
+came from a label-block count that stopped at the first nested label and is
+retracted here.
+
+**Where the 145 goes**, read directly:
+
+```
+pk_rng_step:
+  move x:(r5-$40),a / move a1,x:(r5-$20)     <- 4 words copied through scratch
+  ...                                        (8 instructions, then 8 back)
+  move #>$00f42d,a / move a1,x:(r5-$3e)      <- each 32-bit constant is TWO
+  move #>$005851,a / move a1,x:(r5-$3d)         instructions
+  jsrl pk_u32_mul_low                        <- called twice
+  ...
+  jsrl pk_u32_add
+```
+
+It is almost entirely **32-bit arithmetic built out of 16-bit words**, so every
+load, store and constant costs two instructions, and the scratch round-trips are
+pure overhead. `pk_rng_step` is one RNG advance per sample on the noise path.
+
+**Honest sizing of the remaining timing work.** Fold needs 3,072 cycles off one
+path; Bass and Snare need ~69%/71% cuts. The hot paths are the shared 32-bit
+arithmetic layer (`pk_u32_mul_low` 33 instructions, `pk_u32_add`, and the
+`pk_rng_step` wrapper around them) and the three resonant cores. A bit-exact
+saving here means rewriting that shared layer -- keeping both 16-bit halves in
+registers across the product/add rather than round-tripping through scratch --
+and re-proving every renderer against the oracles. That is a substantial,
+well-scoped piece of work, not a tweak, and it is the largest single item
+between this branch and a flashable image.
 
 ### The equivalence gate
 
