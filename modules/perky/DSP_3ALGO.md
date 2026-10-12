@@ -44,23 +44,56 @@ production always runs:**
 That is the honest description of the boundary, and it is **not** the same set as
 the production path in either direction.
 
-### The production-path delta: attempted, and NOT established
+### The production-path delta: MEASURED, with the harness validating itself
 
-I tried to measure what those omissions cost, driving the real `pk3d_source` with
-`@CONT@` redirected to a `rts` trampoline so the meter stops at our work rather
-than running away through uninitialised memory. **The attempt is inconclusive and
-I am not publishing a number from it.**
+The previous attempt was inconclusive because **I read a stale meter file after an
+assemble that had failed silently** -- the probe wrote `move #>0038e8,r1`, which
+is InvalidInstruction (the immediate-to-*register* form is `#$0038e8`; `#>` is
+for accumulators), so a meter from an earlier run was still on disk and I
+reported it as a measurement. That is the whole explanation for the 6,919-cycle
+disagreement, and it is a process failure, not a hardware one.
 
-The two runs disagree with each other by 6,919 cycles for the bare renderer
-(`g.run` via `pk3t_fold`: 13,300; `join.drive` via an equivalent probe without the
-dump: 6,381) -- and `pk3c_rng_out` is only **12 instructions**, so a 6,919-cycle
-difference cannot be that routine. The runs seed different voice state, so they
-are not measuring the same thing, and any ratio computed from them (2.08x, 3x)
-would be an artefact. Two numbers that cannot both be right are worse than none.
+The measurement the item asked for is now built and run: **one harness, one
+seeded state, one assembly, three entries differing only in what they call.**
 
-**What would settle it:** one harness, one seeded state, the same block, with the
-ONLY difference being which entry is called. That is the next measurement, and it
-must be built before any production-cost figure is quoted.
+```
+m_render    :  13279 modeled cycles/block     base + voice
+m_quoted    :  13300                          + the gate's 12-instruction RNG dump
+m_dispatch  :  18998                          pk3d_source: admission + dispatch
+                                              + mode delivery + the x256 scale
+```
+
+**The harness validates itself.** The gate-only dump measures **+21 cycles**, and
+`pk3c_rng_out` is 12 instructions plus a `jsrl`/`rts` pair -- the right magnitude,
+which means the harness resolves differences of tens of cycles and the other
+deltas are real.
+
+**So, for this case:**
+
+* the quoted timing figure tracks the renderer (13,300 against 13,279): the
+  gate-only dump is 0.16% of it, so the quoted number is a fair stand-in for the
+  renderer;
+* **the production path costs +5,698 modeled cycles/block over what the timing
+  gate measures -- +42.9%**, i.e. **+11,396 hardware cycles**, for the dispatcher,
+  the admission check, the mode delivery and the `x256` scale stage.
+
+**What that does to the budget.** The allowance is 23,040 modeled for the whole
+source. If 5,698 of it is dispatcher overhead, the share left for the RENDERER is
+**17,342, not 23,040**:
+
+| | renderer, measured | + overhead | vs 17,342 |
+|---|---|---|---|
+| Resonant Bass | 74,515 | 80,213 | **77.6% over** |
+| Resonant Snare | 80,722 | 86,420 | **79.9% over** |
+
+The required reduction therefore moves from 69.1/71.5% to roughly **77-80%**, not
+because anything got worse but because the budget the renderer was being judged
+against was **overstated by the omitted overhead**.
+
+**Stated limits.** The +5,698 was measured on the FOLD path; the two Resonant
+engines do not call `pk_simple_base`, so their overhead will differ and must be
+measured separately before the table above is quoted as final. One seeded state
+(Fold ARM mode-1 corner-0), one block.
 
 ## RECONCILED: where 23,040 comes from, and why the "2.76% over" claim was the error
 
