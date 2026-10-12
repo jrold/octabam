@@ -96,18 +96,29 @@ incremental way to find the ceiling instead of jumping to the worst case.
 Run each row with **T8 FX2 = CF Meter** and note TUE, spin min/max and period
 min/max. `DBRN = 0` throughout unless you are deliberately finding the ceiling.
 
-| # | T1 / T5 algorithm | other FX | what it tells you |
-|---|---|---|---|
-| 1 | none (stock) | none | the baseline: stock's own share with this image |
-| 2 | none (stock) | all six retained | the retained-FX cost — **the number this sweep exists for** |
-| 3 | Fold Drum 1 | all six | the lightest Perky algorithm |
-| 4 | Resonant Bass | all six | the middle one |
-| 5 | Resonant Snare | all six | the heaviest |
-| 6 | one algorithm on T1 **and** a different one on T5 | all six | both cores loaded at once |
-| 7 | the worst pair you can build | all six | the true worst case for this image |
+| # | T1 (payload B) | T5 (payload A) | FX | what it tells you |
+|---|---|---|---|---|
+| 1 | — | — | none | the stock baseline for this image |
+| 2 | — | — | all six | the retained-FX cost — **the number this sweep exists for** |
+| 3 | Fold Drum 1 | — | all six | Fold on payload B, alone |
+| 4 | — | Fold Drum 1 | all six | Fold on payload A, alone |
+| 5 | Resonant Bass | — | all six | Bass on payload B, alone |
+| 6 | — | Resonant Bass | all six | Bass on payload A, alone |
+| 7 | Resonant Snare | — | all six | Snare on payload B, alone |
+| 8 | — | Resonant Snare | all six | Snare on payload A, alone |
+| 9 | Fold Drum 1 | Fold Drum 1 | all six | both cores loaded, lightest |
+| 10 | Resonant Snare | Resonant Snare | all six | both cores, heaviest — the predicted worst |
+| 11 | Resonant Snare | Resonant Bass | all six | the worst realistic asymmetric pair |
 
-Rows 6 and 7 matter because T1 and T5 are on **different cores** — the load is the
-maximum per core, not the sum, and the sweep should show that.
+Rows 3–8 are one algorithm at a time on each core in turn: T1 is payload B and T5
+is payload A, they are **different cores**, and the whole design rests on the two
+being independent — so each has to be seen alone before either is believed.
+
+Rows 9–11 matter because the load is the **maximum per core, not the sum**, so a
+pair costs no more than its heavier member — and the sweep should show exactly
+that. If two loaded cores cost more than the heavier one alone, the independence
+assumption is wrong and that is the single most important thing this sweep could
+find.
 
 Then, if you want the ceiling: raise `DBRN` on row 5 until TUE first goes nonzero.
 That value prices this build's headroom directly and needs no model at all.
