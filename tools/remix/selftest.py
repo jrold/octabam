@@ -880,6 +880,26 @@ def main():
              "euclid": ("SPATIALIZER", "FLANGER", "CHORUS", "COMB FILTER"),
              "perky-probe": ("SPRING REV",),  # the impulse donor retains PLATE/DARK
             "perky-cfmeter": ("DARK REV",),  # CF METER's readout insert, as cfmeter
+            # ⚠️ `perky-cfmeter-idle` (remixes/test/perky-cfmeter-idle) had NO
+            # entry, so `_want.get` fell back to CONSUMED and this gate failed
+            # on it. Its measured harvest is ('DARK REV',), the same insert
+            # sitting idle, so the value is the sibling's. (An earlier note here
+            # claimed the "perky-cfmeter" key was stale; it is not -- BOTH
+            # remixes exist and both need an entry. That note was wrong.)
+            "perky-cfmeter-idle": ("DARK REV",),
+            # perky-dsp-3algo's sacrifice is MEASURED, not chosen.
+            # tools/verify/verify_perky_3algo_sacrifice.py links the composed
+            # reduced Perky machine and compares it against the stock spans read
+            # out of the pristine 1.40C: the composed program is 3,868 P words
+            # and the contiguous donor budgets fall short by 3,868 (nothing),
+            # 2,805 (SPRING alone), 1,144 (/PLATE/SPRING/DARK), 964
+            # (/COMPRESSOR), 427 (/LO-FI), 82 (/DJ EQ) and fit at 4,063
+            # (/COMB FILTER). Spring alone -- and the three reverbs -- are not
+            # enough; the first configuration that fits is this one. The four
+            # extra are stock FX1 effects, so giving them up is the price of the
+            # contiguous run, and the report records each one's measured words.
+            "perky-dsp-3algo": ("PLATE REV", "SPRING REV", "DARK REV",
+                                "COMPRESSOR", "LO-FI", "DJ EQ", "COMB FILTER"),
              # perky-cf-final lists all fourteen stock effects (the target keeps
              # every stock FX), so it harvests nothing.
              "perky-cf-final": (),

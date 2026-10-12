@@ -26,4 +26,10 @@ A remix is a named selection of modules; `make image REMIX=<name> BUILD=<n>` bui
 | [`octatrick`](octatrick/README.md) | SYNTH MACHINE + SCALE QUANTIZER + DIRECT JUMP + TUNER + USB MIDI + USB AUDIO (20 channels out, 4 in onto A-D) on the stock effects less SPATIALIZER. | on hardware: Tim's MKI, test build 3.0 b40 (this selection at BUILD 40), 29 Sep 2026: USB AUDIO IN brings the Mac's audio onto the inputs in a one-minute check (long runs not yet tested). The same four modules with the 26 Sep USB AUDIO (out only) ran on the same MKI through the 2.9 test builds; the tuner works on test build 3.0 b40 (UP + TEMPO); the last two 2.9 fixes are not yet confirmed on hardware |
 | [`ok-ms`](ok-ms/README.md) | KITS + MIDI SCENES on the stock effects: the two mods alone. | port-gated: with Octakit on midisc's author's unit, 14 Sep 2026 (OKMS2); with KITS under the port |
 
+## Probes
+
+| remix | contains | proof |
+|---|---|---|
+| [`perky-dsp-3algo`](perky-dsp-3algo/README.md) | Reduced Perky DSP machine: T1/T5 only, one voice per core, three algorithms each. FX sacrifice measured at 3,936 composed P words. | `make check`: composed reduced Perky DSP machine; renderer equivalence and sacrifice measured, execution/placement qualification pending |
+
 Never share a built image: it contains Elektron's OS.

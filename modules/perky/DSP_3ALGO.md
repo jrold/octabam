@@ -351,6 +351,43 @@ carried across calls and laid out at different addresses in the two builds, and
 the measurement that will settle it is a like-for-like read in each build's own
 frame. It is recorded here rather than carried as an unexplained red gate.
 
+### `make check REMIX=perky-dsp-3algo` -- what it found
+
+Running the repository's own floor against the now-canonical artifact surfaced
+three things, two of them mine to fix and one pre-existing.
+
+**1. The sacrifice is a GATED expectation, and mine was missing.**
+`tools/remix/selftest.py` holds a `_want` dict of each remix's intentional
+stock-FX sacrifice, defaulting to the three reverbs. `perky-dsp-3algo` had no
+entry, so the gate failed on the measured seven. Added, with the measured
+shortfall table in the comment beside it -- this is exactly the "narrowly
+updated and documented" case the brief allows, and the measurement is in
+`verify_perky_3algo_sacrifice.py`.
+
+**2. `perky-cfmeter-idle` had no entry either.** Its measured harvest is
+`('DARK REV',)`, the same insert as its sibling, so it takes the sibling's value.
+My first attempt at this RENAMED the `perky-cfmeter` key, which broke that remix
+instead -- both remixes exist (`remixes/test/perky-cfmeter` and
+`remixes/test/perky-cfmeter-idle`) and BOTH need an entry. The note I wrote
+claiming the key was stale was wrong and is corrected in place.
+
+**3. Docs.** `remixes/perky-dsp-3algo/README.md` was missing (the repo requires
+one per remix) and the three generated indexes were stale. Written and
+regenerated with `make docs`.
+
+**Pre-existing, NOT this branch:** `make check` then stops in `verify-shared` at
+`verify_knob_clicks.py`, whose build of the `_knobs` fixture fails the
+"disassemble-what-you-assemble" guard on SPECTRUM:
+
+```
+P:0x01559  wrote 'move x:(r1)+,x0  b,y1'  chip runs 'move x:(r1)+,x0'
+```
+
+This branch touches 22 files -- `tools/verify`, `modules/perky`, `tools/perky`,
+`tools/harness/bd909_host`, `remixes/perky-dsp-3algo`, `modules/perky3algo` --
+and **none** of the assembler, `build_bus.py` or SPECTRUM. So the failure is in
+the tree, not here, and it blocks `verify-shared` for every remix.
+
 ### The canonical build now reproduces the deliverable
 
 The gap recorded in the previous round -- `make bus REMIX=perky-dsp-3algo`
