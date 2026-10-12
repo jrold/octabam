@@ -311,7 +311,52 @@ DSP-side trig path to test, because there is no DSP-side trig path.
 so the voice block carries the render forward rather than restarting -- the same
 property the switch gate exercises across an engine change.
 
-### AN OPEN ANOMALY, flagged not explained
+### THE ANOMALY RESOLVED -- and it exposed a real switching hazard
+
+The test named above: each engine driven from the SAME state and the same controls,
+one engine per run.
+
+```
+FOLD   meter  18998  mono[:4] (-256, -512, -1024, -12544)
+BASS   meter  45357  mono[:4] (-8388608, -8388608, -8388608, -8388608)
+SNARE  meter  48592  mono[:4] (0, 0, 0, 0)
+
+fold == bass : False      fold == snare : False
+```
+
+**All three separate cleanly**, with three different meters. So the engine dispatch
+does select different code and produce different audio, and the earlier coincidence
+was about STATE EVOLUTION between blocks, not about the dispatch. The anomaly is
+closed as benign.
+
+**But it exposed a real hazard in the switched configuration:**
+
+* **Fold -> Resonant Bass saturates at full-scale NEGATIVE.** `mono[:4]` is
+  `-8388608` = `-2^23` exactly, i.e. clipped at the 24-bit rail, on the FIRST block
+  after the switch. Bass's resonators read the words Fold left behind and the sum
+  rails.
+* **Fold -> Resonant Snare renders SILENCE** (`0, 0, 0, 0`).
+
+Those are the two failure modes the brief's "switch algorithms safely ... survive
+algorithm changes between events" is about, and they are now measured rather than
+assumed.
+
+**The boundary, stated.** This is measured with the record's CONTROLS HELD FIXED
+across the switch. A real switch also runs the ColdFire prepare for the new engine,
+which recomputes the control words and may well prevent the rail -- so this
+establishes that the DSP-side switched state is hostile, not that a panel switch
+pops. Establishing the latter needs the prepare in the loop, which is a
+ColdFire-side test.
+
+**What it means for the design either way.** The voice block is shared by three
+engines with different layouts (word 34 is `MODE` for Fold, `DECAY_A` for Bass and
+inside `RES2` for Snare -- the same reason the mode delivery had to be Fold-only).
+A switch therefore hands each engine the previous engine's fields as if they were
+its own. A safe switch needs the DSP to clear or re-seed the voice block when the
+engine id CHANGES, which is now a concrete, bounded piece of work with a measured
+motivation.
+
+### THE EARLIER ANOMALY, kept for the record
 
 **Engine 10 (RES BASS) and engine 0 (FOLD) produced the SAME block-1 PCM:
 `(335360, 353536, 383488)`.** Yet the switch gate's per-block meters are
