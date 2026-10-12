@@ -527,6 +527,49 @@ held     trig=1  peak 8388352     a held note continues instead of reloading
 The snare's release peak differing from its hit is the same fact from the audio
 side: the release does not restart the voice.
 
+## THE REPLACED RENDER IS O(y1) MAC WORK, NOT A FIXED COST
+
+The credit the budget never applies is not small, and the stock code says why.
+
+Payload A, `P:0x39e..P:0x425`:
+
+```
+0003ae: move    #$0,r7          ; 370000        one word: r7 = 0
+000402: do      y1,>$408        ; 06c700 000407 the grain loop
+000405: and     y0,b   (r7)+    ; 205f5e        <-- r7 COUNTED UP here
+00040e: move    y:(r6)+n6,y1
+00040f: do      r7,>$41b        ; 06d700 00041a the sample loop, r7 times
+000411: move    x:(r6)+,x0
+000412: tfr     x0,a   a1,y0
+000413: mac     -y0,x0,a   x:(r6)+,x1
+000414: mpy     -x1,y0,b   x:(r6)+,y1
+000416: add     x1,b   r2,r6
+000417: mac     y1,y0,a   x:(r5),n6
+000418: mac     y0,x0,b
+000419: move    a,x:(r3)+   y:(r5)+,a
+00041a: lsr     a   b,x:(r3)+   y:(r6)+n6,y1
+```
+
+**`move #$0,r7` is real -- encoding `0x370000` is the one-word form and it does zero
+r7.** But `and y0,b (r7)+` inside the grain loop uses r7 as a **post-incremented
+counter**, so by `0x40f` `r7` carries the grain loop's iteration count, and
+`do r7,>$41b` runs that many times over a **ten-instruction body with three MACs
+and two MPYs** -- the 2-tap interpolator `docs/firmware/DSP.md` names.
+
+**So the replaced work is O(y1) multiply-accumulate against ring data the ColdFire
+fills each frame -- not a fixed handful of cycles.** An earlier reading of this
+file concluded the credit was probably small by counting 118 instructions and
+assuming one pass; that was wrong, and this is the correction.
+
+**It still is not a measurement.** y1's magnitude is set by the ring contents, so
+the credit cannot be bounded from the disassembly alone. But the shape is now
+known: linear in a per-frame data value, in a MAC-heavy loop, which is exactly the
+kind of cost that can approach or exceed the renderer's own 35,753.
+
+**This makes the 38% verdict MORE suspect, not less** -- and the measurement that
+settles it is now well defined: run `P:0x39e..P:0x425` on the host with a real
+ring and meter it, or meter a stock frame with the region `nop`ed.
+
 ## THE BUDGET NEVER CREDITS THE STOCK RENDER THIS HOOK REPLACES
 
 The 38% overrun above is computed against `MAX_MODELED_BLOCK = 23040`, and that
