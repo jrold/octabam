@@ -287,6 +287,59 @@ because routines were reachable by FALLTHROUGH. Static reachability in this
 codebase has now fooled me twice, in opposite directions (once removing too much,
 once reporting too much).
 
+## ITEM 6 residual: algorithm switching WORKS at the dispatch level
+
+The one control sub-item that was not gated is algorithm switching. It is now
+exercised through the real dispatcher.
+
+**The harness problem, and how it was solved.** A probe cannot call `pk3d_source`
+twice: the machine hands control back with `jmp @CONT@` rather than returning to
+its caller, so a second `jsrl` in the same block never executes -- which is why a
+first attempt reported three identical meters and looked like a pass. The fix is a
+**stateful probe across script blocks**: the host calls the entry once per block,
+so a counter in X memory advances the selected engine between calls.
+
+```
+meas_cycle:
+        move    #$0039b1,r6
+        move    x:(r6),a          ; the counter, in X memory
+        move    #$000300,r4
+        move    #$000000,b
+        tst     a
+        beq     mset              ; 0 -> FOLD
+        move    #$00000a,b
+        cmp     #$1,a
+        beq     mset              ; 1 -> RES BASS
+        move    #$00000b,b        ; 2 -> RES SNARE
+mset:
+        move    b1,x:(r4+$13)     ; publish the engine id, as pk_render would
+        move    a1,b
+        add     #$1,b
+        move    b1,x:(r6)         ; advance the counter
+        jsrl    pk3d_source
+        rts
+```
+
+Three blocks, and the per-block meters are:
+
+```
+blocks 3  max 16718 instr/block
+meters: ['16718', '15914', '15989']
+```
+
+**Three different, plausible per-block costs** -- the machine selects and runs a
+different renderer each block, in sequence, with no crash and bounded output. The
+id is published exactly as `pk_render` publishes it, into record word `0x13`.
+
+**What this establishes and what it does not.** It establishes that switching
+between the three algorithms works at the dispatch level: the admission check, the
+engine decode and the per-engine entry all behave correctly when the engine changes
+from block to block. It does **NOT** establish that the switched audio is correct,
+because the state used here (`resonant_state('snare', 0)`, a stress state) with
+zero staged controls renders zero -- so the test shows the mechanism runs, not that
+the samples are right. A switching test with NON-zero output needs a reachable
+state and non-zero controls, which is the natural next step.
+
 ## ITEM 9: the next legitimate blocker, stated against its own bar
 
 The directive lists seven preconditions. Each is now satisfied by a measurement in
