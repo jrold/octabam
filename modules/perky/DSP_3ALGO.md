@@ -1092,6 +1092,49 @@ It is also the answer to a question worth asking on the unit: on real hardware
 `X:0x3800..0x386b` holds whatever ran before, and this says that does not reach
 the output on silence.
 
+### LANDED: the dispatcher-driven test, and the mode is verified end to end
+
+Third attempt, and it passes. `tools/verify/verify_perky_3algo_dispatch.py` drives
+`pk3d_source` -- the production path -- and reads the voice block back:
+
+```
+fold: p[8] must become the firmware mode (panel + 1) % 3 at word 34
+  panel 0 -> word34     1  want     1  OK
+  panel 1 -> word34     2  want     2  OK
+  panel 2 -> word34     0  want     0  OK
+
+resonant: word 34 is DECAY_A / inside RES2 -- it must NOT be written
+  RES BASS        word34  4660  seeded  4660  PRESERVED
+  RES SNARE       word34  4660  seeded  4660  PRESERVED
+```
+
+So the mode delivery fixed earlier is now **verified through the real dispatch
+path**, not merely inspected, and the resonant families are confirmed not to have
+their decay block clobbered by it.
+
+**The root cause of the two earlier failures was the entry ADDRESS.** A probe
+placed first in the binary puts the entry at `P:0x1000`, and that run writes zero
+bytes of PCM and state and exits 3 with `no return from 1000 (pc=1c20)`. The join
+gate's *identical* dispatch, at `P:0x1017`, returns 0 and renders 29,452
+instructions. The address dependency itself is not explained -- and it is not a
+property of the machine, which behaves the same either way -- but the gate now
+reproduces the invocation that is known to work instead of chasing it.
+
+**What each of the three attempts cost, and what it taught:**
+
+1. Hand-rolled the host command; diverged from the working one by a single data
+   line (`X 20e 000000`, which the dispatcher's first instruction replays).
+   *Lesson: reuse a known-good driver.*
+2. Reused the driver, but placed the probe first. Still `pc=1c1e` -> `pc=1c20`
+   when a single instruction was added, which correctly located the fault in the
+   machine's post-render path rather than the probe. *Lesson: when a difference
+   does not move the symptom, it is not the cause.*
+3. Reused the driver AND the entry the working gate uses. Passes.
+
+Three rounds on a test is a poor rate and I said so at the time; what made the
+third one work was running the *working* gate's own artifacts by hand and
+comparing exit codes, which took one command and should have been the first.
+
 ### The missing test, second attempt: a line-by-line comparison, and what it ruled out
 
 I applied the lesson from the first attempt -- compare against the WORKING
