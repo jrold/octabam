@@ -1092,6 +1092,52 @@ It is also the answer to a question worth asking on the unit: on real hardware
 `X:0x3800..0x386b` holds whatever ran before, and this says that does not reach
 the output on silence.
 
+### The composed machine DROPS the MODE: `p[8]` never reaches the renderer
+
+Third finding from the same audit, and the sharpest of the three.
+
+`pk_render` publishes the selected MODE in record byte 8 -- `p[8]`, which is
+record WORD `0x10` -- and the qualified Fold transport gate pins the contract it
+has to satisfy:
+
+```python
+assert record[9] == v.words[14] and [1,2,0][record[8]] == v.words[34]
+```
+
+So `record[8]`, mapped through the panel-to-firmware table `[1,2,0]`, must become
+the voice's **word 34** -- the word the Fold renderer reads its mode from.
+
+Measured on the composed machine:
+
+```
+record words the DISPATCHER reads: ['13', '2', '8', 'a', 'c', 'e']
+record word 0x10 (p[8] = the MODE) read by the dispatcher?  NO
+any write to the voice mode word r6+$22 anywhere?            NO
+```
+
+**The mode is never delivered, and the voice's mode word is never written.** On a
+real unit `X:0x3800+34` holds whatever ran before, so the Fold algorithm would run
+in a stale or arbitrary mode -- transient when it should sustain, or noise when it
+should not.
+
+**And the execution gate cannot see it.** Every Fold case seeds the voice block
+from an ARM capture or from the model, and both already CONTAIN word 34. The gate
+therefore supplies exactly the value the machine fails to supply itself, which is
+why 640 blocks and 15/15 ARM cases pass while the production path is wrong.
+
+That is the same shape as the latch: a value the machine needs, absent from the
+path that runs in production, invisible to gates that seed the very state at
+issue.
+
+**Established:** the dispatcher's record reads are exactly
+`{0x2, 0x8, 0xa, 0xc, 0xe, 0x13}` and `0x10` is not among them; no write to
+`r6+$22` exists in the composed source; the qualified gate pins
+`[1,2,0][record[8]] == words[34]` as the contract. **Not established:** whether
+the `[1,2,0]` mapping belongs on the ColdFire side (so the record carries the
+already-mapped value) or on the DSP side at load, and how the two Resonant
+families express their mode -- they may not use word 34 at all. Both need
+checking before this is patched, and it is recorded rather than guessed.
+
 ### The composed machine DROPS the frame's event sample offset
 
 Found by auditing the deliverable the same way the latch was. The qualified seam
