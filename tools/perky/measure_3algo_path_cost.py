@@ -147,6 +147,11 @@ def main() -> None:
             + "X 3964 " + " ".join(["ffffff"] * 17) + "\n"
             + f"X {composer.RNG_GAP_END:x} 000000 000000 000000 000000\n"
             + "P 400 00000c\n" + ytext
+            # Seed the ENGINE LEDGER so the steady-state path is measured rather
+            # than the re-seed: on an engine change the dispatcher ALSO clears the
+            # shared voice block (108 words, ~3 cycles each), which is a real cost
+            # but not the per-block one.
+            + f"X {composer.ENGINE_LEDGER:x} {0x8000 | engine:06x}\n"
             + f"X 300 " + " ".join(f"{w:06x}" for w in rec) + "\n"
             + f"X 209 000300\nX 418 {composer.ADMITTED_SLOT:06x}\nX 20e 000000\n")
         got = {}

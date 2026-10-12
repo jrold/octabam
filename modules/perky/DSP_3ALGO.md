@@ -287,6 +287,43 @@ because routines were reachable by FALLTHROUGH. Static reachability in this
 codebase has now fooled me twice, in opposite directions (once removing too much,
 once reporting too much).
 
+## RE-MEASURED after the firmware change: the wrapper is 547, and the blocker did not move
+
+**Changing the firmware invalidates every figure measured on the old source**, so
+they were re-measured rather than carried forward -- the boundary error this branch
+has now made six times, and the first time it was caught by asking the question
+before being told.
+
+**The renderer figures are unchanged, and that is correct:** the timing gate drives
+`pk3t_fold`/`pk3t_bass`/`pk3t_snare` directly, and the change was in the
+DISPATCHER, so it cannot see it.
+
+```
+fold  25,393 | bass 35,713 | snare 38,737   reachable (identical to before)
+```
+
+**The wrapper moved, by exactly the compare path:**
+
+```
+steady-state wrapper (silence path, ledger seeded)   534 -> 547    (+13)
+one switch block      (silence path, ledger stale)    -- -> 676    (+129, the
+                                                                    108-word re-seed)
+```
+
+The 676 is the whole story of the re-seed's cost: 108 words at ~1.2 cycles each.
+It is paid **once per engine change**, not per block.
+
+**The blocker is unmoved:**
+
+| engine | reachable | + 547 | needs | hardware window |
+|---|---|---|---|---|
+| Fold Drum 1 | 25,393 | 25,940 | 11.2% | **+2.7%** |
+| Resonant Bass | 35,713 | 36,260 | **36.5%** | +31.1% |
+| Resonant Snare | 38,737 | 39,284 | **41.4%** | +39.5% |
+
+36.4% -> 36.5% and 41.3% -> 41.4%: the fix for the switching rail cost the blocker
+nothing measurable, which is the result that makes it safe to keep.
+
 ## FIXED: the engine-change re-seed -- a switch no longer rails
 
 The hazard measured above is fixed. The dispatcher now compares the incoming engine
@@ -513,7 +550,7 @@ this document, and the bar is met **on the reachable domain**, not on stress.
 
 | # | precondition | evidence |
 |---|---|---|
-| 1 | production continuation cost measured or tightly bounded | stock reserve **22,560** cycles/block (16 x 1410, hardware-measured, stock FX load INSIDE it) + wrapper **534** modeled |
+| 1 | production continuation cost measured or tightly bounded | stock reserve **22,560** cycles/block (16 x 1410, hardware-measured, stock FX load INSIDE it) + wrapper **547** modeled |
 | 2 | exact measurement boundaries documented | "MEASUREMENT BOUNDARIES" above: renderer + a 12-instruction gate-only dump; excludes dispatcher, mode delivery, the x256 scale, and stock |
 | 3 | reachable production timing domain established | the captured ARM fixtures; `timing.json` keys its verdict on `worst_reachable` |
 | 4 | hot path profiled | ablation: `pk_resonant_decay` 39.7%, `pk_resonant_core` 21.7%, `pk_u32_mul_low` 15.9%, `pk_resonant_noise` 5.5% |
