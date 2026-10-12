@@ -434,9 +434,32 @@ that the composed path stores the LOW half instead (`r5-$30` is a 32-bit low
 word from `pk_u32_mul_full` / `pk_rng_no_carry`), which would be exactly a
 half-word swap.
 
-**That hypothesis is NOT tested and is recorded as a hypothesis**, not a finding
--- the two previous attempts at this word were both wrong, both times because the
-instrument was blind to the callees.
+**That hypothesis was then TESTED and is NOT supported.** Stepping the model's
+generator 64 times from the ARM seed, neither `0x454d` ever appears as a low half
+nor `0xe6be` as a high half:
+
+```
+steps where low16==0x454d or high16==0xe6be:  0
+```
+
+**A measurement error in my own framing, worth recording so it is not repeated:**
+`0xe6be` is not a Python-model value at all. It is the ARM capture's own
+`wrapper-window-continuation-after` word 14 -- the hardware's value. I had been
+calling it "the model's expectation" throughout this section. So the comparison
+is composed-versus-HARDWARE, not composed-versus-model, and the absence of either
+value among plain RNG steps is expected rather than diagnostic, because word 14
+holds whatever sample was current when the capture stopped.
+
+**Where that leaves it.** Established: the composed renderer and the ARM capture
+disagree on word 14 in all six cases (17741 vs 59070) while corner 0's PCM is
+bit-exact; the model's `render_noise` has the same counter/reload/sample
+semantics as the composed code; and the value is not a direct RNG output from the
+before-seed over 64 steps either way. NOT established: the cause.
+
+**Three framings of this word have now been wrong** (read-back address; rate
+versus sample; half-word swap), each because the check was blind to something --
+the callees, the model's own source, and which artifact the "expected" value came
+from. The honest position is the list of measured facts above and no cause.
 
 **Also unexplained, and worth flagging:** the composed value is identical (17741)
 in all six runs and the model's is identical (59070) in all six, even though the
