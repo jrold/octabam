@@ -287,6 +287,56 @@ because routines were reachable by FALLTHROUGH. Static reachability in this
 codebase has now fooled me twice, in opposite directions (once removing too much,
 once reporting too much).
 
+## The event offset: `X:$20c` is the SAMPLE COUNT, and the machine hardcodes 16
+
+Chasing the recorded `X:$20c` gap to ground produced something sharper than
+"a dropped offset". Stock's own code, payload A:
+
+```
+000394: and     #>$f,a                ; a = a & 0xf            -> 0..15
+000396: move    #>$10,b               ; b = 16
+000398: sub     a,b      a,x:>$20c    ; b = 16 - a  ; and store a -> X:$20c
+00039a: asl     a        b,x:>$20d    ; a <<= 1     ; and store 16-a -> X:$20d
+00039c: move    a,x:>$20e             ; 2a -> X:$20e   <-- THE HOOK SITE
+...
+00042a: move    x:>$20c,n7            ; n7 = a      <-- THE SOURCE'S LOOP COUNT
+00042c: ...
+000434: move    x:>$20d,n7            ; n7 = 16 - a <-- THE CONTINUATION'S
+```
+
+**So `a` is the trig's sample position in the frame, `X:$20c = a`, `X:$20d = 16-a`,
+and `X:$20e = 2a` is the interleaved word index the seam read.** Stock sets `n7`
+from `X:$20c` for the SOURCE and from `X:$20d` for the CONTINUATION: the source
+renders the `a` samples up to the event, and the continuation renders the remaining
+`16-a`.
+
+**The composed machine hardcodes `move #>$10,n7` -- 16 -- and never reads
+`X:$20c`.** Exactly as the seam did before it, so this is inherited rather than
+introduced.
+
+**Why the audio is still correct, and what it costs.** The stock continuation
+renders `16-a` samples STARTING AT `a`, so it overwrites the machine's samples
+`a..15` with its own. The frame comes out right. But the machine did **16 samples
+of work where the contract asks for `a`** -- up to 16x more on the source, and the
+frame as a whole does `16 + (16-a)` samples' worth instead of `16`.
+
+**What that does to the blocker: nothing, and the reason matters.** Timing is a
+WORST case, and the worst case is `a = 15`, where the saving is 1/16 = 6% -- not
+enough to touch a 36.5% / 41.4% gap. The AVERAGE case improves by up to 2x, which
+is real but not a timing argument. The measured reachable figures use `n7 = 16`
+and are therefore an **upper bound on a bound**, and they stay the honest number.
+
+**AND THE OBVIOUS FIX IS A TRAP.** Setting `n7 = X:$20c` directly is dangerous:
+on this DSP a `do` loop with ``LC = 0`` runs **65,536** iterations, so `a = 0`
+would turn a 16-sample render into a 65,536-sample one -- the exact class of
+disaster this branch has already met once (a 196,608-iteration voice loop from a
+modulo buffer). Any implementation must guard `a >= 1` explicitly, and that guard
+is not written yet.
+
+**So the item is narrowed rather than closed**: the contract is now documented and
+evidenced, the audio is unaffected, the worst-case timing is unaffected, and the
+implementation has a named hazard that must be handled before anyone tries it.
+
 ## RE-MEASURED after the firmware change: the wrapper is 547, and the blocker did not move
 
 **Changing the firmware invalidates every figure measured on the old source**, so
