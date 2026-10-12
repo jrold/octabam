@@ -120,19 +120,36 @@ def main() -> None:
     # exactly one record per core can pass the PK/Y1 test -- and its only
     # observable effect was that silence. Removing it is the fix; this check
     # refuses to let it come back.
-    writes = re.findall(r"move\s+\S+,x:>\$%04x" % composed.ADMIT_LATCH, source)
-    clears = re.findall(r"move\s+#>?\$0+,?\w*\s*\n\s*move\s+\w+,x:>\$%04x"
-                        % composed.ADMIT_LATCH, source)
-    if writes and not clears:
-        die(f"the composed dispatcher WRITES x:${composed.ADMIT_LATCH:04x} "
-            f"({len(writes)} time(s)) and never clears it -- an admission latch "
-            f"like that silences every block after the first, because the "
-            f"machine is installed only at the per-track source site and has no "
-            f"once-per-block hook to reset it from")
-    print(f"latch      : x:${composed.ADMIT_LATCH:04x} is "
-          f"{'unused' if not writes else 'written and cleared'} -- no "
-          f"set-and-never-cleared admission latch (one voice per core is "
-          f"already guaranteed by admitting slot 0 only)")
+    # THE LATCH IS STILL REFUSED -- but the word now has a DIFFERENT job, so the
+    # check asserts the property rather than the absence of a write.
+    #
+    # The defect this guards: a word set to 1 on the first admission and NEVER
+    # cleared, so every later block took the silence path and the Perky track
+    # rendered one block and then nothing, for good.
+    #
+    # `x:$38ed` is now the ENGINE LEDGER: it holds the last engine id, TAGED with
+    # 0x8000, and the dispatcher COMPARES it against the incoming id to decide
+    # whether to re-seed the shared voice block on an engine change (measured
+    # motivation: without the re-seed, Fold -> Bass railed at -2^23). A value that
+    # is COMPARED is not a latch; a value that is TESTED FOR TRUTH is.
+    ledger = composed.ENGINE_LEDGER
+    writes = re.findall(r"move\s+\S+,x:>\$%04x" % ledger, source)
+    compares = re.findall(r"move\s+x:>\$%04x,\w+\s*\n\s*cmp\s+\w+,\w+"
+                          % ledger, source)
+    tested = re.findall(r"move\s+x:>\$%04x,\w+\s*\n\s*tst" % ledger, source)
+    if tested:
+        die(f"x:${ledger:04x} is loaded and TESTED FOR TRUTH -- that is the "
+            f"admission-latch shape, which silences every block after the first, "
+            f"because the machine is installed only at the per-track source site "
+            f"and has no once-per-block hook to reset it from")
+    if not (writes and compares):
+        die(f"x:${ledger:04x} is expected to be the ENGINE LEDGER -- written "
+            f"({len(writes)}) and compared ({len(compares)}). A ledger that is "
+            f"not compared cannot gate the re-seed")
+    print(f"latch      : x:${ledger:04x} is the ENGINE LEDGER, written and "
+          f"COMPARED (never tested for truth) -- no set-and-never-cleared "
+          f"admission latch, and the re-seed it gates is why a switch no longer "
+          f"rails")
     print(f"admission  : composed dispatcher admits x:$418 == {admitted:#x} "
           f"(the core's first track)")
 

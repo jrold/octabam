@@ -45,6 +45,38 @@ pk3v_hit:
         move    x:(r4+$13),b
         and     #>$ffff,b
         move    b1,x0                   ; x0 = engine id
+        ; --- RE-SEED THE VOICE BLOCK WHEN THE ENGINE CHANGES ---------
+        ; The three engines SHARE X:0x3800 with DIFFERENT layouts: word
+        ; 34 is MODE for Fold, DECAY_A for Resonant Bass and inside RES2
+        ; for Resonant Snare. A switch therefore hands the new engine
+        ; the old engine's fields as if they were its own. MEASURED
+        ; without this: Fold -> Bass railed at full-scale negative
+        ; (-8388608 = -2^23, clipped) on the first block, and Fold ->
+        ; Snare rendered silence. Both violate the target's "switch
+        ; algorithms safely ... survive algorithm changes between
+        ; events".
+        ;
+        ; The stored id is TAGGED with 0x8000 so a boot word of zero can
+        ; never match a real engine id: the first dispatch after boot
+        ; therefore re-seeds too, which is what we want.
+        ;
+        ; r0/m0 and x1 are free here -- the block below re-sets r0, r5,
+        ; r6 and m0..m6 before anything reads them.
+        move    x0,a
+        add     #>$8000,a               ; the tagged engine id
+        move    a,x1
+        move    x:>$38ed,b
+        cmp     x1,b
+        beq     pk3s_same
+        move    #>$3800,r0
+        move    #>$ffffff,m0
+        clr     a
+        do      #$6c,pk3s_done
+        move    a1,x:(r0)+
+pk3s_done:
+        move    x1,b
+        move    b1,x:>$38ed
+pk3s_same:
         move    x:>$38ec,a
         move    a,x:>$38ec
         move    #>$003800,r6            ; this core has exactly one voice

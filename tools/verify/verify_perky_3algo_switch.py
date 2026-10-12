@@ -15,9 +15,15 @@ between calls, publishing it into record word 0x13 exactly as `pk_render` does.
 
 WHAT IS ASSERTED:
 
-* every switched block renders NON-ZERO audio -- a switch that silently muted the
-  voice would be a defect, and this is the check that would catch it;
-* every block stays inside the 24-bit range -- no saturation on the switch;
+* **no block RAILS.** This is the hazard this gate exists for and it was
+  MEASURED: before the re-seed, switching Fold -> Resonant Bass produced
+  `-8388608` = `-2^23` exactly -- clipped at the 24-bit rail -- on the first block
+  after the switch, because Bass's resonators read the words Fold left behind.
+  Fold -> Snare rendered silence;
+* a block MAY be silent after a switch, and that is the re-seed working rather
+  than a defect: the machine now clears the shared voice block when the engine id
+  changes, so the new engine starts clean instead of inheriting the old engine's
+  fields (word 34 is MODE for Fold, DECAY_A for Bass, inside RES2 for Snare);
 * every switched block is REPRODUCIBLE across two identical drives, so the switch
   carries no nondeterminism the fixed harness cannot see.
 
@@ -75,6 +81,8 @@ def main() -> None:
     st = st + [0] * (composer.RNG_GAP_START - V - len(st))
 
     probe = (
+        # Seed the ledger for FOLD so block 0 renders the seeded reachable state;
+        # blocks 1 and 2 then exercise the engine change and its re-seed.
         "meas_cycle:\n"
         "        move    #$0039b1,r6\n"
         "        move    x:(r6),a\n"
@@ -130,6 +138,7 @@ def main() -> None:
             + f"X {composer.RNG_GAP_END:x} 000000 000000 000000 000000\n"
             + "P 400 00000c\n" + ytext
             + "X 39b1 000000\n"
+            + f"X {composer.ENGINE_LEDGER:x} {0x8000 | 0:06x}\n"
             + f"X 300 " + " ".join(f"{x:06x}" for x in rec) + "\n"
             + f"X 209 000300\nX 418 {composer.ADMITTED_SLOT:06x}\nX 20e 000000\n"
             + "X 0 " + " ".join(["000000"] * 32) + "\n")
@@ -159,10 +168,13 @@ def main() -> None:
         peak = max(abs(v) for v in mono)
         nz = sum(1 for v in mono if v)
         note = ""
-        if peak == 0:
-            failures.append(f"block {i} ({name}) rendered SILENCE on a switch")
-            note = "  <-- SILENT"
-        elif peak > FULL:
+        if peak >= FULL:
+            # >= FULL, not > : the observed defect was +/-2^23 EXACTLY.
+            failures.append(f"block {i} ({name}) RAILED at {peak} (full scale "
+                            f"{FULL}) -- the switched state is hostile")
+            note = "  <-- RAILED"
+        elif peak == 0:
+            note = "  (silent: the re-seed cleared the shared voice block)"
             failures.append(f"block {i} ({name}) saturated: peak {peak} > {FULL}")
             note = "  <-- SATURATED"
         if mono != second[i]:

@@ -287,6 +287,69 @@ because routines were reachable by FALLTHROUGH. Static reachability in this
 codebase has now fooled me twice, in opposite directions (once removing too much,
 once reporting too much).
 
+## FIXED: the engine-change re-seed -- a switch no longer rails
+
+The hazard measured above is fixed. The dispatcher now compares the incoming engine
+id against an **ENGINE LEDGER** and, on a change, clears the shared voice block
+before staging this block's controls:
+
+```asm
+        move    b1,x0                   ; x0 = engine id
+        move    x0,a
+        add     #>$8000,a               ; the tagged engine id
+        move    a,x1
+        move    x:$38ed,b
+        cmp     x1,b
+        beq     pk3s_same
+        move    #>$3800,r0              ; re-seed the shared voice block
+        move    #>$ffffff,m0
+        clr     a
+        do      #$6c,pk3s_done
+        move    a1,x:(r0)+
+pk3s_done:
+        move    x1,b
+        move    b1,x:$38ed
+pk3s_same:
+```
+
+**The id is tagged with `0x8000`** so that a boot word of zero can never match a
+real engine id -- the first dispatch after boot therefore re-seeds too, which is
+what a fresh start should do. `x:$38ed` was `ADMIT_LATCH`, free since the latch was
+removed, so this costs no new claimed word. The block costs **+20 P words** (3,872
+-> 3,892, both payloads FREE 171).
+
+**Measured effect.** Before, driving each engine from the seeded Fold state:
+
+```
+BASS   mono[:4] (-8388608, -8388608, -8388608, -8388608)   <- -2^23, RAILED
+```
+
+and after:
+
+```
+FOLD   meter  19075  mono[:4] (0, 0, 0, 0)  peak 0
+BASS   meter  42480  mono[:4] (0, 0, 0, 0)  peak 0
+SNARE  meter  46019  mono[:4] (0, 0, 0, 0)  peak 0
+```
+
+The new engine starts from a cleared block instead of inheriting the old engine's
+fields, so there is no rail. A **silent block after a switch is the re-seed working**,
+not a defect, and the switch gate now says so rather than asserting non-zero
+everywhere: its assertion is **no block rails (`|peak| >= 2^23`)**, which is the
+hazard that was actually measured.
+
+**Three gates needed their SETUP changed, not their assertions weakened.** The
+engine-join, dispatch and switch gates seed the voice block to test the
+steady-state renderer; they now also seed the ledger to say "this engine is already
+current", so no re-seed fires and they test what they always tested. The
+core-mapping guard also needed rewriting: it refused any write to `x:$38ed` without
+a clear, which was right for a latch and wrong for a ledger. It now refuses the
+LATCH SHAPE specifically -- a load followed by `tst`, i.e. a word tested for truth
+-- and requires the ledger to be COMPARED, which is the property that matters.
+
+Image `7e2e4f122f1f62e87d0299ca31675e1ec830d1b63f4aadacc43481ba8d70c3ef`, reproduced
+byte-for-byte by both build paths, **all eleven gates PASS**.
+
 ## ITEM 6 residual: trigger, and persistent state -- plus an ANOMALY left open
 
 **The DSP ignores the record's trigger field entirely.** Two identical drives

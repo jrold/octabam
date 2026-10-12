@@ -261,7 +261,14 @@ def main() -> None:
                 + f"X {REC:x} " + " ".join(f"{w:06x}" for w in words) + "\n"
                 + f"X 209 {REC:06x}\n"
                 + f"X 418 {composer.ADMITTED_SLOT:06x}\n"
-                + f"X 20e 000000\n")
+                # The dispatcher now RE-SEEDS the voice block when the engine id
+            # changes (it is shared by three engines with different layouts, and
+            # without the re-seed a switch railed at full scale). This case tests
+            # the STEADY-STATE renderer, so it seeds the ledger to say "this
+            # engine is already current" and no re-seed fires.
+            + f"X {composer.ENGINE_LEDGER:x} "
+            f"{0x8000 | engine:06x}\n"
+            + f"X 20e 000000\n")
         got, _ = drive(composer, binary, labels, "join_dispatch", data,
                        f"e{engine}")
         want = seam_scaled(reference[engine])

@@ -126,6 +126,9 @@ def main() -> None:
             + f"X {RECORD:x} " + " ".join(f"{w:06x}" for w in record) + "\n"
             + f"X 209 {RECORD:06x}\n"
             + f"X 418 {composer.ADMITTED_SLOT if slot is None else slot:06x}\n"
+            # Seed the engine ledger so no re-seed fires: this gate tests the
+            # steady-state renderer and the mode delivery, not the switching.
+            + f"X {composer.ENGINE_LEDGER:x} {0x8000 | engine:06x}\n"
             + "X 20e 000000\n")
         pcm, words = join.drive(composer, binary, labels, "join_dispatch", data, tag)
         if len(words) <= MODE_WORD:
