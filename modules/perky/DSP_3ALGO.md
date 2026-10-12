@@ -681,6 +681,58 @@ Two further routes do nothing at all, confirmed by **pixel-identical screenshots
 (same sha256 as the untouched T1 screen): pressing `yes` on the MACHINE>> field,
 and double-tapping the track key.
 
+### READ FROM THE FIRMWARE, NOT SWEPT: what the two admission sites are
+
+`tools/build/where.py` gives an EMAC-correct disassembly of any stock address,
+which is what should have been used before three rounds of gesture-sweeping.
+
+**`pk_chooser_open` (`0x40078886`)** -- the main chooser's open:
+
+```asm
+40078888: movel %d0,%sp@-
+4007888a: pea 0x460e7386          ; the list DESCRIPTOR
+40078890: lea 0x4007edb0,%a3
+40078896: jsr %a3@                ; the list drawer
+40078898: moveal 0x46c82456,%a2
+4007889e: mvzb 0x100b14cf,%d1     ; PART index
+400788a4: mvzb 0x100b14cc,%d2     ; TRACK index
+400788ac: movel #6322,%d0         ; the part record size
+```
+
+**So the list descriptor is at `0x460e7386` and the selected index at `+8`, i.e.
+`0x460e738e`** -- the address this gate dumps. It read `0xFFFFFFFF` because the
+list had never been built, so a `0xFFFFFFFF` there means "no chooser is open",
+which is a usable test in itself. It also calls `0x4007edb0`, the list drawer that
+`production_sim.c` stubs out as "pk_engine_open's list selection".
+
+**`pk_main_commit` (`0x4007981C`)** -- the admission:
+
+```asm
+40079830: moveal #610376,%a0
+40079836: moveb %a1@(0,%a0:l),%d0
+4007983a: orl %d1,%d0
+4007983c: moveb %d0,%a1@(0,%a0:l)
+40079840: moveb 0x100b145e,%d0
+40079846: orl %d0,%d1
+40079848: moveb %d1,0x100b145e
+4007984e: movel #635698,%d0
+40079856: movel %d1,%a1@(0,%d0:l)
+```
+
+That is the **same admission `pk_engine_select` in `control.c` performs**
+(`0x100b145e`, the `+0x95048`/`+0x9b332` bank bytes). So `pk_main_commit` is the
+end of the route: whatever UI reaches a main-chooser commit reaches the module's
+own admission, and `pk_src_commit`/`pk_src_commit2` are the same thing on the SRC
+SETUP path.
+
+**And the double-tap list that opens is `<< MACHINE:FLEX`, whose rows are the
+*sample slots*** (`R4>RECORDING4`, `R5>RECORDING5`, then bare `3 ---` ... `8 ---`).
+`pk_machine_name` formats "machine row 5 as PERKY", so a PERKY row belongs in a
+list of that shape -- but the rows this track scrolls are sample assignments, and
+no PERKY row appears. The next pass should find what **calls** `0x40078886`
+(search the disassembly for a `jsr` to it) rather than sweeping more keys, and
+read `0x400334D8` (`pk_machine_name`) to learn which list row 5 belongs to.
+
 ### The double-tap OPENS THE LIST -- at a 30 ms gap, not 260 ms
 
 `press("t1")` twice with the default `hold=60, settle=200` does nothing (the
