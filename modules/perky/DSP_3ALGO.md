@@ -748,6 +748,23 @@ Rung 1 tests the seam, rung 2 the admission and state load, rungs 3-5 each rende
 relative branch for another two-word relative branch, so pass-1/pass-2 sizing cannot
 drift.
 
+### AND THE RUNGS ARE REAL -- verified at the instruction level
+
+The identical audio raised the opposite worry: that the rung images were not taking
+effect. Regenerating all five and diffing them settles it:
+
+| rung | admission | engine dispatch |
+|---|---|---|
+| 1 | **`bra pk3v_not_admitted`** -- never admits | unchanged (unreachable) |
+| 2 | normal | **`bra pk3c_silence` inserted before the compares** |
+| 3 | normal | `Fold` kept; **Bass -> silence, Snare -> silence** |
+| 4 | normal | `Fold` and `Bass` kept; **Snare -> silence** |
+| 5 | normal | all three renderers reachable |
+
+**A pairwise `cmp` over all five finds no two identical.** So the ladder is applied
+correctly, and the identical audio was **the audio metric being blind, not the rungs
+failing** -- which is the useful distinction: the packaged images are worth flashing.
+
 ### THE LOCAL INSTRUMENT CANNOT WALK THE LADDER -- so it has to be walked on the unit
 
 Each rung image run through the full panel route, reading track 8's audio (the
