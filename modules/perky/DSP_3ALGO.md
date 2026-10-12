@@ -893,6 +893,67 @@ The standalone per-renderer gates stay green, so per-renderer qualification is
 unaffected: `verify_perky_fold_drum_exec.py` and
 `verify_perky_resonant_dsp_exec.py` both pass unchanged.
 
+## P-memory and the FX sacrifice: reduced, and the overlay question answered
+
+**A real 45-word reduction, verified bit-exact.** The shipping composition
+defined six routines that no shipping path can enter -- `pk_u32_sub`,
+`pk_u32_asr`, `pk_noise_step`, `pknhe_read_r2`, `pksde_read_r2`,
+`pksdo_read_r2`. They come from the standalone recipes, which need them for
+their isolated limb tests, but nothing in the composed machine names them.
+`build_dsp_3algo_source.drop_unreached` removes them, and it refuses at build
+time if any of them is referenced anywhere else -- so it can only ever delete
+code that cannot be called, jumped to, or read as data.
+
+```
+composed P words: 3936 -> 3891   (45 saved)
+both payloads    : used 3891, FREE 172   (was FREE 127)
+```
+
+The equivalence and engine-join gates both still pass, i.e. the removal is
+bit-exact-neutral. (An earlier attempt at this measured as *inert*; that earlier
+implementation was faulty and its "no saving" result is retracted.)
+
+**The overlay question, answered.** The target asks whether, since Fold / Bass /
+Snare are mutually exclusive on a Perky track, any of their code can be overlaid
+or loaded/selected to save P. It cannot, for two independent reasons:
+
+1. **Each payload has exactly ONE Perky-capable track** (T1 on B, T5 on A), and
+   that track may switch algorithm at any time -- including between events in a
+   running sequencer, which the functional target explicitly requires. So all
+   three renderers must be resident *simultaneously*; there is no point at which
+   one of them is provably not needed.
+2. Runtime loading/selection would need a loader, and the target forbids
+   inventing one ("Do not invent unsafe runtime loading").
+
+So the P cost is genuinely the union of the three renderers, and 3,891 words is
+that union after deduplication and unreached-code removal.
+
+**Where the FX sacrifice now stands.** With 3,891 words the contiguous budgets
+are:
+
+| configuration sacrificed | words | shortfall |
+| --- | ---: | ---: |
+| nothing | 0 | 3,891 |
+| SPRING only | 1,063 | 2,828 |
+| PLATE + SPRING + DARK (stock donor) | 2,724 | 1,167 |
+| + COMPRESSOR | 2,904 | 987 |
+| + LO-FI | 3,441 | 450 |
+| + DJ EQ | 3,786 | **105** |
+| + COMB FILTER | 4,063 | fits |
+
+The breakpoint is sharp: **105 more words and SPATIALIZER survives**, dropping
+the sacrifice from seven effects to six. That is a much better target than the
+150 it was, and it is the same order as the code-size work the timing
+investigation needs anyway -- an optimization that removes instructions from a
+hot path removes P words too.
+
+**Why the region must be contiguous, and why PLATE is the right start.** The
+placer harvests contiguous runs, so the budget is a prefix sum from the donor
+region. Starting at PLATE (`P:0x1000`) costs 7 effects for 4,063 words;
+starting one effect lower at CHORUS (`P:0xeb7`) buys 4,392 words but costs 8
+effects, because it also gives up CHORUS. Starting at PLATE is optimal, and the
+seven-effect set is the minimum *given the current footprint*.
+
 ## Measured P-memory finding: the stock FX sacrifice is larger than Spring
 
 This is a measured result from the **composed shipping source**, not an
