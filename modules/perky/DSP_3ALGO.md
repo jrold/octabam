@@ -226,11 +226,21 @@ work from:
 final X[:11] = [255, 0, 44544, 0, 174, 0, 8864, 2050, 8864, 2050, 4, 0]
 ```
 
-The voice does write it. Instrumenting the gate's own probe shows `r6` is
-`0x100` at probe entry (the host's `setRegs` sets `r6 = PBLK`), the probe then
-sets `r6 = 0x3800`, and `pk_simple_base` writes the correct base (`0x8`) to
-`X:0x3834`. So the state is produced where the probe points `r6`; reading it
-back is the remaining step.
+The remaining item is exactly this: **the persistent state is not landing at
+`X:0x3800`.**
+
+* `r6` is `0x100` at probe entry (the host's `setRegs` sets `r6 = PBLK`,
+  `r5 = STATE = 0x200`), the probe then sets `r6 = 0x3800`, and
+  `pk_simple_base` writes the correct base (`0x8`) to `X:0x3834` -- confirmed
+  by instrumenting the gate's own probe.
+* Yet the host's `-state` dump at base `0x3800` returns all zeros, and the
+  fixture's BEFORE state is not zeros.
+
+So the voice's writes are going somewhere the dump is not reading, and the
+next step is to find which address they actually land at -- most likely the
+gate's `STATE` base and the address the probe points `r6` at are not the same
+address, which the probe's own instrumentation above shows is worth checking
+directly rather than assuming.
 
 ### What this took, and the lesson
 
