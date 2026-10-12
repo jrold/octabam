@@ -209,6 +209,63 @@ The standalone per-renderer gates stay green, so per-renderer qualification is
 unaffected: `verify_perky_fold_drum_exec.py` and
 `verify_perky_resonant_dsp_exec.py` both pass unchanged.
 
+## Measured P-memory finding: the stock FX sacrifice is larger than Spring
+
+This is a measured result from the **composed shipping source**, not an
+estimate from standalone sizes. The composed source links at **3,936 P words**
+for each payload, and each payload has its own stock code layout, so the budget
+is per payload.
+
+Stock effect spans, read from the pristine 1.40C MAIN OS (`tools/remix/stock.py`,
+which matches the module records by a size fingerprint, so these are image
+values rather than hand-copied ones):
+
+| Payload A | | Payload B | |
+| --- | ---: | --- | ---: |
+| PLATE REV `P:$1000` | 594 | PLATE REV `P:$0dc0` | 594 |
+| SPRING REV `P:$1252` | 1,063 | SPRING REV `P:$1012` | 1,063 |
+| DARK REV `P:$1679` | 1,067 | DARK REV `P:$1439` | 1,067 |
+| COMPRESSOR `P:$1aa4` | 180 | COMPRESSOR `P:$1864` | 180 |
+| LO-FI `P:$1b58` | 537 | LO-FI `P:$1918` | 537 |
+| DJ EQ `P:$1d71` | 345 | DJ EQ `P:$1b31` | 345 |
+| COMB FILTER `P:$1eca` | 277 | COMB FILTER `P:$1c8a` | 277 |
+
+Because the placer only harvests **contiguous** runs, the achievable budgets
+are prefix sums from that table. Against the 3,936-word requirement:
+
+| Configuration sacrificed | A words | B words | Result |
+| --- | ---: | ---: | --- |
+| nothing | 0 | 0 | short 3,936 |
+| SPRING REV only | 1,063 | 1,063 | short 2,873 |
+| PLATE + SPRING + DARK (the stock donor region) | 2,724 | 2,724 | short 1,212 |
+| + COMPRESSOR | 2,904 | 2,904 | short 1,032 |
+| + LO-FI | 3,441 | 3,441 | short 495 |
+| + DJ EQ | 3,786 | 3,786 | short **150** |
+| + COMB FILTER | **4,063** | **4,063** | **fits** |
+
+**So the second preferred configuration -- Spring Reverb only -- is not
+sufficient, and the shortfall has to be documented rather than assumed away.**
+The first configuration that fits is the three reverbs *plus COMPRESSOR, LO-FI,
+DJ EQ and COMB FILTER*: seven of the thirteen stock effects. LO-FI and DJ EQ
+cannot be separated from that set because they are interior members of the run
+(LO-FI `$1b58..$1d71`, DJ EQ `$1d71..$1eca`).
+
+That leaves two honest ways forward, and the choice should be made on the
+numbers:
+
+1. **Shrink the composed image by 150 words** (3,936 -> 3,786). Then the
+   sacrifice stops at DJ EQ and COMB FILTER and SPATIALIZER survives. The
+   easiest 150 words are in the shared helper block, not the renderers: the
+   standalone `pk_math_probe` dispatcher is still emitted, for instance.
+2. Reclaim a **different seven effects** -- COMPRESSOR, LO-FI, DJ EQ and COMB
+   FILTER total 1,339 words where SPATIALIZER+EQUALIZER+PHASER+FLANGER+CHORUS
+   total 1,368 -- if a differently-composed code layout ever makes its budget
+   smaller. Both are inside the 3,936 figure rather than beside it.
+
+The measurement is reproducible from the repository: `tools/remix/stock.py`
+gives the spans and `tools/perky/build_dsp_3algo_source.py --measure` gives the
+requirement. Nothing here is inferred from a standalone sum.
+
 ## Reproducing
 
 ```bash
