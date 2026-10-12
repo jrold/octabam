@@ -748,6 +748,54 @@ Rung 1 tests the seam, rung 2 the admission and state load, rungs 3-5 each rende
 relative branch for another two-word relative branch, so pass-1/pass-2 sizing cannot
 drift.
 
+### THE LOCAL INSTRUMENT CANNOT WALK THE LADDER -- so it has to be walked on the unit
+
+Each rung image run through the full panel route, reading track 8's audio (the
+metric that DID distinguish "Perky assigned" from "not"):
+
+| image | TX0 on track 8 | fault |
+|---|---|---|
+| rung 5 (full) | `371883 371885 15885 15882` | no |
+| rung 4 | **identical** | no |
+| rung 3 | **identical** | no |
+| rung 2 | **identical** | no |
+| **rung 1 (NEVER ADMITS)** | **identical** | no |
+| plain, no Perky assignment | `264507 264509 15885 15882` | no |
+
+**The panel route is genuinely executing** -- assigning Perky changes the audio
+against the plain run (`371883` vs `264507`), so the route and the assignment reach
+the DSP. **But rung 1 cannot run the Perky renderer at all, and it produces
+byte-identical audio to the full machine.** Either TX0 does not reflect the renderer,
+or the rung images are not taking effect; either way **the port cannot discriminate
+these rungs**, which is consistent with everything else found here about a lock-step
+machine and this class of fault.
+
+**So the ladder must be walked on the unit, and that is the plan it was built for.**
+Five flashes, in this order, each one unambiguous:
+
+| flash | rung | what it tests | if the transport stalls |
+|---|---|---|---|
+| 1 | **LADDER1** | the seam only: the hook is present, never admits, the stock source renderer runs | the **hook mechanism itself** is the fault |
+| 2 | **LADDER2** | + admission, record read, state load, silence -- no per-sample work | the **admission or state load** is the fault |
+| 3 | **LADDER3** | + the **Fold** renderer | the **Fold renderer** is the fault |
+| 4 | **LADDER4** | + **Bass** | the **Bass renderer** is the fault |
+| 5 | LADDER5 | + **Snare** -- the shipping machine | (already known to fail) |
+
+**Rung 1 is the one to flash first**, and it is the safest: it exercises the seam
+with no renderer, so if it runs the hook mechanism is exonerated in one flash and the
+next rung is already the next question. If rung 1 *stalls*, nothing downstream
+matters and the whole DSP-side machine can be left alone.
+
+Artifacts (all checksum-verified, `.syx` beside each):
+
+```
+LADDER1  eb543833681101e4309d4b3667a33d49   452,356 B
+LADDER2  e052366e63c6a2f97c06e4a68db84c42   452,356 B
+LADDER3  3e4c7ad6651bcab23db68cf436259a95   452,360 B
+LADDER4  d254c06e6ed765128d39ab89278344ea   452,360 B
+LADDER5  581ed2ce6957bd8245c8a5c465963886   452,356 B   (also the shipping build)
+```
+
 ### Two traps found in building it, both worth recording
 
 1. **`PK_LADDER` must be set when REGENERATING, not when building.** The build reads
