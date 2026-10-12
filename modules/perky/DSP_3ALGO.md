@@ -748,6 +748,44 @@ Rung 1 tests the seam, rung 2 the admission and state load, rungs 3-5 each rende
 relative branch for another two-word relative branch, so pass-1/pass-2 sizing cannot
 drift.
 
+### The ladder has a gate, and the gate has teeth -- proved, not assumed
+
+`tools/verify/verify_perky_3algo_ladder.py` **regenerates all five rungs and reads
+the instructions back**, rather than trusting the module that emitted them. It
+asserts, per rung:
+
+* **rung 1** forces the not-admitted branch exactly once;
+* **rung 2** silences the renderers **before** the first engine compare -- checked by
+  instruction POSITION, because a silent renderer after the compare would leave one
+  reachable and the rung would silently measure the renderer instead of the
+  admission;
+* **rung 3** keeps Fold and has lost both the Bass and Snare entries;
+* **rung 4** keeps Fold and Bass and has lost Snare;
+* **rung 5** carries no ladder substitution at all and still has all three entries --
+  so the shipping source really is the default;
+* **all five sources are pairwise distinct**, because a rung that reproduces another
+  is a step that measures nothing.
+
+It needs no project, so it can run in the suite. It restores
+`machine_3algo.asm` in a `finally`, so the tree is never left on a rung -- a tree
+left on rung 1 builds a machine that never makes a sound and reads as a fresh
+hardware bug.
+
+**Teeth proved by breaking it:** dropping rung 1's forcing branch makes it exit with
+*"rung 1 does not force the not-admitted path (0 of the forcing branch, expected 1).
+The seam rung would then run the machine and the bisection would start one subsystem
+too deep."*
+
+**Two of my own process errors, recorded because they are the same species as the
+rest of this session:**
+
+1. the first teeth test was **void** -- the patch string did not match, so rung 2 was
+   never broken and the gate correctly passed an unbroken ladder. It was reported as
+   a result for one step before being checked;
+2. `echo $?` after `... | tail -2` reads **tail's** exit code, not the gate's --
+   AGENTS.md names this exactly ("`make ... | grep | tail` reports tail's exit code,
+   not make's"). The failure text was the evidence, not the exit code.
+
 ### AND THE RUNGS ARE REAL -- verified at the instruction level
 
 The identical audio raised the opposite worry: that the rung images were not taking
