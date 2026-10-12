@@ -733,6 +733,42 @@ cycle clock: on, x1.00 -- one sample is 6032 ColdFire cycles at 266 MHz; the
 --cf-cycles-clock F     the ColdFire can now be late
 ```
 
+### Reproduced twice: output stops the instant the clock engages
+
+Two independent runs with the verified flag set (`--frame --sequencer
+--cf-frame-deadline 1.7 --cf-cycles-clock 1.0`), one unbounded and one bounded at
+`--frames 60`, both stop the log at **exactly the same place**:
+
+```
+89:cycle clock: on, x1.00 -- one sample is 6032 ColdFire cycles at 266 MHz; the
+                  ColdFire can now be late
+   (nothing further)
+```
+
+No deadline-miss line, no further frames, no further emulated time, and the process
+does not exit. The bound (`--frames 60`) made no difference, which is itself
+informative: **the machine is not reaching frame 60, and it is not reaching the
+live script's first key either** -- the log stops before any panel activity.
+
+**So the run stops at the moment the audio clock starts being driven by real
+ColdFire cycles.** That is the closest this instrument has come to the unit's
+behaviour, and it is still not a verdict: "stopped producing output" is not the same
+claim as "the frame handler missed its deadline", and the line that would say so
+has not been seen.
+
+**What would settle it**, in order of directness:
+
+1. run under a wall-clock cap and read the port's exit path -- if `cfDeadlineHit`
+   is set the port reports `STALL` and exits 1 (`main.cpp:2812`, `:3347`);
+2. `--cf-frame-hist` (the flag exists) to see the per-frame lateness distribution
+   rather than only the final verdict;
+3. `OT_DEADLINE_TRACE=1`, which the register says prints the per-frame guard/mask
+   state -- the mechanism that decides the halt.
+
+**None of these has been tried**, and each is one invocation. The blocker on my side
+is wall time: every attempt at this configuration runs until its timeout, so a
+sweep costs hours rather than minutes.
+
 ### And with those on, the run does NOT complete
 
 That configuration ran to a **2400-second timeout**, and the log **stops immediately
