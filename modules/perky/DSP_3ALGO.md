@@ -1092,6 +1092,37 @@ It is also the answer to a question worth asking on the unit: on real hardware
 `X:0x3800..0x386b` holds whatever ran before, and this says that does not reach
 the output on silence.
 
+### The missing test, second attempt: a line-by-line comparison, and what it ruled out
+
+I applied the lesson from the first attempt -- compare against the WORKING
+invocation rather than iterate on my own -- and rebuilt the gate to **reuse
+`verify_perky_3algo_engine_join`'s assembler and host driver** instead of
+hand-rolling the host command. That removed the duplication that caused the first
+failure.
+
+**It still fails, and the comparison narrowed it usefully.** New datum: the
+failure persists with the probe reproduced EXACTLY as the working gate's --
+including the `move #>$0,r0` line I had dropped -- and the faulting PC advances by
+exactly two words when that line is added (`pc=1c1e` -> `pc=1c20`). So the probe
+is executing correctly, **the runaway is in the machine's own post-render path**,
+not in the probe and not in the data.
+
+That points at `jmp @CONT@`. The composed machine hands control back by jumping
+to the stock continuation (`$000426`) rather than returning, and 0x426 is
+uninitialised in a probe-only binary, so execution walks off. The join gate does
+exactly the same thing and works -- so the remaining difference is in which PATH
+each gate's records take through the machine, and I did not isolate it.
+
+**Ruled out across both attempts:** the record shape (`pk_render_record` prints
+word 19 = engine id and word 16 = `p[8]`); the probe's trailing register resets;
+`check=True` on the host call; hand-rolled versus shared data lines; and the
+probe itself, now byte-for-byte the working one.
+
+**Removed again rather than left broken.** Two attempts have now failed on a
+harness problem and the record says where to resume: instrument what happens
+between the machine's `jmp @CONT@` and the host's "no return", in the working gate
+and this one, side by side.
+
 ### The missing test: identified and designed, NOT landed
 
 The coverage gap named above is the dispatcher-driven test. I wrote it
