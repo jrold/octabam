@@ -388,6 +388,49 @@ This branch touches 22 files -- `tools/verify`, `modules/perky`, `tools/perky`,
 and **none** of the assembler, `build_bus.py` or SPECTRUM. So the failure is in
 the tree, not here, and it blocks `verify-shared` for every remix.
 
+### The last open correctness item: the composed RESONANT state comparison
+
+The composed Fold renderer matches its model in PCM **and** in every state word
+(640 blocks, 15/15 ARM). The composed Resonant renderers do not, and this is what
+the composed execution gate still reports. Characterised, on the captured ARM
+fixtures, dumping the full block after the final 16-sample call:
+
+```
+bass  corner 0: PCM exact=True   state diffs=5   14: 17741 vs 59070, 84: 57112 vs 3754, 85: 65535 vs 0
+bass  corner 1: PCM exact=False  state diffs=5   same words
+bass  corner 2: PCM exact=False  state diffs=5   same words
+snare corner 0: PCM exact=True   state diffs=5   14: 17741 vs 59070, 53: 60588 vs 2391, 54: 65535 vs 0
+snare corner 1: PCM exact=False  state diffs=4   same words
+snare corner 2: PCM exact=False  state diffs=4   same words
+```
+
+Two things fall out of that table, and they are different problems:
+
+1. **`word 14` is wrong the SAME way every time** -- 17741 in all six runs, both
+   families, all corners, against 59070 expected. A value that is identically
+   wrong across unrelated inputs is not a computation going astray; it is a field
+   the composed renderer does not maintain (or reads from a different source)
+   while the reference model does.
+2. **The 32-bit pair carries `0xFFFF` in its low word where the model has 0**
+   (`bass 84/85`, `snare 53/54`). For bass those offsets are `NOISE_RES + 10..13`
+   = the noise resonator's `RES_POSITION` and `RES_VELOCITY` (two 32-bit fields
+   each). An `0xFFFF` low half against a model zero is the signature of a
+   sign-extension or a split-write, not of a wrong resonator position.
+
+**And note what is NOT wrong.** For corner 0 the PCM is **bit-exact** in both
+families. So the audio path is right, the block layout is right (only five of
+88 words differ, so this is not an offset mismatch), and the divergence is
+confined to state the reference model maintains and the DSP either derives
+differently or does not keep.
+
+That reframes the item honestly: the gate compares the DSP's ENTIRE internal
+state against the reference model word for word, which Fold happens to satisfy
+exactly and the resonant implementation does not. Whether the resonant words must
+match, or whether matching PCM is the right contract for an independent
+implementation, is the question this item turns on -- and it is NOT settled here.
+What is established is the exact set of divergent words, that they are the same
+five everywhere, and that corner 0's audio is already bit-exact.
+
 ### FX sacrifice: WHY it cannot be reduced (item 8, answered)
 
 Two independent constraints, each established rather than assumed.
