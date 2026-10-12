@@ -681,6 +681,42 @@ Two further routes do nothing at all, confirmed by **pixel-identical screenshots
 (same sha256 as the untouched T1 screen): pressing `yes` on the MACHINE>> field,
 and double-tapping the track key.
 
+### `pk_machine_name`: PERKY is the OUT-OF-RANGE index 5 of a six-name list
+
+`0x400334D8`, the function the manifest annotates "format machine row 5 as PERKY":
+
+```asm
+400334d8: movel %d2,%sp@-
+400334da: movel %sp@(8),%d1
+400334de: movel #0x400B94F6,%d0     ; the DEFAULT string
+400334e4: moveq #4,%d2
+400334e6: cmpl  %d1,%d2
+400334e8: bcss  0x400334f4          ; index > 4 -> return the DEFAULT
+400334ea: lea   0x400A78C8,%a0
+400334f0: movel %a0@(0,%d1:l:4),%d0 ; index 0..4 -> table entry
+400334f4: movel %sp@+,%d2
+400334f6: rts
+```
+
+**The stock table at `0x400A78C8` has five entries (0..4) and anything else gets
+the default string.** So "row 5 as PERKY" is not a sixth stock entry: it is the
+module returning "PERKY" for the **out-of-range index 5**. That matches
+`pk_src_names`, which "point[s] SRC SETUP at **six** machine names" -- indices 0-5,
+of which 5 is the custom one.
+
+**This also says which list PERKY belongs to.** The double-tap list I opened is
+`<< MACHINE:FLEX` and scrolls through **sample slots** (`R4>RECORDING4`,
+`R5>RECORDING5`, then bare `3 ---` ... `8 ---`), so its indices run well past 5 and
+index 5 is a sample slot, not PERKY. The six-name list `pk_machine_name` formats is
+therefore a **different** list from the double-tap's, and it is the one SRC SETUP
+draws.
+
+**Two callers were searched for and not found**: no `jsr` and no absolute 4-byte
+reference to `0x40078886` or `0x4007981C` exists in `out/raw/section_3_MAIN_OS.bin`,
+so those two are reached indirectly (a jump table, or the detour is entered by
+fall-through rather than a call). Searching for a direct call will not find them;
+the next pass should read the table the chooser indexes instead.
+
 ### READ FROM THE FIRMWARE, NOT SWEPT: what the two admission sites are
 
 `tools/build/where.py` gives an EMAC-correct disassembly of any stock address,
