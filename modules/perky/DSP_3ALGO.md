@@ -573,6 +573,21 @@ That is a much smaller piece of work than this record previously implied, and it
 reuses the transport, chooser, parameter paging and p-lock plumbing that the
 target explicitly points at.
 
+**The T1/T5 mapping falls out of the existing admission rule, and it is
+already correct.** The composed DSP source admits `ADMITTED_SLOT = 0x00` of the
+per-core track slot at `x:$418`, i.e. the FIRST Perky track on each core. The
+repository's own rule is *"one PERKY track per core, lowest selected wins"*
+(the canary manifest states it verbatim). The lowest track on payload B is
+**T1** and the lowest on payload A is **T5** -- which is exactly this target's
+mapping, and it is the repository's measured payload↔core assignment (A serves
+tracks 5-8, B serves 1-4).
+
+So no new admission logic is needed either: selecting the three engine ids and
+letting the existing lowest-wins rule operate puts Fold/Bass/Snare on T1 and T5
+and leaves T2-T4 and T6-T8 ordinary. What remains is to make that restriction
+explicit in this branch's own build front end and prove it with the port gates
+that `build_multi_machine_canary.build_image` already runs.
+
 ### The equivalence gate
 
 `tools/verify/verify_perky_3algo_equivalence.py` is the gate that now carries
