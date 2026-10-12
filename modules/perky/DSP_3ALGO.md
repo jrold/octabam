@@ -367,6 +367,45 @@ the RNG comparison**, and stops at case 29 on a PCM-only difference -- see below
 **had never executed**, because the X comparison above it failed first. It now reads
 `composed.RNG_BASE - STATE`, the bytes it actually seeds.
 
+## ITEM 8, HALF BUILT: the ARM->compact bridge is proven
+
+Item 8 asks that panel changes reach the renderer. The authentic machine updates a
+Resonant voice on the CPU per event -- the ARM routines at 0x0802682C / 0x08026030,
+carried in C by `cf_perky4.c` -- writing TUNE, DECAY, ENV and MIX into an
+ARM-shaped object, while the DSP port renders from a COMPACT layout. Until now the
+only thing that crossed between them was a **fixed template computed at a neutral
+panel setting**, which is why the instruments sound but ignore their knobs.
+
+**`modules/perky/resonant_compact_cf.c` is the bridge, and it is proved.**
+`tools/verify/verify_perky_3algo_compact_cf.py` compares it word for word against
+the models' **own `from_arm`** over **800 states** -- 400 per family, randomized
+TUNE/DECAY/ENV/MIX targets across 0..4095, randomized velocity and note, and a
+70/30 split of triggered and untriggered objects. **Bit-exact.**
+
+Choosing the renderer's own reader as the oracle is the point: a field the port
+drops and a field the renderer needs cannot cancel out, because there is only one
+description of the layout.
+
+**The comparison earned its keep immediately.** The first hand-written port had two
+errors, and both compiled clean:
+* the snare's four decay blocks were transcribed at the wrong offsets (0x188 /
+  0x19C / 0x1CC instead of **0x18C / 0x1A4 / 0x1BC**);
+* the two mix coefficients were **missing entirely** -- `MIX_FIRST`/`MIX_SECOND`,
+  object 0x164/0x168 to compact 97/99.
+
+**A REMOVED DEPENDENCY, MEASURED.** `common_update` fills the ARM object's 0x34
+from the 4096-entry pitch table, which would mean carrying 8 KiB to the ColdFire.
+`from_arm` never reads 0x34, and **zeroing the whole pitch table leaves the compact
+state bit-identical** (measured, both families). The only table the update still
+needs is the 12-entry chromatic one, so the 8 KiB table stays where it is.
+
+**NOT WIRED IN YET, and the artifact is byte-identical because of it.** The card
+image is unchanged at `e3a6f297...`: the port is a proven component, not yet a
+producer. Wiring it needs `res_update_bass`/`res_update_snare` exposed from
+`cf_perky4.c` (they are `static` there), a per-family ARM object in `pk_render`, and
+the conversion call -- then item 8's gate, that a knob change alters the audio
+through the production path.
+
 ## REPEATED TRIGGERS: item 6, and a defect in the gate that hid it
 
 A drum voice must **restart on every hit** and **must not restart between them**:
