@@ -733,6 +733,51 @@ cycle clock: on, x1.00 -- one sample is 6032 ColdFire cycles at 266 MHz; the
 --cf-cycles-clock F     the ColdFire can now be late
 ```
 
+### The trace itself is not credible: frame 38137 every time
+
+The join was attempted -- the round-23 Perky live-script route plus
+`--frame --sequencer --cf-frame-deadline 1.7 --cf-cycles-clock 1.0
+OT_DEADLINE_TRACE=1` -- and it returned
+
+```
+rc = TIMEOUT   acks=1   late_or_dl_nonzero=0
+dltrace ack frame 38137 guard=0 late=0 mask=0 dl=0
+```
+
+**with no TX line at all**, i.e. the transport never started and the script never
+completed.
+
+**`frame 38137` is now the third identical reading across three different scripts**
+-- a trivial two-key script, the plain run, and the full 18-key Perky route. A
+counter that lands on the same value for a 2-key script and an 18-key script is not
+measuring frames. **So the `late=0 dl=0` readings are not evidence of anything**, and
+the previous section's "the frame never misses" is withdrawn as a measurement -- what
+it actually shows is that the trace prints a constant.
+
+That is the ninth wrong result of this session and the same species as the other
+eight: a specific, credible number accepted because it agreed with what I expected.
+`late=0` agreeing with "the frame fits" is exactly why it went unchallenged for two
+rounds.
+
+### Where this leaves the objective, stated plainly
+
+**Established, with evidence in the tree:**
+
+* the **UI route** to assign PERKY -- screen-derived, and it asserts `PK\x01`;
+* the **six variants** through the real panel, with the correct engine (0/10/11) on
+  both cores, live trig counts, non-zero audio, and the transport advancing;
+* the **flag set** that engages the timing instruments, verified in the port's log
+  (`--frame` yes, `--frame-timer` no, `--sequencer` for the cycle clock).
+
+**Not established:** the unit's hang. Every local attempt either does not reproduce
+it or produces a reading that does not survive its own control.
+
+**The one instrument that can answer it is built and waiting:
+`out/OCTATRACK_OCTABAM79X_HWTEST.bin`** -- PERKY 3ALGO + CF METER, wrapping vector
+`0x41`, the frame handler's epilogue on every exit path, and both HC poll loops.
+A lock-step port cannot be late; a unit with the meter on it reports its real frame
+period directly.
+
 ### Perky vs plain: the deadline is IDENTICAL, with one caveat I have to state
 
 Both runs, timing instruments verified engaged, `OT_DEADLINE_TRACE=1`:
