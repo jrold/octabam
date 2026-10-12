@@ -1,24 +1,30 @@
 #!/usr/bin/env python3
-"""Reproduce the physical failure by DRIVING THE REAL PANEL, and prove it did.
+"""The user's physical workflow, reproduced through the REAL PANEL, six variants.
 
-WHY THIS IS BUILT ON MenuPort. Two earlier versions of this gate drove the panel
-with raw live key codes through `--live-script` and both were worthless for the
-same reason: the live Part ended up with NO PK/1 signature, so the run said
-nothing about the Perky machine while looking exactly like a test of it.
+WHY IT IS BUILT THIS WAY. Every other gate reaches the Perky renderer by
+prewriting machine state into a project, poking RAM, or calling `pk_render`
+directly -- all three bypass the firmware transitions the user performs. This one
+drives the stock UI with `tools/verify/stems_panel.MenuPort` (named keys, screen
+capture, `peek`, and emulated time that only advances inside `run(ms)`, so the run
+is deterministic) and REFUSES to report a verdict unless the live Part actually
+carries the PK/1 signature.
 
-`tools/verify/stems_panel.MenuPort` fixes the three things that made that
-possible:
+THE ROUTE, every step confirmed by a rendered screen:
 
-  * NAMED keys (`press("t1")`, `chord("func", "pg_playback")`), so a sequence is
-    readable and its key names come from `tools/panel/key_map.json`;
-  * `peek`/`long`, so the LIVE Part and the list cursor are read back as numbers
-    rather than assumed -- and the gate REFUSES to continue without PK\\x01;
-  * `png()`, so the screen can be looked at when a key does not do what the
-    author thought.
+    t1                                select the track
+    t1 double-tap, 30 ms gap          -> "<< MACHINE:FLEX", the FLEX pool
+    LEFT                              -> the machine chooser
+    down x5                           -> STATIC/FLEX/THRU/NEIGHBOR/PICKUP/PERKY
+    YES                               COMMIT -- the track is now SIGNED
+    NO                                back to Tracks
+    t1 double-tap, 30 ms gap          -> "<< MACHINE:PERKY", the ENGINE POOL
+    down/up                           -> 001 FOLD DRUM / 010 RES BASS / 011 RES SNARE
+    YES                               select the algorithm
+    REC; trig1/5/9/13; PLAY           program and play
 
-Emulated time advances only inside `run(ms)`, in exact steps, so the run is
-deterministic -- which also removes the one-run-in-three flakiness that made the
-previous attempt unreportable.
+The same double-tap opens TWO different lists depending on whether the track is
+signed -- that is why the gesture looked useless until the signing order was
+right.
 """
 from __future__ import annotations
 
@@ -39,27 +45,31 @@ PY = ROOT / ".venv/bin/python3"
 if not PY.is_file():
     PY = pathlib.Path(sys.executable)
 
-PERKY_ROW = 5                      # read from modules/perky/control.c
-ROW_SELECTOR = 0x460E738E          # what control.c compares against PERKY_ROW
 LIVE_PART = 0x40170F60
-# the live Part's T1 machine byte, its PK/1 mark, and the block the admission
-# path scans for the record words
-PART_T1_MACHINE = LIVE_PART + 0x22
-PART_T1_MARK = LIVE_PART + 60
+T1_MACHINE = LIVE_PART + 0x22
+T1_MARK = LIVE_PART + 60
+TRANSPORT = 0x800065B8
+RECBASE = 0x80001C90
+PING_STRIDE = 0xA80
+T_STRIDE = 336
+
+# the engine pool's rows, in the order the screen shows them
+ALGOS = {"fold": (0, "FOLD DRUM"), "bass": (1, "RES BASS"), "snare": (2, "RES SNARE")}
+ENGINE_OF = {"fold": 0, "bass": 10, "snare": 11}
+TRACK_KEY = {1: "t1", 5: "t5"}
 
 
 def stage_card(project: pathlib.Path, work: pathlib.Path) -> pathlib.Path:
-    """T1 as plain stock FLEX, NO Perky signature, NO trigs: everything under
-    test is entered through the panel."""
+    """The target track starts as stock FLEX: no Perky signature, no trigs."""
     fixture = prepare(project, work / "project")
     for bank in fixture.glob("bank*.work"):
         def mutate(data: bytearray) -> None:
             for part in range(otp.NPARTS_ALL):
                 base = otp.PART_BASE + part * otp.PART_STRIDE
                 live = base + 9
-                data[live + 0x22] = 1                       # stock FLEX on T1
+                data[live + 0x22] = 1
                 data[base + otp.SLOT_OFF + otp.SLOT_KIND["flex"]] = 0
-                data[live + 60:live + 63] = bytes(3)        # no PK/1 mark
+                data[live + 60:live + 63] = bytes(3)
             for step in range(64):
                 data[otp.trac_off(0, 0) + step] = 0
         otp._bank_write(fixture, int(bank.stem[4:]), mutate, guard=False)
@@ -71,13 +81,34 @@ def stage_card(project: pathlib.Path, work: pathlib.Path) -> pathlib.Path:
     return card
 
 
+def record(p: MenuPort, ping: int = 0, track: int = 0) -> tuple[bool, int]:
+    """`track` is 0-BASED. T5 is index 4, and it lives on payload A while T1 lives
+    on payload B (AGENTS.md: the track-to-core mapping is inverted), so reading
+    index 0 for a T5 run finds a different track's buffer -- which reads as "the
+    record header was absent", i.e. as a dead track."""
+    """(published, record[10]).
+
+    PUBLISHED IS NOT `record[10] != 0`. FOLD DRUM's engine id is 0, so its record
+    word 10 is `(n << 16) | (count << 8) | 0` -- a perfectly good record whose low
+    byte is zero. An earlier version of this gate tested `if engine` and reported
+    "no record was published" for every Fold run. The record's own header words are
+    the honest test: word 0 is 'PK' and word 1 is 'Y1'|trig.
+    """
+    a = RECBASE + ping * PING_STRIDE + T_STRIDE * track
+    r = p.peek(a, 44)
+    published = int.from_bytes(r[0:4], "big") == 0x504B0000 and \
+        (int.from_bytes(r[4:8], "big") & 0xFFFF0000) == 0x59310000
+    return published, int.from_bytes(r[40:44], "big")      # record[10], byte 40
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--image", type=pathlib.Path, required=True)
     ap.add_argument("--project", type=pathlib.Path, required=True)
-    ap.add_argument("--work", type=pathlib.Path,
-                    default=ROOT / "out/perky/3algo-ui")
-    ap.add_argument("--open-tries", type=int, default=3)
+    ap.add_argument("--track", type=int, default=1, choices=(1, 5))
+    ap.add_argument("--algorithm", default="bass", choices=tuple(ALGOS))
+    ap.add_argument("--deadline", default="1.7")
+    ap.add_argument("--work", type=pathlib.Path, default=ROOT / "out/perky/3algo-ui")
     args = ap.parse_args()
 
     image = args.image.expanduser().resolve()
@@ -88,95 +119,97 @@ def main() -> None:
     if work.exists():
         shutil.rmtree(work)
     work.mkdir(parents=True)
-    card = stage_card(project, work)
     shots = work / "shots"
+    card = stage_card(project, work)
+    tk = TRACK_KEY[args.track]
+    row, label = ALGOS[args.algorithm]
+    want_engine = ENGINE_OF[args.algorithm]
 
-    # STEP 10: the unit's own frame deadline. MenuPort's argv has no
-    # --cf-frame-deadline, so it rides `extra`; without it the port measures
-    # nothing (the frame interrupt is what settle() turns on, and the deadline
-    # model needs it).
-    extra = ("--cf-frame-deadline", "1.7")
     with MenuPort(image, card, "OCTABAM", "RIG", mkii=True,
-                  log_path=work / "port.log", extra=extra) as p:
+                  log_path=work / "port.log",
+                  extra=("--cf-frame-deadline", str(args.deadline))) as p:
         p.settle()
-        p.png(shots / "00-main.png")
-        p.press("t1")
-        p.run(200)
-        p.png(shots / "01-t1.png")
-        baseline = p.screen()
+        p.press(tk)
+        p.run(250)
 
-        # ---- 3/4. ASSIGN PERKY THROUGH THE PANEL. THE ROUTE, screen-derived:
-        #
-        #   t1 (already selected)
-        #   -> track DOUBLE-TAP, 30 ms gap   .. the FLEX engine pool
-        #   -> LEFT                          .. the machine chooser
-        #   -> down x5                       .. STATIC/FLEX/THRU/NEIGHBOR/PICKUP/PERKY
-        #   -> YES                           .. commit (pk_main_commit admits it)
-        #   -> NO                            .. back to Tracks
-        #
-        # Every element was established by reading a screen or the firmware, not by
-        # inheriting a recipe: the 30 ms gap because the default 260 ms leaves the
-        # display pixel-identical; LEFT because the build reports
-        # `ref 0x400ce10e -> pkcontrol:pk_engine_left  LEFT from PERKY engine pool
-        # to machine chooser`; and row 5 because `pk_machine_name` returns PERKY for
-        # the index that falls off the five-entry stock table, and the build pokes
-        # 0x40079248 from 5 to 6 with the note "machine chooser has six rows, PERKY
-        # last".
-        p.press("t1", hold=40, settle=30)      # double-tap, 30 ms
-        p.press("t1", hold=40, settle=400)
+        # --- 3/4/5. sign the track with PERKY
+        p.press(tk, hold=40, settle=30)
+        p.press(tk, hold=40, settle=400)
         p.run(300)
-        p.press("left")                        # FLEX pool -> machine chooser
+        p.press("left")
         p.run(300)
-        p.png(shots / "02-chooser.png")
-        for _ in range(5):                     # down to row 5 = PERKY
+        p.png(shots / "01-chooser.png")
+        for _ in range(5):
             p.press("down")
             p.run(120)
-        p.png(shots / "03-on-perky.png")
-        p.press("yes")                         # commit
+        p.press("yes")
         p.run(600)
-        p.png(shots / "04-committed.png")
-        p.press("no")                          # back to Tracks
+        p.press("no")
         p.run(300)
 
-        typ = p.peek(PART_T1_MACHINE, 1)[0]
-        mark = bytes(p.peek(PART_T1_MARK, 3))
-        print(f"  after commit: T1 type={typ} (1=FLEX), PK sig={mark!r}")
         if b"PK\x01" not in p.peek(LIVE_PART, 4096):
-            print("  !! NO PK/1 SIGNATURE IN THE LIVE PART -- PERKY WAS NEVER "
-                  "ASSIGNED. The run says nothing about the Perky machine.")
-            print(f"     screens in {shots}")
+            print("  !! NO PK/1 SIGNATURE -- PERKY WAS NEVER ASSIGNED; this run "
+                  "says nothing about the Perky machine")
             raise SystemExit(2)
-        print("  ASSIGNED: PERKY is on T1 with its signature.")
+        print(f"  T{args.track} signed: sig={bytes(p.peek(T1_MARK, 3))!r}")
 
-        # ---- TRIGS THROUGH THE PANEL, THEN PLAY
+        # --- 7/8/9. choose the algorithm in the engine pool
+        p.press(tk, hold=40, settle=30)
+        p.press(tk, hold=40, settle=500)
+        p.png(shots / "02-pool.png")
+        for _ in range(3):
+            p.press("up")                        # the cursor starts low
+            p.run(120)
+        for _ in range(row):
+            p.press("down")
+            p.run(120)
+        p.png(shots / f"03-on-{args.algorithm}.png")
+        p.press("yes")
+        p.run(600)
+        p.png(shots / "04-algo-set.png")
+
+        # --- 6/7/8/9. audition, grid-record, the four trigs
+        p.press(tk)
+        p.press("trig1")
         p.press("rec")
         for t in ("trig1", "trig5", "trig9", "trig13"):
             p.press(t)
         p.press("rec")
+        p.run(200)
         p.png(shots / "05-trigs.png")
+
+        # --- 9/10/11. PLAY and watch
         p.press("play")
-        for i in range(6):
+        engines, counts, transport, published = [], [], [], []
+        for i in range(8):
             p.run(500)
-            p.png(shots / f"06-play-{i}.png")
-        # ---- 11. VERIFY: does the transport keep advancing past step 1?
-        seen = []
-        for i in range(10):
-            p.run(400)
-            tw = p.long(0x800065B8)
-            seen.append(tw)
-            if i in (0, 4, 9):
-                p.png(shots / f"07-advance-{i}.png")
-        print(f"  transport over 4 s: {seen}")
-        if any(t_ == 0 or t_ == 2 for t_ in seen):
-            print("  !! TRANSPORT STOPPED/PAUSED during the run")
-        elif all(t_ == 1 for t_ in seen):
-            print("  transport advanced: still PLAYING after 4 s (1 throughout)")
-        log = (work / "port.log").read_text(errors="replace")
-        for line in log.splitlines():
-            if any(k in line for k in ("STALL", "still in its exchange",
-                                       "outside P memory", "deadline")):
-                print("   |", line.strip()[:150])
-        print(f"  screens in {shots}")
+            ok, w = record(p, track=args.track - 1)
+            published.append(ok)
+            engines.append(w & 0xFF)
+            counts.append((w >> 8) & 0xFF)
+            transport.append(p.long(TRANSPORT))
+            if i in (0, 3, 7):
+                p.png(shots / f"06-play-{i}.png")
+
+    print(f"  algorithm    : {args.algorithm} ({label}) -- engine should be {want_engine}")
+    print(f"  record engine: {engines}")
+    print(f"  trig count   : {counts}")
+    print(f"  transport    : {transport}")
+    if not all(published):
+        print(f"  !! the record header was absent on "
+              f"{published.count(False)} of {len(published)} polls -- the track "
+              f"never rendered")
+        raise SystemExit(2)
+    live_engines = engines
+    if any(e != want_engine for e in live_engines):
+        print(f"  !! WRONG ENGINE: expected {want_engine}, saw {set(live_engines)}")
+        raise SystemExit(2)
+    if not all(t == 1 for t in transport):
+        print("  !! TRANSPORT DID NOT STAY PLAYING")
+        raise SystemExit(2)
+    advancing = len(set(counts)) > 1
+    print(f"  PASS: engine {want_engine} on T{args.track}, transport 1 "
+          f"throughout, trig count {'advancing' if advancing else 'STATIC'}")
 
 
 if __name__ == "__main__":

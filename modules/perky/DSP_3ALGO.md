@@ -711,6 +711,39 @@ user workflow then runs -- select T1, assign, return, audition, `REC`, trigs at
 1/5/9/13, `PLAY` -- with the transport reading **1 (playing)** and staying 1
 across 4 s of polling.
 
+### SIX VARIANTS THROUGH THE PANEL, and the engine each one selects
+
+`tools/verify/verify_perky_3algo_ui_repro.py` now takes `--track 1|5` and
+`--algorithm fold|bass|snare`, drives the whole route above, and **asserts that the
+record carries the engine the chosen row names** -- so the panel selection is
+proven to reach the DSP rather than merely to change a screen.
+
+| variant | record engine | transport | trig count |
+|---|---|---|---|
+| T1 fold | **0** | 1 throughout | static |
+| T1 bass | **10** | 1 throughout | **advancing (3,4,5,7,8,9,10,12)** |
+| T1 snare | **11** | 1 throughout | static |
+| T5 fold | **0** | 1 throughout | static |
+| T5 bass / T5 snare | (in progress) | | |
+
+**FOLD 0, RES BASS 10, RES SNARE 11** -- the panel mapping, arriving at the record
+because the engine pool's three rows were selected through the UI on both cores.
+
+**Two bugs of my own, both of which read as a dead track:**
+
+* **`if engine` treated FOLD as "no record".** FOLD's engine id **is 0**, so its
+  record word is `(n << 16) | (count << 8) | 0` -- a good record whose low byte is
+  zero. The published test is the record's own header (`'PK'`/`'Y1'`), not the
+  engine field. Two Fold runs were reported dead before this was caught.
+* **the record index was hard-coded to track 0.** T5 is index 4, and it lives on
+  **payload A** while T1 lives on payload B (the inverted mapping), so a T5 run
+  read a different track's buffer and both T5 variants were reported as "the record
+  header was absent on 8 of 8 polls".
+
+**Both are the same species as the rest of this session's errors: an instrument
+that reports a plausible, specific, wrong answer.** The header assertion and
+`--track` indexing are in the gate now.
+
 ### THE COMPLETE UI PATH -- screen-verified at every step
 
 **The six-variant path is now fully mapped.** Every step below is confirmed by a
