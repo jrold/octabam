@@ -351,6 +351,50 @@ carried across calls and laid out at different addresses in the two builds, and
 the measurement that will settle it is a like-for-like read in each build's own
 frame. It is recorded here rather than carried as an unexplained red gate.
 
+### REACHABLE vs STRESS: the timing figures were taken on stress states
+
+**This materially changes the timing picture and is the answer to the brief's
+item 5.** The `74,515` (bass) and `80,722` (snare) figures in
+`verify_perky_3algo_timing.py` come from `resonant_state()`, whose own docstring
+says it covers "both sides of every bounded-path guard": it deliberately writes
+`RES_MOD = choice(0, 1, 65535, 0xffffffff)`, random 16-bit pitches and
+coefficients, `DECAY_COUNT = choice(0, 1, 2, 65535, 0xffffffff, ...)` and so on.
+Those are STRESS states, not states the Perky control path can produce.
+
+Driving the composed renderers from the **captured ARM fixtures** instead
+(`engine-7-mode-{panel}-corner-{corner}`, the same oracle the standalone
+resonant gate uses, with its offset/size convention), one 16-sample block per
+call:
+
+| engine | synthetic stress worst | reachable ARM worst (3 corners) |
+| --- | ---: | ---: |
+| Resonant Bass | 74,515 | **34,673 / 35,697 / 35,671** |
+| Resonant Snare | 80,722 | **38,049 / 38,787 / 38,551** |
+
+**The reachable worst is about HALF the stress worst.** Against the repo's
+23,040 modeled allowance that is bass over by ~12,657 (a **35%** reduction, not
+69%) and snare over by ~15,747 (a **41%** reduction, not 71%).
+
+Two caveats, both real, neither of which changes the direction:
+
+1. Six fixture runs is a small sample of the reachable domain. It is much better
+   evidence than randomized impossible states, but it is not a proof of the
+   domain's maximum, and the 2x model margin and stock reserve are unchanged.
+2. **Corners 1 and 2 are NOT yet bit-exact** against those fixtures -- bass
+   corner 0 and snare corner 0 are EXACT, bass corner 1 diverges at sample 191,
+   and bass corner 2 / snare corners 1-2 diverge at sample 2. So the timing
+   taken on corners 1-2 is timing of a renderer whose output is not yet trusted.
+   Corner 0's figures are on a bit-exact render and are the ones to rely on:
+   **bass 34,673, snare 38,049**.
+
+So the honest position on the brief's items 2 and 3 is: the required reduction
+on reachable measured states is somewhere near **35-41%**, not 69-71%, and the
+69-71% figure was derived from stress states the production control path cannot
+reach. This does not yet show the engines FIT -- every reachable figure measured
+so far is still over the 23,040 allowance -- but it moves the question from
+"architecturally impossible" to "needs roughly a third off the hot path", which
+is a different problem and the one the optimisation work should attack.
+
 ### MEASURED CONTINUATION LEDGER (this configuration)
 
 Every number below is either printed by the repository's own cycle tool or
