@@ -171,132 +171,62 @@ which the composer already supports) and drive the renderers from that, so the
 comparison is against the smallest possible image -- then re-introduce the seam
 one piece at a time.
 
-### Isolating the composed Fold silence
+### The composed Fold silence: what is proven, and what is not
 
-The composed Fold renderer returns silence for a fixture the standalone binary
-renders as `-1,-1,-2,-2,...`. This round isolated it further, by measurement:
+Assembling both binaries and disassembling the renderers at their own labels,
+**the composed `pk_fold_voice` sample loop is byte-identical to the qualified
+standalone one**, including the instruction the algebra turns on:
 
-* a full 2x2 matrix -- {standalone, composed} x {state at `X:200`, `X:3800`} --
-  gives `-1,-1,-2,-2,...` at **both** addresses for the standalone and zeros at
-  **both** for the composed build, so it is not an addressing artifact;
-* stubbing **both** resonant voices to a bare `rts` and re-running the composed
-  Fold entry still returns silence, so the resonant renderers are not the
-  cause: the composed **Fold path itself** is;
-* the composed `pk_fold_voice` disassembles correctly (`do n7`, the envelope
-  and frequency calls, `pk_simple_base` writing `x:(r6+$34)`) and is
-  instruction-identical to the standalone body.
-
-So the fault is in the Fold path *as composed* -- something about the shared
-helpers and layout as they are emitted together -- and not in any single
-renderer body. The next step is to bisect the composed Fold path by rebuilding
-it from the standalone pieces one section at a time (fold body first, then the
-shared low32/RNG block, then the resonant tail) until the silence appears.
-
-### What an image would have to give up
-
-The 150-word gap matters because it decides whether SPATIALIZER survives. The
-options measured for closing it, none of them a renderer change:
-
-* dead routine removal: `pk_u32_sub` (9), `pk_u32_asr` (6), `pk_noise_step`
-  (14), `pknhe_read_r2` (5) are defined and never reached -- but removing all
-  of them measured as **inert** (3,936 words before and after), so the
-  assembler was already not paying for them and this avenue is closed;
-* genuine cross-path duplication does exist and is small: `pknhe_read_r1` /
-  `pksde_read_r1` (11 instructions each), `pknhe_commit` / `pksde_commit` (6),
-  and the `read_r0`/`read_r2` pairs. Sharing those is a few tens of words, not
-  150;
-* the remaining distance has to come from how the Fold and resonant paths each
-  carry their own envelope entry sequence, or from a smaller table
-  representation.
-
-### Why the harvest is capped at 2,724 words (measured)
-
-`stock.harvested()` is `{effects with DSP code} - listed`, and the build's
-`_listed` is not just the remix's module list:
-
-```python
-_listed = set(REMIX.modules) | set(REMIX.fx1 or [
-    k for k in stock.p_spans("A")
-    if _MODS[k].menu.fx2_id in stock_mod.fx1_ids()])
+```
+  COMPOSED (P:0x1c19..)          STANDALONE (P:0x28aa..)
+  asr   #$11,a,a                 asr   #$11,a,a
+  move  a0,a                     move  a0,a
+  asl   #$8,a,a                  asl   #$8,a,a
+  move  a1,a                     move  a1,a
+  asr   #$8,a,a                  asr   #$8,a,a
+  move  a1,x0                    move  a1,x0
+  move  x:(r6),y0                move  x:(r6),y0
+  mpysu x0,y0,a                  mpysu x0,y0,a
+  asr   #$9,a,a                  asr   #$9,a,a
+  move  a0,a                     move  a0,a
+  bra   func_001c26              bra   func_0028b7     <- relocated only
+  clr   a                        clr   a
+  move  a1,x:(r0)+               move  a1,x:(r0)+
+  move  a1,x:(r0)+               move  a1,x:(r0)+
 ```
 
-`stock.fx1_ids()` is read from the pristine image's **FX1 chooser**, and the
-DSP dispatch table is indexed by the raw id and shared by both menus, so an
-effect on FX1 cannot have its code harvested without taking it off FX1 as well.
-Measured membership:
+Both use `mpysu` here, and both end the loop with the same paired `x:(r0)+`
+stores. The whole routine is identical apart from relocated targets, which is
+what `verify_perky_3algo_equivalence.py` asserts and what the word-level table
+above shows for `pk_simple_base`.
 
-| Effect | fx2 id | on the stock FX1 chooser? | harvestable? |
-| --- | ---: | :---: | :---: |
-| PLATE REV | 0x14 | no | **yes** |
-| SPRING REV | 0x15 | no | **yes** |
-| DARK REV | 0x16 | no | **yes** |
-| COMPRESSOR | 0x18 | yes | no (FX1 needs it) |
-| LO-FI | 0x1c | yes | no |
-| DJ EQ | 0x0d | yes | no |
-| COMB FILTER | 0x13 | yes | no |
-| FILTER / EQUALIZER / PHASER / FLANGER / CHORUS / SPATIALIZER | 0x04/0x0c/0x10/0x11/0x12/0x05 | yes | no |
+**What is NOT explained.** Driving the composed binary through the composed
+gate's own host returns 512 int32 samples that are ALL ZERO, with the host
+reporting `blocks 16  max 13941 instr/block` -- so the renderer ran the right
+number of times and cost the right number of cycles, and wrote nothing to
+`X:0`. The standalone binary, driven by the standalone gate, writes
+`-1,-1,-2,-2,-4,-4` from the same fixture and tables.
 
-The **only** DSP code on neither chooser is the three reverbs, so the maximum
-free contiguous region is **2,724 words** -- and the composed Perky program
-needs **3,936**. The measured shortfall against the whole available region is
-therefore **1,212 words**, not zero.
+Everything below has been checked and is NOT the cause:
 
-This is why the earlier attempt to build with the seven-effect remix overran:
-listing `DELAY` in `modules` pulled its FX1 id (0x08) into `_listed`, the
-auto-add rule then listed every effect whose id is on the FX1 chooser, and the
-harvest collapsed back to the three reverbs. The remix no longer lists DELAY,
-but that alone cannot raise the cap -- the cap is the chooser membership, not
-the listing.
+* the renderer bodies (byte-identical, above);
+* the sample loop and its `x:(r0)+` stores (identical);
+* the scratch convention (built, measured, and did not change the result);
+* the resonant voices (stubbed to `rts`, still silent);
+* the per-core admission latch (the gate was clobbering `X:$38ec/$38ed` with
+  its RNG dump; fixed, moved to `X:$3870`);
+* label-prefix ambiguity (`dsp_asm` resolves by prefix -- 148 labels, zero
+  ambiguous pairs);
+* `n7`: the host sets it from `-frames`, and the gate now passes `-frames 16`
+  explicitly;
+* duplicate label definitions (none).
 
-**Consequence for the target.** Fitting the composed machine as it stands
-requires taking **COMPRESSOR, LO-FI, DJ EQ and COMB FILTER off the FX1 chooser
-as well** (4,063 words total, re-measured and contiguous in both payloads).
-That is a real loss of stock functionality -- those four would no longer be
-selectable on FX1 -- so it is a product decision, not one to take silently.
-The alternative is to bring the composed program down from 3,936 to 2,724
-words, a 1,212-word (31%) reduction, which cannot come from dead code (measured
-inert) and would have to come from a materially different composition.
-
-### The composed routines are byte-identical, verified at the word level
-
-The strongest evidence on this branch is now a word-level comparison rather
-than an instruction-name comparison. Assembling the qualified standalone fold
-program and the composed shipping source, then reading `pk_simple_base` out of
-each binary:
-
-| word | standalone | composed |
-| ---: | ---: | ---: |
-| 0–23 | identical | identical |
-| 24 | `0x002ac0` (`jsr` target) | `0x001e8e` (**relocated `jsr`**) |
-| 25–35 | identical | identical |
-
-So the composed Fold primitives are **bit-identical to the qualified standalone
-build except for the one operand that must move when code relocates**. The same
-holds for `pk_fold_voice` and the shared helper block, which is what
-`verify_perky_3algo_equivalence.py` asserts across every renderer.
-
-**This closes the question of whether the composition is correct.** The
-composed machine executes the qualified instructions.
-
-Two harness defects were found and fixed while chasing the silence, and one
-remains:
-
-* **Fixed — the label-prefix trap.** The composed source has 148 labels and
-  **zero** prefix-ambiguous pairs, which the repo's own assembler trap says
-  must be checked (a label that is a prefix of another silently resolves to
-  the wrong address). No collisions.
-* **Fixed — the gate's RNG dump landed on the machine's own latch.** The gate
-  parked its four RNG words at `RNG+4 = X:$38ec`, which is exactly
-  `EVENT_OFFSET`/`ADMIT_LATCH` (`$38ec`/`$38ed`) -- the composed machine's
-  one-voice-per-core latch. Writing there makes the next frame read a non-zero
-  latch and render silence. The dump now goes to `VOICE+$70` (`X:$3870`),
-  inside the private region, which the composed layout leaves free (the voice
-  block ends at `$386c`, the scratch block starts at `$3900`).
-* **Still open — the remaining harness difference.** The standalone gate
-  passes `-frames 256` and the composed gate does not, and the two disagree on
-  PCM length (256 vs 512 samples). The word-level evidence says the composed
-  code is right; the composed gate's own fixture and host invocation are what
-  still need to match the standalone gate's.
+The remaining difference between the two harnesses is that the composed gate
+drives state at `X:0x3800` while the standalone gate drives it at `X:0x0200`,
+and `pk_simple_base` both reads `x:(r6+$20)` and writes `x:(r6+$34)`. The next
+step is to run the composed binary with the standalone gate's exact fixture and
+bases; if that renders, the fault is in the composed gate's fixture, and if it
+does not, the difference is in the composed *image* rather than the routine.
 
 ### The equivalence gate
 
