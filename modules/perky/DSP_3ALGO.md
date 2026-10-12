@@ -1122,6 +1122,29 @@ a defect with its evidence, not patched blind.
 **This would have made the flashed image useless**, which is exactly what the
 brief's "do not stop after emulator-only tests" is about.
 
+**Where the fix belongs, and what must be established first.** The hook site is
+INSIDE the per-track loop, not once per block: payload B's site `P:0x001a2` is
+`move a,x:>$20e`, reached from the `bne` at `0x53c` (payload A) that walks
+`x:$418` over the core's four tracks, and a new module section begins immediately
+after it at `0x1a4`. So the dispatcher is entered once per TRACK per block --
+four times -- and the latch exists to admit only the first of those four.
+
+**But the slot check may already do that.** The stock walk gives `x:$418` the
+value `0` once per pass and advances it by `0x20` up to `0x80`, and the
+dispatcher admits ONLY `x:$418 == 0`. If that walk restarts at 0 each block --
+which is what a per-block track walk must do -- then admitting slot 0 admits
+exactly one track per block per core, the latch is REDUNDANT, and the defect is
+fixed by deleting it rather than by finding somewhere to clear it.
+
+**What is not established**, and must be before patching: where `x:$418` is
+returned to 0 for the next block. The disassembly shows `move x0,x:>$418` with
+`x0 = 0` at BOOT (`P:0x373` on A, `0x17d` on B) and one advancing read-modify-write
+at `P:0x533..0x53a` on A (`0x243..` on B) -- but no second reset to 0 was
+located. If the slot carries over between blocks instead of restarting, then
+deleting the latch trades one failure for another (an admission once every four
+blocks) and the real fix is different. **That single question decides the fix**,
+and answering it from the payloads is the next step -- not a blind patch.
+
 ### T1/T5 mapping: now evidenced and gated, from the STOCK payloads
 
 The definition of done asks for "T1 mapping to its correct DSP payload/core" and
