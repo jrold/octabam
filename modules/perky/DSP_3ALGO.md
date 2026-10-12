@@ -287,6 +287,44 @@ because routines were reachable by FALLTHROUGH. Static reachability in this
 codebase has now fooled me twice, in opposite directions (once removing too much,
 once reporting too much).
 
+## ITEM 6 residual: trigger, and persistent state -- plus an ANOMALY left open
+
+**The DSP ignores the record's trigger field entirely.** Two identical drives
+differing only in record word 3 (the trig), 2 blocks each:
+
+```
+trig=0 blocks: [[-256, -512, -1024, -12544], [335360, 353536, 383488, 401920]]
+trig=1 blocks: [[-256, -512, -1024, -12544], [335360, 353536, 383488, 401920]]
+
+block0 identical across trig values: True
+block1 identical across trig values: True
+```
+
+**Byte-identical.** So the trigger's effect reaches the DSP **only through the
+control words the ColdFire prepare computes** -- `pk_simple_prepare` smooths one
+extra step on a trig, and that is the whole channel. This is consistent with the
+probe's own comment ("the record flag is checked so a stale/non-event offset cannot
+manufacture a hit") and it settles item 6's trigger/retrigger question: there is no
+DSP-side trig path to test, because there is no DSP-side trig path.
+
+**Persistent state works.** Block 1 differs from block 0 (peak 317,184 -> 663,296),
+so the voice block carries the render forward rather than restarting -- the same
+property the switch gate exercises across an engine change.
+
+### AN OPEN ANOMALY, flagged not explained
+
+**Engine 10 (RES BASS) and engine 0 (FOLD) produced the SAME block-1 PCM:
+`(335360, 353536, 383488)`.** Yet the switch gate's per-block meters are
+**19,014 / 17,731 / 17,772** -- different costs, so different code executed.
+
+Same output from different code is exactly the kind of thing that is either
+completely benign (a shared post-processing stage dominating the block, e.g. the
+`x256` scale or the applied-control path) or an engine dispatch not doing what it
+claims. **I am not going to guess which**, and per this branch's own history the
+guess would be wrong. The next step is to make the two engines' block-1 renders
+differ by construction -- a state and controls that exercise the Resonant
+resonators specifically -- and see whether the outputs separate.
+
 ## ITEM 6 residual: algorithm switching WORKS at the dispatch level
 
 The one control sub-item that was not gated is algorithm switching. It is now
