@@ -164,10 +164,12 @@ def build(work: Path, mainos: Path, *, build_number: int, version: str) -> None:
     print(f"  sha256   : {sha256(normal_image)}")
     print(f"  composed : {words} P words")
 
-    print(f"=== {REMIX} 4/4: composed image ready for the boot/port gates ===")
-    print("  Next: the T1/T5 admission and per-algorithm dispatch on the")
-    print("  ColdFire control path, then verify_perky_machine_boot.py and the")
-    print("  port gates against this image.")
+    print(f"=== {REMIX} 4/4: validate the shipped artifact ===")
+    run("composed image placement and admission",
+        ROOT / "tools/verify/verify_perky_3algo_image.py",
+        IMAGE=str(normal_image))
+    print("  Next: the T1/T5 algorithm-selection control law on the ColdFire")
+    print("  path, then the boot/port gates against this image.")
 
 
 def main() -> None:
