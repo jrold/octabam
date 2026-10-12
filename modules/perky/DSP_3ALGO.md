@@ -711,6 +711,44 @@ user workflow then runs -- select T1, assign, return, audition, `REC`, trigs at
 1/5/9/13, `PLAY` -- with the transport reading **1 (playing)** and staying 1
 across 4 s of polling.
 
+## THE INSTRUMENT IS NOW CONFIGURED CORRECTLY -- verified in the port's own log
+
+`--sequencer` is what enables the cycle clock (`main.cpp:2633`), and with it both
+instruments finally report as engaged:
+
+```
+frame      : on -- 32 frame interrupt(s) taken, 1344 eDMA transfer(s) started
+card ready: 0x1, LOAD PROJECT posted: yes, PART_PTR: 0x400e21e0, 13807.5 ms emulated
+frame dline: on, model x1.70 against a 362.8 us frame -- a miss stops the run
+cycle clock: on, x1.00 -- one sample is 6032 ColdFire cycles at 266 MHz; the
+             ColdFire can now be late (DIAGNOSTIC: captures are not byte-identical)
+```
+
+**The working flag set is therefore:**
+
+```
+--frame                 the DSP frame clock (NOT --frame-timer, which kills the boot)
+--sequencer             enables the cycle clock; PLAY still comes from the panel
+--cf-frame-deadline 1.7 the unit's deadline, "a miss stops the run"
+--cf-cycles-clock F     the ColdFire can now be late
+```
+
+### And with those on, the run does NOT complete
+
+That configuration ran to a **2400-second timeout**, and the log **stops immediately
+after the `cycle clock: on` line**: no deadline-miss line, no further frames, no
+further emulated time. The last recorded state is `32 frame` / `13807.5 ms
+emulated`.
+
+**That is suggestive and it is not proof.** "The process hung" and "the deadline
+stopped the run" are different events, and the miss line that distinguishes them
+did not appear. A bounded run (`--frames 60`) was launched to settle it -- a miss
+stops the run cleanly and prints the line; otherwise the run completes.
+
+**What is certain: before this round, no run had both instruments engaged, so no
+previous timing conclusion in this document is a measurement.** The configuration
+above is the first that can produce one.
+
 ## ISOLATED: `--frame` works, `--frame-timer` is what breaks the boot
 
 Five flag combinations, same card, same trivial script:
