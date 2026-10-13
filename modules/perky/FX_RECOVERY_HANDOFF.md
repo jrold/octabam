@@ -3080,3 +3080,43 @@ six-gate module too risky with little context left.** Round 143 made it -- **by 
 additive, lifting tested logic rather than writing new, and running `make check` before committing.**
 The first attempt did contain an artifact (a stray `if False else`, caught by grepping for it rather
 than by reading the diff); it is gone, and `make check` was green after.
+
+---
+
+# THE WRITE OPERATIONS ARE GATED (round 144)
+
+Round 143 added `repoint` and `append` to `dsp_modmap` and verified them by hand. **Round 144 made that
+permanent.**
+
+`tools/verify/verify_perky_record_write.py` exercises both **on the real payloads from the built
+image**, with fourteen checks:
+
+```
+[ok] A: repoint keeps the blob length          [ok] B: append grows by header + words
+[ok] A: repoint keeps the record count         [ok] B: append adds exactly one record
+[ok] A: the new address is a record            [ok] B: the new address is a record
+[ok] A: the old address is gone                [ok] B: _p_off resolves the new address
+[ok] A: _p_off resolves the new address        [ok] B: every earlier record is byte-identical
+[ok] A: _p_off no longer resolves the old one  [ok] an unknown address raises
+[ok] A: no record moved or resized             [ok] terminator_offset points at the insertion point
+```
+
+**`make check REMIX=perky-machine`: 334 PASS, 8 SKIP, 0 FAIL.** Registered gates 81 -> 82,
+assertions 333 -> 334.
+
+## Two things worth pointing at
+
+**`_p_off`'s predicate is reproduced rather than imported.** `build_bus` reads the image at import
+time, and a gate must not. So the check tests *the same condition* the build uses -- **space 0 and
+`a <= addr < a+count`** -- without dragging the build in.
+
+**"An unknown address raises" is a check, not an afterthought.** A `repoint` that silently did nothing
+would be worse than one that fails: the build would place words into a record that never moved.
+
+## Why this pattern, twice now
+
+**The probe tool (r140) and the write operations (r144) are both gated immediately after being
+written.** That is deliberate and it is the opposite of what this session kept finding elsewhere --
+the wrapper round-trip that existed and never ran (r96), the provenance check that would have passed
+while checking nothing (r112), the boot gate left out for thirty rounds (r113). **Step 2's own
+primitives will not be among them.**

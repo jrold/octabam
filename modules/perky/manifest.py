@@ -116,6 +116,9 @@ MODULE = Module(
         # --selftest, which re-parses an edited payload copy and checks the
         # edit. Writes nothing.
         Gate("tools/verify/verify_perky_tail_probe.py", remix_arg=False),
+        # the record table's write operations (dsp_modmap.repoint/append),
+        # exercised on the real payloads. Writes nothing.
+        Gate("tools/verify/verify_perky_record_write.py", remix_arg=False),
         Gate("tools/verify/verify_perky_machine_module.py", remix_arg=False),
         Gate("tools/verify/verify_perky_preboot_reserve.py", remix_arg=False),
         Gate("tools/verify/verify_perky_abi_contract.py", remix_arg=False),
