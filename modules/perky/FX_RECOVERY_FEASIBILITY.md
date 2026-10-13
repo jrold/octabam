@@ -450,3 +450,46 @@ byte-neutral by a full rebuild, and two blockers identified with their cause**.
 Falsifier carried forward: coverage is measured by parsing source text, so it is exposed
 to exactly the marker problems above. It is only trustworthy once the markers balance and
 the unmarked remainder is zero -- and byte-identity does not speak to coverage at all.
+
+---
+
+# ADDENDUM 7 — markers BALANCED (14 pieces, zero imbalance); coverage 1613 -> 2225
+
+The imbalance was a one-line slicing bug in `build_multi_synth_source.py`, and its shape
+is worth recording because it is easy to repeat:
+
+```python
+source = source[:begin] + wrapper + linear + source[end:]
+```
+
+`source[:begin]` **drops the BEGIN marker**, `source[end:]` **keeps the END**. A balanced
+pair became unbalanced the moment a piece's body was replaced by a computed wrapper --
+and nothing about the emitted text looks wrong until something tries to parse it.
+
+Fixed by giving the replacement its own balanced pair. MEASURED after:
+
+```
+pieces: 14
+BEGIN without END: NONE
+END without BEGIN: NONE
+largest piece: synth_seam_glue.asm ~476 words; over cap: 0
+UNMARKED: ~826 words   (coverage ~2225 of 3051)
+```
+
+**PROVEN BYTE-NEUTRAL:** full rebuild, artifacts byte-identical (`4ba4d72c...`,
+`685e5105...`). Comment only.
+
+## Why balance mattered more than the remaining coverage
+
+An unmarked region is a region a splitter declines to touch. **An unbalanced marker is
+worse: it invites the splitter to invent a boundary** -- either mis-closing the preceding
+piece or extending it to the END. That boundary would be fiction, and fiction that
+assembles. Balance was therefore the precondition, not a nicety, and it now holds.
+
+## Still open for step 2
+
+**~826 words remain outside all markers**, down from 1438 when this began. Located next.
+
+**Carried forward falsifier:** coverage is measured by parsing source text, so it is
+exposed to the very marker problems above. Byte-identity is silent on coverage. The
+number to trust is "unmarked = 0", and it is not there yet.

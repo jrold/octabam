@@ -23,7 +23,15 @@ def generate(noise_layout):
         move a1,x:(r6+$2)
         bra pken_linear
 '''
-    source=source[:begin]+wrapper+linear+source[end:]
+    # The slice below REPLACES the piece's whole body, so it must carry its own
+    # balanced marker pair: source[:begin] drops the BEGIN while source[end:]
+    # keeps the END, which left 'noise_tone_envelope_packed7.asm' with an END
+    # and no BEGIN -- an imbalance that silently mis-closes the preceding piece
+    # for anything splitting on these delimiters. Comment only, so the
+    # assembled bytes must not move.
+    source=(source[:begin]
+            +'; ===== BEGIN noise_tone_envelope_packed7.asm =====\n'
+            +wrapper+linear+source[end:])
     # Standalone math dispatcher and unused SUB/ASR are not reachable by RNG.
     start=source.index('\npk_math_probe:');stop=source.index('\npk_u32_add:',start)
     source=source[:start]+source[stop:]
