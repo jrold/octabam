@@ -1388,3 +1388,54 @@ remaining items is any of those.** Step 2 is a refactor whose every unknown has 
 item 3 is a fixture; items 4 and 5 are tests. **So this is not a blocker, and the goal stays
 active** -- the honest description is "remaining work, with one input that must come from the
 hardware side".
+
+---
+
+# THE ODD-ADDRESS GATE IS OUT OF REACH HERE, FOR THE SAME REASON (round 76)
+
+The brief's gate list includes **"no odd-address ColdFire stores / prior store-merging regression"**.
+That gate exists and is good:
+
+> `tools/verify/verify_perky_cf_odd_access.py` -- "A real ColdFire raises an address error on any
+> word/long access whose effective address is odd; **the vendored Musashi (in ColdFire mode) does
+> not emulate that, so such an access runs fine under `ot_emu` and faults on the unit.** GCC's
+> store-merging pass is the usual source... The CF units are built with `-fno-store-merging` to
+> prevent it; **this gate is the check that it stayed prevented.**"
+
+**It cannot run here, for two independent reasons:**
+
+1. **Its input does not exist.** It reads `out/perky/cf-final/generated`, which is produced by
+   `tools/perky/build_cf_final.py` -- and that script `die()`s without **three external inputs**,
+   none of them present or in the tree:
+
+   ```
+   PERKONS_FIRMWARE   <unset>   "set PERKONS_FIRMWARE or pass --firmware with exact PERKONS v1.2.1"
+   PERKYBITS_ROOT     <unset>   "set PERKYBITS_ROOT or pass --perkybits with the PerkyBits checkout"
+   OT_PROJECT         <unset>   a stock Octatrack project
+   ```
+
+2. **It is not registered in `modules/perky/manifest.py`**, so it is not part of `make check` and
+   never runs even when its input is present.
+
+## The honest reading
+
+**This is the same class of gap as the probe's fixture**: a required check whose subject needs an
+artifact that lives outside this sandbox. And it is the *third* such item now --
+
+| gate | blocker |
+|---|---|
+| window executability (Test A/B) | a stock Octatrack project (`OT_PROJECT`) |
+| odd-address stores | PERKONS_FIRMWARE, PERKYBITS_ROOT, OT_PROJECT |
+| -- | and neither gate is registered |
+
+**Note also that the CF side is not in this milestone's artifact at all**: `build_fold_candidate.py`
+prints *"no shipping CF transport yet"*. So the odd-address gate guards a component the canary does
+not yet carry -- which is why it has no input, and why its absence has not bitten.
+
+## What would close it
+
+1. supply `PERKONS_FIRMWARE` and `PERKYBITS_ROOT` (you have both) and an `OT_PROJECT`;
+2. run `tools/perky/build_cf_final.py` to produce `cf-final/generated`;
+3. **register the gate in the manifest** so it runs in `make check` -- which is a one-line edit and
+   is worth doing regardless, because a gate that exists and is never run is exactly the kind of
+   thing this work has repeatedly found to be load-bearing and absent.
