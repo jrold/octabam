@@ -49,13 +49,15 @@ def generate(noise_layout):
         jsrl pk_multi_noise_init
 ''',1)
     source=source.replace('pks_silence:',(PERKY/'simple_drum_seam.asm').read_text()+'\npks_silence:',1)
-    extras=(PERKY/'simple_drum_voice.asm').read_text()
+    def _piece(name, body):
+        return f'; ===== BEGIN {name} =====\n{body}\n; ===== END {name} =====\n'
+    extras=_piece('simple_drum_voice.asm', (PERKY/'simple_drum_voice.asm').read_text())
     for name,label in [('envelope','pk_simple_envelope'),('frequency','pk_simple_frequency'),('oscillator','pk_simple_oscillator')]:
         text=(PERKY/f'simple_drum_{name}.asm').read_text();text=text[text.index('\n'+label+':'):]
         if name=='envelope':text=text.replace('#>$0009a5,r1','#>$000c50,r1')
         if name=='oscillator':text=text.replace('#>$0007a5,r1','#>$000a50,r1')
-        extras+='\n'+text
-    extras+='\n'+(PERKY/'simple_drum_delta.asm').read_text()
+        extras+=_piece(f'simple_drum_{name}.asm', text)
+    extras+=_piece('simple_drum_delta.asm', (PERKY/'simple_drum_delta.asm').read_text())
     source=noise.force_long_local_jsr(noise.relativize_local_conditionals(source+'\n'+extras))
     labels=re.findall(r'(?m)^([A-Za-z0-9_]+):',source)
     for a in labels:

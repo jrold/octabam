@@ -493,3 +493,48 @@ assembles. Balance was therefore the precondition, not a nicety, and it now hold
 **Carried forward falsifier:** coverage is measured by parsing source text, so it is
 exposed to the very marker problems above. Byte-identity is silent on coverage. The
 number to trust is "unmarked = 0", and it is not there yet.
+
+---
+
+# ADDENDUM 8 — step 2 essentially complete: coverage 1613 -> 2982 words, 19 pieces, balanced
+
+The remaining unmarked block was the Simple Drum renderer, appended raw as `extras` in
+`build_multi_synth_source.py` from five files. Marking them was done **per file, not as
+one piece**, and that choice matters:
+
+* `extras` combined is ~803 words -- **over the 605-word shard cap**, so a single marker
+  pair around it would have produced a piece that could never be a shard. Per-file pieces
+  are individually sized.
+
+MEASURED after:
+
+```
+pieces: 19
+imbalance: BEGIN-only none, END-only none
+covered: 73285 of 74981 chars
+UNMARKED: ~69 words        (from 1438 when step 2 began)
+largest piece: synth_seam_glue.asm ~473 words
+pieces over the 605 cap: 0
+```
+
+**PROVEN BYTE-NEUTRAL:** full rebuild, artifacts byte-identical (`4ba4d72c...`,
+`685e5105...`), for every one of the changes in addenda 5-8.
+
+## What step 2 now has
+
+* **19 pieces, markers balanced** -- so a splitter can trust the delimiters instead of
+  inventing a boundary;
+* **no piece exceeds the 605-word shard cap** -- so every piece is a legal shard, or a
+  legal starting point for one;
+* **~69 words unmarked**, down from 1438. What remains is small enough to identify by
+  eye rather than by another pass of this analysis.
+
+## The method, now with five instances
+
+`@CONT@` preprocessing · sizing drift · three-word length gap · uncovered engine bodies ·
+the unbalanced marker · the over-cap `extras` block.
+
+**Every one was found by attempting the step and reading what it actually did.** The last
+two are the clearest: a splitter would have mis-closed a piece, and one piece would have
+been silently unsplittable -- both invisible to inspection, both obvious the moment the
+measurement ran.
