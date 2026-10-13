@@ -746,3 +746,65 @@ for the spans themselves.
 
 Spring, Dark and Lo-Fi remain absent. Nothing about the goal's correctness claims changed; what
 changed is that step 2's size is now measured rather than guessed, and it is the larger bound.
+
+---
+
+# CLOSED (round 64): no existing mechanism can write the tails -- and a correction about their provenance
+
+Following round 63's result (four of five tails have no image records), the natural next question
+was whether the build's **other** write path reaches them. `build_bus.py:2726`,
+
+```python
+def place_xh(words, start):
+    """Write table words into this payload's X records at `start`."""
+    for k, w in enumerate(words):
+        a = start + k
+        r = next((r for r in _xh_recs if r[0] <= a < r[0] + r[1]), None)
+        if r is None:
+            sys.exit(f"payload {tag}: X:0x{a:05x} is in no X record")
+```
+
+writes through `_xh_recs`, built from `stock.x_exclusive_runs(tag, given_up)` -- the X records of
+*given-up* effects. Measured:
+
+```
+stock.x_exclusive_runs(A, harvest): 3 runs
+  tail 0x33da3..0x34000: 0 overlap
+  tail 0x37da3..0x37f00: 0 overlap
+  tail 0x37f10..0x38000: 0 overlap
+  tail 0x3bda3..0x3c000: 0 overlap
+  tail 0x3fda3..0x40000: 0 overlap
+TOTAL tail coverage: 0
+```
+
+**No existing write mechanism reaches the tails.** `SAFE_SHARED_P_SPANS` and
+`stock.x_exclusive_runs` are **different sets**, and only the second is writable.
+
+## A correction about where `SAFE_SHARED_P_SPANS` came from
+
+**I derived those spans from the LEDGER -- addresses the stock effects do not occupy -- and never
+checked that the build can WRITE them.** "Free" and "writable" are different properties, and I
+conflated them for many rounds. The measured facts are:
+
+* the ledger says the spans are unoccupied (that part was checked, repeatedly);
+* the image has no records there (round 63);
+* `x_exclusive_runs` does not cover them (this round);
+* **so nothing in the build can currently place a word in any of the five.**
+
+## What that means for the plan
+
+The sharding analysis -- 21 pieces, byte-identical reassembly, zero drift, correct call graph --
+**remains valid as an analysis of the PROGRAM.** What it was never a proof of is that the build
+can *reach* the ground the placement assigns. Those are two separate claims, and only the first
+has been established.
+
+**Step 2 therefore needs, at minimum: a record source or an absolute-write path for the five
+tails, plus the safety check against every module's `Claims.dsp_ranges` in the shared window.**
+Until that exists, the placement manifest is a statement about addresses, not about an image.
+
+## The standing lesson, restated because it keeps paying
+
+Six rounds have now produced six successive refinements of step 2's scope, every one larger than
+the last: "two lines", "a three-site refactor", "plus writable ground", "the larger bound", and now
+"ground nothing can currently write". **Each was read off one layer and assumed to hold at the
+next.** The thing that resolved each was measurement, not more reading.
