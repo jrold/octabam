@@ -206,3 +206,43 @@ Addenda 21-25 progressively described change 2 as "new machinery", then "the par
 existing machinery", then "five spans declarable, two needing schema work". Those were all
 written before reading `regions_of()`'s docstring, which states the actual rule in its second
 paragraph. **The mechanism was documented; I was reasoning from the call site instead.**
+
+---
+
+# The placement ledger verifies (round 51) -- release gate 7's placement half
+
+Measured against `out/perky/light2/sharded-p.json` and `stock.p_spans`:
+
+```
+placed shards: 21   total words: 3051
+overlaps BETWEEN shards: NONE
+
+collisions with KEPT effects: NONE      <- required
+collisions with sacrificed  : PLATE x2, COMPRESSOR x1
+```
+
+**Zero overlaps between the 21 shards; zero collisions with every retained stock effect.**
+The only occupied stock ground is PLATE and COMPRESSOR -- exactly the two approved sacrifices.
+
+## The useful consequence
+
+Spring, Dark and Lo-Fi appear in the *sacrificed* column **only because the remix's `fx1` does
+not list them yet** -- that is change 1, unmade. **The shards do not touch their spans either**
+(neither appears in the collision list). So the ledger *predicts* that once change 1 lands, the
+three move to KEPT and the collision set does not grow.
+
+**That is a falsifiable prediction, and it is the right shape to check change 1 with**: after
+listing the three in `fx1`, re-run this ledger and require the same two lines -- `KEPT` gains
+SPRING REV, DARK REV and LO-FI, and `collisions with KEPT effects` is still NONE.
+
+## Reproduce it
+
+```python
+from remix import registry, stock
+import all_fx_layout as L, json, pathlib
+r = registry.remix('perky-machine'); sp = stock.p_spans('A')
+plc = json.loads(pathlib.Path('out/perky/light2/sharded-p.json').read_text())['shards']
+spans = sorted((v['start'], v['start']+v['words']-1, k) for k, v in plc.items())
+# 21 spans, 3051 words, pairwise disjoint; then intersect each with every stock span
+# and require no intersection with any effect that is not PLATE REV or COMPRESSOR.
+```
