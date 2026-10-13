@@ -1685,3 +1685,45 @@ cannot currently reproduce it, because the same `OT_PROJECT` is missing.** So th
 genuine, flashable, tested build; **it is not currently reproducible on this checkout.** Anyone
 relying on it should know that, and supplying the project would restore reproducibility as a
 side effect.
+
+---
+
+# THE LAST INPUT CANNOT BE SYNTHESIZED HERE (round 83) -- and that closes the audit
+
+Round 82 found every remaining blocker converging on `OT_PROJECT`. **The last question worth asking
+was whether this checkout can produce one.** It cannot, and the check is short:
+
+`tools/hw/ot_project.py`'s complete command set is
+
+```
+report · set-gain · apply · host · stamp-defaults · stamp-slot
+migrate-hosts · remap-slot · clone_samples
+```
+
+**every one of which takes an existing `PROJECT_DIR`** -- plus `guard_backup()`, which exists
+specifically to refuse a write without a backup. **It reads and writes an Octatrack project; it
+cannot manufacture one.** That is also what AGENTS.md's *"never an Elektron byte in the repo"*
+requires: a project fixture cannot live here, so an absent one cannot be conjured from here.
+
+## The audit is closed
+
+Rounds 76-83 asked, in order: does the odd-address gate run (no -- unregistered); do the tail gates
+run (no -- unregistered); do the engine gates run (five more unregistered); are the remaining
+candidates stale (three yes, one required-but-stale); what do all the blockers share (**one input**);
+can this checkout supply it (**no**).
+
+**The result is a complete, ordered list of what remains, with a single external dependency at the
+root of it:**
+
+| # | item | state |
+|---|---|---|
+| 1 | step 2 -- place the shards (write path + fit-and-place refactor) | **the only substantial code left** |
+| 2 | list SPRING/DARK/LO-FI in `fx1` | one edit; prediction already confirmed |
+| 3 | `OT_PROJECT` -- a stock Octatrack project | **yours; unblocks 4-7** |
+| 4 | `verify_perky_machine_boot` repointed + registered | needs 3 |
+| 5 | the canary runs; the artifact becomes reproducible | needs 3 |
+| 6 | the odd-address gate audits for real | needs 3 + `PERKONS_FIRMWARE` + `PERKYBITS_ROOT` |
+| 7 | probe Test A / Test B | needs 1 + 3 |
+
+**Item 1 is real work and needs nothing external. Items 2-7 are gated on one artifact.** That is the
+whole picture, and it is a better place to stop than a list of things that were tried.
