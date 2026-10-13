@@ -46,10 +46,38 @@ def check(cond: bool, msg: str) -> None:
         FAILURES.append(msg)
 
 
+def shipping_payload() -> Path:
+    """The LIGHT2 program the canary flashes (3051 words, 21 pieces).
+
+    NOT the default `build_multi_payload.build()` output, which is the smaller
+    mixed build the *_seam_exec gates use as their fixture. The distinction was
+    found by measurement: the two differ (3051/21 vs 2353/16) and BOTH shard
+    cleanly, so this gate checks both -- the shipping program first, because
+    that is the one that gets flashed.
+    """
+    import build_fold_candidate as candidate
+    work = ROOT / "out/perky/light2"
+    source, _ = candidate.build(work)
+    work.mkdir(parents=True, exist_ok=True)
+    (work / "multi.asm").write_text(source)
+    return work / "multi.asm"
+
+
 def main() -> int:
     import build_multi_payload as payload
     import perky_emit_shards as emit
 
+    # (a) THE SHIPPING PROGRAM.
+    ship = shipping_payload()
+    check(ship.exists(), f"could not produce the shipping payload {ship}")
+    if FAILURES:
+        for f in FAILURES:
+            print(f"  FAIL {f}")
+        return 1
+    print("  --- shipping light2 payload ---")
+    check(emit.check(ship, verbose=False) == 0, "shipping payload: emit check failed")
+
+    # (b) The default mixed payload, as a second independent instance.
     assets = Path(os.environ.get("PERKY_SIMPLE_ASSETS", ROOT / "out/perky/simple-drum-assets"))
     target = ROOT / "out/perky/multi"
     payload.build(assets, target)
@@ -59,6 +87,8 @@ def main() -> int:
         for f in FAILURES:
             print(f"  FAIL {f}")
         return 1
+    print("  --- default mixed payload (second instance) ---")
+    check(emit.check(multi, verbose=False) == 0, "mixed payload: emit check failed")
 
     # emit.check prints its own three lines and returns nonzero on failure.
     rc = emit.check(multi, verbose=False)
@@ -68,7 +98,7 @@ def main() -> int:
     # stock effect. Recomputed here rather than trusted from the tool.
     import json
     from remix import registry, stock
-    pieces, whole, dest, final, syms = emit.emit(multi)
+    pieces, whole, dest, final, syms = emit.emit(ship)
     spans = sorted((dest[n], dest[n] + (b - a) - 1, n) for n, a, b, _, _ in pieces)
     for i in range(len(spans)):
         for j in range(i + 1, len(spans)):

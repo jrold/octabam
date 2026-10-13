@@ -434,3 +434,53 @@ Disassemble final DSP code and verify actual branches/calls/ranges."* Property 1
 encoding, property 3 pins where every call and jump lands. **What is still not covered by any
 of it is execution on the chip** -- these are static properties, and only a flash shows the
 rest.
+
+---
+
+# Which payload ships (round 57) -- a correctness question round 56 raised
+
+Round 56's gate built **2353 words / 16 pieces** while the tool defaulted to **3051 / 21**. A
+700-word difference is not a rounding artefact, so it had to be resolved before either number
+was quoted again.
+
+**Resolved by measurement:**
+
+* the module's `dsp=DspSection(asm="modules/perky/probe_glue.asm", ...)` is the *seam*, not the
+  program;
+* the **canary** -- `build_light2_machine_canary.py` -- builds the flashable artifact and passes
+  `dsp_source=work/'multi.asm'`, where `work` is `out/perky/light2` and the source comes from
+  `build_fold_candidate.build(work)`;
+* `build_multi_payload.build()`'s default output at `out/perky/multi` is the **smaller mixed
+  build** the `*_seam_exec` gates use as their fixture.
+
+**So the shipping program is the 3051-word / 21-piece light2 payload, and the 2353-word / 16-piece
+mixed build is a second program.** My sharding analysis targets the shipping one.
+
+## The gate now checks both
+
+```python
+def shipping_payload():
+    import build_fold_candidate as candidate
+    work = ROOT / "out/perky/light2"
+    source, _ = candidate.build(work)
+    (work / "multi.asm").write_text(source)
+    return work / "multi.asm"
+```
+
+and both pass every property:
+
+```
+--- shipping light2 payload ---   29 targets, 0 outside; bytes identical; extents exact
+--- default mixed payload ---     15 targets, 0 outside; bytes identical; extents exact
+shards: 21   words: 3051   retained stock effects clear: 8
+```
+
+**Two independent programs shard cleanly**, and release gate 7's placement half now runs against
+the payload that actually gets flashed rather than the fixture.
+
+## Why this is recorded rather than quietly fixed
+
+Had the gate only ever checked the mixed payload, it would have passed while protecting a program
+nobody flashes -- a green gate over the wrong subject, which is the failure mode this branch has
+hit before (`send_probe`'s harmonic metric, the reverb-smoothed XBUS measurement). The numbers
+differing is what surfaced it.
