@@ -104,3 +104,48 @@ addresses inside a shard. Verified empty for all 21 at assigned origins; keep it
 Tag `perky2v-hw-baseline` → `fc438e03`. Archive:
 `out/hw-baselines/perky2v-fc438e03/`. The current shipped artifact is unrelated to this work and
 byte-identical across all 47 commits: card `4ba4d72c…`, MIDI `685e5105…`.
+
+---
+
+# Where change 2 actually lives (measured, round 49)
+
+`tools/build/build_bus.py:2176`:
+
+```python
+_derived = stock_mod.region_of(stock_mod.harvested(_listed))
+```
+
+**This is the single-run locus.** `stock.regions_of()` -- the plural, which returns the
+contiguous runs separately -- **already exists** in `tools/remix/stock.py`. So change 2 is not
+"new machinery from nothing": it is replacing one call and emitting the module's code across
+the runs it returns.
+
+## A correction, because the measurement contradicted me
+
+I first read the comment *"The largest contiguous run of them is the region"* and concluded
+`region_of()` picks the largest run, so narrowing the harvest would yield only PLATE's 594
+words. **Measured, that is wrong:**
+
+```
+region_of(narrowed)  -> ['COMPRESSOR', 'PLATE REV']  = 774 words   (BOTH)
+regions_of(narrowed) -> [(['PLATE REV'],594), (['COMPRESSOR'],180)]
+```
+
+`region_of()` returns **all** harvested effects. The docstring's "largest contiguous run"
+describes the *flashable* case. The real constraint is a **contiguity assert** elsewhere --
+the code says so: *"the contiguity assert is what proves that rather than assuming it."*
+
+**So the build refuses the narrowed harvest because the two runs are NOT CONTIGUOUS, not
+because 3051 exceeds 774.** That is a different refusal from the one addendum 22 recorded, and
+the distinction matters: a size problem invites shrinking the program; a contiguity problem is
+solved by placement, which is what the sharding already does.
+
+## Exact change 2, as it now stands
+
+1. `build_bus.py:2176`: take `regions_of()` rather than `region_of()`, and relax the
+   contiguity assert when the module's code is emitted as shards.
+2. Emit the module's P across those runs using the assignment from
+   `all_fx_layout.place_program_shards_two_space()`, and across the five shared tails, which
+   are declarable as x/y `DspRange`s because X, Y and P alias inside the window.
+
+**Step 1 is a located, small edit. Step 2 is the emitter, whose every property is proven.**
