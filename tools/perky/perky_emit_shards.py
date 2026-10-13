@@ -47,8 +47,8 @@ LABEL_DEF = re.compile(r"(?m)^([A-Za-z_][A-Za-z0-9_]*):")
 TOKEN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 
 
-def load_source(multi_asm: pathlib.Path) -> str:
-    return multi_asm.read_text().replace("@CONT@", "$000426")
+def load_source(multi_asm: pathlib.Path, tag="A") -> str:
+    return multi_asm.read_text().replace("@CONT@", {"A": "$000426", "B": "$000221"}[tag])
 
 
 def slice_pieces(src: str, whole_len: int, syms: dict):
@@ -107,15 +107,36 @@ def rewrite(slice_src: str, syms: dict, mapper) -> str:
     return sh
 
 
-def emit(multi_asm: pathlib.Path):
+def emit(multi_asm: pathlib.Path, tag="A"):
     """Return (pieces, monolith_words, assigned)."""
-    src = load_source(multi_asm)
+    src = load_source(multi_asm, tag)
     whole, syms = B.assemble_syms(src, MONOLITH_ORG, "mono")
     pieces = slice_pieces(src, len(whole), syms)
 
-    assigned = L.place_program_shards_two_space(
-        [L.ProgramShard(n, b - a) for n, a, b, _, _ in pieces])
-    dest = {p.name: p.start for p in assigned}
+    # Shared P is ONE backing memory for both cores. A shared shard must
+    # never refer into payload-relative private P. Only the seam and shards
+    # called exclusively by that seam may occupy the local donor records.
+    owner=lambda addr: next((n for n,a,b,_,_ in pieces if a<=addr<b),None)
+    incoming={n:set() for n,_,_,_,_ in pieces}
+    for n,_,_,text,_ in pieces:
+        for label in externals(text,syms):
+            target=owner(syms[label])
+            if target is not None:incoming[target].add(n)
+    seam='synth_seam_glue.asm'
+    local_allowed={seam}|{n for n,callers in incoming.items() if callers=={seam}}
+    local=L.local_p_spans(tag)
+    # Reserve 48 private Plate words for the startup clear that protects tails.
+    spans=((local[0][0],local[0][1]-48),local[1])+L.SAFE_SHARED_P_SPANS
+    cursors=[a for a,b in spans]
+    dest={}
+    for n,a,b,_,_ in sorted(pieces,key=lambda p:-(p[2]-p[1])):
+        indices=range(len(spans)) if n in local_allowed else range(2,len(spans))
+        if n==seam:indices=range(2)
+        hit=next((i for i in indices if cursors[i]+b-a<=spans[i][1]),None)
+        if hit is None:raise ValueError(f'{n}: no core-safe shard placement')
+        dest[n]=cursors[hit];cursors[hit]+=b-a
+    private={n for n,addr in dest.items() if addr<0x30000}
+    assert all(incoming[n] <= private for n in private), 'shared-to-private reference'
 
     def final(addr: int) -> int:
         for n, a, b, _, _ in pieces:
@@ -143,7 +164,7 @@ def check(multi_asm: pathlib.Path, verbose: bool) -> int:
         if len(w_mono) != extent:
             bad.append(f"{n}: monolith extent {len(w_mono)} != {extent}")
         # (2) at the ASSIGNED origin: extents exact.
-        w_asg, _ = B.assemble_syms(rewrite(text, syms, final), dest[n], "asg_" + n)
+        w_asg, _ = B.assemble_syms(rewrite(text, syms, final), dest[n], "asg_" + n, strict_layout=True)
         if len(w_asg) != extent:
             bad.append(f"{n}: assigned extent {len(w_asg)} != {extent}")
         total += extent

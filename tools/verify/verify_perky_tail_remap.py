@@ -59,7 +59,7 @@ def main() -> int:
     import perky_tail_remap as R
 
     pieces, whole, dest, final, syms = E.emit(asm)
-    both, extra, stayed, local_kept, moved = R.build(pieces, whole, dest, E.MONOLITH_ORG)
+    both, extra, stayed, local_kept, moved = R.build(asm)
 
     bad = []
     for tag, remap in both.items():
@@ -75,7 +75,7 @@ def main() -> int:
         raise SystemExit('the two payloads got different remaps; the addresses are '
                          'DSP-side and must be identical')
     print(f'  [ok] every record carries at least one word')
-    print(f'  [ok] both payloads carry the identical remap (DSP-side addresses)')
+    print(f'  [ok] both payloads carry identical shared code and placement')
     print(f'  [ok] P_WANT_EXTRA totals {sum(w for _, w in extra["A"])} words, '
           f'matching the appended words')
     print('  [PASS] the tail remap reproduces its own placement')

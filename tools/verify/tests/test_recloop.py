@@ -23,6 +23,18 @@ def pairs(*lr):
 
 
 class RecordAudioTests(unittest.TestCase):
+    def test_generator_commands_are_not_pcm(self):
+        for controls in ([0] * 80, [0x7f7f7f] * 80):
+            rec = [0x504b00, 0x593100] + controls
+            self.assertEqual(recloop.record_audio(rec), [])
+            self.assertEqual(recloop.record_audio(rec, right=True), [])
+
+    def test_magic_values_inside_stock_pcm_are_preserved(self):
+        data = [(0x504b00, 0x593100)] + [(17, -17)] * 15
+        rec = record(header(16, 0x40000), pairs(*data))
+        self.assertEqual(recloop.record_audio(rec), [l for l, _ in data])
+        self.assertEqual(recloop.record_audio(rec, right=True), [r for _, r in data])
+
     def test_thru_two_empty_headers_then_sixteen_pairs(self):
         data = [(100 + k, -100 - k) for k in range(16)]
         rec = record(header(0, 0x40000), header(0, 0x40000), pairs(*data))

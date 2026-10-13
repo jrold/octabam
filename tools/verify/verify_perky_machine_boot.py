@@ -37,7 +37,9 @@ def main():
                     help='the directory holding layout.json and runtime.raw for the '
                          'SAME build as --image')
     ap.add_argument('--normal-image', type=Path, default=ROOT / 'out/mainos_bus.bin')
+    ap.add_argument('--p-records', type=Path, help='exact appended P records for this build')
     args = ap.parse_args()
+    p_records = json.loads(args.p_records.read_text()) if args.p_records else {}
 
     missing = [str(p) for p in (args.image, args.packed, args.platform) if not p.exists()]
     if missing:
@@ -60,9 +62,11 @@ def main():
 
     for index, tag in enumerate(('A', 'B')):
         raw, _ = perky_image.extend_upload(
-            normal, tag, ywords, xwords, extra_x, extra_y
+            normal, tag, ywords, xwords, extra_x, extra_y, p_records.get(tag)
         )
         records = parse_upload(raw)
+        for addr, words in p_records.get(tag, []):
+            exact_record(records, 0, addr, words, tag)
         exact_record(records, 1, perky_image.X_BASE, xwords, tag)
         for base, values in extra_x:
             exact_record(records, 1, base, values, tag)

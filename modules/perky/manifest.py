@@ -122,6 +122,11 @@ MODULE = Module(
         # the placement -> record-table step: append one record per
         # moving shard and name the same ground. Writes nothing.
         Gate("tools/verify/verify_perky_tail_remap.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_p_records.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_fragment_clear.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_fragmented_exec.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_fragmented_image.py", remix_arg=False, stage="image"),
+        Gate("tools/verify/verify_perky_fragmented_fx.py", remix_arg=False, stage="image"),
         Gate("tools/verify/verify_perky_machine_module.py", remix_arg=False),
         Gate("tools/verify/verify_perky_preboot_reserve.py", remix_arg=False),
         Gate("tools/verify/verify_perky_abi_contract.py", remix_arg=False),

@@ -45,6 +45,13 @@ def record_audio(rec, right=False):
     otherwise (0x20000: count 16 -> 8 pairs; count 4 -> 2). The pair count
     is taken from where the next header starts when one is within a pair
     of the estimate, a header at the same rate first."""
+    # PK/Y1 is a generator command stream, not source PCM. `words()` has
+    # combined its two 16-bit DSP halves and discarded the low eight bits.
+    # Treating the signature as a sample fabricated a constant -16 dB input
+    # on an idle PERKY track. Generator output is checked after DSP synthesis
+    # by the PERKY source/port gates; it cannot be reconstructed from commands.
+    if len(rec) >= 2 and rec[:2] == [0x504b00, 0x593100]:
+        return []
     o = 1 if right else 0
     pairs = []; out = 0; i = 0
     while out < 16 and i + 4 <= len(rec):

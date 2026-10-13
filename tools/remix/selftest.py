@@ -904,14 +904,8 @@ def main():
             # perky-dsp-3algo and therefore gives up the same seven effects. It
             # was never listed here, so it fell back to the default three-reverb
             # set and failed: the expectation lagged the remix, not the reverse.
-            # perky-machine omits the two extra effects that release the
-            # contiguous five-effect run (PLATE+SPRING+DARK+COMPRESSOR+LO-FI =
-            # 3,441 words), because the light machine's deduplicated synth is
-            # 3,054 P words and does not fit the three-reverb 2,724. Unlisted, it
-            # fell back to the default three-reverb set and failed: the
-            # expectation lagged the remix, not the reverse.
-            "perky-machine": ("PLATE REV", "SPRING REV", "DARK REV",
-                              "COMPRESSOR", "LO-FI"),
+            # PERKY now uses Plate/Compressor plus guarded shared P tails.
+            "perky-machine": ("PLATE REV", "COMPRESSOR"),
             "perky-dsp-3algo-hwtest": ("PLATE REV", "SPRING REV", "DARK REV",
                                        "COMPRESSOR", "LO-FI", "DJ EQ", "COMB FILTER"),
              # perky-cf-final lists all fourteen stock effects (the target keeps

@@ -11,7 +11,7 @@ Target architecture
   * one algorithm at a time per PERKY voice;
   * SRC page 1 exposes six controls in this exact order, all staged for
     p-lock/LFO by the descriptor's 0x1c6 mask:
-        DECAY / TUNE / PARAM1 / PARAM2 / MODE / ALGO
+        TUNE / DECAY / ALGO / PAR1 / PAR2 / MODE
   * ALGO selects the engine, so an ALGO trig p-lock changes the engine for that
     trig alone and the track's base ALGO resumes on the next unlocked trig.
 
@@ -46,8 +46,8 @@ ENGINE_DESCRIPTION = (
     '000 FOLD DRUM 1 (authentic v1.2.1); '
     '003 FOLD DRUM 2 (authentic v1.2.1); '
     '002 SIMPLE DRUM (authentic v1.2.1); '
-    '010 NOISE/TONE (native/authentic bodies; composed source reference '
-    'qualification pending -- see modules/perky/NOISE_TONE_STATUS.md)'
+    '010 NOISE/TONE (native/authentic bodies; local reference-qualified; '
+    'fragmented placement hardware testing pending)'
 )
 
 
@@ -72,7 +72,7 @@ def main() -> None:
         raise SystemExit(f'missing control source: {CONTROL_SOURCE}')
 
     multi.build_image(
-        work, 5, 'PERKY2V',
+        work, 6, 'PERKY2F',
         control_input=CONTROL_SOURCE,
         engine_ids=ENGINE_IDS,
         engine_description=ENGINE_DESCRIPTION,

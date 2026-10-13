@@ -175,10 +175,11 @@ pks_continue:
         ; convention, so the renderer output must be shifted up.
         ;
         ; Full alignment is a shift of eight (plus 48.16 dB). The shipped
-        ; value is a shift of five (plus 30.10 dB), i.e. a calibrated
+        ; value is a shift of five (plus 30.10 dB), i.e. the existing
         ; MINUS 18.06 dB OT source trim on top of the exact alignment.
         ;
-        ; MEASURED, and why the trim lives here rather than in the renderer:
+        ; The arithmetic is executed by the exact PCM/state gates. Matched-material
+        ; loudness calibration on the unit is still pending. The trim lives here:
         ; the renderer is signed16-RANGE BY DESIGN, so this source path has
         ; NO scaling error -- the alignment is exact and the "48 dB too
         ; quiet" note above is its arithmetic. What is hot is the PROGRAM

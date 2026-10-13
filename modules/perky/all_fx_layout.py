@@ -221,3 +221,10 @@ def validate_placements(placements: Iterable[ProgramPlacement]) -> None:
             if overlaps(extent, (lo, hi)):
                 raise ValueError(f"placement {item.name!r} overlaps {other!r}")
         used.append((item.start, item.end, item.name))
+
+
+def local_p_spans(tag):
+    """Payload-specific donor extents; A and B stock P bases differ by 0x240."""
+    from remix import stock
+    spans = stock.p_spans(tag)
+    return tuple((spans[k][0], sum(spans[k])) for k in ('PLATE REV','COMPRESSOR'))

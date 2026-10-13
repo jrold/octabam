@@ -659,7 +659,7 @@ def _roundtrip(list_out, blob, org, label):
                  f"in tools/build/build_bus.py updated:\n{sites or '    (no sites)'}")
 
 
-def assemble_syms(src_text, org, label=""):
+def assemble_syms(src_text, org, label="", *, strict_layout=False):
     global _SCRATCH
     if _SCRATCH is None:
         import tempfile
@@ -669,6 +669,8 @@ def assemble_syms(src_text, org, label=""):
     r = subprocess.run([str(DIS), "-in", str(tmp), "-org", f"{org:x}",
                         "-out", str(binf), "-sym", str(symf), "-list"],
                        check=True, capture_output=True, text=True)
+    if strict_layout and "sizing drift" in r.stderr:
+        sys.exit(f"{label}: relocated assembly has sizing drift:\n{r.stderr}")
     blob = binf.read_bytes()
     words = [blob[i] | (blob[i + 1] << 8) | (blob[i + 2] << 16)
              for i in range(0, len(blob), 3)]

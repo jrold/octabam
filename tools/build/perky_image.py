@@ -238,9 +238,21 @@ def extend_upload(img: bytes | bytearray, tag: str, y_words: list[int],
     # P: ordinary P records for module code that needs ground no stock record
     # covers (the shared runs). ot_record is space-agnostic, so space 0 is the
     # same emission as X and Y; the check is what makes it safe.
+    claimed_p = []
     for base, values in p_records or []:
+        if not values or not (0 <= base < base + len(values) <= 0x40000):
+            die(f"payload {tag}: invalid P record geometry {base:#x}+{len(values)}")
+        if any(not 0 <= value <= 0xffffff for value in values):
+            die(f"payload {tag}: P record contains a non-24-bit word")
+        if any(_overlap(base, len(values), b, n) for b, n in claimed_p):
+            die(f"payload {tag}: appended P records overlap")
         _check_space_free(records, 0, base, len(values), tag, "P code")
+        # In the shared window X/Y writes are P writes as well.
+        if base >= 0x30000:
+            for space in (1, 2):
+                _check_space_free(records, space, base, len(values), tag, "aliased P code")
         extra += ab_records.ot_record(0, base, values)
+        claimed_p.append((base, len(values)))
 
     raw = bytes(img[p0:term]) + extra + bytes(img[term:p0 + c["payload"][1]])
     return raw, term

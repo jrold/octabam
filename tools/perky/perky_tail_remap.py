@@ -1,44 +1,10 @@
 #!/usr/bin/env python3
-"""Turn the emitter's placement into the build's P_REMAP / P_WANT_EXTRA.
+"""Emit relocated shared-P records for PERKY's extended preboot uploads.
 
-THE PROBLEM THIS SOLVES
-    `perky_emit_shards.emit()` already places every shard correctly: it returns
-    `dest = {shard: DSP P address}` and all 16 shards land inside
-    `all_fx_layout.SAFE_LOCAL_P_SPANS + SAFE_SHARED_P_SPANS` (measured, r148).
-    But `build_bus` cannot WRITE there: the P record table comes from the stock
-    payload, and no stock record covers the shared runs, so `_p_off` refuses
-    (r152). The records have to exist first.
-
-WHAT IT BUILDS
-    For every shard that MOVES (dest[name] != its old address):
-
-        P_REMAP[tag]      += (None, (dest[name], packed_words))   -- append a record
-        P_WANT_EXTRA[tag] += (dest[name], len(words))             -- name the same ground
-
-    `build_bus` applies the first before it reads `mods`, and adds the second to
-    `_want`; its pre-existing `_have != sum(n for _a, n in _want)` guard then
-    proves the two agree -- no new check is needed (r152, r157).
-
-WHY BOTH, AND WHY THE WORDS ARE COUNTED TWICE
-    The five donor records stay in `region`, holding their old stock code, so
-    `_have` counts them AND the appended records. `_want` must therefore count
-    both too. The duplication costs accounting, not space: `region` is only a
-    write target, and the donors are effects this milestone has given up.
-
-    Re-pointing the donors instead cannot work: their extents and the shards'
-    extents do not correspond (Plate alone feeds four shards going to four
-    different runs, r151), and `repoint` moves one record to one address.
-
-UNITS -- THE TRAP THAT COST SIX ROUNDS (r148-r153)
-    `dest`, `whole`'s slice indices and this module's addresses are all ordinary
-    P addresses. `P_WANT_EXTRA` takes `(addr, WORDS)`, the convention
-    `stock.p_spans` and `build_bus`'s `region` line use (`a <= m[1] < a + n`).
-    `all_fx_layout.SAFE_*_SPANS` is `[lo, hi)`; nothing here consumes it.
-
-SELF-TEST
-    `--selftest` runs the whole thing against the real build and prints what it
-    would hand the build: per-tag append counts, word totals, and the run each
-    appended extent falls in. It writes nothing.
+The current canary installs private Plate/Compressor shards through existing
+records, then extends both uploads with identical shared shards. This tool's
+JSON adapter preserves the old analysis interface; growing stock uploads in
+place is not the production path. Addresses and lengths are ordinary P words.
 """
 from __future__ import annotations
 
@@ -58,50 +24,28 @@ def pack(words) -> bytes:
     return b"".join(int(w).to_bytes(3, "little") for w in words)
 
 
-def build(pieces, whole, dest, org):
-    """Return ({tag: remap}, {tag: extra}) for payloads A and B.
+def build(asm):
+    """Return payload-specific relocated shared records and their word extents.
 
-    `pieces` and `whole` come from `emit()`; `org` is the monolith's load
-    address, so piece words are `whole[a-org : b-org]`.
-
-    ⚠️ ONLY SHARDS LANDING IN A *SHARED* RUN GET A RECORD. The local runs are
-    Plate's and Compressor's own extents -- stock records already cover every
-    address in them, so a shard placed there needs no append. Appending for those
-    too grew payload A to 85,749 B against a 79,563 B payload (r166).
-
-    ⚠️ THE SHAPE IS WHAT `perky_image.extend_upload` TAKES: `(addr, [word, ...])`.
-    The records go there, not into `build_bus` -- the two payloads are adjacent
-    (A ends where B begins, gap 0, r167), so the record table cannot grow in the
-    bytes `build_bus` writes. `extend_upload` returns a replacement upload the
-    pre-boot loader reads, which is how X and Y have always shipped.
+    Local Plate/Compressor shards are installed by perky_fragmented_image;
+    shared shards extend the upload. Both payloads have the same placement
+    geometry. Shared code never calls into payload-private P and is identical.
     """
+    import perky_fragmented_image as F
     import all_fx_layout as L
-    local = L.SAFE_LOCAL_P_SPANS          # [lo, hi) -- Plate + Compressor
-
-    def in_local(addr, words):
-        return any(lo <= addr and addr + words <= hi for lo, hi in local)
-
-    remap, extra, stayed, local_kept, moved = [], [], [], [], 0
-    for (name, a, b, _text, _i) in pieces:
-        new = dest[name]
-        if new == a:
-            stayed.append((name, a, b - a))       # an existing record already covers it
-            continue
-        words = list(whole[a - org: b - org])
-        if len(words) != b - a:
-            raise SystemExit(f"{name}: got {len(words)} words, expected {b - a}")
-        if in_local(new, len(words)):
-            local_kept.append((name, new, len(words)))   # stock records already cover it
-            continue
-        remap.append((new, words))
-        extra.append((new, len(words)))
-        moved += len(words)
-
-    # dest holds DSP P addresses, which are payload-INDEPENDENT -- only the stock
-    # RECORD addresses differ between A and B (r149), and append names none.
-    both = {"A": list(remap), "B": list(remap)}
-    extra_both = {"A": list(extra), "B": list(extra)}
-    return both, extra_both, stayed, local_kept, moved
+    both, extra = {}, {}
+    local_kept=[]
+    for tag in ('A','B'):
+        records, ledger, _ = F.plan(asm,tag)
+        shared=[]
+        for item,(addr,words) in zip(ledger,records):
+            if any(lo <= addr and addr+len(words) <= hi for lo,hi in L.local_p_spans(tag)):
+                if tag=='A':local_kept.append((item['name'],addr,len(words)))
+            else:
+                shared.append((addr,words))
+        both[tag]=shared
+        extra[tag]=[(addr,len(words)) for addr,words in shared]
+    return both, extra, [], local_kept, sum(len(w) for _,w in both['A'])
 
 
 def to_json(both, extra) -> dict:
@@ -145,7 +89,7 @@ def main() -> int:
 
     org = E.MONOLITH_ORG
     pieces, whole, dest, final, syms = E.emit(asm)
-    both, extra_both, stayed, local_kept, moved = build(pieces, whole, dest, org)
+    both, extra_both, stayed, local_kept, moved = build(asm)
 
     runs = [(a, b, 'LOCAL') for a, b in L.SAFE_LOCAL_P_SPANS] + \
            [(a, b, 'SHARED') for a, b in L.SAFE_SHARED_P_SPANS]
