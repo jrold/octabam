@@ -1996,3 +1996,63 @@ payloads (payload A has a template -- two in-window records; payload B has none,
 **That is a smaller and more sharply-defined task than the handoff previously implied.** The fit is
 proven, the placement is computed, the pieces are byte-exact at their origins. **The records are the
 whole of what remains.**
+
+---
+
+# STEP 2's RECORD FORMAT, READ FROM THE PARSER (round 121)
+
+Step 2 is one task: **add records for the five tails to both payloads.** Round 121 read the parser
+that defines them -- `tools/build/dsp_modmap.py` -- so the task now has a spec rather than a name.
+
+## The record layout, from `parse()`
+
+```
+off = 0
+if b[0] == 3:  off = 6          # optional leading tag
+if b[off] == 4: off += 6        # and optionally a second
+
+record i:
+  +0   w24  space      <- 0..3; a value > 3 TERMINATES the table
+  +3   w24  f1         <- count, if order == "ca"
+  +6   w24  f2         <- addr
+  +9   ...  count * 3 bytes of WORDS
+  next record begins at +9 + count * 3        <- records are CONTIGUOUS
+```
+
+**Two orders are tried, `"ca"` and `"ac"`, and whichever consumes the blob cleanly wins** -- the
+decompilation did not settle whether the count comes before the addr. So a writer must match whichever
+the payload's other records use, and the parser will tell it which.
+
+## The fact that decides the whole task
+
+**`data = off + 9` -- the code WORDS are stored INLINE in the record, not referenced by it.** A record
+is not "a pointer to some words elsewhere"; it **is** the words, with a 9-byte header.
+
+**So adding a tail record means appending `w24(space) w24(count) w24(addr) + count*3 bytes` to the
+payload blob, before the terminating record.** The tail's bytes go in with it.
+
+**And `build_bus._p_off` -- the other side of this contract -- walks exactly these tuples:**
+
+```python
+for sp, a, cnt, off in mods:
+    if sp == 0 and a <= addr < a + cnt:
+        return va + off + (addr - a) * 3
+sys.exit(f"payload {tag}: no P record holds P:0x{addr:05x}")
+```
+
+**`sys.exit` -- not a warning.** A word with no record cannot be written, which is why the tails are
+free ground: **nothing claims them, so nothing can put code there.** Adding the record is what makes
+them claimable.
+
+## So step 2 is now three concrete edits
+
+1. **Find the payload blob's WRITER** (the counterpart of this parser -- `parse` reads, something
+   assembles).
+2. **Emit a record per tail**, in whichever `order` the payload's existing records use, with the
+   shard's bytes inline.
+3. **Do it for BOTH payloads** -- payload A has two in-window records as a template; **payload B has
+   none, and T1 lives there** (r88).
+
+**Then call `place_program_shards_two_space()`** -- which `perky_emit_shards.emit()` *already does*
+(r120), so that part is done. **The placement is computed; the records are what remains, and they are
+now specified.**
