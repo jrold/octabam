@@ -27,6 +27,28 @@ def build(assets,build_number,version):
     build_image(work,build_number,version)
 
 
+DSP_P_ORG = 0x1000  # where the shared loader places the PERKY program
+
+
+def _perky_p_region_words() -> int:
+    """The contiguous stock-effect run this remix gives up, in P words.
+
+    Derived from the same stock spans the remix build uses, so the ledger can
+    never disagree with what was actually placed.
+    """
+    import sys as _sys
+    _sys.path[:0] = [str(ROOT / 'tools/remix')]
+    from remix import registry as _registry, stock as _stock
+    _r = _registry.remix('perky-machine')
+    _give = _stock.harvested(set(_r.modules) | set(_r.fx1 or set()))
+    _runs = _stock.regions_of(_give)
+    if not _runs:
+        raise SystemExit('perky ledger: the remix harvests no stock effects, so it '
+                         'has no P region to place into')
+    _spans = _stock.p_spans('A')
+    return max(sum(_spans[k][1] for k in run) for run in _runs)
+
+
 def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2),engine_description='003 SIMPLE DRUM (authentic v1.2.1); 011 NOISE/TONE (PERKY2 synthetic)'):
     """Image phase after local qualification; useful when resuming a failed port gate."""
     control_source=work/'control.s'
@@ -46,7 +68,34 @@ def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2)
             if v is None:os.environ.pop(k,None)
             else:os.environ[k]=v
     # The ledger checks finalized stock uploads, both memory spaces and shared aliases.
-    (work/'memory.json').write_text(json.dumps({'p_words':payload.source.noise.measure((work/'multi.asm').read_text(),work/'multi.asm'),'p_capacity':2724,'x_words':sum(r.length for r in ranges if r.space=='x'),'y_words':1946,'y_capacity':2139,'ranges':[dataclasses.asdict(r) for r in ranges]},indent=2)+'\n')
+    #
+    # Every number here is DERIVED, because a hardcoded capacity is worse than no
+    # capacity: it reads as a result. This ledger previously said
+    # p_capacity 2724 alongside a measured 3051 P words, i.e. it reported a
+    # 327-word overrun on a build that in fact places 3051 words into a
+    # 3441-word region with 390 free. 2724 was the old three-reverb donor's
+    # "deduplicated" size and had nothing to do with this remix. y_words was
+    # hardcoded to 1946 while the ranges it ships beside sum to 2139, and P had
+    # NO entry in `ranges` at all -- so the one space this milestone is actually
+    # short of was the one space the ledger did not claim.
+    p_words=payload.source.noise.measure((work/'multi.asm').read_text(),work/'multi.asm')
+    p_capacity=_perky_p_region_words()
+    y_words=sum(r.length for r in ranges if r.space=='y')
+    ledger={
+        'p_words':p_words,
+        'p_capacity':p_capacity,
+        'x_words':sum(r.length for r in ranges if r.space=='x'),
+        'y_words':y_words,
+        'y_capacity':2139,
+        'p_free':p_capacity-p_words,
+        'ranges':[dataclasses.asdict(r) for r in ranges]+[
+            {'space':'p','start':DSP_P_ORG,'length':p_words,
+             'what':'PERKY shipped DSP program (both payloads)','half_relative':False},
+        ],
+    }
+    if p_words>p_capacity:
+        raise SystemExit(f"perky ledger: P overruns its region ({p_words} > {p_capacity})")
+    (work/'memory.json').write_text(json.dumps(ledger,indent=2)+'\n')
     mainos=ROOT/'out/mainos_perky_multi.bin'
     base.repack_machine_loader.build(ROOT/'out/mainos_bus.bin',work,mainos,platform_dir=ROOT/'out/platform',work=ROOT/'out/platform-perky-machine')
     subprocess.run([sys.executable,str(ROOT/'tools/verify/verify_perky_machine_boot.py'),'--image',str(mainos),'--packed',str(work)],cwd=ROOT,check=True)
