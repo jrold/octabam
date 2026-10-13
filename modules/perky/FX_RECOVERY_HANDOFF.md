@@ -149,3 +149,60 @@ solved by placement, which is what the sharding already does.
    are declarable as x/y `DspRange`s because X, Y and P alias inside the window.
 
 **Step 1 is a located, small edit. Step 2 is the emitter, whose every property is proven.**
+
+---
+
+# DECISIVE: the multi-run placer already exists. Only one rule blocks it.
+
+`tools/remix/stock.py:347`, `regions_of()`'s own docstring:
+
+> Harvested effects grouped into CONTIGUOUS runs, in address order.
+>
+> **A module of ours is one code stream, so it must fit inside ONE run -- but different
+> modules can sit in different runs, which is what `build_bus.py`'s placer does.** So every
+> harvested effect is placeable ground, and the only cost of a gap is fragmentation: **a module
+> larger than the biggest run has nowhere to go even when the total is ample.**
+>
+> Until this returned the LARGEST run alone and the rest were given up for nothing -- visible
+> in the remixer as "drop two effects, free only the reverbs" (Sam, 3 Sep). **A stranded run is
+> now placeable.**
+
+And `region_of()` (line 372) is now just the flattened name callers use:
+
+```python
+def region_of(harvest):
+    """... It is no longer a single run -- see regions_of() for the grouping the
+    placer needs."""
+    return tuple(k for run in regions_of(harvest) for k in run)
+```
+
+## What this means for change 2
+
+**The placer already places different modules into different runs.** Nothing about the
+two-address-space layout is unsupported. What blocks Perky is exactly one rule:
+
+> **A module of ours is one code stream.**
+
+Perky is one module, so its 3051 words must fit one run -- and with SPRING, DARK and LO-FI kept,
+the largest run is 594.
+
+**The fix is precisely the sharding, already built and proven:**
+
+| property the split needs | status |
+|---|---|
+| the program divides into independently placeable pieces | 21, markers balanced, zero unmarked, none over the 605 cap |
+| a piece does not depend on where it sits | origin-independent at three origins |
+| a piece never branches relatively outside itself | **0** cross-piece relative branches; all 39 transfers are absolute `jsr`/`jsrl` |
+| pieces reassemble to the original | **byte-identical to the monolith**, all 3051 words |
+| pieces assemble at their assigned origins | 21/21, extents exact, **zero sizing drift** |
+
+**So change 2 is: let ONE module contribute several placeable streams, and feed the placer the
+assignment `place_program_shards_two_space()` already computes.** That is a change to the
+one-stream assumption, not new placement machinery.
+
+## The framing this replaces
+
+Addenda 21-25 progressively described change 2 as "new machinery", then "the part with no
+existing machinery", then "five spans declarable, two needing schema work". Those were all
+written before reading `regions_of()`'s docstring, which states the actual rule in its second
+paragraph. **The mechanism was documented; I was reasoning from the call site instead.**
