@@ -121,6 +121,12 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_fold_seam_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_multi_seam_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_synth_seam_exec.py", remix_arg=False),
+        # Further engine/ABI gates, each verified to PASS before registration.
+        Gate("tools/verify/verify_perky_simple_drum_voice_exec.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_fold_drum_exec.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_xstate_asm_layout.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_stock_dsp_boot_path.py", remix_arg=False),
+
 
 
         Gate("tools/verify/verify_perky_compact_voice.py", remix_arg=False),

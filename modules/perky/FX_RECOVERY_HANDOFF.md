@@ -1537,3 +1537,57 @@ claiming 94 unregistered gates and believed it.**
 
 **Same family as everything else here**: check what the instrument reads before trusting what it
 does not say.
+
+---
+
+# TWELVE GATES RECOVERED, AND THREE FOUND STALE (rounds 77-80)
+
+**Suite: 64 gates at round 76 -> 76 run, 0 failed.** Every gate below was verified to PASS by hand
+*before* registration -- registering an untested gate is how you break a suite for reasons that have
+nothing to do with the work.
+
+| gate | guards | round |
+|---|---|---|
+| `verify_perky_cf_odd_access` | odd ColdFire word/long displacement | 77 (teeth proven both ways) |
+| `verify_perky_all_fx_placer` | the 2,404-word tail budget is usable | 78 |
+| `verify_perky_all_fx_memory` | keep the split; harvest neither FX arena | 78 |
+| `verify_perky_shipping_voice_exec` | the shipping engine voice | 79 |
+| `verify_perky_fold_regression` | fold regression | 79 |
+| `verify_perky_fold_seam_exec` | the fold seam | 79 |
+| `verify_perky_multi_seam_exec` | the multi-engine seam | 79 |
+| `verify_perky_synth_seam_exec` | the synth seam | 79 |
+| `verify_perky_simple_drum_voice_exec` | Simple Drum native parity (240 blocks) | 80 |
+| `verify_perky_fold_drum_exec` | Fold Drum vs the ARM blocks (15) | 80 |
+| `verify_perky_xstate_asm_layout` | the X-state ABI (62 accumulators) | 80 |
+| `verify_perky_stock_dsp_boot_path` | stock-DSP boot path (1,000 ColdFire uploads) | 80 |
+
+## THREE ARE STALE, AND MUST NOT BE REGISTERED
+
+Running the candidates before registering them found three that fail for reasons unrelated to this
+milestone:
+
+| gate | why it fails |
+|---|---|
+| `verify_perky_synth_build_path` | *"full donor budget is 3441, expected 272"* -- written for an older donor layout |
+| `verify_perky_image_legacy_identity` | `ImportError: cannot import name 'runtime_build' from 'remix'` -- references a removed API |
+| `verify_perky_machine_boot` | `FileNotFoundError` -- needs an artifact path it is not given |
+
+**Registering these would have made `make check` red for reasons that say nothing about the
+shipping image** -- and the obvious next move would have been to weaken or delete them. **Recording
+them as stale is the honest alternative: they are evidence that the tree has moved, not that the
+milestone is broken.**
+
+## The method, corrected and worth keeping
+
+```python
+# count Gate(...) however it wraps -- the manifest uses a multi-line form
+registered = set(re.findall(r'Gate\(\s*\n?\s*"([^"]+)"', manifest_text))
+candidates = [n for n in perky_tools_on_disk if f"tools/verify/{n}" not in registered]
+for c in candidates:
+    run it; register it ONLY if it passes; note it as stale if it fails for a
+    reason unrelated to the milestone.
+```
+
+**Two guards, both earned here:** the corrected regex (round 79 -- the naive one missed the wrapped
+form and produced duplicate registrations), and the run-before-register rule (this round -- which is
+what separated the twelve from the three).
