@@ -861,3 +861,56 @@ address spaces, and gate execution -- plus the ordinary questions any new image 
 present in the QUALIFIED build (line 408). The sharded assembly must be required to have
 that diagnostic **empty**, not merely non-fatal: drift that exists today is origin-invariant
 and therefore harmless, but drift introduced *by* sharding would not be.
+
+---
+
+# ADDENDUM 15 — step 5's assignment EXECUTED: all 21 shards placed
+
+`all_fx_layout.py` walked only the five shared tails, so the two local runs were
+unreachable and even a perfectly sharded program was unplaceable. Fixed by adding:
+
+* **`SAFE_LOCAL_P_SPANS`** -- the ordinary-local-P runs freed by the two approved
+  sacrifices: PLATE `0x1000..0x1252` (594) and COMPRESSOR `0x1AA4..0x1B58` (180);
+* **`all_p_spans()` / `total_p_capacity()` / `largest_p_span()`** -- now **3178** and
+  **605**, matching the brief's own arithmetic;
+* **`place_program_shards_two_space()`** -- first-fit-**decreasing** across both spaces.
+
+Why decreasing rather than the given-order first-fit the shared-only placer uses: the
+packing is tight (127 words free), and decreasing order is what was actually proved to
+fit. A given-order first-fit can fail on an input a decreasing one packs, which would read
+as "it does not fit" when it does.
+
+`validate()` still passes, so the existing 2404-word shared-tail invariant is untouched.
+
+## The real placement, on the real pieces
+
+Every one of the 21 measured shards, totalling 3051 words:
+
+```
+LOCAL-P 0x001000..0x001252 ( 594)  used  580 free  14   2 shards
+LOCAL-P 0x001aa4..0x001b58 ( 180)  used  162 free  18   1 shard
+SHARED  0x033da3..0x034000 ( 605)  used  599 free   6   3 shards
+SHARED  0x037da3..0x037f00 ( 349)  used  338 free  11   2 shards
+SHARED  0x037f10..0x038000 ( 240)  used  237 free   3   1 shard
+SHARED  0x03bda3..0x03c000 ( 605)  used  589 free  16   5 shards
+SHARED  0x03fda3..0x040000 ( 605)  used  546 free  59   7 shards
+
+placed 21/21   total placed 3051   total free 127
+```
+
+**Both local runs are used** -- which is exactly what returns P to Spring, Dark and Lo-Fi.
+
+## What remains, precisely
+
+Not placement: that is done and verified. What remains is the **emitter**: take each shard's
+source slice, assemble it at its ASSIGNED origin, and stitch the results into the image --
+with the standing requirement that `assemble_syms`'s sizing-drift diagnostic be **empty**
+for the sharded assembly, since drift introduced by sharding would move addresses inside a
+shard.
+
+Two further things the emitter must not get wrong, both already recorded:
+
+* a shard in a **local** span and a shard in a **shared tail** are different address spaces
+  with different absolute bases -- the placement above records which is which per shard;
+* the image must still pass the ordinary gates: DSP timing for the retained engines, the
+  boot/upload/readback path, and the P/X/Y ledger.

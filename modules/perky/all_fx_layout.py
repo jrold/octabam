@@ -18,6 +18,17 @@ LOW_Y_SPAN = (0x07A5, 0x1000)
 FX_ARENA_SPAN = (0x1000, 0xC000)
 STOCK_MAILBOX_SPAN = (0x37F00, 0x37F10)
 
+# Half-open [lo, hi) ORDINARY-LOCAL-P ranges freed by the two effects this milestone is
+# approved to sacrifice. Unlike the shared tails these are not in the aliased window, so a
+# shard placed in one lives in a DIFFERENT ADDRESS SPACE from a shard in a tail. That is
+# fine -- the DSP executes from both -- but it must be recorded, because the two spaces
+# have different absolute bases and any emitter that treats them as one range is wrong.
+SAFE_LOCAL_P_SPANS: tuple[tuple[int, int], ...] = (
+    (0x1000, 0x1252),   # PLATE REV (594 words) -- approved sacrifice
+    (0x1AA4, 0x1B58),   # COMPRESSOR (180 words) -- approved sacrifice
+)
+
+
 # Half-open [lo, hi) shared-memory ranges that may be considered for P code.
 SAFE_SHARED_P_SPANS: tuple[tuple[int, int], ...] = (
     (0x33DA3, 0x34000),
@@ -58,6 +69,19 @@ def largest_shared_p_span() -> int:
     return max(span_words(span) for span in SAFE_SHARED_P_SPANS)
 
 
+def all_p_spans() -> tuple[tuple[int, int], ...]:
+    """Every span a Perky shard may occupy, across BOTH address spaces."""
+    return SAFE_LOCAL_P_SPANS + SAFE_SHARED_P_SPANS
+
+
+def total_p_capacity() -> int:
+    return sum(span_words(span) for span in all_p_spans())
+
+
+def largest_p_span() -> int:
+    return max(span_words(span) for span in all_p_spans())
+
+
 def low_y_capacity() -> int:
     return span_words(LOW_Y_SPAN)
 
@@ -87,6 +111,52 @@ def validate() -> None:
         if previous_end is not None and lo < previous_end:
             raise ValueError("shared-P spans overlap or are unsorted")
         previous_end = hi
+
+
+def place_program_shards_two_space(shards: Sequence[ProgramShard],
+                                   spans: Sequence[tuple[int, int]] | None = None,
+                                   ) -> list[ProgramPlacement]:
+    """First-fit-DECREASING across both address spaces.
+
+    Why decreasing rather than the given order the shared-only placer uses: the packing is
+    tight (measured 127 words free across both spaces for the current program), and
+    decreasing order is what was actually proved to fit. A given-order first-fit can fail
+    on an input a decreasing one packs, which would look like "it does not fit" when it does.
+
+    Each shard is INDIVISIBLE and must fit inside one span: code may contain local branches
+    and data adjacency, so it may only cross a hole after a builder has explicitly split it
+    at a relocation-safe boundary. A span in SAFE_LOCAL_P_SPANS and one in
+    SAFE_SHARED_P_SPANS are different address spaces; the caller gets whichever fits and is
+    responsible for emitting that shard against the right base.
+    """
+    validate()
+    use = tuple(spans) if spans is not None else all_p_spans()
+    cursors = [lo for lo, _ in use]
+    placements: list[ProgramPlacement] = []
+    names: set[str] = set()
+
+    for shard in sorted(shards, key=lambda s: -s.words):
+        if not shard.name or shard.name in names:
+            raise ValueError(f"program shard name must be unique and nonempty: {shard.name!r}")
+        if shard.words <= 0:
+            raise ValueError(f"program shard {shard.name!r} has invalid size {shard.words}")
+        names.add(shard.name)
+
+        placed = None
+        for index, (_, hi) in enumerate(use):
+            start = _align(cursors[index], shard.alignment)
+            if start + shard.words <= hi:
+                placed = ProgramPlacement(shard.name, start, shard.words)
+                cursors[index] = placed.end
+                break
+        if placed is None:
+            free = sum(hi - cur for cur, (_, hi) in zip(cursors, use))
+            raise ValueError(
+                f"program shard {shard.name!r} ({shard.words} words, align {shard.alignment}) "
+                f"does not fit across {len(use)} spans; total free {free} words, largest "
+                f"original span {max(span_words(s) for s in use)}")
+        placements.append(placed)
+    return placements
 
 
 def _align(value: int, alignment: int) -> int:
