@@ -800,3 +800,57 @@ will genuinely disagree rather than agreeing on an unconventional-but-consistent
 
 **That is a stronger statement than "the gate fails"**, and it is the one the milestone's packaging
 claim needed.
+
+---
+
+# THE GEOMETRY SETTLES IT: `ELEK_VERSION_OFF = 0x0D` IS THE ARITHMETIC (round 103)
+
+Round 102 measured that the card's ELEK and the emitted container are byte-identical, and concluded
+the gate's `rjust` expectation was "out of step" and the tool's code merely "unconventional". **That
+was too generous.** The field's geometry says the tool has a real bug.
+
+```
+0x00..0x03   magic           b'ELEK'
+0x04..0x07   b'0178'
+0x08..0x11   version field   b'PERKY2V   '    <- 10 bytes, text LEFT-aligned
+0x12..0x15   section length  00088a72
+```
+
+**The comment names `ELEK_VERSION_OFF = 0x0D` as where the alnum version begins.** In a 10-byte field
+starting at `0x08`, `0x0D` is `0x08 + 5` -- **exactly where a FIVE-character version begins when it
+is right-justified**: five pad bytes, then the text, ending at `0x11`.
+
+**So `ELEK_VERSION_OFF = 0x0D` is not decoration -- it is the stock convention in arithmetic form:
+a 5-char version, right-justified in a 10-byte field at 0x08.** That is independent evidence, it
+agrees with the comment's words, and it agrees with the gate's `rjust(10)`.
+
+**Conclusion: the tool's `ljust` is a genuine defect**, and `PERKY2V   ` is not merely an
+"unconventional-but-consistent" choice -- it is the wrong alignment for the field the running OS and
+bootloader read.
+
+## Reconciling rounds 101, 102 and 103
+
+| round | claim | verdict |
+|---|---|---|
+| 101 | the tool's code contradicts its comment | **right** |
+| 102 | the card decodes to the container byte for byte | **right, and it stands** |
+| 102 | therefore the gate's expectation is what's wrong | **wrong** -- 103's arithmetic refutes it |
+| 103 | `ELEK_VERSION_OFF = 0x0D` proves right-justification | **the discriminator** |
+
+**Both round 102 measurements remain true**: the card decodes to the container exactly, **and** the
+tool writes the wrong alignment. **They are not in tension** -- a tool can be self-consistent and
+still wrong, and the card and container agree *because they came from the same buggy writer*.
+
+## What this means for the artifact, stated carefully
+
+**The card and MIDI are still what was physically tested, and their hashes are unchanged.** Perky,
+the SRC page, the engines and the gain trim are **untouched by any of this** -- the version field is
+display metadata, not code, and it does not affect whether the card flashes or how the voice sounds.
+
+**But the version string the unit displays is mis-aligned**, and that is now a *known* cosmetic
+defect rather than an open question. **The one-line fix is to right-align in `set_version`, and it
+must be made together with rebuilding the tool** -- after which the card, the ELEK and the MIDI
+should all be regenerated so they continue to agree, this time on the correct convention.
+
+**Until then the roundtrip gate is correctly red**, and it should stay red: it is the only thing that
+noticed.
