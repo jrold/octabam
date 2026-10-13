@@ -674,3 +674,67 @@ absent, and this is a third external dependency alongside `OT_PROJECT` and the P
 mismatch is between the **ELEK container** and the **checker** -- it does not alter the card or the
 MIDI. **But it means the packaging roundtrip is unproven for this build**, and that is a claim the
 milestone's release gates require.
+
+---
+
+# ROOT CAUSE: THE PATCH'S COMMENT AND THE PATCH'S CODE DISAGREE (round 101)
+
+Round 100 pinpointed the version-field mismatch to a convention disagreement. **Round 101 found the
+oracle, and the defect.**
+
+## The oracle was in the repo all along
+
+`tools/patches/elektron-firmware-tool.patch` documents the convention in a comment:
+
+> Octatrack: the running OS/bootloader draw the version from container offset 0x08
+> (**space-padded, right-justified 10-char field**, NUL-terminated by the section-length high byte
+> at ELEK_SECT_OFF). ELEK_VERSION_OFF (0x0D) is only where the alnum version begins; write the full
+> field from 0x08 so the whole 10-char display area is editable.
+
+**That agrees with the gate's `rjust(10)`.** So the gate is right.
+
+## But the patch's own code pads left
+
+```c
+voff=0x08;
+for(fend=voff; fend<ELEK_SECT_OFF && (is_alnum(c[fend])||c[fend]=='.'||c[fend]==' '); fend++);
+...
+int cap=fend-voff, nl=(int)strlen(ver);
+if(nl>cap) return -3;
+for(int i=0;i<cap;i++) c[voff+i] = (i<nl) ? (uint8_t)ver[i] : ' ';
+```
+
+`c[voff+i] = ver[i]` for `i < nl` writes the version from the **start** of the field and pads with
+spaces **after** it -- **left-justified**, the opposite of the comment two lines above.
+
+**Measured consequence:** `out/elek_PERKY2V.bin[0x08:0x12]` is `b'PERKY2V   '`, and the gate's
+`want_version` is `b'   PERKY2V'`, so the roundtrip refuses.
+
+## What this is NOT
+
+**Not a stale binary** -- though the timeline looked like it at first:
+
+```
+tools/patches/elektron-firmware-tool.patch          Oct 12 21:29
+vendor/elektron-firmware-tool/elektron-firmware-tool  Oct 6 10:57   (six days older)
+```
+
+**The binary does predate the patch**, and rebuilding is required regardless -- but that is a
+separate staleness. **A rebuild from the current source would still emit `ljust`**, because the code
+that does it is the patched code.
+
+## So the fix is one line, and it must not be made blind
+
+The correction is to right-align: write `ver[nl-1-i]` at `c[voff+cap-1-i]` instead of `ver[i]` at
+`c[voff+i]`.
+
+**But this changes the ELEK container, and therefore the card and the MIDI updater** -- the two
+artifacts that were physically tested and whose hashes are pinned. **I am not making that change
+without the hardware's own answer**, because the comment asserts what the running OS and bootloader
+do, and *the comment is the only evidence I have for it.* If the comment is wrong, right-aligning
+breaks the version display on the unit; if the code is wrong, the unit currently shows a
+mis-aligned version and the gate is the only thing complaining.
+
+**The cheap discriminator is one flash: does the unit display `PERKY2V` correctly today?** If it
+does, the code is right and the comment and the gate are wrong. **That is a question for hardware,
+not for another round of reading.**
