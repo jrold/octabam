@@ -3304,3 +3304,58 @@ module rather than a grep of the file.
 **The build can now be handed a placement and will write DSP code at tail addresses.** What remains is
 for `perky_emit_shards` -- which already imports `build_bus` and holds `dest` -- to populate `P_REMAP`
 from it. **Still first: the probe** (r139, gated r140), which needs `OT_PROJECT`.
+
+---
+
+# THE PLACEMENT ALREADY LANDS IN THE TAILS (round 148)
+
+Round 147 gave the build `P_REMAP`. The open question was whether the shard placement and the tail
+runs actually correspond. **Measured: they do, all of them.**
+
+```
+emit(): 16 pieces, dest has 16 entries
+SAFE_SHARED_P_SPANS: (212387,212992) (228771,229120) (229136,229376) (245155,245760) (261539,262144)
+SAFE_LOCAL_P_SPANS : (4096,4690) (6820,7000)
+shards landing in a SAFE run: 16 of 16
+
+synth_seam_glue.asm              0x01000   <- LOCAL run 1  (the PLATE record)
+simple_drum_envelope.asm         0x01150   <- LOCAL run 1
+simple_drum_delta.asm            0x01aa4   <- LOCAL run 1
+noise_tone_math.asm              0x33da3   <- SHARED run 1
+simple_drum_oscillator.asm       0x33ece   <- SHARED run 1
+pk_multi_simple_init             0x33fbb   <- SHARED run 1
+noise_tone_oscillator_packed.asm 0x37da3   <- SHARED run 2
+noise_tone_filter.asm            0x37e65   <- SHARED run 2
+noise_tone_envelope.asm          0x37f10   <- SHARED run 2
+synthetic_control_map.asm        0x37f92   <- SHARED run 2
+```
+
+**Sixteen of sixteen shards sit inside a safe run.** `place_program_shards_two_space()` was already
+doing the job; **nothing about the placement needs to change.**
+
+## What that leaves
+
+**Only the translation from `dest` to `P_REMAP`.** For each payload:
+
+1. **find the stock records covering the retired spans** -- they are the ones `region` is built from
+   (r145), and their addresses are known (`0x01000`, `0x01252`, `0x022a4`, `0x33da3`, `0x37da3`,
+   `0x37f10`, `0x3bda3`, `0x3fda3`);
+2. **for each shard in `dest` that falls in a run, emit `(old_addr, new_addr)`** -- a re-point, since
+   the words stay in the record whose byte area they already occupy -- **or `(None, (addr, words))`
+   where the shard needs a run no record covers**;
+3. **hand that dict to `build_bus.P_REMAP`.**
+
+**The word bytes come from `pieces`**, which `emit()` already returns alongside `dest`.
+
+## Why this is now mechanical
+
+**Every input is a measured number, not a guess:** the spans (above), the shard starts (`dest`), the
+shard bytes (`pieces`), the record addresses (`region`), and the two operations (`repoint`/`append`,
+gated since r144). **There is no remaining unknown in the placement** -- only the loop that joins
+them.
+
+## And the one thing that is still unmeasured
+
+**Whether the stock DSP boot routine honours a record at a tail address.** r135-r136 narrowed it to
+"probably", and **the probe (r139, gated r140) settles it in one run.** That is a hardware/emulator
+question, not a placement one, and it does not block writing the loop.
