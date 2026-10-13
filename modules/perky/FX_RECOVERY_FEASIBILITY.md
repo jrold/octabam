@@ -364,3 +364,49 @@ This is the third time this milestone that attempting a step has produced the us
 result where reasoning about it produced nothing (the `@CONT@` preprocessing, the sizing
 drift, and now uncovered pieces). The pattern is consistent: run the step, read what it
 actually does, and let the failure say what the plan missed.
+
+---
+
+# ADDENDUM 5 — step 2 progressed: engine bodies marked, coverage 1613 -> 2040 of 3051
+
+The composer appended the engine bodies with no delimiters at all:
+
+```python
+source += (ROOT/'modules/perky/fold_drum_voice.asm').read_text()
+source += (ROOT/'modules/perky/fold_drum2_voice.asm').read_text()
+```
+
+so 47% of the program sat outside every piece. Wrapping those two appends -- and the
+inline `pk_tone_candidate_voice` block -- in the composer's own
+`; ===== BEGIN <name> =====` / `; ===== END <name> =====` form takes the marked set from
+8 pieces to 11:
+
+| piece | chars | ~words |
+|---|---:|---:|
+| `synth_seam_glue.asm` | 11629 | 478 |
+| `noise_tone_math.asm` | 10608 | 436 |
+| `fold_drum2_voice.asm` | 6849 | 281 |
+| `noise_tone_oscillator_packed.asm` | 5549 | 228 |
+| `synthetic_control_map.asm` | 3802 | 156 |
+| `fold_drum_voice.asm` | 3638 | 149 |
+| `noise_tone_envelope.asm` | 2499 | 103 |
+| `noise_tone_filter.asm` | 2049 | 84 |
+| `noise_tone_voice_xstate_glue.asm` | 1673 | 69 |
+| `noise_tone_mix.asm` | 1368 | 56 |
+
+**PROVEN SAFE, not assumed:** the change is comments only, and a full rebuild produced
+**byte-identical artifacts** -- card `4ba4d72c...`, MIDI `685e5105...`, unchanged. A
+comment-only change that moved the bytes would mean the markers were being assembled.
+
+**NOT YET COMPLETE, and one gap is my own error:**
+
+* I emitted `; ===== BEGIN pk_tone_candidate_voice =====` **without a matching END**. An
+  unterminated piece is not a piece; it is a marker that will silently swallow whatever
+  follows it in any parser that trusts the delimiters.
+* **~1012 words still lie outside all markers.** The remaining unmarked content is other
+  inline `source+='''...'''` blocks further down `build_fold_candidate.py`.
+
+**Falsifier:** the coverage test is a source-text parser, so it can be wrong in the same
+way the markers can. The check that cannot be fooled is the byte-identity one above, and
+it says only that nothing was assembled differently -- **not** that the coverage is
+complete. Coverage completeness must be re-measured after every new marker.

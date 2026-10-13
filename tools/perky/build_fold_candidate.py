@@ -50,13 +50,18 @@ pksf_common_amp_gate:
     source=source.replace('pksd_mode_ready:\n        move a1,x:(r6+$8)','pksd_mode_ready:\n        move a1,x:(r6+$8)\npksf_skip_wave:',1)
     source=source.replace('jsrl pk_simple_voice','jsrl pk_tone_candidate_voice')
     source=source.replace('pksd_retrigger:\n','pksd_retrigger:\n        jsrl pk_fold_candidate_trigger\n',1)
+    source+='; ===== BEGIN fold_drum_voice.asm =====\n'
     source+=(ROOT/'modules/perky/fold_drum_voice.asm').read_text()
+    source+='\n; ===== END fold_drum_voice.asm =====\n'
     # Fold Drum 2, on its own engine marker ($0d), kept DISTINCT from Fold 1's $0c so
     # the staged boundary holds: marker $0c must still produce Fold1's exact behaviour,
     # because this branch was byte-identical to the physically-tested PERKY4 card at
     # 41227ef3. Two-word relative branches, so pass-1/pass-2 sizing cannot drift.
+    source+='; ===== BEGIN fold_drum2_voice.asm =====\n'
     source+=(ROOT/'modules/perky/fold_drum2_voice.asm').read_text()
+    source+='\n; ===== END fold_drum2_voice.asm =====\n'
     source+='''
+; ===== BEGIN pk_tone_candidate_voice =====
 pk_tone_candidate_voice:
         move x:>$418,a
         lsr #$5,a
