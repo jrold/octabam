@@ -622,3 +622,55 @@ question.** Round 98 answered "were these files written at the same time?" when 
 Either the staging step pads it one way and the card wrapper another, or one of the two is written
 from a different source. **This is unresolved, it is inside the deliverable, and it is exactly the
 class of defect the roundtrip gate was written to find.**
+
+---
+
+# THE VERSION-FIELD MISMATCH, PINPOINTED (round 100)
+
+Round 99 established the mismatch is real and inside one build. **Round 100 located it exactly.**
+
+```python
+# verify_perky_final_wrappers.py
+want_version = args.version.rjust(10, " ").encode("ascii")   # RIGHT-aligned
+got_version  = emitted[0x08:0x12]                            # the ELEK's field
+
+# build_machine_canary.py, line 159 -- the version goes to the EXTERNAL tool
+"-V", version,
+```
+
+**The ELEK's version field is written by `elektron-firmware-tool`**, invoked with `-V <version>` by
+the canary. It emits **`ljust`**: `'PERKY2V   '`. The gate expects **`rjust`**: `'   PERKY2V'`.
+
+**The gate also refuses a pre-padded version** (`version must be 1..10 ASCII non-whitespace
+characters`), so the padding is the gate's choice, not the caller's.
+
+## So this is a convention disagreement, and it needs an oracle
+
+Two components in the same build disagree:
+
+| component | convention |
+|---|---|
+| `elektron-firmware-tool` (writes the ELEK) | `ljust(10)` |
+| `verify_perky_final_wrappers.py` (checks it) | `rjust(10)` |
+
+**The oracle that would settle it is the stock firmware's own ELEK container.** This machine has
+`out/raw/section_3_MAIN_OS.bin` -- **the raw MAIN OS section, not a stock ELEK** -- so the oracle is
+absent, and this is a third external dependency alongside `OT_PROJECT` and the PĒRKONS image.
+
+## What is and is not established
+
+* **Established:** the container's field is `ljust`, the checker's expectation is `rjust`, both
+  within one build, and the roundtrip gate fails because of it.
+* **Established:** the gate is *doing its job* -- it exists to prove the card decodes to the emitted
+  container, and a field that disagrees is exactly what it should refuse.
+* **NOT established: which side is wrong.** It may be the gate's assumption, or the tool's output,
+  or neither (the two may simply be checking different fields). **I am not going to guess, and I am
+  not going to change either to make a gate green** -- that is how a version string becomes a
+  flashing bug.
+
+## The honest bottom line for the deliverable
+
+**The card and MIDI that were physically tested are unchanged and their hashes are pinned.** This
+mismatch is between the **ELEK container** and the **checker** -- it does not alter the card or the
+MIDI. **But it means the packaging roundtrip is unproven for this build**, and that is a claim the
+milestone's release gates require.
