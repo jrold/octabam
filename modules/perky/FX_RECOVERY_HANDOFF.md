@@ -1140,3 +1140,58 @@ of which are now located.** The order is therefore:
 
 **The executability question is step 3, not a precondition for steps 1-2.** That inverts addendum
 69's framing, and it means the goal is not gated on hardware for the next stage of work.
+
+---
+
+# THE PROBE, MADE PRECISE (round 71) -- and a cheaper test that comes first
+
+`ot_emu` is built (`out/emu/ot_emu`, Mach-O arm64). Reading its own header comment:
+
+```
+--dsp-pcwatch PC   ->  dsp pcwatch -> dsp n=<k> <executed>:<a1>:<a0>:<b1>:<b0>:<x0>:<x1>:...
+--dsp-watch        ->  watchmem, folded to its cached alias (0x8xxxxxxx) before the compare
+                       dsp peek <core> <X|Y|P> <addr> <len>  ->  reads memory (len <= 4096)
+```
+
+**`pcwatch` watches a SPECIFIC PC, not a range.** So "does the PC ever reach the window?" cannot be
+asked directly -- but the question does not need to be asked that way:
+
+## Test A (cheap, and it comes first): did the words ARRIVE?
+
+After the build places shards in the tails:
+
+```
+dsp peek <core> P <tail address> <len>
+```
+
+**`dsp peek` reads P memory. If the shard's words are there, the write path works -- which settles
+rounds 63-67's question directly and without executing anything.** If they are not, the write path
+is broken and no execution question arises. **This is strictly cheaper than the execution probe and
+it tests the prerequisite.**
+
+## Test B (the execution probe): does the core FETCH the shard?
+
+Place the shard, then watch **that shard's entry PC**:
+
+```
+--dsp-pcwatch 0x33da3        (or whichever tail address the shard's first instruction occupies)
+```
+
+run with Perky selected on T1/T5, and look for hits. **A hit means the core fetched that address;
+zero hits means the code there never runs.**
+
+* **Zero hits is decisive** -- the tail strategy is dead, and it is a local red, which AGENTS.md
+  says is a real defect.
+* **Hits are suggestive, not proof** -- a lock-step local run is a fuzz of hardware timing, not the
+  timing. The final confirmation is still a flash.
+
+## The order, updated
+
+1. implement the tail write path and the fit-and-place refactor;
+2. list SPRING/DARK/LO-FI in `fx1`;
+3. **Test A**: `dsp peek P` -- are the shard's words in the tail?
+4. **Test B**: `--dsp-pcwatch <shard entry>` -- does the core fetch them?
+5. hardware flash.
+
+**Steps 3 and 4 are both local and both bounded.** Neither existed in addendum 69, which treated
+the whole question as hardware.
