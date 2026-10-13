@@ -110,6 +110,11 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_noise_tone_ref.py", remix_arg=False),
         Gate("tools/verify/verify_perky_dsp_word_model.py", remix_arg=False),
         Gate("tools/verify/verify_perky_cf_odd_access.py", remix_arg=False),
+        # ALL_FX_MEMORY.md cites the placer as its proof that the 2404-word
+        # shared-tail budget is usable; both were unregistered and so had
+        # never run in make check. Registering them is the whole fix.
+        Gate("tools/verify/verify_perky_all_fx_placer.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_all_fx_memory.py", remix_arg=False),
         Gate("tools/verify/verify_perky_compact_voice.py", remix_arg=False),
         Gate("tools/verify/verify_perky_simple_drum_compact.py", remix_arg=False),
         Gate("tools/verify/verify_perky_noise_hat_pulse_native_compact.py", remix_arg=False),

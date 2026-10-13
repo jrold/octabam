@@ -1439,3 +1439,50 @@ not yet carry -- which is why it has no input, and why its absence has not bitte
 3. **register the gate in the manifest** so it runs in `make check` -- which is a one-line edit and
    is worth doing regardless, because a gate that exists and is never run is exactly the kind of
    thing this work has repeatedly found to be load-bearing and absent.
+
+---
+
+# THREE GATES THAT EXISTED AND NEVER RAN (rounds 77-78)
+
+The brief's gate list includes checks this project had already written. **Three of them were not in
+`make check`, so they had never run.** All three are now registered and the suite passes.
+
+| gate | what it guards | state |
+|---|---|---|
+| `verify_perky_cf_odd_access` | word/long access at an odd ColdFire displacement | **registered; teeth proven in both directions** |
+| `verify_perky_all_fx_placer` | the 2,404-word shared-tail budget is usable | **registered** |
+| `verify_perky_all_fx_memory` | keep the default memory split; harvest neither FX arena | **registered** |
+
+**Suite before: 64 gates. Now: 67 run, 0 failed.**
+
+## Why the two tail gates matter here specifically
+
+`ALL_FX_MEMORY.md` -- the document the brief cites as the authority for the memory accounting --
+says of `verify_perky_all_fx_placer.py`:
+
+> proves the complete 2,404-word capacity can be used without crossing a hole or touching the
+> mailbox
+
+**That sentence was the entire evidence for the tail budget, and the gate it names was not in the
+suite.** Both gates pass when run -- so nothing was wrong with them, and the defect was purely that
+nobody ran them. **The sharding plan's capacity claim rested on a proof that had been executed by
+hand, if at all.**
+
+## The audit method, so it can be repeated
+
+```python
+registered = set(re.findall(r'Gate\(\s*"(tools/verify/[^"]+)"', manifest_text))
+unregistered = [n for n in perky_tools_on_disk if n not in registered]
+```
+
+**101 of 169 `verify_perky*` tools are unregistered, and MOST ARE CORRECTLY SO**: the `3algo_*`,
+`wavetable_*`, `karplus`, `slap`, `complex_*` and `resonant_*` families are the retired and
+deferred engines this goal forbids, and many others are helpers imported by other gates rather
+than gates themselves. **The value of the audit was not the count -- it was finding the three that
+were load-bearing for THIS milestone.** A raw "101 unregistered" figure would have been noise.
+
+## What is still not done
+
+The `cf-*` family (about 30 tools) remains unregistered because each needs the ColdFire candidate
+built with `PERKONS_FIRMWARE`, `PERKYBITS_ROOT` and `OT_PROJECT`. **They are the same class of gap
+as the probe's fixture**: a required check whose subject lives outside this sandbox.
