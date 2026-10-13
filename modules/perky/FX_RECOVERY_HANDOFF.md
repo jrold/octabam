@@ -1,5 +1,67 @@
 # FX recovery — handoff
 
+## STATUS AT A GLANCE (round 74)
+
+**Delivered and gated — tasks 0, 1, 2, 3, 4, 7, 8 of the goal:**
+
+| | |
+|---|---|
+| baseline frozen | tag `perky2v-hw-baseline` -> `fc438e03`, archived with provenance |
+| SRC page order | `TUNE / DECAY / ALGO / PAR1 / PAR2 / MODE`, counts 128/128/4/128/128/3 |
+| engines reference-qualified | Fold1, Fold2, Simple, Noise/Tone -- both cores, 32000 frames, dirty memory |
+| Noise/Tone authenticity | resolved against the ARM captures; the shipping path IS the authentic seam |
+| output gain | **measured** (no source-path error), trimmed -18.06 dB by exact left shift |
+| P/X/Y ledger | corrected; **66 gates run, 0 failed** |
+| flashable artifact | `~/Downloads/PERKY2V_milestone.{syx,bin}`; hashes unchanged across 73 commits |
+
+**NOT delivered: Spring, Dark and Lo-Fi are still absent** (goal items 6-8). Everything below in
+this file is about getting them back.
+
+## Why it is hard, in three lines
+
+Perky's DSP program is **3051 words** and can only occupy **one contiguous run**. Keeping SPRING
+(1063) + DARK (1067) + LO-FI (537) leaves just PLATE (594) + COMPRESSOR (180) = **774 words
+local**, so the program must be emitted as **shards** across those runs plus five **shared-window
+tails** (2404 words). Capacity is fine -- 3054 vs 3178 -- **contiguity is the problem.**
+
+## The state of the sharding
+
+**PROVEN (all measured, all committed):** 21 pieces, markers balanced, zero unmarked content, none
+over the 605-word cap; code is origin-independent at three origins; **zero** cross-piece relative
+branches (39 transfers are absolute `jsr`/`jsrl`); a two-space placement computed; all 21 shards
+reassemble **byte-identically to the monolith**; they assemble at their **assigned** origins with
+exact extents and **zero sizing drift**; and the placement leaves Spring/Dark/Lo-Fi's 2,667 words
+untouched. `tools/perky/perky_emit_shards.py` does all of this and is registered as a gate.
+
+**NOT DONE — step 2, placing the shards, which is three things:**
+
+1. **the fit-and-place pipeline** (`build_bus.py`: assembly produces one word list, `_try_runs`
+   picks one run, `place(words, cursor)` writes it) must carry N streams;
+2. **the shared tails are not writable ground today** -- `region` is built only from harvested
+   spans, and the tails have no records (see rounds 61-67);
+3. **`place_program_shards_two_space()` must be called by the build**, not just by a tool.
+
+**AND ONE MEASURED RISK THAT DECIDES THE WHOLE APPROACH:** whether the DSP can **execute** from the
+shared window. `ALL_FX_MEMORY.md`'s heading says "executable"; its body says "candidate"; no stock
+code is placed there (payload A's highest P code base is `0x01eca`); and no measurement exists.
+**A heading is not a measurement.** The probe is designed and its recipe is documented below.
+
+## The order of work from here
+
+1. step 2 above (write path + fit-and-place refactor);
+2. list SPRING REV, DARK REV, LO-FI in `remixes/test/perky-machine/remix.py`'s `fx1`
+   (**prediction already confirmed by measurement**: 8 retained effects -> 11, zero new collisions);
+3. **Test A** (`dsp peek P <tail>`) -- are the shard's words actually in a tail?
+4. **Test B** (`--dsp-pcwatch <shard entry>`) -- does the core fetch them? **zero hits is decisive**;
+5. only then the hardware flash, and re-run all 66 gates on the sharded image.
+
+**Requirements 3 and 4 also need a stock project fixture (`OT_PROJECT`), which is not present in
+this worktree.**
+
+---
+
+
+
 **Read this one file. It supersedes the 25 addenda in `FX_RECOVERY_FEASIBILITY.md`, which are
 the measurement record and do not need re-reading to act.**
 
