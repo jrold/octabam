@@ -2699,3 +2699,49 @@ the same routine.
 | **does it validate `addr`** | **the one open question** -- and it is a yes/no in one named routine |
 
 **Everything else about step 2 has been measured, and the last item is now a single routine to read.**
+
+---
+
+# THE LAST QUESTION, NARROWED BY MEASUREMENT (round 135)
+
+The one open question is whether the stock DSP boot routine **validates `addr`**. Round 135 found the
+strongest local evidence available, and it points one way.
+
+## Stock itself already puts records in the shared window
+
+```
+payload A: 98 records; 2 have addr inside 0x30000..0x3ffff
+    record at 0x30000   count=171
+    record at 0x38000   count=19      <- within 0x1000 of the 0x37f10 tail
+payload B: 91 records; 0 have addr inside 0x30000..0x3ffff
+```
+
+**Two things follow, both measured:**
+
+**1. The routine already writes records into the shared window.** `0x30000` and `0x38000` are inside
+`0x30000..0x3ffff` -- **the same address space the tails occupy** (`0x33da3`, `0x37da3`, `0x37f10`,
+`0x3bda3`, `0x3fda3`). So **a record at a shared-window address is not a new kind of thing for it.**
+
+**2. It has no fixed per-payload expectation of what lives there.** **A has two such records; B has
+none.** A routine that required a record at a particular address would fail on one of them --
+**so whatever it does, it does not assume.**
+
+## What this does and does not establish
+
+**Does not prove:** that it writes wherever `addr` says. **It could still validate against a range or a
+whitelist.**
+
+**But it moves the question.** The plausible validation would be a *space* check (P vs X vs Y) or an
+*image-slot* check -- **and the tails pass a space check by construction (space 0, like every other P
+record), while an image-slot check is already falsified by `0x30000`/`0x38000` being neither.**
+
+**So the shape of the remaining risk is now small and specific:** not "will it accept a shared-window
+address" (**stock does**), but "is there any per-address check at all" -- **and the A/B asymmetry
+argues against one.**
+
+## Still inferred, and the test that would end it
+
+**INFERRED, not measured**, as rounds 127 and 129 also were. **The difference is that the inference now
+rests on two measured records rather than on the format's silence.** The test is unchanged and cheap:
+**insert a probe record at a tail address, read the words back with the probe recipe, and see whether
+they arrive.**
