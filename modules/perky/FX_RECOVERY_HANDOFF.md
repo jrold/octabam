@@ -4350,3 +4350,67 @@ build_bus._load_p_spans_from_env()       -> P_REMAP, P_WANT_EXTRA     (this roun
 
 **Every link is in and every link but the second is gated or is the build's own guard. What remains is
 the JSON writer between the second and third -- and a build.**
+
+---
+
+# THE CHAIN IS CLOSED (round 165)
+
+Round 164 put the loader in the build. **Round 165 wrote the JSON it reads -- and the round trip closes.**
+
+## What landed
+
+`tools/perky/perky_tail_remap.py --write <path>` now emits the spec, **only after every check has
+passed** (so a failed placement writes nothing), and prints the build line:
+
+```
+$ REMIX=perky-machine BUILD=3 python3 tools/perky/perky_tail_remap.py --write out/perky_p_spans.json
+  ...
+  [PASS] all 15 appended extents fall inside one reusable run
+  wrote out/perky_p_spans.json
+  build with:  PERKY_P_SPANS=out/perky_p_spans.json REMIX=perky-machine make bus
+```
+
+## And the loader reads it back
+
+```
+$ PERKY_P_SPANS=out/perky_p_spans.json python3 -c 'import build_bus as B; ...'
+  P spans: out/perky_p_spans.json -> 30 record(s), 4034 extra word(s)
+  P_REMAP tags      : ['A', 'B']
+  record(s) per tag : 30                  <- 15 per tag x 2 tags
+  P_WANT_EXTRA words: 4034                <- 2017 per tag x 2
+  first entry       : addr=0x37f92  318 B = 106 words
+```
+
+**30 records and 4034 words are 15 and 2017 doubled -- because both payloads carry the identical
+remap, which is correct (r160): the addresses are DSP-side and `append` names no stock record.** The
+first entry's `318 B / 3 = 106 words` matches `synthetic_control_map`'s extent exactly.
+
+## The whole chain, verified end to end
+
+```
+emit()                              -> dest, pieces, whole
+perky_tail_remap.build()            -> remap (15 appends, 2017 words), want
+perky_tail_remap --write            -> out/perky_p_spans.json          (this round)
+build_bus._load_p_spans_from_env()  -> P_REMAP, P_WANT_EXTRA           (r164)
+   applied before `mods` is read                                       (r147)
+   _want += P_WANT_EXTRA[tag]                                          (r157)
+   records appended via dsp_modmap.append                              (r143, gated r144)
+   _have != sum(_want) proves it                                       (r152)
+```
+
+**Every link exists, the first three are gated, and the last is the build's own guard.**
+
+## What is left, and it is one command
+
+```
+REMIX=perky-machine BUILD=3 python3 tools/perky/perky_tail_remap.py --write out/perky_p_spans.json
+PERKY_P_SPANS=out/perky_p_spans.json make bus REMIX=perky-machine
+make check REMIX=perky-machine
+```
+
+**The first is done and its output checked. The second is the build that has never been run with the
+remap armed -- and it is the one step that can still surprise.** The build's own `_have != sum(_want)`
+will say whether the appended records and the extended `_want` agree; **if they do not, it stops with a
+named payload and both totals.** If they do, the P record table covers the shared runs, `place()` writes
+the shards there, and **Spring, Dark and Lo-Fi are no longer consumed** -- because the placement no
+longer needs their ground.

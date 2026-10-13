@@ -84,10 +84,38 @@ def build(pieces, whole, dest, org):
     return both, extra_both, stayed, moved
 
 
+def to_json(both, extra) -> dict:
+    """The shape `build_bus._load_p_spans_from_env` reads.
+
+    remap entries are [null, [addr, "hex"]] for an append (or [old, new] for a
+    re-point); want entries are [addr, words].
+    """
+    out = {}
+    for tag in sorted(both):
+        remap = []
+        for entry in both[tag]:
+            if entry[0] is None:
+                addr, packed = entry[1]
+                remap.append([None, [addr, packed.hex()]])
+            else:
+                remap.append([entry[0], entry[1]])
+        out[tag] = {"remap": remap, "want": [[a, w] for a, w in extra[tag]]}
+    return out
+
+
+def write_spec(path, both, extra) -> None:
+    import json
+    with open(path, 'w') as f:
+        json.dump(to_json(both, extra), f)
+    print(f'  wrote {path}')
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument('--selftest', action='store_true')
+    ap.add_argument('--write', type=pathlib.Path, default=None,
+                    help='write the JSON that PERKY_P_SPANS names')
     args = ap.parse_args()
 
     import perky_emit_shards as E
@@ -125,6 +153,12 @@ def main() -> int:
                   f'SAFE run', file=sys.stderr)
         raise SystemExit('perky tail remap: a shard lands outside every reusable run')
     print(f'  [PASS] all {len(both["A"])} appended extents fall inside one reusable run')
+
+    # Only now -- after every check above has passed -- write what the build reads.
+    if args.write:
+        write_spec(args.write, both, extra_both)
+        print(f'  build with:  PERKY_P_SPANS={args.write} '
+              f'REMIX=perky-machine make bus')
     return 0
 
 
