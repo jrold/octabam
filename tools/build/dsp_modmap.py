@@ -75,6 +75,75 @@ def modules(img, va, ln):
     return (best[1] if best else []), b
 
 
+# --- writing the record table -------------------------------------------------
+#
+# `parse` reads the table; the two functions below change it. They exist because
+# a module can need DSP code at an address NO stock record covers -- the "tails"
+# -- and a word with no record cannot be written: build_bus._p_off sys.exits.
+# So the record has to be created or re-pointed first.
+#
+# Both shapes are measured against the real image (payload A and B both parse as
+# order "ac") and both round-trip through `parse`; see
+# modules/perky/FX_RECOVERY_HANDOFF.md rounds 121-142 and the self-test in
+# tools/perky/probe_tail_record.py, from which this logic is lifted.
+
+def _w24(v: int) -> bytes:
+    """Three-byte little-endian packing, the inverse of `w24`."""
+    return bytes([v & 0xFF, (v >> 8) & 0xFF, (v >> 16) & 0xFF])
+
+
+def _record_header(order: str, space: int, addr: int, count: int) -> bytes:
+    if order == "ac":
+        return _w24(space) + _w24(addr) + _w24(count)
+    if order == "ca":
+        return _w24(space) + _w24(count) + _w24(addr)
+    raise ValueError(f'order must be "ac" or "ca", not {order!r}')
+
+
+def repoint(blob: bytes, old_addr: int, new_addr: int, order: str = "ac") -> bytes:
+    """Return `blob` with the record at `old_addr` re-pointed to `new_addr`.
+
+    The words do not move and the count does not change -- only the `addr`
+    field. This is payload A's operation: the retired effects' records are one
+    contiguous run and their space is repurposed rather than extended.
+    """
+    mods, _ = parse(blob, order)
+    for sp, addr, cnt, data in mods:
+        if sp == 0 and addr == old_addr:
+            out = bytearray(blob)
+            hdr = data - 9
+            if order == "ac":
+                out[hdr + 3:hdr + 6] = _w24(new_addr)
+            else:
+                out[hdr + 6:hdr + 9] = _w24(new_addr)
+            return bytes(out)
+    raise KeyError(f"no P record at 0x{old_addr:05x}")
+
+
+def terminator_offset(blob: bytes, order: str = "ac") -> int:
+    """Offset of the terminating record: where a new record must be inserted."""
+    mods, _ = parse(blob, order)
+    if not mods:
+        raise ValueError("no records")
+    last = mods[-1]
+    return last[3] + last[2] * 3
+
+
+def append(blob: bytes, space: int, addr: int, words: bytes,
+           order: str = "ac") -> bytes:
+    """Return `blob` with a record for `addr` inserted before the terminator.
+
+    `words` must be `count * 3` bytes, stored inline. This is payload B's
+    operation: it has slack after its table, so a record can be added.
+    """
+    if len(words) % 3:
+        raise ValueError("words must be a whole number of 3-byte DSP words")
+    count = len(words) // 3
+    at = terminator_offset(blob, order)
+    record = _record_header(order, space, addr, count) + words
+    return blob[:at] + record + blob[at:]
+
+
 def extract(img, args):
     """--extract <A|B> <hex dsp addr> <out.bin>  : dump one module's raw words."""
     tag, addr_s, out = args

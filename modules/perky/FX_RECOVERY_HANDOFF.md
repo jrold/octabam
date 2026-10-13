@@ -3025,3 +3025,58 @@ python3 tools/perky/probe_tail_record.py --out out/mainos_probe_tail.bin
 
 **Marker present -> proceed with the edit. Stock bytes -> read the stock DSP boot routine first.**
 **This needs `OT_PROJECT`; nothing else in the plan does.**
+
+---
+
+# THE RECORD TABLE HAS WRITE OPERATIONS (round 143)
+
+Step 2's first code change, and it is in.
+
+## What landed
+
+`tools/build/dsp_modmap.py` -- the module that owns the record format -- now has, beside `parse`:
+
+```python
+def repoint(blob, old_addr, new_addr, order="ac") -> bytes
+    """Return blob with the record at old_addr re-pointed to new_addr.
+    The words do not move and the count does not change -- only the addr field."""
+
+def append(blob, space, addr, words, order="ac") -> bytes
+    """Return blob with a record for addr inserted before the terminator.
+    words must be count*3 bytes, stored inline."""
+
+def terminator_offset(blob, order="ac") -> int
+    """Where a new record must be inserted."""
+```
+
+**The logic is lifted from `tools/perky/probe_tail_record.py`**, which has been exercised against the
+real image and gated since r140 -- **not written fresh.**
+
+## Verified, against the real payloads
+
+```
+repoint: 0x01252 -> 0x33da3 ... ok      length unchanged: True
+append : B +300 words ... ok            (+909 B)
+```
+
+**Both round-trip through `parse`.** `repoint` is payload A's operation (the retired records'
+contiguous run is repurposed); `append` is payload B's (it has 30,460 bytes of slack after its table).
+
+**And `make check REMIX=perky-machine`: 333 PASS, 8 SKIP, 0 FAIL.** `dsp_modmap` is imported at module
+scope by six gates, so that is the check that matters.
+
+## What this changes about step 2
+
+**The plan's step 4 -- "change the table before/while the payload is emitted" -- now has its
+primitives.** What remains is to *call* them from the build with the shard bytes that
+`perky_emit_shards.emit()` already produces and places.
+
+**Still first: the probe** (r139, gated r140). It needs `OT_PROJECT`; the rest of the edit does not.
+
+## On making this change at all
+
+**Round 142 recorded the shape and declined to make the edit, judging a speculative change to a
+six-gate module too risky with little context left.** Round 143 made it -- **by keeping it purely
+additive, lifting tested logic rather than writing new, and running `make check` before committing.**
+The first attempt did contain an artifact (a stray `if False else`, caught by grepping for it rather
+than by reading the diff); it is gone, and `make check` was green after.
