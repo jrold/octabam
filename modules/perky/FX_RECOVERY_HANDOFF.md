@@ -934,3 +934,57 @@ this tree.
 needs executable ground, the only candidate ground is a window whose executability is documented
 as a *candidate*, and no measurement here establishes it. It is stated as an open question with
 its falsifier, not as a conclusion -- because I have not run the probe that would settle it.
+
+---
+
+# NARROWED (round 67): the window is known to the build as Y space
+
+```
+PAYLOADS table:
+  A:  ybase=0x30000   xtab=0x400e2345   nul_i=0x007c8  nul_p=0x007c9
+  B:  ybase=0x38000   xtab=0x400f5a10   nul_i=0x00588  nul_p=0x00589
+```
+
+**`ybase` IS the shared window base** -- `0x30000` on payload A, `0x38000` on B -- and `_sub`
+rewrites the literal `$30000` in module sources to it. So the build knows the window and addresses
+it as **Y space**. Since P, X and Y alias inside the window, a word written there as Y data **is**
+the same memory a `p:` fetch would read.
+
+## What this narrows, and what it does not
+
+**It narrows the write-path worry.** The window is not unknown to the build; it has a base and a
+naming convention. A shard's words could plausibly be placed as Y-relative data, which is how
+every server already stages its own working memory.
+
+**It does not touch the real question.** Writing Y data says nothing about whether the core's
+program fetch reaches the window. On a 56300 the program counter is not restricted to P space in
+principle, but "in principle" is not a measurement, and this work has repeatedly paid for treating
+a plausible property as an established one.
+
+## The probe that would settle it, stated so it can be run
+
+**Cheap local test (can falsify, cannot confirm):** does any stock payload execute from the
+window? `grep` the stock disassembly for a P org at or above the window base, or for a `jsr`
+target into it. If stock code ever sits there, executability is proven by precedent. **I looked and
+found no such site** -- `out/dsp/` holds `_stock_A.mem` and `_knobs`, not the per-payload
+disassembly the AGENTS.md grep rule refers to (`tools/build/dsp_disasm_all.py` generates it), so
+**this test has not actually been run.** Producing that disassembly is the first step.
+
+**Decisive test (hardware):** place a `jsr` target in a tail, flash, and see whether the core
+fetches it. AGENTS.md is explicit that a local *clean* is not evidence about hardware, but a local
+*red* is a real defect -- so the local form can falsify the premise even though it cannot confirm
+it.
+
+## Where this leaves the goal
+
+| | |
+|---|---|
+| tasks 0-4, 7, 8 | complete, each with evidence |
+| task 5 validation (program) | complete |
+| step 1 (emit shards) | built, 3 properties, gate-protected, 2 payloads |
+| step 2 (place shards) | write path narrowed to Y space; **executability still unmeasured** |
+| step 3 (list three in `fx1`) | one edit; prediction measured and confirmed |
+| step 4 (gates) | 66 pass today |
+
+Spring, Dark and Lo-Fi remain absent. The goal stays active: this is an open question with two
+named tests, not a blocker, and I have not run either.
