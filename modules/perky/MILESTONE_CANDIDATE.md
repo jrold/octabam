@@ -556,3 +556,69 @@ Either:
    re-checked without a full rebuild.
 
 **Option 2 is a one-line change to the staging step and would have made this a non-question.**
+
+---
+
+# ROUND 98 WAS WRONG: IT IS ONE BUILD, AND THE MISMATCH IS REAL (round 99)
+
+Round 98 explained round 97's failure as "the two artifacts are from different builds", on the
+evidence of mtimes:
+
+```
+~/Downloads/PERKY2V_milestone.bin   Oct 12 23:30
+out/elek_PERKY2V.bin                Oct 13 00:39
+```
+
+**The hashes refute it:**
+
+```
+out/OCTATRACK_PERKY2V.bin           4ba4d72ce1a9a0bfbb64a8e627fba7a753791e1fc85d59d83ca66ac016f5e12e
+out/OCTATRACK_OS1.40C_PERKY2V.syx   685e51057e262a8502fc0434e123eaea0af3add14e0d182665ef6dfe296d68f6
+~/Downloads/PERKY2V_milestone.bin   4ba4d72c...   IDENTICAL
+~/Downloads/PERKY2V_milestone.syx   685e5105...   IDENTICAL
+```
+
+**The `out/` wrappers and the staged ones are byte-identical.** They were staged by *copying* at
+23:30 from the build that finished at 00:39 -- or the copies carry the original times. Either way
+**they are one build**, and running the gate against the matched set:
+
+```
+PERKY wrapper round-trip: ELEK version field mismatch b'PERKY2V   ' != b'   PERKY2V'
+```
+
+**still fails.**
+
+## So the mismatch is real, and it is inside one build
+
+| artifact | version field |
+|---|---|
+| `out/elek_PERKY2V.bin` | `PERKY2V   ` -- LEFT-aligned |
+| `out/OCTATRACK_PERKY2V.bin` (the card) | `   PERKY2V` -- RIGHT-aligned |
+
+**The ELEK container and the card image, produced by the same build, disagree on a field a decoder
+reads.** The roundtrip gate exists precisely to catch that, and it has.
+
+## My error, and its shape
+
+**I inferred "different builds" from mtimes -- a proxy -- instead of comparing the artifacts.** One
+`shasum` would have settled it, and I ran the gate twice before running it.
+
+**This is the ninth self-correction on this branch and the fourth of the same shape:**
+
+| round | proxy I trusted | what actually settled it |
+|---|---|---|
+| 79 | a `Gate\(\"...\"\)` regex | counting wrapped `Gate(` lines |
+| 89 | `grep -c "^[0-9]\+\."` | reading the procedure |
+| 92 | the terminal display of a field name | counting non-ASCII bytes |
+| **98** | **file mtimes** | **sha256 of the artifacts** |
+
+**In every case the proxy was cheaper to obtain than the measurement and answered a different
+question.** Round 98 answered "were these files written at the same time?" when the question was
+"are these the same bytes?"
+
+## What is now open, and it is a real defect
+
+**The card and the ELEK -- same build, same MAIN OS -- carry different version-field padding.**
+Either the staging step pads it one way and the card wrapper another, or one of the two is written
+from a different source. **This is unresolved, it is inside the deliverable, and it is exactly the
+class of defect the roundtrip gate was written to find.**
