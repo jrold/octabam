@@ -562,3 +562,40 @@ cross-piece reference targets checked: 29   outside every shard: 0
 The gates are static and render-level. **None of them flashes hardware.** Spring, Dark and Lo-Fi
 are still absent from the image, because changes 1 and 2 are not applied -- and that stays true
 however many gates run.
+
+---
+
+# CORRECTION (round 60): step 2 is a refactor, not two lines
+
+Round 58 called step 2 "two lines plus a loop" on the strength of the call site at
+`build_bus.py:2984-2985`. Tracing `words` and `cursor` upstream shows that was too optimistic:
+
+```python
+_w, _syms = assemble_syms(_s2, _c, label=name)    # ONE stream
+_fit, _xlast = _try_runs([...])                   # picks A run
+_r, tab, src, cursor, words, _syms = _fit         # the fit carries cursor/words
+place(words, cursor)                              # 2984
+```
+
+**`_try_runs(...)` is the run-fitting logic and it also assumes one stream**: it selects a single
+run and hands back the `cursor` and `words` that `place()` consumes. So the single-stream
+assumption is in **three** places, not one:
+
+1. the assembly step (`assemble_syms` produces one word list);
+2. the fit step (`_try_runs` chooses one run for that one list);
+3. the placement step (`place(words, cursor)`, and `_r["cursor"] = cursor + len(words)`).
+
+Step 2 is therefore a refactor of the fit-and-place pipeline, not an edit to two lines. The
+emitter (`perky_emit_shards.py`, gate-protected) already produces the N streams with their
+assigned origins; what has to change is that the pipeline can carry N of them, and that the run
+choice becomes the two-space assignment `place_program_shards_two_space()` already computes.
+
+## Why the correction matters more than the estimate
+
+A handoff that says "two lines plus a loop" invites an edit at line 2984 that would silently
+place **one** shard and leave the other twenty unwritten -- or worse, place the monolithic stream
+at a 594-word run's origin. **The count of places the assumption lives is the thing that decides
+whether the change is safe**, so it is worth the round to have it right.
+
+The rest of the map is unchanged: the emitter is built and gated, the placement is computed,
+change 1's prediction is confirmed, and 66 gates pass.
