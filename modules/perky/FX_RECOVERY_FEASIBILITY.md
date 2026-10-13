@@ -748,3 +748,58 @@ back.**
 | 4. assign final origins | next |
 | 5. re-emit with size-stable literals | next |
 | 6. assemble per shard, place, gate execution | next |
+
+---
+
+# ADDENDUM 13 — the size-stability hazard is FALSIFIED by measurement
+
+Five addenda have carried "substituting a cross-shard label with a literal must not change
+any instruction's encoded size" as the core remaining risk. It can be tested directly, and
+the test is decisive: **assemble the same program at different origins and compare.**
+
+```
+org 0x1000: 3051 words
+org 0x2400: 3051 words
+org 0x3840: 3051 words
+
+SAME LENGTH AT ALL THREE ORIGINS: True
+symbols whose OFFSET moves with origin: 0
+-> EVERY SYMBOL IS ORIGIN-INDEPENDENT: the program is SIZE-STABLE
+```
+
+**The encoding does not depend on where the program is placed.** Every symbol keeps the
+same offset relative to the origin, at three origins spanning ~10K words. So relocating a
+piece does not shift its internal addresses.
+
+## Why it holds
+
+* `force_long_local_jsr` turns every internal call into an explicit **long** JSR — a
+  size-fixed form, so distance to the target cannot change it;
+* the relative `bra`/`bsr`/`bcc` forms are size-fixed by construction;
+* and `dsp_asm`'s pass-1 sizing-drift warning, which is present in the qualified build, does
+  **not** move any symbol between these origins — so whatever causes it is origin-invariant.
+
+## The caveat, stated rather than buried
+
+The three origins span ~10K words. The real fragment spread is far larger -- the shared
+tails run to `0x3ffff` against a local `0x1000`, ~200K words. So this test settles
+**absolute** references completely (they resolve to a value, and the value is what the
+emitter writes) and settles **relative** forms **within a piece**, but it does **not**
+directly exercise a relative branch whose *target is in another shard*, where the
+displacement would grow with the gap.
+
+That case is the one thing left to verify in step 5, it is narrow, and it is detectable:
+`assemble_syms` reports the sizing-drift diagnostic, so a cross-shard branch that outgrows
+its form will say so at assembly rather than fail silently. The plan should require that
+diagnostic to be **empty** for the sharded assembly, rather than merely not fatal.
+
+## Where task 5 stands
+
+| step | state |
+|---|---|
+| 1. label -> address map | DONE, tool committed, self-checking |
+| 2. relocation-safe boundaries | DONE -- 21 pieces, balanced, zero unmarked, none over cap |
+| 3. packing feasibility | DONE -- proven, 3178 capacity vs 3051, 127 free |
+| 4. size stability | **FALSIFIED AS A HAZARD for local relocation** (one narrow case left) |
+| 5. assign origins and re-emit | next |
+| 6. assemble per shard, place, gate | next |
