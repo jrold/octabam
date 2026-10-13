@@ -3359,3 +3359,68 @@ them.
 **Whether the stock DSP boot routine honours a record at a tail address.** r135-r136 narrowed it to
 "probably", and **the probe (r139, gated r140) settles it in one run.** That is a hardware/emulator
 question, not a placement one, and it does not block writing the loop.
+
+---
+
+# THE RECORDS, MEASURED (round 149)
+
+Round 148 showed every shard already lands in a safe run. **Round 149 measured the records those runs
+must be expressed through -- and found two things the loop cannot ignore.**
+
+```
+payload A:  0x00438..0x01cd8  count=6305  in a SAFE run: NO     <- the shared curve bank, NOT retired
+            0x01000..0x01251  count= 594  in a SAFE run: 0x01000..0x02251   <- PLATE
+            0x01252..0x01678  count=1063  in a SAFE run: 0x01000..0x02251   <- SPRING
+payload B:  0x0042b..0x01ccb  count=6305  in a SAFE run: NO     <- the curve bank
+            0x00dc0..0x01011  count= 594  in a SAFE run: NO     <- PLATE, at a DIFFERENT address
+            0x01012..0x01438  count=1063  in a SAFE run: 0x01000..0x02251   <- SPRING
+```
+
+## 1. The same record is at different addresses in A and B
+
+**PLATE is `0x01000` in payload A and `0x00dc0` in payload B** -- a 576-word difference. This is the
+documented payload asymmetry (`docs/firmware/TABLES.md`, "Payload-relative addresses"): the payloads
+are linked separately and the blocks below the table differ in size.
+
+**`P_REMAP` is keyed by tag, so this is handled -- but a loop that computes one address and applies it
+to both payloads would silently move the wrong record in B.** The addresses must be read per payload
+from `mods`, never assumed.
+
+## 2. A 6,305-word record covers the retired span and is NOT retired
+
+**`0x00438` (A) / `0x0042b` (B) is the 6,305-word shared curve bank.** It is stock code every effect
+reads; it is not Plate, Spring, Dark, Compressor or Lo-Fi, and it must not move.
+
+**It still lands in `region`** -- `region` is built from any record covering a harvested span (r145) --
+so `_have = sum(m[2] for m in region)` counts its 6,305 words as well.
+
+**That is fine, and it is the guard working:** `_have` is compared against
+`sum(n for _a, n in _want)`, and if the harvest's spans account for the bank too then they agree. **If
+they do not, the build already stops with a named payload.** The rule the loop must obey is therefore
+narrow and checkable: **re-point only the records whose addresses are the retired effect starts, and
+leave every other record in `region` byte-identical.**
+
+## What the loop must be
+
+```
+for tag, va, ln in PAYLOADS:
+    mods, _ = modules(bytes(img), va, ln)          # per payload -- the addresses differ
+    region  = <records covering the harvested spans>   # includes the 6,305-word bank
+    remap   = []
+    for record in region:
+        if record.addr is a retired-effect start:  # 594 / 1063 / 1067 / 537 / 180 words
+            new = <the safe-run address this record's extent should occupy>
+            remap.append((record.addr, new))
+        # every other record -- the bank included -- is left alone
+    P_REMAP[tag] = remap
+```
+
+**The discrimination is by the effect's own word count, which is known exactly** (Plate 594, Spring
+1063, Dark 1067, Lo-Fi 537, Compressor 180 -- the goal's own table). **Not by "is it inside a span",
+which the bank also satisfies.**
+
+## Still unmeasured
+
+**Whether the stock DSP boot routine honours a tail-address record.** r135-r136 narrowed it to
+"probably"; the probe (r139, gated r140) settles it. **It needs `OT_PROJECT` and does not block the
+loop.**
