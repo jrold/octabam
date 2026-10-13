@@ -868,3 +868,69 @@ Addendum 64 said six rounds each refined step 2's scope *upward*. That is half r
 did, and each was resolved by measuring deeper. **Rounds 64 and 65 then refined it back DOWN --
 because the first two answers were read off `place()` rather than off `wrw_p`, the primitive
 underneath it.** Reading one layer down found the mechanism; reading one layer *up* had hidden it.
+
+---
+
+# THE HONEST BOTTOM LINE ON THE TAILS (round 66)
+
+`build_bus.py:2121` is the build's **only** DSP-address -> image-address mapping:
+
+```python
+def _p_off(addr):
+    """Image address of P word `addr`, through the record holding it."""
+    for sp, a, cnt, off in mods:
+        if sp == 0 and a <= addr < a + cnt:
+            return va + off + (addr - a) * 3
+    sys.exit(f"payload {tag}: no P record holds P:0x{addr:05x}")
+```
+
+**It goes through a record, and it hard-exits without one.** Put beside rounds 63 and 64:
+
+* four of the five tails have no record in any space; the fifth has one;
+* `stock.x_exclusive_runs` does not cover them either;
+* **and there is no image-map formula that reaches them.**
+
+## What that most likely means
+
+**The shared window is not image-mapped ground. It is runtime memory that DSP code writes with
+instructions** (`move x0,x:(r6+N)`), not something the build places words into. `place_x` and
+`place_xh` both route through records; `wrw_p` takes an absolute *image* address; and nothing
+supplies one for P:0x33da3.
+
+**Worse, and this is the part that matters: even if a word could be written there, whether the DSP
+can EXECUTE from the shared window is unproven.** The module's own docstring calls the tails
+*"candidates for executable P while stock FX are active"* -- **candidates.** No measurement in this
+work has shown a single instruction fetched and run from P:0x33da3. The window is memory; the
+aliasing is documented; whether the core's program fetch reaches it, and whether the loader's
+memory map permits it, have not been tested.
+
+## So the sharding plan rests on an unproven premise
+
+Everything measured about the sharding is a property of the **program**: 21 relocatable pieces,
+byte-identical reassembly, zero sizing drift, a correct call graph, a computed two-space
+placement. **All of that is real and gated.**
+
+What has never been established is the premise underneath it: **that the shared window can host
+executable code at all.** The placement manifest assigns 18 of 21 shards to ground whose very
+usability as code is a candidate, not a measurement.
+
+**That is the genuine blocker for the FX recovery, and it is a hardware question, not a software
+one.** Resolving it needs either a hardware probe (place a `jsr` target in a tail and see whether
+the core fetches it) or a document that states the window is executable -- and neither exists in
+this tree.
+
+## What this changes about the goal
+
+| | |
+|---|---|
+| tasks 0-4, 7, 8 | complete, each with evidence |
+| task 5 validation (program) | complete |
+| step 1 (emit shards) | built, 3 properties, gate-protected |
+| step 2 (place shards) | **blocked on whether the window is executable ground** |
+| step 3 (list three in `fx1`) | one edit; prediction measured and confirmed |
+| step 4 (gates) | 66 pass today |
+
+**This is the closest thing to a genuine measured blocker this work has produced**: the placement
+needs executable ground, the only candidate ground is a window whose executability is documented
+as a *candidate*, and no measurement here establishes it. It is stated as an open question with
+its falsifier, not as a conclusion -- because I have not run the probe that would settle it.
