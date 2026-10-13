@@ -922,3 +922,58 @@ version field but a **different provenance** (a locally-patched tool), so promot
 cosmetic defect for an unrecorded build path. **The right time to ship a corrected card is the same
 rebuild that restores Spring, Dark and Lo-Fi** -- one new artifact, correct version field, correct
 FX, one set of hashes.
+
+---
+
+# THE PATCH HUNK IS WRITTEN AND VERIFIED FROM PRISTINE (round 105)
+
+Round 104 proved the fix and left one mechanical step: **get it into
+`tools/patches/elektron-firmware-tool.patch`.** Round 105 did it, and did it the correct way rather
+than by hand.
+
+## Why appending a hunk would have been wrong
+
+The existing patch's hunk is `@@ -584,12 +584,25 @@` and the new change lands at `@@ -594,7 +594,7 @@`
+-- **they overlap**, because both edit `set_version`. Appending a second hunk would have conflicted,
+and `scripts/setup.sh` would have refused it (best case) or applied it partially.
+
+**So the patch was regenerated from PRISTINE upstream**, which merges the two changes into one hunk
+naturally:
+
+```
+git -C vendor/elektron-firmware-tool show HEAD:main.c  > pristine.c
+diff -u --label a/main.c --label b/main.c pristine.c patched.c
+```
+
+**Result: two hunks, correctly numbered.**
+
+```
+@@ -584,12 +584,17 @@   voff=0x08  AND  the right-align fix, merged
+@@ -694,6 +699,13 @@   the EFT_EMIT_CONTAINER block
+```
+
+## Verified end-to-end from pristine
+
+```
+patching file main.c
+built OK
+version field from the PATCHED-FROM-PRISTINE build: b'   PERKY2V'
+right-justified as required: True
+```
+
+**The patch applies cleanly (`patch -p1 --dry-run` exit 0), the result compiles, and the compiled
+tool emits the field the unit expects.** That is the whole chain, from a pristine checkout to a
+correct container, with no hand-written diff anywhere in it.
+
+## Why this mattered enough to get right
+
+**The defect it fixes is cosmetic -- a mis-aligned version string -- but the patch is not.**
+`scripts/setup.sh` applies these patches to every build tree, so a malformed hunk here would break
+**every** future build, not just this milestone's. **That asymmetry is why round 104 stopped instead
+of appending a plausible-looking diff**, and why this round spent its time deriving the hunk from
+pristine instead of writing one.
+
+**The binary in the shared main checkout is still the old one** -- rebuilding it is
+`scripts/setup.sh`'s job and belongs to whoever next runs setup, not to a worktree passing through.
+The regenerated artifacts in `/tmp/refix` and `/tmp/vp-out` are **proof, not deliverables**: they were
+built by a locally-patched tool and carry that provenance.

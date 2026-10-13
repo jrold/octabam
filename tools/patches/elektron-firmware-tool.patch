@@ -2,7 +2,7 @@ diff --git a/main.c b/main.c
 index 89c0b80..f039041 100644
 --- a/main.c
 +++ b/main.c
-@@ -584,12 +584,25 @@ static int set_version(uint8_t *c, container_type ct, const char *ver){
+@@ -584,12 +584,17 @@
          if(voff<0) return -1;
          for(fend=voff; fend<ELE3_COUNT_OFF && (is_alnum(c[fend])||c[fend]=='.'||c[fend]==' '); fend++);
      } else if(ct==CT_ELEK){
@@ -18,25 +18,17 @@ index 89c0b80..f039041 100644
      int cap=fend-voff, nl=(int)strlen(ver);
      if(nl>cap) return -3;
 -    for(int i=0;i<cap;i++) c[voff+i] = (i<nl) ? (uint8_t)ver[i] : ' ';
-+    if(ct==CT_ELEK){
-+        /* The Octatrack version field is right-justified: the display area is
-+         * space-padded on the LEFT so the alphanumeric version ends at the
-+         * field's last cell (ELEK_SECT_OFF-1). */
-+        int pad=cap-nl;
-+        for(int i=0;i<cap;i++) c[voff+i] = (i<pad) ? ' ' : (uint8_t)ver[i-pad];
-+    } else {
-+        for(int i=0;i<cap;i++) c[voff+i] = (i<nl) ? (uint8_t)ver[i] : ' ';
-+    }
++    for(int i=0;i<cap;i++) c[voff+i] = (i<cap-nl) ? ' ' : (uint8_t)ver[i-(cap-nl)];
      return 0;
  }
  
-@@ -694,6 +707,13 @@ static int cmd_build(const char *in_syx, const char *out_syx, override *ovs, int
+@@ -694,6 +699,13 @@
      }
      printf("  container             : %zu -> %zu bytes\n", fw.bin.declared_size, nclen);
  
 +    /* Octatrack CF-card path: the OS UPGRADE menu reads an ELUP .bin whose payload is
 +     * just [4-byte BE length][this container]. Emitting the rebuilt container lets
-+     * tools/make_bin.py wrap it without re-deriving the SysEx transport framing. */
++     * tools/build/make_bin.py wrap it without re-deriving the SysEx transport framing. */
 +    { const char *elek_out=getenv("EFT_EMIT_CONTAINER");
 +      if(elek_out && !write_file(elek_out, nc, nclen))
 +          printf("  container emitted     : %s (%zu bytes)\n", elek_out, nclen); }
