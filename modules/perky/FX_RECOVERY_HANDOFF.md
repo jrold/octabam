@@ -1,10 +1,39 @@
 # FX recovery — handoff
 
-## STATUS AT A GLANCE (round 119) — READ THIS FIRST
+## STATUS AT A GLANCE (round 128) — READ THIS FIRST
 
 **Pick up at: STEP 2.** Everything else the goal names is done and gated. Step 2 -- integrate the
 already-proven sharding -- is the only substantial code left, plus the Spring/Dark/Lo-Fi placement it
 buys.
+
+### Step 2 is now ONE EDIT, fully specified (rounds 120-127)
+
+**Not a "substantial refactor".** Six rounds of reading reduced it to a single insertion, with every
+number measured.
+
+| piece | state |
+|---|---|
+| the **placement** | ✓ already computed -- `perky_emit_shards.emit()` calls `place_program_shards_two_space()` (r120) |
+| the write path | ✓ needs **no change** -- `build_bus.place()` already spans several records, "cut at each record boundary" (r124) |
+| the record **format** | ✓ `w24(space) w24(ADDR) w24(COUNT)` + `count*3` bytes inline (r121, r125) |
+| the record **order** | ✓ **`"ac"`** on BOTH payloads -- measured: `ca` dies after one record; `ac` consumes 79,557/79,563 (A) and 77,055/77,061 (B) (r125) |
+| **room** | ✓ **30,460 B** between payload B's end (`0x401086f4`) and `LOADER_AT` (`0x4010fdf0`); a 3,051-word tail needs **9,162 B** -- fits 3.3:1 (r126) |
+| who reads the records | the **stock DSP uploader**, NOT octabam's loader (`loader.S` carries a payload-level table) -- **so the edit stays in the blob** (r127) |
+
+**The edit:** insert, before the terminating record and in **both** payloads,
+`w24(0) w24(tail_addr) w24(count)` followed by the shard's bytes. Then `place()` finds it, `_p_off`
+resolves it, and the shard lands.
+
+**The one risk not measured:** whether the **stock uploader** tolerates a record at an `addr` no stock
+record covers. **INFERRED that it does** (an `addr` per record is that field's whole purpose), **not
+measured.** Cheapest way to settle it: insert a probe record at a known-good but unusual DSP address
+and read the words back with the probe recipe below -- **a local test, and the natural first half of
+the edit.**
+
+**What is NOT known:** where in the build the blob is assembled, so the insertion has a home. **Round
+122 said `platform_build.build()`; round 123 retracted that** -- it is the *loader* builder and takes
+the payload as input ("payloads built elsewhere"). **The writer is upstream, on `build_bus.py`'s side.
+Lead, not finding.**
 
 ### Delivered and gated
 
@@ -18,7 +47,7 @@ buys.
 | P/X/Y ledger | **explicit and proven disjoint** -- P 5 spans/0 overlaps, X 3/0, Y 1/0 |
 | packaging round-trip | **PASSES** on a regenerated matched set (card decodes to the ELEK byte for byte) |
 | candidate record | all **15 item-8 fields** + all **5 item-4 numbers** in `~/Downloads/PERKY2V_milestone_manifest.txt` |
-| gates | **78 registered; `make check` = 332 PASS, 8 SKIP, 0 FAIL** |
+| gates | **80 registered; `make check` = 332 assertions PASS, 8 SKIP, 0 FAIL** |
 | flashable artifact | `~/Downloads/PERKY2V_milestone.{syx,bin}` -- `685e5105...` / `4ba4d72c...`, unchanged since r92 |
 
 ### NOT delivered: Spring, Dark and Lo-Fi (goal items 6-8)
