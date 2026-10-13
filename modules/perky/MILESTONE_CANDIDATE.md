@@ -1275,3 +1275,60 @@ restored  exit=0   [PASS]
 **And the skip/fail distinction is deliberate:** a fresh checkout with no manifest **skips**
 (nothing has been claimed yet); a manifest that exists but names no artifact hash **fails**, because
 that is precisely the claim the gate exists to refuse.
+
+---
+
+# CORRECTION: THE BOOT GATE IS NOT "STALE" -- ONLY ITS DEFAULTS ARE (round 113)
+
+Rounds 81 and 96 listed `verify_perky_machine_boot.py` among three gates "found STALE". **That label
+was too broad, and checking it shows why.**
+
+## Its defaults are stale
+
+```
+--image   default out/mainos_perky_machine.bin     MISSING  (the canary writes mainos_perky_multi.bin)
+--packed  default out/perky/machine-canary/packed  MISSING
+```
+
+## But nothing uses them
+
+```python
+# tools/perky/build_multi_machine_canary.py:101
+subprocess.run([sys.executable, str(ROOT/'tools/verify/verify_perky_machine_boot.py'),
+                '--image', str(mainos), '--packed', str(work)], cwd=ROOT, check=True)
+```
+
+**The canary invokes the gate with explicit paths.** The defaults are dead code, not a broken gate.
+
+## And it needs no external input at all
+
+Its own docstring is explicit:
+
+> **No project/card fixture is needed.** This stops at the RTOS handoff; it does not qualify the
+> machine chooser or AMP/FX/output after project load.
+
+**So this is not one of the gates blocked on `OT_PROJECT`.** The canary's outputs exist, which means
+the canary ran with it and it passed.
+
+## The one thing genuinely absent
+
+**The canary's intermediate `work` directory** -- the packed runtimes it passes as `--packed`. It
+exists only during a canary run and is not kept. **That is the same reproducibility gap as the ELEK
+container** (round 98): an intermediate that the tested artifact was derived from, not preserved
+beside it.
+
+**The remedy is the same and costs nothing:** keep `work` next to the artifacts, the way round 98
+proposed keeping the ELEK. Then the boot gate, the wrapper round-trip and the provenance check can all
+be re-run against a shipped artifact **without rebuilding anything.**
+
+## The general shape, now seen three times
+
+| claim | what was actually true |
+|---|---|
+| "the wrapper gate needs the canary" (r96) | every input was on the machine (r97) |
+| "the two artifacts are different builds" (r98) | byte-identical; one build (r99) |
+| "the boot gate is stale" (r81/96) | **its defaults are; the gate runs and passes (r113)** |
+
+**All three were labels applied from one observation and corrected by looking at the second.** The
+label "STALE" did real damage here: it kept a passing gate out of the registered set for thirty
+rounds.
