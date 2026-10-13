@@ -130,6 +130,20 @@ REMIX = remix_registry.remix(os.environ.get("REMIX"))
 # which is what every existing caller gets. A caller that needs DSP code at
 # a tail address sets this before the build runs; see the loop below.
 P_REMAP: dict | None = None
+
+# Optional per-payload EXTRA harvest spans, as (addr, WORDS) pairs -- the same
+# convention `stock.p_spans` and `_want` below use, NOT the [lo, hi) that
+# all_fx_layout.SAFE_*_SPANS is written in. None is what every existing caller
+# gets.
+#
+# This exists for P ground that belongs to NO stock effect: the shared window's
+# free runs. `_want` is built from harvested effects, and `region` is the records
+# inside `_want`; so ground no effect owns is unreachable however it is written.
+# A caller that appends records there (P_REMAP) must name the same spans here, or
+# `_have` stays short of `_want` and the build stops with "the module map and
+# stock.p_spans disagree". Naming both is what makes the two agree -- and that
+# check is the proof, not a new one.
+P_WANT_EXTRA: dict | None = None
 ORDER = [k for k in REMIX.modules
          if remix_modules()[k].menu is not None]
 # A HIDDEN module (schema.Remix.hidden) is placed, dispatched and cloned but
@@ -2240,6 +2254,11 @@ mkgo:""",
         # have placed 157 of its 207 words and left the rest as a hole in the
         # middle of the stream.
         _want = [_sp[k] for k in _harvest]
+        # P ground that belongs to no stock effect (P_WANT_EXTRA, above). The
+        # caller that appended records there names the same spans; `_have` below
+        # then equals this total, which is the check that the two agree.
+        if P_WANT_EXTRA and tag in P_WANT_EXTRA:
+            _want = _want + list(P_WANT_EXTRA[tag])
         region = sorted((m for m in mods if m[0] == 0
                          and any(a <= m[1] < a + n for a, n in _want)),
                         key=lambda m: m[1])

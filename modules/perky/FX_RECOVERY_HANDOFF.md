@@ -3857,3 +3857,57 @@ build, and already refuses by name.** Nothing new validates the change; the exis
 without one (r147), and the remaining work is three named lines in the harvest path.** **The one thing
 still unmeasured is the hardware question -- whether the DSP boot routine honours a tail-address record
 -- and the probe (r139, gated r140) answers it in one run.**
+
+---
+
+# LINE 1 OF 3: `P_WANT_EXTRA` (round 157)
+
+The three lines from r156. **The first is in.**
+
+## What landed
+
+```python
+# build_bus.py, beside P_REMAP
+P_WANT_EXTRA: dict | None = None     # {tag: [(addr, WORDS), ...]}, None by default
+
+# and at the harvest:
+_want = [_sp[k] for k in _harvest]
+if P_WANT_EXTRA and tag in P_WANT_EXTRA:
+    _want = _want + list(P_WANT_EXTRA[tag])
+region = sorted(...)                 # unchanged
+_have  = sum(m[2] for m in region)
+if _have != sum(n for _a, n in _want): sys.exit(...)   # unchanged -- this is the proof
+```
+
+**`(addr, WORDS)` is deliberate: it is the convention `stock.p_spans` and this very `region` line use
+(`a <= m[1] < a + n`). `SAFE_*_SPANS` is `[lo, hi)`, so the caller converts.** Getting that backwards is
+precisely the six-round error of r148-r153, and it is now written down at the declaration.
+
+**`P_WANT_EXTRA` is keyed by payload because the records are** (r149: Plate is `0x01000` in A and
+`0x00dc0` in B).
+
+## Verified
+
+```
+P_WANT_EXTRA = None  -> inert: True
+spans as (addr, words): [(212387,605), (228771,349), (229136,240), (245155,605), (261539,605)]
+total 2404 words      -> the goal's "2404 P words"
+make check REMIX=perky-machine: 334 PASS, 8 SKIP, 0 FAIL
+```
+
+**The spans convert to the right convention and total exactly 2404.**
+
+## Why the check needs no change
+
+**`_have != sum(n for _a, n in _want)` already proves lines 1 and 2 agree.** If `P_WANT_EXTRA` names a
+span whose records were not appended, `region` misses those words and `_have` falls short -- **and the
+build stops, naming the payload and both totals.** **Nothing new validates the change; the guard written
+for the original harvest does.**
+
+## Lines 2 and 3, still to come
+
+2. **`P_REMAP[tag]` gains an append per shard** -- `(None, (addr, words))`, gated since r144
+3. **the caller (the emitter) sets both from `dest` + `pieces`** -- and the equality check then passes
+
+**Still unmeasured: the hardware question** -- whether the DSP boot routine honours a tail-address
+record. **The probe (r139, gated r140) answers it in one run.**
