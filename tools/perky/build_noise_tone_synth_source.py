@@ -38,7 +38,13 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[2]
 PERKY = ROOT / "modules/perky"
 ASM = ROOT / "vendor/dsp56300/build/source/dsp_host/dsp_asm"
-FULL_DONOR_WORDS = 0x1AA4 - 0x1000  # PLATE + SPRING + DARK = 2724 words
+# The donor region the remix actually releases. perky-machine omits COMPRESSOR
+# and LO-FI as well as the three reverbs, so the contiguous run is
+# PLATE(0x1000)+SPRING+DARK+COMPRESSOR+LO-FI = 0x1000..0x1d70 = 3,441 words.
+# The light machine's deduplicated synth measures 3,054, so the three-reverb
+# 2,724 is no longer the right ceiling -- the old value refused a build that
+# genuinely fits, with no diagnostic beyond the size line.
+FULL_DONOR_WORDS = 0x1D71 - 0x1000  # PLATE+SPRING+DARK+COMPRESSOR+LO-FI = 3441 words
 SPRING_DONOR_WORDS = 1063
 
 PIECES = (

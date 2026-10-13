@@ -1231,7 +1231,15 @@ def main():
     # carries DRAM units. tools/remix/arena.py yields the writes: the base
     # literal at its 24 sites and the four geometry words.
     from remix import arena
-    _reservations = []
+    # Modules that live in the arena declare their pages (PERKY: 242 at the
+    # bottom); the platform reserves its own at the bottom whenever the remix
+    # carries DRAM units. arena.py stacks them and yields the writes: the base
+    # literal at its sites and the four geometry words. Only modules SELECTED
+    # IN THIS REMIX contribute -- reserving on behalf of an absent module would
+    # take pages from the unit for nothing.
+    _reservations = [(_m.name, _m.arena.where, _m.arena.pages)
+                     for _k in REMIX.modules for _m in (remix_modules()[_k],)
+                     if getattr(_m, "arena", None) is not None]
     if _dram:
         _reservations.append(("octabam platform", "bottom", arena.PLATFORM_PAGES))
     _reserve = None

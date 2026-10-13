@@ -1105,6 +1105,32 @@ class DramRegion:
 
 
 @dataclass(frozen=True)
+class ArenaReserve:
+    """Pages of stock's audio page arena taken for this module's DRAM.
+
+    The arena (tools/remix/arena.py) is the 85.5 MB stock shares between Flex
+    samples and the track recorders, and shrinking it is the one DRAM placement
+    with a hardware record. The build stacks every reservation in the remix --
+    `where="bottom"` from the stock base upward (the base literal moves),
+    `where="top"` from the end downward (the count shrinks) -- and computes the
+    four geometry literals from the total, so two modules that each take pages
+    compose instead of both rewriting the same words.
+
+    `recipe_writes` names the writes in a Runtime recipe that ARE those geometry
+    literals: the build skips them and computes the combined values.
+    """
+
+    pages: int
+    where: str = "top"                   # "top" | "bottom"
+    recipe_writes: tuple[str, ...] = ()
+
+    def __post_init__(self):
+        if self.where not in ("top", "bottom"):
+            raise ValueError(f"ArenaReserve.where must be 'top' or 'bottom', not {self.where!r}")
+        if self.pages <= 0:
+            raise ValueError("ArenaReserve.pages must be positive")
+
+@dataclass(frozen=True)
 class Override:
     """This module's own claim at `site` stands in for another module's
     Detour there -- the way two mods that hook one stock instruction get to
@@ -1151,6 +1177,10 @@ class Module:
     pokes: tuple[Poke, ...] = ()
     # Stock bytes this module relies on and does not write (schema.Keep).
     keeps: tuple[Keep, ...] = ()
+    # Pages of the audio page arena this module's DRAM lives in
+    # (schema.ArenaReserve). DRAM units need none: the platform reserves
+    # its own (arena.PLATFORM_PAGES) whenever a remix carries any.
+    arena: ArenaReserve | None = None
     # Claims of OTHER modules this module's own stand in for
     # (schema.Override) -- a bridge chaining two mods' hooks at one site.
     overrides: tuple[Override, ...] = ()
