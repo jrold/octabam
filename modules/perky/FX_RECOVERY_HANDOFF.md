@@ -4285,3 +4285,68 @@ not a silent one: **Spring, Dark and Lo-Fi would still be absent from the build 
 | the call site | `perky_image.extend_upload` / `integrate`, not yet wired |
 | the proof | the build's own `_have != sum(_want)` (r152) |
 | the hardware question | the probe, gated (r139, r140) |
+
+---
+
+# THE CHANNEL ACROSS `runpy` IS IN (round 164)
+
+Round 163 established that assignment cannot reach the build. **Round 164 added the channel that can.**
+
+## What landed
+
+```python
+# build_bus.py, beside REMIX
+def _load_p_spans_from_env():
+    _path = os.environ.get("PERKY_P_SPANS")
+    if not _path:
+        return None, None
+    ...   # {"A": {"remap": [...], "want": [...]}, "B": {...}}
+    print(f"  P spans: {_path} -> {n} record(s), {w} extra word(s)")
+    return _remap, _want
+
+P_REMAP, P_WANT_EXTRA = _load_p_spans_from_env()
+```
+
+**`PERKY_P_SPANS` names a JSON file.** Remap entries are `[null, [addr, "hex"]]` for an append or
+`[old, new]` for a re-point; want entries are `[addr, words]`. **Unset leaves both at `None` -- what
+every existing caller gets.**
+
+**`os` is already imported at line 29** (`import dataclasses, hashlib, json, os, ...`), and `BUILD_TAG` on
+line 198 uses the same mechanism. **The environment is this file's established channel**, which is why
+it is the right one here.
+
+## Verified both ways, against a real file
+
+```
+unset        -> P_REMAP=None P_WANT_EXTRA=None   inert: True
+PERKY_P_SPANS -> "P spans: /tmp/perky_p_spans.json -> 2 record(s), 6 extra word(s)"
+                remap A: [(None, (212387, b'\x01\x02\x03\x04\x05\x06\x07\x08\t'))]
+                want  A: [(212387, 3)]
+make check REMIX=perky-machine: 336 PASS, 8 SKIP, 0 FAIL
+```
+
+**`0x33da3` = 212387, the hex decodes to 9 bytes, the want pair is `(addr, words)`.** The loader runs,
+reports what it loaded, and is silent and inert when the variable is unset.
+
+## Why it prints
+
+**The one failure mode left is a channel that is set but not read** -- the failure round 163 was written
+to prevent. **A line naming the file and both totals means a run either shows the spans it took or
+shows nothing at all; there is no third state to misread.** That is also the property that makes this
+wiring checkable in a build log rather than by inference.
+
+## The whole chain, now complete
+
+```
+emit()                                   -> dest, pieces, whole      (r159 added whole)
+perky_tail_remap.build()                 -> remap, want               (r160, gated r161)
+   written as JSON, path in PERKY_P_SPANS
+build_bus._load_p_spans_from_env()       -> P_REMAP, P_WANT_EXTRA     (this round)
+   applied before `mods` is read                                     (r147)
+   _want += P_WANT_EXTRA[tag]                                        (r157)
+   records appended via dsp_modmap.append                            (r143, gated r144)
+   _have != sum(_want) proves it                                     (r152)
+```
+
+**Every link is in and every link but the second is gated or is the build's own guard. What remains is
+the JSON writer between the second and third -- and a build.**

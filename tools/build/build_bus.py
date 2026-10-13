@@ -144,6 +144,40 @@ P_REMAP: dict | None = None
 # stock.p_spans disagree". Naming both is what makes the two agree -- and that
 # check is the proof, not a new one.
 P_WANT_EXTRA: dict | None = None
+
+# ... and both are filled from the environment, because a caller cannot set them
+# by assignment. `tools/perky/build_multi_machine_canary.py` runs this file with
+# `runpy.run_path(..., run_name='__main__')`, which builds a SECOND module object
+# from this source -- so `build_bus.P_REMAP = ...` on an imported module sets a
+# value this run never reads, silently. The environment is the one channel that
+# crosses that boundary, and `REMIX` above already uses it.
+#
+# PERKY_P_SPANS names a JSON file: {"A": {"remap": [...], "want": [...]}, "B": ...}
+# where remap entries are [null, [addr, "hex bytes"]] for an append, or
+# [old, new] for a re-point, and want entries are [addr, words]. Absent or unset
+# leaves both at None -- which is what every existing caller gets.
+def _load_p_spans_from_env():
+    _path = os.environ.get("PERKY_P_SPANS")
+    if not _path:
+        return None, None
+    import json as _json
+    with open(_path) as _f:
+        _data = _json.load(_f)
+    _remap, _want = {}, {}
+    for _tag, _d in _data.items():
+        _remap[_tag] = [
+            (None, (int(r[1][0]), bytes.fromhex(r[1][1]))) if r[0] is None
+            else (int(r[0]), int(r[1]))
+            for r in _d.get("remap", [])
+        ]
+        _want[_tag] = [(int(a), int(w)) for a, w in _d.get("want", [])]
+    print(f"  P spans: {_path} -> "
+          f"{sum(len(v) for v in _remap.values())} record(s), "
+          f"{sum(sum(w for _a, w in v) for v in _want.values())} extra word(s)")
+    return _remap, _want
+
+
+P_REMAP, P_WANT_EXTRA = _load_p_spans_from_env()
 ORDER = [k for k in REMIX.modules
          if remix_modules()[k].menu is not None]
 # A HIDDEN module (schema.Remix.hidden) is placed, dispatched and cloned but
