@@ -3980,3 +3980,67 @@ P_WANT_EXTRA[tag] = [(dest[name], words(name))        for each shard that moves]
 **Both keyed by payload, both built from the same `(dest, pieces)` pair `emit()` already returns, and
 both using `(addr, WORDS)`.** **Line 1 is in and inert; these two are all that remain -- and the guard
 written for the original harvest proves them.**
+
+---
+
+# THE SHARD WORDS COME FROM `whole` (round 159)
+
+Rounds 157-158 settled what lines 2 and 3 must say. **Round 159 found where their input actually lives --
+and it is not where I had been looking.**
+
+```python
+def emit(multi_asm):
+    src   = load_source(multi_asm)
+    whole, syms = B.assemble_syms(src, MONOLITH_ORG, "mono")   # the assembled WORDS
+    pieces      = slice_pieces(src, len(whole), syms)          # (name, a, b, SOURCE TEXT, idx)
+    assigned    = L.place_program_shards_two_space([...])
+    dest        = {p.name: p.start for p in assigned}
+    def final(addr):
+        for n, a, b, _, _ in pieces:
+            if a <= addr < b:
+                return dest[n] + (addr - a)
+        return addr
+    return pieces, whole, dest, final, syms
+```
+
+**`pieces[3]` is rewritten ASSEMBLY SOURCE, not bytes.** Rounds 157-158 assumed the words travelled with
+the piece. **They do not.**
+
+**The words are a slice of `whole`:** for piece `(n, a, b, text, i)`, the shard's `b - a` words are
+`whole[a - MONOLITH_ORG : b - MONOLITH_ORG]`.
+
+**And `emit()` already returns `final(addr)`, which performs exactly that translation one address at a
+time** -- `dest[n] + (addr - a)` for the piece containing `addr`.
+
+## So lines 2 and 3 are
+
+```python
+for (name, a, b, _text, _i) in pieces:
+    new = dest[name]
+    if new == a:
+        continue                       # stays put; an existing record already covers it
+    words = whole[a - MONOLITH_ORG : b - MONOLITH_ORG]     # ints, 24-bit DSP words
+    packed = b"".join(w.to_bytes(3, "little") for w in words)
+    P_REMAP[tag]      .append((None, (new, packed)))       # append a record carrying them
+    P_WANT_EXTRA[tag].append((new, len(words)))            # and name the same 2 ground
+```
+
+**`packed` is `count * 3` bytes, which is what `dsp_modmap.append` requires** (and it refuses otherwise,
+r143). **The word packing is the same `_w24`/`w24` order the record header uses** -- little-endian
+three-byte, as `dsp_modmap.parse` reads it.
+
+## What this closes
+
+**Every input for lines 2 and 3 now has a named source, a named shape, and a gate:**
+
+| input | where it comes from | checked by |
+|---|---|---|
+| which shards move | `dest[name] != a` | r158's table |
+| the new address | `dest[name]` | r148, r157 |
+| the words | `whole[a - MONOLITH_ORG : b - MONOLITH_ORG]` | this round |
+| the packing | `to_bytes(3, "little")` | `dsp_modmap.append` refuses a wrong length (r143) |
+| the per-payload addresses | `mods`, read per payload | r149's shift |
+| that the two agree | `_have != sum(_want)` | the build's own guard (r152) |
+
+**Nothing is left to discover. What remains is that loop, written into the emitter's caller, and one
+build.**
