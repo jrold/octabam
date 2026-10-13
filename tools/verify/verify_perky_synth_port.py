@@ -86,8 +86,16 @@ def configure_fixture(project: str, *, engine: int = ENGINE, name: str = "projec
                     # point of bounding it -- so 99 can only be expressed as an
                     # out-of-range ALGO, which the transport clamps to ALGO 0.
                     # The baseline therefore renders the clamped engine.
+                    # PAGE ORDER IS TUNE, DECAY, ALGO, PAR1, PAR2, MODE -- it is
+                    # NOT the engine ABI order (TUNE, DECAY, P1, P2). An earlier
+                    # revision of this fixture wrote ALGO into slot 5, which was
+                    # correct only while the page order had ALGO last; after the
+                    # reorder that put ALGO at slot 2, slot 5 became MODE and every
+                    # engine under test rendered Fold Drum 1 again. Slot 11 is the
+                    # hidden model byte, which the transport overwrites from ALGO.
                     algo = {0: 0, 3: 1, 2: 2, 10: 3}.get(engine, 99)
-                    defaults = (64, 64, 64, 64, 0, algo, 0, 0, 0, 0, 0, engine) if track != 4 else (127, 127, 127, 0, 0, algo, 0, 0, 0, 0, 0, engine)
+                    #            TUNE DECAY ALGO  PAR1 PAR2 MODE   (slots 0..5)
+                    defaults = (64,  64,   algo, 64,  64,  0, 0, 0, 0, 0, 0, engine) if track != 4 else (127, 127, algo, 127, 127, 0, 0, 0, 0, 0, 0, engine)
                     for slot, value in enumerate(defaults):
                         off = (0x2a if slot < 6 else 0x1da) + 30 * track + 6 + slot % 6
                         data[base + off] = value
