@@ -3226,3 +3226,81 @@ first answer was the thing that merely *sounded* like the right place.**
 **What survives from round 145:** `region` is built from the harvested records, `place()` writes only
 inside `region`, and `_have != sum(...)` is a real self-verifying guard. **Those are measurements and
 they are unaffected.** Only the *location* of the edit was wrong.
+
+---
+
+# THE BUILD CAN NOW BE TOLD WHERE DSP CODE GOES (round 147)
+
+Round 146 established that the placement lives in the emitter, not the build, and named two shapes.
+**Round 147 built the one it judged better: the build takes it as an explicit input.**
+
+## What landed
+
+```python
+# build_bus.py, beside REMIX
+P_REMAP: dict | None = None
+```
+
+**`None` -- the default -- leaves the stock record table untouched.** Every existing caller is
+unaffected, and `make check` is 334 PASS / 0 FAIL with it in.
+
+A caller that knows where it wants DSP code sets it before the build runs:
+
+```python
+P_REMAP = {
+    'A': [(0x01252, 0x33DA3)],              # re-point in place  (payload A)
+    'B': [(None, (0x33DA3, words_bytes))],  # append before the terminator (payload B)
+}
+```
+
+**Applied in the payload loop, immediately BEFORE `mods` is read** -- which is the whole point: `mods`
+drives both `region` and `_p_off`, so the records must move first.
+
+```python
+if P_REMAP and tag in P_REMAP:
+    _at = va - BASE
+    _blob = bytes(img[_at:_at + ln])
+    for _old, _new in P_REMAP[tag]:
+        if _old is None:
+            _addr, _words = _new
+            _blob = dsp_modmap.append(_blob, 0, _addr, _words)
+        else:
+            _blob = dsp_modmap.repoint(_blob, _old, _new)
+    if len(_blob) > ln:
+        sys.exit(f"payload {tag}: P remap grows the payload to {len(_blob)} B; its slot is {ln}")
+    img[_at:_at + len(_blob)] = _blob
+mods, _ = modules(bytes(img), va, ln)
+```
+
+**A remap that outgrows its slot is refused by name rather than silently truncated.** And the
+pre-existing `_have != sum(...)` check further down still asserts `region` covers exactly the harvested
+spans, so a remap that loses or resizes a record stops the build.
+
+## Both halves proven
+
+```
+P_REMAP = None  -> inert: True            make check: 334 PASS, 8 SKIP, 0 FAIL
+armed           -> the record for 0x33da3 [(0, 212387, 1063, 68517)]
+```
+
+**Inert by default; the re-point resolves when set.**
+
+## The bug this round found in its own first attempt
+
+**The first edit added the loop but not a module-level `import dsp_modmap`.** `build_bus` imported the
+*names* (`from dsp_modmap import BASE, IMG, PAYLOADS, modules`) and used `dsp_modmap.dumpmem` only
+inside `__main__`, behind a local import. So the remap would have raised **`NameError` the first time
+anyone set `P_REMAP`** -- and `make check` was green, because `P_REMAP is None` means the code never
+runs.
+
+**Found by asking the module object, not by reading the diff:** `hasattr(build_bus, 'dsp_modmap')`
+returned `False`. **A guard written for one thing (`'import dsp_modmap' not in source`) matched a
+different thing (a local import inside `__main__`) and skipped the fix** -- the same proxy-for-the-
+question failure that has recurred all session, and the reason the check was `hasattr` on the loaded
+module rather than a grep of the file.
+
+## Where this leaves step 2
+
+**The build can now be handed a placement and will write DSP code at tail addresses.** What remains is
+for `perky_emit_shards` -- which already imports `build_bus` and holds `dest` -- to populate `P_REMAP`
+from it. **Still first: the probe** (r139, gated r140), which needs `OT_PROJECT`.

@@ -30,6 +30,7 @@ import dataclasses, hashlib, json, os, pathlib, re, subprocess, sys
 
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parents[1])); import toolpath  # noqa: E402,F401  (every tools/ dir on sys.path)
 from dsp_modmap import BASE, IMG, PAYLOADS, modules  # noqa: E402
+import dsp_modmap  # noqa: E402  # repoint/append for P_REMAP
 from remix import registry as remix_registry  # noqa: E402
 from remix.registry import modules as remix_modules  # noqa: E402
 from remix.schema import (DEFAULT_HARVEST, NO_FALLBACK, BusRole,  # noqa: E402
@@ -125,6 +126,10 @@ NONE_ID = 0x00                  # a fresh part's FX2 id -- aliased to SEND below
 # itself against (scripts/refhash.sh); there is no default. A module with no menu entry (a ColdFire patch) takes no chooser row,
 # so ORDER is the menu modules alone, in the remix's declared order.
 REMIX = remix_registry.remix(os.environ.get("REMIX"))
+# Optional per-payload P record remap. None leaves the stock table alone,
+# which is what every existing caller gets. A caller that needs DSP code at
+# a tail address sets this before the build runs; see the loop below.
+P_REMAP: dict | None = None
 ORDER = [k for k in REMIX.modules
          if remix_modules()[k].menu is not None]
 # A HIDDEN module (schema.Remix.hidden) is placed, dispatched and cloned but
@@ -2116,6 +2121,34 @@ mkgo:""",
     dev_delay = None            # (words) for the .mem dump append, DEV only
     for tag, va, ln in PAYLOADS:
         pp = PP[tag]
+        # Optional per-payload record remap, set by a caller that knows where it
+        # wants DSP code to live. None -- the default -- leaves the stock table
+        # untouched, so every existing caller is unaffected.
+        #
+        # A module that needs P words at an address NO stock record covers (the
+        # "tails") cannot write them: `_p_off` below sys.exits for any address
+        # outside a record. So the records must be created or re-pointed FIRST.
+        # The `_have != sum(...)` check further down still asserts the region
+        # covers exactly the harvested spans, so a remap that loses or resizes a
+        # record stops the build with a named payload.
+        #
+        # P_REMAP[tag] is a list of (old_addr, new_addr) -- re-point in place, the
+        # operation payload A needs -- or (None, (addr, words)) -- append, the one
+        # payload B needs. Both live in dsp_modmap and are gated by
+        # verify_perky_record_write.
+        if P_REMAP and tag in P_REMAP:
+            _at = va - BASE
+            _blob = bytes(img[_at:_at + ln])
+            for _old, _new in P_REMAP[tag]:
+                if _old is None:
+                    _addr, _words = _new
+                    _blob = dsp_modmap.append(_blob, 0, _addr, _words)
+                else:
+                    _blob = dsp_modmap.repoint(_blob, _old, _new)
+            if len(_blob) > ln:
+                sys.exit(f"payload {tag}: P remap grows the payload to "
+                         f"{len(_blob)} B; its slot is {ln}")
+            img[_at:_at + len(_blob)] = _blob
         mods, _ = modules(bytes(img), va, ln)
 
         def _p_off(addr):
