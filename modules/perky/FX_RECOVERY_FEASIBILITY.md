@@ -1218,3 +1218,49 @@ the harvest is the smaller and more honest change.
 
 **No open question remains about whether the approach works.** What is left is two specific,
 located edits to the build plus the gate run.
+
+---
+
+# ADDENDUM 22 — the coupling between 9c's two changes, confirmed empirically
+
+Addendum 21 said the two changes are coupled. Measured, so the next attempt does not have to
+discover it:
+
+```
+harvest today   : 3441 words -> COMPRESSOR, DARK REV, LO-FI, PLATE REV, SPRING REV
+harvest narrowed:  774 words -> COMPRESSOR, PLATE REV
+narrowed runs   : [PLATE REV 594], [COMPRESSOR 180]     <- two, not one
+
+Perky needs 3051 as ONE contiguous blob.
+Largest narrowed run: 594
+```
+
+**Narrowing the harvest alone cannot work**: 3051 words have nowhere to go in a 594-word
+run, and the build refuses rather than silently truncating (which is the correct behaviour and
+the reason this pairing is discoverable at all). **Change 1 without change 2 fails loudly;
+change 2 without change 1 has nothing to place into.** They land together or not at all.
+
+## One detail from the remix's own comments that constrains change 1
+
+The remix documents why its `fx1` list holds every retained stock insert:
+
+> `fx1` is the ONE list the schema has, and it governs either chooser ... an fx2 id is also an
+> fx1 id
+
+So **adding SPRING REV, DARK REV and LO-FI to `fx1` keeps them on BOTH choosers** -- which is
+what "restore the effect" means for a reverb (FX1) and for LO-FI (which sits on both). Change 1
+is therefore a small, well-understood edit; change 2 is the part with no existing machinery.
+
+## Task 5, final position
+
+| item | state |
+|---|---|
+| validation steps 1-8 | DONE, each measured |
+| 9a sharded image built | DONE |
+| 9b three effects' P verified free | DONE -- 0 words overwritten |
+| 9c-1 narrow the harvest | one small edit to `remixes/test/perky-machine/remix.py` |
+| 9c-2 place shards across two spaces | the part with no existing machinery |
+| 9d gates | after 9c |
+
+**Everything is characterised. What remains is two edits that must land together, plus the
+gate run.**
