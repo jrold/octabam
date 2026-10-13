@@ -2143,3 +2143,66 @@ thing itself. Round 122 matched a call site; the docstring said what the call si
 **The DSP payload's records come from the stock payload**, since `dsp_modmap.modules()` *parses* them
 out of the image -- so `build_bus.py`, which assembles that payload, is where a tail record would be
 inserted. **That is a lead, not a finding**; I have not read it, and this note says so deliberately.
+
+---
+
+# STEP 2 IS *ONLY* THE RECORD INSERTION -- `place()` NEEDS NO CHANGE (round 124)
+
+Round 123 corrected the writer's location to "somewhere in `build_bus.py`'s side". Round 124 read the
+function that actually writes P code, and it settles the scope.
+
+## `build_bus.place()` -- the whole of the write path
+
+```python
+def place(words, start):
+    """Write a contiguous word stream at P address `start`.
+
+    The records load back-to-back but are separated by headers in the
+    file, so the stream is cut at each record boundary.
+    """
+    i = 0
+    for _, a, cnt, off in region:            # the RECORD TABLE
+        if i >= len(words): break
+        pos = start + i
+        if not (a <= pos < a + cnt): continue     # ONLY inside an existing record
+        n = min(len(words) - i, a + cnt - pos)
+        for k in range(n):
+            wrw_p(va + off + (pos - a + k) * 3, words[i + k])
+        i += n
+    if i != len(words):
+        sys.exit(f"payload {tag}: placement ran past the region")
+```
+
+## Three things follow
+
+**1. The words live in the FILE at `va + off + (pos-a)*3`.** The record's `off` is a file offset and
+`*3` is the three-byte packing -- exactly the layout `dsp_modmap.parse()` reads.
+
+**2. A stream may span SEVERAL records.** *"the stream is cut at each record boundary"* -- `place()`
+walks record by record, writing `n` words in each until the stream is done. **Nothing requires a
+stream to sit in one record.**
+
+**3. And that is why step 2 needs no placement change at all.** If a record covering `0x33da3` exists,
+`place()` will use it **with the code it already has.**
+
+## So the task is exactly one thing
+
+**Create the records.** They are *inherited from the stock payload* -- `dsp_modmap.modules()` parses
+them out of the image, and the build only ever writes **into** them. **Nothing in this tree emits a
+new one**, which is why the tails are unreachable: they are DspAddress ranges no record covers, and
+`place()` skips every address outside `region` and then `sys.exit`s.
+
+**Adding a tail record means inserting into the stock payload blob:**
+`w24(space) w24(count) w24(addr)` + the bytes inline, **before the terminating record** -- in whichever
+`order` the payload's existing records use.
+
+**Then `place()` finds it, `_p_off` resolves it, and the shard lands. No other change.** That is a
+sharper scope than any previous round recorded: **the placement, the emitter, the placer and the write
+path are all already correct; only the table entry is missing.**
+
+## And the payload-B problem, restated with the new detail
+
+**Payload A has two in-window records** -- proof the format permits it, and a template.
+**Payload B has none, and T1 lives there.** So the insertion has to be done twice, against two
+different stock blobs, and **B's `order` may differ from A's** -- the parser tries `"ca"` and `"ac"`
+precisely because it was not settled.
