@@ -599,3 +599,62 @@ whether the change is safe**, so it is worth the round to have it right.
 
 The rest of the map is unchanged: the emitter is built and gated, the placement is computed,
 change 1's prediction is confirmed, and 66 gates pass.
+
+---
+
+# DECISIVE (round 61): the shared tails are NOT writable ground today
+
+This is the finding that most changes the shape of step 2, and it was not visible from the call
+site. `build_bus.py` builds the only region `place()` can write through like this:
+
+```python
+_want = [_sp[k] for k in _harvest]                    # ONLY the harvested effects
+region = sorted((m for m in mods if m[0] == 0
+                 and any(a <= m[1] < a + n for a, n in _want)),
+                key=lambda m: m[1])
+_have = sum(m[2] for m in region)
+if _have != sum(n for _a, n in _want):
+    sys.exit("... the module map and stock.p_spans disagree")
+```
+
+**`region` is built exclusively from the HARVESTED effects' spans.** The five shared tails come
+from `all_fx_layout.SAFE_SHARED_P_SPANS`, which is a **separate contract that does not feed
+`region` at all.** So:
+
+* `place()` cannot write a single word into a tail;
+* and **18 of the 21 shards are assigned to tails** (3 in local P, 18 in the tails, per the
+  emitter and the gate).
+
+**So step 2 is not only a refactor of the fit-and-place pipeline. It must also make the shared
+tails writable ground**, which means at minimum:
+
+1. add the tails' P records to `region` (note the selector `m[0] == 0`: records are filtered by
+   space, and the tails live in the shared window where X, Y and P alias);
+2. extend the `_have != sum(...)` consistency check, which currently asserts the region covers
+   *exactly* the harvested spans -- adding ground it does not know about would trip it;
+3. let the `runs` grouping see them, so `place()`'s per-record walk reaches them.
+
+## Why this is the most useful thing found in several rounds
+
+Every previous statement about step 2 -- "two lines plus a loop", then "a three-site refactor" --
+assumed the tails were placeable. **They are not.** An edit made from either of those handoffs
+would have assembled cleanly, placed 3 shards, and left 18 unwritten, with the `_have` check or
+the `place()` overrun guard as the only thing standing between that and a silently truncated
+program.
+
+**The previous rounds' estimates were wrong in the same direction -- too small -- for the same
+reason: they were read off the placement call site, while the constraint lives in how the ground
+is defined two hundred lines earlier.**
+
+## Where the goal stands
+
+| | |
+|---|---|
+| tasks 0-4, 7, 8 | complete, each with evidence |
+| task 5 validation | complete |
+| step 1 (emit shards) | built, 3 properties, gate-protected, 2 payloads |
+| step 2 (place shards) | **a fit-and-place refactor AND new writable ground** |
+| step 3 (list three in `fx1`) | one edit; prediction measured and confirmed |
+| step 4 (gates) | 66 pass today; re-run after 1-3 |
+
+Spring, Dark and Lo-Fi remain absent from the image.
