@@ -458,3 +458,54 @@ question any more.
 **The useful consequence:** when `OT_PROJECT` lands and the canary runs, **four gates become live at
 once** -- boot/upload/readback, the odd-address audit, the tail budget, and this one -- because all
 four were already written and only need their inputs and a manifest line.
+
+---
+
+# THE CARD / MIDI ROUNDTRIP GATE **RAN**, AND FOUND A MISMATCH (round 97)
+
+Round 96 recorded that this gate existed, was right, was unregistered, and needed the canary's
+outputs. **That last part was wrong.** Every input it needs is on this machine:
+
+```
+--mainos   out/mainos_perky_multi.bin          present (the canary's MAIN OS)
+--elek     out/elek_PERKY2V.bin                PRESENT -- I had looked for out/perky/cf-final
+--card     ~/Downloads/PERKY2V_milestone.bin   present
+--midi     ~/Downloads/PERKY2V_milestone.syx   present
+--eft      vendor/elektron-firmware-tool/elektron-firmware-tool   PRESENT
+```
+
+**It runs, and it fails:**
+
+```
+PERKY wrapper round-trip: ELEK version field mismatch b'PERKY2V   ' != b'   PERKY2V'
+```
+
+## What the failure says
+
+**The version field's padding differs between the two artifacts:**
+
+| artifact | field |
+|---|---|
+| `out/elek_PERKY2V.bin` | `PERKY2V   ` -- LEFT-aligned, trailing spaces |
+| `~/Downloads/PERKY2V_milestone.bin` | `   PERKY2V` -- RIGHT-aligned, leading spaces |
+
+**So the ELEK container on disk and the card image that was tested were not produced with the same
+version-field convention.** Either the ELEK is from a different build, or the canary and the staging
+step disagree about padding.
+
+## Why this matters more than the four gates that could not run
+
+**Four brief-named gates could not be executed because of a missing project. This one COULD be, and
+it immediately found a discrepancy between two artifacts that are supposed to be the same
+firmware.** The card/MIDI roundtrip exists precisely to catch this: *"the card image must decode to
+the exact ELEK container... and the MIDI SysEx must decompress section 3 back to the exact final
+MAIN OS bytes."*
+
+**A flash depends on the card and the MIDI updater carrying the same bytes.** Right now the gate
+says they do not agree on a field a decoder reads.
+
+## What is NOT yet established
+
+**This is one field, not the payload**, and the mismatch may be entirely in how the version string is
+padded by the staging path rather than in the firmware. **I have not yet determined which side is
+wrong** -- and I should not guess, because guessing here is how a version string becomes a bug.
