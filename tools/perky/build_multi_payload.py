@@ -44,10 +44,16 @@ def build(assets: Path, out: Path):
     (out/'layout.json').write_text(json.dumps(layout,indent=2)+'\n')
     code=source.generate(out/'noise-packed/layout.json')
     for name,tag,values in [('noise',10,initial[:58]),('simple',2,live.LiveSimpleDrum.fresh().voice.words+[0xffff]+[0]*23)]:
+        # Each generated init is a PIECE, so a splitter can see where it begins and
+        # ends. The label is an f-string, which is why no text search for
+        # 'pk_multi_noise_init' ever found this emitter. Comments only: bytes must
+        # not move.
+        code+=f'; ===== BEGIN pk_multi_{name}_init =====\n'
         code+=f'\npk_multi_{name}_init:\n move x:>$418,a\n lsr #$5,a\n move a1,n1\n move #>$38ee,r1\n move x:(r1+n1),b\n cmp #>${tag:x},b\n beq pkm_{name}_initialized\n move #>${tag:x},a\n move a1,x:(r1+n1)\n move r6,r1\n clr a\n do #>$3a,pkm_{name}_zero\n move a1,x:(r1)+\npkm_{name}_zero:\n nop\n'
         for i,v in enumerate(values):
             if v:code+=f' move #>${v:06x},a\n move a1,x:(r6+${i:x})\n'
         code+=f'pkm_{name}_initialized:\n rts\n'
+        code+=f'; ===== END pk_multi_{name}_init =====\n'
     code=source.noise.force_long_local_jsr(code)
     path=out/'multi.asm';path.write_text(code)
     print(f'Mixed shipping payload: {source.noise.measure(code,path)} P words, {len(ywords)} Y words, 359 claimed X words')

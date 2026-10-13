@@ -624,3 +624,57 @@ definite answer.
 coverage figure here came from a rebuild whose artifacts were byte-identical to the
 previous build. That proves the markers are not assembled. It says nothing about whether
 coverage is complete. The two questions are independent, and only one is settled.
+
+---
+
+# ADDENDUM 11 — STEP 2 COMPLETE: zero unmarked content
+
+The last block's emitter was found, and the reason it resisted two searches is now
+explained: **`build_multi_payload.py:47` builds the label with an f-string.**
+
+```python
+code += f'\npk_multi_{name}_init:\n move x:>$418,a\n ...'
+```
+
+With `name='noise'` that yields `pk_multi_noise_init`, so **the literal string never
+appears in any file** -- which is exactly why `grep -rn "multi_noise_init"` over `.py` and
+`.asm` returned only the `jsrl` at the call site. The same loop also generates
+`pk_multi_simple_init` for `name='simple'`; both are now marked.
+
+MEASURED, and this is the bar step 2 was aiming at:
+
+```
+pieces: 21
+imbalance: BEGIN-only NONE, END-only NONE
+UNMARKED non-blank content: 0 chars (0 words) in 0 regions
+largest piece ~472 words; over the 605 cap: 0
+```
+
+**Every byte of the 3051-word program now sits inside exactly one marked piece. Markers
+balance. No piece exceeds the 605-word shard cap.**
+
+**PROVEN BYTE-NEUTRAL throughout:** a full rebuild after every marking change produced
+artifacts byte-identical to before (`4ba4d72c...`, `685e5105...`).
+
+## What step 2 delivered, and why each part was necessary
+
+| property | needed because |
+|---|---|
+| every byte inside exactly one piece | an unmarked region is one a splitter declines to touch, so it silently stays monolithic |
+| markers balanced | an unbalanced marker invites a splitter to INVENT a boundary -- fiction that assembles |
+| no piece over 605 words | a combined `extras` piece at ~803 words could never have been a shard |
+| byte-identical rebuild every time | comment-only changes that move the bytes would mean the markers are being assembled |
+
+## Standing falsifier, unchanged
+
+Coverage is measured by **parsing source text**. It is therefore exposed to exactly the
+marker problems this section kept finding, and the byte-identity check does **not** speak
+to it. `unmarked = 0` is now measured, and the measurement is only as good as the parser
+that produced it -- so the splitter must re-verify at assembly time rather than trusting
+this number.
+
+## Next
+
+Step 3: choose the actual shard boundaries from these 21 pieces, then assign final
+origins, re-emit with size-stable literals, assemble per shard, place across both address
+spaces, and gate execution.
