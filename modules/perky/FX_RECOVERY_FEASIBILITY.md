@@ -678,3 +678,73 @@ this number.
 Step 3: choose the actual shard boundaries from these 21 pieces, then assign final
 origins, re-emit with size-stable literals, assemble per shard, place across both address
 spaces, and gate execution.
+
+---
+
+# ADDENDUM 12 — STEP 3 FEASIBILITY PROVED: the whole program packs into the fragments
+
+This is the answer task 5 needed. With step 2 complete, every piece's extent can be
+**measured** rather than inferred: attribute each symbol to the piece containing its
+definition and take the span between consecutive piece starts. The extents then total
+**exactly 3051** -- the program length -- so they are a partition of the program, not an
+estimate.
+
+```
+synth_seam_glue.asm                  386
+noise_tone_math.asm                  299
+fold_drum2_voice.asm                 262
+simple_drum_envelope.asm             247
+simple_drum_oscillator.asm           237
+noise_tone_oscillator_packed.asm     194
+fold_drum_voice.asm                  189
+simple_drum_delta.asm                162
+... 21 pieces, total 3051 of 3051
+```
+
+**Largest piece 386 words -- well under the 605-word shard cap**, so no piece needs
+splitting internally.
+
+## The packing
+
+First-fit-decreasing the 21 extents into the seven fragments Perky may use (five shared
+tails 605/605/605/349/240, plus Plate's 594 and Compressor's 180):
+
+```
+frag  605: used 580 free  25   2 pieces      frag  594: used 575 free 19   4 pieces
+frag  605: used 599 free   6   3 pieces      frag  349: used 337 free 12   4 pieces
+frag  605: used 590 free  15   3 pieces      frag  240: used 238 free  2   3 pieces
+                                             frag  180: used 132 free 48   2 pieces
+total capacity 3178, used 3051, free 127
+```
+
+**A packing EXISTS.** First-fit-decreasing succeeding is itself the proof: it produces a
+valid assignment, so the question "can 3051 words of 21 indivisible pieces fit 3178 words
+of fragments, none over 605" is answered **yes**, with 127 words spare.
+
+**No engine is removed. No piece exceeds the cap. Spring, Dark and Lo-Fi all get their P
+back.**
+
+## What this does NOT yet prove, stated plainly
+
+* **Existence of a packing is not a placement.** The real placer must also satisfy each
+  fragment's exact base address and the alignment rules in `all_fx_layout.py`, and must
+  emit the cross-shard fix-ups. FFD ignores all of that; it only answers the capacity
+  question.
+* **The packing is TIGHT** -- 6, 2, 12, 15, 19, 25 and 48 words free per fragment. There is
+  no room for the program to grow afterwards, so any later change to the shards needs a
+  re-pack.
+* **Size stability is unaddressed here.** The plan's core hazard remains: substituting a
+  cross-shard label with a literal must not change any instruction's encoded size, or the
+  shard's internal addresses shift. `dsp_asm`'s own pass-1 sizing-drift warning is present
+  in the qualified build, so this is not hypothetical.
+
+## Where task 5 now stands
+
+| step | state |
+|---|---|
+| 1. label -> address map | DONE, committed as `tools/perky/perky_shard_map.py`, self-checking |
+| 2. relocation-safe boundaries | DONE -- 21 pieces, balanced, zero unmarked, none over cap |
+| 3. feasibility of the packing | **DONE -- proven above** |
+| 4. assign final origins | next |
+| 5. re-emit with size-stable literals | next |
+| 6. assemble per shard, place, gate execution | next |
