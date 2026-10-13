@@ -13,7 +13,7 @@ real ``pk_track_page``, ``pk_admit_track`` and ``pk_render``.
 WHAT IS PROVEN
 
   1. exactly six controls are visible on SRC page 1, and they are
-     ``DECAY, TUNE, PAR1, PAR2, MODE, ALGO`` in that order.  Both facts are
+     ``TUNE, DECAY, ALGO, PAR1, PAR2, MODE`` in that order.  Both facts are
      read out of the descriptor ``pk_track_page`` actually built (names at
      P+0x16, six-byte fields; value counts at P+0x9a).
      NOTE: a first-page name field is 6 bytes -- FIVE characters plus a NUL --
@@ -34,9 +34,9 @@ WHAT IS PROVEN
      page words (exactly what that writer leaves there, low byte included) and
      requires the value to appear in the record the DSP gets, for all six.
   4. MODE is bounded to the engine's valid modes: the descriptor count for
-     slot 4 is 3, and an out-of-range staged MODE is clamped to 2 in the
-     transport (executed).
-  5. ALGO is bounded to the real pool: the descriptor count for slot 5 is 4 and
+     slot 5 (PAGE order: F) is 3, and an out-of-range staged MODE is clamped
+     to 2 in the transport (executed).
+  5. ALGO is bounded to the real pool: the descriptor count for slot 2 is 4 and
      no executed case -- ALGO 0..3, 4, 5, 7, 127, 255, with or without the
      dirty low byte an LFO leaves -- ever put an engine byte outside
      {0, 3, 2, 10} in the record.
@@ -127,7 +127,12 @@ DESC_BASE = 0x38
 ALGO_ENGINE = (0, 3, 2, 10)
 ENGINE_NAMES = {0: "Fold Drum 1", 3: "Fold Drum 2", 2: "Simple Drum", 10: "Noise/Tone"}
 MODE_COUNT, ALGO_COUNT = 3, 4
-LABELS = ("DECAY", "TUNE", "PAR1", "PAR2", "MODE", "ALGO")
+LABELS = ("TUNE", "DECAY", "ALGO", "PAR1", "PAR2", "MODE")
+# Page-slot indices of the six SRC controls, left to right. These are the
+# Part page slots; the engine ABI order is different and the control source
+# remaps between them (pk_light2_src_to_transport).
+SLOT_TUNE, SLOT_DECAY, SLOT_ALGO, SLOT_PAR1, SLOT_PAR2, SLOT_MODE = range(6)
+SLOT_COUNT = 6
 STEPPED_FORMATTER_A = 0x4003C718   # stock enumerated select: prints value+1
 MODE_TICK_WIDGET = 0x40047424      # stock SPRING TYPE three-position ticks
 
@@ -150,7 +155,8 @@ DRIVER = r'''
  * the shipping pk_track_page / pk_admit_track / pk_render, exactly as
  * tools/harness/perky_cf/production_sim.c does for the 3-algo machine.
  *
- * Case rows: track part ping trig algo mode d0 d1 d2 d3 dirty hidden
+ * Case rows: track part ping trig dirty hidden r0 r1 r2 r3 r4 r5
+ *   r0..r5 = the six SRC page slots, in page order.
  */
 #include <sys/mman.h>
 #include <stdint.h>
@@ -260,19 +266,19 @@ int main(int argc, char **argv)
 
     FILE *f = fopen(argv[1], "r");
     if (!f) { perror("cases"); return 2; }
-    unsigned track, part, ping, trig, algo, mode, d0, d1, d2, d3, dirty, hidden;
+    unsigned track, part, ping, trig, dirty, hidden, r[6];
     unsigned idx = 0, fallback = 0;
     while (fscanf(f, "%u %u %u %u %u %u %u %u %u %u %u %u",
-                  &track, &part, &ping, &trig, &algo, &mode,
-                  &d0, &d1, &d2, &d3, &dirty, &hidden) == 12) {
+                  &track, &part, &ping, &trig, &dirty, &hidden,
+                  &r[0], &r[1], &r[2], &r[3], &r[4], &r[5]) == 12) {
         U8(L2_PART_IDX) = (uint8_t)part;
         U8(l2_hidden(track, 5u)) = (uint8_t)hidden;
-        U16(L2_FP + 0u)  = (uint16_t)((d0 << 8) | dirty);
-        U16(L2_FP + 2u)  = (uint16_t)((d1 << 8) | dirty);
-        U16(L2_FP + 4u)  = (uint16_t)((d2 << 8) | dirty);
-        U16(L2_FP + 6u)  = (uint16_t)((d3 << 8) | dirty);
-        U16(L2_FP + 8u)  = (uint16_t)((mode << 8) | dirty);
-        U16(L2_FP + 10u) = (uint16_t)((algo << 8) | dirty);
+        /* Stage the six page slots LITERALLY, in page order. All slot semantics
+         * (which control lives where, and how it maps onto the engine ABI) live
+         * in the Python half, so there is one description of the layout, not
+         * two that can drift apart. */
+        for (unsigned s = 0; s < 6u; ++s)
+            U16(L2_FP + 2u * s) = (uint16_t)((r[s] << 8) | dirty);
         for (unsigned t = 0; t < 8u; ++t) U8(L2_TRIG + t) = 0u;
         U8(L2_TRIG + track) = trig ? 16u : 0u;
         U32(L2_CURSOR_PTR) = L2_CURSOR;
@@ -314,17 +320,30 @@ class Case:
         self.trig, self.algo, self.mode = trig, algo, mode
         self.knobs, self.dirty, self.hidden = knobs, dirty, hidden
 
-    def row(self) -> str:
+    def slots(self) -> tuple[int, ...]:
+        """The six SRC page values this case presents, in PAGE order.
+
+        `knobs` is the four continuous controls in ENGINE-ABI order
+        (TUNE, DECAY, PAR1, PAR2); ALGO and MODE are separate fields. The page
+        order is a product choice and differs from the ABI order, so the mapping
+        lives here once and the C driver just stages what it is given.
+        """
         k = self.knobs
+        out = [0] * SLOT_COUNT
+        out[SLOT_TUNE], out[SLOT_DECAY] = k[0], k[1]
+        out[SLOT_ALGO] = self.algo
+        out[SLOT_PAR1], out[SLOT_PAR2] = k[2], k[3]
+        out[SLOT_MODE] = self.mode
+        return tuple(out)
+
+    def row(self) -> str:
         return " ".join(str(v) for v in (
-            self.track, self.part, self.ping, self.trig, self.algo, self.mode,
-            k[0], k[1], k[2], k[3], self.dirty, self.hidden))
+            self.track, self.part, self.ping, self.trig, self.dirty, self.hidden,
+            *self.slots()))
 
     def staged(self) -> list[int]:
         """The six staged page words this case leaves in the fixture."""
-        k = self.knobs
-        return [(v << 8) | self.dirty for v in
-                (k[0], k[1], k[2], k[3], self.mode, self.algo)]
+        return [(v << 8) | self.dirty for v in self.slots()]
 
 
 def target(value: int) -> int:
@@ -341,14 +360,15 @@ def pair(value: int) -> int:
 def noise_tone_record(case: Case) -> list[int]:
     """The exact record pk_render must write for ALGO 3 (Noise/Tone).
 
-    pk_light2_full_prepare() reads the transport words p[0..3] -- which
-    pk_light2_src_to_transport() filled as TUNE(slot 1), DECAY(slot 0),
-    PARAM1(slot 2), PARAM2(slot 3) -- maps each through pk_light2_target()
-    and publishes them as the four prepared pairs, with MODE clamped to 2 in
-    p[8] and the engine byte (10) in p[11].
+    pk_light2_full_prepare() reads the transport words p[0..3], which
+    pk_light2_src_to_transport() fills from the PAGE slots
+    TUNE(slot 0), DECAY(slot 1), PARAM1(slot 3), PARAM2(slot 4) -- the page
+    order is not the ABI order -- maps each through pk_light2_target() and
+    publishes them as the four prepared pairs, with MODE clamped to 2 in p[8]
+    and the engine byte (10) in p[11].
     """
     k = case.knobs
-    ordered = (target(k[1]), target(k[0]), target(k[2]), target(k[3]))
+    ordered = (target(k[0]), target(k[1]), target(k[2]), target(k[3]))
     mode = min(case.mode, 2)
     record = [0x504B0000, 0x59310000 | case.trig, 0, 0]
     record += [pair(v) for v in ordered]
@@ -542,21 +562,24 @@ def check_descriptor(desc: bytes) -> None:
     if linked:
         fail(f"nibbles {sorted(linked)} carry the left-neighbour link bit; the "
              f"six light controls are independent")
-    if counts[:4] != [128, 128, 128, 128]:
-        fail(f"the four continuous controls must be 128-position knobs, got "
-             f"{counts[:4]!r}")
-    if counts[4] != MODE_COUNT:
-        fail(f"MODE (slot 4) count is {counts[4]}, expected {MODE_COUNT} "
-             f"(the light engines have three modes)")
-    if counts[5] != ALGO_COUNT:
-        fail(f"ALGO (slot 5) count is {counts[5]}, expected {ALGO_COUNT} "
-             f"(the shipping pool has four engines); a larger count would let "
-             f"the panel ask for an engine the pool does not contain")
+    continuous = (SLOT_TUNE, SLOT_DECAY, SLOT_PAR1, SLOT_PAR2)
+    got_cont = [counts[i] for i in continuous]
+    if got_cont != [128, 128, 128, 128]:
+        fail(f"the four continuous controls (slots {sorted(continuous)} = "
+             f"TUNE/DECAY/PAR1/PAR2) must be 128-position knobs, got {got_cont!r}")
+    if counts[SLOT_MODE] != MODE_COUNT:
+        fail(f"MODE (slot {SLOT_MODE}) count is {counts[SLOT_MODE]}, expected "
+             f"{MODE_COUNT} (the light engines have three modes)")
+    if counts[SLOT_ALGO] != ALGO_COUNT:
+        fail(f"ALGO (slot {SLOT_ALGO}) count is {counts[SLOT_ALGO]}, expected "
+             f"{ALGO_COUNT} (the shipping pool has four engines); a larger count "
+             f"would let the panel ask for an engine the pool does not contain")
     if counts[6:] != [0] * 6:
         fail(f"slots 6..11 must stay empty, got counts {counts[6:]!r}")
-    if defaults[:6] != [64, 64, 64, 64, 0, 0]:
+    want_defaults = [64, 64, 0, 64, 64, 0]
+    if defaults[:6] != want_defaults:
         fail(f"seeded first-page defaults are {defaults[:6]!r}, expected "
-             f"[64, 64, 64, 64, 0, 0]")
+             f"{want_defaults!r}")
     for i in enabled:
         if not 0 <= defaults[i] < counts[i]:
             fail(f"slot {i} default {defaults[i]} is outside its count {counts[i]}; "
@@ -569,18 +592,18 @@ def check_descriptor(desc: bytes) -> None:
         fmt[i] = (be32(desc, base + P_FMT_A + 4 * i),
                   be32(desc, base + P_FMT_B + 4 * i),
                   be32(desc, base + P_FMT_12A + 4 * i))
-    for i in range(4):
+    for i in continuous:
         if fmt[i] != (0, 0, 0):
-            fail(f"continuous control slot {i} carries formatter words "
-                 f"{fmt[i]!r}; a plain dial must carry none")
-    for i in (4, 5):
+            fail(f"continuous control slot {i} ({labels[i]}) carries formatter "
+                 f"words {fmt[i]!r}; a plain dial must carry none")
+    for i in (SLOT_ALGO, SLOT_MODE):
         if fmt[i][0] != STEPPED_FORMATTER_A or fmt[i][2] != 0:
-            fail(f"slot {i} (count {counts[i]}) must carry stock's stepped-select "
-                 f"A formatter 0x{STEPPED_FORMATTER_A:08x} with P+0x12a zero, got "
-                 f"0x{fmt[i][0]:08x}/0x{fmt[i][2]:08x}")
-    if fmt[4][1] != MODE_TICK_WIDGET:
+            fail(f"slot {i} ({labels[i]}, count {counts[i]}) must carry stock's "
+                 f"stepped-select A formatter 0x{STEPPED_FORMATTER_A:08x} with "
+                 f"P+0x12a zero, got 0x{fmt[i][0]:08x}/0x{fmt[i][2]:08x}")
+    if fmt[SLOT_MODE][1] != MODE_TICK_WIDGET:
         fail(f"MODE must carry the three-position tick widget "
-             f"0x{MODE_TICK_WIDGET:08x}, got 0x{fmt[4][1]:08x}")
+             f"0x{MODE_TICK_WIDGET:08x}, got 0x{fmt[SLOT_MODE][1]:08x}")
 
     note("MEASURED descriptor: visible slots 0..5 = "
          + " / ".join(f"{i} {labels[i]} (count {counts[i]}, default {defaults[i]})"
@@ -588,9 +611,10 @@ def check_descriptor(desc: bytes) -> None:
     note(f"MEASURED staging bitmap P+0x18e/P+0x18a = 0x{lo:08x}/0x{hi:08x} "
          f"-> enabled {sorted(enabled)} (nothing else)")
     note(f"MEASURED select widgets: MODE A/B/0x12a = "
-         f"0x{fmt[4][0]:08x}/0x{fmt[4][1]:08x}/0x{fmt[4][2]:08x}; "
-         f"ALGO A/B/0x12a = 0x{fmt[5][0]:08x}/0x{fmt[5][1]:08x}/0x{fmt[5][2]:08x}")
-    if fmt[5][1] == 0 and counts[5] <= 5:
+         f"0x{fmt[SLOT_MODE][0]:08x}/0x{fmt[SLOT_MODE][1]:08x}/0x{fmt[SLOT_MODE][2]:08x}; "
+         f"ALGO A/B/0x12a = "
+         f"0x{fmt[SLOT_ALGO][0]:08x}/0x{fmt[SLOT_ALGO][1]:08x}/0x{fmt[SLOT_ALGO][2]:08x}")
+    if fmt[SLOT_ALGO][1] == 0 and counts[SLOT_ALGO] <= 5:
         note("NOTE (INFERRED, not asserted): verify_menu.py's generic rule for "
              "count <= 5 asks for the tick widget 0x40047254; ALGO carries 0. "
              "Stock's count-4 selects are not otherwise evidenced in this tree, "
@@ -655,9 +679,9 @@ def check_dispatch(cases: list[Case], data: dict[str, object]) -> None:
             fail(f"case {case.name}: record word {offset} (DSP words "
                  f"{2*offset}/{2*offset+1}) is 0x{words[offset]:08x}, expected "
                  f"0x{want[offset]:08x}. knobs={case.knobs} mode={case.mode} "
-                 f"dirty=0x{case.dirty:02x}; the transport maps slot 1->TUNE, "
-                 f"slot 0->DECAY, slot 2->PARAM1, slot 3->PARAM2, slot 4->MODE "
-                 f"(clamped to 2), slot 5->engine.")
+                 f"dirty=0x{case.dirty:02x}; the transport maps PAGE slot "
+                 f"0->TUNE, 1->DECAY, 3->PARAM1, 4->PARAM2, 5->MODE (clamped to "
+                 f"2), 2->engine -- the page order is not the engine ABI order.")
     note("MEASURED Noise/Tone exact record: 5 cases, every one of the 10 record "
          "words matches the independent Python oracle (slot order, 127->4095 "
          "endpoint, 7-bit mask, MODE clamp, LFO dirty low byte ignored)")
@@ -872,7 +896,7 @@ def main() -> None:
     print()
     print("PERKY light two-voice SRC page 1: PASS")
     if data:
-        print("  exactly six controls, in order: DECAY / TUNE / PAR1 / PAR2 / MODE / ALGO")
+        print("  exactly six controls, in order: TUNE / DECAY / ALGO / PAR1 / PAR2 / MODE")
         print("  staged through the normal path: P+0x18e/P+0x18a = 0x00111111/0x00000000")
         print("  p-lockable: all six staged words reach the record; MODE has 3 "
               "positions, ALGO has 4")

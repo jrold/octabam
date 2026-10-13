@@ -13,7 +13,7 @@
  * SRC page 1, in this exact order, all six staged for p-lock/LFO by the
  * descriptor's 0x1c6 mask:
  *
- *   A DECAY / B TUNE / C PARAM1 / D PARAM2 / E MODE / F ALGO
+ *   A TUNE / B DECAY / C ALGO / D PARAM1 / E PARAM2 / F MODE
  *
  * The target ABI is unchanged from hw4: p[0]=tune, p[1]=decay, p[6]=mode,
  * p[11]=engine id. ALGO selects the engine, and because ALGO is a first-page
@@ -41,12 +41,15 @@
 #undef page_for
 #undef pk_defaults
 
-#define DECAY_SLOT 0u
-#define TUNE_SLOT 1u
-#define PARAM1_SLOT 2u
-#define PARAM2_SLOT 3u
-#define MODE_SLOT_FINAL 4u
-#define ALGO_SLOT 5u
+/* SRC page 1, left to right: A TUNE / B DECAY / C ALGO / D PARAM1 / E PARAM2 /
+ * F MODE. These are the Part's page-slot indices, and they are NOT the engine
+ * ABI's indices -- pk_light2_src_to_transport does that remap explicitly. */
+#define TUNE_SLOT 0u
+#define DECAY_SLOT 1u
+#define ALGO_SLOT 2u
+#define PARAM1_SLOT 3u
+#define PARAM2_SLOT 4u
+#define MODE_SLOT_FINAL 5u
 
 /* The shipping light engines, in ALGO order. Wavetable is deliberately absent:
  * its asset bank needs a separate shared-memory project and is deferred. */
@@ -69,7 +72,12 @@ static const uint8_t ALGO_ENGINE[ALGO_COUNT] = {
 
 /* Machine creation seeds these exact first-page values. */
 const uint8_t pk_defaults[12] = {
-    64, 64, 64, 64, 0, ENGINE_FOLD1,
+    64,              /* A TUNE  */
+    64,              /* B DECAY */
+    ENGINE_FOLD1,    /* C ALGO  -- an INDEX into ALGO_ENGINE; 0 = Fold Drum 1 */
+    64,              /* D PARAM1 */
+    64,              /* E PARAM2 */
+    0,               /* F MODE  */
     0, 0, 0, 0, 0, 0
 };
 
@@ -79,7 +87,7 @@ const uint8_t pk_defaults[12] = {
 static uint32_t pk_light2_page(void)
 {
     static const char *const names[6] = {
-        "DECAY", "TUNE", "PAR1", "PAR2", "MODE", "ALGO"
+        "TUNE", "DECAY", "ALGO", "PAR1", "PAR2", "MODE"
     };
     (void)page_for_light2_base(ENGINE_FOLD1);
     text(desc + 0x41, "PERKY MACH", 13);
@@ -88,14 +96,14 @@ static uint32_t pk_light2_page(void)
         text(desc + 0x4e + 6u * i, names[i], 6);
         desc[0x96 + i] = pk_defaults[i];
         put32(desc + 0xa2 + 4u * i, 0);
-        /* MODE is a 3-way select (waveform). ALGO is bounded by the engine
-         * count, not by the 12 the hw4 donor used -- an ALGO outside the pool
-         * must not be selectable at all. */
+        /* The two select slots are ALGO (C) and MODE (F); the other four are
+         * full-range knobs. ALGO is bounded by the engine count, not by the 12
+         * the hw4 donor used, so an ALGO outside the pool is not selectable. */
         put32(desc + 0xd2 + 4u * i,
-              i < 4u ? 128u
-                     : (i == MODE_SLOT_FINAL ? 3u : ALGO_COUNT));
+              i == ALGO_SLOT ? ALGO_COUNT
+                             : (i == MODE_SLOT_FINAL ? 3u : 128u));
         put32(desc + 0x102 + 4u * i,
-              i >= MODE_SLOT_FINAL ? MODE_FORMATTER : 0);
+              (i == ALGO_SLOT || i == MODE_SLOT_FINAL) ? MODE_FORMATTER : 0);
         put32(desc + 0x132 + 4u * i,
               i == MODE_SLOT_FINAL ? MODE_WIDGET : 0);
         put32(desc + 0x162 + 4u * i, 0);
@@ -126,12 +134,27 @@ void pk_ui_tick(void)
  */
 static void pk_light2_src_to_transport(uint8_t *p)
 {
-    const uint8_t decay = p[DECAY_SLOT];
+    /* Read every source slot BEFORE writing any ABI slot: the page order and
+     * the ABI order overlap, so an in-place copy would clobber itself. */
     const uint8_t tune = p[TUNE_SLOT];
+    const uint8_t decay = p[DECAY_SLOT];
+    const uint8_t p1 = p[PARAM1_SLOT];
+    const uint8_t p2 = p[PARAM2_SLOT];
     const uint8_t mode = p[MODE_SLOT_FINAL] > 2u ? 2u : p[MODE_SLOT_FINAL];
     const unsigned algo = p[ALGO_SLOT] < ALGO_COUNT ? p[ALGO_SLOT] : 0u;
+
+    /* The engine ABI is the long-standing one: p[0..3] are the four smoothed
+     * controls in the order the engine laws expect (TUNE, DECAY, P1, P2), p[6]
+     * is MODE and p[11] the engine id. The page order is a PRODUCT choice and
+     * is free to differ -- which it now does. Under the previous page order
+     * (DECAY,TUNE,PAR1,PAR2,MODE,ALGO) p[2]/p[3] happened to be PAR1/PAR2
+     * already, so leaving them alone worked by coincidence; with ALGO at slot 2
+     * that coincidence is gone, and NOT remapping here would silently make
+     * PAR1 drive ALGO and PAR2 drive PAR1. */
     p[0] = tune;
     p[1] = decay;
+    p[2] = p1;
+    p[3] = p2;
     p[6] = mode;
     p[11] = ALGO_ENGINE[algo];
 }
