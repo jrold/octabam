@@ -1613,3 +1613,50 @@ blocks the canary, the odd-address audit and the item-4 A/B.
 the same thing**, and the symptom (a preblob assert failing) points at the loader rather than at build
 hygiene. **A canonical run that keeps its own inputs is the difference between a diagnosable failure
 and a misleading one.**
+
+---
+
+# BOTH HALVES OF THE STAGING FIX, EXERCISED (round 118)
+
+Round 117 landed the producer-side fix with an honest "not verified end to end". Round 118 closed as
+much of that as is possible without `OT_PROJECT`, **by exercising the two halves separately.**
+
+## Half 1 -- the staging writes correctly
+
+The exact three lines from round 117, run in isolation:
+
+```
+staged 2 file(s) into out/perky/multi/platform
+layout.json    src=0ce1de023b448ca4...  dst=0ce1de023b448ca4...  MATCH
+runtime.raw    src=a7b8c4b6c2239120...  dst=a7b8c4b6c2239120...  MATCH
+the staged dir exists and is readable: True
+```
+
+**Byte-identical copies, at the path round 115's `--platform` default already named.**
+
+## Half 2 -- the gate reads from `--platform`
+
+Round 115 proved this the direct way: pointing `--platform` at a directory holding `{}` and a zero-byte
+`runtime.raw` moved the failure **to the read**:
+
+```
+dumps = [(layout['base'], raw_runtime, 'runtime')]
+KeyError: 'base'
+```
+
+**So `--platform` reaches the read and the hardcoded `out/platform/` is genuinely gone from the path.**
+
+## What remains unproven, and why it is now narrow
+
+**Only the canary's own invocation** -- that a full run stages its files and then passes the gate. That
+needs `OT_PROJECT`, and no gate exercises the canary.
+
+**The difference from round 117's note is real:** the question is no longer "does this code work?" but
+"does the canary call it?" -- **and the call site is one line away from the staging, visible in the
+same function.** That is a much smaller unknown than "a green suite might not cover this".
+
+## The honest statement, unchanged in kind
+
+**A green `make check` still does not execute this path.** Both halves are tested; their being joined
+in a canonical run is not. **I am not going to call that verified, and I am not going to call it
+unverified either** -- it is two proven pieces and an unrun call site, which is exactly what it is.
