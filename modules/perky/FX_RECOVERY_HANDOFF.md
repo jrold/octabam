@@ -3911,3 +3911,72 @@ for the original harvest does.**
 
 **Still unmeasured: the hardware question** -- whether the DSP boot routine honours a tail-address
 record. **The probe (r139, gated r140) answers it in one run.**
+
+---
+
+# DESIGN A WORKS -- WITH THE RIGHT NUMBERS (round 158)
+
+Round 157 put line 1 in. **Round 158 worked out lines 2 and 3, and got the arithmetic wrong twice
+before getting it right.**
+
+## First error: a sign
+
+```
+ground needed 2715, SAFE_SHARED offers 2404
+  -> my script printed "fits in the shared runs with -311 to spare"
+```
+
+**Negative headroom printed as headroom.** The same class of unread absurdity as r153's 212,992 words --
+**and this time it was in the line immediately above the conclusion.**
+
+## Second error: two different programs
+
+**The 2715 came from `3051 - 336`.** 3051 is the **shipping light2** emit (`REMIX=perky-machine BUILD=3`
+gave `21 pieces / 3051 words` in r120); **the mixed emit is `16 pieces / 2353 words`.** Subtracting a
+piece of one program from the total of another.
+
+## The right numbers
+
+```
+MOVING : 15 shards, 2017 words
+STAYING:  1 shard,   336 words        (synth_seam_glue, already at 0x01000)
+                          total 2353
+
+every shard's NEW extent is wholly inside ONE run: 16 of 16
+  LOCAL  0x01000..0x01251 : synth_seam_glue 336, simple_drum_envelope 247   = 583  <= 594
+  LOCAL  0x01aa4..0x01b57 : simple_drum_delta 162                           = 162  <= 180
+  SHARED (five runs)      : the other 13 shards                             = 1608 <= 2404
+```
+
+**Everything fits, in the right run, with room to spare.**
+
+## So design A is sound
+
+**Append one record per moving shard at its `dest` address, carrying its own words, and name the same
+spans in `P_WANT_EXTRA`.** The arithmetic then closes:
+
+```
+_have = retired records 3441 + appended 2017 = 5458
+_want = harvested spans 3441 + P_WANT_EXTRA 2017 = 5458      equal
+```
+
+**The 2017 words are counted twice -- the retired records still hold their old stock code.** **That is
+harmless: `region` is only a write target, and the records involved belong to effects this milestone has
+given up. The cost is accounting, not space, and the space is separately proven to fit.**
+
+## Why not simply re-point the five donor records
+
+**Because their extents and the shards' extents do not correspond (r151): Plate alone feeds four shards
+going to four different runs.** `repoint` moves one record to one new address; **it cannot split one
+record across four destinations.** Appending is what expresses the placement.
+
+## Lines 2 and 3, stated exactly
+
+```
+P_REMAP[tag]      = [(None, (dest[name], words(name))) for each shard that moves]
+P_WANT_EXTRA[tag] = [(dest[name], words(name))        for each shard that moves]
+```
+
+**Both keyed by payload, both built from the same `(dest, pieces)` pair `emit()` already returns, and
+both using `(addr, WORDS)`.** **Line 1 is in and inert; these two are all that remain -- and the guard
+written for the original harvest proves them.**
