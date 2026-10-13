@@ -4662,3 +4662,53 @@ tested module -- **not new logic.**
 implementations. The insertion point exists and already carries two other spaces. The one thing that
 was missing -- a container that can grow -- is `extend_upload`, and it was there before this work
 began.**
+
+---
+
+# P RECORDS GO THROUGH `extend_upload` (round 170)
+
+Rounds 168-169 found the path and read the two functions. **Round 170 made the edits -- and the P
+record is emitted.**
+
+## What landed
+
+```python
+# the label, so a space-0 collision names P
+label = {0: "P", 1: "X", 2: "Y"}.get(space, "?")
+
+# a p_records parameter on extend_upload, inserted like X and Y
+for base, values in p_records or []:
+    _check_space_free(records, 0, base, len(values), tag, "P code")
+    extra += ab_records.ot_record(0, base, values)
+
+raw = bytes(img[p0:term]) + extra + bytes(img[term:p0 + c["payload"][1]])
+```
+
+## Measured
+
+```
+before: 98 records, terminator at payload+1005033 (absolute)
+extend_upload returned 79593 B (was 79563)  ->  grew 30 B
+  9 B  -- the Y record, always emitted (ot_record(2, Y_BASE, []) is 9 bytes with no words)
+ 21 B  -- the P record: 9-byte header + 4 words x 3
+ 30 B  -- total, exactly
+```
+
+**A P record at `0x33da3` with four words grew the upload by exactly the header plus its words, on top
+of the Y record the function already emits.** `make check REMIX=perky-machine` stays green.
+
+## Why this is the right container, restated in one line
+
+**The two payloads are adjacent -- A ends where B begins, gap 0 (r167) -- so `build_bus` cannot grow the
+record table in the bytes it writes.** `extend_upload` exchanges the terminator for `extra` + the
+terminator and **returns a replacement upload the pre-boot loader reads.** Same table, same format, a
+container that can grow. **X and Y have shipped this way since before this milestone.**
+
+## What is left
+
+**The remap's output needs one shape change.** `perky_tail_remap.build()` returns `(None, (addr,
+packed_bytes))`; `extend_upload` wants `(addr, [word, ...])`. **Unpack the bytes back to words, or ask
+`build()` for words.** Then `repack_machine_loader` passes `p_records` alongside the X and Y it already
+passes, and **the `PERKY_P_SPANS` channel, `P_REMAP` and `P_WANT_EXTRA` are simply unused** -- they were
+built for `build_bus`, which is not where the records go. **They are inert and gated, so they cost
+nothing; deleting them is a tidy-up, not a prerequisite.**

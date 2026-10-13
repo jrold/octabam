@@ -174,7 +174,7 @@ def _check_space_free(records, space: int, base: int, words: int,
                       tag: str, what: str) -> None:
     for rec_space, address, count, _off in records:
         if rec_space == space and _overlap(base, words, address, count):
-            label = "X" if space == 1 else "Y"
+            label = {0: "P", 1: "X", 2: "Y"}.get(space, "?")
             die(
                 f"payload {tag}: existing {label} record {label}:{address:05x}.."
                 f"{address + count - 1:05x} overlaps PERKY {what} destination "
@@ -193,8 +193,17 @@ def _check_x_free(records, tag: str) -> None:
 def extend_upload(img: bytes | bytearray, tag: str, y_words: list[int],
                   x_words: list[int] | None = None,
                   extra_x: list[tuple[int, list[int]]] | None = None,
-                  extra_y: list[tuple[int, list[int], str]] | None = None) -> tuple[bytes, int]:
-    """Return one payload upload with validated PERKY X/Y records inserted."""
+                  extra_y: list[tuple[int, list[int], str]] | None = None,
+                  p_records: list[tuple[int, list[int]]] | None = None) -> tuple[bytes, int]:
+    """Return one payload upload with validated PERKY X/Y/P records inserted.
+
+    ⚠️ THE P RECORDS GO HERE, NOT IN build_bus. The two DSP payloads are
+    ADJACENT -- A ends at 0x400f59ef and B begins there, gap 0 (r167) -- so the
+    record table cannot grow in the bytes build_bus writes at `va`. This function
+    instead exchanges the terminator for `extra` + the terminator and returns the
+    result as a REPLACEMENT UPLOAD, which is what the pre-boot loader reads. X and
+    Y have always shipped that way; P is the same operation into the same table.
+    """
     c = PAY[tag]
     records, term = ab_records.records(img, *c["payload"])
     _check_y_free(records, len(y_words), tag)
@@ -225,6 +234,13 @@ def extend_upload(img: bytes | bytearray, tag: str, y_words: list[int],
     for base, values, purpose in extra_y or []:
         _check_space_free(records, 2, base, len(values), tag, purpose)
         extra += ab_records.ot_record(2, base, values)
+
+    # P: ordinary P records for module code that needs ground no stock record
+    # covers (the shared runs). ot_record is space-agnostic, so space 0 is the
+    # same emission as X and Y; the check is what makes it safe.
+    for base, values in p_records or []:
+        _check_space_free(records, 0, base, len(values), tag, "P code")
+        extra += ab_records.ot_record(0, base, values)
 
     raw = bytes(img[p0:term]) + extra + bytes(img[term:p0 + c["payload"][1]])
     return raw, term
