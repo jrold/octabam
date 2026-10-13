@@ -1,0 +1,264 @@
+/* Two-voice light-engine PERKY control: T1 on one DSP core, T5 on the other.
+ *
+ * Derived from control_hw4_candidate.c (the six-control hw4 implementation, which
+ * is the donor for this UI), reduced to the shipping target:
+ *
+ *   - exactly TWO PERKY voices: track 1 and track 5, one per DSP core
+ *     (payload B serves tracks 1-4, payload A serves 5-8, so T1 and T5 are on
+ *     different cores by construction -- no second voice on either core);
+ *   - T2/T3/T4 and T6/T7/T8 stay ordinary stock tracks;
+ *   - one algorithm runs at a time per voice;
+ *   - the light engine pool, with Resonant Bass/Snare retired entirely.
+ *
+ * SRC page 1, in this exact order, all six staged for p-lock/LFO by the
+ * descriptor's 0x1c6 mask:
+ *
+ *   A DECAY / B TUNE / C PARAM1 / D PARAM2 / E MODE / F ALGO
+ *
+ * The target ABI is unchanged from hw4: p[0]=tune, p[1]=decay, p[6]=mode,
+ * p[11]=engine id. ALGO selects the engine, and because ALGO is a first-page
+ * staged parameter, a trig p-lock on ALGO changes the engine for that trig
+ * alone and the track's base ALGO resumes on the next unlocked trig -- that is
+ * the ordinary Octatrack parameter path, not a special case.
+ *
+ * ALGO is INDIRECT: the four light engines do not occupy ids 0..3 (Fold Drum 1
+ * is 0, Simple Drum is 2, Fold Drum 2 is 3, Noise/Tone is 10), so a direct
+ * `p[11] = algo` would select the wrong engine for three of the four values.
+ * ALGO_ENGINE below is the one place that mapping lives.
+ */
+#define PK_FOLD_CANDIDATE 1
+#define pk_defaults pk_defaults_light2_base
+#define page_for page_for_light2_base
+#define pk_track_page pk_track_page_light2_base
+#define pk_ui_tick pk_ui_tick_light2_base
+#define pk_render pk_render_light2_base
+#define pk_admit_track pk_admit_track_light2_base
+#include "control.c"
+#undef pk_admit_track
+#undef pk_render
+#undef pk_ui_tick
+#undef pk_track_page
+#undef page_for
+#undef pk_defaults
+
+#define DECAY_SLOT 0u
+#define TUNE_SLOT 1u
+#define PARAM1_SLOT 2u
+#define PARAM2_SLOT 3u
+#define MODE_SLOT_FINAL 4u
+#define ALGO_SLOT 5u
+
+/* The shipping light engines, in ALGO order.
+ *
+ * Fold Drum 2 (id 3) is intentionally NOT in this first candidate: this
+ * branch's light composer does not yet emit its dispatch, and the port gate's
+ * engine list does not yet admit id 3. It is added as its own attributable
+ * step once that work is brought across from the perky4-light reference.
+ * Until then ALGO_COUNT is the pool size, so an ALGO outside the pool cannot
+ * be selected -- which is the requirement, not a placeholder.
+ */
+#define ENGINE_FOLD1 0u
+#define ENGINE_SIMPLE 2u
+#define ENGINE_NOISETONE 10u
+#define ALGO_COUNT 3u
+
+/* ALGO value -> engine id. The only place the indirection lives. */
+static const uint8_t ALGO_ENGINE[ALGO_COUNT] = {
+    ENGINE_FOLD1, ENGINE_SIMPLE, ENGINE_NOISETONE
+};
+
+/* The one PERKY track on each core. Track numbering here is zero-based:
+ * 0 = T1 (core B), 4 = T5 (core A). Nothing else is admitted. */
+#define PERKY_TRACK_LOW 0u
+#define PERKY_TRACK_HIGH 4u
+
+/* Machine creation seeds these exact first-page values. */
+const uint8_t pk_defaults[12] = {
+    64, 64, 64, 64, 0, ENGINE_FOLD1,
+    0, 0, 0, 0, 0, 0
+};
+
+/* Patch the cloned stock descriptor after the legacy page initializer runs.
+ * Descriptor text fields are five visible characters plus NUL, hence PAR1/PAR2.
+ */
+static uint32_t pk_light2_page(void)
+{
+    static const char *const names[6] = {
+        "DECAY", "TUNE", "PAR1", "PAR2", "MODE", "ALGO"
+    };
+    (void)page_for_light2_base(ENGINE_FOLD1);
+    text(desc + 0x41, "PERKY MACH", 13);
+    for (unsigned i = 0; i < 6u; ++i)
+    {
+        text(desc + 0x4e + 6u * i, names[i], 6);
+        desc[0x96 + i] = pk_defaults[i];
+        put32(desc + 0xa2 + 4u * i, 0);
+        /* MODE is a 3-way select (waveform). ALGO is bounded by the engine
+         * count, not by the 12 the hw4 donor used -- an ALGO outside the pool
+         * must not be selectable at all. */
+        put32(desc + 0xd2 + 4u * i,
+              i < 4u ? 128u
+                     : (i == MODE_SLOT_FINAL ? 3u : ALGO_COUNT));
+        put32(desc + 0x102 + 4u * i,
+              i >= MODE_SLOT_FINAL ? MODE_FORMATTER : 0);
+        put32(desc + 0x132 + 4u * i,
+              i == MODE_SLOT_FINAL ? MODE_WIDGET : 0);
+        put32(desc + 0x162 + 4u * i, 0);
+    }
+    /* Enable exactly A..F for p-lock/LFO/source staging. */
+    put32(desc + 0x1c2, 0x00000000u);
+    put32(desc + 0x1c6, 0x00111111u);
+    pk_desc_p = (uint32_t)(uintptr_t)(desc + 0x38);
+    return pk_desc_p;
+}
+
+uint32_t pk_track_page(const volatile uint8_t *type_ptr)
+{
+    (void)type_ptr;
+    return pk_light2_page();
+}
+
+void pk_ui_tick(void)
+{
+    U32(0x400d5f38u + PERKY_ROW * 4u) = pk_light2_page();
+}
+
+/* Map the final SRC order onto the stable engine-preparation ABI:
+ *   p[0] TUNE, p[1] DECAY, p[6] MODE, p[11] engine id.
+ * MODE is clamped to its 3 positions; ALGO is clamped to the pool and then
+ * resolved through ALGO_ENGINE, so an out-of-range stored value can never
+ * select an engine that is not in the shipping pool.
+ */
+static void pk_light2_src_to_transport(uint8_t *p)
+{
+    const uint8_t decay = p[DECAY_SLOT];
+    const uint8_t tune = p[TUNE_SLOT];
+    const uint8_t mode = p[MODE_SLOT_FINAL] > 2u ? 2u : p[MODE_SLOT_FINAL];
+    const unsigned algo = p[ALGO_SLOT] < ALGO_COUNT ? p[ALGO_SLOT] : 0u;
+    p[0] = tune;
+    p[1] = decay;
+    p[6] = mode;
+    p[11] = ALGO_ENGINE[algo];
+}
+
+/* Exactly one PERKY track per core, and only those two. */
+unsigned pk_admit_track(const volatile uint8_t *part, unsigned track)
+{
+    (void)part;
+    return track == PERKY_TRACK_LOW || track == PERKY_TRACK_HIGH;
+}
+
+/* Full-resolution live-control transport for Noise/Tone, matching the
+ * already-qualified Simple/Fold transport exactly at both endpoints:
+ *     0..126 -> value << 5
+ *     127    -> 4095
+ */
+static unsigned pk_light2_target(unsigned value)
+{
+    value &= 0x7fu;
+    return value == 127u ? 4095u : value << 5;
+}
+
+static void pk_light2_full_prepare(uint8_t *p, unsigned engine)
+{
+    const unsigned mode = p[6] > 2u ? 2u : p[6];
+    const unsigned raw[4] = { p[0], p[1], p[2], p[3] };
+
+    for (unsigned i = 0; i < 4u; ++i)
+    {
+        const unsigned value = pk_light2_target(raw[i]);
+        p[2u * i] = (uint8_t)(value >> 8);
+        p[2u * i + 1u] = (uint8_t)value;
+    }
+
+    p[8] = (uint8_t)mode;
+    p[9] = 0;
+    p[10] = 0;
+    p[11] = (uint8_t)engine;
+}
+
+int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
+{
+    if (track >= 8u || !pk_admit_track(part_base(), track)
+        || !signed_track(part_base(), track))
+    {
+        return ((int (*)(unsigned, unsigned, unsigned, unsigned))0x40004008u)
+            (track, ping, start, end);
+    }
+
+    ++pk_render_calls;
+    volatile uint32_t *cursor =
+        (volatile uint32_t *)(uintptr_t)U32(0x80001c80u);
+    volatile uint16_t *fp =
+        (volatile uint16_t *)(uintptr_t)U32(0x800062a8u);
+    uint8_t p[12];
+
+    for (unsigned k = 0; k < 12u; ++k)
+    {
+        p[k] = k < 6u
+            ? (uint8_t)(fp[k] >> 8)
+            : U8(0x80000810u + 72u * track + 0x20u + k - 6u);
+    }
+    pk_light2_src_to_transport(p);
+
+    {
+        const unsigned count = end > start && end <= 16u ? end - start : 0u;
+        for (unsigned i = 0; i < 4u + 2u * count; ++i)
+            cursor[i] = 0;
+
+        if (end == 16u)
+        {
+            volatile uint32_t *record = (volatile uint32_t *)(uintptr_t)
+                (0x80001c90u + (ping & 1u) * 0xa80u + 336u * track);
+            const unsigned trig = (U8(0x46104d0cu + track) & 16u) != 0u;
+            const unsigned bank = U32(BANK), part = U8(PART_IDX) & 3u;
+
+            if (simple_bank != bank || simple_part != part)
+            {
+                for (unsigned t = 0; t < 8u; ++t)
+                    simple_controls[t].valid = 0;
+                simple_bank = bank;
+                simple_part = part;
+                for (unsigned t = 0; t < 8u; ++t)
+                    for (unsigned k = 0; k < 4u; ++k)
+                    {
+                        simple_controls[t].prepared[k] = 0;
+                        simple_controls[t].targets[k] = 0;
+                    }
+            }
+
+            if (p[11] == ENGINE_FOLD1)
+                pk_fold_prepare(&simple_controls[track], p, trig);
+            else if (p[11] == ENGINE_SIMPLE)
+                pk_simple_prepare(&simple_controls[track], p, trig);
+            else if (p[11] == ENGINE_NOISETONE)
+            {
+                simple_controls[track].valid = 0;
+                pk_light2_full_prepare(p, ENGINE_NOISETONE);
+            }
+            else
+            {
+                simple_controls[track].valid = 0;
+                for (unsigned k = 0; k < 4u; ++k)
+                {
+                    simple_controls[track].prepared[k] = 0;
+                    simple_controls[track].targets[k] = 0;
+                }
+            }
+
+            record[0] = 0x504b0000u;
+            record[1] = 0x59310000u | trig;
+            record[2] = record[3] = 0;
+            for (unsigned k = 0; k < 6u; ++k)
+                record[4u + k] = ((uint32_t)p[2u * k] << 16)
+                               | p[2u * k + 1u];
+
+            if (trig)
+                ++pk_hits;
+        }
+
+        U32(0x80001c80u) =
+            (uint32_t)(uintptr_t)(cursor + 4u + 2u * count);
+        return 0;
+    }
+}
