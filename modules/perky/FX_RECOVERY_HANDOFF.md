@@ -523,3 +523,42 @@ My context is exhausted, and this is a build change whose verification is a full
 (a long cold build). Making it untested would risk the one thing that matters most here — the
 working tree. **The line numbers, the reasoning and the emitter are all in place; the edit is
 two lines plus a loop, and it should be made in a session that can run the gates behind it.**
+
+---
+
+# The full gate set passes with the shard gate inside it (round 59)
+
+```
+$ REMIX=perky-machine make check REMIX=perky-machine
+module gates (shared isolated, perky-machine): 64 run, 0 failed
+module gates (image):                           2 run, 0 failed
+all runnable checks passed; out/mainos_bus.bin restored to the shipping build
+```
+
+**and the new gate ran as part of it:**
+
+```
+== PERKY PROBE: tools/verify/verify_perky_shard_emit.py
+Fold candidate: 3051/3441 P words; no shipping CF transport yet
+--- shipping light2 payload ---
+pieces: 21   words: 3051   monolith: 3051
+in LOCAL P: 3   in SHARED tails: 18
+cross-piece reference targets checked: 29   outside every shard: 0
+```
+
+## Two things this establishes
+
+1. **Nothing in 58 commits broke the tree.** The sharding work is comment markers, tooling, and
+   documentation; 66 gates now run green over it, including every renderer gate that was already
+   passing. That is the regression evidence, and it is the reason those commits were safe to make
+   on the working branch.
+2. **`Fold candidate: 3051/3441 P words`** -- the build itself reports the shipping program at
+   3051 words in a 3441-word donor region, matching the goal's numbers exactly and matching the
+   sharding analysis independently. Three sources agree: the build report, the emitter, and the
+   gate.
+
+## What this does not establish
+
+The gates are static and render-level. **None of them flashes hardware.** Spring, Dark and Lo-Fi
+are still absent from the image, because changes 1 and 2 are not applied -- and that stays true
+however many gates run.
