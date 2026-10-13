@@ -4,7 +4,7 @@
 No firmware is emitted until make check, native renderer/seam timing,
 production record writer, dirty boot and full sequencer tests pass.
 """
-import argparse, dataclasses, hashlib, json, os, runpy, subprocess, sys
+import argparse, dataclasses, hashlib, json, os, runpy, shutil, subprocess, sys
 from pathlib import Path
 import build_machine_canary as base
 import build_multi_payload as payload
@@ -98,7 +98,21 @@ def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2)
     (work/'memory.json').write_text(json.dumps(ledger,indent=2)+'\n')
     mainos=ROOT/'out/mainos_perky_multi.bin'
     base.repack_machine_loader.build(ROOT/'out/mainos_bus.bin',work,mainos,platform_dir=ROOT/'out/platform',work=ROOT/'out/platform-perky-machine')
-    subprocess.run([sys.executable,str(ROOT/'tools/verify/verify_perky_machine_boot.py'),'--image',str(mainos),'--packed',str(work)],cwd=ROOT,check=True)
+    # out/platform/ is a shared INPUT: repack_machine_loader READS layout.json and
+    # runtime.raw from it, and `make bus` rewrites both in place. So this image
+    # silently depends on whatever was there when it ran, and a later build makes
+    # the pair disagree -- verify_perky_machine_boot.py then fails against a set
+    # nobody chose. Keep the platform files this image actually read beside it, and
+    # hand the gate THAT directory, so the set is checkable later with:
+    #   verify_perky_machine_boot.py --image out/mainos_perky_multi.bin \
+    #       --packed out/perky/multi --platform out/perky/multi/platform
+    plat_stage=work/'platform'
+    plat_stage.mkdir(parents=True,exist_ok=True)
+    for _name in ('layout.json','runtime.raw'):
+        _src=ROOT/'out/platform'/_name
+        if _src.is_file():
+            shutil.copy2(_src,plat_stage/_name)
+    subprocess.run([sys.executable,str(ROOT/'tools/verify/verify_perky_machine_boot.py'),'--image',str(mainos),'--packed',str(work),'--platform',str(plat_stage)],cwd=ROOT,check=True)
     for engine in engine_ids:
         run('verify_perky_synth_port.py',PERKY_SYNTH_IMAGE=mainos,PERKY_TEST_ENGINE=engine)
     card,midi,manifest=base.wrap_flashable(mainos,version)

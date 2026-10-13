@@ -1566,3 +1566,50 @@ build can overwrite. **The default that kept the suite green anticipated the rig
 else writes it in between, and in a single clean run it works: the canary's image, its preblobs and
 its platform files all agreed at 00:30. **The defect appears only when a second build intervenes**,
 which is exactly what a person verifying something else will do.
+
+---
+
+# THE PRODUCER'S FIX: STAGE THE PLATFORM FILES WITH THE IMAGE (round 117)
+
+Round 116 diagnosed it: `out/platform/{layout.json,runtime.raw}` are **inputs** the canary reads, and
+`make bus` rewrites them in place -- so an image and the platform files it was built from can silently
+disagree. Round 117 applies the fix on the producer side.
+
+## The change
+
+Three lines in `build_multi_machine_canary.py`, immediately after the image is built:
+
+```python
+plat_stage = work/'platform'
+plat_stage.mkdir(parents=True, exist_ok=True)
+for _name in ('layout.json', 'runtime.raw'):
+    _src = ROOT/'out/platform'/_name
+    if _src.is_file():
+        shutil.copy2(_src, plat_stage/_name)
+```
+
+**and the boot gate is now handed that directory** (`--platform str(plat_stage)`), so it checks the
+set the image was **actually built from** rather than whatever `out/platform/` holds at check time.
+
+**The staged copy lives in the canary's own work dir** -- `out/perky/multi/platform` -- which is where
+round 115's `--platform` default already pointed. **The set stays together.**
+
+## What is verified, and what is not
+
+**Verified:** the file parses; `make check REMIX=perky-machine` is green (**332 PASS, 8 SKIP, 0 FAIL**);
+the change is a copy performed *after* the build, so it cannot alter the image.
+
+**NOT verified:** that the canary's staging actually works end to end. **The canary needs
+`OT_PROJECT`, no gate runs it, and `make check` therefore never touches this code.** I have not run
+it, and I am not going to describe a green suite as if it covered a path the suite does not execute.
+
+**That gap is the honest state of this change**, and it is the same `OT_PROJECT` dependency that
+blocks the canary, the odd-address audit and the item-4 A/B.
+
+## Why it is worth landing anyway
+
+**The defect it addresses is not hypothetical -- it bit this session.** I ran `make bus` twice to prove
+`eft-repatch` inert, and that broke the boot gate's inputs. **Anyone verifying anything else will do
+the same thing**, and the symptom (a preblob assert failing) points at the loader rather than at build
+hygiene. **A canonical run that keeps its own inputs is the difference between a diagnosable failure
+and a misleading one.**
