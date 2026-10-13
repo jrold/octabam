@@ -56,7 +56,7 @@ STOCK_SYX = ROOT / "downloads/extracted/OCTATRACK_OS1.40C.syx"
 # 0x100000 + 12: the ELUP file length the unit's OS-upgrade validator accepts
 # (`filesize - 12 > 0x100000` is the refusal that prints "LENGTH ERROR").
 CARD_OS_BIN_MAX = 0x100000 + 12
-EFT = ROOT / "vendor/elektron-firmware-tool/elektron-firmware-tool"
+EFT = Path(os.environ.get("PERKY_EFT", ROOT / "vendor/elektron-firmware-tool/elektron-firmware-tool"))
 MAKE_BIN = ROOT / "tools/build/make_bin.py"
 
 # First-hardware blockers execute the generated shipping renderer and seam.

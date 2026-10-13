@@ -120,6 +120,12 @@ def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2)
     for engine in engine_ids:
         run('verify_perky_synth_port.py',PERKY_SYNTH_IMAGE=mainos,PERKY_TEST_ENGINE=engine)
     card,midi,manifest=base.wrap_flashable(mainos,version)
+    subprocess.run([
+        sys.executable,str(ROOT/'tools/verify/verify_perky_final_wrappers.py'),
+        '--mainos',str(mainos),'--elek',str(base.firmware_paths(version)[0]),
+        '--card',str(card),'--midi',str(midi),'--eft',str(base.EFT),
+        '--version',version,'--work',str(work/'wrapper-verify'),
+    ],cwd=ROOT,check=True)
     # git= names the last COMMIT and is blind to the working tree, so a build made
     # from uncommitted sources and one made from the same commit report the SAME
     # git= value while producing different bytes. That has already caused three
@@ -138,6 +144,16 @@ def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2)
                         f'the last commit and goes stale if anything is committed '
                         f'afterwards, and cannot see uncommitted sources\n'
                         f'tree={_tree_state()}\n'+f'version={version}\ngit={base.revision()}\nengines={engine_description}\n'+f'card_sha256={base.sha256(card)}\nmidi_sha256={base.sha256(midi)}\nmainos_sha256={base.sha256(mainos)}\nstock_mainos_sha256={base.sha256(ROOT/"out/raw/section_3_MAIN_OS.bin")}\nstock_syx_sha256={base.sha256(base.STOCK_SYX)}\ndsp_source_sha256={base.sha256(work/"multi.asm")}\ncontrol_assembly_sha256={base.sha256(control_source)}\n'+'voice_limit=T1 and T5 only, one PERKY voice per core\nfx_available=FILTER,SPATIALIZER,EQUALIZER,DJ EQ,PHASER,FLANGER,CHORUS,COMB FILTER,DELAY,SPRING REV,DARK REV,LO-FI\nfx_unavailable=PLATE REV,COMPRESSOR\nfx_test_start=NONE\nstatus=locally qualified; fragmented placement physical testing pending\n')
+    with manifest.open('a') as recorded:
+        recorded.write(
+            f'card_image_path={card.resolve()}\nmidi_updater_path={midi.resolve()}\n'
+            f'mainos_image_path={mainos.resolve()}\neft_path={base.EFT.resolve()}\n'
+            f'eft_sha256={base.sha256(base.EFT)}\n'
+            f'source_manifest_path={(work/"source-manifest.json").resolve()}\n'
+            f'source_manifest_sha256={base.sha256(work/"source-manifest.json")}\n'
+            f'memory_ledger_path={(work/"memory.json").resolve()}\n'
+            f'memory_ledger_sha256={base.sha256(work/"memory.json")}\n'
+        )
     print(f'READY: {card}\n{midi}\n{manifest}')
 
 def main():

@@ -107,21 +107,21 @@ Recorded direct qualifications:
 - Four `verify_perky_synth_port.py` runs, engine IDs `0,3,2,10`: each passes
   **32,000 dirty frames on both cores**, later trigs, stock AMP/FX continuation
   and six excess-voice silence checks. Logs: `out/perky/fragmented-engine*-v3.log`.
-- `verify_perky_fragmented_fx.py`: two 2,600-frame layouts collectively exercise
-  every retained FX, with PERKY active on T1/T5 and ordinary sources on six
-  tracks; every P word is read back afterward and shared execution is watched.
+- `verify_perky_fragmented_fx.py`: four rotated 2,600-frame layouts collectively exercise
+  every retained FX and all four FX2 allocator positions on both cores, with
+  PERKY active on T1/T5 and ordinary sources on six tracks; every P word is read back afterward and shared execution is watched.
 - `verify_perky_cf_odd_access.py --generated out/perky/fragmented`: 149
   word/long operands, none with odd displacement.
 - `scripts/refhash.sh save` before changes, then `check`: 24 artifact/report
   configurations bit-identical. The new assembler strict-layout argument is
   opt-in; normal callers retain their prior behavior.
 
-The final project-enabled `make check REMIX=perky-machine` passed: **347 PASS
+The final project-enabled `make check REMIX=perky-machine` passed: **349 PASS
 result lines, 2 actual SKIP results, 0 FAIL**; **84 source gates + 4 image gates**
 ran with zero failures. The runner's concluding sentence contains `[SKIP]` but
 is not a third skipped check. The two legacy default-path skips are covered by
 explicit current-candidate boot/readback and odd-address checks. The eight
-`test_recloop.py` cases also pass. Full log: `out/perky/check-final-project.log`.
+`test_recloop.py` cases also pass. Full log: `out/perky/check-final-expanded.log`.
 
 Packaging hashes and exact code commit are appended after qualification. Generated firmware and proprietary inputs remain untracked.
 
@@ -143,3 +143,41 @@ with identical AMP/FX/LEVEL settings to finish the gain calibration.
 These are pending physical tests of fragmented P placement and startup
 preservation. Prior T1/T5 smooth operation is the baseline hardware fact;
 local port passes do not turn the new candidate into a hardware-qualified one.
+
+## Packaging and exact source checkpoint
+
+The tested DSP/ColdFire implementation was frozen at
+`93598f93d9c2aca1b475fc15dcbe343b84bf587d`. The later checkpoint adds the
+four-position FX regression and mandatory wrapper validation; renderer and
+MAIN OS behavior remain byte-identical to that frozen build.
+
+The release wrapper gate found a separate defect in the shared vendor tool:
+`main.c` had the offset correction but still left-justified the version. The
+shared checkout was not reset or edited. An isolated build under
+`out/eft-perky2f` was made from upstream commit
+`065d18f4195793e61891e387813488ee59f6d1ca` plus the existing repository patch.
+Both decoded containers differ ONLY at the ten-byte version field. The failed
+wrappers and their hashes are preserved under
+`out/perky/PERKY2F-leftjust-wrappers/`.
+
+Use `PERKY_EFT=out/eft-perky2f/elektron-firmware-tool` for this local toolchain.
+The canary now runs `verify_perky_final_wrappers.py` before reporting READY:
+card → exact ELEK/checksum/version, MIDI → exact section-3 MAIN OS. The corrected
+wrapper passed that gate. The MAIN OS remains exactly the image qualified on
+both cores for all four engines and all FX2 allocator positions.
+
+Final delivery tag: **PERKY2F**. Artifacts stay in this worktree's ignored `out/`:
+
+| Artifact | Bytes | SHA-256 |
+|---|---:|---|
+| `OCTATRACK_PERKY2F.bin` | 569,092 | `9d834161e25f3b7f58bf581461fab5b9aabf900d6d9d4353320679390c280fa6` |
+| `OCTATRACK_OS1.40C_PERKY2F.syx` | 794,921 | `14164e657529e4c6e7cc802203d4648af2d5133ea0ed0d5aa38f42ff83c8acd9` |
+| `elek_PERKY2F.bin` | 569,074 | `a942677c078751acc0d2b473df0a496b5ba3b6b0d44f1fd1ce72c49e5f420127` |
+| `perky/light2/fragmented-mainos.bin` | 1,266,004 | `2bcf688d885e5b9b61c4b12a2ca0a9ff1b01d52485d3026c44426d0b744c74ce` |
+
+The card file is below the 1,048,588-byte OS-upgrade limit. See
+`out/PERKY2F_checkpoint_manifest.json` for exact code/source/tool/input hashes,
+matched platform/table files and qualification-log hashes. No project-dependent
+qualification is pending for this fixture. Different real projects, physical
+memory-fetch timing, project/Part reloads on the unit, and perceived-level A/B
+remain hardware follow-up work.

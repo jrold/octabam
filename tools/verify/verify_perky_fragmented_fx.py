@@ -20,7 +20,8 @@ def main():
     watch=next(r['start'] for r in plans['A'][1] if r['name']=='fold_drum_voice.asm')
     peek=';'.join(f'{core}:P:{addr:x},{len(words)}' for tag,core in [('A',0),('B',1)] for addr,words in plans[tag][0])
     configs=[('FILTER','EQUALIZER','DJ EQ','PHASER'),('SPATIALIZER','FLANGER','CHORUS','COMB FILTER')]
-    for index,fx1 in enumerate(configs):
+    for index in range(4):
+        fx1=configs[index%2]
         port.OUT=work/f'config{index}';port.OUT.mkdir(parents=True,exist_ok=True)
         fixture=port.configure_fixture(project,engine=0)
         for bank in fixture.glob('bank*.work'):
@@ -30,7 +31,7 @@ def main():
                     for t in (1,2,3,5,6,7):data[base+60+30*t:base+63+30*t]=bytes(3)
             otp._bank_write(fixture,int(bank.stem[4:]),ordinary,guard=False)
         for track in range(1,9):
-            for slot,effect in [('fx1',fx1[(track-1)%4]),('fx2',('LO-FI','SPRING REV','DARK REV','DELAY')[(track-1)%4])]:
+            for slot,effect in [('fx1',fx1[(track-1)%4]),('fx2',('LO-FI','SPRING REV','DARK REV','DELAY')[(track-1+index)%4])]:
                 values=otp.module_defaults(registry.modules()[effect])
                 otp.set_fx(fixture,slot,track,effect,page=values[:6],page2=values[6:12],guard=False)
         card=port.OUT/'card.img'
