@@ -96,9 +96,14 @@ def main() -> int:
 
     # Release gate 7's placement half: disjoint, and clear of every retained
     # stock effect. Recomputed here rather than trusted from the tool.
-    import json
+    import json, re as _re
     from remix import registry, stock
     pieces, whole, dest, final, syms = emit.emit(ship)
+
+    # The brief: "no Resonant code in shipping path". The shipping program is
+    # assembled just above, so its symbol table is the honest place to check.
+    _rsn = sorted(l for l in syms if _re.search(r"reson|res_|rsn", l, _re.I))
+    check(not _rsn, f"Resonant symbols in the shipping program: {_rsn[:6]}")
     spans = sorted((dest[n], dest[n] + (b - a) - 1, n) for n, a, b, _, _ in pieces)
     for i in range(len(spans)):
         for j in range(i + 1, len(spans)):

@@ -1741,3 +1741,33 @@ root of it:**
 
 **Item 1 is real work and needs nothing external. Items 2-7 are gated on one artifact.** That is the
 whole picture, and it is a better place to stop than a list of things that were tried.
+
+---
+
+# "NO RESONANT CODE IN THE SHIPPING PATH" -- MEASURED AND NOW ASSERTED (round 86)
+
+The brief lists this as a release gate. It had no check, so I measured it directly:
+
+```
+shipping program symbols: 205
+symbols matching reson/res_/rsn: 0
+words: 3051
+```
+
+**Zero Resonant symbols in the shipping program.** And the six `resonant`-named verify tools
+(`verify_perky_3algo_resonant_fresh`, `verify_perky_resonant_compact`,
+`verify_perky_cf_resonant_dsp`, and the rest) test the **retired** engines this goal forbids -- so
+they are **correctly unregistered**, not gaps to close. That distinction mattered in round 78's
+audit and matters here.
+
+**Made permanent**: `verify_perky_shard_emit.py` already assembles the shipping program, so the
+assertion lives there, where the symbol table is in hand:
+
+```python
+_rsn = sorted(l for l in syms if re.search(r"reson|res_|rsn", l, re.I))
+check(not _rsn, f"Resonant symbols in the shipping program: {_rsn[:6]}")
+```
+
+**A requirement the brief states, previously unchecked, now asserted by a gate that runs in
+`make check`** -- and it is the third brief-named gate recovered or created in rounds 77-86 (after
+the odd-address store and the tail budget).
