@@ -2254,3 +2254,51 @@ placed before the terminating record, in **both** payloads, whose orders are now
 assembled** (so the insertion has a home), and **whether the blob has room** -- the records consume
 essentially the whole blob, so a new one must go where the terminator is, and the stage/ceiling the
 loader reserves decides whether that is possible.
+
+---
+
+# ROOM EXISTS: 30,460 BYTES BETWEEN PAYLOAD B AND THE LOADER (round 126)
+
+Round 125 left two open questions. Round 126 answers the second -- **whether the blob has room** -- and
+the answer is the `available words` figure the goal's blocker definition asks for.
+
+## Measured
+
+```
+payload A: va=0x400e2324  79,563 B  -> ends 0x400f59ef
+payload B: va=0x400f59ef  77,061 B  -> ends 0x401086f4
+loader:                               0x4010fdf0
+```
+
+**The two payload blobs are back-to-back** -- A ends exactly where B begins -- so **A cannot grow without
+moving B.** But B ends at `0x401086f4` and the loader sits at `0x4010fdf0`:
+
+```
+0x4010fdf0 - 0x401086f4 = 0x76FC = 30,460 bytes
+```
+
+**A tail record for the 3,051-word program costs `3,051 * 3 = 9,153` bytes of words plus a 9-byte
+header = 9,162.** Against 30,460 available. **It fits, with 21,298 bytes to spare.**
+
+## What this does and does not settle
+
+**Settles:** the FILE side has room. **Known:** 30,460 available, 9,162 required, ratio 3.3:1.
+
+**Does not settle:** whether the DSP side accepts a write to those addresses. **The record's `addr` is
+a DSP address and its `off` is a FILE offset** -- so a new record grows the file blob (which fits) and
+directs the loader to write DSP memory at the tail addresses (which are free RAM, 2404 words measured
+across five spans in round 111).
+
+**Nor:** whether the loader's own copy loop honours a record whose `addr` lies outside whatever it
+assumed. **That is a property of the loader, and I have not read it.**
+
+## Where the 30,460 bytes actually is
+
+**It is the gap before `LOADER_AT = 0x4010FDF0`**, the fixed address the ColdFire side calls after the
+stock OS image. **`platform_build`'s `LAYOUT` names it `ceiling`; `preboot_layout` enforces it.** So the
+region is not unclaimed waste -- **it is reserved, and the reserve is what a growing payload B would
+eat into.**
+
+**That makes it a question about the reserve's purpose, not just its size** -- and the `preboot_reserve`
+in `layout.json` (`base, size, ceiling`, 1,486,848 bytes) is about **DSP** buffer space, not the
+ColdFire file. **Two different ceilings, and I have measured one of them.**
