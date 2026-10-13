@@ -2546,3 +2546,56 @@ either the uploader read or a probe record on hardware.** The local half is now 
 stock image on disk are untouched -- the commit that records this changes only a markdown file.
 **Given that this session has already broken a gate's inputs once by running a build (r114), the
 cheapest possible experiment was the right one.**
+
+---
+
+# THE APPEND PROBE: BOTH LOCAL HALVES ARE NOW PROVEN (round 132)
+
+Round 131 proved payload A's approach -- **re-point an existing record's `addr`**. Round 132 proves
+payload B's -- **append a new one before the terminator.**
+
+## The probe
+
+```
+payload B blob 77,061 B, 91 records
+terminator at blob+0x12cff; 6 bytes after it
+
+after inserting a 300-word tail record (909 B):
+  blob    : 77,061 -> 77,970 B  (+909)
+  records : 91 -> 92            (+1)
+  the tail address is a record  : True  count=300
+  _p_off would resolve P:0x33da3: True
+  the first record is unchanged : True
+```
+
+**The blob grows by exactly the record's size (9-byte header + 300*3 = 909).** The count rises by one.
+**The tail address becomes a record that `_p_off` resolves. And every record before it is byte-for-byte
+what it was** -- so appending disturbs nothing that already works.
+
+## Both shapes, both proven locally
+
+| payload | shape | probe | result |
+|---|---|---|---|
+| **A** (T5) | re-point an existing record's `addr` | r131 | ✓ count unchanged, tail resolves, old address gone |
+| **B** (T1) | append a record before the terminator | r132 | ✓ +909 B, +1 record, tail resolves, others untouched |
+
+**That is the whole of step 2's mechanism, verified on copies in memory.** Neither probe wrote to disk.
+
+## What is now proven, and the one thing that is not
+
+**Proven locally:** the record table accepts **both** operations; `parse()` reads the result correctly;
+**`_p_off` -- the build's own mapper -- resolves a tail address in either shape**; and neither operation
+disturbs the records around it.
+
+**Not proven:** that the **stock DSP uploader** accepts a record at an address no stock record covered.
+**This is the third time it has been named** (r127, r129, r131) and it is the only thing left between
+this analysis and an actual build attempt. **It needs either the uploader read or a probe record on
+hardware.**
+
+## One detail worth recording
+
+**The terminator is `w24 = 0x3` on both payloads, and it is 6 bytes long** -- a header with no data.
+`parse()` stops there because the record it would read next runs off the end, not because of the
+`sp > 3` guard: **3 is not `> 3`.** That is a small inconsistency in the parser's comment, not in its
+behaviour -- **but a writer must put the new record BEFORE those 6 bytes, not after**, or the
+terminator ends up inside the table.
