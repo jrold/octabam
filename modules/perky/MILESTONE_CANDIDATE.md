@@ -1369,3 +1369,56 @@ are passed explicitly, so the message describes a situation the canary never cre
 accurate about what it tested and slightly misleading about what it means** -- noted rather than
 papered over, because the fix (teaching the gate the canary's real paths) needs a canary run to
 confirm, and confirming it is worth more than guessing it.
+
+---
+
+# THE BOOT GATE RUNS -- AND ITS INPUTS ARE FROM THREE DIFFERENT BUILDS (round 114)
+
+Round 113 registered the boot gate and made it skip on its stale defaults. Round 114 found the real
+paths, ran it, and **it fails.** That is worth recording precisely, because the failure is not what it
+looks like.
+
+## The real paths, and they exist
+
+```
+tools/perky/build_multi_machine_canary.py:21   work = ROOT/'out/perky/multi'
+```
+
+**Both `out/perky/multi` and `out/mainos_perky_multi.bin` are present.** So the gate is runnable:
+
+```
+verify_perky_machine_boot.py --image out/mainos_perky_multi.bin --packed out/perky/multi
+  AssertionError at line 70:
+    assert (work / f'preblob{index}.bin').read_bytes() == expected_blob
+```
+
+## Why it fails: three builds, not one
+
+```
+out/mainos_perky_multi.bin   Oct 13 00:30   the canary's image          (--image)
+out/mainos_bus.bin           Oct 13 01:50   MY rebuild from round 109  (--normal-image)
+out/platform-perky-machine/  its own run     the preblobs               (--platform-work)
+```
+
+**The gate compares blobs parsed out of `--image` against `preblob*.bin` in `--platform-work`.** Those
+come from different builds, so the comparison cannot hold -- **and it says nothing about whether the
+code is correct.**
+
+## This is the third appearance of one gap, and it is now concrete
+
+| artifact | preserved? | consequence |
+|---|---|---|
+| the ELEK container (r98) | no | the wrapper round-trip could not be re-run without a rebuild |
+| the canary's `work` dir (r113) | yes -- `out/perky/multi` | the boot gate can be invoked |
+| **a MATCHED set of image + platform work** | **no -- three different runs** | **the boot gate fails on stage fright, not on code** |
+
+**`AGENTS.md` says a local red IS a defect. That rule is right, and this red is real** -- but the
+defect is in the *build hygiene*, not in the loader: **nothing keeps an image and the intermediates it
+was derived from together.** Every one of these three failures has the same fix, and it is
+bookkeeping rather than engineering: **stage the intermediates beside the artifact they produced.**
+
+## What I am NOT claiming
+
+**Not that the loader is broken** -- I have not shown that, and the failing comparison cannot show it.
+**Not that the gate is wrong** -- it is doing exactly what it should with the inputs it was handed.
+**Only that its inputs disagree, and here is which ones.**
