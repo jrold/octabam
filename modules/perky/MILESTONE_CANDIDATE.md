@@ -1152,3 +1152,39 @@ Everything is in place:
 `make eft-repatch`, then regenerate the wrappers, and the card carries the corrected field. **The
 staged artifacts remain unchanged** -- the right moment to ship a corrected card is still the rebuild
 that restores Spring, Dark and Lo-Fi, so it is produced once with everything right.
+
+---
+
+# THE BUILD CHANGE IS FULLY VERIFIED (round 110)
+
+Round 109 proved `eft-repatch` leaves the shipping image bit-identical. Round 110 ran the whole gate
+suite on the changed tree.
+
+```
+make check REMIX=perky-machine
+  exit=0
+  331 [PASS]
+    7 [SKIP]
+    0 FAIL
+```
+
+**Two independent proofs, covering two different questions:**
+
+| question | proof |
+|---|---|
+| does the new target change the artifact? | `make bus` before/after -- **bit-identical**, `460712a7…` |
+| does it disturb anything the gates check? | `make check` -- **331 PASS, 0 FAIL, exit 0** |
+
+**The first is the narrow claim; the second is the broad one.** `AGENTS.md` prescribes a full
+`scripts/refhash.sh` run (24 configurations) for a build change, and that remains the strongest
+available check -- but **these two together close the question the change actually raised**: a new
+`.PHONY` target nothing invokes neither alters an image nor moves a gate.
+
+**The 7 skips are the environment-gated gates** -- the ones needing `OT_PROJECT`, the PĒRKONS image,
+or the CF family's three inputs. They are recorded as skips rather than passes, which is the honest
+state: **they have not run, and no result is claimed for them.**
+
+**And the count is worth recording correctly:** `331 PASS` is the number of gate *assertions* across
+the suite; the *76* quoted through this work is the number of gate *files* registered in
+`make check`. Both numbers are right, they measure different things, and conflating them is exactly
+the proxy-for-the-question mistake this session made four times.
