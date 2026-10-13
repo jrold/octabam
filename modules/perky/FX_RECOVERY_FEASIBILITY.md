@@ -1301,3 +1301,42 @@ This is the fourth conclusion on this branch drawn from a comment read too quick
 corrected by the fuller quote two lines further on: the composed-source gate (round 6), the
 `dsp_asm` externals (round 8), and the sizing-drift check (round 19) were the others. **The
 reliable fix has been to read the mechanism, not the summary of it.**
+
+---
+
+# ADDENDUM 24 — change 2 is new machinery, confirmed against the schema
+
+Addendum 23's retraction removed a wrong reason for preferring one approach, so it was worth
+re-checking whether change 2 could be a **declaration** rather than code. It cannot:
+
+* the schema's only placement field is `donor_desc` -- "E address of the stock donor", a single
+  address for the descriptor, not a P region;
+* nothing in `schema.py` expresses a module occupying several P spans;
+* Perky's own manifest declares `linked=` (one ColdFire unit) and `claims.dsp_ranges` (X and Y
+  only) -- **no P at all**, because P placement is decided by the harvest.
+
+So placing 21 shards across two address spaces is new build machinery. That is the honest
+characterisation, and it is what makes 9c the largest remaining item rather than a one-liner.
+
+## The complete map, as it now stands
+
+**Proven and committed:** the program fits (3051 into 3178); 21 relocatable pieces with zero
+unmarked content and none over the 605 cap; origin-independent at three origins; no
+cross-piece relative branches; a computed placement using both address spaces; shards that
+reassemble byte-identically to the monolith; assigned-origin assembly with zero sizing drift;
+and a built sharded image with the three effects' P measurably free.
+
+**Remaining, in order:**
+
+1. **change 1** -- list SPRING REV, DARK REV, LO-FI in the remix's `fx1`. Small and safe: the
+   harvest takes DSP code only, so this keeps each effect whole. Measured effect: 3441 words
+   in one run becomes 774 in two.
+2. **change 2** -- new machinery to place a module's P across multiple spans, using
+   `all_fx_layout.place_program_shards_two_space` for the assignment. **This is the large
+   item**, and the schema has nothing to hang it on today.
+3. **the gates** -- DSP timing for the retained engines, boot/upload/readback, the P/X/Y
+   ledger, on the resulting image.
+
+**Change 1 is now understood to be easy and change 2 is confirmed to be the hard part.** That
+is a more useful division of the remaining work than the one this document carried before
+today, and it came from checking a schema rather than reasoning about it.
