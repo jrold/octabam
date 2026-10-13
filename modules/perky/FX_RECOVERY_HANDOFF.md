@@ -356,3 +356,43 @@ reassembly, origin-independence, zero cross-piece branches, zero sizing drift).
 4. **Run the gates.**
 
 **Steps 2 and 3 are small and located. Step 1 is the emitter, already validated end to end.**
+
+---
+
+# Step 1 is built and passing: `tools/perky/perky_emit_shards.py`
+
+```
+$ REMIX=perky-machine BUILD=3 python3 tools/perky/perky_emit_shards.py
+  pieces: 21   words: 3051   monolith: 3051
+  in LOCAL P: 3   in SHARED tails: 18
+  monolith-origin bytes identical for every piece: True
+  assigned-origin extents exact for every piece: True
+```
+
+It does the whole of step 1: assemble the monolith, slice the 21 marked pieces, rewrite each
+piece's external label tokens to `$hex`, and assemble each piece twice --
+
+* **at its MONOLITH origin**, where the bytes must equal the monolith's bytes for that source
+  range. This is the faithfulness claim, and it is a real byte-identity check: two independent
+  assemblies of the same code over all 3051 words.
+* **at its ASSIGNED origin** (3 in local P, 18 in the tails), where the extent must be exact.
+  **Byte-identity is deliberately NOT claimed here** and should not be: internal label
+  addresses move when a piece is relocated.
+
+Stating those two separately is the point. Earlier in this work byte-identity was used for a
+weaker claim (a comment-only edit changed nothing); here it is used for the strong one, and the
+one place it does not hold is called out rather than blurred.
+
+## What a caller does with it
+
+`emit()` returns the pieces with their source ranges and their assigned origins, plus the
+address mapper. The build side needs only:
+
+```python
+for name, mono_a, mono_b, text, _ in pieces:
+    words, _ = assemble(rewrite(text, syms, final), dest[name], name)
+    place(words, dest[name])          # build_bus.place(), once per shard
+```
+
+**Step 2 is therefore a loop at one existing call site.** Steps 3 (list the three in `fx1`) and
+4 (the gates) follow.
