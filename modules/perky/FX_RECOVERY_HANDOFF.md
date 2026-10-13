@@ -4767,3 +4767,56 @@ exists and is measured; **the only unwired link is one argument at one call site
 **Then the build runs, Spring/Dark/Lo-Fi stop being consumed, and `make check` will say so.** The
 hardware question -- whether the DSP boot routine honours a tail-address record -- is still answered by
 the probe (r139, gated r140), which needs `OT_PROJECT`.
+
+---
+
+# THE LAST WIRE IS A PARAMETER THREAD (round 172)
+
+Round 171 measured the join: `build()`'s output goes into `extend_upload` and grows the upload by exactly
+the right bytes. **Round 172 found what is left, and it is smaller than it looked.**
+
+## The chain, as it stands
+
+```python
+# repack_machine_loader.py:200
+pres, pokes, log, table_layout = perky_image.integrate(prefix, table_dir)
+```
+
+**`integrate` calls `extend_upload` once per payload internally, and it does not take `p_records`.** So
+the wire is:
+
+1. **`integrate(prefix, table_dir, p_records=None)`** -- a new optional parameter, default `None`, so
+   every existing caller is unchanged;
+2. **pass `p_records[tag]` to the `extend_upload` call for each payload**, in the same place the X and Y
+   arguments already flow;
+3. **`repack_machine_loader`** calls `perky_tail_remap.build()` and hands the result in.
+
+**Nothing new is invented at any of the three steps.** Step 1 is a default parameter, step 2 is an
+argument, step 3 is a call.
+
+## Why the records reach the right payload
+
+**`build()` returns the same record list keyed `A` and `B`** (r160: the addresses are DSP-side, so they
+are payload-independent). **`integrate` already iterates payloads** -- it has to, since `extend_upload`
+takes a `tag`. So the mapping is `p_records[tag]`, and if a tag is absent the argument is `None`, which
+`extend_upload` already treats as "no P records".
+
+## What this round did not do
+
+**It did not make the edit.** Threading a parameter through `integrate` means reading its body to see
+how the two `extend_upload` calls are shaped -- **and with little context left, a wrong guess there would
+surface as a build that silently emitted no P records at all, which is exactly the failure the whole
+`PERKY_P_SPANS` detour was built to avoid.**
+
+## The state, unchanged
+
+| piece | state |
+|---|---|
+| placement, selection rule, record format | measured and in (r148-r150, r167, r169) |
+| `extend_upload` takes `p_records` | in; measured growth 9 Y + 4,941 P (r170) |
+| `build()` emits the right shape | in; the join measured (r171) |
+| all gates | **336 PASS, 8 SKIP, 0 FAIL** |
+| **the wire** | **`integrate(..., p_records=None)` + two arguments (this round)** |
+| the hardware question | the probe, gated (r139, r140), needs `OT_PROJECT` |
+
+**Three edits, all mechanical, none a design question.**
