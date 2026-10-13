@@ -3614,3 +3614,67 @@ already correct (r148), the selection rule is by count (r149), and the totals ar
 wrong:** the guard forbids `append` here, and no per-shard record is needed because `place()` spans
 records. **What round 151 found that stands: the old `addr`s do not correspond to the new shard
 addresses, so an address assignment is required. That is a smaller statement than the one it made.**
+
+---
+
+# CORRECTION: I MISREAD `SAFE_*_SPANS` FOR SIX ROUNDS (round 153)
+
+**`SAFE_SHARED_P_SPANS` and `SAFE_LOCAL_P_SPANS` are `(start, END)` tuples, not `(start, LENGTH)`.**
+
+```
+as I had been reading them          as they actually are
+0x33da3 .. 212992 "words"           0x33da3 .. 0x33fff =   605 words
+0x01000 ..   4690 "words"           0x01000 .. 0x01251 =   594 words
+```
+
+**Read correctly, the three numbers the goal quotes fall out exactly:**
+
+```
+SAFE_LOCAL  : 0x01000..0x01251  594  <- PLATE
+              0x01aa4..0x01b57  180  <- COMPRESSOR
+              = 774
+SAFE_SHARED : 0x33da3..0x33fff  605
+              0x37da3..0x37eff  349
+              0x37f10..0x37fff  240
+              0x3bda3..0x3bfff  605
+              0x3fda3..0x3ffff  605
+              = 2404
+shared + local = 3178          <- the goal's "2404 + 594 + 180 = 3178"
+retired donor  = 3441          <- the goal's "3441-word donor region"
+```
+
+**The largest shard is 605 -- exactly what the goal says. Every number agrees.**
+
+## What this invalidates
+
+**Round 148's "16 of 16 shards land in a SAFE run" tested `s <= a < s + n` with `n` read as a length.**
+With `n` actually the END address, that predicate is true for almost any small `a` -- **it was
+meaningless, and r148's conclusion rested on it.** The real question -- whether each shard's *extent*
+fits in a run -- **had not been asked.**
+
+**Rounds 149-152 inherited the misreading.** Their record-level measurements (the five contiguous donor
+records, the per-payload shift, `append` breaking `_have`) were computed from `mods`, not from these
+spans, **so those stand.** What does not stand is any statement of the form "the tails are inside the
+harvested spans": **they are not.** The shared runs sit at `0x33da3..0x3ffff`, **above the donor,** and
+overlap no retired effect.
+
+## What that means for the plan
+
+**`SAFE_LOCAL` (774 words) is exactly Plate + Compressor -- the two effects the goal approves sacrificing
+-- and it IS inside the harvested spans, so `region` covers it.**
+
+**`SAFE_SHARED` (2404 words) is free space NO stock record covers.** Writing there therefore needs
+`append`, and `append` grows `_have` while `_want` stays the harvested spans' total -- **so the build
+would stop with "the module map and stock.p_spans disagree" (r152's finding, now with the right spans).**
+
+**So the real remaining work is in the HARVEST PATH: `_want` must be extended to cover the shared runs,
+or the harness that declares them must enter `region` another way.** That is a question about
+`build_bus`/`stock_mod`, and it is the next thing to read -- **not an address assignment, as r152
+concluded.**
+
+## The lesson, which is this session's own recurring one
+
+**I read a tuple's semantics off its values instead of off its producer, and every number looked
+plausible.** 212,992 "words" is absurd -- larger than any DSP region -- and that absurdity was the
+signal, sitting in my own output since r148, unread. **The check I should have run first: does the total
+reproduce a number the goal states? It did not; I did not look.**
