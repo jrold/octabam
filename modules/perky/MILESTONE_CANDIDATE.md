@@ -738,3 +738,65 @@ mis-aligned version and the gate is the only thing complaining.
 **The cheap discriminator is one flash: does the unit display `PERKY2V` correctly today?** If it
 does, the code is right and the comment and the gate are wrong. **That is a question for hardware,
 not for another round of reading.**
+
+---
+
+# THE MISMATCH IS THE GATE'S EXPECTATION, NOT THE ARTIFACT (round 102)
+
+Round 101 concluded the tool's code was wrong because the patch's comment says "right-justified".
+**Round 101 stopped one measurement short.** The gate fails at the version check and **returns before
+it ever compares the card to the container** -- so that comparison had never been made. Made now:
+
+```
+card-decoded ELEK : 559757 bytes
+emitted ELEK      : 559757 bytes
+IDENTICAL         : True
+```
+
+**The ELEK embedded in the card that was physically tested is byte-identical to
+`out/elek_PERKY2V.bin`, version field included.** Both carry `b'PERKY2V   '`.
+
+## What that means
+
+The packaging roundtrip exists to prove one thing: **that the card image decodes to the emitted
+container.** It does. **Exactly.** The property the gate was written to check **holds**, and it holds
+byte for byte.
+
+The failure is at the step *before* that comparison. The gate does not read the expected version out
+of anything -- it **manufactures** it:
+
+```python
+want_version = args.version.rjust(10, " ").encode("ascii")
+```
+
+**So the gate asserts a padding convention the tool has never used**, and refuses a container that
+is internally consistent with the card it shipped in.
+
+## The corrected picture
+
+| claim | round 101 | round 102, measured |
+|---|---|---|
+| card decodes to the emitted container | untested | **identical, 559757 bytes** |
+| the version field is `ljust` | yes | yes -- **in both** |
+| the tool's code contradicts its comment | yes | yes, **but it does so consistently** |
+| which side is wrong | the tool | **the gate's `rjust` assumption** |
+
+**The patch's comment still says "right-justified" and the code still pads left** -- that
+contradiction is real and worth fixing. **But it is a documentation defect in a vendored tool, not a
+defect in the artifact.** The card and the MIDI updater were built by the same tool with the same
+convention, and they agree.
+
+## For the release gates
+
+**The roundtrip gate is not green, and it will not be until either the gate's expectation or the
+tool's padding changes** -- and they must change *together*, or the next build's card and container
+will genuinely disagree rather than agreeing on an unconventional-but-consistent field.
+
+**What is now established rather than assumed:**
+
+* the card image decodes to the emitted container, **byte for byte**;
+* the version field is consistent between them;
+* the mismatch is **entirely** the gate's manufactured expectation.
+
+**That is a stronger statement than "the gate fails"**, and it is the one the milestone's packaging
+claim needed.
