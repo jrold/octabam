@@ -1422,3 +1422,48 @@ bookkeeping rather than engineering: **stage the intermediates beside the artifa
 **Not that the loader is broken** -- I have not shown that, and the failing comparison cannot show it.
 **Not that the gate is wrong** -- it is doing exactly what it should with the inputs it was handed.
 **Only that its inputs disagree, and here is which ones.**
+
+---
+
+# CORRECTION: THE IMAGE AND PLATFORM WORK DO MATCH; MY REBUILD BROKE IT (round 114, second measurement)
+
+Round 114's first write-up said the boot gate's inputs come from "three different builds". **The
+mtimes say something more precise, and more useful:**
+
+```
+out/mainos_perky_multi.bin    Oct 13 00:30   <- the canary's image       (--image)
+out/platform-perky-machine    Oct 13 00:30   <- SAME build as the image  (--platform-work)
+out/perky/multi               Oct 12 17:12   <- the canary's work dir    (--packed)
+out/platform/layout.json      Oct 13 01:47   <- MY make bus from round 109
+out/platform/runtime.raw      Oct 13 01:47   <- MY make bus from round 109
+out/mainos_bus.bin            Oct 13 01:50   <- MY make bus from round 109
+```
+
+**The image and its platform work are the SAME build** -- 00:30 both. So the `preblob` comparison had
+matched inputs after all, and my original reason for the failure was wrong.
+
+## The actual cause
+
+The gate also reads, unconditionally:
+
+```python
+layout = json.loads((ROOT / 'out/platform/layout.json').read_text())
+raw_runtime = (ROOT / 'out/platform/runtime.raw').read_bytes()
+```
+
+**Both are from 01:47 — my own `make bus REMIX=perky-machine`, run twice in round 109 to prove
+`eft-repatch` inert.** That rebuild overwrote the platform artifacts the canary's run had left, and
+**the boot gate reads them from a fixed path with no argument to point elsewhere.**
+
+## So the defect is real, and it is mine
+
+**My verification work broke a gate's inputs.** Not the loader, not the gate:
+**`make bus` writes `out/platform/*` at a fixed location, and anything that consumed those files from
+a previous build breaks silently.**
+
+**That is a sharper finding than the first version of this note**, and it is the fourth instance of
+the same shape: **an intermediate shared by fixed path between runs that must agree.** The others were
+the ELEK container (r98), the canary's `work` dir (r113), and the version-field convention (r103).
+
+**And unlike the others, this one has a live consequence:** running `make bus` and then the boot gate
+**always** mismatches, because the gate has no way to be told which build's platform files to read.
