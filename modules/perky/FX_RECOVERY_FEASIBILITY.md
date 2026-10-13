@@ -914,3 +914,55 @@ Two further things the emitter must not get wrong, both already recorded:
   with different absolute bases -- the placement above records which is which per shard;
 * the image must still pass the ordinary gates: DSP timing for the retained engines, the
   boot/upload/readback path, and the P/X/Y ledger.
+
+---
+
+# ADDENDUM 16 — the emitter CONCEPT IS PROVEN: a shard assembles standalone, byte-identical
+
+The last unknown was whether a shard can be assembled **on its own**. It can, and the
+proof is exact:
+
+```
+shard synth_seam_glue.asm: 11629 chars, defines 29 labels, references 9 EXTERNAL labels
+                            (pk_fold_candidate_trigger, pk_multi_fold2_init,
+                             pk_multi_fold_init, pk_multi_noise_init,
+                             pk_multi_simple_init, pk_simple_base,
+                             pk_synth_apply_controls, pk_tone_candidate_voice,
+                             pk_voice_xstate)
+standalone assembly at 0x1000: 386 words      <- exactly the shard's measured extent
+monolith bytes over that range match standalone assembly: True
+```
+
+**Take the shard's source slice, rewrite its nine external label references to their
+absolute `$hex` values, assemble it alone -- and the bytes are IDENTICAL to the monolithic
+program over that range.** That is the emitter's core operation, verified on the largest
+shard.
+
+## The implementation detail that cost a false start
+
+The first attempt **failed**, and the reason is worth recording because it is easy to
+repeat: I rewrote only references in the `op label` form. Labels also appear in **other
+operand positions** -- immediates, `do` loop targets, and memory-reference operands. The
+working rewrite covers **every label token on every non-comment line**.
+
+**So the emitter's substitution step must be token-scoped over all operands, not
+line-form-scoped.** A line-form rewrite silently leaves some references as unresolved
+labels, and the assembler then fails (or worse, resolves something by accident) rather
+than producing the intended absolute.
+
+## Where task 5 now stands
+
+| step | state |
+|---|---|
+| 1. label -> address map | DONE (tool committed, self-checking) |
+| 2. relocation-safe boundaries | DONE (21 pieces, balanced, zero unmarked, none over cap) |
+| 3. packing feasibility | DONE (3178 vs 3051; 127 free) |
+| 4. size stability | DONE (origin-independent; zero cross-piece relative branches) |
+| 5. placement across both spaces | DONE (all 21 placed; both local runs used) |
+| 6. **shard assembles standalone, byte-identical** | **DONE for the largest shard -- this addendum** |
+| 7. emit all shards, stitch the image, gate it | remaining |
+
+**What is left is engineering with no unknown in it**: apply the proven substitution to all
+21 shards, assemble each at its assigned origin, stitch into the image, and run the ordinary
+gates. The `synth_seam_glue.asm` case is the hardest one -- it is the largest and it
+references nine external labels -- so the remaining shards are strictly easier.
