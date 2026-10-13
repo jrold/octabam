@@ -181,3 +181,23 @@ matched platform/table files and qualification-log hashes. No project-dependent
 qualification is pending for this fixture. Different real projects, physical
 memory-fetch timing, project/Part reloads on the unit, and perceived-level A/B
 remain hardware follow-up work.
+
+The exact release-source checkpoint is
+`0252129441269a443c096358d4322000496e3fb7`. It was rebuilt cleanly; its 533-file
+source manifest matches that commit, and the rebuilt MAIN OS matches the
+qualified payload SHA above. This final documentation-only follow-up records
+the source commit without changing generated firmware. The final source/tool/
+artifact manifest is sealed to that release-source checkpoint.
+
+Reproduction uses the original fixture read-only:
+
+```sh
+REMIX=perky-machine BUILD=6 \
+PERKY_EFT=out/eft-perky2f/elektron-firmware-tool \
+OT_PROJECT='/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6' \
+.venv/bin/python3 tools/perky/build_light2_machine_canary.py
+```
+
+The image phase can also be resumed with `build_multi_machine_canary.build_image`
+after the preflights; `REMIX=perky-machine` is required for assembler import.
+The successful preflight and image-resume logs are both pinned in the manifest.
