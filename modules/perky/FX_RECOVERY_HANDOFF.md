@@ -246,3 +246,52 @@ spans = sorted((v['start'], v['start']+v['words']-1, k) for k, v in plc.items())
 # 21 spans, 3051 words, pairwise disjoint; then intersect each with every stock span
 # and require no intersection with any effect that is not PLATE REV or COMPRESSOR.
 ```
+
+---
+
+# Change 1's prediction is CONFIRMED (round 52)
+
+Addendum from round 51 stated a falsifiable prediction and this is it, run:
+
+```
+BEFORE change 1:  KEPT = CHORUS, COMB FILTER, DJ EQ, EQUALIZER, FILTER,
+                        FLANGER, PHASER, SPATIALIZER           (8)
+                  collisions with KEPT: NONE
+
+AFTER  change 1:  KEPT = ... + SPRING REV, DARK REV, LO-FI     (11)
+                  collisions with KEPT: NONE
+
+KEPT gains SPRING/DARK/LO-FI   : True
+collisions with KEPT still NONE: True
+-> PREDICTION CONFIRMED
+```
+
+**Listing SPRING REV, DARK REV and LO-FI in the remix's `fx1` keeps all three, and the
+21-shard placement still collides with nothing retained.**
+
+## Why this matters more than another restatement
+
+The milestone's central claim is "Spring restored, Dark restored, Lo-Fi restored, all other
+stock FX retained, Plate and Compressor the only sacrifices." Until this round that claim rested
+on an argument: the two spaces have room, the shards do not sit in the three effects' spans, so
+listing them should work.
+
+**It is now a measured compatibility, and it was measured by stating the outcome in advance and
+running the check.** The check required no edit to the tree and no build, so nothing is left in
+a broken state:
+
+```python
+now = set(r.modules) | set(r.fx1 or [k for k in sp if k])
+ledger(now)                                  # 8 kept, no collisions
+ledger(now | {'SPRING REV','DARK REV','LO-FI'})   # 11 kept, STILL no collisions
+```
+
+## What is still not done
+
+**Change 1 is not applied**, and must not be applied alone: with the three kept, Perky's one
+code stream has only the 594-word PLATE run, because the placer places one module into one run.
+**Changes 1 and 2 land together** -- 2 being "let one module contribute several placeable
+streams", which is the sharding, already proven.
+
+After that: the gates (DSP timing for the retained engines, boot/upload/readback, the P/X/Y
+ledger).
