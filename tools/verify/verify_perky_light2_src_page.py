@@ -405,6 +405,19 @@ def build_cases() -> list[Case]:
         Case("lock_held_dirty", part=1, algo=1, dirty=0x7D),
         Case("lock_released_dirty", part=1, algo=0, dirty=0x7D),
     ]
+    # (c2) The same three-trig shape on MODE. Task 7 requires MODE p-lock as well as
+    # ALGO p-lock, and the two travel different paths -- ALGO resolves through a
+    # table into the engine byte, MODE is clamped and lands in the mode word -- so
+    # proving one does not prove the other.
+    cases += [
+        Case("mode_lock_base", part=1, algo=0, mode=0),
+        Case("mode_lock_held", part=1, algo=0, mode=1),
+        Case("mode_lock_released", part=1, algo=0, mode=0),
+        Case("mode_lock_clamp", part=1, algo=0, mode=127),
+        Case("mode_lock_base_2", part=2, algo=2, mode=2),
+        Case("mode_lock_held_2", part=2, algo=2, mode=0),
+        Case("mode_lock_released_2", part=2, algo=2, mode=2),
+    ]
     # (d) ALGO, not the persisted hidden engine slot, is the authority
     cases += [
         Case("algo_beats_hidden_fold1", part=2, algo=0, hidden=2),
@@ -656,10 +669,12 @@ def check_dispatch(cases: list[Case], data: dict[str, object]) -> None:
     assert isinstance(rows, dict)
     by_name = {case.name: i for i, case in enumerate(cases)}
     engines: dict[str, int] = {}
+    modes: dict[str, int] = {}
     pool = set(ALGO_ENGINE)
 
     for i, case in enumerate(cases):
         words = record_words(rows, i, case)
+        modes[case.name] = (words[8] >> 16) & 0xFF
         engine = words[9] & 0xFFFF
         if engine not in pool:
             fail(f"case {case.name}: engine byte 0x{engine:04x} (DSP word 19) is "
@@ -720,6 +735,24 @@ def check_dispatch(cases: list[Case], data: dict[str, object]) -> None:
                  f"{released}={sequence[2]}")
         note(f"MEASURED one-trig ALGO p-lock: base {base}={sequence[0]} -> "
              f"locked {held}={sequence[1]} -> unlocked {released}={sequence[2]}")
+    # (e2) One-trig MODE p-lock, twice.
+    for base, held, released in (("mode_lock_base", "mode_lock_held",
+                                  "mode_lock_released"),
+                                 ("mode_lock_base_2", "mode_lock_held_2",
+                                  "mode_lock_released_2")):
+        seq = [modes[base], modes[held], modes[released]]
+        if seq[1] == seq[0]:
+            fail(f"the MODE p-lock case {held} did not change the mode "
+                 f"(both {seq[0]})")
+        if seq[2] != seq[0]:
+            fail(f"the unlocked trig did not return to base MODE: "
+                 f"{base}={seq[0]}, {held}={seq[1]}, {released}={seq[2]}")
+        note(f"MEASURED one-trig MODE p-lock: base {base}={seq[0]} -> "
+             f"locked {held}={seq[1]} -> unlocked {released}={seq[2]}")
+    if modes["mode_lock_clamp"] != 2:
+        fail(f"an out-of-range MODE reached the record as "
+             f"{modes['mode_lock_clamp']}; it must clamp to 2")
+
     if engines["lock_held_dirty"] != engines["lock_held"]:
         fail(f"an LFO dirty low byte changed the engine: clean "
              f"{engines['lock_held']} vs dirty {engines['lock_held_dirty']}")
