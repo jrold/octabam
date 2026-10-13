@@ -808,3 +808,63 @@ Six rounds have now produced six successive refinements of step 2's scope, every
 the last: "two lines", "a three-site refactor", "plus writable ground", "the larger bound", and now
 "ground nothing can currently write". **Each was read off one layer and assumed to hold at the
 next.** The thing that resolved each was measurement, not more reading.
+
+---
+
+# REVERSAL (round 65): the absolute writer exists, and the spans' provenance is sound
+
+**Two corrections to addendum 64, both by measurement.**
+
+## 1. The spans' provenance was recorded -- my self-correction was too harsh
+
+`all_fx_layout.py`'s own docstring (which I had not read when I wrote addendum 64):
+
+> The shared `0x30000..0x3ffff` window aliases P/X/Y. **Stock effect guard/census work shows an
+> FX2 instance does not write beyond `base+0x3da2`.** The tails below therefore remain
+> **candidates** for executable P while stock FX are active. Core-1 mailbox `0x37f00..0x37f0f` is
+> excluded.
+
+**The tails begin at `0x33da3` = `base + 0x3da3` -- exactly one word past the measured
+`base+0x3da2` boundary.** The derivation *was* census-based, *was* recorded, and *was* explicitly
+labelled "candidates". Addendum 64's claim that I "never checked" is wrong in the part that
+matters: what was never checked is **writability**, which is narrower and different from
+provenance.
+
+## 2. Step 2 does NOT need a new write mechanism. It already exists.
+
+`build_bus.py:673`:
+
+```python
+def wrw_p(a, v):
+    i = a - BASE
+    img[i], img[i + 1], img[i + 2] = v & 0xff, (v >> 8) & 0xff, (v >> 16) & 0xff
+```
+
+**`wrw_p` takes an ABSOLUTE image address and writes three bytes. There is no record lookup.**
+`place()` uses it, `place_x` uses it, `place_xh` uses it, and it does not care whether a record
+covers the address.
+
+So a shard in a tail is written by calling `wrw_p` with the right **image** address -- and the
+tails need no records at all. **What is actually missing is only the DSP-address -> image-offset
+translation for the shared window**, which is the same translation the payload upload already
+defines and which `_p_off(addr)` performs for recorded ground.
+
+## What step 2 now is
+
+1. emit the shards (done, gated);
+2. for each shard, place it by writing its words at the image address of its assigned origin --
+   through records where records exist, and by direct `wrw_p` where they do not;
+3. make the run cursors account for both, so nothing else is placed on top;
+4. keep the safety check: a write into the shared window must not collide with any module's
+   `Claims.dsp_ranges`, which `all_fx_layout.validate()` already does for the spans themselves.
+
+**That is smaller than addendum 64 said, and the difference is that `wrw_p` never needed a
+record.** Two rounds of "the ground cannot be written" were both wrong for the same reason: I
+read `place()`'s record walk and assumed the record walk was the only way to write.
+
+## The lesson, corrected
+
+Addendum 64 said six rounds each refined step 2's scope *upward*. That is half right: rounds 58-63
+did, and each was resolved by measuring deeper. **Rounds 64 and 65 then refined it back DOWN --
+because the first two answers were read off `place()` rather than off `wrw_p`, the primitive
+underneath it.** Reading one layer down found the mechanism; reading one layer *up* had hidden it.
