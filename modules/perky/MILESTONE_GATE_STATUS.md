@@ -40,7 +40,7 @@ back byte-identical).
 | repeated triggers / retriggers | PROVEN (persistent + event-offset cases in the seam gates) |
 | all six SRC controls, requested order | PROVEN (light2 gate) |
 | ALGO p-lock base->locked->base | PROVEN (light2 gate, dispatch byte) |
-| **MODE p-lock** | **NOT SEPARATELY GATED.** MODE is staged and clamped identically to ALGO, and the clamp is proven; a dedicated MODE p-lock case is not |
+| MODE p-lock | PROVEN — dedicated cases added: base 0->1->0 and 2->0->2 in the mode word, plus an out-of-range clamp case |
 | stock AMP continuation | PROVEN (seam gates run to the continuation) |
 | **Spring present and functional** | **NOT POSSIBLE — the effect is not in this image** |
 | **Dark present and functional** | **NOT POSSIBLE — same** |
@@ -65,3 +65,52 @@ contiguous to put a 3051-word program; and `dsp_asm` substitutes labels textuall
 the sharding is a Python-level emitter and needs no toolchain change).
 
 **Until that lands, this is not the milestone, regardless of how green the rest is.**
+
+
+---
+
+# ADDENDUM — the SRC-page gate's teeth, settled
+
+This gate is the only evidence for the SRC page order, the staging mask, the ALGO and
+MODE p-lock returns, the admission mask and the out-of-range clamps, so whether it can
+FAIL matters more than whether it passes. It was in doubt for two rounds. It is now
+settled, and the sequence is worth keeping because most of it was my error.
+
+## The override works
+
+`PERKY_LIGHT2_CONTROL` does reach the compiled artifact. MEASURED: swapping the first
+two labels in the descriptor makes the gate fail with
+
+```
+SRC page-1 controls are ['DECAY', 'TUNE', 'ALGO', 'PAR1', 'PAR2', 'MODE'],
+expected ['TUNE', 'DECAY', 'ALGO', 'PAR1', 'PAR2', 'MODE']
+```
+
+## The teeth are real, on both paths
+
+* **descriptor**: the label swap above is caught.
+* **MODE clamp**: moving BOTH clamps from 2 to 3 is caught, at the record word:
+  `case nt_mode_clamp3: record word 8 (DSP words 16/17) is 0x00030000, expected 0x00020000`.
+
+## Why a single-clamp mutation is NOT caught -- and that is correct
+
+MODE is clamped TWICE in the shipping path: in `pk_light2_src_to_transport` into `p[6]`,
+and again in `pk_light2_full_prepare` into `p[8]`. Mutating one leaves the other
+correct, the record is still right, and the gate correctly passes. Defence in depth, not
+a blind spot.
+
+## The invalid harness, which caused the confusion
+
+Every mutation run through `PERKY_LIGHT2_CONTROL` from a `/tmp` path failed to BUILD --
+not because of any guard, but because the mutated file's `#include "control.c"` does not
+resolve from `/tmp`. Proven by a CLEAN, unmutated copy failing identically from the same
+directory. **Mutations for this gate must live inside `modules/perky/`**, and two
+earlier "teeth proven" and "teeth not proven" claims were both drawn from runs that
+never compiled.
+
+## Consequence for the earlier retraction
+
+Round 14 recorded that this gate's teeth were UNPROVEN. That was over-broad: the teeth
+were always there, and the single-clamp result was a correct PASS under redundant
+clamping. The narrow true statement is the one above -- the gate is sensitive on both
+paths once a mutation actually builds and actually defeats both clamps.
