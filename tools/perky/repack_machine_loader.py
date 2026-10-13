@@ -169,7 +169,11 @@ def check_preboot_disjoint(layout: dict, pres: list[dict]) -> None:
 
 
 def build(image_path: Path, table_dir: Path, output: Path,
-          platform_dir: Path | None = None, work: Path | None = None) -> None:
+          platform_dir: Path | None = None, work: Path | None = None,
+          p_records: dict | None = None) -> None:
+    """... `p_records` is {tag: [(addr, [word, ...])]} for module code that needs
+    P ground no stock record covers. Default None, so every existing caller is
+    unchanged; it is threaded to perky_image.integrate (r173)."""
     platform_dir = platform_dir or ROOT / "out/platform"
     work = work or ROOT / "out/platform-perky-machine"
     if not image_path.exists():
@@ -197,7 +201,9 @@ def build(image_path: Path, table_dir: Path, output: Path,
     if image_slice(prefix, 0x4000050C, 6) != boot_written:
         die("normal full-machine build does not already route boot to Octabam loader")
 
-    pres, pokes, log, table_layout = perky_image.integrate(prefix, table_dir)
+    pres, pokes, log, table_layout = perky_image.integrate(
+            prefix, table_dir, p_records=p_records
+        )
     check_preboot_disjoint(layout, pres)
     for address, expect, write, note in pokes:
         apply_write(prefix, address, expect, write, note)

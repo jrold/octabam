@@ -4935,3 +4935,72 @@ through `repack_machine_loader` is still needed; **its source is one level highe
 | all gates | **336 PASS, 8 SKIP, 0 FAIL** |
 | the two edits | **named, located, mechanical** |
 | the hardware question | the probe, gated (r139, r140), needs `OT_PROJECT` |
+
+---
+
+# THE WIRE IS IN; THE CANARY STOPS ON `OT_PROJECT` (round 175)
+
+Round 174 located two edits. **Round 175 made both.**
+
+## What landed
+
+```python
+# tools/perky/repack_machine_loader.py
+def build(image_path, table_dir, output, platform_dir=None, work=None,
+          p_records: dict | None = None) -> None:
+    ...
+    pres, pokes, log, table_layout = perky_image.integrate(
+        prefix, table_dir, p_records=p_records
+    )
+
+# tools/perky/build_multi_machine_canary.py, before the repack call
+import perky_emit_shards as _E, perky_tail_remap as _R
+_pieces,_whole,_dest,_final,_syms = _E.emit(work/'multi.asm')
+_recs,_extra,_stayed,_kept,_moved = _R.build(_pieces,_whole,_dest,_E.MONOLITH_ORG)
+print(f"  P records: {len(_recs['A'])} to append ({_moved} words); "
+      f"{len(_stayed)+len(_kept)} shard(s) already covered")
+base.repack_machine_loader.build(..., p_records=_recs)
+```
+
+**`make check REMIX=perky-machine`: 336 PASS, 8 SKIP, 0 FAIL.** Both defaults are `None`, so every
+existing caller is unchanged.
+
+## And the canary stops before reaching it
+
+```
+$ REMIX=perky-machine BUILD=3 python3 tools/perky/build_light2_machine_canary.py
+  OT_PROJECT is required for the sequencer gate
+exit=1
+```
+
+**The P-records line never prints** -- the canary dies in an earlier gate. **`OT_PROJECT` is the external
+input this session has named since the beginning: a stock Octatrack project on the card, which cannot be
+produced here, because AGENTS.md forbids committing an Elektron byte.**
+
+## What that means, stated exactly
+
+**The code path is complete and green; it has never executed.** That is the same category as the changes
+in r147, r166 and r171 that were inert-until-armed -- **except that this one is not inert by design, it is
+blocked by an input.** The difference matters:
+
+* **an inert path can be tested by arming it** (r166, r171 -- done, and both found real defects);
+* **this one cannot be armed without a file that must not exist in the repo.**
+
+**And the honest reading of that is not "blocked".** `perky_tail_remap --write` + `integrate`'s
+`p_records` parameter can be exercised **without the canary**: `extend_upload` was tested directly in
+r170 and r171, and the canary's only additional contribution is *the argument*. **A focused test that
+calls `emit()` -> `build()` -> `integrate()` on a scratch image would exercise the whole chain and needs
+no project at all.**
+
+**That is the next thing to write -- a gate, not a build.**
+
+## State
+
+| piece | state |
+|---|---|
+| placement, selection rule, record format | in (r148-r150, r167, r169) |
+| `extend_upload` / `build()` / `integrate` | in; joins measured (r170, r171, r173) |
+| `repack_machine_loader` + canary wiring | **in; `make check` green (this round)** |
+| the chain, end to end | **never executed -- `OT_PROJECT` gates the canary** |
+| the next step | **a gate that drives `emit()` -> `build()` -> `integrate()` with no project** |
+| the hardware question | the probe, gated (r139, r140), also needs `OT_PROJECT` |

@@ -97,7 +97,16 @@ def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2)
         raise SystemExit(f"perky ledger: P overruns its region ({p_words} > {p_capacity})")
     (work/'memory.json').write_text(json.dumps(ledger,indent=2)+'\n')
     mainos=ROOT/'out/mainos_perky_multi.bin'
-    base.repack_machine_loader.build(ROOT/'out/mainos_bus.bin',work,mainos,platform_dir=ROOT/'out/platform',work=ROOT/'out/platform-perky-machine')
+    # P records for the shards that land OUTSIDE the donor effects' own extents.
+    # build_bus cannot host them -- the two payloads are adjacent, gap 0 (r167) --
+    # so they go through perky_image.extend_upload, which returns a replacement
+    # upload the pre-boot loader reads (r168-r173).
+    import perky_emit_shards as _E, perky_tail_remap as _R
+    _pieces,_whole,_dest,_final,_syms=_E.emit(work/'multi.asm')
+    _recs,_extra,_stayed,_kept,_moved=_R.build(_pieces,_whole,_dest,_E.MONOLITH_ORG)
+    print(f"  P records: {len(_recs['A'])} to append ({_moved} words); "
+          f"{len(_stayed)+len(_kept)} shard(s) already covered")
+    base.repack_machine_loader.build(ROOT/'out/mainos_bus.bin',work,mainos,platform_dir=ROOT/'out/platform',work=ROOT/'out/platform-perky-machine',p_records=_recs)
     # out/platform/ is a shared INPUT: repack_machine_loader READS layout.json and
     # runtime.raw from it, and `make bus` rewrites both in place. So this image
     # silently depends on whatever was there when it ran, and a later build makes
