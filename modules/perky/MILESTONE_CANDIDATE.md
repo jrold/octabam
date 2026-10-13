@@ -219,3 +219,37 @@ on this build** -- several are not, and saying so in the procedure is more usefu
 holding the unit. A manifest that calls a resolved qualification "pending" and a procedure that
 covers a third of the test sequence are the two documents most likely to cost a flash cycle -- and
 both are fixable without touching a line of the build.
+
+---
+
+# A CORRECTION TO ROUND 89, AND THE ONE REAL GAP (round 90)
+
+Round 89 claimed the test procedure "covers 5 steps; the brief specifies 14". **That was my
+measurement error, the same kind as round 79's audit regex.** I counted with
+`grep -cE "^[0-9]+\."` and got 5 -- **which counts numbered lines, not coverage.** Read properly,
+the procedure covers the brief's sequence in seven sections: T1, T5, the three remaining engines,
+ALGO mapping, the p-lock round trip, ordinary stock tracks, and the FX state. **It is a good
+procedure, and it is arguably better organised for a tester holding the unit than a 14-item list.**
+
+## But there was one real gap, and it is the brief's own ask
+
+> **Report clearly what each of the three MODE positions means for all four engines so the user
+> knows what they are hearing on hardware.**
+
+**The procedure never told the tester what MODE does.** It asked them to sweep it and report, which
+is useful, but the brief asks for the meaning to be stated -- and a tester who knows what to expect
+gives a better answer than one who does not.
+
+**Added**: a per-engine MODE table, a note that on some engines MODE gates whether the voice sounds
+at all (so a silent position is a mode, not a fault), and a sixth "send back" item asking which
+positions are distinct per engine and which Noise/Tone mode is the expected one.
+
+## The pattern, for the second time this session
+
+**Round 89's error and round 79's were the same shape**: a counting tool that measured something
+narrower than the question, read as if it had measured the question. Round 79's regex missed wrapped
+`Gate(` forms and produced duplicate registrations; round 89's `grep -c` missed section-based
+coverage and produced a false "documentation gap".
+
+**Both were caught by reading the artefact rather than the count of it.** That is now seven
+self-corrections on this branch, and the remedy has not changed.
