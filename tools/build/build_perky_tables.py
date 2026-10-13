@@ -98,7 +98,16 @@ def build(image_path: Path, table_dir: Path, output: Path) -> None:
             f"{stock_len:,} B. This isolated table canary expects no existing "
             "platform-loader append."
         )
-    install_reservation(img)
+    # VERIFY, do not install. build_bus has already applied every arena
+    # reservation for this remix (module reservations first, then the
+    # platform's), so the base literal and the geometry words are ALREADY
+    # moved. install_reservation refuses unless the site still holds stock
+    # bytes, which is exactly what a correct build has just changed -- it
+    # would refuse every PERKY-selecting remix. verify_reservation checks
+    # that the reservation build_bus made is the one this stage expects,
+    # which is the stronger statement and the one that catches a real
+    # disagreement.
+    verify_reservation(img)
 
     pres, pokes, log, layout = perky_image.integrate(img, table_dir)
     print("=== PERKY packed private-Y tables ===")

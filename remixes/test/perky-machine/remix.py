@@ -9,7 +9,7 @@ impulse probe remains unchanged.
 COMPRESSOR and LO-FI were added to that set for Fold Drum 2: Fold2 costs 279 P
 words marginal (2,680 -> 2,959 composed), COMPRESSOR alone lands at 2,904 -- 55
 short -- and the remaining 41 could not come from deduplication (the composed
-source has 179 labels, all unique). See modules/perky/STEP2_FOLD2_INTEGRATION.md.
+source has 179 labels, all unique). See modules/perky/FOLD_ROOT_CAUSE.md.
 """
 from remix.schema import Proof, Remix
 
