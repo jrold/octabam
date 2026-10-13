@@ -697,3 +697,52 @@ Whether a tail's records are in space `0`. The tails live in the **shared window
 P alias -- so a tail might appear in `mods` as an x or y record rather than a P one, in which case
 the `m[0] == 0` filter would exclude it even if the record exists. **That is the likely shape of
 the answer, and it is exactly why this has to be measured rather than reasoned about.**
+
+---
+
+# RESOLVED (round 63): the tails have no image records -- step 2 is the larger change
+
+Round 62's question, answered by measurement. `modules(bytes(img), va, ln)` for payload A returns
+**98 records across spaces 0, 1 and 2**, and against the five tails:
+
+```
+   tail 0x33da3..0x34000 (606):  overlap any-space=0   space-0=0
+   tail 0x37da3..0x37f00 (350):  overlap any-space=0   space-0=0
+   tail 0x37f10..0x38000 (241):  overlap any-space=1   space-0=1   <- only one
+   tail 0x3bda3..0x3c000 (606):  overlap any-space=0   space-0=0
+   tail 0x3fda3..0x40000 (606):  overlap any-space=0   space-0=0
+```
+
+**Four of the five tails have no record in ANY space; the fifth has exactly one.** So `mods`
+cannot supply them, `region` cannot reach them, and the `m[0] == 0` filter is not the obstacle --
+there is nothing there to filter.
+
+**Step 2 is therefore the larger change, as round 61 bounded it**: the tails need a write path of
+their own, not just a wider `_want`.
+
+## The structural reason, which is more useful than the count
+
+The tails live in the **shared window**, and the image's record table describes regions the loader
+copies. A shared window is shared *memory*, not a copied region, so it plausibly has no records at
+all. `place()` walks records; **in the tails there is nothing to walk.**
+
+That means the fix is not "add the tails to `_want`" but **a second write mechanism for
+unrecorded ground** -- writing P words at absolute addresses rather than through a record's
+`(va + off)` translation. Whether that is safe is a separate question: the shared window's P view
+is the same memory as its X and Y views, so a write there must be checked against every module's
+`Claims.dsp_ranges` in the window, which is exactly what `all_fx_layout.validate()` already does
+for the spans themselves.
+
+## The handoff is now accurate on scope
+
+| | |
+|---|---|
+| tasks 0-4, 7, 8 | complete, each with evidence |
+| task 5 validation | complete |
+| step 1 (emit shards) | built, 3 properties, gate-protected, 2 payloads |
+| step 2 (place shards) | **a fit-and-place refactor AND a write path for unrecorded ground** |
+| step 3 (list three in `fx1`) | one edit; prediction measured and confirmed |
+| step 4 (gates) | 66 pass today; re-run after 1-3 |
+
+Spring, Dark and Lo-Fi remain absent. Nothing about the goal's correctness claims changed; what
+changed is that step 2's size is now measured rather than guessed, and it is the larger bound.
