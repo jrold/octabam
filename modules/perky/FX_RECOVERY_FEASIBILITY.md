@@ -1264,3 +1264,40 @@ is therefore a small, well-understood edit; change 2 is the part with no existin
 
 **Everything is characterised. What remains is two edits that must land together, plus the
 gate run.**
+
+---
+
+# ADDENDUM 23 — RETRACTION: the harvest does not remove descriptors, and 9c is simpler than I said
+
+**Addendum 21 claimed that restoring the three effects post-build "would also require
+restoring their dispatch entries and chooser rows, i.e. undoing the harvest." That is wrong,
+and the remix's own comment says so:**
+
+> `stock.harvested()` is "stock effects with DSP code that are on NEITHER chooser", so a
+> module omitted from `modules` but **still on a chooser keeps its algorithm and its P words**
+
+The harvest takes **DSP code only**. An effect that remains on a chooser keeps its algorithm,
+its descriptor and its row. So:
+
+* **listing SPRING REV, DARK REV and LO-FI in the remix's `fx1` keeps all three entirely** --
+  code and descriptor -- with no separate restoration step;
+* my round-39 argument against a post-build patch was therefore built on a false premise.
+
+## What this changes
+
+Not the coupling -- addendum 22's measurement stands: narrowing the harvest gives Perky 774
+words in two runs, and 3051 words cannot fit that, so the shard placement is still required.
+What it changes is the **fear** attached to change 1. Change 1 is not "remove the effects from
+the build and put them back"; it is **"stop harvesting them"**, which keeps them whole.
+
+And it removes a wrong reason for preferring one integration approach over another. The
+choice between narrowing the harvest and patching post-build should be made on the merits --
+whether the build can place a module across multiple spans -- not on a supposed need to undo
+chooser surgery that was never necessary.
+
+## The pattern, since it recurred
+
+This is the fourth conclusion on this branch drawn from a comment read too quickly and
+corrected by the fuller quote two lines further on: the composed-source gate (round 6), the
+`dsp_asm` externals (round 8), and the sizing-drift check (round 19) were the others. **The
+reliable fix has been to read the mechanism, not the summary of it.**
