@@ -1195,3 +1195,46 @@ zero hits means the code there never runs.**
 
 **Steps 3 and 4 are both local and both bounded.** Neither existed in addendum 69, which treated
 the whole question as hardware.
+
+---
+
+# THE PROBE RECIPE, DOCUMENTED (round 72)
+
+`tools/emu/README.md` "The port on a project" gives the invocation, and `--dsp` is the flag that
+enables the engine:
+
+```sh
+# 1. stage a card from a project fixture
+.venv/bin/python3 tools/emu/ot_emu/stage_card.py PROJECT_DIR OCTABAM RIG --out out/card.img
+
+# 2. run the image under the port, with the DSP, playing
+out/emu/ot_emu --image out/mainos_bus.bin --card out/card.img --set OCTABAM --project RIG \
+    --sequencer --internal-clock --frames 600 --load-ms 90000 --dsp --main-level 64 \
+    [--mem-dump spans] [--poke-trig 2]
+```
+
+**So both tests use tools that already exist** -- `--dsp` for the engine, `--mem-dump` (Test A),
+`--dsp-pcwatch` (Test B). No new tooling. `verify_analog_bassdrum_ui.py` is a working precedent for
+staging a card and dumping DSP memory from a gate.
+
+## What the two tests look like concretely
+
+**Test A -- did the words arrive?**
+Run the image with the shards placed, then read P memory at a tail address. In the batch form this
+is `--mem-dump` over the tail spans; interactively it is `dsp peek <core> P <addr> <len>`.
+* words present -> the write path works (settles rounds 63-67);
+* words absent -> the write path is broken, and no execution question arises.
+
+**Test B -- does the core fetch them?**
+`--dsp-pcwatch <the shard's entry PC>`, with Perky selected on T1/T5, then look for hits.
+* **zero hits is decisive** -- the tail strategy is dead, and it is a local red;
+* hits are suggestive only -- final confirmation is a flash.
+
+## What is still missing to run them
+
+1. **step 2** -- the shards must actually be placed, which is the write path plus the fit-and-place
+   refactor;
+2. **a project fixture** -- an existing one can be reused (`verify_analog_bassdrum_ui.py` stages
+   its own; the Perky gates use fixtures too).
+
+**Neither is a new investigation. The probe is now a recipe, not a research question.**
