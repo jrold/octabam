@@ -854,3 +854,71 @@ should all be regenerated so they continue to agree, this time on the correct co
 
 **Until then the roundtrip gate is correctly red**, and it should stay red: it is the only thing that
 noticed.
+
+---
+
+# THE VERSION-FIELD DEFECT: FIXED, AND THE ROUNDTRIP GATE NOW PASSES (round 104)
+
+Round 103 established the tool's `ljust` is a real defect. **Round 104 fixed it and ran the gate.**
+
+## The fix, proven
+
+One line in `set_version` (`vendor/elektron-firmware-tool/main.c`):
+
+```c
+-  for(int i=0;i<cap;i++) c[voff+i] = (i<nl) ? (uint8_t)ver[i] : ' ';
++  for(int i=0;i<cap;i++) c[voff+i] = (i<cap-nl) ? ' ' : (uint8_t)ver[i-(cap-nl)];
+```
+
+Built in a **private staged copy** (`/tmp/eft-fixrus`), never in `vendor/` -- which in this worktree
+is a **symlink to the main checkout**, shared with other sessions. Same discipline `AGENTS.md`
+prescribes for `dsp_host`.
+
+**The measured result:**
+
+```
+old      ELEK [0x08:0x12] = b'PERKY2V   '     left-justified
+patched  ELEK [0x08:0x12] = b'   PERKY2V'     RIGHT-justified
+```
+
+**Identical file sizes** -- 559,757 B container, 559,776 B card, 781,921 B MIDI -- so the fix moves
+one field's alignment and touches nothing else.
+
+## The gate now passes
+
+Regenerated the whole set with the patched tool and re-ran the release gate:
+
+```
+PERKY final wrapper round-trip: PASS
+  card: ELUP checksum valid; seed=0x2f1349d2; ELEK=559,757 B exact; version=PERKY2V
+  MIDI: section 3 -> section_3_MAIN_OS.bin; MAIN OS=1,257,586 B exact
+  MAIN OS sha256=9f93971e368620afe310bee6bad122397ecefa49c48e46145010ec3f332ac4b9
+```
+
+**Two brief-named release gates are now satisfied as measurements rather than as open questions:**
+*the card wrapper round-trip* and *the MIDI updater round-trip*.
+
+**And this is the first time the packaging was verified on a MATCHED set** -- rounds 97-99 compared
+artifacts whose provenance was ambiguous. Here the ELEK, the card and the MIDI all came out of one
+run of one tool, and the gate decoded them back to the same MAIN OS.
+
+## What is still outstanding
+
+**The fix is not yet in `tools/patches/elektron-firmware-tool.patch`.**
+The `ljust` line is **upstream context, not a patch-added line**, so the correction needs a **new
+hunk** -- and I did not hand-write a unified diff, because a malformed patch is worse than a missing
+one: `scripts/setup.sh` would either refuse it or, worse, apply it partially.
+
+**So the state is: the defect is diagnosed, the fix is proven, the gate passes with the fix, and the
+patch hunk is the one mechanical step left.** Anyone picking this up can reproduce the proof with the
+two commands above and then add the hunk with `git diff` against the pristine upstream source, which
+is the correct way to produce it.
+
+## And what this does NOT change
+
+**The staged card and MIDI -- `4ba4d72c…` and `685e5105…` -- are unchanged and remain what was
+physically tested.** The regenerated set in `/tmp/refix` is **not** delivered: it has the correct
+version field but a **different provenance** (a locally-patched tool), so promoting it would trade a
+cosmetic defect for an unrecorded build path. **The right time to ship a corrected card is the same
+rebuild that restores Spring, Dark and Lo-Fi** -- one new artifact, correct version field, correct
+FX, one set of hashes.
