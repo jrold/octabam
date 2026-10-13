@@ -658,3 +658,42 @@ is defined two hundred lines earlier.**
 | step 4 (gates) | 66 pass today; re-run after 1-3 |
 
 Spring, Dark and Lo-Fi remain absent from the image.
+
+---
+
+# THE ONE OPEN QUESTION THAT SIZES STEP 2 (round 62)
+
+Round 61 established that `region` -- the only ground `place()` can write -- is built solely from
+the **harvested** spans, and that 18 of the 21 shards are assigned to the five shared tails. The
+size of step 2 then depends entirely on one fact:
+
+> **Does `mods` -- `modules(bytes(img), va, ln)` at `build_bus.py:2119` -- contain records that
+> cover the five tails?**
+
+* `region = sorted((m for m in mods if m[0] == 0 and any(a <= m[1] < a + n for a, n in _want)), ...)`
+* so **if `mods` already has records there**, step 2 shrinks: add the tails' spans to `_want` and
+  the existing filter picks them up;
+* **if it does not**, the tails need a record source of their own, which is the larger change.
+
+## Resolve it in one command
+
+```python
+import build_bus as B, all_fx_layout as L, pathlib
+img = pathlib.Path('out/mainos_bus.bin').read_bytes()
+mods, _ = B.modules(bytes(img), <va>, <words>)      # signature to confirm first
+for lo, hi in L.SAFE_SHARED_P_SPANS:
+    print(hex(lo), sum(1 for m in mods if m[0] == 0 and lo <= m[1] < hi))
+```
+
+I attempted this and got `index out of range` -- **my call signature for `modules()` was wrong**,
+and I did not have the context left to read it. That is worth stating plainly rather than
+guessing: **the last thing this handoff should do is assert a size for step 2 it has not
+measured.** Round 61's bound (the tails are not writable *today*) is measured and stands; whether
+the fix is small or large is not.
+
+## Also worth measuring with it
+
+Whether a tail's records are in space `0`. The tails live in the **shared window**, where X, Y and
+P alias -- so a tail might appear in `mods` as an x or y record rather than a P one, in which case
+the `m[0] == 0` filter would exclude it even if the record exists. **That is the likely shape of
+the answer, and it is exactly why this has to be measured rather than reasoned about.**
