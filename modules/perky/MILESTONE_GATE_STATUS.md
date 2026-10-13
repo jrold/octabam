@@ -46,13 +46,13 @@ back byte-identical).
 | **Dark present and functional** | **NOT POSSIBLE — same** |
 | **Lo-Fi present and functional** | **NOT POSSIBLE — same** |
 | Plate / Compressor absent | true, and intentional |
-| Delay remains functional | not separately gated on this branch |
+| Delay remains functional | **NO APPLICABLE GATE EXISTS.** `tools/verify/verify_delay.py` is not this: it proves an alternate BusDelay DSP *module* is bit-identical to the shipping one, and this remix contains no BusDelay. The goal means the stock Octatrack DELAY, which is ColdFire-side and not touched by the P harvest at all -- see MILESTONE_CANDIDATE.md |
 | no Resonant in shipping path | PROVEN (0 references) |
 | complete P/X/Y ledger | PROVEN, and corrected this milestone (P was unclaimed and its capacity was stale) |
 | boot/upload/readback | PROVEN (boot gate) |
 | card wrapper roundtrip | PROVEN (the build produces both) |
 | MIDI updater roundtrip | PROVEN (same) |
-| no odd-address ColdFire store regression | not separately gated on this branch |
+| no odd-address ColdFire store regression | **GATE EXISTS BUT IS NOT RUNNABLE HERE.** `tools/verify/verify_perky_cf_odd_access.py` is the right gate and is not in the perky manifest's list; run directly it fails with 'missing generated dir', because it needs build artifacts this worktree does not produce. Wiring it in means finding what generates that directory, which is not a one-line change |
 | no provenance mismatch | PROVEN, and the ROOT CAUSE is now fixed — the manifest records `tree=clean|dirty` and states that the `*_sha256=` fields pin the artifact |
 
 ## The single missing piece
