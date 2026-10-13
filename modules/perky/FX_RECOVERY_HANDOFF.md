@@ -2972,3 +2972,56 @@ in *other* gates (r96, r112, r113).
 
 **If `out/mainos_bus.bin` is absent the gate SKIPs** rather than failing: a fresh checkout has no image
 to probe, and that is not a defect.
+
+---
+
+# THE BUILD EDIT'S SHAPE (round 142)
+
+Rounds 120-141 produced the plan. This records the **exact code shape** for the one place it goes, so
+the edit is mechanical.
+
+## Where the operation belongs
+
+**Not `all_fx_layout.py`** -- that module owns placement (`SAFE_*_SPANS`, `ProgramShard`,
+`place_program_shards_two_space`). **Not a new module.**
+
+**`tools/build/dsp_modmap.py` owns the record format** -- it has `w24`, `parse`, `modules`, and the
+`PAYLOADS = [("A", 0x400e2324, 0x136cb), ("B", 0x400f59ef, 0x12d05)]` constants. **The two write
+operations belong beside `parse`.**
+
+```python
+def repoint(blob: bytearray, old_addr: int, new_addr: int, order: str = "ac") -> None:
+    """Change one record's addr in place. The words do not move; the count does
+    not change. This is payload A's operation (r131)."""
+
+def append(blob: bytearray, space: int, addr: int, words: bytes,
+           order: str = "ac") -> bytes:
+    """Return `blob` with a record inserted before the terminator. The words go
+    inline. This is payload B's operation (r132)."""
+```
+
+**Both are already prototyped and self-tested** in `tools/perky/probe_tail_record.py`
+(`probe_payload()` is `repoint` plus a marker fill). **Lift the logic from there rather than writing
+it again** -- it has been exercised against the real image and gated since r140.
+
+## Why the edit is low-risk if done this way
+
+* **Additive.** `dsp_modmap` is imported at module scope by six gates; adding functions changes no
+  existing behaviour, and `make check` (81 gates, 333 assertions) is the check.
+* **No new placement code.** `place()` already spans records (r124); `emit()` already calls the placer
+  (r120).
+* **Both operations are probed.** A re-point (r131); B append (r132). Both round-trip through `parse`.
+* **Room is measured, not assumed.** B: 30,460 B available, 9,162 needed (r126). A: a contiguous
+  3,441-word reused run (r130).
+
+## The one thing to do first
+
+**Run the probe** (r139's tool, gated in r140):
+
+```
+python3 tools/perky/probe_tail_record.py --out out/mainos_probe_tail.bin
+# boot it with a project on the card, then:  dsp peek <core> P 0x33da3 8
+```
+
+**Marker present -> proceed with the edit. Stock bytes -> read the stock DSP boot routine first.**
+**This needs `OT_PROJECT`; nothing else in the plan does.**
