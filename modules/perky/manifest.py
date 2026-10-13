@@ -119,6 +119,9 @@ MODULE = Module(
         # the record table's write operations (dsp_modmap.repoint/append),
         # exercised on the real payloads. Writes nothing.
         Gate("tools/verify/verify_perky_record_write.py", remix_arg=False),
+        # the placement -> record-table step: append one record per
+        # moving shard and name the same ground. Writes nothing.
+        Gate("tools/verify/verify_perky_tail_remap.py", remix_arg=False),
         Gate("tools/verify/verify_perky_machine_module.py", remix_arg=False),
         Gate("tools/verify/verify_perky_preboot_reserve.py", remix_arg=False),
         Gate("tools/verify/verify_perky_abi_contract.py", remix_arg=False),

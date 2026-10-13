@@ -4098,3 +4098,60 @@ payloads**, and the function returns it keyed `A` and `B` without computing anyt
 **What remains is wiring this module into the build call and running `make check` -- not a design
 question.** The one thing still unmeasured is the hardware question: **whether the DSP boot routine
 honours a tail-address record**, which the probe (r139, gated r140) answers in one run.
+
+---
+
+# THE TAIL REMAP IS GATED (round 161)
+
+Round 160 wrote `tools/perky/perky_tail_remap.py`. **Round 161 made sure it cannot rot -- and made it
+check the three things it cannot see about itself.**
+
+```
+[PASS] all 15 appended extents fall inside one reusable run
+[ok] every packed record is a whole number of 3-byte words
+[ok] both payloads carry the identical remap (DSP-side addresses)
+[ok] P_WANT_EXTRA totals 2017 words, matching the appended words
+[PASS] the tail remap reproduces its own placement
+```
+
+**`make check REMIX=perky-machine`: 336 PASS, 8 SKIP, 0 FAIL.** Registered gates **82 -> 83**,
+assertions **334 -> 336**.
+
+## The three invariants the tool cannot state about itself
+
+**1. Packing.** Every appended byte count must be a multiple of three. **A wrong packing is SILENT: the
+record would carry misaligned words, the build would still pass, and the DSP would execute garbage.**
+`dsp_modmap.append` refuses a non-multiple, but only when it is called -- this catches it at the source.
+
+**2. Payload equality.** The two payloads must get the **identical** remap, because `dest` holds DSP-side
+addresses and `append` names no stock record. **If they ever differ, an address has leaked in from
+somewhere payload-dependent.** Round 160 argued this; the gate now enforces it.
+
+**3. The word total.** `P_WANT_EXTRA` must total exactly the appended words. **That is the property the
+build's `_have != sum(_want)` guard consumes** -- checking it here means a failure names this tool rather
+than surfacing as "the module map and stock.p_spans disagree" three steps later.
+
+## The bug this round found in its own first attempt
+
+**The gate ran the tool as a subprocess with `REMIX` set, then imported the emitter in the parent with
+`REMIX` unset** -- so the child printed PASS and the parent died with `no remix selected`. **A gate whose
+two halves disagree about their environment.** Fixed by setting it in the process, not just the child.
+
+## Three tools gated the moment they were written
+
+| round | tool | what it protects |
+|---|---|---|
+| r140 | `probe_tail_record.py` | the one command that answers the hardware question |
+| r144 | `dsp_modmap.repoint/append` | the record table's write operations |
+| **r161** | **`perky_tail_remap.py`** | **the placement -> record-table step** |
+
+**That is deliberate and it is the opposite of this session's recurring finding** -- the wrapper
+round-trip that existed and never ran (r96), the provenance check that would have passed while checking
+nothing (r112), the boot gate left out of the suite for thirty rounds (r113).
+
+## Where step 2 stands now
+
+**All three lines are built and two of them are in the build.** Line 1 (`P_WANT_EXTRA`) landed in r157.
+Lines 2 and 3 exist as a verified, gated module. **What remains is calling it from whichever script
+writes the payload, and one build.** The guard that proves the result is the build's own, and has been
+since long before this work started.
