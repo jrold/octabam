@@ -3678,3 +3678,59 @@ concluded.**
 plausible.** 212,992 "words" is absurd -- larger than any DSP region -- and that absurdity was the
 signal, sitting in my own output since r148, unread. **The check I should have run first: does the total
 reproduce a number the goal states? It did not; I did not look.**
+
+---
+
+# WHERE THE SPANS COME FROM, READ AT LAST (round 154)
+
+Round 153 corrected the format. **Round 154 read the declarations and their comments -- the place the
+semantics were stated all along.**
+
+```python
+LOW_Y_SPAN          = (0x07A5, 0x1000)
+FX_ARENA_SPAN       = (0x1000, 0xC000)
+STOCK_MAILBOX_SPAN  = (0x37F00, 0x37F10)
+
+# Half-open [lo, hi) ORDINARY-LOCAL-P ranges freed by the two effects this milestone is
+# approved to sacrifice. Unlike the shared tails these are not in the aliased window, so a
+# shard placed in one lives in a DIFFERENT ADDRESS SPACE from a shard in a tail. That is
+# fine -- the DSP executes from both -- but it must be recorded, because the two spaces
+# have different absolute bases and any emitter that treats them as one range is wrong.
+SAFE_LOCAL_P_SPANS = ((0x1000, 0x1252),   # PLATE REV (594 words) -- approved sacrifice
+                      (0x1AA4, 0x1B58))   # COMPRESSOR (180 words) -- approved sacrifice
+
+# Half-open [lo, hi) shared-memory ranges that may be considered for P code.
+SAFE_SHARED_P_SPANS = ((0x33DA3, 0x34000), (0x37DA3, 0x37F00), (0x37F10, 0x38000),
+                       (0x3BDA3, 0x3C000), (0x3FDA3, 0x40000))
+```
+
+## Three things the source states outright
+
+**1. The format is `[lo, hi)` -- half-open on the END.** The comment says so. **Six rounds of reading the
+second element as a length were six rounds of not reading the line above it.**
+
+**2. `SAFE_LOCAL_P_SPANS` IS Plate + Compressor**, with the words spent and the word "approved
+sacrifice" beside each. **The milestone's own decision is recorded in the data.**
+
+**3. The two spaces are DIFFERENT ADDRESS SPACES**, and the comment says an emitter that treats them as
+one range "is wrong". **The local range is ordinary local P; the shared ranges are the aliased window.
+`SAFE_LOCAL` and `SAFE_SHARED` are not interchangeable.**
+
+## And the shared ranges are NOT stock effect spans
+
+**They are "shared-memory ranges that may be considered for P code" -- free space in the aliased
+window.** Which confirms round 153's correction from the other direction: **they are not inside any
+harvested effect's span, so `region` does not cover them and `_want` does not count them.**
+
+**The mailbox is respected:** `STOCK_MAILBOX_SPAN` is `0x37F00..0x37F10`, and the shared runs stop at
+`0x37F00` and resume at `0x37F10`. **The boundary was chosen, not stumbled into.**
+
+## So round 153's conclusion holds, and is now sourced
+
+**Writing to `SAFE_SHARED` requires records no stock effect provides, so `append` is the only operation
+that reaches them -- and `append` grows `_have` while `_want` stays fixed, so the build would stop.**
+**The remaining work is in the harvest path: something must extend `_want`, or `region` must admit the
+shared runs another way.**
+
+**Next: read `harvested()`, `regions_of()` and `p_spans()` in `tools/remix/stock.py` -- the three
+functions that build what `_want` is made of -- before writing anything.**
