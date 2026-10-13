@@ -27,7 +27,7 @@ def build(assets,build_number,version):
     build_image(work,build_number,version)
 
 
-def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2),engine_description='003 SIMPLE DRUM (authentic v1.2.1); 011 NOISE/TONE (PERKY2 synthetic)',local_only=False):
+def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2),engine_description='003 SIMPLE DRUM (authentic v1.2.1); 011 NOISE/TONE (PERKY2 synthetic)',local_only=False,src_only=False):
     """Image phase after local qualification; useful when resuming a failed port gate."""
     import perky_fragmented_image as fragments
     seam=work/'fragmented-seam.asm'
@@ -35,11 +35,19 @@ def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2)
     control_source=work/'control.s'
     base.load_module('multi_control_gen',ROOT/'modules/perky/generate.py').write(control_source,source=control_input)
     mods=base.registry.modules();old=mods['PERKY PROBE']
-    full=base.perky_machine_module.build(old,control_source=base.repo_relative(control_source),dsp_source=base.repo_relative(seam))
+    full=base.perky_machine_module.build(old,control_source=base.repo_relative(control_source),dsp_source=base.repo_relative(seam),src_only=src_only)
     full=dataclasses.replace(full,dsp=dataclasses.replace(full.dsp,subst=substitutions))
     ranges=tuple(dataclasses.replace(r,length=6) if r.space=='x' and r.start==0x38ec else r for r in full.claims.dsp_ranges)
     ranges+=(DspRange('x',0x3964,17,'Simple Drum shared control-rate pitch cache'),)
     shared_shards=fragments.plan(work/'multi.asm','A')[1]
+    if src_only:
+        ranges+=(DspRange('x',0x3975,2,'Fold2 raw pitch table value and frequency-high temporary'),)
+        layout=json.loads((work/'layout.json').read_text())
+        if layout.get('source_clock'):
+            ranges+=(DspRange('x',0x3980,40,'native-rate PCM FIFO'),
+                     DspRange('x',0x39b0,17,'native-rate source clock state'))
+        shared_shards+=fragments.plan(work/'multi.asm','B')[1]
+        shared_shards=list({r['start']:r for r in shared_shards if r['start']>=0x30000}.values())
     ranges+=tuple(DspRange('x',r['start'],r['length'],'PERKY shared P/X/Y code: '+r['name'])
                   for r in shared_shards if r['start']>=0x30000)
     full=dataclasses.replace(full,claims=dataclasses.replace(full.claims,dsp_ranges=ranges))
@@ -63,19 +71,27 @@ def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2)
     capacities={tag:sum(hi-lo for lo,hi in memory_layout.local_p_spans(tag)+memory_layout.SAFE_SHARED_P_SPANS)
                 for tag in ('A','B')}
     _, table_layout = perky_image.load_tables(work)
+    shared_union={r['start']:r for tag in ('A','B') for r in shards[tag] if r['start']>=0x30000}
+    shared_used=sum(r['length'] for r in shared_union.values())
+    shared_capacity=sum(hi-lo for lo,hi in memory_layout.SAFE_SHARED_P_SPANS)
+    x_free=[[0x38f2,0x3900],[0x3977,0x3a68]] if src_only else [[0x38f2,0x3900],[0x3975,0x3a68]]
+    if table_layout.get('source_clock'):
+        x_free=[[0x38f2,0x3900],[0x3977,0x3980],[0x39a8,0x39b0],[0x39c1,0x3a68]]
     ledger={
         'cores':{tag:{'tracks':[5,6,7,8] if tag=='A' else [1,2,3,4],
                      'p_shards':shards[tag],
                      'ranges':[dataclasses.asdict(r) for r in ranges],
                      'p_capacity':capacities[tag],
                      'p_words':sum(r['length'] for r in shards[tag]),
-                     'p_free':capacities[tag]-sum(r['length'] for r in shards[tag]),
-                     'private_x_free':[[0x38f2,0x3900],[0x3975,0x3a68]],
+                     'p_free':sum(hi-lo for lo,hi in memory_layout.local_p_spans(tag))-sum(r['length'] for r in shards[tag] if r['start']<0x30000)+shared_capacity-shared_used,
+                     'private_x_free':x_free,
                      'private_y_free':[[0x07a5+table_layout['total_words'],0x1000]],
                      'stock_local_y_fx':[0x1000,0xc000],
                      'stock_shared_fx_buffers':[[a,a+0x3da3] for a in (0x30000,0x34000,0x38000,0x3c000)]}
                  for tag in ('A','B')},
         'table_layout':table_layout,
+        'physical_shared_p':{'capacity':shared_capacity,'words':shared_used,
+                             'free':shared_capacity-shared_used,'extents':list(shared_union.values())},
         'preserved_fx':['FILTER','SPATIALIZER','EQUALIZER','DJ EQ','PHASER',
                         'FLANGER','CHORUS','COMB FILTER','DELAY',
                         'SPRING REV','DARK REV','LO-FI'],
@@ -103,6 +119,8 @@ def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2)
         _src=ROOT/'out/platform'/_name
         if _src.is_file():
             shutil.copy2(_src,plat_stage/_name)
+    if src_only:
+        shutil.copy2(ROOT/'out/platform/runtime/runtime.elf',plat_stage/'runtime.elf')
     subprocess.run([sys.executable,str(ROOT/'tools/verify/verify_perky_machine_boot.py'),'--image',str(mainos),'--packed',str(work),'--platform',str(plat_stage),'--platform-work',str(work/'platform-loader'),'--normal-image',str(normal_path),'--p-records',str(work/'p-records.json')],cwd=ROOT,check=True)
     source_hashes={str(p.relative_to(ROOT)):base.sha256(p) for folder in
         ('modules/perky','tools/perky','tools/verify','tools/harness/perky_cf','tools/build','tools/emu/ot_emu')

@@ -13,13 +13,14 @@ No tracked manifest is mutated by this helper.
 from __future__ import annotations
 
 import dataclasses
+from pathlib import Path
 
 from remix.schema import Detour, Linked, Poke, Proof, SymbolRef
 
 H = bytes.fromhex
 
 
-def build(original, *, control_source: str, dsp_source: str):
+def build(original, *, control_source: str, dsp_source: str, src_only: bool = False):
     if original.key != "PERKY PROBE":
         raise ValueError(f"expected PERKY PROBE, got {original.key!r}")
     if original.dsp is None or original.dsp.asm != "modules/perky/probe_glue.asm":
@@ -103,6 +104,18 @@ def build(original, *, control_source: str, dsp_source: str):
              "machine chooser persists PERKY"),
     )
 
+    if src_only:
+        widget=Path(control_source).with_name('lfo-widget.s')
+        write_lfo_widget(widget)
+        linked+=(Linked("pkui",widget.as_posix(),dram=True),)
+        symbol_refs=tuple(r for r in symbol_refs if r.symbol in ("pk_render","pk_engine_right"))
+        symbol_refs+=(SymbolRef(0x400d38d8,0x4003bf64,"pkcontrol","pk_lfo_format",
+                               note="PERKY five-character PMTR names; stock tracks retain stock strings"),
+                      SymbolRef(0x400d3908,0x4004661c,"pkui","pk_lfo_widget",
+                               note="PERKY PMTR widget has room for DECAY and SRC"))
+        detours=tuple(d for d in detours if d.symbol not in
+                      ("pk_pool_title","pk_list_draw","pk_pool_open"))
+
     return dataclasses.replace(
         original,
         linked=linked,
@@ -117,3 +130,42 @@ def build(original, *, control_source: str, dsp_source: str):
             "five source controls, engine browser, packed DSP synth source."
         ),
     )
+
+
+def write_lfo_widget(path):
+    """Clone the user's stock widget with a larger, independently terminated name.
+
+    Keep every instruction length and internal branch unchanged. External
+    calls are absolute. No Elektron bytes are stored in the repository.
+    """
+    base,end=0x4004661c,0x400467a2
+    stock_path=Path('out/raw/section_3_MAIN_OS.bin').resolve()
+    stock=stock_path.read_bytes()
+    changes={0x4004661e:(0xffcc,0xffc8),
+             0x40046626:(0x38,0x3c),0x4004662a:(0x3c,0x40),
+             0x4004662e:(0x44,0x48),0x40046632:(0x48,0x4c),
+             0x40046636:(0x4c,0x50),0x4004663a:(0x50,0x54),
+             0x400466a4:(0x33,0x34),0x400466a8:(0x2e,0x2f),
+             0x400466b6:(0x2f,0x30),0x4004679e:(0x34,0x38)}
+    asm='''        .text
+        .global pk_lfo_widget
+pk_lfo_widget:
+        lea -16(%sp),%sp
+        movem.l %d0-%d1/%a0-%a1,(%sp)
+        jsr pk_selected_source
+        tst.l %d0
+        movem.l (%sp),%d0-%d1/%a0-%a1
+        lea 16(%sp),%sp
+        bne.s .lfo_five
+        jmp (0x4004661c).l
+.lfo_five:
+'''
+    cursor=base
+    for address,(before,after) in sorted(changes.items()):
+        off=address-0x40000400
+        assert int.from_bytes(stock[off:off+2],'big')==before,('stock LFO widget drift',hex(address))
+        if address>cursor:
+            asm+=f'        .incbin "{stock_path}", {cursor-0x40000400}, {address-cursor}\n'
+        asm+=f'        .word 0x{after:04x}\n';cursor=address+2
+    asm+=f'        .incbin "{stock_path}", {cursor-0x40000400}, {end-cursor}\n'
+    path.write_text(asm)

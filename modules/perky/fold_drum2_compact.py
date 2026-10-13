@@ -233,8 +233,12 @@ class FoldDrum2:
                 base + ((common_voice.words[common.PITCH_ENV_AMOUNT] * factor) >> 9)
             ) & 0xFFFFFFFF
 
-            # Copy envelope/control mutations back before oscillator helpers.
-            self.words[:34] = common_voice.words
+            # The oscillator views mutate self.words directly. Copy only the
+            # envelopes: copying the captured oscillator A here would reset
+            # its evolving phase/increment on every subsequent sample.
+            self.words[AMP_ENV:PITCH_ENV + common.ENV_WORDS] = (
+                common_voice.words[AMP_ENV:PITCH_ENV + common.ENV_WORDS]
+            )
             first, second = self._primary_views()
             common._set_oscillator_frequency(first, frequency)
 

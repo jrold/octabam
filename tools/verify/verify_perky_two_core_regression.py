@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""Replay the physical Fold1/T1 Dark/T5 regression on an owned project copy.
+
+The --legacy-page control is the immutable PERKY2V_light_2voice source order.
+Completion here is an emulator result, never physical qualification. P-locks
+exercise changing controls at non-block-aligned sequencer trigger offsets.
+"""
+import argparse, hashlib, json, os, re, struct, subprocess, sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path[:0] = [str(ROOT/'tools/hw'), str(ROOT/'tools/harness'), str(ROOT/'tools')]
+import ot_project as otp
+import blockdump as bd
+import recloop as rl
+from ab_fixture import prepare
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--image', type=Path, required=True)
+    ap.add_argument('--project', type=Path, default=os.environ.get('OT_PROJECT'))
+    ap.add_argument('--work', type=Path, required=True)
+    ap.add_argument('--legacy-page', action='store_true')
+    ap.add_argument('--frames', type=int, default=9000)
+    ap.add_argument('--quantum', type=int, default=64)
+    ap.add_argument('--t1-only', action='store_true')
+    ap.add_argument('--compare-t1-to',type=Path,
+                    help='require T1 post-chain PCM to match a same-image T1-only block dump')
+    args = ap.parse_args()
+    assert args.project and (args.project/'project.work').is_file(), 'real OT_PROJECT required'
+    args.work.mkdir(parents=True, exist_ok=True)
+    project = prepare(args.project, args.work/'project')
+    order = (1,0,3,4,5,2) if args.legacy_page else (0,1,2,3,4,5)
+    for bank in project.glob('bank*.work'):
+        def mutate(data):
+            for part in range(otp.NPARTS_ALL):
+                base = otp.PART_BASE + part*otp.PART_STRIDE + 9
+                for track in range(8):
+                    data[base+60+30*track:base+63+30*track] = bytes(3)
+                    data[base+track] = data[base+8+track] = 0
+                for track in ((0,) if args.t1_only else (0,4)):
+                    data[base+0x22+track] = 1
+                    data[base+60+30*track:base+63+30*track] = b'PK\x01'
+                    # Logical order TUNE DECAY ALGO PAR1 PAR2 MODE. ALGO 0
+                    # displays 1 (Fold1); MODE 0 displays 1 (no transient).
+                    for slot, value in zip(order, (64,96,0,64,64,0)):
+                        data[base+0x2a+30*track+6+slot] = value
+                    data[base+8+track] = 0x16 if track == 0 else 0  # Dark on T1
+            for track in range(8):
+                at = otp.trac_off(0,track)
+                data[at:at+64] = bytes(64)
+                data[at+0x59:at+0x59+64*32] = bytes([255])*(64*32)
+                if track not in ((0,) if args.t1_only else (0,4)): continue
+                for step in (0,2,5,6,10,13):
+                    data[at+7-step//8] |= 1 << (step%8)
+                    # Alternate locked and unlocked hits; all four continuous
+                    # controls and MODE change, while ALGO stays Fold1.
+                    if step%2:
+                        for logical,value in enumerate((52+step,64+step,0,24+step*3,32+step*4,step%3)):
+                            data[at+0x59+step*32+order[logical]] = value
+        otp._bank_write(project,int(bank.stem[4:]),mutate,guard=False)
+    otp.set_pattern_scale(project,1,0,16,'1X',guard=False)
+    card = args.work/'card.img'
+    subprocess.run([sys.executable,str(ROOT/'tools/emu/ot_emu/stage_card.py'),str(project),'OCTABAM','RIG','--tree',str(args.work/'tree'),'--out',str(card)],check=True,cwd=ROOT)
+    dump = args.work/'blocks.bin'
+    cmd = [str(ROOT/'out/emu/ot_emu'),'--image',str(args.image.resolve()),'--card',str(card.resolve()),'--set','OCTABAM','--project','RIG','--load-ms','90000','--sequencer','--internal-clock','--bank','0','--frames',str(args.frames),'--dsp','--dsp-dirty','123','--dsp-quantum',str(args.quantum),'--main-level','64','--block-dump',str(dump.resolve())]
+    logpath = args.work/'port.log'
+    with logpath.open('w') as log:
+        log.write(' '.join(cmd)+'\n'); log.flush()
+        subprocess.run(cmd,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,timeout=600,check=True)
+    log = logpath.read_text()
+    assert re.search(r'frames run\s*:\s*'+str(args.frames)+r'.*REACHED',log), 'frame deadline incomplete'
+    assert 'FAULT:' not in log and 'ILLEGAL' not in log
+    classes = bd.classes(bd.read(dump))
+    results = {}
+    for track in ((1,) if args.t1_only else (1,5)):
+        samples = rl.readback_audio(classes,track)
+        assert sum(abs(v)>100 for v in samples)>16, (track,'source silent')
+        results[str(track)] = dict(samples=len(samples),significant=sum(abs(v)>100 for v in samples),peak=max(map(abs,samples)),
+                                  pcm_sha256=hashlib.sha256(struct.pack(f'<{len(samples)}i',*samples)).hexdigest())
+    if args.compare_t1_to:
+        baseline=rl.readback_audio(bd.classes(bd.read(args.compare_t1_to)),1)
+        actual=rl.readback_audio(classes,1)
+        assert actual==baseline,('adding T5 changed T1 PCM',len(actual),len(baseline),
+                                 next(((i,a,b) for i,(a,b) in enumerate(zip(actual,baseline)) if a!=b),None))
+        print('[PASS] T1 post-chain PCM bit-identical with/without T5, including all p-locks and Dark')
+    report = dict(status='PASS: emulator completion/audio only; hardware regression unresolved',frames=args.frames,quantum=args.quantum,legacy_page=args.legacy_page,t1_only=args.t1_only,tracks=results)
+    (args.work/'result.json').write_text(json.dumps(report,indent=2)+'\n')
+    print('[PASS] Fold1 T1/Dark'+(' alone' if args.t1_only else ' + T5')+f': {args.frames} dirty frames, sequencer p-locks, quantum {args.quantum}; no physical qualification implied')
+
+
+if __name__ == '__main__': main()

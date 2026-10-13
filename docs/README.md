@@ -11,6 +11,7 @@ Where each doc is, by who reads it. A module's own page is
 | [guide/BUILDING.md](guide/BUILDING.md) | what to install (macOS, Linux/WSL2), the toolchain, your own OS 1.40C, building an image, flashing from the card or over MIDI, after the flash, recovery, back to stock |
 | [../remixes/README.md](../remixes/README.md) | the remixes you can flash, with where each has run |
 | [guide/REMIXER.md](guide/REMIXER.md) | composing your own remix: the `make remix` TUI, or a `remix.py` by hand |
+| [../modules/perky/PERKY3R_AUDIT.md](../modules/perky/PERKY3R_AUDIT.md) | PERKY2F hardware-regression investigation, three-engine repair candidate, local evidence and short T1/T5 hardware checklist |
 
 ## Writing a module or changing the build
 

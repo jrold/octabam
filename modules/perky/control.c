@@ -627,6 +627,7 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
 /* Engine-family browser. Slot 11 is the persisted browser-owned model byte;
  * slot 4 is the visible main-page three-way MODE parameter.
  */
+#if !defined(PK_SRC_ONLY) || !PK_SRC_ONLY
 static uint32_t engine_bank = 0;
 static unsigned engine_part = 0;
 static unsigned engine_track = 0;
@@ -786,3 +787,15 @@ void pk_engine_right(unsigned key, unsigned value)
 
     ((void (*)(unsigned, unsigned))0x4007909cu)(key, value);
 }
+#else
+/* Historical machine.s includes these symbols, but the SRC-only profile
+ * installs none of its browser detours. Keep the unused ABI without the
+ * retired selector, handlers or label assets. */
+unsigned pk_engine_draw(void) { return 0; }
+void pk_engine_open(void) { }
+void pk_engine_left(void) { }
+void pk_engine_right(unsigned key, unsigned value)
+{
+    ((void (*)(unsigned,unsigned))0x4007909cu)(key,value);
+}
+#endif

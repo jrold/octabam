@@ -7,6 +7,7 @@ sys.path[:0]=[str(ROOT/'tools'),str(ROOT/'tools/build'),str(ROOT/'tools/perky'),
 os.environ.setdefault('REMIX','perky-machine')
 import verify_perky_synth_port as port
 import perky_fragmented_image as F
+import perky_image as tables
 import ot_project as otp
 from remix import registry
 
@@ -14,11 +15,17 @@ def main():
     project=os.environ.get('OT_PROJECT')
     if not project:
         print('[SKIP] fragmented FX runtime: needs OT_PROJECT');return
-    work=ROOT/'out/perky/fragmented-fx';work.mkdir(parents=True,exist_ok=True)
-    build=ROOT/'out/perky/fragmented'
+    work=Path(os.environ.get('PERKY_FX_WORK',ROOT/'out/perky/fragmented-fx'));work.mkdir(parents=True,exist_ok=True)
+    build=Path(os.environ.get('PERKY_FRAGMENT_BUILD',ROOT/'out/perky/fragmented'))
     plans={tag:F.plan(build/'multi.asm',tag) for tag in ('A','B')}
+    y_words,y_layout=tables.load_tables(build)
+    shared=json.loads((build/'p-records.json').read_text())
+    expected={tag:{addr:words for addr,words in plans[tag][0]} for tag in ('A','B')}
+    for tag in ('A','B'):
+        expected[tag].update({addr:words for addr,words in shared[tag]})
     watch=next(r['start'] for r in plans['A'][1] if r['name']=='fold_drum_voice.asm')
-    peek=';'.join(f'{core}:P:{addr:x},{len(words)}' for tag,core in [('A',0),('B',1)] for addr,words in plans[tag][0])
+    peek=';'.join([f'{core}:P:{addr:x},{len(words)}' for tag,core in [('A',0),('B',1)] for addr,words in expected[tag].items()]
+                  +[f'{core}:Y:7a5,{len(y_words)}' for core in (0,1)])
     configs=[('FILTER','EQUALIZER','DJ EQ','PHASER'),('SPATIALIZER','FLANGER','CHORUS','COMB FILTER')]
     for index in range(4):
         fx1=configs[index%2]
@@ -46,6 +53,8 @@ def main():
         assert int(re.search(r'dsp pcwatch:.*last (\d+) arrival',log)[1])>0
         readback={(int(c),int(a,16)):[int(w,16) for w in words.split()] for c,a,words in re.findall(r'core (\d+) P:0x([0-9a-f]+): ([0-9a-f ]+)',log)}
         for tag,core in [('A',0),('B',1)]:
-            for addr,words in plans[tag][0]:assert readback[core,addr]==words,(index,tag,hex(addr))
-        print(f'[PASS] FX configuration {index}: 2600 dirty frames, shared code executed, every P shard survives all FX init/proc')
+            for addr,words in expected[tag].items():assert readback[core,addr]==words,(index,tag,hex(addr))
+        y_readback={int(core):[int(w,16) for w in words.split()] for core,words in re.findall(r'core (\d+) Y:0x0*7a5: ([0-9a-f ]+)',log)}
+        for core in (0,1):assert y_readback[core]==y_words,(index,core,'stock FX modified PERKY tables')
+        print(f'[PASS] FX configuration {index}: 2600 dirty frames, shared code executed, every physical P shard and all Y tables survive all FX init/proc')
 if __name__=='__main__':main()

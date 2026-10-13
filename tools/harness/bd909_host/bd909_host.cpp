@@ -44,6 +44,9 @@ const TWord SENTINEL = 0x03f000, PBLK = 0x000100, AUDIO = 0x000000, STATE = 0x00
 // Executed instructions, from the emulator's own counter: a hardware DO loop
 // runs to completion inside ONE execInterpreter() call (dsp_host's meter).
 bool cycleMeter = false;
+// Optional instruction trace for memory-fetch timing differentials. This is
+// observation only: the emulator's timing and renderer remain unchanged.
+std::ofstream fetchTrace;
 long call(DSP& dsp, TWord pc) {
     dsp.setPC(SENTINEL);
     dsp.jsr(pc);
@@ -54,6 +57,7 @@ long call(DSP& dsp, TWord pc) {
         if (dsp.getPC().toWord() == SENTINEL) return long(cycleMeter ? modeledCycles : dsp.getInstructionCounter() - i0);
         const auto before = dsp.getInstructionCounter();
         const auto opPC = dsp.getPC().toWord();
+        if (fetchTrace.is_open()) fetchTrace << std::hex << opPC << ' ' << std::dec << dsp.calcOpcodeCycles(opPC) << '\n';
         dsp.execInterpreter();
         if (cycleMeter) {
             modeledCycles += dsp.calcOpcodeCycles(opPC) * (dsp.getInstructionCounter() - before);
@@ -66,7 +70,7 @@ long call(DSP& dsp, TWord pc) {
 }
 
 int main(int argc, char** argv) {
-    std::string code, data, script, out, meterPath, statePath, inputPath;
+    std::string code, data, script, out, meterPath, statePath, inputPath, registerPath;
     TWord org = 0, entry = 0, init = 0; bool haveInit = false; int frames = 16; int stateWords = 64;
     // The dump/seed base for the state window. Stock callers used the fixed
     // STATE = 0x200, but a module may keep its voice block elsewhere (the
@@ -85,6 +89,8 @@ int main(int argc, char** argv) {
         else if (k == "-out") out = v;
         else if (k == "-meter") meterPath = v;
         else if (k == "-cycle-meter") cycleMeter = std::atoi(v.c_str()) != 0;
+        else if (k == "-fetch-trace") { fetchTrace.open(v); cycleMeter = true; }
+        else if (k == "-registers") registerPath = v;
         else if (k == "-frames") frames = std::atoi(v.c_str());
         else if (k == "-statebase") stateBase = TWord(std::strtoul(v.c_str(), nullptr, 16));
         else if (k == "-state-words") stateWords = std::atoi(v.c_str());
@@ -136,6 +142,7 @@ int main(int argc, char** argv) {
     std::ifstream sf(script); std::ofstream of(out, std::ios::binary);
     std::ofstream mf; if (!meterPath.empty()) mf.open(meterPath);
     std::ofstream stf; if (!statePath.empty()) stf.open(statePath);
+    std::ofstream rf; if (!registerPath.empty()) rf.open(registerPath);
     std::string line; long block = 0, maxN = 0, sum = 0;
     while (std::getline(sf, line)) {
         std::istringstream ls(line); int v[13];
@@ -154,6 +161,13 @@ int main(int argc, char** argv) {
             of.write(reinterpret_cast<char*>(&w), 4);
         }
         if (mf) mf << n << "\n";
+        if (rf) {
+            const auto& r = dsp.regs();
+            rf << std::hex << r.a.var << ' ' << r.b.var << ' ' << r.x.var << ' ' << r.y.var
+               << ' ' << r.sr.var << ' ' << r.omr.var << ' ' << r.la.var << ' ' << r.lc.var << ' ' << r.sp.var;
+            for (int k = 0; k < 8; ++k) rf << ' ' << r.r[k].var << ' ' << r.n[k].var << ' ' << r.m[k].var;
+            rf << '\n';
+        }
         if (stf) {
             for (int k = 0; k < stateWords; ++k) stf << std::hex << mem.get(MemArea_X, stateBase + k) << ' ';
             for (int k = 0; k < stateWords; ++k) stf << std::hex << mem.get(MemArea_Y, stateBase + k) << ' ';

@@ -327,5 +327,11 @@ def extra_state_init(layout: dict) -> list[tuple[int, list[int]]]:
         if words != 17:
             die(f"pitch_cache declares {words} words; decoder ABI requires 17")
         # Cache tag must not accidentally match a dirty first-block index.
-        return [(base, [tag] + [0] * 16)]
+        rows=[(base, [tag] + [0] * 16)]
+        clock=layout.get('source_clock')
+        if clock:
+            if clock.get('base_word')!=0x39b0 or clock.get('words')!=17:
+                die('source_clock initialization ABI drift')
+            rows.append((0x39b0,[0]*17))
+        return rows
     return []

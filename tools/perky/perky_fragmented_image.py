@@ -52,6 +52,12 @@ def plan(asm, tag):
 
 
 def seam_source(asm, output):
+    if '; PERKY3_CORE_OWNED' in Path(asm).read_text():
+        # Generic placement supplies the guarded source hook and reserves the
+        # approved donors. install() moves this hook to the private entry only
+        # after independently assembling every final shard.
+        Path(output).write_text('pk_probe_source:\n move a,x:>$20e\n rts\n')
+        return {}
     pieces, whole, dest, final, syms = E.emit(asm)
     seam = next(p for p in pieces if p[0] == 'synth_seam_glue.asm')
     assert dest[seam[0]] == 0x1000, 'builder seam origin changed'
@@ -72,13 +78,16 @@ def seam_source(asm, output):
 
 def install(image, asm):
     img = bytearray(image)
+    owned='; PERKY3_CORE_OWNED' in Path(asm).read_text()
     appended, ledgers = {}, {}
     for tag, (va, ln) in zip(('A', 'B'), (A.PAYLOAD_A, A.PAYLOAD_B)):
         recs, _ = A.records(img, va, ln)
         records, ledger, entry = plan(asm, tag)
         site = {'A': 0x39c, 'B': 0x1a2}[tag]
         hook = A.word_at(recs, 0, site)
-        assert [A.rd(img, hook+3*i) for i in range(2)] == [0x0bf080, entry]
+        hook_entry=L.local_p_spans(tag)[0][0] if owned else entry
+        assert [A.rd(img, hook+3*i) for i in range(2)] == [0x0bf080, hook_entry]
+        if owned:A.wr(img,hook+3,entry)
         # Replace only the original clear loop. The stock continuation,
         # including A's CLR B and B's mailbox staging, remains in place.
         end=0x4a if tag=='A' else 0x4b
@@ -105,5 +114,17 @@ def install(image, asm):
                                  (32+effect_id,B.PP[tag]['nul_p'])):
                 A.wr(img,B.PP[tag]['xtab']-A.BASE+3*index,target)
         ledgers[tag] = ledger
+    if owned:
+        # Both uploads install the SAME union of both cores' copies. Shared
+        # cold helper records must be identical; core-specific copies have
+        # distinct physical extents and can safely call their own private P.
+        union={}
+        for rows in appended.values():
+            for addr,words in rows:
+                if addr in union:assert union[addr]==words,('shared helper drift',hex(addr))
+                union[addr]=words
+        ordered=sorted(union.items())
+        for (a,w),(b,v) in zip(ordered,ordered[1:]):assert a+len(w)<=b,('cross-core shared P overlap',hex(a),hex(b))
+        appended={tag:ordered for tag in ('A','B')}
     assert appended['A']==appended['B'], 'shared memory cannot hold payload-specific code'
     return bytes(img), appended, ledgers

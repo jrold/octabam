@@ -102,6 +102,14 @@ def externals(slice_src: str, syms: dict) -> set[str]:
 
 def rewrite(slice_src: str, syms: dict, mapper) -> str:
     sh = slice_src
+    # Explicit branch PCs are supplied by the three-engine composer. Numeric
+    # Bcc operands are displacements in dsp_asm, not absolute addresses.
+    def branch(m):
+        site,op,label,tail=m.groups()
+        if label not in externals(slice_src,syms):return m.group(0)
+        disp=(mapper(syms[label])-mapper(syms[site]))&0xffffff
+        return f'{site}:\n        {op} >${disp:06x}{tail}'
+    sh=re.sub(r'(?m)^(p3site\d{5}):\n\s*(b\w+)\s+([A-Za-z_]\w*)([^\n]*)$',branch,sh)
     for t in sorted(externals(slice_src, syms), key=len, reverse=True):
         sh = re.sub(r"\b" + re.escape(t) + r"\b", "$%06x" % mapper(syms[t]), sh)
     return sh
@@ -112,6 +120,15 @@ def emit(multi_asm: pathlib.Path, tag="A"):
     src = load_source(multi_asm, tag)
     whole, syms = B.assemble_syms(src, MONOLITH_ORG, "mono")
     pieces = slice_pieces(src, len(whole), syms)
+
+    if '; PERKY3_CORE_OWNED' in src:
+        from perky_three_placement import place
+        dest=place(pieces,syms,tag,externals)
+        def final(addr):
+            for n,a,b,_,_ in pieces:
+                if a<=addr<b:return dest[n]+addr-a
+            return addr
+        return pieces,whole,dest,final,syms
 
     # Shared P is ONE backing memory for both cores. A shared shard must
     # never refer into payload-relative private P. Only the seam and shards
