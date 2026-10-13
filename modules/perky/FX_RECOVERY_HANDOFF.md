@@ -2745,3 +2745,59 @@ argues against one.**
 rests on two measured records rather than on the format's silence.** The test is unchanged and cheap:
 **insert a probe record at a tail address, read the words back with the probe recipe, and see whether
 they arrive.**
+
+---
+
+# THE STOCK OS DOES NOT CARRY THE WINDOW ADDRESSES (round 136)
+
+Round 135 narrowed the last question to "is there any per-address check at all". Round 136 asked a
+sharper one: **does the stock boot routine even know these addresses?**
+
+## Measured: it does not
+
+Searching the stock MAIN OS for the four preboot windows as big-endian constants:
+
+```
+0x40b00000  stock OS hits: 0
+0x40b40000  stock OS hits: 0
+0x40b80000  stock OS hits: 0
+0x40bc0000  stock OS hits: 0
+```
+
+**None of them is in the stock image.** So the routine that reads the depacked payload **cannot be
+reading from a hardcoded constant.**
+
+## What that means
+
+**The address must arrive as data** -- from a table, a pointer, or a register the loader sets. Which
+means **the stock routine is driven by what it is handed, not by what it expects.**
+
+**That is evidence about the last question, and it points the same way as round 135:** a routine that
+hardcodes nothing about *where* the payload is **is unlikely to be checking *where each record says to
+go*** -- the two are the same kind of assumption.
+
+**INFERRED, as rounds 127, 129 and 135 were.** The measurement is certain (zero hits); the conclusion
+drawn from it is not.
+
+## The caveat, stated because it matters
+
+**"Zero hits" is consistent with two things:** the constant genuinely absent, **or** it being computed
+(address = base + offset, with only the base in the image). **I have not distinguished them** -- doing
+so means finding the routine and reading it, which is the same remaining task as before.
+
+**What the search does establish is that the naive reading -- "stock knows 0x40b00000" -- is false.**
+Whatever tells the routine where to read, **it is not a literal in the stock OS.**
+
+## The picture, after five rounds on one question
+
+| round | what was measured | what it did to the question |
+|---|---|---|
+| 127 | `loader.S` has a payload-level table | the reader is not octabam's loader |
+| 133 | the blob lands in ColdFire DRAM | the reader is stock ColdFire code |
+| 134 | `MEMORY.md` names it | **the stock DSP boot routine** |
+| 135 | stock puts 2 records in the shared window | it writes there already |
+| 136 | **stock carries none of the window addresses** | **it does not hardcode where to read** |
+
+**Each round removed a way the routine could have refused a tail address, and none has produced one.**
+That is not proof -- **but it is five measurements pointing the same way, and the test that ends it is
+still one probe record.**
