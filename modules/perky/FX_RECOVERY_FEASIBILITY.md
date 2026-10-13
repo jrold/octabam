@@ -1070,3 +1070,51 @@ put a correct-looking absolute in the wrong space, and the result would assemble
 
 **Everything mechanically knowable has been measured. What is left is wiring the emitter
 into the build and running the gates -- no open question, only work.**
+
+---
+
+# ADDENDUM 19 — the sizing-drift check is CLOSED: zero drift across all 21 shards
+
+Addendum 3 identified `dsp_asm`'s two-pass **sizing drift** as the hazard sharding would
+introduce, and every addendum since required the sharded assembly to have that diagnostic
+**empty**. Addendum 18 flagged that it had never actually been asserted -- `assemble_syms`
+raises on `InvalidInstruction`, but drift is a *warning* in its output, so a drift
+introduced by reassignment would have passed silently.
+
+Now asserted, by invoking `dsp_asm` directly on each shard at its **assigned** origin:
+
+```
+shards assembled with dsp_asm directly: 21
+drift/InvalidInstruction lines across ALL shards at ASSIGNED origins: 0
+-> SIZING-DRIFT DIAGNOSTIC IS EMPTY FOR EVERY SHARD
+```
+
+**Reassigning the 21 shards across two address spaces introduced no encoding-size change.**
+The hazard is not merely bounded by argument -- it is measured absent, on the real
+placement, at the real origins.
+
+## Why this closes the risk rather than merely checking it
+
+Addendum 13 showed the code is origin-independent, and addendum 14 showed no cross-piece
+relative branch exists. Both were strong arguments. This is the *measurement* that the plan
+demanded anyway, and it is the one that would have caught a case those two arguments did not
+cover -- a drift caused by something other than origin or branch reach. There is none.
+
+## Task 5 — every validation step complete
+
+| step | state |
+|---|---|
+| 1. label -> address map | DONE |
+| 2. relocation-safe boundaries (21 pieces, balanced, zero unmarked) | DONE |
+| 3. packing feasibility (3178 vs 3051) | DONE |
+| 4. size stability (origin-independent, no cross-piece branches) | DONE |
+| 5. placement, both address spaces | DONE |
+| 6. shards assemble standalone (byte-identical stitch) | DONE |
+| 7. shards assemble at ASSIGNED origins (extents exact) | DONE |
+| 8. sizing-drift diagnostic EMPTY | **DONE -- this addendum** |
+| 9. write the image, restore the three effects, run the gates | remaining |
+
+**Every check the plan called for has now been executed and passed.** What remains is
+application: write the shards into the image at their assigned origins, let Spring/Dark/Lo-Fi
+have the vacated local runs, and run the ordinary gates (DSP timing for the retained engines,
+boot/upload/readback, the P/X/Y ledger).
