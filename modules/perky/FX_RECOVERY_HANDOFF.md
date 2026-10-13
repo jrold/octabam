@@ -4536,3 +4536,63 @@ either payload.
 constraint that sixteen rounds of placement analysis never touched.** The placement is correct, the
 correspondence is proven, the guard works. **What was never checked is whether the container can hold
 the new records, and it cannot.**
+
+---
+
+# THE UPLOAD GROWS, AND P CAN GO THROUGH IT (round 168)
+
+Round 167 found that the payload blob cannot grow in place -- A and B are adjacent, gap 0. **Round 168
+read `extend_upload` and found that this is not the constraint it looked like.**
+
+## What `extend_upload` actually does
+
+```python
+def extend_upload(img, tag, y_words, x_words=None, extra_x=None, extra_y=None):
+    """Return one payload upload with validated PERKY X/Y records inserted."""
+    records, term = ab_records.records(img, *c["payload"])
+    _check_y_free(records, len(y_words), tag)
+    ...
+    extra += ab_records.ot_record(2, Y_BASE, y_words)
+    for base, values, purpose in extra_y or []:
+        _check_space_free(records, 2, base, len(values), tag, purpose)
+        extra += ab_records.ot_record(2, base, values)
+    raw = bytes(img[p0:term]) + extra + bytes(img[term:p0 + c["payload"][1]])
+    return raw, term
+```
+
+**It inserts `extra` at the terminator `term`, keeps the rest, and returns the result as a REPLACEMENT
+UPLOAD.** `integrate` returns "preboot_payloads" -- **these grown blobs are what the pre-boot loader
+reads, not the bytes at the payload's fixed `va`.**
+
+**So the growth is real and it is allowed.** Round 167's finding -- that the payload region is adjacent to
+B and cannot extend -- **applies to writing at `va`. It does not apply to the upload, because `extend_upload`
+never writes back there.**
+
+## Three things this gives, all already built
+
+**1. The record builder.** `ab_records.ot_record(space, base, values)` -- **for P, `ot_record(0, addr, words)`.**
+The five-argument shape is right there: space 1 for X, space 2 for Y, **0 for P**.
+
+**2. The insertion point.** `term`, the record-table terminator -- **the same place `dsp_modmap.append`
+puts a record (r143).** Two implementations of one operation, and the guard `_check_space_free` proves
+neither collides with an existing record.
+
+**3. Proof the pattern works.** X and Y have shipped through this path. **P is the same operation into
+the same table.**
+
+## What that changes about the plan
+
+**`P_REMAP` / `P_WANT_EXTRA` and the `PERKY_P_SPANS` channel (r157-r165) were built for `build_bus` --
+and they work; the guard proved it twice, by refusing correctly.** But they were aimed at the wrong
+container. **The records belong in `extend_upload`, alongside the X and Y records it already inserts,
+and the blob it returns is what carries them.**
+
+**That also resolves the ordering question from r162-r163 without a channel: `extend_upload` runs from
+`repack_machine_loader` AFTER `build_bus`, and it is the last thing to touch the payloads.** No `runpy`
+boundary to cross, **because nothing needs to reach `build_bus` at all.**
+
+## The honest position
+
+**`P_REMAP`, `P_WANT_EXTRA`, `PERKY_P_SPANS`, `perky_tail_remap.py` and its gate are all correct work
+against the wrong target.** They are inert and gated, so they cost nothing; **they are simply not the
+path the records take.** The path is `extend_upload`, and it was there before this work started.
