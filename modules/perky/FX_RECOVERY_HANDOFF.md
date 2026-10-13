@@ -988,3 +988,62 @@ it.
 
 Spring, Dark and Lo-Fi remain absent. The goal stays active: this is an open question with two
 named tests, not a blocker, and I have not run either.
+
+---
+
+# MEASURED (round 68): the cheap test ran -- no stock code executes from the window
+
+Round 67 named the test and the missing input. Both are now done.
+
+```
+$ python3 tools/build/dsp_disasm_all.py
+payload A:  68 P modules,  6,817 instructions, 0 undecodable -> out/dsp/payload_A.asm
+payload B:  46 P modules,  6,251 instructions, 0 undecodable -> out/dsp/payload_B.asm
+```
+
+**The test:**
+
+```
+payload A:  highest P CODE base 0x01eca    (0x30000 and 0x38000 appear as OPERANDS only)
+payload B:  highest P CODE base 0x01c8a
+lines with a 0x3xxxx code label, both payloads: 0
+```
+
+**Stock code occupies only `0x00000..0x01eca` on A and `0x00000..0x01c8a` on B.** The window base
+appears in the disassembly **as an address being read or written** -- as data -- and never as a
+code location.
+
+## What this establishes, and what it does not
+
+* **Established:** there is **no precedent** for executing from the shared window. No stock module
+  places code there. If executability were a general property the stock image exercised, this is
+  where it would show, and it does not.
+* **Established:** the window *is* used, as data -- consistent with round 67's finding that the
+  build addresses it as Y space (`ybase=0x30000` / `0x38000`).
+* **NOT established:** that the window *cannot* execute. Absence of precedent is not absence of
+  capability, and on a 56300 the PC is not architecturally confined to P space in principle.
+
+**So the premise is neither confirmed nor refuted; it is now known to be unprecedented.** That is
+a materially better position than round 66's, where the test had not been run at all, and it means
+the remaining question is genuinely a hardware one.
+
+## The two tests, updated
+
+1. **Local precedent** -- RUN. Result: no stock code in the window (above).
+2. **Hardware** -- place a `jsr` target in a tail, flash, see whether the core fetches it. This is
+   now the *only* remaining test, and it is a hardware probe. AGENTS.md: a local *clean* is not
+   evidence about hardware, but a local *red* is a real defect -- so test 1 could only ever have
+   falsified the premise, and it did not.
+
+## Where the goal stands
+
+| | |
+|---|---|
+| tasks 0-4, 7, 8 | complete, each with evidence |
+| task 5 validation (program) | complete |
+| step 1 (emit shards) | built, 3 properties, gate-protected, 2 payloads |
+| step 2 (place shards) | write path is Y space; **executing there is unprecedented and unproven** |
+| step 3 (list three in `fx1`) | one edit; prediction measured and confirmed |
+| step 4 (gates) | 66 pass today |
+
+Spring, Dark and Lo-Fi remain absent. The goal stays active.
