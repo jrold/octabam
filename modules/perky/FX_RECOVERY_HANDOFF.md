@@ -1,6 +1,76 @@
 # FX recovery — handoff
 
-## STATUS AT A GLANCE (round 85)
+## STATUS AT A GLANCE (round 119) — READ THIS FIRST
+
+**Pick up at: STEP 2.** Everything else the goal names is done and gated. Step 2 -- integrate the
+already-proven sharding -- is the only substantial code left, plus the Spring/Dark/Lo-Fi placement it
+buys.
+
+### Delivered and gated
+
+| | |
+|---|---|
+| baseline frozen | tag `perky2v-hw-baseline` (annotated `0080b4e1` -> commit `fc438e03`), archived |
+| SRC page order | `TUNE / DECAY / ALGO / PAR1 / PAR2 / MODE`, counts 128/128/4/128/128/3 |
+| engines reference-qualified | Fold1, Fold2, Simple, Noise/Tone -- both cores, 32000 frames, dirty memory |
+| Noise/Tone authenticity | resolved against the ARM captures; the shipping path IS the authentic seam |
+| output gain | **measured at the seam**, trimmed -18.06 dB by exact left shift; all 5 item-4 numbers recorded |
+| P/X/Y ledger | **explicit and proven disjoint** -- P 5 spans/0 overlaps, X 3/0, Y 1/0 |
+| packaging round-trip | **PASSES** on a regenerated matched set (card decodes to the ELEK byte for byte) |
+| candidate record | all **15 item-8 fields** + all **5 item-4 numbers** in `~/Downloads/PERKY2V_milestone_manifest.txt` |
+| gates | **78 registered; `make check` = 332 PASS, 8 SKIP, 0 FAIL** |
+| flashable artifact | `~/Downloads/PERKY2V_milestone.{syx,bin}` -- `685e5105...` / `4ba4d72c...`, unchanged since r92 |
+
+### NOT delivered: Spring, Dark and Lo-Fi (goal items 6-8)
+
+**These three are what the rest of this file is about.** The mechanism to restore them is **proven
+end-to-end as an analysis** (r61-88): 21 relocatable pieces, byte-identical reassembly against the
+working monolith, zero sizing drift, a verified call graph, and a placement leaving their 2,667 words
+untouched -- **but not integrated.**
+
+**Step 2's hard part, precisely (r88):** the tails have no records in the image's P record table, so
+nothing can write them. **A shared-window address IS loadable** -- payload A carries two in-window
+records, so the format permits it and there is a template. **But payload B has none, and T1 lives
+there.** So the work is: add P records for the tails to **both** payloads, then the fit-and-place
+refactor, then call `place_program_shards_two_space()`.
+
+### What rounds 86-119 added
+
+* **Twelve gates** that existed and had never run, registered (64 -> **78**). The odd-address gate's
+  teeth were proven both ways.
+* **Three gates labelled "stale" in r81/96 -- that label was too broad.** r113 showed
+  `verify_perky_machine_boot` has stale *defaults* only; the canary invokes it with explicit paths and
+  **it needs no project fixture**. Registered, 76 -> 78.
+* **The version-field defect: diagnosed, fixed, patched, and the patch verified from pristine.** The
+  vendored tool wrote the ELEK version `ljust` where the OS reads it `rjust`; `ELEK_VERSION_OFF = 0x0D`
+  is the arithmetic that settles it. `make eft-repatch` now exists (the `dsp-repatch` analogue) and is
+  **proven inert** (bit-identical image, 332 PASS).
+* **A provenance gate** for the brief's "no mismatch between HEAD, manifest and artifact" -- written
+  with its teeth proven both ways after **three** ways it could have passed while checking nothing.
+* **A real defect found and fixed on the producer side:** `out/platform/{layout.json,runtime.raw}` are
+  **inputs** the canary reads and `make bus` rewrites, so an image and its platform files could silently
+  disagree. The canary now stages the files it read.
+
+### One external input, still
+
+**`OT_PROJECT`** -- a stock Octatrack project -- is required by the canary, the odd-address audit, the
+item-4 A/B and `build_cf_final.py`. **It cannot be synthesized here** (`tools/hw/ot_project.py` only
+reads/writes an existing project, and no Elektron byte may enter the repo).
+
+**The boot gate is NOT on that list** (r113) -- it stops at the RTOS handoff. **The wrapper round-trip
+is NOT either** -- it ran, and passes, on a regenerated matched set (r104).
+
+### Two things only hardware can answer
+
+1. **The ladder step that matches Perky** -- the loudness A/B in test step 9.
+2. **Does A change pitch and D change decay on T1?** -- validates the SRC reorder's PAR1/PAR2 remap.
+
+**Plus a third, cheap:** does the unit display `PERKY2V` correctly today? That settles the
+version-field question (r101-105) in one flash.
+
+---
+
+## STATUS AT A GLANCE (round 85) — superseded, kept for history
 
 **Delivered and gated — tasks 0, 1, 2, 3, 4, 7, 8 of the goal:**
 
