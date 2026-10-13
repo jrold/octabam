@@ -1165,3 +1165,56 @@ boot/upload/readback, and the P/X/Y ledger.
 
 **Everything the sharding had to prove has been proved.** Steps 9c and 9d are build
 integration and gate-running, with no open question about whether the approach works.
+
+---
+
+# ADDENDUM 21 — the integration seam, identified exactly
+
+Step 9c is "wire the sharded image into the build". Locating that seam precisely, so it is
+not re-derived:
+
+## How Perky's P gets placed today
+
+Two separate mechanisms, and only one of them is P:
+
+* **`Claims.dsp_ranges` covers X and Y only** -- `x 0x3800` (236), `x 0x38EC` (2),
+  `x 0x3900` (100), `y 0x07a5` (2139). **There is no P range in the claims at all.**
+* **P comes from the harvest.** `stock.harvested(listed)` is "effects on NEITHER chooser",
+  and `stock.regions_of(harvest)` groups them into contiguous runs. Today that is ONE run --
+  PLATE + SPRING + DARK + COMPRESSOR + LO-FI, 3441 words -- into which the 3051-word program
+  is placed as a single blob.
+
+So the shared tails are **not** part of the harvest mechanism; they are
+`all_fx_layout.SAFE_SHARED_P_SPANS`, a separate contract that nothing in the build consumes
+yet.
+
+## Therefore 9c is two changes, not one
+
+1. **Change the harvest to PLATE + COMPRESSOR only.** That frees SPRING (1063), DARK (1067)
+   and LO-FI (537) to keep their own code -- which is exactly what the brief asks -- and
+   leaves Perky the two local runs (594 + 180).
+2. **Place the 21 shards across those two runs *and* the five shared tails.** This is the
+   part with no existing machinery: `build_bus.py`'s placer handles the donor run, and
+   nothing currently places a module across multiple address spaces. `all_fx_layout.
+   place_program_shards_two_space` computes the assignment (addendum 19) but is not yet
+   called by the build.
+
+## Why a post-build patch would not be simpler
+
+The tempting shortcut -- build as today, then overwrite P with the sharded image -- does not
+work, because the harvest does more than decline to copy bytes: **it takes the three effects
+out of the FX choosers.** Restoring their code post-build would also require restoring their
+dispatch entries and chooser rows, i.e. undoing the harvest rather than avoiding it. Changing
+the harvest is the smaller and more honest change.
+
+## Where that leaves the goal
+
+| | |
+|---|---|
+| sharding mechanism | **proven end-to-end** (addenda 12-20) |
+| sharded P image | **built**; three effects' regions verified free |
+| 9c | **two identified changes**: narrow the harvest, call the two-space placer from the build |
+| 9d | gates on the result: DSP timing, boot/upload/readback, ledger |
+
+**No open question remains about whether the approach works.** What is left is two specific,
+located edits to the build plus the gate run.
