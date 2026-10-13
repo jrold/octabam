@@ -292,3 +292,49 @@ The canary's own lines are untouched and `card_sha256` still matches the artifac
 The addition is a clearly-marked comment block after them, and it also records the two stale
 fields from round 89 -- `git=` predating 90 commits, and the Noise/Tone "qualification pending"
 line that the ARM-capture work superseded.
+
+---
+
+# THE ITEM-8 RECORD IS COMPLETE (round 92)
+
+The brief's hardware-candidate record names **fifteen fields**. Eight were present; **four were
+absent entirely** and are now measured from the build rather than transcribed:
+
+```
+src_page_order        = A TUNE (128) / B DECAY (128) / C ALGO (4) / D PAR1 (128) / E PAR2 (128) / F MODE (3)
+algorithm_map_panel   = 1 FOLD DRUM 1 / 2 FOLD DRUM 2 / 3 SIMPLE DRUM / 4 NOISE/TONE
+algorithm_map_wire    = 0 FOLD DRUM 1 / 1 FOLD DRUM 2 / 2 SIMPLE DRUM / 3 NOISE/TONE
+output_gain_correction= minus 18.06 dB, an exact LEFT SHIFT of 5 (ALIGN_SHIFT 8, SEAM_SHIFT 5)
+p_ground_local        = 774 words in 2 runs (PLATE 594 + COMPRESSOR 180)
+p_ground_shared       = 2404 words in 5 runs
+p_capacity_total      = 3178 words
+perky_program         = 3051 words
+p_free_headroom       = 127 words
+xy_map_per_payload    = X:3800-38EB 236w, X:38EC-38ED 2w, X:3900-3963 100w, Y:07A5-0FFF 2139w
+```
+
+**Two of these say something the earlier manifest could not.** The gain correction records *how*
+the trim was applied (a pure left shift, so no rounding, truncation, DC bias, wraparound or
+clipping) and that the renderer was **not** altered. And the X/Y map records that **Y is exactly
+full — 2139 of 2139** — which is why the deferred Wavetable work cannot add Y residency.
+
+## A typo worth recording, because of how it failed
+
+I wrote the field name `srс_page_order` with a **Cyrillic 'с' (U+0441)** instead of Latin 'c'.
+The line looked correct in the terminal and **failed in a specific, misleading way**: it did not
+match `[a-z_]+=`, so the field read as **MISSING** while sitting in the file, and my first fix
+script's regex did not match it either.
+
+**Found by counting non-ASCII bytes (exactly 1) rather than by re-reading the line** — the same
+lesson as the last three corrections: the display is not the data.
+
+## The fifteen, verified
+
+```
+branch · commit SHA · provenance · MIDI path · MIDI SHA · card path · card SHA
+manifest · algorithm map · SRC order · retained FX · removed FX
+gain correction · P/X/Y map · free headroom            --- 0 missing ---
+```
+
+**No hash changed**: `card_sha256` still equals the artifact's sha256, verified after every edit.
+The additions are comment-marked blocks; the canary's own lines are untouched.
