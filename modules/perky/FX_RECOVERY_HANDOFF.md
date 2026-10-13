@@ -1813,3 +1813,55 @@ which is also why nothing can write them.
 **Item 2 is why the sharding plan is expensive**, and it is the honest answer to "why not just write
 the words there". **The mapping from code address to image address is a table, not a formula, and
 the tails are not in the table.**
+
+---
+
+# FEASIBILITY: THE TAILS CAN BE MADE LOADABLE -- WITH A TEMPLATE ON A AND NONE ON B (round 88)
+
+Round 87 established that the tails have no image records, so nothing can write them. **The
+decisive follow-up is whether a shared-window address is loadable AT ALL** -- because if the loader
+refuses the whole window, no amount of new structure helps.
+
+```
+payload A: 2 P records INSIDE the shared window
+  P:0x30000..0x300ab   (171 words)
+  P:0x38000..0x38013   ( 19 words)
+payload B: 0 P records inside the shared window
+```
+
+**A shared-window address IS loadable: payload A carries two such records.** So adding records for
+the tails is **structurally possible** -- the format permits it, and there is a working template to
+copy.
+
+## But the template exists on one payload only
+
+* **payload A** has the precedent (2 records in the window);
+* **payload B has none** -- and payload B serves tracks 1-4, **where T1 lives**;
+* and because the track-core mapping is inverted, **T1 (payload B) and T5 (payload A) need this
+  independently.** One payload having a template does not give the other one.
+
+## So step 2's hard part, precisely
+
+**Add P records for the tails to both payloads:**
+1. follow payload A's in-window records as the template;
+2. produce the equivalent on payload B, which has no precedent;
+3. keep the `_have != sum(...)` consistency check satisfied (it asserts the region covers exactly
+   the harvested spans);
+4. then the fit-and-place refactor and the placer call.
+
+**This is feasible and expensive. It is not blocked by the format** -- which is the answer worth
+having, and it took one measurement to distinguish "hard" from "impossible".
+
+## The lineage of this question, since it took ten rounds
+
+| round | claim | how it was settled |
+|---|---|---|
+| 61 | the tails are not writable ground (`region`) | reading `region`'s construction |
+| 63 | four of five tails have no record in any space | counting records against the spans |
+| 66 | `_p_off` hard-exits without a record | reading the only DSP->image mapper |
+| 68 | no stock code executes from the window | disassembling both payloads |
+| 87 | the mapping is piecewise, so no formula reaches a tail | 68 records, 68 distinct offsets |
+| **88** | **a window address IS loadable; A has the template, B does not** | **counting in-window records, per payload** |
+
+**Six measurements, each narrowing the same question, and the answer only became usable at the
+last one.**
