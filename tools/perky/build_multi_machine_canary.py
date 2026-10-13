@@ -104,7 +104,24 @@ def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2)
     card,midi,manifest=base.wrap_flashable(mainos,version)
     source_hashes={str(p.relative_to(ROOT)):base.sha256(p) for folder in ('modules/perky','tools/perky','tools/verify','tools/harness/perky_cf','tools/build','tools/emu/ot_emu') for p in (ROOT/folder).glob('*') if p.is_file() and p.suffix in ('.py','.c','.cpp','.h','.asm')}
     (work/'source-manifest.json').write_text(json.dumps(source_hashes,indent=2)+'\n')
-    manifest.write_text('PERKY MIXED MACHINE HARDWARE TEST\n'+f'version={version}\ngit={base.revision()}\nengines={engine_description}\n'+f'card_sha256={base.sha256(card)}\nmidi_sha256={base.sha256(midi)}\nmainos_sha256={base.sha256(mainos)}\ndsp_source_sha256={base.sha256(work/"multi.asm")}\ncontrol_assembly_sha256={base.sha256(control_source)}\n'+'voice_limit=one PERKY track per core, lowest selected wins\nfx=NONE for first hardware test\nstatus=locally qualified; new engines physical testing pending\n')
+    # git= names the last COMMIT and is blind to the working tree, so a build made
+    # from uncommitted sources and one made from the same commit report the SAME
+    # git= value while producing different bytes. That has already caused three
+    # provenance scares on this branch. Record the tree state beside it, and say
+    # which fields actually pin the artifact.
+    def _tree_state() -> str:
+        try:
+            r = subprocess.run(['git', 'status', '--porcelain'], cwd=ROOT,
+                               check=True, capture_output=True, text=True)
+        except Exception:
+            return 'unknown'
+        return 'clean' if not r.stdout.strip() else 'dirty'
+
+    manifest.write_text('PERKY MIXED MACHINE HARDWARE TEST\n'
+                        f'provenance=the *_sha256= lines PIN THIS ARTIFACT; git= names '
+                        f'the last commit and goes stale if anything is committed '
+                        f'afterwards, and cannot see uncommitted sources\n'
+                        f'tree={_tree_state()}\n'+f'version={version}\ngit={base.revision()}\nengines={engine_description}\n'+f'card_sha256={base.sha256(card)}\nmidi_sha256={base.sha256(midi)}\nmainos_sha256={base.sha256(mainos)}\ndsp_source_sha256={base.sha256(work/"multi.asm")}\ncontrol_assembly_sha256={base.sha256(control_source)}\n'+'voice_limit=one PERKY track per core, lowest selected wins\nfx=NONE for first hardware test\nstatus=locally qualified; new engines physical testing pending\n')
     print(f'READY: {card}\n{midi}\n{manifest}')
 
 def main():
