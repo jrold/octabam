@@ -1635,3 +1635,53 @@ produces every input, and nothing about its checks looks wrong -- only its two d
 I could not run the canary to produce `out/perky/multi/packed` and then re-run the gate. **So this
 is recorded as "stale, one directory from working, and required" -- not as fixed**, and not as a
 blocker either: the missing input is produced by a script in the tree.
+
+---
+
+# ONE MISSING INPUT GATES EVERYTHING REMAINING (round 82)
+
+Running the canary -- the script that produces **both the flashable artifact and the boot gate's
+input** -- stops at its first step:
+
+```
+$ python3 tools/perky/build_multi_machine_canary.py out/perky/simple-drum-assets
+build-perky-machine: OT_PROJECT is required for the shipping sequencer gate
+```
+
+**`OT_PROJECT` is a stock Octatrack project.** Chasing four separate blockages over rounds 73-82
+converged on the same artifact every time:
+
+| check | needs |
+|---|---|
+| the canary / shipping sequencer gate | `OT_PROJECT` |
+| `verify_perky_machine_boot` -- boot/upload/readback | `OT_PROJECT` |
+| the window-executability probe (Test A / Test B) | `OT_PROJECT` |
+| `build_cf_final.py` -- the odd-address gate | `OT_PROJECT` + `PERKONS_FIRMWARE` + `PERKYBITS_ROOT` |
+
+**This is the single most useful thing this work can tell you.** Four apparently independent
+blockers are one input:
+
+```
+OT_PROJECT=<a backed-up stock Octatrack project on this machine>
+```
+
+and for the CF family also `PERKONS_FIRMWARE` and `PERKYBITS_ROOT`, both of which you hold.
+
+## What becomes possible immediately when it lands
+
+1. **`build_multi_machine_canary.py` runs** -- so the artifact can be rebuilt from source and its
+   `packed/` directory appears;
+2. **`verify_perky_machine_boot` can be repointed and registered** -- closing a gate the brief lists
+   by name;
+3. **the canary's sequencer gate runs** -- an engine-level check currently unavailable;
+4. **the probe (Test A / Test B) becomes runnable** once step 2 places the shards.
+
+**None of that needs new code from me.** It needs the artifact.
+
+## A caution about the artifact I do have
+
+`~/Downloads/PERKY2V_milestone.{syx,bin}` exists and its hashes are stable -- **but the canary
+cannot currently reproduce it, because the same `OT_PROJECT` is missing.** So the artifact is a
+genuine, flashable, tested build; **it is not currently reproducible on this checkout.** Anyone
+relying on it should know that, and supplying the project would restore reproducibility as a
+side effect.
