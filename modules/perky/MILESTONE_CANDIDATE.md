@@ -253,3 +253,42 @@ coverage and produced a false "documentation gap".
 
 **Both were caught by reading the artefact rather than the count of it.** That is now seven
 self-corrections on this branch, and the remedy has not changed.
+
+---
+
+# THE MANIFEST NOW CARRIES THE EXACT FX LISTS (round 91)
+
+The brief's hardware-candidate record asks for the **exact retained FX list** and the **exact
+intentionally removed FX list**. The canary wrote only:
+
+```
+fx=NONE for first hardware test
+```
+
+**which is a test-procedure choice -- leave the FX slots empty on the first flash -- and NOT a
+statement about which effects the image carries.** Read as the latter it is actively misleading.
+
+Measured, and now recorded in the manifest:
+
+```
+retained (8, 2717 P words): FILTER 727 · EQUALIZER 282 · DJ EQ 345 · PHASER 207
+                            FLANGER 289 · CHORUS 329 · SPATIALIZER 261 · COMB FILTER 277
+removed  (5, 3441 P words): PLATE REV 594 · COMPRESSOR 180
+                            SPRING REV 1063 · DARK REV 1067 · LO-FI 537
+```
+
+## Two things that had to be said explicitly
+
+**DELAY appears in neither list** -- it is ColdFire-side, so it never appears in the DSP P spans and
+is retained by construction. The brief lists it under MUST KEEP, so the manifest now says so.
+
+**The removed list is not uniformly "approved".** PLATE and COMPRESSOR are the two sacrifices the
+brief permits. **SPRING, DARK and LO-FI are not** -- they are the milestone's remaining work. A flat
+"removed" list would have implied all five were sanctioned.
+
+## The appended block changes no hash
+
+The canary's own lines are untouched and `card_sha256` still matches the artifact byte for byte.
+The addition is a clearly-marked comment block after them, and it also records the two stale
+fields from round 89 -- `git=` predating 90 commits, and the Noise/Tone "qualification pending"
+line that the ARM-capture work superseded.
