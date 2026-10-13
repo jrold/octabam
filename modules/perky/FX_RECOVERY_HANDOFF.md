@@ -3120,3 +3120,60 @@ written.** That is deliberate and it is the opposite of what this session kept f
 the wrapper round-trip that existed and never ran (r96), the provenance check that would have passed
 while checking nothing (r112), the boot gate left out for thirty rounds (r113). **Step 2's own
 primitives will not be among them.**
+
+---
+
+# THE INTEGRATION POINT, FOUND (round 145)
+
+The primitives are in and gated (r143, r144). This is where they get called.
+
+## `build_bus.py:2210` -- how `region` is built
+
+```python
+_want = [_sp[k] for k in _harvest]
+region = sorted((m for m in mods if m[0] == 0
+                 and any(a <= m[1] < a + n for a, n in _want)),
+                key=lambda m: m[1])
+_have = sum(m[2] for m in region)
+if _have != sum(n for _a, n in _want):
+    sys.exit(f"payload {tag}: the harvested spans cover {sum(n for _a, n in _want)} words "
+             f"but their P records total {_have} -- the module map and stock.p_spans disagree")
+```
+
+**`region` is the set of stock records whose addresses fall inside the harvested effects' spans** --
+Plate, Spring, Dark, Compressor, Lo-Fi. **`place()` writes ONLY inside `region`** (r124), and
+`_p_off` refuses anything else. **So the tails are unreachable for exactly one reason: no entry of
+`region` covers them.**
+
+## The change, precisely
+
+**`mods` comes from `modules(bytes(img), va, ln)` at line 2119 -- it is read from the image.** Both
+`region` and `_p_off` are built from it.
+
+So the edit is:
+
+1. **after `mods` is computed and before `region`**, call `dsp_modmap.repoint(...)` on `img` to move
+   the records A will reuse onto tail addresses (payload A), and `append(...)` for B;
+2. **re-read `mods`** -- `modules(bytes(img), va, ln)` again -- so `region` sees the new addresses;
+3. **then the existing `_have != sum(...)` check becomes the gate**: it asserts `region` covers
+   *exactly* the harvested spans, so the re-pointed set must total the same word count. **A re-point
+   preserves count by construction (r131) -- so the check still holds, and if it does not, the build
+   stops.**
+
+**Nothing else changes.** `place()` already spans records; `_p_off` already resolves whatever `region`
+says; the `_have` check already validates the accounting.
+
+## Why this is the safe place to make it
+
+**The `_have != sum(...)` check is a self-verifying guard.** It compares the word count `region`
+covers against the count the harvest expects. A re-point that moved a record to a tail keeps the count
+identical; **anything that got the edit wrong -- a lost record, a wrong count, a mis-parsed header --
+makes `_have` disagree and the build stops with a named payload.** That is the cheapest possible
+failure mode for a change to the core build.
+
+## What is still not known
+
+**Whether the stock DSP boot routine honours a record at a tail address.** Five measurements say
+probably (r127, r133-r136); the probe settles it (r139, gated r140). **It needs `OT_PROJECT`.** The
+edit above is correct regardless of that answer -- **if the routine refuses, the edit is simply not
+enough, and the failure will be audible rather than silent.**
