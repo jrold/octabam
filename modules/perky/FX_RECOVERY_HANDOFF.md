@@ -1047,3 +1047,54 @@ the remaining question is genuinely a hardware one.
 | step 4 (gates) | 66 pass today |
 
 Spring, Dark and Lo-Fi remain absent. The goal stays active.
+
+---
+
+# CLOSED (round 69): the tail strategy rests on a heading's assertion
+
+`modules/perky/ALL_FX_MEMORY.md` -- the document the brief cites as the authority for the memory
+accounting -- says this:
+
+```
+## Shared-window executable tails
+
+The DSP shared window $30000..$3ffff aliases P/X/Y. Existing stock-effect census/guard work pins
+the highest stock FX2 write at base + $3da2. The words after that point are the only shared-window
+regions currently admitted as CANDIDATE Perky program storage. The stock mailbox $37f00..$37f0f
+is removed.
+```
+
+**The heading asserts "executable". The body says "candidate".** The section then points at
+`tools/verify/verify_perky_all_fx_placer.py`, which "proves the complete 2,404-word capacity can
+be used without crossing a hole or touching the mailbox" -- **a placement-capacity proof, which is
+a software property. It executes nothing.**
+
+## The complete, honest picture
+
+| claim | status |
+|---|---|
+| the tails are free of stock FX writes | **measured** (census: highest FX2 write at `base+$3da2`; tails start `base+$3da3`) |
+| the tails can HOLD 2,404 words of shards | **measured** (`verify_perky_all_fx_placer.py`) |
+| the tails are addressable by the build | **narrowed**: the window is known as Y space (`ybase`) |
+| a word can be WRITTEN there by the build | **not established** -- no records (r63), no `x_exclusive_runs` (r64), `_p_off` hard-exits (r66) |
+| the core can EXECUTE from there | **not established.** Asserted by a heading; the body says "candidate"; no stock precedent (r68) |
+
+**The plan's central assumption is the last row**, and it has never been measured -- not by the
+document that asserts it, not by the gate it cites, and not by anything in this work.
+
+## What the goal's own numbers imply about this
+
+The brief reasons: "Safe shared tails: 2404 ... If Plate + Compressor are retired: 2404 + 594 + 180
+= 3178. This is enough for the current 3054-word Perky program." **That arithmetic is correct and
+it is the reason the tail strategy exists. But the brief also says "Do NOT pretend this is one
+contiguous 2404-word region" -- it was careful about contiguity and did not test executability.**
+
+## What would settle it
+
+1. **A hardware probe**: place a `jsr` target in a tail, flash, see whether the core fetches it.
+2. **A document from the reverse-engineering work** that states the window is executable and says
+   how it was measured. `ALL_FX_MEMORY.md`'s heading is not that document; a heading is not a
+   measurement.
+
+**Until one of those exists, the honest status of the FX recovery is: the program is ready to be
+placed, the placement is computed, the ground is unproven.**
