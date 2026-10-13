@@ -1238,3 +1238,49 @@ is `--mem-dump` over the tail spans; interactively it is `dsp peek <core> P <add
    its own; the Perky gates use fixtures too).
 
 **Neither is a new investigation. The probe is now a recipe, not a research question.**
+
+---
+
+# TWO CORRECTIONS to the probe recipe (round 73), both by reading the precedent
+
+**Addendum 72 said `--mem-dump` runs Test A. That is wrong.**
+
+`verify_analog_bassdrum_ui.py` builds its spans like this:
+
+```python
+spans = '0x40170f60,6322=part.bin;0x400d5f4c,4=page.bin;0x400bb7d0,4=setup.bin;0x80000830,1=live.bin;...'
+```
+
+**Those are ColdFire addresses (`0x40…`, `0x80…`). `--mem-dump` reads COLDFIRE memory, not DSP P
+memory.** Test A -- "are the shard's words in the tail?" -- needs the **interactive**
+`dsp peek <core> P <addr> <len>` over the pipe (documented at `main.cpp:112-120`), not a batch flag.
+
+**And the precedent skips without a project fixture:**
+
+```python
+src = os.environ.get('OT_PROJECT')
+if not src:
+    print('[SKIP] Analog Bassdrum panel: set OT_PROJECT to a stock project fixture'); return
+```
+
+`verify_perky_probe_port.py` printed the same `[SKIP]` line during the round-59 `make check`, and
+**no fixture is present in this worktree.** So the probe has a third requirement beyond the two
+addendum 72 listed: *a stock project fixture*.
+
+## The requirement list, corrected
+
+| # | requirement | state |
+|---|---|---|
+| 1 | step 2: the shards actually placed | not done (write path + refactor located) |
+| 2 | a stock project fixture (`OT_PROJECT`) | **not present in the worktree** |
+| 3 | Test A via `dsp peek P` (interactive), not `--mem-dump` | mechanism corrected here |
+| 4 | Test B via `--dsp-pcwatch <shard entry>` | as addendum 72 said |
+
+## Why this is recorded rather than quietly fixed
+
+Addendum 72's recipe would have been followed exactly and produced **a dump of ColdFire memory that
+is silent about the tails** -- and the natural reading of that silence is "the words aren't there",
+which would have condemned the tail strategy on the strength of a measurement that never looked at
+it. **That is the same instrument-blindness this branch keeps finding** (`send_probe`'s harmonic
+metric, the reverb-smoothed XBUS measurement, the cached-alias write watch in AGENTS.md). The
+remedy is the same: name what the instrument reads before trusting what it does not say.
