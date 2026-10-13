@@ -4155,3 +4155,64 @@ nothing (r112), the boot gate left out of the suite for thirty rounds (r113).
 Lines 2 and 3 exist as a verified, gated module. **What remains is calling it from whichever script
 writes the payload, and one build.** The guard that proves the result is the build's own, and has been
 since long before this work started.
+
+---
+
+# THE CALL SITE IS FOUND, AND IT ALREADY APPENDS (round 162)
+
+Round 161 gated the remap. **Round 162 looked for where it must be called, and found the mechanism
+already exists -- for a different space.**
+
+## `tools/build/perky_image.py`
+
+```
+"""PERKY data injection into the two finalized OT DSP uploads.
+
+Generic build_bus.py has already placed PERKY's source hook/code in each DSP
+payload. This pass appends data records and returns replacement uploads for
+Octabam's established pre-boot loader:
+
+* X:0x3800 -- compact voice state / sideband initialization;
+* Y:0x07a5 -- exact packed Noise/Tone/Simple static tables;
+* optional profile-declared X/Y initializers generated under out/.
+"""
+
+def _check_space_free(records, space, base, words, ...)   # line 173
+def extend_upload(img, tag, y_words, ...)                 # line 193  <- appends records
+def integrate(img, table_dir)                             # line 233  <- entry point
+```
+
+**This pass already appends records to the finalized uploads** -- for X and Y -- **and it already has a
+free-space check.** `extend_upload` is the shape the P work needs.
+
+## Why that matters
+
+**The call site is not a new script.** `build_bus` places PERKY's code and writes the image;
+`perky_image.integrate()` then **appends records to that image** and returns the replacements the
+pre-boot loader reads. **P records are the same kind of append, into the same image, at the same stage.**
+
+**And the ordering is already right:** `integrate` runs *after* `build_bus` has finalized the payloads,
+**which is exactly when `P_REMAP` must take effect** -- `build_bus` applies it immediately before reading
+`mods` (r147), so it has to be set *before* that build, not after. **That is the one sequencing question
+to settle when wiring it, and it is a question about which call happens first, not about mechanism.**
+
+## What round 162 did not do
+
+**It did not make the edit.** Wiring P into `extend_upload` touches the file that produces the shipping
+image, and the sequencing question above has to be answered by reading `integrate`'s callers, not by
+assuming. **With limited context left, recording the site and the question is worth more than a guess
+that would surface as a silent misplacement.**
+
+## Where step 2 stands, precisely
+
+| piece | state |
+|---|---|
+| the two write operations | in `dsp_modmap`, gated (r143, r144) |
+| the build's acceptance of a remap | `P_REMAP` + `P_WANT_EXTRA`, inert by default (r147, r157) |
+| the placement | already correct; 16/16 in a reusable run (r148, r158) |
+| placement -> remap | `perky_tail_remap.py`, gated (r160, r161) |
+| **the call site** | **`perky_image.extend_upload` / `integrate` -- found, not yet wired** |
+| the proof it all agrees | the build's own `_have != sum(_want)` (r152) |
+| the hardware question | the probe, gated (r139, r140) |
+
+**One wiring edit and one build separate this from Spring, Dark and Lo-Fi.**
