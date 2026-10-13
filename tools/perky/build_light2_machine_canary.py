@@ -46,7 +46,8 @@ ENGINE_DESCRIPTION = (
     '000 FOLD DRUM 1 (authentic v1.2.1); '
     '003 FOLD DRUM 2 (authentic v1.2.1); '
     '002 SIMPLE DRUM (authentic v1.2.1); '
-    '010 NOISE/TONE (preserved PERKY2 synthetic)'
+    '010 NOISE/TONE (native/authentic bodies; composed source reference '
+    'qualification pending -- see modules/perky/NOISE_TONE_STATUS.md)'
 )
 
 
