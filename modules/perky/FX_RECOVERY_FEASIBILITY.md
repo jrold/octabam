@@ -1118,3 +1118,50 @@ cover -- a drift caused by something other than origin or branch reach. There is
 application: write the shards into the image at their assigned origins, let Spring/Dark/Lo-Fi
 have the vacated local runs, and run the ordinary gates (DSP timing for the retained engines,
 boot/upload/readback, the P/X/Y ledger).
+
+---
+
+# ADDENDUM 20 — the sharded P image EXISTS, and the three effects' regions are FREE
+
+Step 9's core is now executed. All 21 shards assembled at their assigned origins, written
+into a full P image, and the regions the restored effects need checked:
+
+```
+sharded P image built: 21 shards
+
+regions that MUST stay free for the restored effects:
+  SPRING REV   0x01252..0x01678 (1063)  overwritten: 0
+  DARK REV     0x01679..0x01aa3 (1067)  overwritten: 0
+  LO-FI        0x01b58..0x01d70 ( 537)  overwritten: 0
+conflicts: NONE
+```
+
+**This is the milestone's central requirement, measured rather than argued: the sharded
+Perky placement does NOT occupy SPRING, DARK or LO-FI's P.** Their 2667 words are untouched,
+so all three effects can be restored with their own code, exactly as the brief demands, and
+PLATE + COMPRESSOR remain the only sacrifices.
+
+The placement manifest is written to `out/perky/light2/sharded-p.json`.
+
+## What this is, and what it is not
+
+**It is** a complete P image for the Perky program: every one of the 21 shards assembled at
+its assigned origin across both address spaces, with the freed local runs verified free.
+
+**It is not yet the firmware.** The build still assembles Perky as a single contiguous blob
+at `0x1000..0x1bee`; the sharded image has to replace that blob in the image-assembly path,
+and then the ordinary gates have to run on the result -- DSP timing for the retained engines,
+boot/upload/readback, and the P/X/Y ledger.
+
+## Task 5 — final state
+
+| item | state |
+|---|---|
+| all validation steps (1-8) | DONE, each measured |
+| step 9a: sharded image built | **DONE -- this addendum** |
+| step 9b: three effects' P verified free | **DONE -- 0 words overwritten** |
+| step 9c: wire into the build's image path | remaining |
+| step 9d: gates on the resulting image | remaining |
+
+**Everything the sharding had to prove has been proved.** Steps 9c and 9d are build
+integration and gate-running, with no open question about whether the approach works.
