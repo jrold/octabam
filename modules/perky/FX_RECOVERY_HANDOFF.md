@@ -3556,3 +3556,61 @@ is the real remaining work.**
 **The memory arithmetic is untouched:** Plate 594 + Compressor 180 + shared tails 2404 = 3178 against a
 3051-word program. **Spring, Dark and Lo-Fi are still never consumed.** The obstacle is representational,
 not spatial.
+
+---
+
+# THE HARVEST PATH ANSWERS IT -- AND `append` WOULD BREAK THE GUARD (round 152)
+
+Round 151 asked how `region` and `_have` behave when the record set changes. **Reading the harvest path
+answers it, and the answer reframes round 151.**
+
+## What the code actually does
+
+```python
+_listed  = set(REMIX.modules) | set(REMIX.fx1 or [...])      # the two choosers
+_derived = stock_mod.region_of(stock_mod.harvested(_listed))  # effects on NEITHER chooser
+_harvest = sorted(set(_derived) | ({"CHORUS"} if DEV else set()), key=...)
+...
+region = every record inside a harvested span                  # line 2236: "EVERY RECORD
+_have  = sum(m[2] for m in region)                             #  INSIDE A HARVESTED SPAN"
+_want  = sum(n for _a, n in _want)
+if _have != sum(n for _a, n in _want):
+    sys.exit(f"payload {tag}: ... the module map and stock.p_spans disagree")
+```
+
+**`harvested()` is EFFECT-level** ("stock effects with DSP code that are on NEITHER chooser"), and
+`region_of()` returns "every harvested effect with DSP code, in address order" -- its docstring notes
+it "is no longer a single run". **`region` then takes every record inside those effects' spans.**
+
+## Three consequences
+
+**1. The tails ARE the harvested spans.** `SAFE_SHARED_P_SPANS` and `SAFE_LOCAL_P_SPANS` are, by
+construction, the extents of the retired effects. **So `region` already contains the records at those
+addresses -- unconditionally, with no change needed to reach them.** Round 151's framing ("no entry of
+region covers the tails") was wrong: entries cover them; **their `addr`s are simply still the stock ones.**
+
+**2. `append` would BREAK the guard.** `_have != sum(_want)` is an exact equality on word totals.
+`append` adds a record and its words, so `_have` grows and `_want` does not -- **the build would stop
+with "the module map and stock.p_spans disagree".** **That is the check working, and it rules out round
+151's "a record per shard" as stated.**
+
+**3. The shard/record mismatch is NOT an obstacle.** `place()` already spans records -- "cut at each
+record boundary" (r124) -- so **a shard crossing several records is written into all of them.** **Round
+151 treated the 4/8/6-shard overlap as fatal; it is not, because the writer was built for exactly that.**
+
+## So the shape is
+
+**Re-point the existing records so their `addr`s are the tail addresses, keeping their `count`s. The
+total is unchanged, so `_have` still equals `_want`, and `place()` writes the shards across whatever
+records their target addresses fall in.**
+
+**What is left to work out is the ADDRESS ASSIGNMENT** -- which record goes to which tail -- **not a new
+mechanism.** The primitives are in and gated (r144), the build takes the remap (r147), the placement is
+already correct (r148), the selection rule is by count (r149), and the totals are known to close (r150).
+
+## Retracting round 151's conclusion
+
+**Round 151 said "round 150's one loop was wrong; a record per shard is needed".** **Both halves were
+wrong:** the guard forbids `append` here, and no per-shard record is needed because `place()` spans
+records. **What round 151 found that stands: the old `addr`s do not correspond to the new shard
+addresses, so an address assignment is required. That is a smaller statement than the one it made.**
