@@ -4596,3 +4596,69 @@ boundary to cross, **because nothing needs to reach `build_bus` at all.**
 **`P_REMAP`, `P_WANT_EXTRA`, `PERKY_P_SPANS`, `perky_tail_remap.py` and its gate are all correct work
 against the wrong target.** They are inert and gated, so they cost nothing; **they are simply not the
 path the records take.** The path is `extend_upload`, and it was there before this work started.
+
+---
+
+# THE P PATH IS READY, WITH ONE COSMETIC FIX (round 169)
+
+Round 168 found the records belong in `extend_upload`. **Round 169 read the two functions that decide
+whether that is true, and it is.**
+
+## `ab_records.ot_record` is space-agnostic
+
+```python
+def ot_record(space, addr, words):
+    b = bytearray()
+    for v in (space, addr, len(words), *words):
+        b += bytes((v & 0xff, (v >> 8) & 0xff, (v >> 16) & 0xff))
+    return bytes(b)
+```
+
+**`ot_record(0, addr, words)` emits `space, addr, count, *words` as little-endian three-byte words --
+exactly the record format `dsp_modmap.parse` reads and `dsp_modmap._record_header(order="ac")` writes
+(r143).** Two implementations, one format, and the tests for each already exist.
+
+## `_check_space_free` takes the space as a parameter
+
+```python
+def _check_space_free(records, space, base, words, tag, what):
+    for rec_space, address, count, _off in records:
+        if rec_space == space and _overlap(base, words, address, count):
+            label = "X" if space == 1 else "Y"     # <-- the only space-specific line
+            die(f"payload {tag}: existing {label} record ... overlaps PERKY {what} ...")
+```
+
+**The overlap test is generic; only the message's label is not.** `_check_space_free(records, 0, addr,
+words, tag, "P code")` would work and would call a P record "Y".
+
+## So the work is two small edits, both in `extend_upload`
+
+```python
+# 1. the label, so a space-0 collision names P
+label = {0: "P", 1: "X", 2: "Y"}.get(space, "?")
+
+# 2. a p_records parameter, inserted like the X and Y records
+for addr, values in p_records or []:
+    _check_space_free(records, 0, addr, len(values), tag, "P code")
+    extra += ab_records.ot_record(0, addr, values)
+```
+
+**Inserted at `term`, after the X and Y records, before the terminator moves.** The blob that comes back
+carries all three spaces, and the pre-boot loader reads it.
+
+## And the remap already produces exactly this input
+
+**`perky_tail_remap.build()` returns `remap` as `(None, (addr, packed_bytes))` -- addr plus the words.**
+For `extend_upload` the shape needed is `(addr, [word, ...])`: **the same pair with the bytes unpacked
+back to words, or `build()` asked for words instead of bytes.** That is a one-line change to a gated,
+tested module -- **not new logic.**
+
+**`P_WANT_EXTRA` and the `PERKY_P_SPANS` channel are not needed on this path at all:** they extend
+`build_bus`'s `_want`, and `build_bus` is not where the records go.
+
+## Where this leaves the milestone
+
+**The placement is correct and proven. The record format is understood and has two written
+implementations. The insertion point exists and already carries two other spaces. The one thing that
+was missing -- a container that can grow -- is `extend_upload`, and it was there before this work
+began.**
