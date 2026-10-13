@@ -2443,3 +2443,60 @@ same unmeasured property round 127 named.** Both are testable locally with a pro
 **Round 126 said "room exists" without asking room for *which* payload.** It is room for B only.
 **The A side is solved by reallocation instead -- and that is a better answer than room, because it
 needs none.**
+
+---
+
+# PAYLOAD A'S RETIRED RECORDS ARE ONE CONTIGUOUS 3,441-WORD RUN (round 130)
+
+Round 129 argued A is short of *unallocated* space, not space. Round 130 measured its shape -- and the
+argument holds exactly.
+
+## The map
+
+```
+PLATE REV    0x01000..0x01251    594
+SPRING REV   0x01252..0x01678   1063
+DARK REV     0x01679..0x01aa3   1067
+COMPRESSOR   0x01aa4..0x01b57    180
+LO-FI        0x01b58..0x01d70    537
+             ----------------------
+             0x01000..0x01d70   3441 words -- CONTIGUOUS, no gaps
+```
+
+**One run, 3,441 words, from `0x01000` to `0x01d70`.** Every one of the five is retired by the
+milestone's own FX priorities (Plate and Compressor approved; Spring, Dark and Lo-Fi to be restored).
+
+## And it explains a number that had been sitting unexplained
+
+`all_fx_layout.SAFE_LOCAL_P_SPANS` is `((0x1000, 0x1252), (0x1AA4, 0x1B58))` -- **774 words, in two
+runs.** That is **Plate 594 + Compressor 180**, and nothing else:
+
+```
+0x01000..0x01251   594   PLATE      <- SAFE_LOCAL span 1
+0x01252..0x01678  1063   SPRING     <- NOT in SAFE_LOCAL
+0x01679..0x01aa3  1067   DARK       <- NOT in SAFE_LOCAL
+0x01aa4..0x01b57   180   COMPRESSOR <- SAFE_LOCAL span 2
+0x01b58..0x01d70   537   LO-FI      <- NOT in SAFE_LOCAL
+```
+
+**So `SAFE_LOCAL_P_SPANS` is precisely "the two sacrifices the brief permits"**, and the gap between
+its two spans is **Spring + Dark = 2,130 words** -- the ones that must come back. **The layout module
+has been encoding the brief's priority list in its constants all along**, and round 129's "A already
+holds 3,441 words of records whose code is being removed" is that list.
+
+## What it means for step 2, on the A side
+
+**The five records are contiguous, so reallocating them is a local operation.** To give A a record per
+tail: **change the `addr` and `count` of records already in the table, and lay the program's shards
+into the 3,441-word byte area those records already own.** No insertion, no shift, no growth, and the
+loader does not move.
+
+**3,051 words of program into 3,441 words of area -- 390 to spare**, which is consistent with the
+127-word total headroom the placer reports once A's and B's other spans are counted.
+
+## Still inferred, still testable
+
+**That a record's `addr` and `count` may be changed.** Both are plain words in a 9-byte header (r121),
+so nothing about the format forbids it -- **but "nothing forbids it" is not "the loader tolerates it"**,
+and that is the same unmeasured property round 127 named. **One probe record at an unusual address,
+read back, settles it.**
