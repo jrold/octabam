@@ -509,3 +509,50 @@ says they do not agree on a field a decoder reads.
 **This is one field, not the payload**, and the mismatch may be entirely in how the version string is
 padded by the staging path rather than in the firmware. **I have not yet determined which side is
 wrong** -- and I should not guess, because guessing here is how a version string becomes a bug.
+
+---
+
+# ROUND 97's MISMATCH, RESOLVED: the two artifacts are from different builds (round 98)
+
+Round 97 ran the card/MIDI roundtrip gate and it failed with:
+
+```
+PERKY wrapper round-trip: ELEK version field mismatch b'PERKY2V   ' != b'   PERKY2V'
+```
+
+**I said I would not guess which side was wrong. The answer is that neither is -- they are not the
+same build.**
+
+```
+~/Downloads/PERKY2V_milestone.bin   Oct 12 23:30   <- the staged, tested artifact
+~/Downloads/PERKY2V_milestone.syx   Oct 12 23:30
+out/mainos_perky_multi.bin          Oct 13 00:30   <- an hour LATER
+out/elek_PERKY2V.bin                Oct 13 00:39   <- an hour and nine minutes LATER
+```
+
+**The staged card and MIDI predate the ELEK and the MAIN OS in `out/` by over an hour.** The gate is
+correct to refuse them: it is comparing a card against a container that never produced it.
+
+## What this actually tells us -- and it is worth more than the mismatch
+
+**The ELEK container that produced the tested card was not preserved.** `out/` has since been
+overwritten by later builds, so:
+
+* the staged artifacts remain **exactly** what was tested -- their hashes are pinned and unchanged;
+* **but the intermediate that would let them be re-derived is gone**;
+* and the roundtrip gate -- which exists precisely to prove card and MIDI carry the same firmware --
+  **cannot be run against them without rebuilding both from source.**
+
+**That is the same reproducibility gap as `OT_PROJECT`, reached from a different direction:** the
+artifact is trustworthy, and the path that produced it is not currently walkable.
+
+## What would close it
+
+Either:
+
+1. **rebuild both from source** with `OT_PROJECT` supplied, which regenerates the ELEK, the card and
+   the MIDI together and lets the gate run for real; or
+2. **preserve the ELEK beside the artifacts** in future staging runs, so the roundtrip can be
+   re-checked without a full rebuild.
+
+**Option 2 is a one-line change to the staging step and would have made this a non-question.**
