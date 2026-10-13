@@ -538,3 +538,45 @@ the unbalanced marker · the over-cap `extras` block.
 two are the clearest: a splitter would have mis-closed a piece, and one piece would have
 been silently unsplittable -- both invisible to inspection, both obvious the moment the
 measurement ran.
+
+---
+
+# ADDENDUM 9 — the last unmarked block, located exactly
+
+Coverage is now all but complete. The remaining unmarked content is a **single block of
+~1687 characters (~69 words)** containing `pk_multi_noise_init:`, and it is pinned between
+two known pieces:
+
+```
+before: simple_drum_delta.asm   (the noise composer's tail, marked in addendum 8)
+after : fold_drum_voice.asm     (appended by build_fold_candidate.py)
+```
+
+So it is emitted by the noise/synth composer path, after the marked pieces and before
+`build_fold_candidate.py` reads the composed source and appends the engine bodies. It is
+**not defined at line-start in any `.py` or `.asm` in the tree**, so it is produced
+dynamically -- a further search of that path, not a further analysis of this one.
+
+## Why this is a clean stopping point rather than a loose end
+
+Everything step 2 needed is in place:
+
+* **19 pieces, markers balanced** -- a splitter can trust the delimiters;
+* **no piece exceeds the 605-word shard cap** -- every piece is a legal shard or a legal
+  starting point;
+* **~69 words unmarked of 3051** (2%), down from 1438 (47%) when step 2 began, and the
+  remainder is identified **by name and by its two flanking pieces** rather than as a
+  region to re-derive.
+
+The remaining block is small enough that it cannot hide a boundary problem of the kind
+that has mattered here -- but it still must be marked before a splitter runs, because
+**an unmarked region is one a splitter declines to touch, and a declined region is a
+region that silently stays in the monolithic image.**
+
+## Carried forward
+
+* `unmarked = 0` is the bar, and it is not met. The last block is located, not yet marked.
+* Coverage is measured by parsing source text, so it is exposed to the marker problems
+  already found twice. Every coverage figure in addenda 5-9 was taken from a rebuild whose
+  artifacts were **byte-identical** to the previous build -- which proves the markers did
+  not assemble, but says nothing about whether coverage is complete.
