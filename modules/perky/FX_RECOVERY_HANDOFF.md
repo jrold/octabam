@@ -4216,3 +4216,72 @@ that would surface as a silent misplacement.**
 | the hardware question | the probe, gated (r139, r140) |
 
 **One wiring edit and one build separate this from Spring, Dark and Lo-Fi.**
+
+---
+
+# THE WIRING CANNOT USE THE MODULE GLOBAL -- `runpy` (round 163)
+
+Round 162 found the call site and left one sequencing question. **Round 163 answered it, and the answer
+rules out the obvious wiring.**
+
+## What the callers do
+
+```python
+# tools/perky/build_multi_machine_canary.py:64
+runpy.run_path(str(ROOT/'tools/build/build_bus.py'), run_name='__main__')
+
+# tools/perky/repack_machine_loader.py:200
+pres, pokes, log, table_layout = perky_image.integrate(prefix, table_dir)
+```
+
+**`build_bus` writes the image; `perky_image.integrate` appends records afterwards.** So `P_REMAP` and
+`P_WANT_EXTRA` must be in place **before line 64 runs.**
+
+## Why `build_bus.P_REMAP = ...` would NOT work
+
+**`runpy.run_path(..., run_name='__main__')` executes the file in a NEW module namespace.** It is not the
+`build_bus` module an importer sees -- **it is a second, separate module object built from the same
+source.** Setting `P_REMAP` on the imported `build_bus` and then calling `runpy.run_path` **sets a value
+the run never reads**, and it would look exactly like a working wiring: no error, no warning, and the
+build would simply place nothing.
+
+**This is the same shape as this session's recurring failure** -- r147's missing module-level import,
+where `make check` was green because the code path never ran. **A wiring that cannot be observed to work
+is worse than no wiring.**
+
+## What the wiring must be instead
+
+**`build_bus` must read the remap from something `runpy` inherits** -- the process environment, or a file
+named by an environment variable. **The build already does exactly this for `REMIX`:**
+
+```python
+REMIX = remix_registry.remix(os.environ.get("REMIX"))
+```
+
+**So an environment or file channel is the established idiom in this file**, and it is the only channel
+that crosses the `runpy` boundary.
+
+## What that means for the plan
+
+**Line 1 (`P_WANT_EXTRA`) and line 2 (`P_REMAP`) as module globals are still the right shape INSIDE
+`build_bus`** -- they are how the loop reads them, and they are inert at `None`. **What changes is how the
+caller reaches them: not by assignment, but by a channel the second module object also consults.** The
+globals stay; a loader for them gets added beside `REMIX`.
+
+**And the guard still proves the result:** if the channel is not read, `P_WANT_EXTRA` is `None`, the
+shared runs are never added to `_want`, `region` never covers them, and the appended records are never
+made -- **so the image is simply the old one, and the FX are still missing.** That is a visible outcome,
+not a silent one: **Spring, Dark and Lo-Fi would still be absent from the build report.**
+
+## The state, unchanged except for this
+
+| piece | state |
+|---|---|
+| the two write operations | in `dsp_modmap`, gated (r143, r144) |
+| `P_REMAP` / `P_WANT_EXTRA` in the build | in, inert at `None` (r147, r157) |
+| the placement | already correct, 16/16 (r148, r158) |
+| placement -> remap | `perky_tail_remap.py`, gated (r160, r161) |
+| **how the caller reaches the build** | **must cross `runpy` -- env or file, not assignment (this round)** |
+| the call site | `perky_image.extend_upload` / `integrate`, not yet wired |
+| the proof | the build's own `_have != sum(_want)` (r152) |
+| the hardware question | the probe, gated (r139, r140) |
