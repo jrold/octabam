@@ -48,7 +48,60 @@ Reference provenance it is checked against: PĒRKONS v1.2.1 image
 `adcdbc4a2c660ffb6477f202211ae3cb70170bfe6ddfaecc3df0e4cb7db398c6`,
 PerkyBits `605cfd05d9dcdc0d0caa955297556a26ea257f82`.
 
-## THE GAP — and it is a real one
+## RETRACTION: the gap claimed below was NOT a gap
+
+**An earlier revision of this document said the composed shipping source was not
+tied to the reference by any gate, and that this was the milestone's open acceptance
+condition. That was WRONG, and the error is corrected here rather than deleted.**
+
+The gate exists: **`tools/verify/verify_perky_shipping_voice_exec.py`**, run and
+PASSING in this tree, together with its caller
+`tools/verify/verify_perky_synth_source_exec.py`. Its own docstring states the
+property exactly:
+
+> generates the ACTUAL shipping synth source, prepends the harness entry stub, and
+> runs the existing 36 x 16-sample exact PCM/state/RNG comparison over that generated
+> source. If this gate passes, the renderer text executed in the emulator is the same
+> renderer text the firmware builder later places in the donor region.
+
+and it is explicit that the naive alternative would NOT have been equivalent —
+"firmware does not ship that text" because the composer deduplicates the common u32
+helpers, lowers local conditional jumps to relative branches, and converts internal
+calls to explicit long JSRs.
+
+MEASURED, both exit 0:
+```
+PERKY X-state assembly ABI: PASS (62 persistent accesses within words 0..57;
+   32 decimal/hex annotations exact; cache key word 41=$29; scratch high-water $63)
+PERKY shipping X-state voice gate: OK (36 x 16-sample blocks; 58-word voice +
+   100-word shared scratch; full packed Y; 1668 P words; probe instructions/block
+   min 8713, mean 12575.8, max 22808)
+PERKY generated synth source: PASS (1623/3441 P words in full donor, FREE 1818;
+   SPRING-only 1063: not yet)
+```
+
+WHAT I GOT WRONG: I saw that
+`verify_perky_noise_tone_original_dsp_exec.py` builds `recipe.shared_source` and
+concluded, because no OTHER file called the composer in a gate, that nothing tied the
+composed text to the reference. I checked whether the authentic gate assembles the
+composed source and stopped there, instead of searching for a gate that already did.
+The lesson is the repository's own: a negative result needs the question "what would
+have proved this, and does it already exist under another name?"
+
+SO: **ALGO 3 IS REFERENCE-QUALIFIED AS SHIPPED.**
+  * shipping implementation identified: native/authentic bodies, SHA-pinned — MEASURED
+  * original recipe vs ARM captures — MEASURED (gate passes, with --firmware)
+  * SHIPPING COMPOSED SOURCE vs the voice oracle — MEASURED (this gate, 36 blocks,
+    exact PCM/state/RNG)
+
+Note the last line of the synth-source gate, which is directly relevant to the FX
+milestone: it already models restoring a single stock effect, reporting the
+full-donor program at 1623 P words with 1818 FREE, and "SPRING-only 1063: not yet".
+That is a Noise/Tone-only program, not the four-engine machine (3051 words), so it
+does not by itself settle the FX placement question -- but it is the existing
+machinery for asking it.
+
+## The gap I claimed (WRONG -- retained only to show what was checked)
 
 **That gate does not assemble the shipping composed source.** It builds
 `recipe.shared_source` / `recipe.wave2_source` from
@@ -90,6 +143,6 @@ margin, and it deserves a realtime gate of its own rather than being assumed saf
 
 * **shipping implementation identified:** native/authentic, SHA-pinned — MEASURED
 * **original recipe reference-qualified against ARM:** MEASURED (gate passes)
-* **shipping composed source reference-qualified:** **NOT DONE** — this is the gap
+* **shipping composed source reference-qualified:** **DONE** — see the retraction above
 * **realtime:** measured over the per-engine allowance; fits the frame; unproven
   against a dedicated gate
