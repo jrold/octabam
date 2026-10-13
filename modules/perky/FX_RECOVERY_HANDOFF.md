@@ -2599,3 +2599,53 @@ hardware.**
 `sp > 3` guard: **3 is not `> 3`.** That is a small inconsistency in the parser's comment, not in its
 behaviour -- **but a writer must put the new record BEFORE those 6 bytes, not after**, or the
 terminator ends up inside the table.
+
+---
+
+# THE REMAINING UNKNOWN, NARROWED TO STOCK COLDFIRE CODE (round 133)
+
+Rounds 127-132 left one thing unproven: **does the reader accept a record at an address no stock record
+covered?** Round 133 narrows *who* that reader is.
+
+## The loader stages into COLDFIRE DRAM
+
+`out/platform-perky-machine/layout.json`:
+
+```
+perky payload A dst    0x40b00000..0x40b150bd   (84.2 KB)
+perky payload A stage  0x40b80000..0x40b91279   (68.6 KB)
+perky payload B dst    0x40b40000..0x40b546f7   (81.7 KB)
+perky payload B stage  0x40bc0000..0x40bd0d12   (67.3 KB)
+```
+
+**`0x40Bxxxxx` is ColdFire DRAM, not DSP P/X/Y.** A's 84.2 KB `dst` comfortably holds its 79,563-byte
+blob.
+
+**So `loader.S` copies, depacks and hash-gates the payload INTO COLDFIRE, and stops.** That is what its
+`pretable` describes and all it does. **The payload does not reach DSP memory in that step.**
+
+## Therefore the reader is stock ColdFire code
+
+**Something in the stock OS takes the depacked blob from ColdFire DRAM and writes it into DSP P memory
+-- and that is what walks the record table.** It is the only remaining candidate:
+
+| candidate | verdict |
+|---|---|
+| `loader.S` | ✗ payload-level table only; stages into ColdFire (r127, r133) |
+| the DSP itself | ✗ the blob is in ColdFire DRAM at that point (r133) |
+| **the stock OS's DSP upload routine** | **✓ the only thing left** |
+
+## Why that is useful rather than just a restatement
+
+**It is a bounded search in stock code that is already in the image**, rather than an unknown about
+hardware. The upload routine must:
+
+* read records in the `w24(space) w24(addr) w24(count)` shape (r121, r125);
+* write `count` words to `addr` in DSP memory;
+* and stop at the terminator.
+
+**The question is only whether it validates `addr`** -- and if it does validate, the check is a
+comparison against some table or range that is itself readable.
+
+**The three probes (r131, r132) and this narrowing together mean the work left is: read one stock
+routine, or flash one probe record.** Everything else about step 2 is measured.
