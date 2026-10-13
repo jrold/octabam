@@ -1015,3 +1015,58 @@ Only this:
 measured rather than assumed, and the two failures along the way (the line-form rewrite,
 the over-cap `extras` block) were both found by running the step rather than by reasoning
 about it.
+
+---
+
+# ADDENDUM 18 — the emitter runs at the ASSIGNED origins: 21/21, extents exact
+
+Addendum 17 validated the operation at each shard's MONOLITH origin. The real emitter has
+to use the **assigned** origins, with cross-shard references rewritten to **final**
+addresses (the target shard's assigned origin plus its offset within that shard). Done:
+
+```
+shards assembled at their ASSIGNED origins: 21/21
+in LOCAL P : 3    in SHARED tails: 18
+extent mismatches: 0
+```
+
+Three shards land in local P -- the PLATE and COMPRESSOR runs -- and eighteen in the shared
+tails, exactly as the two-space placement computed. Every shard's assembled extent matches
+its measured extent, so nothing grew or shrank when it moved.
+
+## The address translation, stated because it is the one place an error would hide
+
+A cross-shard reference is rewritten from
+
+```
+monolith address of target  ->  assigned_origin(target's shard) + (monolith addr - target's shard start)
+```
+
+The two spaces have **different absolute bases** (local P around `0x1000`, the tails around
+`0x33da3`+), so a target in a local run and a target in a tail are handled by the same
+formula but resolve to very different values. Getting the shard-to-origin map wrong would
+put a correct-looking absolute in the wrong space, and the result would assemble cleanly.
+
+## What this does NOT yet cover, stated rather than implied
+
+* **The sizing-drift diagnostic was not separately asserted EMPTY.** `assemble_syms` raises
+  on `InvalidInstruction`, but drift is a *warning* in its output, so a drift introduced by
+  reassignment would not have raised here. This is the one check the plan has required
+  since addendum 3 and it has still not been made explicit. It must be before the image is
+  built -- drift that exists today is origin-invariant and harmless, drift introduced by
+  sharding would not be.
+* **The stitched image has not been built or gated.** The shards assemble individually at
+  the right origins; they have not yet been written into an image, nor has that image been
+  through the boot, timing or ledger gates.
+
+## Task 5, final position
+
+| step | state |
+|---|---|
+| 1-5 | DONE |
+| 6. shards assemble standalone | DONE (all 21, byte-identical stitch) |
+| 7. shards assemble at ASSIGNED origins | **DONE -- this addendum** |
+| 8. assert drift empty; build the image; gate it | remaining |
+
+**Everything mechanically knowable has been measured. What is left is wiring the emitter
+into the build and running the gates -- no open question, only work.**
