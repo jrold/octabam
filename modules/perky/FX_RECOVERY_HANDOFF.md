@@ -1098,3 +1098,45 @@ contiguous 2404-word region" -- it was careful about contiguity and did not test
 
 **Until one of those exists, the honest status of the FX recovery is: the program is ready to be
 placed, the placement is computed, the ground is unproven.**
+
+---
+
+# THE PROBE IS RUNNABLE LOCALLY (round 70) -- addendum 69 was too pessimistic
+
+Addendum 69 concluded the executability question "can only be settled by hardware". **That is half
+wrong: a local probe can FALSIFY it, and AGENTS.md says a local red is a real defect.**
+
+## The instrument
+
+* **`dsp_host` cannot do it.** `setup.sh:75` builds it at
+  `vendor/dsp56300/build/source/dsp_host/dsp_host`, and its options (`-inst -trace -mem -pokey
+  -peekx ...`) contain **no way to start execution at an arbitrary PC**. It runs the payload from
+  its dispatch entry, which is not where a tail shard would run.
+* **`ot_emu` can.** AGENTS.md documents `ot_emu --dsp-pcwatch`: it boots the real dispatcher under
+  the ColdFire port and can watch where the DSP fetches. **That is the right instrument**, because
+  the question is precisely "does program fetch ever reach the window".
+
+## The probe, concretely
+
+1. build an image whose Perky shards are placed in the tails (step 2 above -- the hard part);
+2. run it under `ot_emu --dsp-pcwatch`, with a project that selects Perky on T1 and T5;
+3. **look for any fetch with a PC in `0x30000..0x3ffff`.**
+
+**A red is decisive:** no fetch into the window while Perky is selected means the shards there never
+run, and the tail strategy is dead. **A green is suggestive, not proof** -- AGENTS.md is explicit
+that a lock-step local run is a fuzz of hardware timing, not the timing, so a local clean is not
+evidence that a hardware defect is absent.
+
+## Why this matters for the plan
+
+It means the blocking question is **not** "wait for a flash". It is "finish step 2 far enough to
+run the probe" -- **and step 2's remaining work is the write path plus the cursor accounting, both
+of which are now located.** The order is therefore:
+
+1. implement the tail write path (rounds 63-67) and the fit-and-place refactor (round 60);
+2. list SPRING/DARK/LO-FI in `fx1` (round 52's confirmed edit);
+3. **run `ot_emu --dsp-pcwatch` and look for a fetch into the window** -- falsifiable locally;
+4. only then the hardware flash.
+
+**The executability question is step 3, not a precondition for steps 1-2.** That inverts addendum
+69's framing, and it means the goal is not gated on hardware for the next stage of work.
