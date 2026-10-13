@@ -966,3 +966,52 @@ than producing the intended absolute.
 21 shards, assemble each at its assigned origin, stitch into the image, and run the ordinary
 gates. The `synth_seam_glue.asm` case is the hardest one -- it is the largest and it
 references nine external labels -- so the remaining shards are strictly easier.
+
+---
+
+# ADDENDUM 17 — THE EMITTER IS FULLY VALIDATED: 21/21 shards, stitch == monolith
+
+Addendum 16 proved the operation on the largest shard. Generalised to all of them:
+
+```
+shards assembled standalone: 21/21
+stitched words: 3051 of 3051
+STITCHED == MONOLITH: True
+```
+
+**Procedure, applied per shard:** take its source slice; find every label token on a
+non-comment line that the slice references but does not define; rewrite each to its
+absolute `$hex` value; assemble the slice alone at its origin; check the produced word
+count equals the shard's measured extent; write the words into place. Then compare the
+stitched whole against the monolithic assembly.
+
+**Every shard assembled standalone, every extent matched, and the stitched program is
+byte-identical to the monolith.** That is the emitter's entire substance, validated
+against the program that physically works.
+
+## Why the byte-identity check is the right one here
+
+It is the only check that cannot be satisfied by a plausible-looking wrong answer. A
+shard that resolved a reference to the wrong absolute, or dropped one, or assembled at the
+wrong origin, would produce a *different* word somewhere in the range -- and the
+comparison is over all 3051 words, not a sample. **This is the one place in this milestone
+where byte-identity means what it says**: it is comparing two independent assemblies of the
+same code, not proving that a comment-only edit left the bytes alone.
+
+## What genuinely remains
+
+Only this:
+
+1. **use the ASSIGNED origins** from the two-space placement (addendum 15) instead of each
+   shard's monolith origin. The substitution step is unchanged -- only the `org` argument
+   and the `$hex` values change, both of which are already computed;
+2. **write the shards into the image** at those origins, leaving the vacated local runs
+   (`0x1000..0x1252` for SPRING/DARK/LO-FI's return, and the tails) as computed;
+3. **run the ordinary gates**: `assemble_syms`'s sizing-drift diagnostic must be EMPTY for
+   each shard, plus DSP timing for the retained engines, boot/upload/readback, and the
+   P/X/Y ledger.
+
+**No unknown remains in the sharding.** Every property the plan needed has now been
+measured rather than assumed, and the two failures along the way (the line-form rewrite,
+the over-cap `extras` block) were both found by running the step rather than by reasoning
+about it.
