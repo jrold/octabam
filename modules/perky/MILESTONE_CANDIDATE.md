@@ -81,11 +81,18 @@ x_words 359   y_words 2139 / y_capacity 2139
 
 ## FX — retained and removed
 
-Retained, descriptors/code/dispatch untouched on both cores:
+Retained, descriptors/code/dispatch untouched on both cores — the eight stock DSP
+effects that remain in the local P region:
 
 ```
 CHORUS, COMB FILTER, DJ EQ, EQUALIZER, FILTER, FLANGER, PHASER, SPATIALIZER
 ```
+
+**DELAY is also retained**, and it is not in that list because it is not a DSP effect at
+all -- it lives on the ColdFire side and consumes no DSP P. It is therefore **not at risk
+from this harvest**, and the FX recovery cannot threaten it. Recorded separately here
+rather than omitted: deriving the retained list from the DSP P spans quietly dropped it,
+and DELAY is on the milestone's must-keep list.
 
 **Intentionally removed — and this is the milestone gap:**
 
