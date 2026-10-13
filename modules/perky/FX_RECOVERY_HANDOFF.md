@@ -3424,3 +3424,73 @@ which the bank also satisfies.**
 **Whether the stock DSP boot routine honours a tail-address record.** r135-r136 narrowed it to
 "probably"; the probe (r139, gated r140) settles it. **It needs `OT_PROJECT` and does not block the
 loop.**
+
+---
+
+# THE COMPLETE P PICTURE (round 150)
+
+Round 149 gave the rules. **Round 150 measured the retired records themselves -- and the whole plan is
+now explicit, with no gaps.**
+
+## The five donors are contiguous, and per-payload
+
+```
+payload A: 0x01000..0x01251  594  Plate
+           0x01252..0x01678 1063  Spring
+           0x01679..0x01aa3 1067  Dark
+           0x01aa4..0x01b57  180  Compressor
+           0x01b58..0x01d70  537  LoFi
+           ---------------------------------
+           total            3441        <- the goal's own "3441-word donor region"
+
+payload B: the same five, shifted by -0x240 (576 words)
+```
+
+**The five are one contiguous run `0x01000..0x01d70` in A -- and their total is exactly 3441, which is
+the number the goal quotes. That is the accounting closing on itself.**
+
+## Only TWO of the five are actually consumed
+
+```
+SAFE_LOCAL_P_SPANS (reused) : 0x01000..0x01251 (594, Plate) + 0x01aa4..0x01b57 (180, Compressor)
+shards placed there         : synth_seam_glue 0x01000
+                              simple_drum_envelope 0x01150
+                              simple_drum_delta 0x01aa4
+the other 13 shards         : the SAFE_SHARED runs at 0x33da3+
+```
+
+**Spring (1063), Dark (1067) and Lo-Fi (537) -- 2667 words -- are never addressed by the placement at
+all.**
+
+## Which is the goal, stated as arithmetic
+
+| | words |
+|---|---|
+| SAFE_SHARED tails | 2404 |
+| SAFE_LOCAL (Plate 594 + Compressor 180) | 774 |
+| **total reachable** | **3178** |
+| Perky program | 3051 |
+| **free** | **127** |
+
+**The goal's own numbers were 2404 + 594 + 180 = 3178 against 3054, leaving 124.** The program now
+measures **3051**, so the headroom is **127**. **Either way it fits, and Spring, Dark and Lo-Fi are
+not consumed.**
+
+## So the remap is exactly this
+
+```
+payload A: repoint  (0x01000 -> the local run address the shard at 0x01000 needs)
+                    (0x01aa4 -> the address simple_drum_delta needs)
+           and the 13 shared shards need records at 0x33da3+ -- appended, since no
+           stock record covers those addresses
+payload B: the same, with every source address shifted by -0x240
+```
+
+**Both operations are in `dsp_modmap` and gated (r144). `P_REMAP` is in the build and proven both ways
+(r147). The placement is already correct (r148). The selection rule is by word count (r149).**
+
+## What is left, and it is one loop
+
+**Join `dest` + `pieces` + the retired records into `P_REMAP`.** Every input is a measured number.
+**The one thing that is still unmeasured is the hardware question -- whether the stock DSP boot routine
+honours a tail-address record -- and the probe (r139, gated r140) answers it in one run.**
