@@ -48,23 +48,18 @@
 #define MODE_SLOT_FINAL 4u
 #define ALGO_SLOT 5u
 
-/* The shipping light engines, in ALGO order.
- *
- * Fold Drum 2 (id 3) is intentionally NOT in this first candidate: this
- * branch's light composer does not yet emit its dispatch, and the port gate's
- * engine list does not yet admit id 3. It is added as its own attributable
- * step once that work is brought across from the perky4-light reference.
- * Until then ALGO_COUNT is the pool size, so an ALGO outside the pool cannot
- * be selected -- which is the requirement, not a placeholder.
- */
+/* The shipping light engines, in ALGO order. Wavetable is deliberately absent:
+ * its asset bank needs a separate shared-memory project and is deferred. */
 #define ENGINE_FOLD1 0u
 #define ENGINE_SIMPLE 2u
+#define ENGINE_FOLD2 3u
 #define ENGINE_NOISETONE 10u
-#define ALGO_COUNT 3u
+#define ALGO_COUNT 4u
 
-/* ALGO value -> engine id. The only place the indirection lives. */
+/* ALGO value -> engine id. The only place the indirection lives: the engines do
+ * NOT occupy ids 0..3, so a direct p[11] = algo would select the wrong one. */
 static const uint8_t ALGO_ENGINE[ALGO_COUNT] = {
-    ENGINE_FOLD1, ENGINE_SIMPLE, ENGINE_NOISETONE
+    ENGINE_FOLD1, ENGINE_FOLD2, ENGINE_SIMPLE, ENGINE_NOISETONE
 };
 
 /* The one PERKY track on each core. Track numbering here is zero-based:
@@ -148,6 +143,16 @@ unsigned pk_admit_track(const volatile uint8_t *part, unsigned track)
     return track == PERKY_TRACK_LOW || track == PERKY_TRACK_HIGH;
 }
 
+/* Fold Drum 2 shares Fold Drum 1's authentic control law -- the reference's rate
+ * expressions are literally identical -- so it reuses pk_fold_prepare and is
+ * distinguished only by the engine byte. */
+static void pk_light2_fold2_prepare(PKSimpleControl *s, uint8_t *p,
+                                    unsigned trig)
+{
+    pk_fold_prepare(s, p, trig);
+    p[11] = ENGINE_FOLD2;
+}
+
 /* Full-resolution live-control transport for Noise/Tone, matching the
  * already-qualified Simple/Fold transport exactly at both endpoints:
  *     0..126 -> value << 5
@@ -229,6 +234,8 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
 
             if (p[11] == ENGINE_FOLD1)
                 pk_fold_prepare(&simple_controls[track], p, trig);
+            else if (p[11] == ENGINE_FOLD2)
+                pk_light2_fold2_prepare(&simple_controls[track], p, trig);
             else if (p[11] == ENGINE_SIMPLE)
                 pk_simple_prepare(&simple_controls[track], p, trig);
             else if (p[11] == ENGINE_NOISETONE)

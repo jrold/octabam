@@ -30,7 +30,13 @@ import recloop as rl  # noqa:E402
 from ab_fixture import prepare  # noqa:E402
 
 ENGINE = int(os.environ.get("PERKY_TEST_ENGINE", "10"))
-assert ENGINE in (0, 2, 10), "only qualified engine candidates can enter this gate"
+# 3 = Fold Drum 2. The guard exists so an engine cannot reach this gate before
+# it has a renderer, a seam route, an init and a browser/ALGO entry; Fold2
+# has all four (fold_drum2_voice.asm + fold_drum2_seam.asm + the composer's
+# pk_multi_fold2_init + ALGO_ENGINE), so admitting it here IS the
+# qualification step rather than a bypass of it. Wavetable is deliberately
+# NOT listed: it is deferred and has no bank.
+assert ENGINE in (0, 2, 3, 10), "only qualified engine candidates can enter this gate"
 OUT = ROOT / f"out/perky/synth-port-engine-{ENGINE}"
 TRACKS = (1, 5)
 BLOCKED_TRACKS = (2, 3, 4, 6, 7, 8)

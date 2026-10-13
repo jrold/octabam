@@ -10,6 +10,7 @@ Keeping this as its own module/remix gives us one falsifiable result before the
 Noise/Tone renderer and the full machine browser are allowed into the image.
 """
 from remix.schema import (
+    ArenaReserve,
     Category,
     Claims,
     DspHook,
@@ -44,6 +45,12 @@ MODULE = Module(
             note="isolated canary: replace FLEX renderer with PK/Y1 record writer",
         ),
     ),
+    # The PERKY arena: 242 pages reserved at the bottom of DRAM. This is not
+    # decoration -- repack_machine_loader.verify_reservation checks the
+    # built image for the reservation poke and refuses without it
+    # ("PERKY arena reservation missing at 0x4000045e"). The light build
+    # needs it exactly as the PERKY4 build did.
+    arena=ArenaReserve(pages=242, where="bottom"),
     claims=Claims(dsp_ranges=(
         DspRange("x", 0x3800, 236, "PERKY compact voice state + envelope caches + RNG"),
         DspRange("x", 0x38EC, 2, "PERKY source event-offset and admission staging"),

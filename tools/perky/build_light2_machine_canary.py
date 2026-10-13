@@ -39,12 +39,12 @@ ROOT = multi.ROOT
 
 CONTROL_SOURCE = ROOT / 'modules/perky/control_light2_candidate.c'
 
-# The shipping light engines for this first candidate, by their real engine ids.
-# Fold Drum 2 (id 3) joins as its own attributable step once the perky4-light
-# Fold2 dispatch is brought across and the port gate's engine list admits it.
-ENGINE_IDS = (0, 2, 10)
+# The shipping light engines, by their real engine ids. Wavetable is deferred.
+# ALGO order (see control_light2_candidate.c) is Fold1, Fold2, Simple, Noise/Tone.
+ENGINE_IDS = (0, 3, 2, 10)
 ENGINE_DESCRIPTION = (
     '000 FOLD DRUM 1 (authentic v1.2.1); '
+    '003 FOLD DRUM 2 (authentic v1.2.1); '
     '002 SIMPLE DRUM (authentic v1.2.1); '
     '010 NOISE/TONE (preserved PERKY2 synthetic)'
 )
