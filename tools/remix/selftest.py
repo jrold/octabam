@@ -900,6 +900,12 @@ def main():
             # contiguous run, and the report records each one's measured words.
             "perky-dsp-3algo": ("PLATE REV", "SPRING REV", "DARK REV",
                                 "COMPRESSOR", "LO-FI", "DJ EQ", "COMB FILTER"),
+            # perky-dsp-3algo-hwtest is the same machine profile as
+            # perky-dsp-3algo and therefore gives up the same seven effects. It
+            # was never listed here, so it fell back to the default three-reverb
+            # set and failed: the expectation lagged the remix, not the reverse.
+            "perky-dsp-3algo-hwtest": ("PLATE REV", "SPRING REV", "DARK REV",
+                                       "COMPRESSOR", "LO-FI", "DJ EQ", "COMB FILTER"),
              # perky-cf-final lists all fourteen stock effects (the target keeps
              # every stock FX), so it harvests nothing.
              "perky-cf-final": (),

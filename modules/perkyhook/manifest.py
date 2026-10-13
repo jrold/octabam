@@ -9,13 +9,19 @@ does the hook mechanism wedge the sequencer? -- and it must not be mistaken for
 a build of the instrument.
 """
 from remix.schema import (  # noqa: F401
-    BusRole, Claims, DspHook, DspSection, Kind, Module, YBase,
+    BusRole, Category, Claims, DspHook, DspSection, Kind, Module, Proof,
+    YBase,
 )
 
 MODULE = Module(
     name="perkyhook",
     key="PERKY HOOKDBG",
     kind=Kind.DSP_CLIENT,
+    category=Category.FIXES,
+    author="jrold",
+    author_url="https://github.com/jrold",
+    proof=Proof.CHECK,
+    proof_note="Source-hook debug insert; answers whether the hook mechanism wedges the sequencer. Not a build of the instrument.",
     doc=("Source-hook debug insert: replays the displaced stock instruction, "
          "applies the admission test, and returns to stock (rts, popping the "
          "seam's JSR return) when the event is not ours. Renders nothing."),
