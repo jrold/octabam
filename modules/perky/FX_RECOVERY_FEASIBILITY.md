@@ -172,3 +172,80 @@ applies to the DSP payloads.)
 brief's "2404 + 594 + 180 = 3178, 124 words headroom" step reads as though a single
 placement decision remains. It does not: the program must be split, and the splitter
 does not exist.**
+
+---
+
+# ADDENDUM 2 — RETRACTION and correction: sharding needs NO toolchain change
+
+**Addendum 1 concluded that `dsp_asm` "cannot assemble a shard that references
+another shard", and implied a linker would be needed. The first half is true of the
+assembler PROPER; the conclusion drawn from it was wrong. Corrected here.**
+
+Reading `dsp_asm.cpp` beyond the option list shows how labels actually work:
+
+```cpp
+// Pre-scan label names. The assembler's symbol table does not resolve these
+// in operands, so labels are substituted textually as $hex instead.
+for (auto& [n, text] : lines) {
+    const auto colon = text.find(':');
+    if (colon != std::string::npos && text.find(',') == std::string::npos)
+        labels[text.substr(0, colon)] = 0;
+}
+```
+
+**Labels are substituted TEXTUALLY, as `$hex` literals, before the encoder ever sees
+them.** The symbol table never resolves an operand; a label is just a name that a
+pre-pass rewrites into an absolute value.
+
+Two consequences:
+
+1. **A shard needs no external-symbol support, because it needs no symbols at all.**
+   If the source already contains `$1234`, nothing has to be resolved. The assembler
+   never knew the difference.
+
+2. **The composer is Python** (`build_noise_tone_synth_source.py::
+   generate(layout_path) -> str`), so the substitution can be done at source-emission
+   time, entirely outside the assembler.
+
+The same comment block records the one real constraint:
+
+```cpp
+// The assembler implements only the RELATIVE b-forms (bra/bsr/bcc); jmp and
+// jcc are not supported. So a branch operand is a DISPLACEMENT from the
+// instruction's own address, while everything else (do, immediates, memory
+// references) takes the label's absolute value.
+```
+
+**So a cross-shard transfer cannot be a `bra` b-form** — its operand is a displacement
+from the instruction's own address, and the short relative range does not cross a
+hole. Cross-shard transfers must be **absolute `jsr`/`jsrl`**, which is the form the
+composer already forces: `force_long_local_jsr()` converts every internal PERKY call
+into an explicit long JSR. **The required instruction form is already the shipped
+one.**
+
+## So the sharding plan is a Python project, not a toolchain project
+
+1. compose the program as today and assemble it once at a provisional origin, taking
+   the label -> address map from `-sym` (or from the pre-pass's own map);
+2. choose shard boundaries at relocation-safe points — module/piece boundaries, since
+   those are the units the composer already builds and the places where calls are
+   already explicit long JSRs;
+3. assign each shard a final origin;
+4. **re-emit each shard's source** with its cross-shard targets written as `$hex`
+   literals at their FINAL addresses, keeping intra-shard labels as labels;
+5. assemble each shard at its own origin, place with a placer extended to cover both
+   the shared tails and the two local runs;
+6. gate it: a cross-shard jump that lands in the wrong hole assembles perfectly and is
+   invisible to every existing check, so the sharded layout needs an execution gate.
+
+No `dsp_asm` change. No `dsp-repatch`. No `make emu-cf` rebuild of the vendored
+assembler — which matters, because AGENTS.md records that a stale `dsp_asm` silently
+emits wrong forms, and the binary is not the source.
+
+## The lesson, since this is the second time in three rounds
+
+Addendum 1 read the option list, found no `--extern`, and concluded a linker was
+needed. The answer was one comment block further down the same file. **Reading the
+interface is not reading the implementation** — and the repository says so itself:
+"disassemble what you assemble", "the binary is not the source". The equivalent here
+was "read how the name is resolved, not just which flags exist".
