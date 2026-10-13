@@ -249,3 +249,62 @@ needed. The answer was one comment block further down the same file. **Reading t
 interface is not reading the implementation** — and the repository says so itself:
 "disassemble what you assemble", "the binary is not the source". The equivalent here
 was "read how the name is resolved, not just which flags exist".
+
+---
+
+# ADDENDUM 3 — two obstacles found by trying to assemble the composed source
+
+Attempting the first step of the sharding plan (assemble the composed program once, to
+take the label -> address map) fails, and the failure is informative. MEASURED, by
+running `dsp_asm` directly on `out/perky/light2/multi.asm`:
+
+```
+src.asm:370: InvalidInstruction -- "jmp     @CONT@"
+src.asm:408: pass-1 sizing drift -- pass 1 placed this line at P:0x01182,
+             pass 2 at P:0x01181 (a label resolved to a size the dummy did not;
+             spell the operand as a number)
+```
+
+## 1. The source the builder assembles is not the source on disk
+
+`@CONT@` is still present (exactly one occurrence). The build substitutes it with the
+stock continuation address per payload -- the build log says
+`SUBST: PERKY PROBE payload A -- @CONT@ -> $000426` -- and only THEN assembles. So a
+shard emitter cannot work from `multi.asm` as written; it must reproduce the build's
+preprocessing, or run after it. Step 1 of the plan is therefore "assemble what the
+builder assembles", not "assemble the file".
+
+## 2. SIZING DRIFT IS THE REAL HAZARD FOR SHARDING, AND IT IS ALREADY VISIBLE
+
+`dsp_asm` is a **two-pass** assembler, and it reports when a label resolves to a size
+between passes such that the instruction grows or shrinks -- which moves EVERY address
+after it. Its own advice is blunt: *"spell the operand as a number."*
+
+This is precisely the failure mode sharding introduces deliberately. The plan says
+"re-emit each shard with cross-shard targets as `$hex` literals at their final
+addresses". If substituting a label with its absolute value changes the encoding size
+of any instruction -- a `jsr` that shortens, a displaced move that becomes one word
+where the label form was two, or the reverse -- then the shard's internal addresses all
+shift relative to the monolithic assembly, and **the shard no longer matches the code
+that was qualified.**
+
+So the shard emitter needs an invariant that this warning makes explicit:
+
+> for every cross-shard reference, the literal form must encode to the SAME SIZE as the
+> label form did in the monolithic assembly.
+
+That is checkable, and it must be checked per shard, not assumed. `force_long_local_jsr`
+is what makes it plausible: it already forces calls into an explicit long form, which is
+size-stable regardless of distance. But "plausible" is exactly what the two-pass warning
+exists to catch, and one drift site is already present at line 408 in the QUALIFIED
+build -- so drift is not hypothetical here.
+
+## Consequence for the plan
+
+Insert a step before splitting:
+
+0. reproduce the builder's preprocessing, then assemble and capture the label map AND
+   per-instruction encodings;
+1. choose shard boundaries at pieces where every outgoing reference is size-stable;
+2. assert, per shard, that every substituted literal encodes to the same size as the
+   label form did -- and fail loudly if not.
