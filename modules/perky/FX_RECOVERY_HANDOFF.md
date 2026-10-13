@@ -3177,3 +3177,52 @@ failure mode for a change to the core build.
 probably (r127, r133-r136); the probe settles it (r139, gated r140). **It needs `OT_PROJECT`.** The
 edit above is correct regardless of that answer -- **if the routine refuses, the edit is simply not
 enough, and the failure will be audible rather than silent.**
+
+---
+
+# CORRECTION: THE PLACEMENT IS NOT IN THE BUILD (round 146)
+
+Round 145 said the change belongs at `build_bus.py:2210`, where `region` is built. **Checking the
+dependency direction refutes that.**
+
+```
+tools/build/build_bus.py          imports perky_emit_shards?  NO
+                                  imports all_fx_layout?      NO
+                                  imports place_program_shards? NO
+
+tools/perky/perky_emit_shards.py:40   import build_bus as B
+```
+
+**`build_bus` is the LIBRARY. `perky_emit_shards` imports it, and the emitter is what holds the
+placement** (`emit()` calls `place_program_shards_two_space()` and returns `dest = {piece: start}` --
+r120).
+
+**So `region` at line 2210 knows only about the stock harvested records. It has no idea which shard
+should go where, because that knowledge lives one level UP, in the emitter.**
+
+## What that changes
+
+**Round 145's three-step edit cannot be made where it was described.** `build_bus` cannot move a
+record *to a tail a shard needs* without being told which tail -- and it does not know.
+
+**Two shapes are actually available, and the choice is a design decision, not a mechanical one:**
+
+| shape | how it works |
+|---|---|
+| **the emitter drives it** | `perky_emit_shards` already imports `build_bus` and holds `dest`. It can apply the record changes to the image **around** the build's write, or pass them in. |
+| **the build takes it as input** | `build_bus` gains an optional parameter -- "these records belong at these addresses" -- and applies it before building `region`. Inert when absent, so every existing caller is unaffected. |
+
+**The second is more in keeping with how `build_bus` is used** (a library with explicit inputs), and it
+keeps the `_have != sum(...)` guard as the gate, which was round 145's best observation and still
+holds.
+
+## The pattern, for the third time
+
+**Round 122 said the writer was `platform_build.build()`; round 123 read its docstring and retracted
+it.** Round 145 said the integration point was `build_bus.py:2210`; **round 146 checked the imports and
+retracted that too.** Both times the retraction came from reading one more file -- **and both times the
+first answer was the thing that merely *sounded* like the right place.**
+
+**What survives from round 145:** `region` is built from the harvested records, `place()` writes only
+inside `region`, and `_have != sum(...)` is a real self-verifying guard. **Those are measurements and
+they are unaffected.** Only the *location* of the edit was wrong.
