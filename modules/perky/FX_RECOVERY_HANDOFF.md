@@ -4044,3 +4044,57 @@ three-byte, as `dsp_modmap.parse` reads it.
 
 **Nothing is left to discover. What remains is that loop, written into the emitter's caller, and one
 build.**
+
+---
+
+# LINES 2 AND 3 ARE WRITTEN (round 160)
+
+**`tools/perky/perky_tail_remap.py`** turns the emitter's placement into the build's two inputs.
+
+## What it produces
+
+```
+emit(): 16 pieces, 2353 words; monolith org 0x1000
+staying put : 1 shard  -- synth_seam_glue 0x1000 336w
+appending   : 15 records, 2017 words
+
+  0x33da3 299w SHARED   0x37da3 194w SHARED   0x37e65 133w SHARED
+  0x37f10 130w SHARED   0x37f92 106w SHARED   0x3bda3  91w SHARED
+  0x3bdfe  89w SHARED   0x3be57  86w SHARED   0x3bead  80w SHARED
+  0x3befd  78w SHARED   0x33ece 237w SHARED   0x33fbb  54w SHARED
+  0x3bf4b  31w SHARED   0x01150 247w LOCAL    0x01aa4 162w LOCAL
+
+P_WANT_EXTRA total: 2017 words
+[PASS] all 15 appended extents fall inside one reusable run
+```
+
+**It matches round 158's arithmetic to the word:** 15 movers, 2017 words, 1608 in the shared runs
+(<= 2404), 409 in the local runs, and `synth_seam_glue` alone stays where it is because a record already
+covers `0x01000`.
+
+## A simplification the round found
+
+**`dest` holds DSP P addresses, which are payload-INDEPENDENT.** Only the stock *record* addresses differ
+between A and B (r149) -- **and `append` names none of them.** So the remap is **the same list for both
+payloads**, and the function returns it keyed `A` and `B` without computing anything twice. **Rounds
+157-158 assumed a per-payload difference was needed here; it is not.**
+
+## What it refuses
+
+* **A word count that disagrees with the piece's extent** (`len(words) != b - a`) -- so a bad slice is
+  caught, not written.
+* **Any appended extent not wholly inside a reusable run** -- the self-test fails by address and size
+  rather than letting the build discover it.
+
+## What is now in place
+
+| line | state |
+|---|---|
+| **1. `P_WANT_EXTRA` in the build** | landed, inert by default (r157) |
+| **2. `P_REMAP` gains one append per mover** | **built and verified (this round)** |
+| **3. the caller sets both from `dest` + `pieces`** | **built and verified (this round)** |
+| the guard that proves 2 and 3 agree | the build's own `_have != sum(_want)` (r152) |
+
+**What remains is wiring this module into the build call and running `make check` -- not a design
+question.** The one thing still unmeasured is the hardware question: **whether the DSP boot routine
+honours a tail-address record**, which the probe (r139, gated r140) answers in one run.
