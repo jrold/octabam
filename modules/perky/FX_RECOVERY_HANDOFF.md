@@ -1591,3 +1591,47 @@ for c in candidates:
 **Two guards, both earned here:** the corrected regex (round 79 -- the naive one missed the wrapped
 form and produced duplicate registrations), and the run-before-register rule (this round -- which is
 what separated the twelve from the three).
+
+---
+
+# A FOURTH STALE GATE, AND THIS ONE IS REQUIRED (round 81)
+
+`verify_perky_machine_boot.py` guards **boot/upload/readback** -- a gate the brief lists by name.
+It cannot run, and the reason is stale defaults rather than a defect:
+
+```
+--image      out/mainos_perky_machine.bin        but the canary writes out/mainos_perky_multi.bin
+--packed     out/perky/machine-canary/packed     MISSING
+```
+
+Measured on this tree:
+
+| input | state |
+|---|---|
+| `out/mainos_perky_multi.bin` | **present** (1,257,586 bytes -- the canary's output) |
+| `out/platform/layout.json` | present |
+| `out/platform/runtime.raw` | present |
+| `out/platform-perky-machine` | present |
+| `out/perky/machine-canary/packed` | **missing** |
+
+**So the gate is one directory away from running, and that directory is what the canary produces.**
+The likely history is a rename -- `machine-canary` to `multi`, and `mainos_perky_machine` to
+`mainos_perky_multi` -- that updated the canary and not the gate.
+
+## The four stale gates, together
+
+| gate | why it fails | revival |
+|---|---|---|
+| `verify_perky_synth_build_path` | expects a 272-word donor; the build has 3441 | update the expectation, or retire it |
+| `verify_perky_image_legacy_identity` | imports `remix.runtime_build`, removed | retire, or port to the new API |
+| `verify_perky_machine_boot` | **stale paths**; inputs mostly present | **point it at the canary's output -- then register it** |
+| `verify_perky_machine_boot`'s `--packed` | directory absent | produced by running the canary |
+
+**`machine_boot` is the one worth reviving**: boot/upload/readback is a required gate, the canary
+produces every input, and nothing about its checks looks wrong -- only its two defaults.
+
+## What this round did not reach
+
+I could not run the canary to produce `out/perky/multi/packed` and then re-run the gate. **So this
+is recorded as "stale, one directory from working, and required" -- not as fixed**, and not as a
+blocker either: the missing input is produced by a script in the tree.
