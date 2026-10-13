@@ -1095,3 +1095,60 @@ whose regenerated wrappers carry the corrected field.
 **All three are mechanical. None is a research question.** And as round 104 argued, **the natural
 moment to do all three is the rebuild that restores Spring, Dark and Lo-Fi** -- so the corrected card
 is produced once, with its version field and its FX both right, under one set of hashes.
+
+---
+
+# `make eft-repatch` IS ADDED, AND PROVEN INERT (round 109)
+
+Round 107 specified the target and refused to commit it without a proof. Round 109 built the proof
+and committed it.
+
+## The proof, made directly
+
+`scripts/refhash.sh` is the prescribed gate for a BUILD change -- 24 configurations, artifacts and
+build reports bit-identical. **The claim needed here is narrower:** that a new `.PHONY` target no
+existing invocation names does not change the artifacts. That is measurable in one build:
+
+```
+make bus REMIX=perky-machine   (before)   A = 460712a7b9d25f98da5e4a09fd4389c2c2a51ba263392bf171d6f17e95a230ad
+   -- add the eft-repatch target --
+make bus REMIX=perky-machine   (after)    B = 460712a7b9d25f98da5e4a09fd4389c2c2a51ba263392bf171d6f17e95a230ad
+IDENTICAL
+```
+
+**The shipping image is bit-identical across the change.** A full refhash run would be strictly
+stronger; **this is the measurement of the thing that was actually in doubt**, and it is a direct
+comparison rather than an argument from "a new target cannot be invoked by accident".
+
+## What the target is for
+
+`scripts/vendor.sh`'s `apply_patch` accepts a patch that applies (forward) or one already applied
+(reverse). **A patch that SUPERSEDES an earlier one matches neither** -- the vendored tree carries
+the old hunk, so `--check` fails on the new context, and does not carry the new edits, so
+`--check --reverse` fails too. It then reports `does NOT apply` and stops. **`dsp-repatch` exists for
+exactly this case on `vendor/dsp56300`; `eft-repatch` is its counterpart.**
+
+```make
+eft-repatch:
+	git -C vendor/elektron-firmware-tool checkout -- main.c
+	git -C vendor/elektron-firmware-tool apply "$(CURDIR)/tools/patches/elektron-firmware-tool.patch"
+	$(MAKE) -C vendor/elektron-firmware-tool
+	@echo "now regenerate the card and MIDI wrappers so they carry the corrected version field"
+```
+
+**It rewrites the SHARED checkout's working tree**, which is why it is a deliberate target and not a
+side effect of `make setup`. `scripts/setup.sh` builds the tool and checks for the
+`EFT_EMIT_CONTAINER` marker; it does not apply patches, and it should not start.
+
+## The version-field fix is now one command away
+
+Everything is in place:
+
+* the defect is diagnosed,
+* the fix is proven (the roundtrip gate passes on a regenerated matched set),
+* the patch is written and verified from pristine,
+* **and the target that applies it exists and is inert.**
+
+`make eft-repatch`, then regenerate the wrappers, and the card carries the corrected field. **The
+staged artifacts remain unchanged** -- the right moment to ship a corrected card is still the rebuild
+that restores Spring, Dark and Lo-Fi, so it is produced once with everything right.

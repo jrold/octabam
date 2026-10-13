@@ -415,6 +415,19 @@ dsp-repatch: ## Re-apply tools/patches/dsp56300.patch to vendor/dsp56300 (revert
 	@$(MAKE) --no-print-directory check-asm
 	@echo "now rebuild the port against it: make emu-cf"
 
+# scripts/vendor.sh's apply_patch accepts a patch that applies, or one already applied. A patch that
+# SUPERSEDES an earlier one matches neither: the vendored tree already carries the old hunk, so
+# --check fails on the new context, and it does not yet carry the new edits, so --check --reverse
+# fails too. It then reports "does NOT apply" and stops. dsp-repatch exists for exactly that case on
+# vendor/dsp56300; this is its counterpart. It rewrites the SHARED checkout's working tree, so run it
+# deliberately, never as a side effect of a build.
+.PHONY: eft-repatch
+eft-repatch: ## Re-apply tools/patches/elektron-firmware-tool.patch to vendor/elektron-firmware-tool (reverts its tracked edits) and rebuild it
+	git -C vendor/elektron-firmware-tool checkout -- main.c
+	git -C vendor/elektron-firmware-tool apply "$(CURDIR)/tools/patches/elektron-firmware-tool.patch"
+	$(MAKE) -C vendor/elektron-firmware-tool
+	@echo "now regenerate the card and MIDI wrappers so they carry the corrected version field"
+
 .PHONY: check-asm
 check-asm: ## dsp_asm is the patched assembler: the one-word displaced move (0257de), a data-ALU op with an XY move (f4f9ea); prints the binaries' architecture
 	@echo "dsp_asm/dsp_host architecture: $$(file -b $(DSP_ASM) | sed 's/^Mach-O 64-bit executable //; s/^ELF 64-bit LSB [a-z ]*, //; s/,.*//') / $$(file -b $(dir $(DSP_ASM))dsp_host | sed 's/^Mach-O 64-bit executable //; s/^ELF 64-bit LSB [a-z ]*, //; s/,.*//'); host $$(if [ "$$(uname -s)" = Darwin ] && [ "$$(sysctl -n hw.optional.arm64 2>/dev/null)" = 1 ]; then echo arm64; else uname -m; fi)"
