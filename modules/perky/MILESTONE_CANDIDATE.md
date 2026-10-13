@@ -123,3 +123,51 @@ odd-address store regression.
 
 `MILESTONE_HWTEST.md`. Run `stamp-defaults` FIRST — this image changes the SRC slot
 layout, so a Part saved under the old layout stalls the sequencer on the first play.
+
+
+---
+
+# FX RECOVERY — precise remaining work
+
+This record leads with "NOT THE MILESTONE ... Spring, Dark and Lo-Fi are absent". That is
+still true, and this section says exactly what remains, because the mechanism is now fully
+validated and only integration is missing.
+
+## What is proven
+
+| item | evidence |
+|---|---|
+| the program fits | 3051 words into 3178 (5 shared tails + PLATE 594 + COMPRESSOR 180), 127 free |
+| relocatable pieces | 21 pieces, markers balanced, **zero unmarked content**, none over the 605 cap |
+| origin-independent | same 3051 words and identical symbol offsets at origins 0x1000 / 0x2400 / 0x3840 |
+| no cross-piece branches | 0 relative branches cross a piece; all 39 cross-piece transfers are absolute `jsrl` |
+| placement computed | `place_program_shards_two_space()` -- all 21 placed, both local runs used |
+| shards reassemble | all 21 assembled standalone; stitched result **byte-identical to the monolith** |
+| assigned origins work | all 21 assemble at their assigned origins, extents exact, **zero sizing drift** |
+| **the three effects' P is free** | SPRING 0x1252, DARK 0x1679, LO-FI 0x1B58 -- **0 words overwritten** |
+
+The sharded P image exists (`out/perky/light2/sharded-p.json`).
+
+## What remains — two edits that MUST land together
+
+1. **Narrow the harvest** in `remixes/test/perky-machine/remix.py`: add SPRING REV, DARK REV
+   and LO-FI to `fx1` so they keep their own code. Measured effect: the harvest goes from
+   3441 words in one run to **774 words in two runs** (PLATE 594, COMPRESSOR 180).
+2. **Place the shards across both address spaces** in the build's image path. This is the part
+   with no existing machinery: `build_bus.py`'s placer handles the donor run, and nothing
+   currently places a module across multiple address spaces.
+
+**They are coupled and cannot be landed separately.** Narrowing the harvest alone gives 3051
+words only 594 words of contiguous space; the build refuses (correctly) rather than
+truncating. Change 2 alone has nothing to place into.
+
+## Then the gates
+
+DSP timing for the retained engines, boot/upload/readback, and the P/X/Y ledger -- on the
+resulting image.
+
+## What this milestone delivered apart from the FX
+
+The SRC page in the required order, the measured output trim, the corrected P/X/Y ledger, the
+provenance root-cause fix, the candidate record, and 13 gates executing green including all
+four engines on both DSP cores over 32000 frames.
