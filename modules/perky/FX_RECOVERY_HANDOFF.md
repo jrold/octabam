@@ -2106,3 +2106,40 @@ computed (r120).** What remains is the edit itself and its gate.
 like the payload packer -- one is a compressor, one is a wrapper. **Grepping for names that sound right
 is how this session has repeatedly gone wrong; following the call from the entry point is what worked
 here.** Worth remembering: the canary's line 100 was the thread, and it was already in my notes.
+
+---
+
+# CORRECTION: ROUND 122's "WRITER LOCATED" WAS WRONG (round 123)
+
+Round 122 followed the call chain to `platform_build.build()` and called it the record writer.
+**Reading its docstring, it is the LOADER builder and it takes the DSP payload as INPUT:**
+
+> `payloads: [dict(name, blob, stage, dst, rawlen, rhash, backup)]` for **payloads built
+> elsewhere**: `blob` = signature + GKA3 stream.
+
+**"payloads built elsewhere" is decisive.** And its `LAYOUT = "layout.json"` is the *loader's*
+`base, runtime, stage, ceiling` -- not a module table. There is no `space/count/addr` packing anywhere
+in the file: the only `*3` in it is a hash multiply.
+
+## What that changes
+
+**The DSP P records are inside the DSP payload blob**, which this stage receives. So the writer is
+upstream of the chain I followed -- **in whatever produces the DSP payload**, which is `build_bus.py`'s
+side, not `platform_build`'s.
+
+## Why this is worth writing down rather than quietly fixing
+
+**Round 122 ended with a confident "located precisely" and a table of three candidates it had ruled
+out.** All of that reasoning was sound; **the conclusion was wrong, and only the docstring showed
+it.** A handoff that said "the writer is `platform_build.build()`" would send the next session to the
+wrong file with my confidence behind it.
+
+**That is the fifth time this session has recorded a confident wrong answer**, and the pattern is
+consistent: **each was a label applied to the first thing that matched**, corrected by reading the
+thing itself. Round 122 matched a call site; the docstring said what the call site *is*.
+
+## Where the writer actually is
+
+**The DSP payload's records come from the stock payload**, since `dsp_modmap.modules()` *parses* them
+out of the image -- so `build_bus.py`, which assembles that payload, is where a tail record would be
+inserted. **That is a lead, not a finding**; I have not read it, and this note says so deliberately.
