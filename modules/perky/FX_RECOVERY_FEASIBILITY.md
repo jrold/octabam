@@ -308,3 +308,59 @@ Insert a step before splitting:
 1. choose shard boundaries at pieces where every outgoing reference is size-stable;
 2. assert, per shard, that every substituted literal encodes to the same size as the
    label form did -- and fail loudly if not.
+
+---
+
+# ADDENDUM 4 — step 2 (choose shard boundaries) is blocked by the markers themselves
+
+The plan's step 2 is "choose shard boundaries at relocation-safe points -- module/piece
+boundaries, since those are the units the composer already builds". Attempting it shows
+the boundaries the composer emits do NOT cover the program.
+
+Parsing `out/perky/light2/multi.asm` for the composer's own `; ===== BEGIN <name> =====`
+/ `; ===== END <name> =====` delimiters:
+
+| piece | chars | ~words |
+|---|---:|---:|
+| `synth_seam_glue.asm` | 11629 | 479 |
+| `noise_tone_math.asm` | 10608 | 437 |
+| `noise_tone_oscillator_packed.asm` | 5549 | 228 |
+| `synthetic_control_map.asm` | 3802 | 157 |
+| `noise_tone_envelope.asm` | 2499 | 103 |
+| `noise_tone_filter.asm` | 2049 | 84 |
+| `noise_tone_voice_xstate_glue.asm` | 1673 | 69 |
+| `noise_tone_mix.asm` | 1368 | 56 |
+| **marked total** | | **~1613 of 3051** |
+
+**CONFIDENCE: the word column is INFERRED, not measured** -- it is the piece's character
+share of the source times the measured 3051-word total. The character counts are exact;
+the word split between pieces is an estimate, and any shard boundary chosen from it must
+be re-measured by assembling the shard.
+
+Two things follow.
+
+**1. The good news.** The largest marked piece is ~479 words, comfortably under the
+605-word shard cap, so the marked pieces are individually splittable.
+
+**2. The obstacle.** **~1438 words -- 47% of the program -- lie outside every marker.**
+Those are the engine bodies (Fold Drum 1, Fold Drum 2, Simple Drum). Piece boundaries as
+the composer emits them therefore cover barely half the program, and "split at piece
+boundaries" cannot work as written: there are no boundaries inside the engines.
+
+## What step 2 actually needs
+
+Either the composer must delimit the engine bodies too, so every byte of the program sits
+inside exactly one marked piece; or shard boundaries must be found inside the engine
+bodies by inspection, which is harder and is precisely where relocation-safety is least
+obvious -- the engines contain the local branches and data adjacency the contract warns
+about.
+
+The first is the smaller change and the safer one: it does not require understanding the
+engines' internals, only marking the units the composer already concatenates.
+
+## Method note
+
+This is the third time this milestone that attempting a step has produced the useful
+result where reasoning about it produced nothing (the `@CONT@` preprocessing, the sizing
+drift, and now uncovered pieces). The pattern is consistent: run the step, read what it
+actually does, and let the failure say what the plan missed.
