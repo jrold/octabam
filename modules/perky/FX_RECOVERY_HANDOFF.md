@@ -2302,3 +2302,56 @@ eat into.**
 **That makes it a question about the reserve's purpose, not just its size** -- and the `preboot_reserve`
 in `layout.json` (`base, size, ceiling`, 1,486,848 bytes) is about **DSP** buffer space, not the
 ColdFire file. **Two different ceilings, and I have measured one of them.**
+
+---
+
+# WHO READS THE RECORDS: NOT OCTABAM'S LOADER (round 127)
+
+Round 126 confirmed there is room for a tail record and left one question: **does the loader honour a
+record at an arbitrary `addr`?** Reading the loader answers it -- **and the answer is that the question
+was aimed at the wrong reader.**
+
+## Octabam's loader has its OWN table, and it is payload-level
+
+`tools/remix/loader.S`, assembled and linked at `LOADER_AT` by `platform_build.build()`:
+
+```
+src       address of the staged blob's SOURCE in this append (4-byte)
+stage     uncached address the blob is copied to and depacked FROM
+dst       uncached address the payload is depacked to
+rhash     rolling x33 hash of the depacked payload
+backup    uncached address of a backup copy, or 0 for none
+```
+
+**It copies and depacks whole BLOBS.** It walks `(src, len, phash, stage, dst, rhash, backup)` per
+payload -- **nothing about P-module records, spaces or per-module addresses.**
+
+## So the P records have a different reader
+
+**They live INSIDE the depacked blob, and the reader is the stock OS's DSP uploader** -- whatever the
+firmware uses to move a payload into DSP P memory. **That reader walks the record table and writes each
+record's words at its `addr`**, which is the whole purpose of carrying an `addr` per record.
+
+**INFERRED, not measured.** I have not read the stock uploader. **What is measured is that the table
+exists with those fields and that the tails are free DSP addresses** -- and that is enough to say what
+the insertion has to look like, but **not enough to promise the uploader accepts an addr it did not
+expect.**
+
+## Why the distinction matters for step 2
+
+**If octabam's loader walked the records, adding one would mean changing `loader.S`** -- a second
+edit, in ColdFire assembly, at a fixed address.
+
+**It does not.** The loader's job is to get the blob into DRAM and depack it. **The records are
+consumed downstream, in stock code**, so the insertion is confined to **the blob's bytes** -- exactly
+where rounds 121-125 put it.
+
+**That keeps step 2 to one edit in one place**, and it also means the risk is concentrated in the one
+thing not measured: **whether the stock uploader tolerates a record at an address no stock record
+covers.**
+
+## What would settle it
+
+**The uploader is stock code, so it can be read** -- or, more cheaply, **a record whose `addr` is a
+known-good but unusual DSP address can be inserted and the words read back** with the probe recipe the
+handoff already carries. **That is a local test, and it is the natural first half of the edit.**
