@@ -803,3 +803,61 @@ diagnostic to be **empty** for the sharded assembly, rather than merely not fata
 | 4. size stability | **FALSIFIED AS A HAZARD for local relocation** (one narrow case left) |
 | 5. assign origins and re-emit | next |
 | 6. assemble per shard, place, gate | next |
+
+---
+
+# ADDENDUM 14 — the last size-stability case is closed: ZERO cross-piece relative branches
+
+Addendum 13 left exactly one case: a relative branch whose target sits in **another**
+shard, where the displacement would grow with the gap. It can be settled by counting
+rather than by reasoning about range limits.
+
+Classifying every reference whose target lies outside the referring piece:
+
+```
+cross-piece RELATIVE branches : 0
+cross-piece CALLS (jsr/jsrl)  : 39
+cross-piece OTHER             : 0
+```
+
+**There are no cross-piece relative branches.** The case cannot arise, so the hazard is
+retired rather than merely bounded. Every one of the 39 cross-piece transfers is a
+`jsrl` -- an absolute, size-fixed long call.
+
+## Why this is not a coincidence
+
+`build_noise_tone_synth_source.py` ends with
+
+```python
+source = noise.force_long_local_jsr(noise.relativize_local_conditionals(source))
+```
+
+`relativize_local_conditionals` makes the conditionals relative **within** their piece, and
+`force_long_local_jsr` promotes every internal call to an explicit long JSR. Those two
+steps, applied from the beginning, are exactly what makes these pieces separately
+relocatable. **The property the sharding plan needed was already designed into the
+composer** -- which is also why the earlier origin test found every symbol
+origin-independent.
+
+## Task 5 risk position, after this
+
+| risk | state |
+|---|---|
+| capacity / fits at all | **closed** -- 3051 into 3178, 127 free (addendum 12) |
+| piece over the 605 shard cap | **closed** -- largest is 386 (addendum 12) |
+| unmarked region a splitter would skip | **closed** -- zero unmarked (addendum 11) |
+| unbalanced markers | **closed** -- 21 pieces, zero imbalance (addendum 11) |
+| encoded size depends on origin | **closed** -- origin-independent at three origins (addendum 13) |
+| cross-shard relative branch out of range | **closed** -- zero such branches exist (this addendum) |
+
+**No technical risk remains in the sharding itself.** What is left is emission and
+placement work: assign final origins, re-emit, assemble each shard, place across the two
+address spaces, and gate execution -- plus the ordinary questions any new image carries
+(DSP timing for the retained engines, the boot path, the ledger).
+
+## The standing requirement for step 5, unchanged
+
+`assemble_syms` reports `dsp_asm`'s pass-1 sizing-drift diagnostic, and one such site is
+present in the QUALIFIED build (line 408). The sharded assembly must be required to have
+that diagnostic **empty**, not merely non-fatal: drift that exists today is origin-invariant
+and therefore harmless, but drift introduced *by* sharding would not be.
