@@ -484,3 +484,42 @@ Had the gate only ever checked the mixed payload, it would have passed while pro
 nobody flashes -- a green gate over the wrong subject, which is the failure mode this branch has
 hit before (`send_probe`'s harmonic metric, the reverb-smoothed XBUS measurement). The numbers
 differing is what surfaced it.
+
+---
+
+# Step 2 in code: `build_bus.py:2984-2985` (round 58)
+
+```python
+place(words, cursor)                      # 2984
+_r["cursor"] = cursor + len(words)        # 2985
+```
+
+**Those two lines are the entire single-stream assumption.** The module's assembled words go out
+as one contiguous stream at `cursor`, and the run's cursor advances by the stream's length. The
+per-run cursor machinery (`_r["cursor"]`, and `place()` itself) is already there; what is missing
+is that a module can offer only ONE stream.
+
+There are two other `place()` call sites, both for tables, not module code:
+
+* `place(tab, _r["cursor"])` (2971) -- a module's P table, same one-stream shape;
+* `place(words, cursor)` (3045) -- the second module path.
+
+## The change
+
+```python
+for shard_words, shard_origin in streams:       # one entry today, N when sharded
+    place(shard_words, shard_origin)
+    for r in runs:
+        if r["base"] <= shard_origin < r["base"] + r["words"]:
+            r["cursor"] = shard_origin + len(shard_words)
+```
+
+`runs` and the per-run cursors already exist, and `place()` already takes a start. **What is
+missing is only that `streams` can have more than one entry.**
+
+## Why this is recorded and not applied
+
+My context is exhausted, and this is a build change whose verification is a full `make check`
+(a long cold build). Making it untested would risk the one thing that matters most here — the
+working tree. **The line numbers, the reasoning and the emitter are all in place; the edit is
+two lines plus a loop, and it should be made in a session that can run the gates behind it.**
