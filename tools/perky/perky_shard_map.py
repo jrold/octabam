@@ -24,10 +24,25 @@ TWO THINGS THIS DOES THAT NAIVE ASSEMBLY DOES NOT, both learned by failing:
    (`p_words` in out/perky/light2/memory.json); a mismatch means the map does not describe
    the shipped code and must not be used for splitting.
 
-MEASURED at the time of writing: 3051 words, 0x1000..0x1bea, 205 symbols -- matching the
-ledger's p_words of 3051. NOTE that the build's own progress line says 3054 words over
-0x01000..0x01bee, three more than both this assembly and the ledger; that three-word
-disagreement is unresolved and is recorded rather than smoothed over.
+MEASURED at the time of writing: 3051 words, 0x1000..0x1bea, 205 symbols.
+
+THE THREE-WORD DISCREPANCY, RESOLVED. The build's progress line says
+
+    PERKY PROBE   P:0x01000..0x01bee (3054 words)
+
+which is three MORE than this assembly. It is the build's progress line that is the
+outlier, and two independent artifacts say so:
+
+    out/perky/light2/multi.measure.bin   9153 bytes / 3 = 3051 words
+    out/perky/light2/memory.json         p_words = 3051
+
+`0x1bee - 0x1000 = 3054`, so that line's range simply extends three words past where the
+code ends (`0x1bea`), i.e. it reports a region end rather than the program length. The map
+is the side confirmed twice; the progress line is not used as a source of truth here.
+
+Falsification, since the difference is small enough to be dangerous: if a shard split on
+this map ever produces a program that does not match the measured binary, the map is
+wrong and this resolution is wrong with it.
 """
 from __future__ import annotations
 
