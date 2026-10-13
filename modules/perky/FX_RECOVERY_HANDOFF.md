@@ -3494,3 +3494,65 @@ payload B: the same, with every source address shifted by -0x240
 **Join `dest` + `pieces` + the retired records into `P_REMAP`.** Every input is a measured number.
 **The one thing that is still unmeasured is the hardware question -- whether the stock DSP boot routine
 honours a tail-address record -- and the probe (r139, gated r140) answers it in one run.**
+
+---
+
+# THE OBSTACLE: RECORD EXTENTS AND SHARD EXTENTS DO NOT CORRESPOND (round 151)
+
+Round 150's plan was "re-point the retired records to the tails". **Measuring the overlap between record
+extents and shard extents refutes it.**
+
+```
+shard                                 OLD        NEW      words  moved?
+synth_seam_glue.asm                 0x01000  0x01000    336  -
+synthetic_control_map.asm           0x01150  0x37f92    106  MOVE
+noise_tone_voice_xstate_glue.asm    0x011ba  0x3be57     86  MOVE
+noise_tone_math.asm                 0x01210  0x33da3    299  MOVE
+...
+needing a MOVE: 15 of 16;   staying put: 1
+
+payload A retired records vs shard extents:
+  0x01000..0x01251 Plate       overlaps 4 shards
+  0x01252..0x01678 Spring      overlaps 8 shards
+  0x01679..0x01aa3 Dark        overlaps 6 shards
+  0x01aa4..0x01b57 Compressor  overlaps 0     <- never used
+  0x01b58..0x01d70 LoFi        overlaps 0     <- never used
+```
+
+## Why this breaks the plan
+
+**`repoint` moves a RECORD -- one contiguous `count`-word extent -- by rewriting its `addr`.** The words
+do not move; `build_bus.place()` then writes shard bytes into the byte area the record already owns.
+
+**So a record's words can only go somewhere CONTIGUOUS, and only as one block.** But **Plate's 594
+words feed FOUR shards, and those four go to four different safe runs** (`0x01000`, `0x37f92`, `0x3be57`,
+`0x33da3`). **One `addr` cannot express four destinations.**
+
+**Same for Spring (8 shards) and Dark (6).** The retired records are the *packed* extent the emitter
+fills; the shards are the *placed* extents the safe runs want. **Nothing makes those two partitions
+agree, and the placer is first-fit-decreasing, so they cannot be made to agree by construction.**
+
+## What this rules out, and what it leaves
+
+**Ruled out:** re-pointing the five records as a block. **Also ruled out:** a contiguous 3441-word target
+-- the safe runs are fragmented (largest shard 605, r148).
+
+**Left: a record per shard.** `append()` can create a record at any address with any count (gated,
+r144), so **each of the 15 moving shards can get its own record at its `dest` address, carrying its own
+bytes.** That is expressible and needs no new operation.
+
+**But it raises the next question, and it is the important one:** what happens to the FIVE RETIRED
+RECORDS, whose counts (594/1063/1067/180/537) no longer correspond to anything? **They would still sit
+in `region` holding stale words.** `repoint` cannot shrink or delete a record, and `_have` counts their
+words.
+
+**So the remaining question is not "re-point or append" -- it is how `region` and `_have` are satisfied
+when the record set no longer matches the packed content.** That is a question about `build_bus`'s
+harvest path, and it needs reading before the loop is written. **Round 150's "one loop" was wrong; this
+is the real remaining work.**
+
+## What this does not affect
+
+**The memory arithmetic is untouched:** Plate 594 + Compressor 180 + shared tails 2404 = 3178 against a
+3051-word program. **Spring, Dark and Lo-Fi are still never consumed.** The obstacle is representational,
+not spatial.
