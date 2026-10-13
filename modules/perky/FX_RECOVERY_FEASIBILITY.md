@@ -94,3 +94,81 @@ removal, duplicate-helper folding, and constant/table sharing** — i.e. shrinki
 reduction. The brief lists sharding first and code-size second; the measurement says
 sharding alone is insufficient without also extending the placer, and code-size work
 is insufficient without sharding. Both are needed.
+
+---
+
+# ADDENDUM — the complete stock P map, and the toolchain constraint
+
+## There is no shortcut: stock P is one packed region with zero gaps
+
+Measured from `stock.p_spans('A')` — every stock effect's P extent, sorted:
+
+```
+0x007d1   727  FILTER        0x01252  1063  SPRING REV
+0x00aa8   261  SPATIALIZER   0x01679  1067  DARK REV
+0x00bad   282  EQUALIZER     0x01aa4   180  COMPRESSOR
+0x00cc7   207  PHASER        0x01b58   537  LO-FI
+0x00d96   289  FLANGER       0x01d71   345  DJ EQ
+0x00eb7   329  CHORUS        0x01eca   277  COMB FILTER
+0x01000   594  PLATE REV
+total 6158 words, 0x7d1..0x1fdf, ZERO GAPS
+```
+
+Every span abuts the next; the gap detector printed none. The `perky-machine` harvest
+takes the contiguous upper part `0x1000..0x1d71` (3441 words, the five effects the
+brief lists).
+
+**So there is no larger contiguous run to move Perky into.** Restoring Spring (1063),
+Dark (1067) and Lo-Fi (537) = 2667 words puts them back at their own addresses and
+leaves Perky exactly Plate's 594 and Compressor's 180 — **two non-adjacent local
+runs**, 2277 words short of the 3051-word program.
+
+Capacity is not the problem: 774 local + 2404 in shared tails = 3178 >= 3051.
+**Contiguity is the problem, and it is unavoidable without sharding.**
+
+## `dsp_asm` cannot assemble a shard that references another shard
+
+MEASURED — the assembler accepts exactly these options:
+
+```
+-in  -out  -org  -list  -sym
+```
+
+It **emits** a symbol table (`-sym`) and **cannot consume one**. There is no external
+symbol, equate, or link input. It assembles **one self-contained unit at one origin**,
+and every symbol that unit references must be defined inside it.
+
+That is the concrete obstacle to the brief's plan. "Split the code at relocation-safe
+boundaries" requires each piece to resolve `jsr`/`jmp`/`bra` targets that live in
+*other* pieces, and the assembler has no way to express a symbol defined elsewhere.
+
+(The ColdFire side does have linker-backed units — `build_bus.py` section 1d, and
+`ab_image.py` moves a blob and fixes up "its external callers". None of that machinery
+applies to the DSP payloads.)
+
+**What sharding would therefore require — new tooling, not configuration:**
+
+1. a relocation-safe boundary analysis over the composed source;
+2. a two-pass scheme: assemble whole to learn every symbol address, place the shards,
+   then rewrite each cross-shard reference as an **absolute literal** (the composer
+   already forces internal calls into explicit long JSRs, so the form exists) and
+   re-assemble each shard at its final origin;
+3. a placer spanning **two address spaces** — the shared window tails and local P —
+   since `place_program_shards` walks `SAFE_SHARED_P_SPANS` only and the tails are 650
+   words short on their own;
+4. execution gates for the sharded layout, since a cross-shard jump that lands wrong
+   is invisible to assembly.
+
+## Summary for this task
+
+* required: **3051** words as a single self-contained unit (a `dsp_asm` constraint)
+* available contiguous: **774** local, in two non-adjacent runs — **2277 short**
+* available fragmented: **2404** in five shared tails, largest **605**
+* toolchain: no external-symbol input; one unit, one origin
+* `PERKY_MACHINES_TARGET.md`, which `ALL_FX_MEMORY.md` cites as its authority, is absent
+* Y is **exactly full** (2139/2139) — no Y headroom exists for any of this
+
+**This is engineering, not a question for the user. But it is a project, and the
+brief's "2404 + 594 + 180 = 3178, 124 words headroom" step reads as though a single
+placement decision remains. It does not: the program must be split, and the splitter
+does not exist.**
