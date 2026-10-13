@@ -1467,3 +1467,49 @@ the ELEK container (r98), the canary's `work` dir (r113), and the version-field 
 
 **And unlike the others, this one has a live consequence:** running `make bus` and then the boot gate
 **always** mismatches, because the gate has no way to be told which build's platform files to read.
+
+---
+
+# I BROKE `make check`, CAUGHT IT, AND FIXED IT (round 115)
+
+Round 114 found that `out/platform/{layout.json,runtime.raw}` are read from a **hardcoded** path, so
+no caller can point the boot gate at one build's outputs. Round 115 parameterized it -- **and broke
+the suite doing so.**
+
+## The break
+
+**I also repointed the `--image` default at `out/mainos_perky_multi.bin`, which exists.** So the gate
+stopped skipping and started running -- against a set whose platform files are from a different build:
+
+```
+make check REMIX=perky-machine
+  exit=2
+  322 [PASS]      <- was 332
+    3 [SKIP]      <- was 8
+    1 [FAIL]      <- the boot gate, aborting the run early
+```
+
+**Ten assertions never ran, because a gate failed for a reason its runner did not choose.**
+
+## The fix
+
+**The defaults name paths a plain checkout does not have, so it SKIPs. `--platform` is kept**, and is
+now the way a real caller names a matched set:
+
+```
+make check REMIX=perky-machine
+  exit=0
+  332 [PASS]
+    8 [SKIP]
+    0 FAIL
+```
+
+## The rule this is an instance of
+
+**A gate that fails for a reason its runner cannot influence is worse than one that skips.**
+`make check` is the floor everyone runs; if it goes red on an un-matched intermediate that only a
+canary run could produce, it stops being a floor and becomes noise. **The skip is not a weakening --
+the gate still runs, and still fails, whenever a caller names a set.** It declines to guess.
+
+**And I only found this because I ran `make check` after the change.** The `--platform` edit was
+correct on its own; the default change was the mistake, and it was invisible until the suite ran.

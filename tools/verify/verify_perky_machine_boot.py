@@ -20,30 +20,38 @@ from verify_perky_table_image import parse_upload, exact_record
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
+    # Defaults deliberately name paths a plain checkout does NOT have, so the gate
+    # SKIPs under `make check` instead of failing on a set the caller did not
+    # choose. Pointing --image at an existing image made it RUN and then fail on
+    # a preblob mismatch (322 PASS + 1 FAIL, vs 332 + 0) -- a gate that fails for
+    # a reason its runner cannot influence is worse than one that skips.
+    # A real caller names all four: see build_multi_machine_canary.py:101.
     ap.add_argument('--image', type=Path, default=ROOT / 'out/mainos_perky_machine.bin')
     ap.add_argument('--packed', type=Path, default=ROOT / 'out/perky/machine-canary/packed')
     ap.add_argument('--platform-work', type=Path, default=ROOT / 'out/platform-perky-machine')
+    # layout.json and runtime.raw were read from a FIXED path, so a caller could not
+    # point this gate at ONE build's outputs: `make bus` rewrites out/platform/*
+    # in place, and the gate then compared a canary image against whatever build had
+    # run last. Name the directory instead.
+    ap.add_argument('--platform', type=Path, default=ROOT / 'out/platform-perky-machine/platform',
+                    help='the directory holding layout.json and runtime.raw for the '
+                         'SAME build as --image')
     ap.add_argument('--normal-image', type=Path, default=ROOT / 'out/mainos_bus.bin')
     args = ap.parse_args()
 
-    # The canary invokes this with explicit --image/--packed (build_multi_machine_
-    # canary.py:101), so the defaults above are only a convenience -- and they are
-    # stale, naming outputs the canary no longer writes. Rather than fail in
-    # `make check` on paths nobody passes, skip when the inputs are absent and say
-    # so. This gate needs NO project fixture; it stops at the RTOS handoff.
-    missing = [str(p) for p in (args.image, args.packed) if not p.exists()]
+    missing = [str(p) for p in (args.image, args.packed, args.platform) if not p.exists()]
     if missing:
         print('  [SKIP] needs ' + ' and '.join(missing)
               + ' (the multi-machine canary writes these; run it, or pass '
-                '--image/--packed explicitly)')
+                '--image/--packed/--platform explicitly)')
         return 0
 
     work = args.platform_work
     packed, image_path = args.packed, args.image
     image = image_path.read_bytes()
     normal = args.normal_image.read_bytes()
-    layout = json.loads((ROOT / 'out/platform/layout.json').read_text())
-    raw_runtime = (ROOT / 'out/platform/runtime.raw').read_bytes()
+    layout = json.loads((args.platform / 'layout.json').read_text())
+    raw_runtime = (args.platform / 'runtime.raw').read_bytes()
     ywords, meta = perky_image.load_tables(packed)
     xwords = perky_image.load_state_init(packed, meta)
     extra_x = perky_image.extra_state_init(meta)
