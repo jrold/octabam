@@ -2649,3 +2649,53 @@ comparison against some table or range that is itself readable.
 
 **The three probes (r131, r132) and this narrowing together mean the work left is: read one stock
 routine, or flash one probe record.** Everything else about step 2 is measured.
+
+---
+
+# THE READER HAS A NAME: THE STOCK DSP BOOT ROUTINE (round 134)
+
+Round 133 narrowed the record table's reader to "some stock ColdFire DSP upload routine". **The repo
+already names it.**
+
+## `modules/perky/MEMORY.md`, lines 199-208
+
+> The extended DSP uploads cannot overwrite their stock image slots, so the standard Octabam loader
+> depacks each replacement upload to reserved SDRAM **before the stock DSP boot routine reads it.**
+> PERKY uses the same four 256 KiB windows as the measured Analog-BD preboot path:
+
+```
+cached destination A   0x40b00000..0x40b3ffff
+cached destination B   0x40b40000..0x40b7ffff
+cached stage A         0x40b80000..0x40bbffff
+cached stage B         0x40bc0000..0x40bfffff
+```
+
+**So the reader is the STOCK DSP BOOT ROUTINE**, and the address it reads from is documented, fixed,
+and matches the `dst` the loader stages to (`0x40b00000` for A -- r133).
+
+## Why this is the end of the scoping trail
+
+**Round 133 argued it from the layout; the repo states it outright.** And it means:
+
+* **the reader is stock code in the image** -- readable, not a hardware unknown;
+* **it is a named routine**, so there is one thing to find rather than a search;
+* **and the property in question is a single yes/no:** does that routine validate `addr`, or write
+  wherever the record says?
+
+**If it validates**, the check is a comparison -- a range or a table -- and that is itself readable in
+the same routine.
+
+## The whole of step 2's unknowns, now
+
+| question | state |
+|---|---|
+| record format | ✓ measured (r121) |
+| record order | ✓ measured: `"ac"` (r125) |
+| room, payload B | ✓ 30,460 B vs 9,162 needed (r126) |
+| room, payload A | ✓ not needed -- 3,441 contiguous retired words to reallocate (r129, r130) |
+| does the format accept re-pointing | ✓ **probed** (r131) |
+| does the format accept appending | ✓ **probed** (r132) |
+| who reads the records | ✓ **the stock DSP boot routine** (r133, r134) |
+| **does it validate `addr`** | **the one open question** -- and it is a yes/no in one named routine |
+
+**Everything else about step 2 has been measured, and the last item is now a single routine to read.**
