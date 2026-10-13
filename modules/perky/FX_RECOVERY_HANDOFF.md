@@ -1935,3 +1935,64 @@ having, and it took one measurement to distinguish "hard" from "impossible".
 
 **Six measurements, each narrowing the same question, and the answer only became usable at the
 last one.**
+
+---
+
+# STEP 2: THE PLACEMENT IS ALREADY COMPUTED -- THE BLOCKER IS THE RECORD TABLE (round 120)
+
+**This narrows the pick-up point.** The handoff above says "step 2: the fit-and-place refactor plus the
+tail records". Reading the code, **the first half is done.**
+
+## `perky_emit_shards.emit()` already calls the placer
+
+```python
+def emit(multi_asm):
+    whole, syms = B.assemble_syms(src, MONOLITH_ORG, "mono")
+    pieces = slice_pieces(src, len(whole), syms)
+    assigned = L.place_program_shards_two_space(
+        [L.ProgramShard(n, b - a) for n, a, b, _, _ in pieces])
+    dest = {p.name: p.start for p in assigned}
+    ...
+    return pieces, whole, dest, final, syms
+```
+
+**So the pipeline already carries N streams, already places them, and already returns each piece's
+assigned origin.** That was the first of the three sub-steps. Run against `out/perky/multi/multi.asm`:
+
+```
+monolith 2353 words -> 16 pieces
+  0x01000  synth_seam_glue.asm               336  LOCAL
+  0x01150  simple_drum_envelope.asm          247  LOCAL
+  0x01aa4  simple_drum_delta.asm             162  LOCAL
+  0x33da3  noise_tone_math.asm               299  SHARED
+  0x33ece  simple_drum_oscillator.asm        237  SHARED
+  0x33fbb  pk_multi_simple_init               54  SHARED
+  0x37da3  noise_tone_oscillator_packed.asm  194  SHARED
+  0x37e65  noise_tone_filter.asm             133  SHARED
+  0x37f10  noise_tone_envelope.asm           130  SHARED
+  0x37f92  synthetic_control_map.asm         106  SHARED
+  0x3bda3  noise_tone_envelope_packed7.asm    91  SHARED
+  0x3bdfe  noise_tone_mix.asm                 89  SHARED
+  0x3be57  noise_tone_voice_xstate_glue.asm   86  SHARED
+  0x3bead  simple_drum_voice.asm              80  SHARED
+  0x3befd  pk_multi_noise_init                78  SHARED
+  0x3bf4b  simple_drum_frequency.asm          31  SHARED
+  total: 2353 words in 16 pieces
+```
+
+**(That is the DEFAULT mixed payload, not the shipping light2 -- 2353/16 vs 3051/21. The mechanism is
+the same; the numbers differ because the two payloads select different pieces.)**
+
+## What is actually left, then
+
+**Only the second half: the tails need records in the image's P record table, so the loader writes
+them.** The placement decides *where* code goes; the record table is what makes the loader *carry* it
+there. `perky_emit_shards` produces the bytes at the right origins and proves the extents exact -- **and
+the loader still has no entry telling it those words exist.**
+
+**So step 2 is not "refactor and place". It is one thing:** add records for the five tails, in **both**
+payloads (payload A has a template -- two in-window records; payload B has none, and T1 lives there).
+
+**That is a smaller and more sharply-defined task than the handoff previously implied.** The fit is
+proven, the placement is computed, the pieces are byte-exact at their origins. **The records are the
+whole of what remains.**
