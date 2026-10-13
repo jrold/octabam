@@ -413,3 +413,48 @@ and the probe.
 **All five are correct about the seam. None of them is a measurement of the whole source-record
 path against a stock one** -- which is the measurement the brief actually asks for, and which the
 hardware A/B in step 9 of the test sequence is the practical substitute for.
+
+---
+
+# THE CARD AND MIDI ROUNDTRIP GATE (round 96)
+
+The brief's release-gate list names two checks I had never verified existed:
+
+* **card wrapper roundtrip**
+* **MIDI updater roundtrip**
+
+**They are one gate, and it is exactly right.** `tools/verify/verify_perky_final_wrappers.py`:
+
+> **Round-trip final Perky card and MIDI wrappers back to their exact inputs.** Release-only
+> packaging gate. The card image must decode to the exact ELEK container emitted by
+> elektron-firmware-tool, and the MIDI SysEx must decompress section 3 back to the exact final MAIN
+> OS bytes.
+
+That is a stronger check than either phrase suggests on its own: it verifies that **the card image
+and the MIDI updater are both *decodable back* to the same MAIN OS bytes** -- i.e. that the two
+delivery paths carry the same firmware, which is the property a flash actually depends on.
+
+## Its state
+
+| | |
+|---|---|
+| registered in `make check` | **no** (0 mentions) |
+| requires | `--mainos --elek --card --midi --eft --version` |
+| `out/mainos_bus.bin` | present |
+| `out/perky/cf-final` | **missing** |
+| the wrappers themselves | staged -- `~/Downloads/PERKY2V_milestone.{bin,syx}` |
+
+**So the gate exists, is correct, is unregistered, and needs the canary's outputs** -- which need
+`OT_PROJECT`. **It cannot be run here**, and it is the **fourth brief-named gate in that position**
+(after the odd-address store, the tail budget, and boot/upload/readback).
+
+## Why this is worth recording rather than leaving
+
+**A release gate that exists, is right, and never runs is the pattern this work has now found four
+times** -- and each time the gate had been written by someone who understood the risk. **The
+registration edit is one line; the input is the same missing project.** Neither is a research
+question any more.
+
+**The useful consequence:** when `OT_PROJECT` lands and the canary runs, **four gates become live at
+once** -- boot/upload/readback, the odd-address audit, the tail budget, and this one -- because all
+four were already written and only need their inputs and a manifest line.
