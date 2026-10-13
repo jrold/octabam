@@ -171,3 +171,51 @@ resulting image.
 The SRC page in the required order, the measured output trim, the corrected P/X/Y ledger, the
 provenance root-cause fix, the candidate record, and 13 gates executing green including all
 four engines on both DSP cores over 32000 frames.
+
+---
+
+# DELIVERABLE DOCUMENTATION GAPS (round 89)
+
+The staged artifact is complete -- `.bin`, `.syx`, manifest, test procedure and both calibration
+WAVs are all present, and the artifact hashes match the manifest exactly. **Two documentation gaps
+remain, both user-facing.**
+
+## 1. The manifest is stale on two fields
+
+```
+engines=... 010 NOISE/TONE (native/authentic bodies; composed source reference
+            qualification pending -- see modules/perky/NOISE_TONE_STATUS.md)
+```
+
+**Noise/Tone's reference qualification is no longer pending** -- it was resolved against the ARM
+captures, and `NOISE_TONE_STATUS.md` records that. The manifest line predates the resolution.
+
+```
+git=3d86d92547e4
+```
+
+**The artifact's `git=` is the commit the build read, and 89 commits have landed since.** That is
+not a defect -- `tree=clean` is recorded beside it, and the `*_sha256=` lines are what pin the
+artifact -- but a reader comparing `git=` to `HEAD` would reasonably be confused. **The manifest
+should say which of its fields identify the artifact and which identify the tree it was built from.**
+
+## 2. The test procedure covers 5 steps; the brief specifies 14
+
+The procedure is genuinely useful -- it carries the `stamp-defaults` migration, which is the step
+that stops the sequencer stalling on a re-laid-out SRC page:
+
+```
+tools/hw/ot_project.py stamp-defaults "<card>/<set>/<project>" perky-machine --all
+```
+
+But the brief's hardware sequence has fourteen items (T1/T5 per engine, all 3 MODEs, ALGO knob
+mapping, the ALGO p-lock base->locked->base round trip, the loudness A/B, Spring/Dark/Lo-Fi, and the
+ordinary-stock-track check). **Those belong in the procedure, whether or not every one is reachable
+on this build** -- several are not, and saying so in the procedure is more useful than omitting them.
+
+## Why this is worth a round
+
+**The artifact is the thing you flash.** Its manifest and its procedure are what you read while
+holding the unit. A manifest that calls a resolved qualification "pending" and a procedure that
+covers a third of the test sequence are the two documents most likely to cost a flash cycle -- and
+both are fixable without touching a line of the build.
