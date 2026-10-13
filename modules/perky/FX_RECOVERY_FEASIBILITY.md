@@ -580,3 +580,47 @@ region that silently stays in the monolithic image.**
   already found twice. Every coverage figure in addenda 5-9 was taken from a rebuild whose
   artifacts were **byte-identical** to the previous build -- which proves the markers did
   not assemble, but says nothing about whether coverage is complete.
+
+
+---
+
+# ADDENDUM 10 — the last block's emitter is GENERATED, and that is why the search failed twice
+
+Searching for `pk_multi_noise_init` the obvious way does not find its definition:
+
+```
+grep -rn "multi_noise_init" --include=*.py --include=*.asm
+  tools/perky/build_multi_synth_source.py:49:   jsrl pk_multi_noise_init      <- reference only
+modules/perky/synthetic_control_map.asm   -> 0
+modules/perky/simple_drum_delta.asm       -> 0
+```
+
+**No `.py` and no `.asm` in the tree defines it.** It nevertheless lands in the composed
+source, immediately after `; ===== END simple_drum_delta.asm =====` and before
+`fold_drum_voice.asm`.
+
+## What that means
+
+The body is **built from fragments** by the composer chain, so the label never appears
+whole in any file for a text search to find. This is the same shape as the earlier
+markers: the emitted text is not the source text, and a search of the source cannot see
+what the composer assembles.
+
+It also explains why two rounds of grep-and-read failed to locate it, and why the next
+step is **not another grep**: the emitter has to be found by instrumenting the composer
+chain -- for example, dumping the source immediately after each stage
+(`noise.generate` -> `multi_synth.generate` -> `fold_candidate`) and diffing, so the
+stage that introduces the block identifies itself. That is a mechanical next step with a
+definite answer.
+
+## Standing state of step 2
+
+* **19 pieces, markers balanced, no piece over the 605-word cap.**
+* **Unmarked: this one block, ~69 words of 3051 (2%)**, located between two named pieces.
+* `unmarked = 0` is the bar. It is not met, and this document says so rather than calling
+  98% complete.
+
+**Carried forward, and it is the third time this distinction has mattered:** every
+coverage figure here came from a rebuild whose artifacts were byte-identical to the
+previous build. That proves the markers are not assembled. It says nothing about whether
+coverage is complete. The two questions are independent, and only one is settled.
