@@ -109,6 +109,7 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_abi_contract.py", remix_arg=False),
         Gate("tools/verify/verify_perky_noise_tone_ref.py", remix_arg=False),
         Gate("tools/verify/verify_perky_dsp_word_model.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_cf_odd_access.py", remix_arg=False),
         Gate("tools/verify/verify_perky_compact_voice.py", remix_arg=False),
         Gate("tools/verify/verify_perky_simple_drum_compact.py", remix_arg=False),
         Gate("tools/verify/verify_perky_noise_hat_pulse_native_compact.py", remix_arg=False),

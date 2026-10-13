@@ -35,7 +35,14 @@ def main() -> int:
     args = ap.parse_args()
     gen = args.generated
     if not gen.is_dir():
-        raise SystemExit(f"PERKY CF odd-access: missing generated dir {gen}")
+        # Its input is the ColdFire candidate's generated assembly, which
+        # build_cf_final.py produces only when PERKONS_FIRMWARE, PERKYBITS_ROOT
+        # and OT_PROJECT are all supplied. Skip, as verify_perky_probe_port does
+        # without OT_PROJECT, so this gate can live in `make check` and still run
+        # wherever the inputs exist. Until this, the gate existed and NEVER ran.
+        print(f"[SKIP] PERKY CF odd-access: no generated dir {gen} "
+              f"(needs tools/perky/build_cf_final.py and its three inputs)")
+        return 0
 
     hits = []
     total = 0
