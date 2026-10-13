@@ -977,3 +977,63 @@ pristine instead of writing one.
 `scripts/setup.sh`'s job and belongs to whoever next runs setup, not to a worktree passing through.
 The regenerated artifacts in `/tmp/refix` and `/tmp/vp-out` are **proof, not deliverables**: they were
 built by a locally-patched tool and carry that provenance.
+
+---
+
+# THE PATCH IS CORRECT; APPLYING IT NEEDS A REPATCH STEP THAT DOES NOT EXIST (round 106)
+
+Round 105 wrote and verified the patch from pristine. Round 106 found the one thing standing between
+that patch and a fixed tool.
+
+## `vendor/` is shared, and already carries the OLD patch
+
+```
+vendor -> /Users/jrold/Downloads/octabam/vendor      (the main checkout, shared)
+vendor/elektron-firmware-tool/main.c:597   (i<nl) ? ver[i] : ' '    <- the OLD ljust
+tools/patches/elektron-firmware-tool.patch  1 hit for i<cap-nl      <- the NEW fix
+```
+
+**The worktree's patch is correct and the vendored source is not** -- which is right, because a
+worktree must not edit `vendor/`. **But it means the fix is in the patch and not in the tree.**
+
+## And `apply_patch` cannot bridge that
+
+`scripts/vendor.sh`:
+
+```bash
+if   git -C "$1" apply --check "$2";           then git apply
+elif git -C "$1" apply --check --reverse "$2"; then already applied
+else echo "[!] ... does NOT apply"; fi
+```
+
+**Against the current tree, the new patch matches NEITHER branch:**
+
+* `--check` **fails**, because the tree already has the `voff=ELEK_VERSION_OFF` line replaced, so the
+  merged hunk's `-voff=ELEK_VERSION_OFF` context no longer exists;
+* `--check --reverse` **fails**, because the tree does not carry the new right-align line.
+
+**So `scripts/vendor.sh` reports `does NOT apply` and stops.** This is exactly the situation
+`AGENTS.md` records for `dsp56300` -- *"A built tree is not re-patched here: one built under an older
+patch keeps the older assembler"* -- and `dsp56300` has a remedy:
+
+```
+make dsp-repatch   ## re-apply after reverting the vendored tree's tracked edits
+```
+
+**There is no equivalent target for `elektron-firmware-tool`.** The remedy is one command against
+the vendored repo -- `git -C vendor/elektron-firmware-tool checkout -- main.c`, then re-run
+`scripts/vendor.sh` -- and it belongs in the setup path, not in a worktree passing through, because
+**it rewrites the shared checkout's working tree.**
+
+## Where this leaves the artifact, stated plainly
+
+* the defect is **diagnosed** (round 103, `ELEK_VERSION_OFF = 0x0D` is the arithmetic);
+* the fix is **proven** (round 104, the gate passes on a regenerated matched set);
+* the patch is **written and verified from pristine** (round 105, applies cleanly, builds, emits
+  `   PERKY2V`);
+* **and it is not yet applied to the shared vendored tree** (round 106, `apply_patch` refuses, and
+  the repatch step for this vendor does not exist).
+
+**The staged card and MIDI are unchanged and remain what was physically tested.** The fix becomes
+live the next time the vendored tool is repatched and rebuilt -- and, as round 104 argued, **the right
+moment to ship a corrected card is the same rebuild that restores Spring, Dark and Lo-Fi.**
