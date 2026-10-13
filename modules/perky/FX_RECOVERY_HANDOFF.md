@@ -3800,3 +3800,60 @@ one decision left, and it is a two-line question, not an unknown.**
 
 **Every number the goal quotes now reproduces, every span is read by its own documented convention,
 and the remaining change is: append records at the shared runs and extend `_want` to match.**
+
+---
+
+# THERE IS NO P-SPACE DECLARATION -- IT IS THE HARVEST (round 156)
+
+Round 155 said the extension belongs where `_want` is computed. **Round 156 looked for an existing
+declaration mechanism before writing code, and found one -- for the wrong space.**
+
+```python
+# modules/perky/manifest.py
+claims=Claims(dsp_ranges=(
+    DspRange("x", 0x3800, 236,           "PERKY compact voice state + envelope caches + RNG"),
+    DspRange("x", 0x38EC, 2,             "PERKY source event-offset and admission staging"),
+    DspRange("x", 0x3900, 0x64,          "PERKY shared sparse source-render scratch"),
+    DspRange("y", 0x07a5, 0x1000 - 0x07a5, "PERKY packed Noise/Tone tables"),
+)),
+```
+
+**`DspRange(space, address, LENGTH, note)`. Every one of these is `"x"` or `"y"`.**
+
+## So there is no P-space declaration, and that is consistent
+
+**`Claims.dsp_ranges` is how a module reserves X and Y -- the data spaces. P is not reserved that way: P
+is taken by HARVESTING a stock effect, which is the whole `region`/`_want` mechanism.** A module that
+wants P words does not declare an address; **it relies on the remix having given up an effect whose
+records cover where it wants to write.**
+
+**That is why the shared runs are a genuinely new kind of ground: they are P addresses that belong to no
+effect, so no declaration covers them and no harvest reaches them.**
+
+## The third argument is a LENGTH -- the second confirmation
+
+`DspRange("y", 0x07a5, 0x1000 - 0x07a5, ...)` is `(start, length)`, the same convention as
+`stock.p_spans` and its consumer `regions_of`. **`SAFE_*_SPANS` is the odd one out in this tree, not the
+rule** -- it is `[lo, hi)`, and its own comment says so. **Two conventions, both documented, and rounds
+148-152 read the wrong one.** Round 155 identified it; this round confirms it from a third site.
+
+## What that leaves, precisely
+
+**The change is in the harvest path, and there is no declaration to add -- the code that builds `_want`
+must admit the shared runs.** Concretely:
+
+1. **`_want` gains the shared runs** (`SAFE_SHARED_P_SPANS`, interpreted as `[lo, hi)`);
+2. **`P_REMAP` appends a record per shard into those runs** -- `append`, gated (r144), reachable (r147);
+3. **and `_have` then equals `_want`**, because the appended records' words are exactly what the runs
+   were added with.
+
+**Point 3 is the check that proves points 1 and 2 agree -- and it is already written, already in the
+build, and already refuses by name.** Nothing new validates the change; the existing guard does.
+
+## Where the goal stands after nine rounds on this
+
+**The memory arithmetic reproduces the goal's own numbers (r153), both span conventions are sourced
+(r154, r155, r156), the primitives are in and gated (r143, r144), the build accepts a remap and is inert
+without one (r147), and the remaining work is three named lines in the harvest path.** **The one thing
+still unmeasured is the hardware question -- whether the DSP boot routine honours a tail-address record
+-- and the probe (r139, gated r140) answers it in one run.**
