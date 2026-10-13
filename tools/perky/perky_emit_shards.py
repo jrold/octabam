@@ -150,9 +150,38 @@ def check(multi_asm: pathlib.Path, verbose: bool) -> int:
         if verbose:
             print(f"  {n:44s} mono 0x{a:05x} -> 0x{dest[n]:05x}  {extent:4d} words")
 
+    # (3) THE CALL GRAPH. Every external reference was rewritten to an
+    # absolute $hex; check each one names a FINAL address that lies inside some
+    # shard. This is the "disassemble what you assemble / verify actual
+    # branches, calls and ranges" requirement, checked at the source level:
+    # the encoding is already pinned by check (1), so what remains to verify is
+    # that no call or jump aims outside the placed program.
+    spans = [(dest[n], dest[n] + (b - a) - 1, n) for n, a, b, _, _ in pieces]
+
+    def owner(addr):
+        for lo, hi, n in spans:
+            if lo <= addr <= hi:
+                return n
+        return None
+
+    bad_targets = []
+    n_targets = 0
+    for n, a, b, text, _ in pieces:
+        refs = externals(text, syms)
+        n_targets += len(refs)
+        for t in refs:
+            fa = final(syms[t])
+            if owner(fa) is None:
+                bad_targets.append((n, t, hex(fa)))
+    if bad_targets:
+        for n, t, fa in bad_targets[:6]:
+            bad.append(f"{n}: target {t} -> {fa} is OUTSIDE every shard")
+
     print(f"  pieces: {len(pieces)}   words: {total}   monolith: {len(whole)}")
     local = sum(1 for n, _, _, _, _ in pieces if dest[n] < 0x30000)
     print(f"  in LOCAL P: {local}   in SHARED tails: {len(pieces) - local}")
+    print(f"  cross-piece reference targets checked: {n_targets}"
+          f"   outside every shard: {len(bad_targets)}")
     if total != len(whole):
         bad.append(f"total {total} != monolith {len(whole)}")
     if bad:

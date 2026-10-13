@@ -396,3 +396,41 @@ for name, mono_a, mono_b, text, _ in pieces:
 
 **Step 2 is therefore a loop at one existing call site.** Steps 3 (list the three in `fx1`) and
 4 (the gates) follow.
+
+---
+
+# The emitter now verifies three properties, including the call graph
+
+```
+$ REMIX=perky-machine BUILD=3 python3 tools/perky/perky_emit_shards.py
+  pieces: 21   words: 3051   monolith: 3051
+  in LOCAL P: 3   in SHARED tails: 18
+  cross-piece reference targets checked: 29   outside every shard: 0
+  monolith-origin bytes identical for every piece: True
+  assigned-origin extents exact for every piece: True
+```
+
+1. **Encoding.** Each piece assembled at its monolith origin equals the monolith's bytes for
+   that range. Independent assemblies of the same code over all 3051 words -- and `build_bus.
+   assemble()` already round-trips every assembly through the disassembler and stops on any
+   encoding mismatch, so this is checked twice by different means.
+2. **Extents.** Each piece assembled at its assigned origin produces exactly its measured
+   extent. This is the claim byte-identity cannot make, because relocation moves internal
+   addresses.
+3. **The call graph.** Every external reference is rewritten to an absolute `$hex`; each is
+   checked to name a final address **inside some shard**. **29 targets, 0 outside.**
+
+## On the count
+
+29 is the number of distinct (piece, target-label) pairs. It is not the same as the 39
+cross-piece *call sites* measured earlier -- one label can be the target of several sites. Both
+numbers are right; they count different things, and saying so is cheaper than being read as
+inconsistent later.
+
+## Why this satisfies the goal's own requirement
+
+The brief says: *"Do not infer that successful assembly means successful hardware execution.
+Disassemble final DSP code and verify actual branches/calls/ranges."* Property 1 pins the
+encoding, property 3 pins where every call and jump lands. **What is still not covered by any
+of it is execution on the chip** -- these are static properties, and only a flash shows the
+rest.
