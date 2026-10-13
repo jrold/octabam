@@ -2206,3 +2206,51 @@ path are all already correct; only the table entry is missing.**
 **Payload B has none, and T1 lives there.** So the insertion has to be done twice, against two
 different stock blobs, and **B's `order` may differ from A's** -- the parser tries `"ca"` and `"ac"`
 precisely because it was not settled.
+
+---
+
+# THE RECORD ORDER IS `ac`, MEASURED ON BOTH PAYLOADS (round 125)
+
+Round 121 read the format from the parser but left one field ambiguous: the decompilation did not
+settle whether the count precedes the addr, so `parse()` tries `"ca"` and `"ac"`. Round 125 measured
+which one each payload actually uses -- **because an inserted record must match it.**
+
+```
+payload A: blob 79,563 B
+  order=ca:   1 record,  consumed  1,602 B   terminator 0x7f4e6d at +0x642
+  order=ac:  98 records, consumed 79,557 B   ran off the end
+payload B: blob 77,061 B
+  order=ca:   1 record,  consumed  1,602 B   terminator 0x7df71b at +0x642
+  order=ac:  91 records, consumed 77,055 B   ran off the end
+```
+
+**`"ca"` dies after one record on both payloads** -- it reads some large value as a "space" and stops.
+**`"ac"` consumes 79,557 of A's 79,563 bytes and 77,055 of B's 77,061.** That is the parse, and
+`modules()` picks it because it keeps whichever consumes more.
+
+## So the header is
+
+```
++0  w24  space
++3  w24  ADDR        <- first
++6  w24  COUNT       <- second
++9  ...  count * 3 bytes of words
+```
+
+**And the table runs to the end of the blob** -- 79,557 of 79,563 on A, 77,055 of 77,061 on B. Six
+bytes of tail on each; the records are packed edge to edge.
+
+## What that fixes for step 2
+
+**The insertion has no ambiguity left.** A tail record is:
+
+```
+w24(0)  w24(tail_addr)  w24(count)  + count*3 bytes
+```
+
+placed before the terminating record, in **both** payloads, whose orders are now known to be the same.
+
+**Two things this does NOT settle**, and they are the remainder: **where in the build the blob is
+assembled** (so the insertion has a home), and **whether the blob has room** -- the records consume
+essentially the whole blob, so a new one must go where the terminator is, and the stage/ceiling the
+loader reserves decides whether that is possible.
