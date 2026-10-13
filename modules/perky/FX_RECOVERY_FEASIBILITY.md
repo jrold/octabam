@@ -1340,3 +1340,58 @@ and a built sharded image with the three effects' P measurably free.
 **Change 1 is now understood to be easy and change 2 is confirmed to be the hard part.** That
 is a more useful division of the remaining work than the one this document carried before
 today, and it came from checking a schema rather than reasoning about it.
+
+---
+
+# ADDENDUM 25 — what the schema CAN and CANNOT express about the shard placement
+
+Checking `Claims` one more time for a P-placement field, because addendum 24's conclusion
+rested on its absence:
+
+```
+Claims fields: reserved_private_y, owns_fx2_buffers, stock_instance_buffer,
+               buffer_words, fx1_only, part_window, sram, dsp_ranges
+DspRange:      "space" is "x" or "y"
+```
+
+**No P field, and `DspRange.space` accepts only `"x"` or `"y"`.** So a shard cannot be
+declared as `DspRange("p", ...)`.
+
+## But the shared tails are expressible anyway -- and that is a real lead
+
+`DspRange`'s own docstring says:
+
+> Inside it, X, Y and P are one memory shared by both cores, so the ledger compares the range
+> against every module's ...
+
+**Inside the shared window the three spaces alias, so a tail occupied by shard code can be
+declared as an x or y range and the existing ledger will police it.** Five of the seven spans
+are therefore declarable with today's schema.
+
+**What cannot be declared is the two LOCAL runs** -- PLATE `0x1000..0x1252` and COMPRESSOR
+`0x1AA4..0x1B58`. They are below the shared window and are P-only, so a `DspRange` cannot name
+them at all.
+
+That splits change 2 into two unequal halves:
+
+* **the five shared tails**: declarable as x/y ranges today, so the ledger's existing
+  machinery applies -- and the ledger is exactly what must not be bypassed;
+* **the two local runs**: need either a new `space` value (with every consequence that implies
+  for `dsp_ranges` consumers) or a different declaration path.
+
+## Also confirmed by this
+
+The `'p'` entry this milestone added to `memory.json` is **ledger-only by necessity**, not by
+choice -- the schema could not have carried it. That earlier decision was right, and this is
+the measurement that says why.
+
+## Task 5, final
+
+**Proven:** fits, 21 relocatable pieces, origin-independent, no cross-piece branches, placement
+computed, byte-identical reassembly, assigned-origin assembly with zero drift, sharded image
+built with the three effects' P free.
+
+**Remaining:** change 1 (list the three in `fx1` -- small, safe); change 2 (multi-span
+placement -- five spans declarable today, two needing new schema); then the gates.
+
+**No open question remains. What is left is code.**
