@@ -4820,3 +4820,62 @@ surface as a build that silently emitted no P records at all, which is exactly t
 | the hardware question | the probe, gated (r139, r140), needs `OT_PROJECT` |
 
 **Three edits, all mechanical, none a design question.**
+
+---
+
+# THE THREAD IS IN, AND THE SCRATCH IS THREE TIMES THE SIZE NEEDED (round 173)
+
+Round 172 named three edits. **Round 173 made the first two, and read the body that decides the third.**
+
+## What landed
+
+```python
+def integrate(img, table_dir, p_records=None):
+    ...
+    for tag, c in PAY.items():
+        raw, _term = extend_upload(
+            img, tag, y_words, x_words, extra_state_init(layout), extra_y,
+            (p_records or {}).get(tag),
+        )
+```
+
+**`p_records` is `{tag: [(addr, [word, ...])]}`, default `None`, so every existing caller is
+unchanged.** `extend_upload` already takes it (r170). **`integrate` already iterates payloads, so
+`(p_records or {}).get(tag)` is the whole mapping.**
+
+**Verified inert:** `inspect.signature` shows both defaults are `None`, and **`make check` is 336 PASS,
+8 SKIP, 0 FAIL.**
+
+## And the limit that decides whether this fits
+
+```python
+if len(raw) > 0x40000 or 4 + len(packed_blob) > 0x40000:
+    die(f"payload {tag}: upload {len(raw):,} B / packed {len(packed_blob):,} B "
+        "outgrows its 256 KiB preboot scratch")
+```
+
+**The preboot scratch is 256 KiB -- 262,144 bytes.** Measured in r171, payload A with all 13 P records
+is **84,513 B**: 79,563 before, plus 4,950. **It uses 32% of the scratch.**
+
+**So the container is not merely bigger than the payload -- it is three times bigger.** The r167
+adjacency finding was real and remains the reason `build_bus` cannot host the records; **what it was not
+is a reason the records cannot exist.**
+
+## The one edit left
+
+**`repack_machine_loader` must call `perky_tail_remap.build()` and pass the result to `integrate`.** That
+needs `pieces`, `whole` and `dest` from `emit()`, **and whether that module already has them is the one
+thing this round did not check** -- reading `repack_machine_loader`'s data flow is the next step, and it
+is a read, not a guess.
+
+## State
+
+| piece | state |
+|---|---|
+| placement, selection rule, record format | in (r148-r150, r167, r169) |
+| `extend_upload` takes `p_records` | in; measured 9 Y + 4,941 P (r170) |
+| `build()` emits `(addr, [word, ...])` | in; join measured (r171) |
+| `integrate` takes `p_records` | **in, inert (this round)** |
+| scratch headroom | **262,144 B limit vs 84,513 B used -- 32%** |
+| all gates | **336 PASS, 8 SKIP, 0 FAIL** |
+| the caller supplying `p_records` | **the one edit left** |

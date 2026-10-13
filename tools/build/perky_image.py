@@ -246,8 +246,14 @@ def extend_upload(img: bytes | bytearray, tag: str, y_words: list[int],
     return raw, term
 
 
-def integrate(img: bytes | bytearray, table_dir: Path):
-    """Return (preboot_payloads, pointer_pokes, log, layout)."""
+def integrate(img: bytes | bytearray, table_dir: Path, p_records: dict | None = None):
+    """Return (preboot_payloads, pointer_pokes, log, layout).
+
+    `p_records` is `{tag: [(addr, [word, ...]), ...]}` -- P records for module
+    code that needs ground no stock record covers (the shared runs). Default
+    None, so every existing caller is unchanged. See `extend_upload` for why the
+    records belong here and not in `build_bus`.
+    """
     from remix import pack, platform_build
 
     y_words, layout = load_tables(table_dir)
@@ -256,7 +262,8 @@ def integrate(img: bytes | bytearray, table_dir: Path):
     pres, pokes, log = [], [], []
     for tag, c in PAY.items():
         raw, _term = extend_upload(
-            img, tag, y_words, x_words, extra_state_init(layout), extra_y
+            img, tag, y_words, x_words, extra_state_init(layout), extra_y,
+            (p_records or {}).get(tag),
         )
         packed_blob = (
             pack.PACKED_MAGIC
