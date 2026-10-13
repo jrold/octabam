@@ -115,6 +115,14 @@ MODULE = Module(
         # never run in make check. Registering them is the whole fix.
         Gate("tools/verify/verify_perky_all_fx_placer.py", remix_arg=False),
         Gate("tools/verify/verify_perky_all_fx_memory.py", remix_arg=False),
+        # Engine gates that were genuinely unregistered.
+        Gate("tools/verify/verify_perky_shipping_voice_exec.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_fold_regression.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_fold_seam_exec.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_multi_seam_exec.py", remix_arg=False),
+        Gate("tools/verify/verify_perky_synth_seam_exec.py", remix_arg=False),
+
+
         Gate("tools/verify/verify_perky_compact_voice.py", remix_arg=False),
         Gate("tools/verify/verify_perky_simple_drum_compact.py", remix_arg=False),
         Gate("tools/verify/verify_perky_noise_hat_pulse_native_compact.py", remix_arg=False),

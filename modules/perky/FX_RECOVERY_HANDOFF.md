@@ -1486,3 +1486,54 @@ were load-bearing for THIS milestone.** A raw "101 unregistered" figure would ha
 The `cf-*` family (about 30 tools) remains unregistered because each needs the ColdFire candidate
 built with `PERKONS_FIRMWARE`, `PERKYBITS_ROOT` and `OT_PROJECT`. **They are the same class of gap
 as the probe's fixture**: a required check whose subject lives outside this sandbox.
+
+---
+
+# EIGHT GATES RECOVERED, AND A CORRECTION TO MY OWN AUDIT METHOD (rounds 77-79)
+
+## The gates
+
+| gate | what it guards | round |
+|---|---|---|
+| `verify_perky_cf_odd_access` | odd ColdFire word/long displacement | 77 (teeth proven both ways) |
+| `verify_perky_all_fx_placer` | the 2,404-word shared-tail budget is usable | 78 |
+| `verify_perky_all_fx_memory` | keep the default split; harvest neither FX arena | 78 |
+| `verify_perky_shipping_voice_exec` | the shipping engine voice | 79 |
+| `verify_perky_fold_regression` | fold engine regression | 79 |
+| `verify_perky_fold_seam_exec` | the fold seam | 79 |
+| `verify_perky_multi_seam_exec` | the multi-engine seam | 79 |
+| `verify_perky_synth_seam_exec` | the synth seam | 79 |
+
+**Suite: 64 gates at round 76 -> 72 run, 0 failed.** Every one of the eight passed when run by hand;
+**none was in `make check`.** The four-engine proof -- the core of the goal's task 3 -- rested on
+remembering to run its gates.
+
+## The correction, which matters more than the count
+
+My first audit used:
+
+```python
+re.findall(r'Gate\(\s*"(tools/verify/[^"]+)"', text)      # WRONG
+```
+
+**It misses a `Gate(` whose string is on the NEXT line** -- and the manifest uses that form. So
+registrations were under-counted, two of my seven "unregistered" candidates were **already
+registered**, and registering them raised `gate ... listed twice`. The corrected pattern:
+
+```python
+re.findall(r'Gate\(\s*\n?\s*"([^"]+)"', text)             # handles the wrapped form
+```
+
+**Corrected figures: 169 tools on disk, 75 registered, 94 not** -- not 101. **My round-78 note that
+"most of the unregistered are correctly so" was right, but the number it rested on was wrong, and
+it was wrong in a way that produced duplicate registrations rather than a quiet understatement.**
+
+## The lesson, which is the branch's recurring one
+
+**An audit tool that under-reports produces confident wrong conclusions AND a broken build.** The
+detection was cheap -- `ValueError: gate ... listed twice` -- but only because registering a
+duplicate is a hard error. **Had the schema silently tolerated it, I would have shipped a manifest
+claiming 94 unregistered gates and believed it.**
+
+**Same family as everything else here**: check what the instrument reads before trusting what it
+does not say.
