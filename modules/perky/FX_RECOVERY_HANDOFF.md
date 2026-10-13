@@ -295,3 +295,64 @@ streams", which is the sharding, already proven.
 
 After that: the gates (DSP timing for the retained engines, boot/upload/readback, the P/X/Y
 ledger).
+
+---
+
+# Change 2 in code: call the placer once per shard (round 53)
+
+`build_bus.py:2265`:
+
+```python
+def place(words, start):
+    """Write a contiguous word stream at P address `start`.
+
+    The records load back-to-back but are separated by headers in the
+    file, so the stream is cut at each record boundary.
+    """
+    i = 0
+    for _, a, cnt, off in region:
+        if i >= len(words): break
+        pos = start + i
+        if not (a <= pos < a + cnt): continue
+        n = min(len(words) - i, a + cnt - pos)
+        for k in range(n):
+            wrw_p(va + off + (pos - a + k) * 3, words[i + k])
+        i += n
+    if i != len(words):
+        sys.exit(f"payload {tag}: placement ran past the region")
+```
+
+**`place()` is ALREADY parameterised by `start`, and it already writes a stream that may be cut
+across file records.** The single-run constraint is only that it is called **once** with the
+whole 3051-word program: `pos` walks linearly from `start`, and across a gap -- a non-harvested
+effect's addresses, which are not in `region` -- `i` stops advancing and it exits with
+*"placement ran past the region."* **That is the entire constraint, and it is one call site.**
+
+**The surrounding machinery is already multi-run:**
+
+* `runs` is a **list**, each entry carrying its **own `cursor`** (line 2242);
+* `_end_of_run(a)` returns the end of the run containing an address;
+* `_written(a)` tests reach within the run containing `a`;
+* `budget = sum(m[2] for m in region)` already sums across records.
+
+## So change 2 is: call `place()` once per shard
+
+```python
+for shard in shards:                 # 21 of them
+    place(shard.words, shard.origin) # origin from place_program_shards_two_space()
+```
+
+**No new placement machinery. No new schema field. One call site becomes a loop.** The
+prerequisite is that the module's *source* be assembled as the 21 shards rather than one blob
+-- which is the emitter, and whose every property is already measured (byte-identical
+reassembly, origin-independence, zero cross-piece branches, zero sizing drift).
+
+## What remains, in order
+
+1. **Assemble the module as 21 shards** (the emitter; properties proven) instead of one blob.
+2. **Loop `place()`** over the shards at the assigned origins.
+3. **List SPRING REV, DARK REV, LO-FI in the remix's `fx1`** (change 1; prediction confirmed
+   in the previous addendum).
+4. **Run the gates.**
+
+**Steps 2 and 3 are small and located. Step 1 is the emitter, already validated end to end.**
