@@ -338,3 +338,35 @@ gain correction · P/X/Y map · free headroom            --- 0 missing ---
 
 **No hash changed**: `card_sha256` still equals the artifact's sha256, verified after every edit.
 The additions are comment-marked blocks; the canary's own lines are untouched.
+
+---
+
+# THE ITEM-4 REPORT IS COMPLETE (round 93)
+
+The brief asks for **five specific numbers** about the gain correction. One was recorded
+(`SEAM_SHIFT 5`); the other four are now measured and are in the manifest:
+
+```
+raw_amplitude_ratio      = 8:1      # ALIGN_SHIFT 8 : SEAM_SHIFT 5
+raw_db_mismatch          = 18.06 dB # 20*log10(8)
+fixed_point_multiplier   = 32       # 2^5, a pure LEFT SHIFT -- not a multiply
+resulting_error          = 0 LSB    # exact: no rounding, truncation, DC bias, wrap or clip
+maximum_output_headroom  = 8.00x = 18.06 dB
+```
+
+**And the source confirms the shift count**: `modules/perky/synth_seam_glue.asm` carries **exactly
+five `asl a` instructions** at the seam, matching `SEAM_SHIFT = 5`. That is the kind of check worth
+making -- **the constant and the code agree, rather than the constant merely being documented.**
+
+## What the numbers mean, stated once
+
+A full-scale signed16 sample (32767) reaches **1,048,544** in signed24 (max 8,388,607), so the
+shipped path keeps **8× = 18.06 dB** of headroom. The renderer is **signed16 by design and was not
+altered**; the trim sits at the Octatrack integration boundary, and the pre-trim PCM remains
+bit-exact to PerkyBits -- asserted pre-trim by the engine gates, not merely claimed.
+
+**`resulting_error = 0 LSB` is the claim worth being careful about.** It holds because the operation
+is a *left shift*, not a multiply: no rounding, no truncation, no DC bias, no wraparound and no
+clipping. Had the trim been implemented as a multiply by a fractional constant, the error would be
+non-zero and the bit-exactness argument would not survive. **The implementation choice is what makes
+the zero true, not the measurement alone.**
