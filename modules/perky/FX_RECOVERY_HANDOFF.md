@@ -2056,3 +2056,53 @@ them claimable.
 **Then call `place_program_shards_two_space()`** -- which `perky_emit_shards.emit()` *already does*
 (r120), so that part is done. **The placement is computed; the records are what remains, and they are
 now specified.**
+
+---
+
+# STEP 2's RECORD WRITER, LOCATED (round 122)
+
+Round 121 specified the record format from the parser. Round 122 followed the call chain to the code
+that **emits** them.
+
+## The chain
+
+```
+build_multi_machine_canary.py:100
+    base.repack_machine_loader.build(ROOT/'out/mainos_bus.bin', work, mainos, ...)
+
+tools/perky/repack_machine_loader.py:205
+    append, symbols, boot, names = platform_build.build([], [runtime_payload], work)
+                                   ^^^^^^^^^^^^^^^^^^^^ THE PAYLOAD AND ITS RECORDS
+```
+
+**`tools/build/platform_build.py`, function `build()`, is the writer.** That is where a tail record
+must be added.
+
+## What was ruled out on the way
+
+| candidate | verdict |
+|---|---|
+| `tools/remix/pack.py` | **the payload COMPRESSOR** (`_greedy_parse`, `_gamma_bits`) -- not the record packer |
+| `tools/perky/build_multi_payload.py` | only `build(assets, out)` and `main()` -- a wrapper, not the writer |
+| `tools/build/dsp_modmap.py` | the **parser** -- reads the table, never writes it |
+
+**Three plausible-looking names, none of them the writer.** The chain had to be followed rather than
+grepped for: the canary calls a repacker, which calls the platform builder, which writes the payload.
+
+## So step 2's three edits, now located precisely
+
+1. **`tools/build/platform_build.build()`** -- emit a record per tail, `w24(space) w24(count)
+   w24(addr)` + the shard's bytes inline, matching the `order` the payload's existing records use.
+2. **Both payloads** -- A has two in-window records as a template; **B has none, and T1 lives there**.
+3. **Then the placement** -- `place_program_shards_two_space()`, which `perky_emit_shards.emit()`
+   already calls (r120).
+
+**The format is specified (r121), the writer is located (r122), and the placement is already
+computed (r120).** What remains is the edit itself and its gate.
+
+## The honest note on how this round went
+
+**I spent several searches on the wrong files.** `pack.py` and `build_multi_payload.py` both *look*
+like the payload packer -- one is a compressor, one is a wrapper. **Grepping for names that sound right
+is how this session has repeatedly gone wrong; following the call from the entry point is what worked
+here.** Worth remembering: the canary's line 100 was the thread, and it was already in my notes.
