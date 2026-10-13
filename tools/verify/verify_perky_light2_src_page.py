@@ -88,10 +88,12 @@ WHAT THIS GATE CANNOT SEE (stated rather than implied)
   * Everything here is about the ColdFire CONTROL side.  It says nothing about
     whether a given engine renders correctly, and nothing about timing.
 
-Exit status: 0 when every claim above holds.  The host build is skipped (with a
-printed line, exit 0) only when no host C compiler exists at all.  Set
-``PERKY_LIGHT2_CONTROL`` to another C file to run the same gate against a
-variant -- that is how the teeth of this gate are demonstrated.
+Exit status: 0 when every claim above holds.  A missing toolchain is a printed
+SKIP line and not a failure -- the host half is skipped when no host C compiler
+exists at all, and the shipping-artifact half when m68k-elf-gcc is absent; the
+final summary says which ran.  Set ``PERKY_LIGHT2_CONTROL`` to another C file to
+run the same gate against a variant -- that is how the teeth of this gate are
+demonstrated.
 """
 from __future__ import annotations
 
@@ -128,6 +130,7 @@ MODE_COUNT, ALGO_COUNT = 3, 4
 LABELS = ("DECAY", "TUNE", "PAR1", "PAR2", "MODE", "ALGO")
 STEPPED_FORMATTER_A = 0x4003C718   # stock enumerated select: prints value+1
 MODE_TICK_WIDGET = 0x40047424      # stock SPRING TYPE three-position ticks
+
 
 def note(line: str) -> None:
     print(line)
@@ -181,6 +184,7 @@ extern int pk_render(unsigned, unsigned, unsigned, unsigned);
 extern unsigned pk_admit_track(const volatile uint8_t *, unsigned);
 extern uint32_t pk_track_page(const volatile uint8_t *);
 extern uint32_t pk_desc_p;
+extern void pk_ui_tick(void);
 
 /* The stock FLEX renderer is never supposed to run from this gate. */
 void pk_stock_pool_open(void) { abort(); }
@@ -240,7 +244,16 @@ int main(int argc, char **argv)
     const uint8_t *desc = (const uint8_t *)(uintptr_t)(page - 0x38u);
     printf("DESC ");
     for (unsigned i = 0; i < L2_DESC_SIZE; ++i) printf("%02x", desc[i]);
-    printf("\nADMIT");
+    printf("\n");
+
+    /* The other admitted voice (T5, zero-based 4) and the UI tick must hand out
+     * the same page: one light machine, two tracks. */
+    printf("DESC4_PTR %08x\n", (unsigned)pk_track_page(part0 + 0x22u + 4u));
+    pk_ui_tick();
+    printf("UI_TICK %08x\n",
+           (unsigned)U32(0x400d5f38u + 5u * 4u));   /* PERKY_ROW 5 */
+
+    printf("ADMIT");
     for (unsigned t = 0; t < 8u; ++t)
         printf(" %u", pk_admit_track(part0, t));
     printf("\n");
@@ -433,16 +446,23 @@ def execute(cases: list[Case]) -> dict[str, object]:
     rows: dict[int, dict[str, object]] = {}
     after: dict[str, object] = {}
     fallback = None
+    page = page4 = ui_tick = None
     for line in result.stdout.splitlines():
         fields = line.split()
         if not fields:
             continue
         if fields[0] == "DESC_PTR":
-            if int(fields[1], 16) != int(fields[2], 16):
-                fail(f"pk_track_page returned 0x{fields[1]} but pk_desc_p is 0x{fields[2]}")
+            page = int(fields[1], 16)
+            if page != int(fields[2], 16):
+                fail(f"pk_track_page returned 0x{page:08x} but pk_desc_p is "
+                     f"0x{int(fields[2], 16):08x}")
             desc = bytes.fromhex(fields[3]) if len(fields) > 3 else None
         elif fields[0] == "DESC":
             desc = bytes.fromhex(fields[1])
+        elif fields[0] == "DESC4_PTR":
+            page4 = int(fields[1], 16)
+        elif fields[0] == "UI_TICK":
+            ui_tick = int(fields[1], 16)
         elif fields[0] == "ADMIT":
             admit = [int(v) for v in fields[1:]]
         elif fields[0] == "CASE":
@@ -459,6 +479,15 @@ def execute(cases: list[Case]) -> dict[str, object]:
         fail("the fixture did not report a whole descriptor")
     if len(admit) != 8 or len(rows) != len(cases) or fallback is None or not after:
         fail(f"incomplete fixture output ({len(rows)}/{len(cases)} cases)")
+    if page4 is None or page4 != page:
+        fail(f"the second admitted voice (T5, zero-based 4) was handed a "
+             f"different page pointer (0x{page4} vs 0x{page:08x})")
+    if ui_tick is None or ui_tick != page:
+        fail(f"pk_ui_tick published 0x{ui_tick} for the PERKY row, not the "
+             f"descriptor page 0x{page:08x}")
+    note(f"MEASURED page identity: pk_track_page(T1) == pk_track_page(T5) == "
+         f"0x{page:08x}, and pk_ui_tick publishes that same pointer for the "
+         f"PERKY row")
     return {"desc": desc, "admit": admit, "rows": rows, "after": after,
             "fallback": fallback}
 
@@ -842,13 +871,18 @@ def main() -> None:
     check_dsp_dispatch()
     print()
     print("PERKY light two-voice SRC page 1: PASS")
-    print("  exactly six controls, in order: DECAY / TUNE / PAR1 / PAR2 / MODE / ALGO")
-    print("  staged through the normal path: P+0x18e/P+0x18a = 0x00111111/0x00000000")
-    print("  p-lockable: all six staged words reach the record; MODE clamps to 3, ALGO to 4")
-    print("  ALGO indirect: 0->Fold1(0), 1->Fold2(3), 2->Simple(2), 3->Noise/Tone(10)")
-    print("  one-trig ALGO p-lock: 0->3->0 and 2->10->2 in the DSP dispatch byte (word 19)")
-    print(f"  executed: host build of {CONTROL.name} + the real pk_render, "
-          f"{len(cases)} cases")
+    if data:
+        print("  exactly six controls, in order: DECAY / TUNE / PAR1 / PAR2 / MODE / ALGO")
+        print("  staged through the normal path: P+0x18e/P+0x18a = 0x00111111/0x00000000")
+        print("  p-lockable: all six staged words reach the record; MODE has 3 "
+              "positions, ALGO has 4")
+        print("  ALGO indirect: 0->Fold1(0), 1->Fold2(3), 2->Simple(2), 3->Noise/Tone(10)")
+        print("  one-trig ALGO p-lock: 0->3->0 and 2->10->2 in the DSP dispatch byte (word 19)")
+        print(f"  executed: host build of {CONTROL.name} + the real pk_render, "
+              f"{len(cases)} cases")
+    else:
+        print("  NOT EXECUTED: no host C compiler; only the artifact and DSP "
+              "tie-in checks ran")
 
 
 if __name__ == "__main__":

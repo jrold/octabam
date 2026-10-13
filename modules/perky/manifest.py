@@ -99,6 +99,10 @@ MODULE = Module(
         Gate("tools/verify/verify_perky_synth_source_exec.py", remix_arg=False),
         Gate("tools/verify/verify_perky_control_mapper.py", remix_arg=False),
         Gate("tools/verify/verify_perky_control_mapper_exec.py", remix_arg=False),
+        # The two-voice LIGHT machine's SRC page-1 contract, executed against the
+        # real pk_render: six controls, exact staging mask, engine byte on ALGO
+        # with a one-trig p-lock.  The light page has no other gate.
+        Gate("tools/verify/verify_perky_light2_src_page.py", remix_arg=False),
         Gate("tools/verify/verify_perky_machine_module.py", remix_arg=False),
         Gate("tools/verify/verify_perky_preboot_reserve.py", remix_arg=False),
         Gate("tools/verify/verify_perky_abi_contract.py", remix_arg=False),
