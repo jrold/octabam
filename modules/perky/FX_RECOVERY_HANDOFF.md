@@ -1771,3 +1771,45 @@ check(not _rsn, f"Resonant symbols in the shipping program: {_rsn[:6]}")
 **A requirement the brief states, previously unchecked, now asserted by a gate that runs in
 `make check`** -- and it is the third brief-named gate recovered or created in rounds 77-86 (after
 the odd-address store and the tail budget).
+
+---
+
+# STEP 2's HARD PART, SETTLED BY MEASUREMENT (round 87)
+
+Rounds 63-67 converged on "the tails are not writable ground" from the `region`/record side, and
+round 65 found `wrw_p` takes an absolute *image* address -- which raised the hope that a tail could
+be written anyway, if only the image offset were computable. **It is not.**
+
+The image's P layout is **piecewise per record**:
+
+```
+payload A: 68 P records, 68 DISTINCT (va + off - addr*3) values
+payload B: 46 P records, 46 DISTINCT
+-> NOT linear; the offset depends on the record
+```
+
+**So there is no formula from a DSP P address to an image address.** For a recorded address,
+`_p_off` walks `mods` and uses that record's own `off`. For an **unrecorded** address -- every tail
+-- **no such record exists, and no arithmetic substitutes for one.**
+
+## What that means, precisely
+
+| | |
+|---|---|
+| Do the records reach the window? | **yes** -- payload A's P coverage runs `0x00000..0x38013` |
+| Do they reach the TAILS? | **no** -- round 63 measured zero overlap on four of five |
+| Is there a linear map to fall back on? | **no** -- 68 records, 68 distinct offsets |
+
+**The tails are the GAPS between records.** They are free precisely because no record claims them --
+which is also why nothing can write them.
+
+## So step 2 is three things, and the middle one is the hard one
+
+1. the fit-and-place pipeline must carry N streams instead of one;
+2. **the tails need RECORDS** -- entries in the image's P record table, which the loader then has to
+   understand. This is not a `wrw_p` call and not a loop; it is new structure in the payload;
+3. the build must call `place_program_shards_two_space()`.
+
+**Item 2 is why the sharding plan is expensive**, and it is the honest answer to "why not just write
+the words there". **The mapping from code address to image address is a table, not a formula, and
+the tails are not in the table.**
