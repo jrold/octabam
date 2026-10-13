@@ -2384,3 +2384,62 @@ covers.**
 **The uploader is stock code, so it can be read** -- or, more cheaply, **a record whose `addr` is a
 known-good but unusual DSP address can be inserted and the words read back** with the probe recipe the
 handoff already carries. **That is a local test, and it is the natural first half of the edit.**
+
+---
+
+# THE SLACK ASYMMETRY, AND WHY A IS NOT ACTUALLY SHORT (round 129)
+
+Round 126 measured 30,460 bytes of room and I called it room for the tail record. **Reading the
+addresses again shows it is room for ONE payload, not both:**
+
+```
+A: 0x400e2324..0x400f59ef        slack after A: 0 bytes
+B: 0x400f59ef..0x401086f4        slack after B: 30,460 bytes
+loader: 0x4010fdf0
+```
+
+**A ends exactly where B begins.** So **payload B can grow in place; payload A cannot without moving
+B -- and moving B moves the loader, which sits at a fixed `LOADER_AT`.**
+
+**And the mapping is inverted, so this is the wrong way round for convenience:** A serves tracks 5-8,
+B serves tracks 1-4. **T1 is on B (the one with slack). T5 is on A (the one without).**
+
+## But A is not short of SPACE -- it is short of UNALLOCATED space
+
+**A already holds 3,441 words of records whose code the milestone is removing:**
+
+```
+Plate Reverb     594
+Spring Reverb   1063
+Dark Reverb     1067
+Compressor       180
+Lo-Fi            537
+                ----
+                3441
+```
+
+**Those records exist, are backed by bytes, and are pointed at code nobody wants.** The 3,051-word
+program fits inside 3,441 words. **So A's requirement is not new space -- it is a REALLOCATION of
+records A already carries.**
+
+**That is a different edit from adding a record:** instead of inserting 9 + `count*3` bytes and shifting
+everything, **change the `addr` and `count` of records that are already in the table, and pack the
+shards into the byte area they already own.** No growth, no shift, no loader move.
+
+## So step 2 has two shapes, one per payload
+
+| payload | slack | approach |
+|---|---|---|
+| **B** (T1) | 30,460 B after its table | **append** records before the terminator -- measured to fit 3.3:1 (r126) |
+| **A** (T5) | none | **repurpose** the 3,441 words of retired records -- re-point their `addr`, repack their bytes |
+
+**Neither needs a new address space.** And **INFERRED, not measured:** that a record's `addr` and
+`count` may be changed freely, and that a payload's loader does not depend on a record being where it
+was. **The first is implied by the format (both fields are just words in a header); the second is the
+same unmeasured property round 127 named.** Both are testable locally with a probe record.
+
+## What this corrects
+
+**Round 126 said "room exists" without asking room for *which* payload.** It is room for B only.
+**The A side is solved by reallocation instead -- and that is a better answer than room, because it
+needs none.**
