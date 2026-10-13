@@ -3734,3 +3734,69 @@ shared runs another way.**
 
 **Next: read `harvested()`, `regions_of()` and `p_spans()` in `tools/remix/stock.py` -- the three
 functions that build what `_want` is made of -- before writing anything.**
+
+---
+
+# THE ERROR EXPLAINED, AND THE MECHANISM WITH IT (round 155)
+
+Round 154 read the span declarations. **Round 155 read their three producers -- and found the reason I
+misread them for six rounds: the tree uses TWO conventions, both documented, and I read one as the
+other.**
+
+```python
+# tools/remix/stock.py
+def p_spans(payload) -> dict[str, tuple[int, int]]:
+    """{effect key: (P address, words)} for one payload's DSP effect code."""   # (start, LENGTH)
+
+# and its own consumer:
+def regions_of(harvest):
+    sp = p_spans("A")
+    if cur and sp[cur[-1]][0] + sp[cur[-1]][1] != a:      # start + LENGTH = the next start
+```
+
+**`stock.p_spans()` is `(start, LENGTH)`. `all_fx_layout.SAFE_*_SPANS` is `[lo, hi)` -- an END.**
+**Both are right where they live. Only one of them is what I assumed.**
+
+## The mechanism, now fully visible
+
+```python
+_want  = [_sp[k] for k in _harvest]          # (addr, words) per harvested effect
+region = sorted((m for m in mods if m[0] == 0
+                 and any(a <= m[1] < a + n for a, n in _want)), key=...)   # records in those spans
+_have  = sum(m[2] for m in region)
+if _have != sum(n for _a, n in _want): sys.exit(...)
+```
+
+**`_want` is a list of `(address, words)` spans. `region` is every P record whose address falls inside
+one. `_have` is those records' total; the check is equality against `_want`'s total.**
+
+**So adding the shared runs to `_want` is exactly the right gesture -- and it is not sufficient by
+itself.** With no record at `0x33da3+`, `region` gains nothing there, `_have` stays short of `_want`, and
+the build stops with "the module map and stock.p_spans disagree".
+
+## Which closes the loop
+
+**Both halves are needed, and both exist:**
+
+1. **`append` records at the shared runs** -- `dsp_modmap.append` (gated, r144), reachable from the
+   build through `P_REMAP`'s `(None, (addr, words))` form (r147).
+2. **Extend `_want` to cover the same runs** -- so `_have` and `_want` agree.
+
+**`_want` is built from `_sp = stock_mod.p_spans(tag)`, so the extension belongs where the harvest is
+computed** -- `build_bus.py`'s `_want` line, or the remix's declaration that feeds it. **That is the
+one decision left, and it is a two-line question, not an unknown.**
+
+## What is now settled, with a source for each
+
+| claim | source |
+|---|---|
+| the spans are `[lo, hi)` | the declaration comment (r154) |
+| `p_spans` is `(addr, words)` | its docstring and `regions_of` (r155) |
+| the shared runs are not stock effects | the declaration comment (r154) |
+| the mailbox is stepped over | `STOCK_MAILBOX_SPAN` (r154) |
+| `append` alone breaks `_have` | the equality check (r152) |
+| `_want` must gain the same runs | this round |
+| the totals are 2404 + 774 = 3178 vs 3051 | measured (r153) |
+
+**Every number the goal quotes now reproduces, every span is read by its own documented convention,
+and the remaining change is: append records at the shared runs and extend `_want` to match.**
