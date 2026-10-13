@@ -3364,7 +3364,11 @@ hostquit:
         # send_probe.py / render_reverb.py can drive the delay, and both take a
         # .mem -- making the developer remember a separate dsp_modmap
         # incantation after every build is how the hatch stops being used.
-        import dsp_modmap
+        #
+        # ⚠️ NO `import dsp_modmap` HERE. A local one shadows the module-level
+        # import for ALL of main(), so the P_REMAP append far ABOVE -- which runs
+        # first -- raised UnboundLocalError. It was invisible while P_REMAP was
+        # None: the path never ran. Found by running the armed build (r166).
         mem = pathlib.Path("out/dsp/mem_dev_A.mem")
         mem.parent.mkdir(parents=True, exist_ok=True)
         dsp_modmap.dumpmem(bytes(img), ["A", str(mem)])

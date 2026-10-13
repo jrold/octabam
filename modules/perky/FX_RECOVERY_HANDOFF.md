@@ -4414,3 +4414,63 @@ will say whether the appended records and the extended `_want` agree; **if they 
 named payload and both totals.** If they do, the P record table covers the shared runs, `place()` writes
 the shards there, and **Spring, Dark and Lo-Fi are no longer consumed** -- because the placement no
 longer needs their ground.
+
+---
+
+# THE ARMED BUILD RAN, AND THE GUARD SAID NO (round 166)
+
+The chain closed in r165. **Round 166 ran it -- and the first honest result is a refusal.**
+
+## Two findings, in order
+
+**1. A shadowing bug of my own -- the same class as r147.**
+
+```
+line 2193:  _blob = dsp_modmap.append(_blob, 0, _addr, _words)
+UnboundLocalError: cannot access local variable 'dsp_modmap'
+```
+
+**`main()` had `import dsp_modmap` at line 3367**, seven spaces in, serving `dumpmem` further down.
+**A local import makes the name local for the WHOLE function, so my use at 2193 -- which runs first --
+bound nothing.** I had added the module-level import at r147 and never removed the local one.
+
+**`make check` was green throughout, because `P_REMAP is None` means line 2193 never executes.** That is
+the third instance of this session's pattern: **a change that cannot fail while it is inert.** Removed;
+the module-level import at line 33 covers both uses.
+
+**2. The guard then fired, by name and with numbers.**
+
+```
+payload A: P remap grows the payload to 85749 B; its slot is 79563
+```
+
+**6,186 bytes over -- and `15 x 9 + 3 x 2017 = 6,186` exactly**: fifteen 9-byte record headers plus
+three bytes for each of 2017 words. **The arithmetic is exactly what the remap asked for; the payload
+slot simply is not big enough.**
+
+## What that means, and what it corrects
+
+**The constraint on this work was never `SAFE_SHARED_P_SPANS`' 2404 words.** That is free *DSP address
+space*, and the program fits it (r158). **The binding constraint is the PAYLOAD SLOT:**
+`PAYLOADS = [("A", ..., 0x136cb), ("B", ..., 0x12d05)]` -- **79,563 and 77,061 bytes.** Appending
+records needs room *in the blob*, and A has 6,186 bytes less than the remap wants.
+
+**Rounds 148-165 measured the wrong limit.** Everything they established about placement, correspondence
+and the guard is still true; **what none of them checked is whether the record table can GROW to hold the
+appends.** It cannot, as the design stands.
+
+## The correction that follows
+
+**Not every moving shard needs an appended record.** The 15 movers include ones whose new home is inside
+the *donor region itself* -- `simple_drum_envelope` goes to `0x01150` and `simple_drum_delta` to
+`0x01aa4`, both inside Plate's and Compressor's runs. **Those addresses already have stock records
+covering them, so they need no append at all** -- only the ones landing in the shared runs do, and those
+are 13 shards / 1608 words: `13 x 9 + 3 x 1608 = 4,941 B`. **Still more than 6,186? No -- less.** That
+is the next measurement, and it decides whether the append design survives or has to place shards to
+reuse existing records.
+
+## The honest position
+
+**The chain is built and the guard works. The first armed build refused for a measured, named reason
+that no earlier round had looked for.** That is a better outcome than a build that produced an image with
+the records in the wrong place -- and it is the outcome the guard was written for.
