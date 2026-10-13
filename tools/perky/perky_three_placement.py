@@ -17,6 +17,9 @@ PRIVATE_ENTRY = ('synth_seam_glue.asm','simple_drum_voice.asm')
 
 def place(pieces, syms, tag, externals):
     size={n:b-a for n,a,b,_,_ in pieces}
+    if 'pk_multi_complex_init' in size:
+        import perky_four_placement
+        return perky_four_placement.place(pieces, syms, tag, externals)
     common=COMMON | ({'pk_source_clock_prepare','pk_three_common_controls','pk_three_common_trigger'} if 'pk_source_clock_prepare' in size else set())
     private_fast=PRIVATE_FAST + (('pk_source_clock_finish',) if 'pk_source_clock_finish' in size else ())
     assert COMMON <= size.keys(), 'three-engine cold-helper census changed'

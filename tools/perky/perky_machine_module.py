@@ -20,7 +20,8 @@ from remix.schema import Detour, Linked, Poke, Proof, SymbolRef
 H = bytes.fromhex
 
 
-def build(original, *, control_source: str, dsp_source: str, src_only: bool = False):
+def build(original, *, control_source: str, dsp_source: str, src_only: bool = False,
+          phase2_ui: bool = False):
     if original.key != "PERKY PROBE":
         raise ValueError(f"expected PERKY PROBE, got {original.key!r}")
     if original.dsp is None or original.dsp.asm != "modules/perky/probe_glue.asm":
@@ -116,6 +117,18 @@ def build(original, *, control_source: str, dsp_source: str, src_only: bool = Fa
         detours=tuple(d for d in detours if d.symbol not in
                       ("pk_pool_title","pk_list_draw","pk_pool_open"))
 
+    if phase2_ui:
+        assert src_only, 'PERKY4 uses the SRC-only UI'
+        linked += (Linked("pkfourui", "modules/perky/machine_four_ui.s", dram=True),)
+        detours += (Detour(0x40040132, H("4879400bf10a2f36cce8"),
+                          "pkfourui", "pk_four_machine_glyph",
+                          "signed PERKY track selects stock P bitmap; internal FLEX type stays intact",
+                          pad_to=10),)
+        detours += (Detour(0x4004beac, H("4a1066044282600e"),
+                          "pkfourui", "pk_four_play_glyph",
+                          "PERKY source trig latch feeds stock play glyph; stock player flags stay intact",
+                          pad_to=8),)
+
     return dataclasses.replace(
         original,
         linked=linked,
@@ -124,7 +137,8 @@ def build(original, *, control_source: str, dsp_source: str, src_only: bool = Fa
         pokes=pokes,
         dsp=dsp,
         proof=Proof.CHECK,
-        proof_note="development full Noise/Tone machine; emulator/hardware qualification pending",
+        proof_note=("PERKY4 four-engine source; local qualification required; hardware pending" if phase2_ui else
+                    "development full Noise/Tone machine; emulator/hardware qualification pending"),
         doc=(
             "Development PERKY Noise/Tone machine: PK/1-signed FLEX donor, "
             "five source controls, engine browser, packed DSP synth source."

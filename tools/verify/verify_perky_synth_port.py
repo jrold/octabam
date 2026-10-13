@@ -36,7 +36,7 @@ ENGINE = int(os.environ.get("PERKY_TEST_ENGINE", "10"))
 # pk_multi_fold2_init + ALGO_ENGINE), so admitting it here IS the
 # qualification step rather than a bypass of it. Wavetable is deliberately
 # NOT listed: it is deferred and has no bank.
-assert ENGINE in (0, 2, 3, 10), "only qualified engine candidates can enter this gate"
+assert ENGINE in (0, 2, 3, 5, 10), "only qualified engine candidates can enter this gate"
 OUT = ROOT / f"out/perky/synth-port-engine-{ENGINE}"
 TRACKS = (1, 5)
 BLOCKED_TRACKS = (2, 3, 4, 6, 7, 8)
@@ -93,7 +93,7 @@ def configure_fixture(project: str, *, engine: int = ENGINE, name: str = "projec
                     # reorder that put ALGO at slot 2, slot 5 became MODE and every
                     # engine under test rendered Fold Drum 1 again. Slot 11 is the
                     # hidden model byte, which the transport overwrites from ALGO.
-                    algo = {0: 0, 3: 1, 2: 2, 10: 3}.get(engine, 99)
+                    algo = {0: 0, 3: 1, 2: 2, 5: 3, 10: 3}.get(engine, 99)
                     #            TUNE DECAY ALGO  PAR1 PAR2 MODE   (slots 0..5)
                     defaults = (64,  64,   algo, 64,  64,  0, 0, 0, 0, 0, 0, engine) if track != 4 else (127, 127, algo, 127, 127, 0, 0, 0, 0, 0, 0, engine)
                     for slot, value in enumerate(defaults):

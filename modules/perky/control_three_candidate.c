@@ -58,12 +58,20 @@
 #define ENGINE_FOLD1 0u
 #define ENGINE_SIMPLE 2u
 #define ENGINE_FOLD2 3u
+#if defined(PK_COMPLEX_CANDIDATE)
+#define ENGINE_COMPLEX 5u
+#define ALGO_COUNT 4u
+#else
 #define ALGO_COUNT 3u
+#endif
 
 /* ALGO value -> engine id. The only place the indirection lives: the engines do
  * NOT occupy ids 0..3, so a direct p[11] = algo would select the wrong one. */
 static const uint8_t ALGO_ENGINE[ALGO_COUNT] = {
     ENGINE_FOLD1, ENGINE_FOLD2, ENGINE_SIMPLE
+#if defined(PK_COMPLEX_CANDIDATE)
+    , ENGINE_COMPLEX
+#endif
 };
 
 /* The one PERKY track on each core. Track numbering here is zero-based:
@@ -215,6 +223,11 @@ static void pk_light2_fold2_prepare(PKSimpleControl *s, uint8_t *p,
 static uint8_t pk_prefix_controls[8][12];
 static uint8_t pk_prefix_valid[8];
 
+#if defined(PK_COMPLEX_CANDIDATE)
+static void pk_complex_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig);
+static void pk_ui_note_trig(unsigned track);
+#endif
+
 static void pk_three_prepare(unsigned track, uint8_t *p, unsigned trig)
 {
     const unsigned bank = U32(BANK), part = U8(PART_IDX) & 3u;
@@ -234,6 +247,10 @@ static void pk_three_prepare(unsigned track, uint8_t *p, unsigned trig)
         pk_fold_prepare(&simple_controls[track], p, trig);
     else if (p[11] == ENGINE_FOLD2)
         pk_light2_fold2_prepare(&simple_controls[track], p, trig);
+#if defined(PK_COMPLEX_CANDIDATE)
+    else if (p[11] == ENGINE_COMPLEX)
+        pk_complex_prepare(&simple_controls[track], p, trig);
+#endif
     else
         pk_simple_prepare(&simple_controls[track], p, trig);
 }
@@ -302,8 +319,12 @@ int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
             }
             pk_prefix_valid[track] = 0;
 
-            if (trig)
+            if (trig) {
                 ++pk_hits;
+#if defined(PK_COMPLEX_CANDIDATE)
+                pk_ui_note_trig(track);
+#endif
+            }
         }
 
         U32(0x80001c80u) =

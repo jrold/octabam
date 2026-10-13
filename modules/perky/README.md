@@ -47,3 +47,8 @@ Noise Hat's three candidate DSP modes now have original ARM PCM/state execution
 gates. See [NOISE_HAT.md](NOISE_HAT.md) for measured resources and the outstanding
 classic timing and production-integration gates. Family 010 remains unavailable
 in production images.
+
+Phase 2 development candidate: [PERKY4 release and hardware handoff](PERKY4_RELEASE.md),
+[exact memory ledger](PERKY4_MEMORY.md), and [Pickup feasibility audit](PICKUP_FEASIBILITY.md).
+This four-algorithm profile has its own local release runner; the registered
+probe manifest and preserved PERKY3R checkpoint remain unchanged.

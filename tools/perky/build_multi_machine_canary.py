@@ -27,7 +27,7 @@ def build(assets,build_number,version):
     build_image(work,build_number,version)
 
 
-def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2),engine_description='003 SIMPLE DRUM (authentic v1.2.1); 011 NOISE/TONE (PERKY2 synthetic)',local_only=False,src_only=False):
+def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2),engine_description='003 SIMPLE DRUM (authentic v1.2.1); 011 NOISE/TONE (PERKY2 synthetic)',local_only=False,src_only=False,phase2_ui=False):
     """Image phase after local qualification; useful when resuming a failed port gate."""
     import perky_fragmented_image as fragments
     seam=work/'fragmented-seam.asm'
@@ -35,7 +35,7 @@ def build_image(work,build_number,version,*,control_input=None,engine_ids=(10,2)
     control_source=work/'control.s'
     base.load_module('multi_control_gen',ROOT/'modules/perky/generate.py').write(control_source,source=control_input)
     mods=base.registry.modules();old=mods['PERKY PROBE']
-    full=base.perky_machine_module.build(old,control_source=base.repo_relative(control_source),dsp_source=base.repo_relative(seam),src_only=src_only)
+    full=base.perky_machine_module.build(old,control_source=base.repo_relative(control_source),dsp_source=base.repo_relative(seam),src_only=src_only,phase2_ui=phase2_ui)
     full=dataclasses.replace(full,dsp=dataclasses.replace(full.dsp,subst=substitutions))
     ranges=tuple(dataclasses.replace(r,length=6) if r.space=='x' and r.start==0x38ec else r for r in full.claims.dsp_ranges)
     ranges+=(DspRange('x',0x3964,17,'Simple Drum shared control-rate pitch cache'),)
