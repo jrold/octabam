@@ -2801,3 +2801,77 @@ Whatever tells the routine where to read, **it is not a literal in the stock OS.
 **Each round removed a way the routine could have refused a tail address, and none has produced one.**
 That is not proof -- **but it is five measurements pointing the same way, and the test that ends it is
 still one probe record.**
+
+---
+
+# STEP 2 AS A WORK PLAN (round 137)
+
+Seventeen rounds (120-136) turned step 2 from "a substantial refactor" into the work below. **This is
+the plan, in order, with the measurement behind each step.** Nothing here needs re-deriving.
+
+## 0. The one test that gates the rest
+
+**Insert a probe record at a tail address in one payload, build, and read the words back:**
+
+```
+.venv/bin/python3 tools/emu/ot_emu/stage_card.py PROJECT_DIR OCTABAM RIG --out out/card.img
+out/emu/ot_emu --image out/mainos_bus.bin --card out/card.img --set OCTABAM --project RIG \
+    --sequencer --internal-clock --frames 600 --load-ms 90000 --dsp --main-level 64
+# then, interactively:  dsp peek <core> P 0x33da3 300
+```
+
+**If the words arrive, everything below is mechanical. If they do not, stop and read the stock DSP boot
+routine -- and the record table is not the mechanism.** `--mem-dump` does **not** work for this (its
+spans are ColdFire addresses).
+
+**This needs `OT_PROJECT`.** It is the same dependency round 0 of the goal documents.
+
+## 1. Payload B -- append (T1's core)
+
+```
+insert, immediately BEFORE the terminator (blob+0x12cff for the current build):
+    w24(0) w24(tail_addr) w24(count) + count*3 bytes
+```
+
+**Measured:** the parse accepts it, the count rises by one, `_p_off` resolves the tail, and every
+record before it is untouched (r132). **Room:** 30,460 bytes after B's table, 9,162 needed (r126).
+**Order is `"ac"`** -- `w24(space) w24(ADDR) w24(COUNT)` (r125).
+
+## 2. Payload A -- reallocate (T5's core)
+
+**No insertion.** A's five retired records are **one contiguous 3,441-word run** at
+`0x01000..0x01d70` (r130), and the program fits in it (3,051 words). **Change each record's `addr` to
+the tail it should cover, and repack the shard bytes into the byte area those records already own.**
+
+**Measured:** re-pointing a record's `addr` parses correctly, leaves the count unchanged, and `_p_off`
+resolves the new address (r131).
+
+## 3. The placement is already done
+
+`perky_emit_shards.emit()` **already calls** `place_program_shards_two_space()` and returns
+`dest = {piece: start}` (r120). `build_bus.place()` **already spans several records** and needs no
+change (r124). **Do not write a placer.**
+
+## 4. Where the edit goes
+
+**The writer is on `build_bus.py`'s side, not `platform_build.build()`** -- that is the *loader*
+builder and takes the payload as input (r123 retracted r122's claim). **The record table itself comes
+from the stock payload and is only ever written INTO**, so the edit is: **change the table before/while
+the payload is emitted.**
+
+## 5. Order of work, and the checks at each step
+
+| # | step | check |
+|---|---|---|
+| 1 | probe record at a tail | words read back at the tail address |
+| 2 | B: append records | `verify_perky_shard_emit` + `_p_off` resolves every shard |
+| 3 | A: re-point the 5 retired records | the retired addresses disappear from `region`; the tails appear |
+| 4 | place the program | `place()` returns without `sys.exit`; extents exact |
+| 5 | rebuild + `make check` | **80 gates, 332 assertions, 0 FAIL** |
+| 6 | confirm Spring/Dark/Lo-Fi are PRESENT | the goal's items 6-8 |
+
+## 6. What is NOT known, and it is one thing
+
+**Whether the stock DSP boot routine validates `addr`.** Five measurements say it probably does not
+(r127, r133, r134, r135, r136) -- and **step 0 above settles it in one run.** Everything else has been
+measured.
