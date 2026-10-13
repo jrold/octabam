@@ -2500,3 +2500,49 @@ loader does not move.
 so nothing about the format forbids it -- **but "nothing forbids it" is not "the loader tolerates it"**,
 and that is the same unmeasured property round 127 named. **One probe record at an unusual address,
 read back, settles it.**
+
+---
+
+# THE REALLOCATION PROBE: THE FORMAT ACCEPTS IT (round 131)
+
+Rounds 129-130 argued payload A's tail records can be made by **re-pointing records it already has**,
+rather than inserting new ones. That rests on an unmeasured claim: *a record's `addr` may be changed.
+**Round 131 tested it -- on a copy, in memory, without touching the tree.**
+
+## The probe
+
+Take payload A's blob from the stock image. Find the PLATE record (`space=0 addr=0x01000 count=594`,
+`data_off=0x104a6`). **Change only its three `addr` bytes to a tail address, `0x33da3`. Re-parse.**
+
+```
+after re-pointing addr to 0x33da3:
+  records still parsed              : 98 (was 98)
+  the tail address is now a record  : True    count=594
+  the old 0x1000 record is gone     : True
+  _p_off would resolve P:0x33da3    : True
+```
+
+**Four things, all as needed:**
+
+* **the record count is unchanged** -- 98 before and after, so nothing downstream desynchronised;
+* **the tail address is now a record** -- `parse()` finds `space=0, addr=0x33da3, count=594`;
+* **the old address is gone** -- exactly the reallocation, not a duplication;
+* **and `_p_off` -- the mapper the build itself uses -- resolves it.** `build_bus.place()` would now
+  write into `0x33da3..0x34000` **through the record**, because that is how it already writes anywhere.
+
+## What this proves, and what it does not
+
+**Proves:** the record table's `addr` field is freely re-pointable **as far as the format and the
+build's own reader are concerned**. The 9-byte header carries `addr` as a plain word, and nothing about
+parsing, counting or mapping depends on it matching where it was.
+
+**Does not prove:** that the **stock DSP uploader** accepts a record at an address no stock record
+covered. **That is the runtime side, it is the same property rounds 127 and 129 named, and it needs
+either the uploader read or a probe record on hardware.** The local half is now done.
+
+## Why doing it on a copy mattered
+
+**The probe mutated a `bytearray` copy in memory and wrote nothing.** The staged artifacts and the
+stock image on disk are untouched -- the commit that records this changes only a markdown file.
+**Given that this session has already broken a gate's inputs once by running a build (r114), the
+cheapest possible experiment was the right one.**
