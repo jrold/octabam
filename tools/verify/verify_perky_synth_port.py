@@ -69,7 +69,25 @@ def configure_fixture(project: str, *, engine: int = ENGINE, name: str = "projec
                 for track in range(8):
                     data[base + 0x22 + track] = 1  # FLEX transport donor
                     data[base + 60 + 30 * track:base + 63 + 30 * track] = b"PK\x01"
-                    defaults = (64, 64, 64, 64, 0, 0, 0, 0, 0, 0, 0, engine) if track != 4 else (127, 127, 127, 0, 0, 0, 2, 0, 0, 0, 0, engine)
+                    # THE SIX-CONTROL SRC LAYOUT, not the legacy five-control one.
+                    # Slots 0..5 are DECAY/TUNE/PARAM1/PARAM2/MODE/ALGO, and ALGO
+                    # is an INDEX into the module's ALGO_ENGINE table -- it is NOT
+                    # the engine id. The old form wrote the engine id into slot 11
+                    # (the hidden model slot of the five-control layout) and left
+                    # slot 5 at 0, so EVERY engine under test rendered Fold Drum 1:
+                    # engine 0 passed, and 3/2/10 failed with "production engine
+                    # record missing" while actually rendering engine 0.
+                    # ALGO_INDEX inverts ALGO_ENGINE = {0: Fold1, 3: Fold2,
+                    # 2: Simple, 10: Noise/Tone} -> {Fold1: 0, Fold2: 1, Simple: 2,
+                    # NoiseTone: 3}.
+                    # engine 99 is the gate's deliberate unsupported-engine
+                    # baseline. With ALGO bounded to the pool, an unsupported
+                    # engine is unreachable THROUGH THE PAGE -- which is the
+                    # point of bounding it -- so 99 can only be expressed as an
+                    # out-of-range ALGO, which the transport clamps to ALGO 0.
+                    # The baseline therefore renders the clamped engine.
+                    algo = {0: 0, 3: 1, 2: 2, 10: 3}.get(engine, 99)
+                    defaults = (64, 64, 64, 64, 0, algo, 0, 0, 0, 0, 0, engine) if track != 4 else (127, 127, 127, 0, 0, algo, 0, 0, 0, 0, 0, engine)
                     for slot, value in enumerate(defaults):
                         off = (0x2a if slot < 6 else 0x1da) + 30 * track + 6 + slot % 6
                         data[base + off] = value
