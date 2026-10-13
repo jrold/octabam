@@ -4879,3 +4879,59 @@ is a read, not a guess.
 | scratch headroom | **262,144 B limit vs 84,513 B used -- 32%** |
 | all gates | **336 PASS, 8 SKIP, 0 FAIL** |
 | the caller supplying `p_records` | **the one edit left** |
+
+---
+
+# THE REMAINING THREAD IS TWO EDITS, BOTH LOCATED (round 174)
+
+Round 173 put `p_records` into `integrate`. **Round 174 found who can supply it -- and it is not where
+r172 guessed.**
+
+## The call chain, measured
+
+```python
+# tools/perky/build_multi_machine_canary.py
+ 57:  full = base.perky_machine_module.build(..., dsp_source=base.repo_relative(work/'multi.asm'))
+ 81:  p_words = payload.source.noise.measure((work/'multi.asm').read_text(), work/'multi.asm')
+100:  base.repack_machine_loader.build(ROOT/'out/mainos_bus.bin', work, mainos,
+                                        platform_dir=ROOT/'out/platform',
+                                        work=ROOT/'out/platform-perky-machine')
+```
+
+**`work/'multi.asm'` -- the file `perky_emit_shards.emit()` reads -- is already in scope in the canary,
+three times over.** And it is the canary, at line 100, that calls `repack_machine_loader.build`.
+
+## So the thread is
+
+```
+canary:  pieces, whole, dest, ... = perky_emit_shards.emit(work/'multi.asm')
+         p_records, _ = perky_tail_remap.build(pieces, whole, dest, E.MONOLITH_ORG)
+         repack_machine_loader.build(..., p_records=p_records)
+             -> perky_image.integrate(prefix, table_dir, p_records=p_records)   (r173)
+                 -> extend_upload(..., (p_records or {}).get(tag))              (r170)
+                     -> ab_records.ot_record(0, addr, words)                    (r169)
+```
+
+**Two edits: an optional `p_records` parameter on `repack_machine_loader.build`, and the two lines in
+the canary that compute and pass it.** Every function in the chain already accepts what it must.
+
+## Correction to r172
+
+**r172 said the wire was "`integrate` + `repack_machine_loader` passes `p_records[tag]`".** That was
+half right: **`integrate` does take it (r173), but the value has to originate in the CANARY, because
+that is where `emit()`'s input lives and where `repack_machine_loader.build` is called.** A thread
+through `repack_machine_loader` is still needed; **its source is one level higher than r172 said.**
+
+## State
+
+| piece | state |
+|---|---|
+| placement, selection rule, record format | in (r148-r150, r167, r169) |
+| `extend_upload` takes `p_records` | in; measured 9 Y + 4,941 P (r170) |
+| `build()` emits `(addr, [word, ...])` | in; join measured (r171) |
+| `integrate` takes `p_records` | in, inert (r173) |
+| scratch headroom | **262,144 B limit vs 84,513 B used -- 32%** |
+| the call chain | **measured; `multi.asm` in scope in the canary (this round)** |
+| all gates | **336 PASS, 8 SKIP, 0 FAIL** |
+| the two edits | **named, located, mechanical** |
+| the hardware question | the probe, gated (r139, r140), needs `OT_PROJECT` |
