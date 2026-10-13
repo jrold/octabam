@@ -108,6 +108,10 @@ MODULE = Module(
         # artifact": matches each recorded *_sha256= against the artifact it pins,
         # resolves git=, and refuses to pass when it can check no hash at all.
         Gate("tools/verify/verify_perky_provenance.py", remix_arg=False),
+        # boot/upload/readback. No project fixture needed -- stops at the RTOS
+        # handoff. The canary passes --image/--packed explicitly; with stale
+        # defaults absent it SKIPs rather than failing make check.
+        Gate("tools/verify/verify_perky_machine_boot.py", remix_arg=False),
         Gate("tools/verify/verify_perky_machine_module.py", remix_arg=False),
         Gate("tools/verify/verify_perky_preboot_reserve.py", remix_arg=False),
         Gate("tools/verify/verify_perky_abi_contract.py", remix_arg=False),

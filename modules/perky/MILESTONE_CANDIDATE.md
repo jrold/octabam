@@ -1332,3 +1332,40 @@ be re-run against a shipped artifact **without rebuilding anything.**
 **All three were labels applied from one observation and corrected by looking at the second.** The
 label "STALE" did real damage here: it kept a passing gate out of the registered set for thirty
 rounds.
+
+---
+
+# THE BOOT GATE IS REGISTERED, THIRTY ROUNDS LATE (round 113)
+
+Round 113 corrected the label and then acted on the correction.
+
+**The gate now skips when its stale defaults are absent** rather than failing, and says why:
+
+```
+[SKIP] needs out/mainos_perky_machine.bin and out/perky/machine-canary/packed
+       (the multi-machine canary writes these; run it, or pass --image/--packed explicitly)
+```
+
+**and it is in `make check`.** Both newly registered gates appear in the run:
+
+```
+make check REMIX=perky-machine
+  exit=0
+  332 [PASS]
+    8 [SKIP]     <- +1, the boot gate's honest skip
+    0 FAIL
+== PERKY PROBE: tools/verify/verify_perky_provenance.py     (PASS)
+== PERKY PROBE: tools/verify/verify_perky_machine_boot.py   (SKIP)
+```
+
+**Registered gates: 76 -> 78.** The boot gate was excluded by a label -- "STALE" -- that named a
+property of its *defaults* and was read as a property of the *gate*. **Thirty rounds of a passing
+check sitting outside the suite, from one word applied to the wrong noun.**
+
+## One honest note on the skip message
+
+**It names the stale defaults**, because that is what it checked for. Under the canary those paths
+are passed explicitly, so the message describes a situation the canary never creates. **It is
+accurate about what it tested and slightly misleading about what it means** -- noted rather than
+papered over, because the fix (teaching the gate the canary's real paths) needs a canary run to
+confirm, and confirming it is worth more than guessing it.
