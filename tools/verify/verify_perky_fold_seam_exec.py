@@ -27,6 +27,19 @@ def main():
     c.write_data=data
     assets=ROOT/'out/perky/simple-drum-assets'
     pitch=(assets/'pitch.bin').read_bytes();e1=(assets/'envelope1.bin').read_bytes();e2=(assets/'envelope2.bin').read_bytes()
+    # The renderer returns signed16 PCM BY DESIGN (fold_drum_voice.asm casts
+    # its product to signed16 explicitly). ALIGN_SHIFT is the exact
+    # signed16 -> signed24 source alignment (plus 48.16 dB) and is what the
+    # authentic reference convention is. SEAM_SHIFT is what SHIPS: the same
+    # alignment plus a calibrated MINUS 18.06 dB OT source trim, because a
+    # synth voice at full signed16 reaches 0 dBFS while a typical
+    # FLEX/STATIC sample sits far below it. A pure left shift keeps the trim
+    # exact -- no rounding, truncation, DC bias, wraparound or clipping --
+    # and the renderer is untouched, so the state and RNG assertions below
+    # remain the pre-trim bit-exactness proof against the reference model.
+    ALIGN_SHIFT = 8
+    SEAM_SHIFT = 5
+    assert 0 <= SEAM_SHIFT <= ALIGN_SHIFT
     waves={i:(assets/f'wave_{i:08x}.bin').read_bytes() for i in [0x080222a0,0x080226a0,0x080228a0]}
     total=0;meters=[]
     for SLOT in (0,0x20,0x40,0x60):
@@ -44,7 +57,7 @@ def main():
                         for i in [15,16,18,26,27,29,35]:v.words[i]=0
                         pcm+=v.render(16-event,waves,pitch,e1,e2,rng)
                     else:pcm=v.render(16,waves,pitch,e1,e2,rng)
-                    assert audio[0]==[x<<8 for x in pcm],(SLOT,mode,prepared,event,'PCM')
+                    assert audio[0]==[x<<SEAM_SHIFT for x in pcm],(SLOT,mode,prepared,event,'PCM: the seam output must be the reference PCM at the SHIPPED source trim; state/RNG below still prove the renderer itself is bit-exact')
                     assert [x&65535 for x in states[0][:40]]==v.words,(SLOT,mode,prepared,event,'state',[(i,a,b) for i,(a,b) in enumerate(zip(states[0],v.words)) if a!=b])
                     want_rng=[rng[0]&65535,rng[0]>>16,rng[1]&65535,rng[1]>>16]
                     assert states[0][58:62]==want_rng,(SLOT,mode,prepared,event,'RNG')
@@ -67,7 +80,7 @@ def main():
                     for off in [15,16,18,26,27,29,35]:v.words[off]=0
                     pcm+=v.render(16-event,waves,pitch,e1,e2,rng)
                 else:pcm=v.render(16,waves,pitch,e1,e2,rng)
-                assert audio[i]==[x<<8 for x in pcm],(mode,decay,i,'persistent PCM')
+                assert audio[i]==[x<<SEAM_SHIFT for x in pcm],(mode,decay,i,'persistent PCM')
                 assert [x&65535 for x in states[i][:40]]==v.words,(mode,decay,i,'persistent state')
                 assert states[i][58:62]==[rng[0]&65535,rng[0]>>16,rng[1]&65535,rng[1]>>16],(mode,decay,i,'persistent RNG')
             meters+=list(map(int,(OUT/'fold-persistent.meter').read_text().split()));total+=len(events)

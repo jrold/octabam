@@ -169,14 +169,38 @@ pks_done_silence:
         nop
 
 pks_continue:
-        ; Native mixer returns signed16 PCM. Align it to the stock signed24
-        ; source scale before AMP/FX (otherwise output is 48 dB too quiet).
+        ; Native mixer returns signed16 PCM: fold_drum_voice.asm casts its
+        ; product to signed16 explicitly, and noise_tone_mix_native.asm is
+        ; signed16 in and out. The stock source stage expects the signed24
+        ; convention, so the renderer output must be shifted up.
+        ;
+        ; Full alignment is a shift of eight (plus 48.16 dB). The shipped
+        ; value is a shift of five (plus 30.10 dB), i.e. a calibrated
+        ; MINUS 18.06 dB OT source trim on top of the exact alignment.
+        ;
+        ; MEASURED, and why the trim lives here rather than in the renderer:
+        ; the renderer is signed16-RANGE BY DESIGN, so this source path has
+        ; NO scaling error -- the alignment is exact and the "48 dB too
+        ; quiet" note above is its arithmetic. What is hot is the PROGRAM
+        ; MATERIAL: a synth voice that reaches full signed16 maps to
+        ; full-scale signed24, i.e. 0 dBFS, while a typical FLEX/STATIC
+        ; sample sits far below full scale. On hardware the user matched
+        ; them by dropping LEVEL to about 50 of 128, which under the
+        ; (LEVEL/128)^2 law is minus 16.3 dB -- so the difference is real,
+        ; is the material, and is not a defect in the integration.
+        ;
+        ; A pure left shift keeps the trim EXACT: no rounding, no
+        ; truncation, no DC bias (an arithmetic shift right would bias
+        ; negative samples down by up to the discarded bits), no
+        ; wraparound and no clipping -- a signed16 value shifted by five
+        ; cannot leave signed24 range. The renderer is untouched, so its
+        ; output against the PerkyBits reference is unchanged and remains
+        ; independently bit-exact; the pre-trim convention is still the
+        ; documented eight, and changing this constant changes only the
+        ; OT source level.
         move    #$0,r0
         do      #$20,pks_scaled_output
         move    x:(r0),a
-        asl     a
-        asl     a
-        asl     a
         asl     a
         asl     a
         asl     a

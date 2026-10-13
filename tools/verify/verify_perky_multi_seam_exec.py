@@ -12,6 +12,17 @@ ROOT=c.ROOT
 sys.path[:0]=[str(ROOT/'modules/perky'),str(ROOT/'tools/perky')]
 import simple_drum_live as live, simple_drum_ref as ref, simple_drum_control as control, simple_drum_compact as compact
 import build_multi_payload as payload
+
+# The renderers return signed16 PCM BY DESIGN, so the exact signed16 ->
+# signed24 source alignment is a shift of 8. SEAM_SHIFT is what SHIPS: the
+# alignment plus a calibrated MINUS 18.06 dB OT source trim (a synth voice
+# at full signed16 reaches 0 dBFS where a typical FLEX/STATIC sample sits
+# far below it). A pure left shift keeps the trim exact -- no rounding,
+# truncation, DC bias, wraparound or clipping -- and every state and RNG
+# assertion here remains the pre-trim bit-exactness proof.
+ALIGN_SHIFT = 8
+SEAM_SHIFT = 5
+assert 0 <= SEAM_SHIFT <= ALIGN_SHIFT
 OUT=ROOT/'out/perky/multi-seam'
 SLOT=0;RECORD=[]
 
@@ -79,7 +90,7 @@ def main():
                         v.trigger()
                         pcm+=compact.render_block(v.voice,16-event,waves,pitch,e1,e2)
                     else:pcm=compact.render_block(v.voice,16,waves,pitch,e1,e2)
-                    assert a==[[x<<8 for x in pcm]],(SLOT,mode,prepared,event,'Simple Drum PCM',a,pcm)
+                    assert a==[[x<<SEAM_SHIFT for x in pcm]],(SLOT,mode,prepared,event,'Simple Drum PCM',a,pcm)
                     assert [x&65535 for x in s[0][:34]]==v.voice.words,(SLOT,mode,event,'Simple Drum state')
                     assert s[0][62:64]==[0x4100,0x1234], 'ring/stock continuation'
                     meters.append(int((OUT/'simple.meter').read_text().strip()));total+=1
@@ -108,7 +119,7 @@ def main():
                 v.trigger()
                 pcm+=compact.render_block(v.voice,16-event,waves,pitch,e1,e2)
             else:pcm=compact.render_block(v.voice,16,waves,pitch,e1,e2)
-            assert a[i]==[x<<8 for x in pcm],(mode,i,'persistent PCM')
+            assert a[i]==[x<<SEAM_SHIFT for x in pcm],(mode,i,'persistent PCM')
             assert [x&65535 for x in s[i][:34]]==v.voice.words,(mode,i,'persistent state')
         meters+=list(map(int,(OUT/'simple-long.meter').read_text().split()));total+=len(events)
     RECORD=[0]*11+[99]
@@ -135,13 +146,13 @@ pkms_record_ready:""")
     blocks=[(tuple([0]*11+[engine]),event) for engine,event in [(2,0),(2,-1),(10,0),(10,-1),(2,7),(2,-1)]]
     a,s,_=c.run(binary,entry,'engine-switch',initial,tables,blocks)
     v=live.LiveSimpleDrum.fresh();v.apply_prepared_record(bytes(RECORD));v.trigger()
-    assert a[0]==[x<<8 for x in compact.render_block(v.voice,16,waves,pitch,e1,e2)]
-    assert a[1]==[x<<8 for x in compact.render_block(v.voice,16,waves,pitch,e1,e2)]
+    assert a[0]==[x<<SEAM_SHIFT for x in compact.render_block(v.voice,16,waves,pitch,e1,e2)]
+    assert a[1]==[x<<SEAM_SHIFT for x in compact.render_block(v.voice,16,waves,pitch,e1,e2)]
     assert a[2]==expected[noise_knobs[0],0][0][0], 'switch to Noise/Tone overlay'
     v=live.LiveSimpleDrum.fresh();v.apply_prepared_record(bytes(RECORD))
     pcm=compact.render_block(v.voice,7,waves,pitch,e1,e2);v.trigger();pcm+=compact.render_block(v.voice,9,waves,pitch,e1,e2)
-    assert a[4]==[x<<8 for x in pcm], 'switch back to Simple Drum overlay'
-    assert a[5]==[x<<8 for x in compact.render_block(v.voice,16,waves,pitch,e1,e2)]
+    assert a[4]==[x<<SEAM_SHIFT for x in pcm], 'switch back to Simple Drum overlay'
+    assert a[5]==[x<<SEAM_SHIFT for x in compact.render_block(v.voice,16,waves,pitch,e1,e2)]
     assert [x&65535 for x in s[5][:34]]==v.voice.words
     total+=len(blocks)
     assert max(meters)<=23040,('deadline',max(meters))

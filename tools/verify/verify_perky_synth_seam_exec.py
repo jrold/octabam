@@ -8,6 +8,17 @@ AMP/FX itself is outside this focused gate.
 from pathlib import Path
 import verify_perky_controlled_voice_exec as c
 
+# The renderers return signed16 PCM BY DESIGN, so the exact signed16 ->
+# signed24 source alignment is a shift of 8. SEAM_SHIFT is what SHIPS:
+# the alignment plus a calibrated MINUS 18.06 dB OT source trim (a synth
+# voice at full signed16 reaches 0 dBFS where a typical FLEX/STATIC
+# sample sits far below it). A pure left shift keeps the trim exact --
+# no rounding, truncation, DC bias, wraparound or clipping -- and every
+# state and RNG assertion here remains the pre-trim bit-exactness proof.
+ALIGN_SHIFT = 8
+SEAM_SHIFT = 5
+assert 0 <= SEAM_SHIFT <= ALIGN_SHIFT
+
 ROOT = c.ROOT
 SLOT = 0
 WRAPPER = r'''
@@ -94,7 +105,7 @@ def main():
         for event in (-1, *range(16)):
             audio, states, _ = c.run(binary, entry, f'slot-{SLOT:x}-event-{event}',
                                       state_init, tables, [(knobs, event)])
-            assert audio == [[sample << 8 for sample in block] for block in expected[event]], (SLOT, event, 'seam PCM differs')
+            assert audio == [[sample << SEAM_SHIFT for sample in block] for block in expected[event]], (SLOT, event, 'seam PCM differs')
             assert states[0][62:64] == [0x4100, 0x1234], (SLOT, event, 'continuation')
     SLOT = 0x80
     audio, states, _ = c.run(binary, entry, 'invalid-slot', state_init, tables,
@@ -110,7 +121,7 @@ def main():
     c.write_data = occupied
     SLOT = 0
     audio, _, _ = c.run(binary, entry, 'dirty-latch-reset', state_init, tables, [(knobs, 0)])
-    assert audio == [[sample << 8 for sample in block] for block in expected[0]]
+    assert audio == [[sample << SEAM_SHIFT for sample in block] for block in expected[0]]
     SLOT = 0x20
     audio, _, _ = c.run(binary, entry, 'excess-voice', state_init, tables, [(knobs, 0)])
     assert not any(audio[0]), 'second admitted voice exceeded the per-core limit'
@@ -133,7 +144,7 @@ def main():
               if len(f := line.split()) == 2}
     finish = labels['pkse_finish']
     audio, _, _ = c.run(binary, entry, 'unsigned-slot0-reset', state_init, tables, [(knobs, 0)])
-    assert audio == [[sample << 8 for sample in block] for block in expected[0]]
+    assert audio == [[sample << SEAM_SHIFT for sample in block] for block in expected[0]]
     print('PERKY actual source seam: PASS (all slots/trigger offsets, exact PCM, '
           'ring advance, continuation, invalid/excess voices silent, dirty latch '
           'reset on signed and unsigned slot0)')
