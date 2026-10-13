@@ -1188,3 +1188,44 @@ state: **they have not run, and no result is claimed for them.**
 the suite; the *76* quoted through this work is the number of gate *files* registered in
 `make check`. Both numbers are right, they measure different things, and conflating them is exactly
 the proxy-for-the-question mistake this session made four times.
+
+---
+
+# THE EXPLICIT P/X/Y LEDGER, WITH THE DISJOINTNESS COMPUTED (round 111)
+
+The brief's item 5 asks for *"an explicit final P/X/Y ledger proving there are no overlaps."* Two
+registered gates already exercise the pieces -- `verify_perky_all_fx_placer` enumerates the P tails,
+`verify_perky_all_fx_memory` proves the allocator geometry -- and both pass:
+
+```
+shared executable capacity: 2404 words
+private low-Y capacity     : 2139 words
+tail-a   -> P:$33da3..$33fff (605)      tail-b1  -> P:$37f10..$37fff (240)
+tail-b0  -> P:$37da3..$37eff (349)      tail-c   -> P:$3bda3..$3bfff (605)
+                                        tail-d   -> P:$3fda3..$3ffff (605)
+```
+
+**But "two gates pass" is not "the ledger proves no overlaps".** So the disjointness was computed --
+pairwise interval intersection over every span in every space:
+
+```
+P:  5 spans, 2404 words, 0 overlaps
+X:  3 spans,  338 words, 0 overlaps
+Y:  1 span,  2139 words, 0 overlaps
+--- 0 overlaps across the whole ledger ---
+P: 2404/2404 accounted      Y: 2139/2139 -- exactly full
+```
+
+**Now in the manifest**, so the claim travels with the artifact rather than living in a gate's exit
+code.
+
+## One thing the ledger must say clearly, or it misleads
+
+**`P: 2404/2404` does not mean Perky occupies 2404 words.** It means **the all-FX-safe shared
+capacity is fully accounted for.** The 3051-word program is placed **across those five tails plus the
+local ground** -- 774 words in 2 local runs -- for a total capacity of 3178. The manifest carries all
+three numbers together (`p_ground_local`, `p_ground_shared`, `p_capacity_total`) for exactly this
+reason.
+
+**And `Y: 2139/2139` is the opposite kind of statement: it IS full.** There is no Y headroom, which
+is why the deferred Wavetable work cannot add Y residency.
