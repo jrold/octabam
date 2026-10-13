@@ -1229,3 +1229,49 @@ reason.
 
 **And `Y: 2139/2139` is the opposite kind of statement: it IS full.** There is no Y headroom, which
 is why the deferred Wavetable work cannot add Y residency.
+
+---
+
+# THE PROVENANCE GATE: WRITTEN, TEETH PROVEN, REGISTERED (round 112)
+
+The brief's release-gate list names *"no provenance mismatch between HEAD, manifest and produced
+artifact"*. **Nothing checked it** -- `grep -c provenance modules/perky/manifest.py` was 0.
+
+`tools/verify/verify_perky_provenance.py` now does. **`make check REMIX=perky-machine`: 332 PASS,
+7 SKIP, 0 FAIL** (was 331 -- the +1 is this gate).
+
+## What it proves, and what it says it cannot
+
+**Proven:** every recorded `*_sha256=` matches the artifact it pins; `git=` resolves to a real
+commit; `tree=` is clean or dirty; and when `git=` is HEAD with a clean tree, the manifest describes
+this checkout.
+
+**Not proven:** that a rebuild reproduces the artifact byte for byte. That needs the canary's inputs.
+**The gate reports the comparison it can make and refuses to imply the one it cannot** -- a
+distinction this milestone has needed repeatedly.
+
+## It took three fixes, and each caught a way to pass while checking nothing
+
+**This is the "audits nothing" trap, walked into while writing the gate against it:**
+
+| # | the defect | how it would have passed |
+|---|---|---|
+| 1 | selected `out/PERKY2V_PERKY_TEST.txt` (the canary's own manifest, no artifact hash) | hash check skipped, **exit 0** |
+| 2 | `re.match(r'^([a-z_]+)=(.*)$')` -- **`card_sha256` contains digits**, so it never parsed | field read as absent, check skipped |
+| 3 | selected a manifest with the hash but **not** the `*_path=` it pins | nothing to compare, **exit 0** |
+
+**Found by running the corrupt-manifest test and watching it return `exit=0` twice.** The rule that
+kept catching it -- *measure the instrument's teeth, not its exit code* -- is the same one that
+produced four earlier corrections this session.
+
+## Teeth, shown both ways
+
+```
+normal    exit=0   card_sha256 MATCHES · midi_sha256 MATCHES · [PASS] 2 hashes
+corrupt   exit=1   card_sha256: MISMATCH against PERKY2V_milestone.bin
+restored  exit=0   [PASS]
+```
+
+**And the skip/fail distinction is deliberate:** a fresh checkout with no manifest **skips**
+(nothing has been claimed yet); a manifest that exists but names no artifact hash **fails**, because
+that is precisely the claim the gate exists to refuse.

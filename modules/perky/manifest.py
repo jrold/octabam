@@ -104,6 +104,10 @@ MODULE = Module(
         # with a one-trig p-lock.  The light page has no other gate.
         Gate("tools/verify/verify_perky_light2_src_page.py", remix_arg=False),
         Gate("tools/verify/verify_perky_shard_emit.py", remix_arg=False),
+        # the brief's "no provenance mismatch between HEAD, manifest and produced
+        # artifact": matches each recorded *_sha256= against the artifact it pins,
+        # resolves git=, and refuses to pass when it can check no hash at all.
+        Gate("tools/verify/verify_perky_provenance.py", remix_arg=False),
         Gate("tools/verify/verify_perky_machine_module.py", remix_arg=False),
         Gate("tools/verify/verify_perky_preboot_reserve.py", remix_arg=False),
         Gate("tools/verify/verify_perky_abi_contract.py", remix_arg=False),
