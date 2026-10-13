@@ -1037,3 +1037,61 @@ the vendored repo -- `git -C vendor/elektron-firmware-tool checkout -- main.c`, 
 **The staged card and MIDI are unchanged and remain what was physically tested.** The fix becomes
 live the next time the vendored tool is repatched and rebuilt -- and, as round 104 argued, **the right
 moment to ship a corrected card is the same rebuild that restores Spring, Dark and Lo-Fi.**
+
+---
+
+# THE EXACT BUILD CHANGE, AND WHY IT NEEDS THE REFHASH GATE (round 107)
+
+Round 106 found that a correct patch cannot be applied to an already-patched vendor tree, because
+`scripts/vendor.sh`'s `apply_patch` matches neither `--check` nor `--check --reverse`. `dsp56300` has
+a remedy. **Here is the exact analogue, and the reason it is not simply committed.**
+
+## The precedent, verbatim
+
+```make
+.PHONY: dsp-repatch
+dsp-repatch: ## Re-apply tools/patches/dsp56300.patch to vendor/dsp56300 (reverts its tracked edits), rebuild dsp_asm/dsp_host, check the one-word move
+	git -C vendor/dsp56300 checkout -- source
+	git -C vendor/dsp56300 apply "$(CURDIR)/tools/patches/dsp56300.patch"
+	cmake --build vendor/dsp56300/build --target dsp56kDisassemble dsp_asm dsp_host -j8
+	@$(MAKE) --no-print-directory check-asm
+	@echo "now rebuild the port against it: make emu-cf"
+```
+
+## The change it implies
+
+```make
+.PHONY: eft-repatch
+eft-repatch: ## Re-apply tools/patches/elektron-firmware-tool.patch to vendor/elektron-firmware-tool (reverts its tracked edits) and rebuild it
+	git -C vendor/elektron-firmware-tool checkout -- main.c
+	git -C vendor/elektron-firmware-tool apply "$(CURDIR)/tools/patches/elektron-firmware-tool.patch"
+	$(MAKE) -C vendor/elektron-firmware-tool
+	@echo "now regenerate the card and MIDI wrappers so they carry the corrected field"
+```
+
+Four lines, mirroring the target that already exists.
+
+## Why this is recorded rather than committed
+
+**It is a change to the BUILD, not to a module**, and `AGENTS.md` is explicit about what that
+requires:
+
+> If you change the BUILD rather than a module, prove it changed nothing: `scripts/refhash.sh save`
+> on a tree you trust, then `scripts/refhash.sh check` -- 24 configurations, artifacts and build
+> reports, bit-identical.
+
+**That is a 24-configuration bit-identity proof.** A new `.PHONY` target that no existing invocation
+names should not change any artifact -- **but "should not" is exactly the reasoning this repository
+has been burned by, and the proof is cheap to run and impossible to fake.** Adding an unproven build
+change would be worse than recording the exact change and its gate.
+
+## What is actually blocked, precisely
+
+**Nothing about the artifact.** The staged card and MIDI are unchanged and remain what was physically
+tested. **What is blocked is the last mile of a cosmetic fix:** a correct, pristine-verified patch
+that needs (a) a repatch target, (b) the refhash proof that the target is inert, and (c) a rebuild
+whose regenerated wrappers carry the corrected field.
+
+**All three are mechanical. None is a research question.** And as round 104 argued, **the natural
+moment to do all three is the rebuild that restores Spring, Dark and Lo-Fi** -- so the corrected card
+is produced once, with its version field and its FX both right, under one set of hashes.
