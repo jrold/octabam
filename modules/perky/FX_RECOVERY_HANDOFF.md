@@ -2875,3 +2875,69 @@ the payload is emitted.**
 **Whether the stock DSP boot routine validates `addr`.** Five measurements say it probably does not
 (r127, r133, r134, r135, r136) -- and **step 0 above settles it in one run.** Everything else has been
 measured.
+
+---
+
+# STEP 0 IS NOW ONE COMMAND (round 139)
+
+The plan's step 0 -- the probe that settles whether the stock DSP boot routine accepts an unexpected
+`addr` -- is now a tool rather than a recipe.
+
+## `tools/perky/probe_tail_record.py`
+
+```
+python3 tools/perky/probe_tail_record.py --selftest      # proves the edit, writes nothing
+python3 tools/perky/probe_tail_record.py --out out/mainos_probe_tail.bin
+```
+
+**What it does:** takes the built image, finds SPRING's record in payload A (`0x01252`, 1063 words),
+**re-points its `addr` to the first tail (`0x33da3`)**, and fills its words with `0xABCDEF`.
+
+**Why that shape:**
+
+* **re-pointing is a PURE IN-PLACE edit** -- no insertion, no growth, no shifting, so the only
+  difference from stock is one `addr` field and the bytes it governs;
+* **it is the operation payload A needs anyway** (r131), so a positive result is the real answer;
+* **SPRING is retired by the milestone's priorities**, so nothing the goal wants to keep is disturbed;
+* **the marker is unmistakable** -- stock code is never `0xABCDEF`.
+
+## Verified, three ways, before claiming anything
+
+**1. `--selftest` re-parses the edited blob and checks eight properties:**
+
+```
+[ok] the donor record exists          [ok] the word count is preserved
+[ok] the probe record is at the tail  [ok] the payload length is unchanged
+[ok] the record count is unchanged    [ok] _p_off resolves the tail
+[ok] the donor address is gone        [ok] the marker is in the image bytes
+```
+
+**2. The emitted image differs from the reference in exactly the right places:**
+
+```
+differing bytes: 3,192
+expected header (addr field only): 0xf2ac3..0xf2ac5   =     3
+expected data                    : 0xf2ac9..0xf373d   = 3,189  (1063 words)
+all differences inside the expected ranges: True
+```
+
+**3 + 3,189 = 3,192 exactly**, sizes identical, and **the reference `out/mainos_bus.bin` is unchanged**
+(checked with `cmp`).
+
+**3. It writes only `out/mainos_probe_tail.bin`** -- a new file -- so it cannot disturb the inputs any
+gate or the canary reads. **That matters: round 114 broke a gate's inputs by running `make bus`.**
+
+## Reading the answer
+
+Boot the probe and peek DSP P memory:
+
+```
+dsp peek <core> P 0x33da3 8
+```
+
+**Pattern present → the routine writes wherever `addr` says. Step 2's mechanism is confirmed and the
+plan proceeds.**
+**Stock bytes → it refuses. Stop and read the stock DSP boot routine.**
+
+**The peek needs the emulator with a project on the card -- the same `OT_PROJECT` the goal's item 0
+documents. The tool is ready; the run is what is missing.**
