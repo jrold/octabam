@@ -59,7 +59,7 @@ def main() -> int:
     import perky_tail_remap as R
 
     pieces, whole, dest, final, syms = E.emit(asm)
-    both, extra, stayed, moved = R.build(pieces, whole, dest, E.MONOLITH_ORG)
+    both, extra, stayed, local_kept, moved = R.build(pieces, whole, dest, E.MONOLITH_ORG)
 
     bad = []
     for tag, remap in both.items():

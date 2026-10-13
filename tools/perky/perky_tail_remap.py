@@ -63,8 +63,21 @@ def build(pieces, whole, dest, org):
 
     `pieces` and `whole` come from `emit()`; `org` is the monolith's load
     address, so piece words are `whole[a-org : b-org]`.
+
+    ⚠️ ONLY SHARDS LANDING IN A *SHARED* RUN GET A RECORD. The local runs are
+    Plate's and Compressor's own extents -- stock records already cover every
+    address in them, so a shard placed there needs no append. Appending for those
+    too grew payload A to 85,749 B against a 79,563 B slot (r166); the overage,
+    6,186 B, was exactly 15 headers + 3 x 2017. Dropping the two local movers
+    leaves 13 appends / 1608 words = 4,941 B, which fits.
     """
-    remap, extra, stayed, moved = [], [], [], 0
+    import all_fx_layout as L
+    local = L.SAFE_LOCAL_P_SPANS          # [lo, hi) -- Plate + Compressor
+
+    def in_local(addr, words):
+        return any(lo <= addr and addr + words <= hi for lo, hi in local)
+
+    remap, extra, stayed, local_kept, moved = [], [], [], [], 0
     for (name, a, b, _text, _i) in pieces:
         new = dest[name]
         if new == a:
@@ -73,6 +86,9 @@ def build(pieces, whole, dest, org):
         words = whole[a - org: b - org]
         if len(words) != b - a:
             raise SystemExit(f"{name}: got {len(words)} words, expected {b - a}")
+        if in_local(new, len(words)):
+            local_kept.append((name, new, len(words)))   # stock records already cover it
+            continue
         remap.append((None, (new, pack(words))))
         extra.append((new, len(words)))
         moved += len(words)
@@ -81,7 +97,7 @@ def build(pieces, whole, dest, org):
     # RECORD addresses differ between A and B (r149), and append names none.
     both = {"A": list(remap), "B": list(remap)}
     extra_both = {"A": list(extra), "B": list(extra)}
-    return both, extra_both, stayed, moved
+    return both, extra_both, stayed, local_kept, moved
 
 
 def to_json(both, extra) -> dict:
@@ -129,7 +145,7 @@ def main() -> int:
 
     org = E.MONOLITH_ORG
     pieces, whole, dest, final, syms = E.emit(asm)
-    both, extra_both, stayed, moved = build(pieces, whole, dest, org)
+    both, extra_both, stayed, local_kept, moved = build(pieces, whole, dest, org)
 
     runs = [(a, b, 'LOCAL') for a, b in L.SAFE_LOCAL_P_SPANS] + \
            [(a, b, 'SHARED') for a, b in L.SAFE_SHARED_P_SPANS]

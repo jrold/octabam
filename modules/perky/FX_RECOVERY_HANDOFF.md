@@ -4474,3 +4474,65 @@ reuse existing records.
 **The chain is built and the guard works. The first armed build refused for a measured, named reason
 that no earlier round had looked for.** That is a better outcome than a build that produced an image with
 the records in the wrong place -- and it is the outcome the guard was written for.
+
+---
+
+# THE RECORD TABLE CANNOT GROW IN PLACE (round 167)
+
+Round 166 removed the two donor-region movers and reran. **It still refused -- and the second refusal
+found the real constraint.**
+
+## What the corrected spec did
+
+```
+[PASS] all 13 appended extents fall inside one reusable run
+P_WANT_EXTRA total: 1608 words
+build with:  PERKY_P_SPANS=out/perky_p_spans.json REMIX=perky-machine make bus
+
+GUARD: payload A: P remap grows the payload to 84504 B; its slot is 79563
+```
+
+**`84,504 - 79,563 = 4,941` -- exactly the 13-append size.** So the payload is *already at* 79,563 B and
+the check refuses **any** growth. **Round 166's "4,941 < 6,186 so it fits" compared the append against
+the wrong quantity: 6,186 was the *overage of the first attempt*, not available room.**
+
+## The measurement that explains it
+
+```
+PAYLOADS: A va=0x400e2324 ln=79563  ends 0x400f59ef
+          B va=0x400f59ef ln=77061  ends 0x401086f4
+
+gap between A and B: 0 B  (0 words)
+```
+
+**The two payloads are perfectly adjacent.** A ends exactly where B begins. **Appending a single byte
+to A's blob overwrites the first byte of B -- and B is where the other Perky voice lives.**
+
+**So `ln` is not a slot with slack; it is the payload's own length, and the region after it belongs to
+somebody else.** Round 147's guard message said "its slot is {ln}"; **that word was wrong, and this
+round is the correction.**
+
+## What this means for the design
+
+**The P record table cannot grow in place -- not by 13 records, not by one.** Any design that adds
+records to the payload blob has to answer *where the bytes go*, and there is no free space adjacent to
+either payload.
+
+**Two shapes remain, and neither is a placement question:**
+
+1. **Balance the growth** -- remove as many bytes from the payload as the records add. The payload is
+   assembled from our modules and stock; **a module's contribution could shrink, but the appended
+   records are ~4,941 B in A and the same in B, so this means giving up ~1,647 words of code.** That is
+   a code-size problem, which section 6 of the goal explicitly puts last.
+2. **Put the records outside the payload** -- which is what `perky_image.extend_upload` already does for
+   X and Y (r162): it appends to the **upload**, not the payload, and the pre-boot loader reads the
+   result. **The upload is the structure with room.**
+
+**Shape 2 is the one the tree already uses, and it is the one to read next.**
+
+## The honest position
+
+**Two armed builds, two measured refusals, both by name and with numbers -- and the second one found the
+constraint that sixteen rounds of placement analysis never touched.** The placement is correct, the
+correspondence is proven, the guard works. **What was never checked is whether the container can hold
+the new records, and it cannot.**
