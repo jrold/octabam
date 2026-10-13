@@ -1,6 +1,6 @@
 # FX recovery — handoff
 
-## STATUS AT A GLANCE (round 74)
+## STATUS AT A GLANCE (round 85)
 
 **Delivered and gated — tasks 0, 1, 2, 3, 4, 7, 8 of the goal:**
 
@@ -11,11 +11,25 @@
 | engines reference-qualified | Fold1, Fold2, Simple, Noise/Tone -- both cores, 32000 frames, dirty memory |
 | Noise/Tone authenticity | resolved against the ARM captures; the shipping path IS the authentic seam |
 | output gain | **measured** (no source-path error), trimmed -18.06 dB by exact left shift |
-| P/X/Y ledger | corrected; **66 gates run, 0 failed** |
-| flashable artifact | `~/Downloads/PERKY2V_milestone.{syx,bin}`; hashes unchanged across 73 commits |
+| P/X/Y ledger | corrected; **76 gates run, 0 failed** |
+| flashable artifact | `~/Downloads/PERKY2V_milestone.{syx,bin}`; hashes unchanged across 85 commits |
 
 **NOT delivered: Spring, Dark and Lo-Fi are still absent** (goal items 6-8). Everything below in
 this file is about getting them back.
+
+### What rounds 76-85 added
+
+**Twelve gates that existed and had never run are now registered** (64 -> 76 gates, 0 failed): the
+odd-address gate (teeth proven both ways), the two tail-budget gates `ALL_FX_MEMORY.md` cites as its
+proof, and nine engine/seam gates -- including the four-engine proof that is task 3's core. Three
+further candidates were found **stale** (they test an older architecture) and deliberately left
+unregistered rather than made green.
+
+**And one finding subsumes the rest: every remaining blocker converges on a single external input.**
+`OT_PROJECT` -- a stock Octatrack project -- is required by the canary, the boot gate, the
+executability probe and `build_cf_final.py`. It cannot be synthesized here (`tools/hw/ot_project.py`
+only reads and writes an existing project, and AGENTS.md forbids an Elektron byte in the repo), and
+**the canary cannot currently reproduce the shipped artifact without it.**
 
 ## Why it is hard, in three lines
 
