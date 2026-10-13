@@ -2941,3 +2941,34 @@ plan proceeds.**
 
 **The peek needs the emulator with a project on the card -- the same `OT_PROJECT` the goal's item 0
 documents. The tool is ready; the run is what is missing.**
+
+---
+
+# THE PROBE TOOL IS GATED (round 140)
+
+Round 139 wrote `tools/perky/probe_tail_record.py` -- the single command that answers step 2's one open
+question. Round 140 made sure it cannot rot.
+
+**`tools/verify/verify_perky_tail_probe.py`** runs the tool's `--selftest` inside `make check`: the
+selftest re-parses an edited payload copy and checks eight properties of the edit -- the donor record,
+the tail record, the record count, the old address, the word count, the payload length, `_p_off`, and
+the marker. **It writes nothing** (the edit is on an in-memory copy).
+
+```
+make check REMIX=perky-machine
+  exit=0
+  333 [PASS]    <- +1, the tail-probe gate
+    8 [SKIP]
+    0 FAIL
+```
+
+**Registered gates: 80 -> 81. Assertions: 332 -> 333.**
+
+**Why this was worth a round:** the probe answers the question the whole of step 2 rests on, and it
+encodes measurements (the `"ac"` order, the 9-byte header, `_p_off`'s reach) that would otherwise live
+only in this document. **A tool that answers the critical question and is not checked is one refactor
+away from being wrong and silently trusted** -- which is exactly the pattern this session kept finding
+in *other* gates (r96, r112, r113).
+
+**If `out/mainos_bus.bin` is absent the gate SKIPs** rather than failing: a fresh checkout has no image
+to probe, and that is not a defect.

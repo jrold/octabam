@@ -112,6 +112,10 @@ MODULE = Module(
         # handoff. The canary passes --image/--packed explicitly; with stale
         # defaults absent it SKIPs rather than failing make check.
         Gate("tools/verify/verify_perky_machine_boot.py", remix_arg=False),
+        # keeps the step-0 probe honest: it re-runs the probe tool's
+        # --selftest, which re-parses an edited payload copy and checks the
+        # edit. Writes nothing.
+        Gate("tools/verify/verify_perky_tail_probe.py", remix_arg=False),
         Gate("tools/verify/verify_perky_machine_module.py", remix_arg=False),
         Gate("tools/verify/verify_perky_preboot_reserve.py", remix_arg=False),
         Gate("tools/verify/verify_perky_abi_contract.py", remix_arg=False),
