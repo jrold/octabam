@@ -1346,3 +1346,45 @@ which would have condemned the tail strategy on the strength of a measurement th
 it. **That is the same instrument-blindness this branch keeps finding** (`send_probe`'s harmonic
 metric, the reverb-smoothed XBUS measurement, the cached-alias write watch in AGENTS.md). The
 remedy is the same: name what the instrument reads before trusting what it does not say.
+
+---
+
+# THE PROBE'S LAST REQUIREMENT IS YOURS TO SUPPLY (round 75)
+
+Addendum 73 listed "a stock project fixture (`OT_PROJECT`)" as a requirement. Round 75 checked
+whether it can be produced locally. **It cannot.**
+
+* **No fixture on this machine.** The candidates checked (`~/Downloads`, `~/Documents`) hold
+  unrelated material.
+* **`tools/harness/stress_project.py` cannot conjure one.** Its own docstring:
+
+  > `python3 tools/harness/stress_project.py [--remix X] [--source <project>] [--out …]`
+  > **The source template stays local and is never committed.**
+
+  It **derives** a stress layout from a source project; it does not generate a stock project.
+
+**So the probe's requirement list is complete and its last item is a stock Octatrack project** --
+which you have and this sandbox does not. Everything else is in the tree.
+
+## The complete requirement list, final
+
+| # | requirement | state |
+|---|---|---|
+| 1 | step 2: the shards actually placed | not done -- write path + fit-and-place refactor located |
+| 2 | list SPRING REV, DARK REV, LO-FI in `fx1` | one edit; **prediction already confirmed** |
+| 3 | a stock Octatrack project (`OT_PROJECT`) | **yours to supply** |
+| 4 | Test A: `dsp peek <core> P <tail>` | mechanism corrected in addendum 73; interactive |
+| 5 | Test B: `--dsp-pcwatch <shard entry>` | recipe documented; **zero hits is decisive** |
+
+**Four of the five are local to this tree. The second is one edit whose outcome is already
+measured. So the FX recovery is gated on step 2 (real work, no open question) and on one artifact
+you can hand over.**
+
+## A note on what "blocked" would mean here
+
+The goal defines a genuine blocker as exact measured evidence: address/range, required words,
+available words, a timing or ABI or relocation result, or a reference mismatch. **None of the
+remaining items is any of those.** Step 2 is a refactor whose every unknown has been measured away;
+item 3 is a fixture; items 4 and 5 are tests. **So this is not a blocker, and the goal stays
+active** -- the honest description is "remaining work, with one input that must come from the
+hardware side".
