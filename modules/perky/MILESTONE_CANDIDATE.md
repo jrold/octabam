@@ -370,3 +370,46 @@ is a *left shift*, not a multiply: no rounding, no truncation, no DC bias, no wr
 clipping. Had the trim been implemented as a multiply by a fractional constant, the error would be
 non-zero and the bit-exactness argument would not survive. **The implementation choice is what makes
 the zero true, not the measurement alone.**
+
+---
+
+# THE ONE ITEM-4 REQUIREMENT NOT MET AS WRITTEN (round 94)
+
+The brief prescribes a specific experiment:
+
+> 2. Better still, use **EXACTLY THE SAME integer PCM through both source paths.**
+> 3. Feed the reference PCM through a completely stock FLEX/STATIC source path at unity/default
+>    source settings.
+> 4. Feed that same PCM through the Perky source-record/integration path...
+> 5. Compare at the closest possible common point BEFORE stock AMP, FX1, FX2, track LEVEL, MAIN/CUE.
+
+**What was done instead measured the source path directly.** The seam's multiply is x256 -- the exact
+signed16 -> signed24 alignment -- so there is **no source-path scaling error**, and the -18.06 dB
+trim is a calibrated choice rather than a correction of a defect. The five numbers reported in
+round 93 are sound and source-verified.
+
+**But that is not the same experiment.** A two-path A/B with identical PCM would catch a
+source-record/integration error *anywhere* in the chain; the seam measurement only rules out the
+scaling at the seam. **The brief asked for the former and I produced the latter**, and the
+distinction matters because the seam measurement cannot see an error introduced upstream of it.
+
+## And it could not have been gated here anyway
+
+**No calibration gate exists.** `verify_perky_mix_exec.py` is registered and mentions gain -- but it
+tests the **Noise/Tone mixer**, not a two-path A/B. Any genuine A/B needs the emulator with a
+project on the card, which is the same `OT_PROJECT` dependency that blocks the canary, the boot gate
+and the probe.
+
+## The five numbers, restated with their scope
+
+| number | value | what it is scoped to |
+|---|---|---|
+| raw amplitude ratio | 8:1 | the seam's alignment vs the shipped shift |
+| raw dB mismatch | 18.06 dB | the same |
+| fixed-point multiplier | 32 (2^5) | the shipped left shift, confirmed by 5 `asl` in the source |
+| resulting error | 0 LSB | **holds because it is a shift, not a multiply** |
+| maximum output headroom | 8.00x = 18.06 dB | signed16 full-scale into signed24 |
+
+**All five are correct about the seam. None of them is a measurement of the whole source-record
+path against a stock one** -- which is the measurement the brief actually asks for, and which the
+hardware A/B in step 9 of the test sequence is the practical substitute for.
