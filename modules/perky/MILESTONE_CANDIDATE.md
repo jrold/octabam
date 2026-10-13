@@ -1513,3 +1513,56 @@ the gate still runs, and still fails, whenever a caller names a set.** It declin
 
 **And I only found this because I ran `make check` after the change.** The `--platform` edit was
 correct on its own; the default change was the mistake, and it was invisible until the suite ran.
+
+---
+
+# THE ROOT CAUSE, COMPLETE: `out/platform/` IS AN INPUT (round 116)
+
+Round 114 found the boot gate failing after my `make bus`. Round 116 read the code that explains it.
+
+## The chain
+
+```
+build_multi_machine_canary.py:100
+    base.repack_machine_loader.build(ROOT/'out/mainos_bus.bin', work, mainos,
+                                     platform_dir=ROOT/'out/platform',          # <- READ
+                                     work=ROOT/'out/platform-perky-machine')    # <- preblobs
+
+repack_machine_loader.py:173   platform_dir = platform_dir or ROOT / "out/platform"
+repack_machine_loader.py:194   layout, _runtime_raw, runtime_payload = load_runtime(platform_dir)
+repack_machine_loader.py:85    def load_runtime(platform_dir):
+                               86    layout_path = platform_dir / platform_build.LAYOUT
+                               87    raw_path    = platform_dir / "runtime.raw"
+```
+
+**`platform_dir` is an INPUT.** The canary does not write it; it **reads** `layout.json` and
+`runtime.raw` from the shared `out/platform/`.
+
+**So the canary's image is a function of whatever platform files happened to be there when it ran.**
+`make bus` -- which I ran twice in round 109 -- rewrites them in place. The boot gate then compares
+the canary's image against the *current* platform files, and they are from different builds.
+
+## Why this is the sharpest form of the gap
+
+**It is not that an intermediate was lost.** It is that **the canary's own output silently depends on
+a shared mutable directory**, and nothing records which contents it read. Two runs of the canary, with
+a `make bus` between them, produce images that differ **for a reason nothing in the manifest names**.
+
+**And the fix has the same shape as everything else here: name the directory, and keep the set
+together.** Round 115 already added `--platform` to the *checker*. **The same seam belongs on the
+producer** -- the canary should take a platform directory and the build should keep the platform
+files it used beside the image they produced.
+
+## The confirmation worth noting
+
+**Round 115's `--platform` default was `out/platform-perky-machine/platform`** -- a path that does not
+exist, chosen so `make check` would skip rather than fail. **It turns out to be exactly where the
+platform files belong:** inside the canary's own work directory, instead of a shared path that any
+build can overwrite. **The default that kept the suite green anticipated the right fix.**
+
+## What I am not claiming
+
+**Not that the canary is broken for its own run** -- reading `out/platform` is correct *if* nothing
+else writes it in between, and in a single clean run it works: the canary's image, its preblobs and
+its platform files all agreed at 00:30. **The defect appears only when a second build intervenes**,
+which is exactly what a person verifying something else will do.
