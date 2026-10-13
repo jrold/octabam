@@ -67,9 +67,13 @@ def build(pieces, whole, dest, org):
     ⚠️ ONLY SHARDS LANDING IN A *SHARED* RUN GET A RECORD. The local runs are
     Plate's and Compressor's own extents -- stock records already cover every
     address in them, so a shard placed there needs no append. Appending for those
-    too grew payload A to 85,749 B against a 79,563 B slot (r166); the overage,
-    6,186 B, was exactly 15 headers + 3 x 2017. Dropping the two local movers
-    leaves 13 appends / 1608 words = 4,941 B, which fits.
+    too grew payload A to 85,749 B against a 79,563 B payload (r166).
+
+    ⚠️ THE SHAPE IS WHAT `perky_image.extend_upload` TAKES: `(addr, [word, ...])`.
+    The records go there, not into `build_bus` -- the two payloads are adjacent
+    (A ends where B begins, gap 0, r167), so the record table cannot grow in the
+    bytes `build_bus` writes. `extend_upload` returns a replacement upload the
+    pre-boot loader reads, which is how X and Y have always shipped.
     """
     import all_fx_layout as L
     local = L.SAFE_LOCAL_P_SPANS          # [lo, hi) -- Plate + Compressor
@@ -83,13 +87,13 @@ def build(pieces, whole, dest, org):
         if new == a:
             stayed.append((name, a, b - a))       # an existing record already covers it
             continue
-        words = whole[a - org: b - org]
+        words = list(whole[a - org: b - org])
         if len(words) != b - a:
             raise SystemExit(f"{name}: got {len(words)} words, expected {b - a}")
         if in_local(new, len(words)):
             local_kept.append((name, new, len(words)))   # stock records already cover it
             continue
-        remap.append((None, (new, pack(words))))
+        remap.append((new, words))
         extra.append((new, len(words)))
         moved += len(words)
 
@@ -109,12 +113,8 @@ def to_json(both, extra) -> dict:
     out = {}
     for tag in sorted(both):
         remap = []
-        for entry in both[tag]:
-            if entry[0] is None:
-                addr, packed = entry[1]
-                remap.append([None, [addr, packed.hex()]])
-            else:
-                remap.append([entry[0], entry[1]])
+        for addr, words in both[tag]:
+            remap.append([None, [addr, pack(words).hex()]])
         out[tag] = {"remap": remap, "want": [[a, w] for a, w in extra[tag]]}
     return out
 
@@ -154,9 +154,8 @@ def main() -> int:
     print(f'  staying put : {len(stayed)} shard(s): '
           f'{[(n, hex(a), w) for n, a, w in stayed]}')
     print(f'  appending   : {len(both["A"])} record(s), {moved} words')
-    for r in both['A']:
-        addr, packed = r[1]
-        w = len(packed) // 3
+    for addr, words in both['A']:
+        w = len(words)
         hit = [f'{k}' for a, b, k in runs if a <= addr and addr + w <= b]
         if not hit:
             bad.append((addr, w))

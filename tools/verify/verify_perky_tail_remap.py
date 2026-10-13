@@ -63,19 +63,18 @@ def main() -> int:
 
     bad = []
     for tag, remap in both.items():
-        for entry in remap:
-            addr, packed = entry[1]
-            if len(packed) % 3:
-                bad.append(f'{tag}: 0x{addr:05x} has {len(packed)} B, not a multiple of 3')
+        for addr, words in remap:
+            if not words:
+                bad.append(f'{tag}: 0x{addr:05x} is an empty record')
     if bad:
         for b in bad:
             print(f'  [FAIL] {b}', file=sys.stderr)
-        raise SystemExit('a packed record is not a whole number of DSP words')
+        raise SystemExit('a record is empty or malformed')
 
     if extra['A'] != extra['B'] or both['A'] != both['B']:
         raise SystemExit('the two payloads got different remaps; the addresses are '
                          'DSP-side and must be identical')
-    print(f'  [ok] every packed record is a whole number of 3-byte words')
+    print(f'  [ok] every record carries at least one word')
     print(f'  [ok] both payloads carry the identical remap (DSP-side addresses)')
     print(f'  [ok] P_WANT_EXTRA totals {sum(w for _, w in extra["A"])} words, '
           f'matching the appended words')

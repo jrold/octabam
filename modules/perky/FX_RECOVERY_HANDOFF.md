@@ -4712,3 +4712,58 @@ packed_bytes))`; `extend_upload` wants `(addr, [word, ...])`. **Unpack the bytes
 passes, and **the `PERKY_P_SPANS` channel, `P_REMAP` and `P_WANT_EXTRA` are simply unused** -- they were
 built for `build_bus`, which is not where the records go. **They are inert and gated, so they cost
 nothing; deleting them is a tidy-up, not a prerequisite.**
+
+---
+
+# THE SHAPE MATCHES AND THE PATH MEASURES (round 171)
+
+Round 170 put `p_records` into `extend_upload`. **Round 171 changed `perky_tail_remap.build()` to emit
+what it takes -- `(addr, [word, ...])` instead of `(addr, packed_bytes)` -- and measured the join.**
+
+## The full path, measured
+
+```
+build() -> 13 record(s), 1608 words, 2 kept in local
+extend_upload(p_records=...) -> 84513 B (was 79563), grew 4950 B
+expected 9 (Y) + 4941 (P) = 4950
+MATCH: True
+```
+
+**4,941 B is exactly the growth round 166's refusal said was needed** -- 13 headers (117 B) plus 1608
+words (4,824 B). **The same bytes, through the container that can hold them.**
+
+## The gate caught the change, which is what it was for
+
+```
+verify_perky_tail_remap.py line 67:  addr, packed = entry[1]
+ValueError: too many values to unpack (expected 2, got 106)
+```
+
+**`make check` went red on `297a`-style grounds -- a checker that knew the old shape.** That is the
+third time this session a gate written alongside its subject has earned its keep (r140, r144, r161),
+**and the first time one actually fired.** Updated to the new shape; `make check` is green again.
+
+**The gate now asserts the thing that still matters for this shape:** every record carries at least one
+word. **A zero-word record would be a no-op that still consumed 9 bytes of the upload** -- harmless but
+pointless, and now refused by name.
+
+## What is in place, end to end
+
+| piece | state |
+|---|---|
+| placement | correct; 16/16 in a reusable run (r148, r158) |
+| the retired records | the five contiguous donors, per-payload shift measured (r149, r150) |
+| the selection rule | shared runs only; local runs are already covered (r167, r170) |
+| the record format | `ot_record(space, addr, words)` -- space-agnostic (r169) |
+| the container | `extend_upload`, which grows and returns a replacement upload (r168, r170) |
+| the shape | `build()` emits `(addr, [word, ...])` (this round) |
+| the join | measured: 4,950 B = 9 Y + 4,941 P (this round) |
+| all gates | 336 PASS, 8 SKIP, 0 FAIL |
+
+## What is left
+
+**`repack_machine_loader` must pass `p_records` alongside the X and Y it already passes.** Every input
+exists and is measured; **the only unwired link is one argument at one call site** (line 200, r162).
+**Then the build runs, Spring/Dark/Lo-Fi stop being consumed, and `make check` will say so.** The
+hardware question -- whether the DSP boot routine honours a tail-address record -- is still answered by
+the probe (r139, gated r140), which needs `OT_PROJECT`.
