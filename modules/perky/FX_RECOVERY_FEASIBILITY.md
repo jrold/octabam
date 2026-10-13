@@ -410,3 +410,43 @@ comment-only change that moved the bytes would mean the markers were being assem
 way the markers can. The check that cannot be fooled is the byte-identity one above, and
 it says only that nothing was assembled differently -- **not** that the coverage is
 complete. Coverage completeness must be re-measured after every new marker.
+
+
+---
+
+# ADDENDUM 6 — coverage 1613 -> 2164; one marker imbalance remains, and it is the composer's
+
+Marking the remaining inline blocks in `build_fold_candidate.py` -- closing the
+`pk_tone_candidate_voice` piece I had opened without an END, and wrapping both
+`pk_multi_fold_init` and `pk_multi_fold2_init` -- takes the marked set to **13 pieces**
+and coverage to **~2164 of 3051 words**.
+
+**PROVEN BYTE-NEUTRAL AGAIN:** full rebuild, artifacts byte-identical to before
+(card `4ba4d72c...`, MIDI `685e5105...`). Comments only.
+
+**Marker balance, measured:** zero BEGIN-without-END (my earlier error is closed), and
+**largest marked piece ~476 words, zero pieces over the 605 cap** -- so what is marked is
+splittable.
+
+## What still blocks step 2
+
+1. **`noise_tone_envelope_packed7.asm` has an END with NO BEGIN.** This is the composer's
+   own imbalance, not mine. It matters more than an unmarked block: a parser that trusts
+   the delimiters will either mis-close the previous piece or extend it to here, and
+   either way the boundary it computes is fiction. Any splitter must **refuse to run when
+   the markers are unbalanced** rather than pick an interpretation.
+
+2. **~887 words remain unmarked.** They are outside `build_fold_candidate.py`'s appends,
+   so they come from the other composer (`build_noise_tone_synth_source.py`) or from
+   regions rewritten after concatenation. Finding them needs the same treatment on the
+   other emission path.
+
+## Status of step 2
+
+Partially done, and honestly bounded: **13 pieces marking ~2164 of 3051 words, four
+imbalances or gaps resolved (three gaps closed, one imbalance found), every change proved
+byte-neutral by a full rebuild, and two blockers identified with their cause**.
+
+Falsifier carried forward: coverage is measured by parsing source text, so it is exposed
+to exactly the marker problems above. It is only trustworthy once the markers balance and
+the unmarked remainder is zero -- and byte-identity does not speak to coverage at all.

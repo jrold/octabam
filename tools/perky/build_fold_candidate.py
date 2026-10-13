@@ -98,6 +98,7 @@ pk_fold_candidate_trigger:
         move a1,x:(r6+$23)
 pkfc_trigger_done:
         rts
+; ===== END pk_tone_candidate_voice =====
 '''
     raw=(ROOT/'out/perky/engine-fixtures/engine-1-mode-1-corner-0/wrapper-window-before.bin').read_bytes()[0xc4:0xc4+0xf4]
     words=fold.FoldDrum1.from_arm(raw).words
@@ -108,18 +109,22 @@ pkfc_trigger_done:
     raw2=(ROOT/'out/perky/engine-fixtures/engine-4-mode-1-corner-0/wrapper-window-before.bin').read_bytes()[0xc4:0xc4+0x134]
     words2=fold2.FoldDrum2.from_arm(raw2).words
     words2[10]=words2[21]=0
+    source+='; ===== BEGIN pk_multi_fold_init =====\n'
     source+='\npk_multi_fold_init:\n move x:>$418,a\n lsr #$5,a\n move a1,n1\n move #>$38ee,r1\n move x:(r1+n1),b\n cmp #>$c,b\n beq pkfc_initialized\n move #>$c,a\n move a1,x:(r1+n1)\n move r6,r1\n clr a\n do #>$3a,pkfc_zero\n move a1,x:(r1)+\npkfc_zero:\n nop\n'
     for i,value in enumerate(words):
         if value:source+=f' move #>${value:06x},a\n move a1,x:(r6+${i:x})\n'
     source+='pkfc_initialized:\n rts\n'
+    source+='; ===== END pk_multi_fold_init =====\n'
     # Fold 2's own init. THE LABEL NAMES MATTER: pkfc2_* deliberately shares NO PREFIX
     # with pkfc_*. dsp_asm resolves labels by prefix, so pkfc_zero2 would assemble as
     # pkfc_zero's address with a stray "2" and branch into hyperspace -- the failure
     # AGENTS.md records as a host SIGSEGV with no diagnostic.
+    source+='; ===== BEGIN pk_multi_fold2_init =====\n'
     source+='pk_multi_fold2_init:\n move x:>$418,a\n lsr #$5,a\n move a1,n1\n move #>$38ee,r1\n move x:(r1+n1),b\n cmp #>$d,b\n beq pkfc2_initialized\n move #>$d,a\n move a1,x:(r1+n1)\n move r6,r1\n clr a\n do #>$3a,pkfc2_zero\n move a1,x:(r1)+\npkfc2_zero:\n nop\n'
     for i,value in enumerate(words2):
         if value:source+=f' move #>${value:06x},a\n move a1,x:(r6+${i:x})\n'
     source+='pkfc2_initialized:\n rts\n'
+    source+='; ===== END pk_multi_fold2_init =====\n'
     source=multi.source.noise.force_long_local_jsr(multi.source.noise.relativize_local_conditionals(source))
     (out/'fold.asm').write_text(source)
     used=multi.source.noise.measure(source,out/'fold.asm')
