@@ -1,8 +1,10 @@
 # PERKY4R physical lock: unresolved release blocker
 
 The MKII user reports PERKY4R locking with T1 and T5 assigned to PERKY,
-including non-Complex algorithms and blank projects. Whether stock-only
-playback or either PERKY track alone also locks is not established. This
+including non-Complex algorithms and blank projects. The subsequent report
+confirms **PERKY4R, T1 alone, no FX: empty playback works; the first manual
+sound trigger or sequencer trig instantly locks**. A second PERKY voice and
+stock FX are not required. No diagnostic-image result has yet been reported. This
 supersedes any assumption that the failure is isolated to Complex controls.
 There is **no locally reproduced firmware failure and no stability fix claim**.
 
@@ -74,6 +76,45 @@ AMP/FX execution deadline. No ceiling was raised. Local equality can therefore
 coexist with the reported physical lock. Bank placement and deadline behavior
 remain hypotheses, not proven explanations.
 
+### Updated first-trigger discrimination
+
+The single-voice, no-FX first-trigger report weakens the hypothesis that two
+active PERKY renderers must contend. It does not establish a control-law defect.
+The entry is gated by a signed PK/Y1 source record: assigning the machine or
+running empty playback need not enter synthesis at all. The ColdFire producer
+publishes that record when its renderer is called for a complete source frame.
+The source entry then resolves the voice, initializes its engine, prepares
+controls and base pitch, applies the trigger, renders, adapts the clock and
+continues into stock AMP. Thus the observation narrows the failure to activation
+of this path, but does not yet distinguish initialization from first rendering
+or the stock continuation.
+
+The next hardware image is now **P4RNDISP**, rather than PLACE: T1 alone,
+Fold1, no FX, one manual sound trigger. It differs from the reported failing R
+by exactly two eight-word dispatch blocks, retaining all P placements. If it
+still locks, test **P4ROLDDSP** with the same single-trigger configuration to
+separate the DSP component from the unchanged R ColdFire runtime. Use only
+Fold1/Simple on these diagnostic images. PLACE remains available as the later
+placement comparison. Firmware binaries and their hashes are unchanged.
+
+`--first-trigger-delay 16 --t1-only --dry --fixed-algorithm --algorithm 0`
+extends the actual-image replay with sixteen leading empty steps. It records
+the first signed-source frame, first trigger frame and first audible sample;
+it requires the leading audio interval to stay silent. This explicitly tests
+the empty-playback-to-first-sound transition, rather than starting with a trig
+at step zero. Its local outcome still cannot establish hardware stability.
+
+Both frozen images completed this T1-only/no-FX delayed replay. No signed PERKY
+record reached the DSP before frame **5514**; the first signed record was also
+the first trigger record. Both first audible samples were at **88248**, and
+their complete audio SHA-256 was
+`b3dd105222dbf4f97adc0bc3b273e84ae1ece07932ad3c9e514ddd3cea920a35`.
+Thus empty playback in this reproducer does not warm up the PERKY renderer:
+the reported lock coincides with its first invocation. The complete source
+records and post-chain audio match locally. The new BNE+4 opcode pair also has
+precedents in preserved PERKY4 and stock DSP code; a novel branch instruction
+form is not demonstrated. Hardware behavior remains unproven.
+
 ## Controlled hardware images
 
 | Identifier | Variable changed relative to frozen R | Complex status |
@@ -130,7 +171,7 @@ and packaging tool:
 .venv/bin/python3 tools/perky/measure_runtime_images.py --reference out/frozen/PERKY4R --candidate out/discriminators/P4RPLACE --out out/regression/place-source-cost
 ```
 
-## Single next experiment and test order
+## Original multi-voice protocol (superseded for the next experiment)
 
 First use **P4RPLACE**, a fresh blank project, 120 BPM, 64 steps, all FX NONE.
 Set T1/T5 to PERKY, ALGO 1, MODE 1, TUNE 64, DECAY 96, PAR1/PAR2 64. Put trigs
@@ -149,5 +190,5 @@ If all fail, the next differential is the ColdFire/runtime or loader integration
 No algorithm changes are authorized by these outcomes alone.
 
 Current branch is `codex/perky4r-runtime-regression`. Source is committed clean;
-the release remains blocked on the first physical PLACE experiment. No local
+the release remains blocked on the first physical NDISP single-trigger experiment. No local
 command supplies the missing hardware discrimination.

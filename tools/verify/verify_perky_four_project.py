@@ -27,6 +27,8 @@ def main():
                     help='lock every sequencer step to --algorithm, including ALGO p-locks')
     ap.add_argument('--dry', action='store_true', help='disable Dark and all other stock FX')
     ap.add_argument('--stock-only', action='store_true', help='exercise installed firmware with no PERKY assignments')
+    ap.add_argument('--first-trigger-delay',type=int,choices=range(62),default=0,
+                    help='leave leading steps empty before the first sound trigger')
     ap.add_argument('--legacy-page', action='store_true')
     ap.add_argument('--frames', type=int, default=36000)
     ap.add_argument('--quantum', type=int, default=64)
@@ -36,6 +38,8 @@ def main():
     ap.add_argument('--compare-t1-to',type=Path,
                     help='require T1 post-chain PCM to match a same-image T1-only block dump')
     args = ap.parse_args()
+    steps=tuple(step for step in (0,2,5,6,10,13,16,21,25,29,32,37,41,45,48,53,57,61)
+                if step>=args.first_trigger_delay)
     tracks=() if args.stock_only else (0,) if args.t1_only else (4,) if args.t5_only else (0,4)
     assert args.project and (args.project/'project.work').is_file(), 'real OT_PROJECT required'
     args.work.mkdir(parents=True, exist_ok=True)
@@ -65,7 +69,7 @@ def main():
                     data[at+0x899:at+0x919] = bytes(128)
                     if track not in tracks and not (args.stock_only and track in (0,4)): continue
                     data[at+0x50:at+0x52]=bytes((64,2))
-                    for step in (0,2,5,6,10,13,16,21,25,29,32,37,41,45,48,53,57,61):
+                    for step in steps:
                         data[at+7-step//8] |= 1 << (step%8)
                         if step%2:
                             for logical,value in enumerate((8+(step*7)%96,64+step%32,args.algorithm if args.fixed_algorithm else (step//8)%4,(step*11)%128,(step*17)%128,step%3)):
@@ -93,14 +97,21 @@ def main():
         assert sum(abs(v)>100 for v in samples)>16, (track,'source silent')
         packets=source_records.signed_records(classes,1 if track==1 else 0)
         hits=[p for p in packets if p[3]==1]
-        assert len(hits)>=18,(track,'full 64-step cycle not executed',len(hits))
-        steps=(0,2,5,6,10,13,16,21,25,29,32,37,41,45,48,53,57,61)
+        assert len(hits)>=len(steps),(track,'full 64-step cycle not executed',len(hits),len(steps))
         expected=[(0,3,2,5)[args.algorithm if args.fixed_algorithm else (step//8)%4 if step%2 else args.algorithm] for step in steps]
-        assert [p[19] for p in hits[:18]]==expected,(track,'actual full-page sequencer trig dispatch order',[p[19] for p in hits[:18]],expected)
+        assert [p[19] for p in hits[:len(steps)]]==expected,(track,'actual full-page sequencer trig dispatch order',[p[19] for p in hits[:len(steps)]],expected)
         required={(0,3,2,5)[args.algorithm]} if args.fixed_algorithm else {0,3,2,5}
         actual_engines={p[19] for p in (packets if args.fixed_algorithm else hits)}
         assert actual_engines==required,(track,'actual algorithms',sorted(actual_engines),required)
-        results[str(track)] = dict(triggers=len(hits),engines=sorted({p[19] for p in hits}),samples=len(samples),significant=sum(abs(v)>100 for v in samples),peak=max(map(abs,samples)),
+        first_sound=next(i for i,value in enumerate(samples) if abs(value)>100)
+        if args.first_trigger_delay:
+            assert first_sound>=int((steps[0]-1)*44100/8),(track,'sound before requested empty playback interval',first_sound,steps[0])
+        core=1 if track==1 else 0
+        addresses=(0x80001c90,0x80002710) if core==1 else (0x800021d0,0x80002c50)
+        signed=sorted((frame,p) for address in addresses for frame,p in classes.get(('>',0,core,address),[])
+                      if len(p)>=4 and p[0]==0x504b and p[2]==0x5931)
+        first_packet=signed[0][0];first_hit=next(frame for frame,p in signed if p[3]==1)
+        results[str(track)] = dict(triggers=len(hits),engines=sorted({p[19] for p in hits}),samples=len(samples),significant=sum(abs(v)>100 for v in samples),peak=max(map(abs,samples)),first_sound_sample=first_sound,first_signed_record_frame=first_packet,first_trigger_record_frame=first_hit,
                                   pcm_sha256=hashlib.sha256(struct.pack(f'<{len(samples)}i',*samples)).hexdigest())
     if args.compare_t1_to:
         baseline=rl.readback_audio(bd.classes(bd.read(args.compare_t1_to)),1)
@@ -108,7 +119,7 @@ def main():
         assert actual==baseline,('adding T5 changed T1 PCM',len(actual),len(baseline),
                                  next(((i,a,b) for i,(a,b) in enumerate(zip(actual,baseline)) if a!=b),None))
         print('[PASS] T1 post-chain PCM bit-identical with/without T5, including all p-locks and Dark')
-    report = dict(status='PASS: PERKY4 emulator project/engine-lock completion; physical qualification pending',frames=args.frames,quantum=args.quantum,legacy_page=args.legacy_page,algorithm=args.algorithm,fixed_algorithm=args.fixed_algorithm,dry=args.dry,stock_only=args.stock_only,image_sha256=hashlib.sha256(args.image.read_bytes()).hexdigest(),t1_only=args.t1_only,tracks=results)
+    report = dict(status='PASS: PERKY4 emulator project/engine-lock completion; physical qualification pending',frames=args.frames,quantum=args.quantum,legacy_page=args.legacy_page,algorithm=args.algorithm,fixed_algorithm=args.fixed_algorithm,dry=args.dry,stock_only=args.stock_only,first_trigger_delay=args.first_trigger_delay,image_sha256=hashlib.sha256(args.image.read_bytes()).hexdigest(),t1_only=args.t1_only,tracks=results)
     (args.work/'result.json').write_text(json.dumps(report,indent=2)+'\n')
     active='stock machines only' if args.stock_only else ('T1 alone' if args.t1_only else 'T5 alone' if args.t5_only else 'T1 + T5')+(' dry' if args.dry else ', Dark on T1' if not args.t5_only else '')
     print(f'[PASS] PERKY4 base ALGO {args.algorithm+1}, '+('fixed engine' if args.fixed_algorithm else 'all-page engine locks')+', '+active+f': {args.frames} dirty frames, sequencer p-locks, quantum {args.quantum}; no physical qualification implied')
