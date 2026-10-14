@@ -13,13 +13,14 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--builds',type=Path,required=True)
     ap.add_argument('--delivery',type=Path,required=True)
+    ap.add_argument('--versions',nargs='+',choices=('P4RPLACE','P4RNDISP','P4ROLDDSP','P4RPG6'),default=('P4RPLACE','P4RNDISP','P4ROLDDSP'))
     args=ap.parse_args()
     assert not subprocess.check_output(['git','status','--porcelain','--untracked-files=normal'],cwd=ROOT),'commit source before packaging'
     assert sha(base.EFT)=='c42f39e4a908abbdb4c65df706025a97fb024d1d869a55092e958f127d6bb619','qualified wrapper tool required'
     args.delivery.mkdir(parents=True,exist_ok=True)
     source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     files={}; variants=[]
-    for version in ('P4RPLACE','P4RNDISP','P4ROLDDSP'):
+    for version in args.versions:
         work=args.builds/version
         diagnostic=json.loads((work/'diagnostic.json').read_text())
         assert diagnostic['source_parent']==source_commit,'rebuild from clean committed source'
@@ -37,6 +38,6 @@ def main():
     (args.delivery/'SHA256.txt').write_text(''.join(f'{digest}  {name}\n' for name,digest in sorted(files.items())))
     receipt=dict(status='hardware discrimination builds; physical stability unresolved',source_commit=source_commit,branch='codex/perky4r-runtime-regression',eft=dict(path=str(base.EFT),sha256=sha(base.EFT)),variants=variants)
     (args.delivery/'provenance.json').write_text(json.dumps(receipt,indent=2)+'\n')
-    print('[PASS] three diagnostic card/MIDI wrapper round trips; source',source_commit,flush=True)
+    print('[PASS]',len(args.versions),'diagnostic card/MIDI wrapper round trips; source',source_commit,flush=True)
 
 if __name__=='__main__':main()

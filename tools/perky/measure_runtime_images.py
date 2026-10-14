@@ -19,9 +19,10 @@ def main():
     ap.add_argument('--reference',type=Path,required=True)
     ap.add_argument('--candidate',type=Path,required=True)
     ap.add_argument('--out',type=Path,required=True)
+    ap.add_argument('--engines',type=int,nargs='+',choices=(0,3,2,5),default=(0,2,5))
     args=ap.parse_args();args.out.mkdir(parents=True,exist_ok=True)
     host.OUT=args.out;host.HOST=args.out/'bd909_host';host.build_host()
-    reports=[]; outputs={}
+    reports=[]; outputs={}; states={}
     for version,build in (('PERKY4R',args.reference),(args.candidate.name,args.candidate)):
         normal=(build/'fragmented-normal.bin').read_bytes();shared=json.loads((build/'p-records.json').read_text())
         ledger=json.loads((build/'memory.json').read_text())
@@ -38,7 +39,7 @@ def main():
             words,labels=B.assemble_syms(wrapper,0x5000,'runtime_wrapper',strict_layout=True)
             stub=args.out/'wrapper.bin';stub.write_bytes(b''.join(w.to_bytes(3,'little') for w in words))
             initial=host.words(build/'state_init.words');table=host.words(build/'tables.words')
-            for engine in (0,2,5):
+            for engine in args.engines:
                 run=args.out/f'{version}-{tag}-{engine}';run.mkdir(exist_ok=True)
                 # The same prepared controls feed both placements. Complex uses
                 # its real AU-repaired ABI; Fold/Simple retain their own ABI.
@@ -57,7 +58,7 @@ def main():
                 text+='X 500 03504b 030000 035931 030000 030000 030000 030000 030000 '+' '.join(f'{w|0x030000:06x}' for w in record)+'\nX 418 000000\nX 20b 004080\n'
                 (run/'data.txt').write_text(text)
                 (run/'script.txt').write_text('\n'.join(' '.join(map(str,[0]*12+[event])) for event in (0,-1,15,-1))+'\n')
-                command=[str(host.HOST),'-code',str(stub),'-org','5000','-entry',f'{labels["pk_controlled_voice_exec"]:x}','-data',str(run/'data.txt'),'-script',str(run/'script.txt'),'-out',str(run/'audio.raw'),'-meter',str(run/'meter.txt'),'-fetch-trace',str(run/'trace.txt'),'-registers',str(run/'registers.txt'),'-frames','16']
+                command=[str(host.HOST),'-code',str(stub),'-org','5000','-entry',f'{labels["pk_controlled_voice_exec"]:x}','-data',str(run/'data.txt'),'-script',str(run/'script.txt'),'-out',str(run/'audio.raw'),'-state',str(run/'state.txt'),'-meter',str(run/'meter.txt'),'-fetch-trace',str(run/'trace.txt'),'-registers',str(run/'registers.txt'),'-frames','16']
                 subprocess.run(command,cwd=ROOT,capture_output=True,check=True)
                 trace=[(int(pc,16),int(cycles)) for pc,cycles in map(str.split,(run/'trace.txt').read_text().splitlines())]
                 spans=[(r['start'],r['start']+r['length']) for r in rows]
@@ -66,13 +67,16 @@ def main():
                 cycles=list(map(int,(run/'meter.txt').read_text().split()))
                 assert max(cycles)<=23040,(version,tag,engine,cycles)
                 outputs[version,tag,engine]=(run/'audio.raw').read_bytes()
+                states[version,tag,engine]=(run/'state.txt').read_bytes()
                 assert any(struct.unpack(f'<{len(outputs[version,tag,engine])//4}i',outputs[version,tag,engine])),(version,tag,engine,'silent source measurement')
                 registers=[list(map(lambda value:int(value,16),line.split())) for line in (run/'registers.txt').read_text().splitlines()]
                 assert all(row[8]==0 for row in registers),(version,tag,engine,'unbalanced return stack')
                 reports.append(dict(version=version,core=tag,engine=engine,cycles=cycles,source_trace_cycles=sum(c for _,c in source),shared_opcode_fetches=dict(sorted(banks.items())),image_sha256=hashlib.sha256((build/'fragmented-mainos.bin').read_bytes()).hexdigest()))
                 print('[PASS]',version,tag,engine,'modeled cycles',cycles,'shared opcode fetches',dict(sorted(banks.items())),flush=True)
     for tag in ('A','B'):
-        for engine in (0,2,5):assert outputs['PERKY4R',tag,engine]==outputs[args.candidate.name,tag,engine],(tag,engine,'placement changed source PCM')
-    (args.out/'report.json').write_text(json.dumps(dict(status='source model only; hardware arbitration not modeled',records=reports,PCM_comparisons=6,failed=0,skipped=0),indent=2)+'\n')
+        for engine in args.engines:
+            assert outputs['PERKY4R',tag,engine]==outputs[args.candidate.name,tag,engine],(tag,engine,'placement changed source PCM')
+            assert states['PERKY4R',tag,engine]==states[args.candidate.name,tag,engine],(tag,engine,'placement changed captured native voice/RNG state')
+    (args.out/'report.json').write_text(json.dumps(dict(status='source model only; hardware arbitration not modeled',records=reports,PCM_comparisons=2*len(args.engines),state_comparisons=2*len(args.engines),failed=0,skipped=0),indent=2)+'\n')
 
 if __name__=='__main__':main()

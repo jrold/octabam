@@ -5,7 +5,8 @@ including non-Complex algorithms and blank projects. The subsequent report
 confirms **PERKY4R, T1 alone, no FX: empty playback works; the first manual
 sound trigger or sequencer trig instantly locks**. A second PERKY voice and
 stock FX are not required. A subsequent **P4RNDISP** manual trigger also stalls
-the sequencer; the user confirms its screen and encoders still respond. This
+the sequencer; the user confirms its screen and encoders still respond.
+**P4ROLDDSP subsequently plays sound and runs the sequencer without lockups.** This
 supersedes any assumption that the failure is isolated to Complex controls.
 There is **no locally reproduced firmware failure and no stability fix claim**.
 
@@ -101,10 +102,9 @@ The next hardware image is now **P4ROLDDSP**: T1 alone, Fold1, no FX, one manual
 sound trigger. It restores the complete frozen PERKY4 DSP component while
 retaining the exact R ColdFire runtime SHA-256
 `637af5f61a6dc5c46d1b3576585f338ac402d0c6dea36cc0cf4b8d2e3ddc27fe`.
-NDISP uses that same runtime. A successful OLDDSP first trigger would implicate
-the remaining DSP changes, physical placement or their upload integration;
-another failure would direct the next differential toward the ColdFire/runtime
-or shared loader path. Neither outcome is yet known. Use only
+NDISP uses that same runtime. The successful OLDDSP first trigger now implicates
+the remaining DSP changes, physical placement or their upload integration.
+It does not prove that every R ColdFire/Complex path is hardware qualified. Use only
 Fold1/Simple on these diagnostic images. PLACE remains available as the later
 placement comparison. Firmware binaries and their hashes are unchanged.
 
@@ -125,6 +125,46 @@ the reported lock coincides with its first invocation. The complete source
 records and post-chain audio match locally. The new BNE+4 opcode pair also has
 precedents in preserved PERKY4 and stock DSP code; a novel branch instruction
 form is not demonstrated. Hardware behavior remains unproven.
+
+### Shared-P end-of-map prefetch discriminator
+
+The physical observations are now: R fails, NDISP fails with a responsive UI,
+OLDDSP works. A specific placement hazard appears at T1's common frame return:
+R's `pk_three_frame` occupies `0x3ffc5..0x3fffe`, leaving just `0x3ffff` below
+the unmapped `0x40000` boundary. PERKY4's frame ends at `0x3ffc7`; its highest
+placed routine ends at `0x3fff7`. The instruction-only emulator does not fetch
+the sequential pipeline words beyond a return instruction and allocates memory
+beyond this silicon map, so PCM/state and boot readback cannot expose this risk.
+
+The [DSP56720/21 reference manual, section 4.3.3](https://www.nxp.com/docs/en/reference-manual/DSP56720RM.pdf)
+documents instruction prefetch and a seven-stage pipeline; chapter 3 gives the
+shared-memory limit. Repository `CHIP.md` also records freezes at `0x40000+`.
+**The claim that speculative fetch explains this stall is an inference, not
+yet a physical measurement.** Six words are a conservative experimental margin,
+not a claimed measured number of speculative fetches.
+
+P4RPG6 constrains placement below `0x3fffa` and explicitly uploads six NOPs at
+`0x3fffa..0x3ffff`. The complete R DSP source and ColdFire runtime are unchanged;
+no helper or algorithm is removed and all three AU fixes remain. The constrained
+packer fits all 2398 shared code words; padding uses the former six free words.
+Physical shared-P use is now 2404/2404, with **zero free shared words**; private P
+remains 770/774, four free per core. The startup-clear bytes remain identical.
+All twelve stock effects and the two-voice architecture remain.
+
+`verify_perky_prefetch_guard.py` is a conservative placement/explicit-padding
+gate. Its preserved-R negative control identifies T1's frame ending at
+`0x3fffe`; it is not a new hardware pipeline emulator or proof of the root cause.
+P4RPG6 boot/readback, all four fixed-algorithm 36000-frame replays, complete
+PCM/producer differentials, retained-FX readback, and representative source-cost
+checks qualify the new physical placement locally. The source meter compares
+all four algorithms on both cores, including cold hits and interior retriggers,
+without changing the 23040 ceiling. Direct AU evidence remains the earlier R
+capture; the new candidate preserves R's synthesis rather than retuning it.
+
+The next physical test is **P4RPG6, T1 alone, Fold1, no FX, one manual trigger**,
+followed by one sequencer trig. If it passes, test T5 and both voices, then
+Complex. No stability fix is claimed before that observation. The original
+PLACE candidate remains a separate placement-policy discriminator if needed.
 
 ## Controlled hardware images
 
@@ -201,5 +241,5 @@ If all fail, the next differential is the ColdFire/runtime or loader integration
 No algorithm changes are authorized by these outcomes alone.
 
 Current branch is `codex/perky4r-runtime-regression`. Source is committed clean;
-the release remains blocked on the physical OLDDSP single-trigger experiment. No local
+the release remains blocked on the physical PG6 single-trigger experiment. No local
 command supplies the missing hardware discrimination.
