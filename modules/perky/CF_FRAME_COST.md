@@ -9,6 +9,19 @@
 > experiment simply because it says "read first," "current," or "next step."**
 
 
+## 14 Oct 2026 instrument correction
+
+The upstream integration audit found that the retained branch-predictor patch
+used `ADD_CYCLES` for its 1/8-cycle charges, increasing the remaining budget
+and returning negative elapsed cycles. The BSR cost selector also could not
+select its intended two-cycle value. Commit `c2d99dad` repairs the instrument
+and extends its instruction tests. The predictor-era ColdFire frame costs and
+headroom below, including **115.2 us / 66 us**, are retracted as timing evidence;
+they remain here as the original checkpoint record. They require fresh
+measurement with the repaired instrument. This does not change the PERKY4S
+DSP algorithms or its hardware-tested MAIN OS. Modeled timing still does not
+establish physical arbitration, stalls, or real-time headroom.
+
 ## 11 Oct 2026 checkpoint — block-cached renderers + Acoustic Hats removed
 
 The remaining seven renderers (Fold 1/2, Karplus, Noise/Tone M1, Simple/Complex

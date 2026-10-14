@@ -6,7 +6,7 @@
 an Octatrack MKII. This is **not** the earlier four-voice ColdFire prototype,
 the Noise/Tone canary, or the three-algorithm DSP test remix.
 
-- **Source commit:** `16a8de19a17ee4cba765cbdb30ca051f85af4e23`
+- **Original hardware checkpoint:** `16a8de19a17ee4cba765cbdb30ca051f85af4e23`
 - **Hardware-tested MAIN OS SHA256:** `be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0`
 - **Audio tracks:** T1 (DSP core B) and T5 (DSP core A), one PERKY synthesis
   voice per core. T2–T4 and T6–T8 remain normal Octatrack tracks.
@@ -26,6 +26,11 @@ OS is byte-identical to the successful P4RPG6 hardware probe. The user has
 also reported PERKY4S working on the MKII. The extent of prolonged physical
 stress testing is not established; local emulator/qualification results
 should not be mistaken for exhaustive silicon verification.
+
+The 14 October 2026 upstream integration preserves that original checkpoint
+in Git history. Its merged source and local qualification are recorded in
+[the integration report](UPSTREAM_INTEGRATION_2026-10-14.md). The merged branch
+has not been separately tested on an Octatrack or approved for pushing.
 
 ### Current DSP memory limit
 
