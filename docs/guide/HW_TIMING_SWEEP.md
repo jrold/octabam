@@ -1,5 +1,12 @@
 # Hardware timing sweep — `perky-dsp-3algo-hwtest`
 
+> **ARCHIVED HARDWARE-TEST PLAN (REDUCED THREE-ALGORITHM PROTOTYPE).**
+> The former `perky-dsp-3algo-hwtest` build is not the current Perky Machines
+> implementation. Do not use this older flash procedure for PERKY4S.
+> See [current PERKY status](../../modules/perky/README.md) and
+> [PERKY4S release evidence](../../modules/perky/PERKY4S_RELEASE.md).
+
+
 **EXPERIMENTAL. This image exists to be measured, not to be used.** It carries the
 reduced Perky machine plus CF METER, the repository's own timing harness. Nothing
 in it has been measured on an Octatrack; every figure below is a software planning

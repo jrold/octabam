@@ -1,5 +1,12 @@
 # Task 5 — restoring Spring / Dark / Lo-Fi: the measured feasibility picture
 
+> **HISTORICAL PERKY CHECKPOINT.** This document preserves observations
+> from an earlier prototype; any claim below about what "ships", what is
+> "current", or what needs flashing applies to that recorded checkpoint,
+> **not** to the physically working PERKY4S release. Current status and
+> memory: [PERKY4S](PERKY4S_RELEASE.md) and [README](README.md).
+
+
 **Measured on `perky-2voice-milestone`. This corrects an arithmetic assumption in
 the milestone brief, so it comes first.**
 

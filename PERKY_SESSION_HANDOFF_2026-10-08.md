@@ -1,5 +1,12 @@
 # Perky Machines — session handoff (2026-10-08)
 
+> **ARCHIVED 8 OCTOBER SESSION RECORD.** These instructions and the ColdFire
+> build status reflect the conditions on that date, not the present checkout.
+> The physically working PERKY4S synthesizes on the DSPs, not on ColdFire.
+> See [current PERKY status](modules/perky/README.md) and
+> [PERKY4S release evidence](modules/perky/PERKY4S_RELEASE.md).
+
+
 Branch: `perky-machines`
 
 This file preserves the state of the ColdFire-only four-voice build session so the work can be resumed in a better-equipped environment without reconstructing the debugging history.

@@ -16,6 +16,19 @@ including Image 90 (`usb-lean`). Other documents cite 94, 96 and 99 for
 
 The full text before this rewrite: `git show 666b6154:CHANGELOG.md`.
 
+## PERKY4S — 14 Oct 2026 — working guarded four-algorithm DSP release
+
+The user confirms **PERKY4S** is working on their Octatrack MKII. T1/core B
+and T5/core A support ALGO 1–4 (Fold1/Fold2/Simple/Complex) with SRC
+parameter locks and the retained stock AMP/FX pipeline; the production MAIN OS
+is byte-identical to the hardware-successful P4RPG6 probe. The six-word
+shared-P boundary guard fixes the previously reported PERKY4R first-trigger
+sequencer stall. The release keeps 12 stock FX and retires Plate and Compressor.
+Extensive long-duration coverage was not specified. Source checkpoint
+`16a8de19a17ee4cba765cbdb30ca051f85af4e23`, MAIN OS SHA256
+`be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0`.
+See [PERKY4S release record](modules/perky/PERKY4S_RELEASE.md).
+
 ## P4RPG6 — 14 Oct 2026 — PERKY4R stability discriminator
 
 The MKII user reports T1 and T5 working with every PERKY algorithm and Dark

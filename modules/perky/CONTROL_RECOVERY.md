@@ -1,5 +1,12 @@
 # Recovering a family's control laws from the firmware
 
+> **HISTORICAL PERKY CHECKPOINT.** This document preserves observations
+> from an earlier prototype; any claim below about what "ships", what is
+> "current", or what needs flashing applies to that recorded checkpoint,
+> **not** to the physically working PERKY4S release. Current status and
+> memory: [PERKY4S](PERKY4S_RELEASE.md) and [README](README.md).
+
+
 Every engine's *renderer* is qualified against the firmware's captured PCM and
 state.  The *control* path — the arithmetic that turns the panel's four values
 into the object fields the renderer reads — had to be recovered separately for

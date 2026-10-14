@@ -1,5 +1,14 @@
 # Noise/Tone (ALGO 3) — what actually ships, and what is still unproven
 
+> **Historical Noise/Tone milestone, not current firmware instructions.** This document
+> records an earlier PERKY development state and retains its original
+> measurements, commits and failure analysis as evidence. The working MKII
+> release is [PERKY4S](PERKY4S_RELEASE.md) (DSP, T1/T5,
+> Fold1/Fold2/Simple/Complex, 12 retained stock FX). Its production shared-P
+> budget has **zero free words**. Do not continue the old "next step" or flash
+> plan here as if it were the present project status.
+
+
 **Measured on the shipping `perky-2voice-milestone` tree. Read this before calling
 Noise/Tone finished.**
 

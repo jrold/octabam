@@ -1,7 +1,18 @@
 # PERKY port architecture
 
-Current milestone: PERKY4 authentic Fold Drum 1 / Simple Drum plus preserved synthetic Noise/Tone are locally qualified. New-engine hardware tests are pending; PERKY2 Noise/Tone physical audio was confirmed on 6 Oct 2026. See [HANDOFF.md](HANDOFF.md) for the current implementation and
-qualification limits; the sections below describe the target architecture.
+**Current status:** PERKY4S Phase 2 is a DSP-based four-algorithm
+implementation confirmed working on a physical MKII: Fold Drum 1, Fold Drum 2,
+Simple Drum and Complex Drum on T1/T5, using 12 stock FX. The current build,
+program-memory budget and physical-test evidence are in [README.md](README.md)
+and [PERKY4S_RELEASE.md](PERKY4S_RELEASE.md).
+
+**The sections below preserve the original port proposal and early milestones.**
+They are not authoritative shipping status or current UI specifications. In
+particular, the old family-browser design was superseded by SRC encoder C
+(ALGO), with all six SRC controls parameter-lockable; Noise/Tone is *not*
+an ALGO in the current release. The historical references remain useful for
+reverse-engineering provenance.
+
 
 ## Reference/oracle
 

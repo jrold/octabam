@@ -1,5 +1,14 @@
 # PERKY two-voice light machine — physical test procedure
 
+> **HISTORICAL CHECKPOINT — not the current PERKY build.** The data and
+> procedures below document their original experiment and have been retained
+> unchanged for provenance. **PERKY4S** is the current working MKII firmware:
+> two DSP voices (T1/T5), Fold1/Fold2/Simple/Complex, 12 retained stock FX.
+> The current status and memory ledger are in
+> [PERKY4S](PERKY4S_RELEASE.md). **Do not flash or continue this older
+> experiment simply because it says "read first," "current," or "next step."**
+
+
 **Read this before flashing.** The image is deliberately boring: the first test is
 Fold Drum 1 on T1, then the same on T5, then Fold2 and Simple, then ALGO p-locks.
 **Do not add Wavetable before this image works physically** — it is deferred and

@@ -58,11 +58,15 @@ and a dry delayed-first-trigger replay covers cold activation.
 
 ## Physical confirmation
 
-The reported P4RPG6 audio/playback cases have passed. Test duration and exhaustive
-transition/modulation coverage were not specified. This is separate from local
-executable qualification and direct installed-AU comparisons.
+The user subsequently confirmed that **PERKY4S itself works on the physical
+Octatrack MKII**, in addition to the earlier P4RPG6 report (T1/T5, all four
+algorithms, Dark Reverb on both). The production MAIN OS of both builds is
+byte-identical at the SHA256 above. The exact PERKY4S audition duration and
+exhaustive transition/modulation coverage were not specified. Do not convert
+this into a claim that every stress scenario has been tested on silicon;
+local qualification and direct installed-AU comparisons remain separate.
 
-Keep PERKY4 as rollback. After installing PERKY4S, use a blank project and trigger
+Keep PERKY4 as rollback. For **additional / extended physical regression testing** of PERKY4S, use a blank project and trigger
 T1 and T5 separately, then together. Cycle all four algorithms and three modes;
 exercise ALGO locks, retriggers, LFOs/scenes and Dark Reverb on both voices over
 several full 64-step cycles. Compare Complex against the AU using the captured

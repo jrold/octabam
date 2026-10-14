@@ -1,5 +1,14 @@
 # PERKY4 physical memory and modeled timing
 
+> **HISTORICAL CHECKPOINT — not the current PERKY build.** The data and
+> procedures below document their original experiment and have been retained
+> unchanged for provenance. **PERKY4S** is the current working MKII firmware:
+> two DSP voices (T1/T5), Fold1/Fold2/Simple/Complex, 12 retained stock FX.
+> The current status and memory ledger are in
+> [PERKY4S](PERKY4S_RELEASE.md). **Do not flash or continue this older
+> experiment simply because it says "read first," "current," or "next step."**
+
+
 The executable ledger is `out/perky/four/memory.json`, derived from final
 assembled shards, their physical union, upload tables and guarded stock ranges.
 `perky_four_memory.py` supplements the build ledger with exact occupancy and

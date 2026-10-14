@@ -3,9 +3,18 @@
 This document is the authoritative target for the Perky Machines work in Octabam.
 Intermediate audition/canary builds may intentionally implement only a subset, but they must not be described as the finished Perky Machines implementation unless every requirement below is satisfied.
 
+**Current implementation vs. final target (14 October 2026).** The
+hardware-working **PERKY4S Phase 2** release has **two** PERKY-capable tracks
+(T1/T5), four selectable algorithms, and **12** stock effects; it gives up
+Plate Reverb and Compressor. It does **not** satisfy the final four-voice,
+all-stock-FX target described below. Its actual P-memory budget and build
+procedure are in [PERKY4S_RELEASE.md](modules/perky/PERKY4S_RELEASE.md).
+
 ## Development and release policy
 
-All Perky Machines work stays on the `perky-machines` branch.
+All Perky Machines work stays on the existing `perky-machines` branch in
+the existing Octabam checkout. Do not create additional branches, linked
+worktrees, clones or duplicate workspaces unless the user explicitly asks.
 
 GitHub-hosted CI pipelines and GitHub Actions are not used for this work. Qualification is run locally with the repository's own tools.
 

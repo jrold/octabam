@@ -44,6 +44,35 @@ after the artifacts are shown identical.)
 commit or on an issue. `.incbin` from the user's stock image at build time
 is the pattern.
 
+## PERKY-specific workflow (overrides generic Octabam PR advice below)
+
+For work on **this fork's PERKY Machines project**, the user has chosen a
+**single working branch and a single existing checkout**:
+
+- Use the existing `perky-machines` branch and existing Octabam directory.
+- **Do not create a Git branch, linked worktree, cloned checkout or duplicate
+  workspace** unless the user explicitly requests it. A new coding-agent
+  conversation is *not* permission to branch or create a workspace.
+- Before editing, verify the branch and working-tree status; do not overwrite
+  uncommitted work or switch away from an occupied checkout unsafely.
+- Make PERKY commits directly on `perky-machines`. Push only as requested.
+- Reuse local toolchains and build directories; delete disposable generated
+  outputs after use, but never discard irreplaceable fixtures or source inputs.
+  Avoid uncontrolled growth under `out/` and `.claude/worktrees/`.
+- Run verification **locally**. Do not use GitHub Actions or GitHub CI for PERKY.
+- **Do not pull, rebase or merge upstream Octabam automatically.** The user
+  explicitly schedules upstream integration as a separate task.
+- The physically working Phase 2 baseline is **PERKY4S**, source commit
+  `16a8de19a17ee4cba765cbdb30ca051f85af4e23`, MAIN OS SHA256
+  `be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0`.
+  The current branch may have documentation-only commits after this baseline.
+  See [current PERKY status](modules/perky/README.md) and
+  [PERKY4S release evidence](modules/perky/PERKY4S_RELEASE.md).
+
+**The general upstream-PR workflow instructions below do not override this
+PERKY-specific rule.** In particular, do not follow their worktree-creation or
+automatic rebase instructions for PERKY work.
+
 ## Build and check
 
 ```bash
@@ -69,9 +98,10 @@ Gates run before the rebase are not a result. PR #396 was written on
 the merge was textually clean in `pressure.py`, and its stress fixture
 failed on `SEND has no knob 'SEND'`.
 
-**ALWAYS WORK IN A GIT WORKTREE, never in the main checkout.** Several
-sessions share this repository at once; the main checkout's working tree,
-index and stash list are theirs as much as yours. Start every task with
+**For general upstream Octabam PRs unrelated to PERKY, use a separate Git
+worktree when concurrent sessions require isolation.** Several
+sessions can share this repository; the main checkout's working tree,
+index and stash list may belong to another session. For those upstream PRs:
 `git worktree add .claude/worktrees/<name> -b <branch> origin/main`, work
 and run the gates there, and open the PR from it. Never `git stash` or
 `git stash pop` in the main checkout: on 13 Sep 2026 a pop there took

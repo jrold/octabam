@@ -1,5 +1,14 @@
 # Composed reduced Perky DSP machine — implementation record
 
+> **Historical three-algorithm DSP prototype, not current firmware instructions.** This document
+> records an earlier PERKY development state and retains its original
+> measurements, commits and failure analysis as evidence. The working MKII
+> release is [PERKY4S](PERKY4S_RELEASE.md) (DSP, T1/T5,
+> Fold1/Fold2/Simple/Complex, 12 retained stock FX). Its production shared-P
+> budget has **zero free words**. Do not continue the old "next step" or flash
+> plan here as if it were the present project status.
+
+
 **Branch:** `perky-dsp-2voice-3algo` (from `perky-optimize`, commit `a522d2f2`).
 
 This is the reduced production target: **two Perky voices total, one per DSP

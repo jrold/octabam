@@ -1,5 +1,14 @@
 # PERKY two-voice memory ledger
 
+> **Historical pre-PERKY4S memory ledger, not current firmware instructions.** This document
+> records an earlier PERKY development state and retains its original
+> measurements, commits and failure analysis as evidence. The working MKII
+> release is [PERKY4S](PERKY4S_RELEASE.md) (DSP, T1/T5,
+> Fold1/Fold2/Simple/Complex, 12 retained stock FX). Its production shared-P
+> budget has **zero free words**. Do not continue the old "next step" or flash
+> plan here as if it were the present project status.
+
+
 Current four-engine candidate. Half-open extents; addresses and sizes are DSP words.
 
 A serves T5–T8; B serves T1–T4. Only T5/A and T1/B are admitted PERKY voices.

@@ -1,5 +1,14 @@
 # Perky Machines — final four-algorithm software qualification
 
+> **Historical ColdFire qualification (8 October 2026), not current firmware instructions.** This document
+> records an earlier PERKY development state and retains its original
+> measurements, commits and failure analysis as evidence. The working MKII
+> release is [PERKY4S](PERKY4S_RELEASE.md) (DSP, T1/T5,
+> Fold1/Fold2/Simple/Complex, 12 retained stock FX). Its production shared-P
+> budget has **zero free words**. Do not continue the old "next step" or flash
+> plan here as if it were the present project status.
+
+
 Date: 2026-10-08
 
 This checkpoint covers the locked four-voice milestone implemented by the ColdFire source-machine architecture. It is separate from physical Octatrack audition and from the final real `m68k-elf` card/MIDI cross-link step.

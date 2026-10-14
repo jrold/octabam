@@ -1,5 +1,13 @@
 # PERKY: object+8 is the sustain threshold (why DECAY did nothing)
 
+> **Historical ColdFire-engine debugging record.** These measurements explain
+> an earlier PERKY audio/envelope fault. They are **not** evidence that the
+> current DSP-based PERKY4S has the same uncontrolled sustain issue. At
+> maximum DECAY, authentic Simple/Complex Drum sustain is part of the
+> reference behavior. See [current PERKY status](../modules/perky/README.md)
+> and [PERKY4S release](../modules/perky/PERKY4S_RELEASE.md).
+
+
 ## Symptom on the unit (after the silence fix landed)
 
 - The DECAY knob did nothing; every hit rang out.

@@ -1,5 +1,14 @@
 # PERKY4R Complex Drum AU authenticity repair
 
+> **HISTORICAL REPAIR RECORD, NOT A WORKING FIRMWARE RECOMMENDATION.**
+> The direct-AU Complex fixes in this record were retained, but PERKY4R itself
+> subsequently stalled the physical MKII sequencer. The six-word guarded
+> placement fixed the reported hardware regression in PERKY4S. See
+> [PERKY4S release](PERKY4S_RELEASE.md) and
+> [placement investigation](PERKY4R_RUNTIME_REGRESSION.md). The references
+> below to physical testing being "pending" reflect this older R-stage audit.
+
+
 PERKY4R repairs three independently demonstrated shipping Complex controls. The
 installed **PerkyBits AU 0.2.0** is the sonic oracle. PERKY4 source
 `11f0165f702ddac17bd61a5b19cdbe43cca740f9` and its Downloads updaters remain the

@@ -1,5 +1,13 @@
 # Hardware failure modes: the register
 
+> **Current PERKY status:** the user's working MKII firmware is
+> **PERKY4S**, not the older ColdFire or three-algorithm diagnostic builds
+> described by several historical entries below. Their incident reports,
+> measured causes and original dates are retained intact. For the current
+> two-voice DSP profile, hardware results and boundary guard, see
+> [PERKY4S release](../../modules/perky/PERKY4S_RELEASE.md).
+
+
 Symptom → cause (measured, inferred or open) → fix. Add an entry the moment
 a mode is seen on hardware.
 

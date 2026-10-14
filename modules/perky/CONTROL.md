@@ -1,5 +1,12 @@
 # PERKY control conversion
 
+> **HISTORICAL PERKY CHECKPOINT.** This document preserves observations
+> from an earlier prototype; any claim below about what "ships", what is
+> "current", or what needs flashing applies to that recorded checkpoint,
+> **not** to the physically working PERKY4S release. Current status and
+> memory: [PERKY4S](PERKY4S_RELEASE.md) and [README](README.md).
+
+
 The Octatrack port needs more than the already-native per-sample renderers.
 PerkyBits intentionally leaves **control conversion and smoothing** in the
 original PĒRKONS firmware and replaces only the validated render routine.

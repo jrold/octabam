@@ -1,5 +1,12 @@
 # The Fold Drum audio fault — root cause, measured
 
+> **HISTORICAL PERKY CHECKPOINT.** This document preserves observations
+> from an earlier prototype; any claim below about what "ships", what is
+> "current", or what needs flashing applies to that recorded checkpoint,
+> **not** to the physically working PERKY4S release. Current status and
+> memory: [PERKY4S](PERKY4S_RELEASE.md) and [README](README.md).
+
+
 **Status: root cause identified on the shipped DSP code, and it is NOT in this branch's
 composition path.** This is the record, so it is not re-derived.
 

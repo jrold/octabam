@@ -4,7 +4,17 @@ This document is the physical-memory contract for the locked Perky Machines
 target in `PERKY_MACHINES_TARGET.md`. It supersedes older PERKY4/HW4 notes that
 allowed stock effects to be harvested or retired.
 
-## Non-negotiable rule
+> **FINAL-TARGET MEMORY CONTRACT — NOT THE CURRENT RELEASE LEDGER.**
+> This describes how a *future* PERKY build could preserve **all 14 stock
+> effects**, as required by [the final target](../../PERKY_MACHINES_TARGET.md).
+> The physically working **PERKY4S Phase 2** retains **12** stock effects,
+> using Plate/Compressor as donors. Its shared P tails are already
+> **2,404/2,404 words occupied** (2,398 code + six guard NOPs); private P is
+> **770/774** per core. See [current status](README.md) and the
+> [PERKY4S release ledger](PERKY4S_RELEASE.md) instead of treating the
+> unallocated 2,404 words below as remaining PERKY4S headroom.
+
+## Non-negotiable rule for the final all-FX target
 
 Both Octatrack FX slots and every stock effect remain available. Final Perky
 code/data may not claim any word needed by the stock FX allocator or stock
