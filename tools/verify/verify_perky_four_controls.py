@@ -39,8 +39,15 @@ def main():
         if case.trig:update()
         tune,decay,p1,p2=s['prepared']
         values=[tune,law.amplitude_decay_rate(decay),law.pitch_envelope_decay_rate(p1),p2>>1] if engine==2 else [tune,law._envelope_decay_rate(law._time_parameter(decay),50,7280),p1,p2]
-        if engine==5:values=[min(tune+768,4095),law._envelope_decay_rate(law._time_parameter(decay),50,7280),(0xfffff//((43244160-9552*p1)>>12))&65535,p2]
-        expected=[0x504b0000,0x59310000|case.trig,0,0]+[g.pair(v) for v in values]+[(mode<<16)|(int(decay>=4080) if engine!=5 else 0),engine]
+        if engine==5:values=[tune,law._envelope_decay_rate(law._time_parameter(decay),50,7280),(0xfffff//((43244160-9552*p1)>>12))&65535,p2]
+        wire_mode=mode
+        gate=int(decay>=4080)
+        if engine==5:
+            q=0x400b+12*(4095-p1)
+            frequency=((q&8191)+8192)>>(13-((q>>13)&7))
+            wire_mode|=gate<<7
+            gate=frequency-1
+        expected=[0x504b0000,0x59310000|case.trig,0,0]+[g.pair(v) for v in values]+[(wire_mode<<16)|gate,engine]
         words=g.record_words(data['rows'],i,case)
         assert words==expected,(i,case.name,'controls/mode/engine/record',words,expected)
         states[case.track]=s

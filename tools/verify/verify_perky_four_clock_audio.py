@@ -31,8 +31,11 @@ class Complex:
     def apply(self,record):
         values=[(record[2*i]<<8)|record[2*i+1] for i in range(4)]
         self.words[32],self.words[20],self.words[31],self.words[33]=values
-        self.words[14]=0
-        wave=(0x080222a0,0x080224a0,0x080228a0)[record[8]]
+        self.words[14]=record[8]>>7
+        frequency=record[9]<<3
+        self.words[36]=int(frequency*0x57619f1//(1<<22))
+        self.words[37]=0
+        wave=(0x080222a0,0x080224a0,0x080228a0)[record[8]&3]
         self.words[8]=wave&65535;self.words[9]=wave>>16
     def hit(self):
         self.words[10]=self.words[17]=self.words[21]=self.words[28]=1
@@ -70,8 +73,8 @@ def main():
         controls=((0,428,0,0),(2046,29,2046,2046),(4092,6,4092,4092)) if engine!=2 else ((0,65535,65535,0),(2048,428,1040,1024),(4095,1,1,2047))
         for mode,gate in itertools.product(range(3),(0,1)):
             for prepared in controls:
-                if engine==5:prepared=(min(prepared[0]+768,4095),prepared[1],99+(prepared[2]//4),prepared[3])
-                record=[v for word in prepared for v in (word>>8,word&255)]+[mode,gate,0,engine]
+                if engine==5:prepared=(prepared[0],prepared[1],99+(prepared[2]//4),prepared[3])
+                record=[v for word in prepared for v in (word>>8,word&255)]+[mode|(0x80 if engine==5 and gate else 0),(254,31,3)[0 if prepared[0]==0 else 1 if prepared[0]==2046 else 2] if engine==5 else gate,0,engine]
                 events=[(i//16)%16 if i%16==0 else -1 for i in range(256)]
                 audio,states,_=c.run(binary,entry,'persistent',initial,tables,[(tuple([0]*12),e) for e in events])
                 v=f1.FoldDrum1(list(fresh)) if engine==0 else f2.FoldDrum2(list(fresh2)) if engine==3 else Complex(list(fresh_complex)) if engine==5 else simple.LiveSimpleDrum.fresh()
@@ -126,7 +129,7 @@ def main():
     clean_data=data; dirty=random.Random(0x44495254); dirt_cases=0
     for engine,mode in itertools.product((0,3,2,5),range(3)):
         values=(2814,29,180,2046) if engine==5 else (2048,428,1040,1024) if engine==2 else (2046,29,2046,2046)
-        record=[v for word in values for v in (word>>8,word&255)]+[mode,0,0,engine]
+        record=[v for word in values for v in (word>>8,word&255)]+[mode,31 if engine==5 else 0,0,engine]
         script=[(tuple([0]*12),0)]+[(tuple([0]*12),-1)]*7
         c.write_data=clean_data
         clean_audio,clean_states,_=c.run(binary,entry,'dirty-clean',initial,tables,script)
@@ -168,7 +171,7 @@ def main():
         # not the earlier wrapper's address. clean_data resolves symbols here.
         symbols={p[0]:int(p[1],16) for p in map(str.split,blocked_binary.with_suffix('.sym').read_text().splitlines()) if len(p)==2}
         for position,engine,mode in itertools.product(range(1,4),(0,3,2,5),range(3)):
-            record=[v for word in (2814,29,180,2046) for v in (word>>8,word&255)]+[mode,0,0,engine]
+            record=[v for word in (2814,29,180,2046) for v in (word>>8,word&255)]+[mode,31 if engine==5 else 0,0,engine]
             def blocked_data(path,state,table):
                 clean_data(path,state,table)
                 with path.open('a') as out:out.write(f'X 418 {position*32:06x}\n')
@@ -200,7 +203,7 @@ p3test_recordready:''',1)
     def tuple_for(engine,mode,new):
         prepared=((4095,1,1,2047) if new else (2048,428,1040,1024)) if engine==2 else ((0,428,4092,4092) if new else (2046,29,2046,2046))
         if engine==5:prepared=(768,428,99,4092) if new else (2814,29,180,2046)
-        return [v for word in prepared for v in (word>>8,word&255)]+[mode,0,0,engine]
+        return [v for word in prepared for v in (word>>8,word&255)]+[mode,(254 if new else 31) if engine==5 else 0,0,engine]
     def make_voice(engine):
         return f1.FoldDrum1(list(fresh)) if engine==0 else f2.FoldDrum2(list(fresh2)) if engine==3 else Complex(list(fresh_complex)) if engine==5 else simple.LiveSimpleDrum.fresh()
     def apply(v,record):

@@ -14,6 +14,7 @@ Where each doc is, by who reads it. A module's own page is
 | [../modules/perky/PERKY3R_AUDIT.md](../modules/perky/PERKY3R_AUDIT.md) | PERKY2F hardware-regression investigation, three-engine repair candidate, local evidence and short T1/T5 hardware checklist |
 
 | [../modules/perky/PERKY4_RELEASE.md](../modules/perky/PERKY4_RELEASE.md) | Four-algorithm local candidate, provenance workflow and MKII checklist |
+| [../modules/perky/PERKY4R_AU_REPAIR.md](../modules/perky/PERKY4R_AU_REPAIR.md) | Direct installed-AU capture, three demonstrated Complex control defects, repair gates and hardware comparison |
 | [../modules/perky/PERKY4_MEMORY.md](../modules/perky/PERKY4_MEMORY.md) | Both DSP cores, physical aliases, exact free extents and modeled timing |
 | [../modules/perky/PICKUP_FEASIBILITY.md](../modules/perky/PICKUP_FEASIBILITY.md) | Conditional ColdFire census only; Pickup and shared recorders preserved |
 

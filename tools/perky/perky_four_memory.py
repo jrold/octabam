@@ -19,15 +19,15 @@ def supplement(work):
     m['schema']='perky4-physical-memory-v1'
     shared=m['physical_shared_p']
     shared['free_extents']=gaps(L.SAFE_SHARED_P_SPANS,[(r['start'],r['start']+r['length']) for r in shared['extents']])
-    assert sum(b-a for a,b in shared['free_extents'])==shared['free']==25
+    assert sum(b-a for a,b in shared['free_extents'])==shared['free']==6
     for tag,c in m['cores'].items():
         local=[(r['start'],r['start']+r['length']) for r in c['p_shards'] if r['start']<0x30000]
         c['private_p']={'capacity':sum(b-a for a,b in L.local_p_spans(tag)),
                         'words':sum(b-a for a,b in local),
                         'free_extents':gaps(L.local_p_spans(tag),local)}
-        assert c['private_p']['words']==759
+        assert c['private_p']['words']==770
         c['private_p']['free']=sum(b-a for a,b in c['private_p']['free_extents'])
-        assert c['private_p']['free']==15
+        assert c['private_p']['free']==4
         c['private_x_occupancy']=[
             [0x3800,58,'persistent voice state; Complex uses 42, common overlay reserves 58'],
             [0x383a,172,'fourth waveform, unsigned int16'],

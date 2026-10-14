@@ -1,4 +1,8 @@
-# PERKY4 Phase 2 — local candidate and hardware handoff
+# PERKY4 Phase 2 — preserved release and hardware handoff
+
+Hardware comparison later rejected Complex fidelity. The raw renderer gates
+below remain valid, but the shipping control bridge omitted three AU behaviors.
+See [PERKY4R AU repair](PERKY4R_AU_REPAIR.md) for the correction and direct AU evidence.
 
 PERKY4 starts from PERKY3R source checkpoint
 `ca23c76bce2dbe55f30b5fc5547d55e0ba04cdc7` on the isolated

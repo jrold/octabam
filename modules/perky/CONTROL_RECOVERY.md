@@ -49,14 +49,21 @@ narrows it to one.
 
 ## What it recovered for Complex Drum (V2, algorithm 3)
 
+The original sweep below ran without an explicit trigger note; its TUNE
+bias and incomplete field census did **not** establish AU instrument fidelity.
+The PERKY4R note-45 trigger sweep and direct installed-AU captures supersede
+those assumptions; see [the repair audit](PERKY4R_AU_REPAIR.md).
+
 Object at **wrapper + 0x1F8**, 0x140 bytes.  Prepared control words in the
 object's own slots **0x1C / 0x20 / 0x24 / 0x28** (tune, decay, P1, P2), exactly
 as Fold Drum keeps them.
 
 | panel | object field | law |
 |---|---|---|
-| TUNE | raw pitch `0xBA` | `min(prepared_tune + 768, 4095)` |
+| TUNE | raw pitch `0xBA` | `prepared_tune` at the AU default/trigger note 45; the historical +768 was the untriggered default-note offset |
 | DECAY | amplitude env decay `0x96` | `0xFFFFF / (48*51 + (48*7279 * time_parameter(prepared_decay)) >> 12)` |
+| P1 | modulation increment `0xCC` | `frequency_step(8 * ((((q & 8191) + 8192) >> (13 - ((q >> 13) & 7))) - 1))`, `q = 0x400b + 12*(4095-prepared_p1)` |
+| DECAY | amplitude trigger/gate `0x7B` | `prepared_decay >= 4080` |
 | P1 | pitch env decay `0x11A` | `0xFFFFF / ((43244160 - 9552*prepared_p1) >> 12)` |
 | P2 | pitch amount `0x120` | `prepared_p2` |
 | MODE | main wave target `0x3C` | M1 → `0x080222A0`, M2 → `0x080224A0`, M3 → `0x080228A0` |

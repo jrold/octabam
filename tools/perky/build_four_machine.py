@@ -55,9 +55,9 @@ def main():
     modes.add_argument('--qualify-only',action='store_true')
     modes.add_argument('--package-qualified',action='store_true')
     ap.add_argument('--work',type=Path,default=ROOT/'out/perky/four')
-    ap.add_argument('--version',default='PERKY4')
+    ap.add_argument('--version',default='PERKY4R')
     args=ap.parse_args();work=args.work.resolve();work.mkdir(parents=True,exist_ok=True)
-    assert args.version=='PERKY4','Phase 2 release identifier is PERKY4; old checkpoints are reserved'
+    assert args.version=='PERKY4R','Complex AU repair identifier is PERKY4R; old checkpoints are reserved'
     project=os.environ.get('OT_PROJECT')
     if not args.local_only:assert project and (Path(project)/'project.work').is_file(),'real OT_PROJECT required'
     results=[];result_lock=threading.Lock()
@@ -109,6 +109,12 @@ def main():
         if not args.local_only:
             run(['make','check','REMIX=perky-machine'],targeted=False)
             run(['scripts/refhash.sh','check'])
+            run(*gate('verify_perky_complex_au.py',extra=('--capture',)))
+            run(*gate('verify_perky_complex_au.py',{'PERKY_CORE':'B'}))
+            run(*gate('verify_perky_complex_au.py',extra=('--baseline',)))
+            for defect,case in (('tune',0),('modulation',4),('sustain',2)):
+                run(*gate('verify_perky_complex_au.py',extra=('--baseline','--isolate',defect,'--baseline-case',str(case))))
+            run(*gate('verify_perky_complex_control_contract.py'))
             for name in ('verify_perky_three_controls.py','verify_perky_three_rng.py','verify_perky_source_clock.py',
                          'verify_perky_clear_registers.py','verify_perky_fold2_compact.py','verify_perky_fold2_dsp_exec.py'):
                 run(*gate(name))
@@ -157,6 +163,9 @@ def main():
     inputs=[item(ROOT/'out/raw/section_3_MAIN_OS.bin'),item(base.STOCK_SYX),item(base.EFT),item(ROOT/'out/emu/ot_emu')]
     for folder in ('out/perky/simple-drum-assets','out/perky/engine-fixtures'):
         inputs.extend(item(p) for p in sorted((ROOT/folder).rglob('*')) if p.is_file())
+    inputs += [item(Path('/Library/Audio/Plug-Ins/Components/PerkyBits.component/Contents/MacOS/PerkyBits')),item(Path('/Library/Audio/Plug-Ins/Components/PerkyBits.component/Contents/Info.plist'))]
+    inputs += [item(p) for p in sorted((ROOT/'out/perky/au-regression').glob('*.f32'))]
+    inputs += [item(ROOT/'out/perky/au-regression/capture-manifest.json'),item(ROOT/'out/perky/au-regression/events.tsv')]
     native=Path(os.environ.get('PERKYBITS_SOURCE','/Users/jrold/Downloads/perkybits'))
     for p in sorted((native/'Source').rglob('*')):
         if p.is_file() and p.suffix in ('.h','.hpp','.c','.cpp'):inputs.append(item(p))
@@ -170,12 +179,13 @@ def main():
     if perkons.is_file():inputs.append(item(perkons))
     native_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=native,text=True).strip()
     extra_sources={}
-    for folder in ('tools/harness/bd909_host','tools/patches','scripts'):
+    for folder in ('tools/harness/bd909_host','tools/harness/perky_cf','tools/perky','tools/verify','modules/perky','tools/patches','scripts'):
         for p in (ROOT/folder).rglob('*'):
-            if p.is_file() and p.suffix in ('.cpp','.c','.h','.py','.sh','.patch'):
+            if p.is_file() and p.suffix in ('.cpp','.c','.h','.py','.sh','.patch','.asm','.s'):
                 extra_sources[str(p.relative_to(ROOT))]=base.sha256(p)
+    extra_sources['tools/harness/perky_au_capture.cpp']=base.sha256(ROOT/'tools/harness/perky_au_capture.cpp')
     extra_sources['Makefile']=base.sha256(ROOT/'Makefile')
-    report={'extra_sources':extra_sources,'native_reference_commit':native_commit,'version':args.version,'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'starting_commit':'ca23c76bce2dbe55f30b5fc5547d55e0ba04cdc7',
+    report={'extra_sources':extra_sources,'native_reference_commit':native_commit,'version':args.version,'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'starting_commit':'11f0165f702ddac17bd61a5b19cdbe43cca740f9',
         'hardware_qualified':False,'algorithms':ALGORITHMS,'controls':['TUNE','DECAY','ALGO','PAR1','PAR2','MODE'],
         'voices':['T1','T5'],'artifacts':artifacts,'inputs':inputs,'commands':results,
         'project_input':q['project_input'],'committed_rebuild_sha256':base.sha256(image),
@@ -190,13 +200,15 @@ def main():
     report['qualification']['targeted_commands']={'pass':sum(r['targeted'] for r in results),'fail':0,'skip':0}
     component_paths=[ROOT/f'out/perky/four-renderer-{tag}/report.json' for tag in ('A','B')]
     component_paths += [ROOT/f'out/perky/four-clock-audio-{tag}/report.json' for tag in ('A','B')]
+    component_paths += [ROOT/'out/perky/au-regression'/tag/'report.json' for tag in ('A','B')]
+    component_paths += [ROOT/'out/perky/au-regression/control-contract/report.json']
     component_paths += [work/'ui-report.json']
     component_paths += [work/f'{name}-t1-only-q64/result.json' for name in ('legacy','four')]
     component_paths += [work/f'{name}-t1-t5-q{quantum}/result.json' for name in ('legacy','four') for quantum in (16,64,256)]
     component_paths += [work/'four-t5-only-q64/result.json']
     report['component_reports']={str(p.relative_to(ROOT)):{'artifact':item(p),'results':json.loads(p.read_text())} for p in component_paths}
-    report_path=work/'PERKY4_RELEASE.json';report_path.write_text(json.dumps(report,indent=2)+'\n')
-    manifest.write_text('PERKY4 MKII HARDWARE TEST CANDIDATE\n'+f'git={base.revision()}\n'
+    report_path=work/(args.version+'_RELEASE.json');report_path.write_text(json.dumps(report,indent=2)+'\n')
+    manifest.write_text(args.version+' MKII HARDWARE TEST CANDIDATE\n'+f'git={base.revision()}\n'
         +''.join(f'{n}_sha256={v["sha256"]}\n' for n,v in artifacts.items())
         +'status=local qualification passed; physical qualification pending\n'
         +f'release_report={report_path}\nrelease_report_sha256={base.sha256(report_path)}\n')

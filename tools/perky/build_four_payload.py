@@ -38,14 +38,35 @@ def build(out, *, native_clock=True):
         'p4sg_init:\n        jsrl pk_multi_complex_init\n        bra p3sg_common\np3sg_init_one:', 1)
     source = source.replace('        jsrl pk_simple_voice\n        bra p3sg_finish',
         '        cmp #>$5,a\n        bne p4sg_simple\n        jsrl pk_complex_production_voice\n        bra p3sg_finish\np4sg_simple:\n        jsrl pk_simple_voice\n        bra p3sg_finish', 1)
-    # Complex has no amplitude gate at maximum DECAY. Original MODE 1/0/2
+    # Complex maximum-DECAY gate is transported in MODE bit 7. MODE 1/0/2
     # selects 22a0/24a0/28a0; phase-wrap owns the actual oscillator switch.
     source = source.replace('pksf_common_amp_gate:\n',
-        'pksf_common_amp_gate:\n        move x:>$39bf,a\n        cmp #>$5,a\n        bne p4sg_gate\n        clr a\n        move a1,x:(r6+$e)\n        bra p4sg_wave\np4sg_gate:\n', 1)
+        'pksf_common_amp_gate:\n        move x:>$39bf,a\n        cmp #>$5,a\n        bne p4sg_gate\n        move x:(r4+$10),a\n        and #>$80,a\n        lsr #$7,a\n        move a1,x:(r6+$e)\n        bra p4sg_wave\np4sg_gate:\n', 1)
     source = source.replace('        move #>$0802,a\n        move a1,x:(r6+$9)',
         'p4sg_wave:\n        move #>$0802,a\n        move a1,x:(r6+$9)', 1)
     source = source.replace('pksd_mode1:\n        move #>$26a0,a',
         'pksd_mode1:\n        move x:>$39bf,a\n        cmp #>$5,a\n        bne p4sg_mode_simple\n        move #>$24a0,a\n        bra pksd_mode_ready\np4sg_mode_simple:\n        move #>$26a0,a', 1)
+    # The common controls are physically shared, while the exact frequency
+    # converter is core-private. Apply the missing Complex modulation control
+    # from the private segment; all other families keep their original path.
+    assert source.count('p3sg_base:\n')==1,'Complex modulation update site drift'
+    source = source.replace('p3sg_base:\n', 'p3sg_base:\n        move x:>$39bf,a\n        cmp #>$5,a\n        bne p4mod_base\n        jsrl pk_complex_mod_update\np4mod_base:\n', 1)
+    mod_update = '''pk_complex_mod_update:
+        move x:(r4+$11),a
+        and #>$ff,a
+        asl #$3,a,a
+        move a1,x0
+        jsrl pk_simple_frequency
+        move a1,x:(r6+$24)
+        clr a
+        move a1,x:(r6+$25)
+        rts
+'''
+    assert source.count('; ===== END simple_drum_frequency.asm =====')==1,'private frequency shard drift'
+    source = source.replace('; ===== END simple_drum_frequency.asm =====',
+        mod_update + '; ===== END simple_drum_frequency.asm =====', 1)
+    assert source.count('        move x:(r4+$10),a\n        and #>$ff,a')==2,'MODE decode census drift'
+    source = source.replace('        move x:(r4+$10),a\n        and #>$ff,a', '        move x:(r4+$10),a\n        and #>$3,a')
     # Restore authentic fourth-wave dispatch; retain the three direct Y reads.
     source = source.replace('        bra     pksdo_unknown_wave',
         '        cmp     #>$24a0,a\n        beq     p4osc_fourth\n        bra     pksdo_unknown_wave', 1)

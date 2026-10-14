@@ -52,3 +52,7 @@ Phase 2 development candidate: [PERKY4 release and hardware handoff](PERKY4_RELE
 [exact memory ledger](PERKY4_MEMORY.md), and [Pickup feasibility audit](PICKUP_FEASIBILITY.md).
 This four-algorithm profile has its own local release runner; the registered
 probe manifest and preserved PERKY3R checkpoint remain unchanged.
+
+Complex authenticity repair: [PERKY4R AU audit and capture procedure](PERKY4R_AU_REPAIR.md).
+PERKY4's original renderer comparisons proved arithmetic, while direct installed-AU
+qualification exposed its TUNE, modulation-frequency and maximum-DECAY control omissions.

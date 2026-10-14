@@ -1,5 +1,5 @@
 /* PERKY4: preserve PERKY3R's control smoother, prefix record and admission.
- * Complex adds the recovered V2/A3 laws, not a new update schedule.
+ * Complex applies the AU-proven V2/A3 controls with the existing update schedule.
  */
 #define PK_COMPLEX_CANDIDATE 1
 #include "control_three_candidate.c"
@@ -7,7 +7,7 @@
 static void pk_complex_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig)
 {
     pk_simple_prepare(s, p, trig);
-    unsigned tune = s->prepared[0] + 768u;
+    unsigned tune = s->prepared[0];
     unsigned values[4] = {
         tune > 4095u ? 4095u : tune,
         simple_rate(simple_time(s->prepared[1]), 50u, 7280u),
@@ -18,7 +18,14 @@ static void pk_complex_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig)
         p[2u*i] = (uint8_t)(values[i] >> 8);
         p[2u*i+1u] = (uint8_t)values[i];
     }
-    p[9] = 0; /* Original Complex update has no Simple maximum-decay gate. */
+    /* ARM update 0x08024a7c..aa2: inverted PAR1 exponential frequency.
+     * Its frequency is always 8 times a byte (24..2032 Hz). Byte 9 carries
+     * frequency/8; MODE bit 7 carries the original maximum-DECAY gate.
+     * MODE bits 0..1 and the prefix byte-10 validity marker stay intact. */
+    unsigned q = 0x400bu + 12u * (4095u - s->prepared[2]);
+    p[9] = (uint8_t)((((q & 0x1fffu) + 0x2000u)
+                     >> (13u - ((q >> 13) & 7u))) - 1u);
+    p[8] |= s->prepared[1] >= 4080u ? 0x80u : 0u;
     p[11] = ENGINE_COMPLEX;
 }
 
