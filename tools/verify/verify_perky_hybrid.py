@@ -185,7 +185,7 @@ def main():
     ]
     # Bind every gate to one source tree, including imported helpers and harness
     # dependencies. A change between gates invalidates earlier correctness proof.
-    source_paths=[p for parent in ('modules/perky','tools/verify','tools/harness/perky_cf','tools/perky','tools/emu/ot_emu')
+    source_paths=[p for parent in ('modules/perky','tools','remixes/test/perky-cf-final')
                   for p in (ROOT/parent).rglob('*') if p.is_file() and p.suffix in ('.c','.h','.hpp','.cpp','.py','.s','.S','.ld')]
     qualification_sources={str(p.relative_to(ROOT)):sha(p) for p in source_paths}
     result['qualification_source_hashes']=qualification_sources
@@ -226,6 +226,30 @@ def main():
     result['source_drift_across_qualification']=final_drift
     if final_drift:
         result['unresolved_requirements'].append('source changed across qualification: '+', '.join(final_drift))
+    # Recheck external native references, emulator libraries and child inputs
+    # after every gate, not just at the time that child finished. This binds
+    # correctness and feasibility evidence to the same complete input epoch.
+    receipts=[('legacy/qualification.json',('current_sources',)),
+              ('noise-tone-controls/capture-manifest.json',('input_hashes',)),
+              ('original-profiles/receipt.json',('inputs',)),
+              ('target/report.json',('source_sha256','linked_library_sha256')),
+              ('packaging/report.json',('source_sha256','inputs'))]
+    evidence_drift=[];checked_inputs=0
+    for relative,fields in receipts:
+        path=runwork/relative
+        try:
+            evidence=json.loads(path.read_text())
+            for field in fields:
+                for name,value in evidence[field].items():
+                    expected=value['sha256'] if isinstance(value,dict) else value
+                    source=Path(name);source=source if source.is_absolute() else ROOT/source
+                    checked_inputs+=1
+                    if not source.is_file() or sha(source)!=expected:evidence_drift.append(str(source))
+        except (OSError,ValueError,KeyError) as exc:
+            evidence_drift.append(f'{path}: {exc}')
+    result['child_evidence_revalidation']={'input_checks':checked_inputs,'drift':sorted(set(evidence_drift))}
+    if evidence_drift:
+        result['unresolved_requirements'].append('child evidence inputs changed or unavailable: '+', '.join(sorted(set(evidence_drift))))
     if not result['unresolved_requirements']:
         result['status'] = 'PASS_FOR_PROBE_BUILD'
     result['limits'] = ['No hybrid firmware built.', 'Hardware feasibility UNVERIFIED.',
