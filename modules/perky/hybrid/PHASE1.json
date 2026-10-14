@@ -1,0 +1,1975 @@
+{
+  "schema": "octabam.perky.hybrid.phase1.checkpoint.v1",
+  "status": "BLOCKED",
+  "hardware_feasibility": "UNVERIFIED",
+  "source_commit": "77c89e491145c1f60fc01219915a5dba9a41793a",
+  "baseline_commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+  "baseline_manifest": {
+    "path": "/Users/jrold/Downloads/octabam/modules/perky/hybrid/BASELINE.json",
+    "bytes": 876815,
+    "sha256": "d84ec82601a1bbfa5af7cf3079f63d72c04f203df185157709980096687ba3a7"
+  },
+  "entrypoint_argv": [
+    ".venv/bin/python3",
+    "tools/verify/verify_perky_hybrid.py",
+    "--stage",
+    "baseline",
+    "--work",
+    "out/perky/hybrid"
+  ],
+  "entrypoint_exit_status": 1,
+  "entrypoint_log": {
+    "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/entrypoint.log",
+    "bytes": 1509,
+    "sha256": "7e28e67742fec3244ac2d8afa0aef3fb6e7192364e3a7a5173c6375bcf323da4"
+  },
+  "full_results": {
+    "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/results.json",
+    "bytes": 279002,
+    "sha256": "8b3a39c8c0834f8f330d1b1c0e14170ffc711a07eeeaf750c9958d47a9af80fe"
+  },
+  "frozen_validation": {
+    "status": "PASS",
+    "sources": 647,
+    "inputs": 2748,
+    "historical_commands": 51,
+    "main_sha256": "be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0"
+  },
+  "commands": [
+    {
+      "name": "ctest",
+      "argv": [
+        "ctest",
+        "--test-dir",
+        "/Users/jrold/Downloads/octabam/out/emu",
+        "--output-on-failure"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "PERKYBITS_SOURCE": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/ctest-gate.log",
+        "bytes": 1035,
+        "sha256": "cc4527676d33f219db74a97ea53892f258f776e67c1bcf39801b5484e493982c"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/cmake/4.4.2/bin/ctest",
+        "bytes": 15317144,
+        "sha256": "729772880220d2b2731ac84d745a61b5958cf1c34a885c238c8086dd60d4a794"
+      },
+      "common_source_hash_set_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be",
+      "additional_source_hashes": {},
+      "effective_source_hashes_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be"
+    },
+    {
+      "name": "release-guards",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_release_guards_selftest.py"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "PERKYBITS_SOURCE": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/release-guards-gate.log",
+        "bytes": 284,
+        "sha256": "a3108b8db4b24b10dbf24ac60434ecc9fe94fd2cb4eeb22fd68afe3d84e9d83e"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      },
+      "common_source_hash_set_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be",
+      "additional_source_hashes": {
+        "tools/verify/verify_perky_release_guards_selftest.py": "170e1093097273413415b667fd580249dcdba3eca1e294f9a2f76fd3eae6169d"
+      },
+      "effective_source_hashes_sha256": "5c3491146ce4280c6cca7916399f9f0a92fea09ad08c1545936183c5002e7250"
+    },
+    {
+      "name": "prefetch-guard",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_prefetch_guard.py",
+        "--build",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/reproduction"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "PERKYBITS_SOURCE": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/prefetch-guard-gate.log",
+        "bytes": 96,
+        "sha256": "4803e5b60cc378cd1ec9f8abfb765d83071825ec5748f8e5dcfbe93be13634e2"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      },
+      "common_source_hash_set_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be",
+      "additional_source_hashes": {
+        "tools/verify/verify_perky_prefetch_guard.py": "32aca922709046d20da21dfa458b861ad0103d73c08f107a6f78ba994828939c"
+      },
+      "effective_source_hashes_sha256": "df5145f1f5bd26ab1575ce154a198e1cf0bf7c2d39b83ff27a7c637f3b91dedd"
+    },
+    {
+      "name": "legacy",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_final.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--perkybits",
+        "/Users/jrold/Downloads/perkybits",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/legacy"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "PERKYBITS_SOURCE": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 1,
+      "status": "FAIL",
+      "skipped_required_test": false,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/legacy-gate.log",
+        "bytes": 2167,
+        "sha256": "e3ea24f3bdc3dbb3a37b50e050797ed7e2d06adb7cfc8b01078e2a1f9db9ff05"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      },
+      "common_source_hash_set_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be",
+      "additional_source_hashes": {
+        "tools/verify/verify_perky_cf_final.py": "fa4208e3ccddd1eccf4a368edb48737ce47d74cefe2f371255b46c4deeb6d04b"
+      },
+      "effective_source_hashes_sha256": "9840412ee494968d9800d7bc1f77ecf1aa325d0dc6cb464fc23566adb81eec90"
+    },
+    {
+      "name": "wavetable",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_wavetable_dsp.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/wavetable"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "PERKYBITS_SOURCE": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/wavetable-gate.log",
+        "bytes": 2555,
+        "sha256": "a82d1246f3f3bc42a34c99d49586bbf790f6fb43fdc88ea3362465ac2826b724"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      },
+      "common_source_hash_set_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be",
+      "additional_source_hashes": {
+        "tools/verify/verify_perky_cf_wavetable_dsp.py": "85799a59f5657db83066607e13ddb8580cf3156a467a66456e183bb08729ab1a"
+      },
+      "effective_source_hashes_sha256": "fbb260944b26ac77e661799a6f001dbdf7b8eb9a6f89ed0b01fc9d6e46f27c4f"
+    },
+    {
+      "name": "resonant",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_resonant_dsp.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/resonant"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "PERKYBITS_SOURCE": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 1,
+      "status": "FAIL",
+      "skipped_required_test": false,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/resonant-gate.log",
+        "bytes": 4549,
+        "sha256": "4becfd380cc25bba5737ec9702be760fc32be95e4d5dfd091474396830ea88a3"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      },
+      "common_source_hash_set_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be",
+      "additional_source_hashes": {
+        "tools/verify/verify_perky_cf_resonant_dsp.py": "1f5e92abd3ba25f55bb38fc5c7df28251e680a20cc9e711f849a96f69264b80b"
+      },
+      "effective_source_hashes_sha256": "78fb30d419367fed579a167b91889368c1796c313157419d029c7af9676407f1"
+    },
+    {
+      "name": "noise-tone",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_noise_tone.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--source",
+        "/Users/jrold/Downloads/perkybits"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "PERKYBITS_SOURCE": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/noise-tone-gate.log",
+        "bytes": 1019,
+        "sha256": "277f797479372e3133c0eb2053af0ae9cf6ae99f147486075d09bf9437298cba"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      },
+      "common_source_hash_set_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be",
+      "additional_source_hashes": {
+        "tools/verify/verify_perky_cf_noise_tone.py": "c1237c26a9d0144d439c849f582a02c6b1d7ed8c8fd10fa576f024945127ad87"
+      },
+      "effective_source_hashes_sha256": "8b49e389ccc983c8a5c92ca80ba9fee124e6e2a68c57f1d3ddde342f6c454343"
+    },
+    {
+      "name": "noise-tone-controls",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_noise_tone_control_evidence.py"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "PERKYBITS_SOURCE": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 1,
+      "status": "FAIL",
+      "skipped_required_test": false,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/noise-tone-controls-gate.log",
+        "bytes": 150,
+        "sha256": "a2476c5889e13d9a881883f4519fa4d6b95e888d6ca08ee8d97ee5dc882047dc"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      },
+      "common_source_hash_set_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be",
+      "additional_source_hashes": {
+        "tools/verify/verify_perky_noise_tone_control_evidence.py": "9f978691339112da60abbe63ad0dc2808d0d760832f9e3d39ae93ee0f5e5b106"
+      },
+      "effective_source_hashes_sha256": "0b3194135ebc46942d3f2574caca61981fd7f8fe70673154e73b1e2e1e0f588e"
+    },
+    {
+      "name": "freestanding",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_freestanding.py"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "PERKYBITS_SOURCE": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/freestanding-gate.log",
+        "bytes": 76,
+        "sha256": "409e760d65b10a14c92a5de6a2f76115048fa4ae1f6659d47a6731479c35e817"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      },
+      "common_source_hash_set_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be",
+      "additional_source_hashes": {
+        "tools/verify/verify_perky_cf_freestanding.py": "5499198f777f7ccfde535661432722dd89b280f2130373a80dcd0db4a13399ef"
+      },
+      "effective_source_hashes_sha256": "166d35a74d94732a5a9bb1bfb57c2722c4aa7cb922cc16d9c5cd893d79d9cbfa"
+    },
+    {
+      "name": "hotloops",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_hotloops.py"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "PERKYBITS_SOURCE": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/hotloops-gate.log",
+        "bytes": 113,
+        "sha256": "31a1a687d336a3fa18352ef365102519250627c0f050fdb21cbe243542c21401"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      },
+      "common_source_hash_set_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be",
+      "additional_source_hashes": {
+        "tools/verify/verify_perky_cf_hotloops.py": "621ed7aa1c4502c7cb57e187e60db4f2c9d6c914c5c5e0469ae18b5bae3d60bc"
+      },
+      "effective_source_hashes_sha256": "cb3564c5aeeaefdcf41e6bb663b347d638060e8d8ccd7713134f1897e0ae3f01"
+    },
+    {
+      "name": "stock-record",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_stock_record_abi.py"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "PERKYBITS_SOURCE": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 1,
+      "status": "FAIL",
+      "skipped_required_test": false,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/stock-record-gate.log",
+        "bytes": 456,
+        "sha256": "b0696cd4cf583de3c44ec68d159a8d3f924ff7a9117e492e3de3ca30f30503fc"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      },
+      "common_source_hash_set_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be",
+      "additional_source_hashes": {
+        "tools/verify/verify_perky_cf_stock_record_abi.py": "473dbcf9cfc4f4f8b93e5f6804fd21fc01a6a8c90f363fe815b14db8ad4a271a"
+      },
+      "effective_source_hashes_sha256": "76c19f32c04dcfd7d416e1134628087ce835c54afbe70bd6203c3af95422451d"
+    },
+    {
+      "name": "runtime-memory",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_runtime_memory_final.py"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "PERKYBITS_SOURCE": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/runtime-memory-gate.log",
+        "bytes": 245,
+        "sha256": "a0b8ed9b74a0e2f4c6950108aafc779187f07c37ed6b7260bb207867053bc2b6"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      },
+      "common_source_hash_set_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be",
+      "additional_source_hashes": {
+        "tools/verify/verify_perky_cf_runtime_memory_final.py": "ddc1a6c18a9227e7cab992d9bbe33e7f432ac54281c005e16127b2d574ab3465"
+      },
+      "effective_source_hashes_sha256": "f660cd17a84b3934858a0a659e10bc7606f2e8ed825e5cee2d4ff44767cbafd3"
+    },
+    {
+      "name": "wt-profiles",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_wt_profiles.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/wt-profiles"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "PERKYBITS_SOURCE": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 1,
+      "status": "FAIL",
+      "skipped_required_test": false,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/wt-profiles-gate.log",
+        "bytes": 8136,
+        "sha256": "c05b9b49130ea4bacd4c98d248e36c25141351146a85341defbb722104c7603f"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      },
+      "common_source_hash_set_sha256": "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be",
+      "additional_source_hashes": {
+        "tools/verify/verify_perky_hybrid_wt_profiles.py": "9e60a81e968115ecfed7c0349f831a4d85aeda3b0c03a379139a32c50a513fca"
+      },
+      "effective_source_hashes_sha256": "4c4998028dcba718290bf614697ffd2f8b504d3623f821f1bcd243c931ac93c5"
+    }
+  ],
+  "source_hash_sets": {
+    "85066857f73530f2c4013854ecaf20377efa9da7733e40dea720a31e9469d7be": {
+      "modules/perky/cf_complex_drum.h": "98588a85c21c8e94e1b908de10a9b4086ef0830915aa3ecf3fd971b06c0165f2",
+      "modules/perky/noise_tone_control_update.py": "dce869a5f996f2e7f99438344c214de0ac62c2944a20886071854a204a3bfe6e",
+      "modules/perky/control_four_candidate.c": "f7027ed31101edbd96e8a9bbea4a3a636c03395ab8fcb9e67a46390acc47bcf2",
+      "modules/perky/slap_voice.asm": "d009990bc25da9e6940097216eb4eb957b3b7aecab22db9c25f33b1d5ee2bc93",
+      "modules/perky/fold_drum2_transport.py": "0998708ed5994f3e5521d7cde0c77841565224400c9b461888fde4299f806ab9",
+      "modules/perky/cf_resonant.h": "a11636313ff7e8c2e9bf9d6ad6f40439056a46adbabc103ae843e7f69465834f",
+      "modules/perky/karplus_control_update.py": "74415d3cc5d2162e65fac63df89994dbdaf3271588dbac471df9122fe02b4d36",
+      "modules/perky/simple_drum_frequency.asm": "7d4ec35feac89f2f967f79a30bb2ce354b8489ce452343d108a7ddbb8476ec36",
+      "modules/perky/PERKY4_RELEASE.md": "82c7bf05c3df18493c08ad60adadd5c48e6ee9ddf2b3272b75ca718d87c559bd",
+      "modules/perky/FOLD_ROOT_CAUSE.md": "5b36e4d406203c21d0ef6be41d349ce84905066a78b65ba7bcfca50071c047ba",
+      "modules/perky/fold_drum_voice.asm": "8b16a0cd366c10eee1a0f19a92d171242988aa89bfccbd3281b464f93d4af1e5",
+      "modules/perky/noise_tone_math.asm": "fd46edad4ac398a498172961e0cf6497b7f9eb8092be1e5260f2991e0089bb61",
+      "modules/perky/VOICE_SILO.md": "bf3258c2d4b8fa7e54fd358424c49d5e273d03e9a1fa47b4ceb5f6ae169d212c",
+      "modules/perky/UPSTREAM_INTEGRATION_2026-10-14.md": "6965ef17f8d86be7f736498f70c5cf368c6b89646d8c8ede9dc09031d9a4633b",
+      "modules/perky/resonant_bass_compact.py": "11961a91d9bbc2c0d52240661cac7d278672f4c3a78c882a99fc057d9d4dc745",
+      "modules/perky/simple_drum_delta.asm": "16eea6c3efadc20e5196e9914f4da773575e137cc0a614a9853c4045c02f0252",
+      "modules/perky/simple_drum_live.py": "39f2cba67d1ca3a045fba2408d899c29e127bc29669ef8e53ea058d5abf18c72",
+      "modules/perky/synth_seam_glue.asm": "80d9286a1633fc1643db1686e9fda6c5e6843f6d6bd38a19ce2e870171ce5de4",
+      "modules/perky/cf_noise_hat.h": "bcdb9999fe511ede8ec4fc991d2a42fd84288e4b9512d22604d6acb5d7d9287b",
+      "modules/perky/control_cf_hw_render_diag.c": "c05b330b61f1bc0727a80c15eeed6e3bafc01a77d5a7437e691d88d61cf03e8c",
+      "modules/perky/wavetable_drum_compact.py": "14e5b4c90962bc89662f3e76e4612e04097be9c48ec8c6809dc0750ce2338ad4",
+      "modules/perky/noise_tone_envelope_unpack7.asm": "054b1f754d6310c75c550f258ec01ae409148b706f4b2e3dcf4b6fee622978c6",
+      "modules/perky/noise_tone_envelope_cursor.py": "0c013d8ccfc927d31cc45195fbea1b600e89596b80ca394b851f51934c2b1b03",
+      "modules/perky/cf_wavetable.c": "e203b681ff8c6268ee32337bd8e71fb05c580ecbef0828f1fe218cc28e357ad0",
+      "modules/perky/complex_drum_voice.asm": "6f72b16caf76bc00f519befefda69ea7df0c8a00a44a539156685fd13da4dc7c",
+      "modules/perky/noise_tone_voice_native_xstate.asm": "eb006bcf688eab5175458fe40b60a451450937461bbc54e0d51719c2546f5626",
+      "modules/perky/simple_drum_envelope.asm": "fe1623ded91791e70f74ca157ae189fa71210e1a80549b1e9523986862f914fa",
+      "modules/perky/machine.s": "d6eb00d67d155eff14a5b38676c3fb701b2d3f52fc3937050bdeaca6158e3c23",
+      "modules/perky/noise_tone_envelope_packed7.asm": "bfffedd53ff450d2180b66d659d9042eea528023fde2ea6b02ed7aa5ddb22cd3",
+      "modules/perky/noise_tone_envelope_cache.py": "80eb2580bcd7586ffe66227b00f797e5b95442098e3aebfc087e7eb1240296d8",
+      "modules/perky/noise_tone_envelope_native.asm": "fdc5bd39615395bc994031d308fafade7f5d682cf5f9797ce457689c88bfe816",
+      "modules/perky/manifest.py": "584ac79ba2d90b9ee635d52b999675375c57c04ec7a4515bb7722069022e59de",
+      "modules/perky/resonant_arm.h": "420edfcf228d2adc40ec8af8d2fb47fd776ea2b5c941481e5a02b9a6e9b4aa81",
+      "modules/perky/generate.py": "95cb7960b540fb87acc116ccbef0adaa3847a9783447e1210fd355308e620ba4",
+      "modules/perky/DSP_QUALIFICATION.md": "5472b727e03fbb158a7f7f3637f73feae9808323b5c2c3a13985a196f6b73b11",
+      "modules/perky/resonator_compact.py": "842a5adaa01a7685a05cfa41862e33b2b61258366e40bb2fb0c9c56b9988c75c",
+      "modules/perky/machine_four_ui.s": "693e3aa08ce4af1deead4f942cb68b2e202475d35c74c0250496e0c810106ef6",
+      "modules/perky/noise_hat_classic_mode0.asm": "80c17c2a1f5bb17b1848bffe4048a014383b105d1d897f91dfef98464d5b9734",
+      "modules/perky/CF_FRAME_COST.md": "fdf572884af6bccaa9f8fd9a60a8f3b1123426ac57291c0dc8b3d76ddc1d673a",
+      "modules/perky/noise_hat_envelope.asm": "42e6b51b4180e91ff8fe97413221f42d725b4da030edbad0f7210a02885e49dc",
+      "modules/perky/MILESTONE_GATE_STATUS.md": "80443d55b928a156814cecdffef9803563c794db36b70bd7a29d41013d7d543f",
+      "modules/perky/noise_tone_filter_native.asm": "396fc0fed6dce8b5021457c591ede0d59f343f3a9e5d33ddbc5078be90f88d27",
+      "modules/perky/ALL_FX_MEMORY.md": "ea174ed106eb02d36294429ccc5218ffaecfd576160c04cead665403ab7504d2",
+      "modules/perky/karplus_voice.asm": "1b5d225a72339c42cd41a59a9077ad70e060ce0fdf0c02a2570885c43fb89617",
+      "modules/perky/noise_hat_classic_mode1.asm": "901d6d71e02c08d0a0337d9e175c572e535976c4fee933b90e5dc8e7da4beb3d",
+      "modules/perky/simple_drum_voice.asm": "c988fdd1be56883eb719fd1d4c3faea3cb5c4409c3b0e9e075104e1b073dbfb1",
+      "modules/perky/LADDER.md": "99d4da02cac815d037ec9b4f781bd00d4f6277e2577dde2febd86332362bb95f",
+      "modules/perky/noise_tone_compact_packed.py": "b23f468599e5a291187681456d420c922ad42927ae976aa5c9c7e5cc0823ec86",
+      "modules/perky/cf_karplus.c": "9639a1f1292ddeaf95e46a5feb38a254e2b77497d997ea50fe3f42d676052170",
+      "modules/perky/noise_tone_envelope_authentic.asm": "f7494f19d493f3d377a9b800282b9a8e7be5ddcdec8ac304b02213a2c8a3414a",
+      "modules/perky/noise_hat_compact.py": "587922f8cc70e8ac6988bb48d3e645423b185a80667e02e7da06369f03b0b7c6",
+      "modules/perky/hook_only.asm": "387575f5034cb11cdedf7faa3acf315ddae845030eb8b3e8fd4d2f173cbf4509",
+      "modules/perky/probe_glue.asm": "b4fcaadaf3ea6191c2ea34dd49703d468efcd7e5339559d75169c61abdd708f6",
+      "modules/perky/CONTROL_RECOVERY.md": "0eae9da14459c117d9b4bd8f7972dcedb208e3b2538de80b86ba96d95c060539",
+      "modules/perky/slap_coeff_table.py": "3e59df4898b8fa68488f2dcde27138d6c6da663abe977e9f18db7770f3170be1",
+      "modules/perky/simple_drum_seam.asm": "8ae28ef7a13273480e28e8a3dbb00706ca1fca3a44c270db1c60ad456724f250",
+      "modules/perky/simple_drum_transport.py": "66604f0a5ba9ad6f76c433f56b1dab6aebaef39b9e26bd3ed0d0190715537db5",
+      "modules/perky/cf_noise_tone.c": "08cbf517d53365740b5e89399233b5d4229e496bc822efe2f8aeb7af13b6eea6",
+      "modules/perky/noise_tone_oscillator_native.asm": "a4d682580214c04aafb49a01cd172bd781422e5a1b432277aeb0c9efc2eb654a",
+      "modules/perky/control_3algo.s": "e61b5239d8f4c8c16e17210cbca3798c458f9e438e98d9dd47b58433a1ce4472",
+      "modules/perky/cf_fold.c": "96ac7a5a7e4868670f0f159f935ad9f130582d1161088c5948f3eeccbaa7be0f",
+      "modules/perky/cf_pcm_rice.h": "f3ca09599fe4a16ddb0ec3b3bca9ae10debb68ec4c6c01b4370094486071d1b5",
+      "modules/perky/simple_drum_tables.py": "f1d11e099b16b7e9c274a80273ee64dc5679d4ada910d7b98778384276774c26",
+      "modules/perky/noise_tone_compact.py": "8f30b745ffe49f81b8834a5aa772107f7428c612d3391a39491e44d54b0823cc",
+      "modules/perky/NOISE_TONE_STATUS.md": "01e59fe3998125b11024a9f890c74ce2ffd0e07a866f92edef2515e510496837",
+      "modules/perky/synthetic_control_map.asm": "5eabdf8dd2c235ccbdc88a35baa681d548e4f163928f4709679e930e8c718289",
+      "modules/perky/fold_drum2_seam.asm": "fdfa55ad6801b9183cb35160c2f31dad3bc4ddde258875505fc3ad8bc4d81c33",
+      "modules/perky/DSP_3ALGO.md": "08e6ae0b9bb4d6b0594fc39314bbf1f42ca9cdf4a3aad37a8bd2e9ae97281f2f",
+      "modules/perky/noise_tone_voice_xstate_glue.asm": "852c10a61a33a58aba756a13d2f9f2b5b8179139bf97ba7775c2146c6d136843",
+      "modules/perky/control_fold2_candidate.c": "41be7a075b4a92ee74fc10fe6b005b1ea04bcb8d4c7e3c93dff963ddf07f877e",
+      "modules/perky/cf_perky4.h": "d16b0d7c24fc759e5690694143c0af61b015e59bbf29957632231ecdc49b97d8",
+      "modules/perky/cf_slap.c": "e0e0a62c8112ceb5b9fe8bb7108feb7e7e396f89f43099e2e55f4107d692ab2b",
+      "modules/perky/MILESTONE_CANDIDATE.md": "004090679d79f8c8b6efc043f1b34ba73a8b9cfe7b3041f114b58f0de6894e8b",
+      "modules/perky/cf_simple_drum.c": "abc62704ce6a8b4a5580aa5fe75746e2c35442e0b84c8a49cc3cc11497512a8c",
+      "modules/perky/control_hw4_candidate.c": "7854ccfbe87011d9863eb298160b4b898176b94e287716daa802cedca7e6d259",
+      "modules/perky/control.c": "362d2d2969cb3c79a01d6d32c2f865ba58c9f191c8600bbcbea35e98c6ec35d2",
+      "modules/perky/wavetable_asset_codec.py": "bd0a6cfa33f09b38ad5bf300cc071e28c75b3e60a81e2abf9df6bbb0a97e9937",
+      "modules/perky/noise_tone_voice_glue.asm": "5aed129a26de787bdd381fe6e8ff3de15f575172ffa84155698287f265f36ca3",
+      "modules/perky/README.md": "f9a7b48a174bc8060d328292f5242b262c5e18a26b1ba690f9f33d8654a597ef",
+      "modules/perky/simple_drum_oscillator.asm": "27d02fd7b59effacd27c37e84c42e6d85b0f46b766839b5e0746f1cf0ffe9f26",
+      "modules/perky/complex_drum_production.py": "2904f49a24b66d79fe12a1804df36e3c16fa3b0d4194b5ccd22113eda2fd2d39",
+      "modules/perky/dsp_source_layout.py": "562b6fcb75e0fcd6cbc3331f04669257feda4a9783c35b3748eacf1bacbc6542",
+      "modules/perky/fold_drum_transport.py": "deb44c493908cba4ec5d66bafdeb93a247762febe58e6211da2d97329929b809",
+      "modules/perky/cf_noise_hat.c": "18aac652089aa04d7e6f751dd8bba3314f63aa1a8bf7dfb1016fd421f7df8776",
+      "modules/perky/fold_drum2_voice.asm": "99296e68e538af2a60fdfab3c4791f868347c8832e6b52d7eac68cef7da80b99",
+      "modules/perky/noise_hat_phase.asm": "55ec6791df05dbb90d722b387a972782874d79ab061db66ecd7e84329efef197",
+      "modules/perky/noise_tone_envelope.asm": "1ca860afbdda0e43f9f328566cfb0dcc4014b8d8812dd75090f49bec49031480",
+      "modules/perky/noise_tone_wave_unpack.asm": "58d79bf16123bc2f99e1d8e9d73ca5e8f46ff56d19a555e7e9072521f814c6a9",
+      "modules/perky/cf_assets.s": "3d3d2fbf2421450e27712106c5c52dd554ab3d34df04099243b8dfef14654ca8",
+      "modules/perky/noise_hat_control_update.py": "b8a1caa9a3d508589bd9585e90730152061f22550ef03d58c1ac89931b0997fd",
+      "modules/perky/wavetable_drum_voice.asm": "5cb738418ff0229e75db5657e5b6021957004d2d7fb76e42dc3a319f08544f97",
+      "modules/perky/TWO_VOICE_CHECKPOINT.md": "7ee2e4549b2fb420546695288621beae5d3e5aa888125cf02b526de49b675fa5",
+      "modules/perky/noise_tone_tables.py": "c0a56056353814f05095c8b2f8dfaac9c70fd4a0cea27e7be3e16c7b551d7ccd",
+      "modules/perky/karplus_seam.asm": "8d086f8857e081ec5b4320c46e157a0f8c089ffc96fe6ab356c1963c5ee3081e",
+      "modules/perky/all_fx_layout.py": "cd928def953c012bfcd010099755b024a13b3b0f4a5c825a2649e1cc2ab076b0",
+      "modules/perky/cf_resonant.c": "d759084a0ab41fa65e11fb2d9d6d5470ffcc73a20bb1c5b839242bc3ab119499",
+      "modules/perky/MEMORY.md": "54d3338b3f883621a560a0e2eb778c3ea92a9c8c7373814b4756fb6419bc822c",
+      "modules/perky/hw4_memory.py": "678b91d0915bf98d3a3a34681a2abf8d0f0e1c3189bbb87d8241e1836b251538",
+      "modules/perky/cf_complex_drum.c": "c57c9e5f89b534c165bd5e8b7e65ac666e2496de6bd773f1d7102f408090ab7e",
+      "modules/perky/simple_drum_compact.py": "0fe95c4b57bd1cec2b13ba1aa8807df68d12bf24c2dcd4a4cc5405cb5936f351",
+      "modules/perky/resonant_snare_compact.py": "98c5bdaab327e03fe6b0b37c2b6799873bd3fb01c9f6b54ca266e328b68b6c4e",
+      "modules/perky/wavetable_asset_decode.asm": "2e459e4887dc68288cead2f40b7f664bca2ddc2574803ce7734c52fa8b0ce103",
+      "modules/perky/PERKY4_MEMORY.md": "aff108eb8f7867911ee1375e0d6e318caff51dff4df353790d14f28bae11e98e",
+      "modules/perky/noise_hat_classic_delay.asm": "936082a5f8d21e6987aec751b8eb5f9e0318044f43010dc45256831f0aaef3ff",
+      "modules/perky/control_cf_final.c": "28da6c4909c661cff7e373bf53094c969b7a30bf4f7f1cf032f149ffde3e2662",
+      "modules/perky/SYNTHETIC.md": "a5b760723ddaa48fd40f925520508081509949b9de7e805918a5785381ad9274",
+      "modules/perky/karplus_control_seam.asm": "46901eeb04068e059f0f24e2d66f8e3ad1e4d2e409471c1c43a2f8dd8f9d485b",
+      "modules/perky/PERKY4S_RELEASE.md": "17a2afa4d5f91219198889d14ac20a8474e93c1b4c44283abaa41d56c82b9891",
+      "modules/perky/simple_drum_control.py": "df108a857d49ec679e4355f7def9a4a7dd76fcc0056aee31a65e4c6f66e676f3",
+      "modules/perky/noise_hat_classic_mode0_voice.asm": "6155cdb56cde7833b02ca0dade9a26e144078bbb7b1683656ac8d8e6eb1f6704",
+      "modules/perky/resonant_fresh.h": "04a254204b4244a7080b96422ea00d72597079dd96971c711d8c789a8c83e2b3",
+      "modules/perky/fold_control_update.py": "2999a6bd0cebd4b2f99e7c5f111708843cb23840fbe95c2bcd43e8ce356c53a7",
+      "modules/perky/noise_tone_envelope_native7.asm": "4b6ba9be83fd4d8696e13f3970d70e3294d9e89e9303e95179e767a747d61f93",
+      "modules/perky/PORT.md": "cd8bbd1d5dd76f369cd1d2829c7d632e66325a443bf2a51fa20e2d9b309a398d",
+      "modules/perky/LIGHT2_HWTEST.md": "b9050f81b926fa6fbc7b5e1e5159a92b4395c545a61f02dbea9b89f38a80218d",
+      "modules/perky/noise_tone_wave2_compact.py": "913b0804b20584b86b27f483a395590ab00067bb368aac5c935958863ac78d2d",
+      "modules/perky/control_three_candidate.c": "37047a761e4b59ef0829e93c636d06ea81953d6cdcc5c311678ba9d00e419529",
+      "modules/perky/simple_drum_ref.py": "09caffdeae6a881ee38d2711d03984113e5146418717c780a116a1b5bf5094f2",
+      "modules/perky/NOISE_HAT.md": "079ef9d656608844934aa6437c6827374a0e71c663db6a1b31826aea08604364",
+      "modules/perky/generate_cf_final.py": "ff93a6716b576dd0661cdcbb5eb3e19f2a471a6fe76ca0dba3259656c7f342ca",
+      "modules/perky/FINAL_QUALIFICATION.md": "7c9913d57ecd962ec9cfc1c7a7eb930b40210fca0da47f72e9778cc50cafdfdb",
+      "modules/perky/FX_RECOVERY_FEASIBILITY.md": "d7f15ace2462016595d95f859a526bb218224cbe4b7dcdb32f25077fbc2ddb27",
+      "modules/perky/PERKY3R_AUDIT.md": "d4ff40057ce62fd3790c948718ed54e961ae66203bac3b8cbb0df5b59343d49b",
+      "modules/perky/PERKY4R_RUNTIME_REGRESSION.md": "66c6c705ae7dc1389073711c01bbe49df537e6ba3f5f40e20a156a203b1c02e6",
+      "modules/perky/karplus_compact.py": "d6eac74a4be46697874835b8bdce6da44cb78c61afb87bcd9bb4f3a177873d50",
+      "modules/perky/complex_drum_compact.py": "68ee98662c24df6c3f18525c5384a4ad2b8dcfc0a8ace4b8b1bd079cacd9c455",
+      "modules/perky/TWO_VOICE_MEMORY.md": "55912601bd8bb2b51c51173dbc22af53d1250dfb14caf2614d4ce52ae6b6be07",
+      "modules/perky/cf_wavetable.h": "71845d1551c844e270a71456ba4f779aa4f698df9e9eb403b08105ddc1bcbffe",
+      "modules/perky/noise_tone_oscillator_packed.asm": "6a95eaca844988e12a29f6f1fa76d32d8c88bd76d92a4f435d8289c73b8afd28",
+      "modules/perky/MILESTONE_HWTEST.md": "29ff7288b34b2546f750eb034867c6f61da5c25792a4d081543d67ad4948cb0b",
+      "modules/perky/control_light2_candidate.c": "857a1988b0065fc4d1765d3d8e40e056ae22d69af7ea98835c2d45657844f1dd",
+      "modules/perky/README_3ALGO.md": "19a3dac2600501e42de3f0ff22b512c24fef15af6cc6083ec712834b9dcd643d",
+      "modules/perky/karplus_control_state.py": "5a7202e01aacf0e7f13ff086c8c5624b19e56ccbebcda50d1befe62f0cb8e88f",
+      "modules/perky/noise_tone_wave2_xstate.asm": "66f9d4c59622def5020b69d0336bea815616defbc9764aa5e32f419754c1fb4e",
+      "modules/perky/noise_hat_pulse_compact.py": "6da7de43f98a87a54018b0346b4bf6eaa6565e918954188a6179dead217442de",
+      "modules/perky/simple_drum_runtime_tables.py": "4524e8d1877a478e1f922b3ad9263d3d205e842c601dc360cb86ea7586809a4e",
+      "modules/perky/machine_3algo.asm": "6722fa4ce815209b6cef04f3e37c1e46dd9887da9685f0f930fee8d592528165",
+      "modules/perky/resonant_compact_cf.c": "86666bb73ff6eeb2e2e9271acb7265e573d6fc24642eecb30aa16617bdde5de0",
+      "modules/perky/cf_karplus.h": "8c311ecfa6e2eb9fe2b57c2af05a524419f44f61a002f0b94afe6ca404cd9d70",
+      "modules/perky/slap_compact.py": "c18e8aa37a13291c2144c109d5082af2874ab8aa982b683ee6c2aaa136864970",
+      "modules/perky/ENGINE_MATRIX.md": "f303aeecefda8817956a4677ee1fd9f82bb4e505dba27722961d8226e060b00a",
+      "modules/perky/noise_hat_filter.asm": "e73111271661c30aa144001c448970cdb6fca253df9f8a30cddfc987313a0e5d",
+      "modules/perky/fold_drum2_compact.py": "c6d72a4f1f88f4a9b1f893b161944632cd1b9c5a76f149b4b578caeb7aa9e3b3",
+      "modules/perky/cf_slap_coeff.inc": "f70e05ea6d093270d3563fabf22eb56b999500aef42609a9cfc8b3473f29f316",
+      "modules/perky/noise_tone_oscillator.asm": "3b29e437c2fbdfc9231ed2284dcabbcc3fc7f480293bc78d7cd8690007358669",
+      "modules/perky/noise_tone_ref.py": "a75551db88d56bc1192b30ee8313b3d2f79ca421c01a5e1dd0bc85b6a09a5b28",
+      "modules/perky/resonant_control_update.py": "2866f790af44676d82d5a0a3f5122706a57c53d1c1f5b633ce71ea3dfdb8c1b6",
+      "modules/perky/noise_tone_mix.asm": "e1efb41eb907ef0be14e35afc5af73e92c9237db9d04e0a6eacd6815f669c2bd",
+      "modules/perky/fold_drum_compact.py": "e02d9c423b3ac0fa8ddfc42df478d7e781f425e06da005d6a015279224b1cc3c",
+      "modules/perky/cf_simple_drum.h": "9a535090d2bd3f13cb5f360a74824658321a23330c48a7e92115a646b0631e53",
+      "modules/perky/noise_tone_filter.asm": "3d680ec3a1b4e51ad481bd03ed6fbb3ddf350529bf2aa774aa361c1608f817ad",
+      "modules/perky/cf_slap.h": "4d10f0e328cff102aeaf1e4a720438fac504e78965488aeac2f6d2cec8b4ed22",
+      "modules/perky/PICKUP_FEASIBILITY.md": "f1eefd35da6a9446f20a87fccc968694b13124f1103047db0efb9cd0c4eada57",
+      "modules/perky/noise_hat_pulse_voice.asm": "76cb4f9e4e49556e4362dbce36c0317806a2be4fef6917348c923bc24f6aa2a9",
+      "modules/perky/noise_tone_original_dsp.py": "d6dab50b7bdf91b8fa66930e8209f4663ed4b2de364b23c7b8b5345e876b71f6",
+      "modules/perky/cf_perky4.c": "8478ec462d6444906fc4d2e07673458509d3df0568a1cc8b06ada187e3e6fe63",
+      "modules/perky/probe_cf.s": "b77ddd7a92304eec5f050f67ef081016b7891fd628b3aaf3cd6afe6eb06c697e",
+      "modules/perky/karplus_live_control.asm": "ef2c1489240e91398c5f2bffe06b06905a7554fa21bbad3326fd2ad6d1297cbc",
+      "modules/perky/noise_tone_mix_native.asm": "608667281f516f430cc828e816ba955877ff8bd26dad9ce1bd93b399c7a0e5eb",
+      "modules/perky/noise_hat_classic_mode1_voice.asm": "06ec01d4ade512b88ed9af4cacf385481a343569b78bf2337b9c0af61cfbb138",
+      "modules/perky/HANDOFF.md": "e78d5430edc17a336a86f37d3b21d90a4249844b4cba4601d9cfe03a242efeeb",
+      "modules/perky/hw4_profile.py": "815834c773b6877ab409c4090df75848512564ffb2b56f006877dd25c701e668",
+      "modules/perky/dsp_u32.py": "d6c8e0b89a8cf262376afb3749a413c4bf7a36f2db72a8738cec701304137de8",
+      "modules/perky/FX_RECOVERY_HANDOFF.md": "3916fddf6a6575456728625b3cc4f370159e3feeca0b994156acff236b82c6ea",
+      "modules/perky/cf_fold.h": "e1e3d3c16065fbbfc77b3606782aef431d42ff745ae3c4105472e1444cc25996",
+      "modules/perky/CONTROL.md": "5721cc9e119912a4e184b0305c335860a7fb588ebfef010af63ddab4977431ca",
+      "modules/perky/noise_tone_word_model.py": "d34cb0bc8f33ad41ae06f238eff96ba7afed7dbd48485dd1d2a05ad891b7acfa",
+      "modules/perky/PERKY4R_AU_REPAIR.md": "b37716552f85eccd16ded7230cbdc52bbec799e8627367797b9692711666ace7",
+      "modules/perky/resonant_dsp.py": "694cf8665e4f5da16c1de7ac4abbe4c55b9251cc83fcd712fc285d31d98bb6c4",
+      "modules/perky/resonant_fast_dsp.py": "95a0611f76a4961e3ef3c2dcccc10cb3678b70bf13726d8a7d993caaf2df2303",
+      "modules/perky/cf_noise_tone.h": "9cbf001ccbdedb4ee25cd6ec88d8d804ac442a070b1f3ac4c26470c113417d45",
+      "modules/perky/hook_state_only.asm": "d2a92807513a552344d9f5bc92f415e1216de7f2380df70d7fb62c80f4ffc56f",
+      "modules/perky/resonant_fresh.py": "b5486b0daf68e2811d2342b1ab816428b47444db8460e05c7b45a7274c783f4d",
+      "modules/perky/cf_math.h": "d621ce5f2738917e076cc74f8d3b6080b4d237e615e8f6f4fc42bc5dbdc83262"
+    }
+  },
+  "required_failed_checks": [
+    "legacy",
+    "resonant",
+    "noise-tone-controls",
+    "stock-record",
+    "wt-profiles"
+  ],
+  "required_unresolved_checks": [
+    "Complete original V1/V2 initialization, control-cadence and boundary differential proof",
+    "Exact Resonant snare/bass/third-mode PCM/state/RNG success",
+    "Simultaneous two-instance differential coverage, releases, long tails and family changes",
+    "Audited actual DSP source dependency closure (qualified inventory is conservative)",
+    "Corrected-model target-code costs for all required/reversed profile-mode pairings",
+    "Actual proposed linked two-instance allocation, stack and deterministic readiness proof",
+    "Separate ELUP container/header accounting and validated card payload limit",
+    "Completed fresh production qualification (the initial attempt was interrupted on CF failures)"
+  ],
+  "initial_qualification": {
+    "exit_status": 130,
+    "status": "INTERRUPTED_AFTER_CF_REFERENCE_FAILURES",
+    "argv": [
+      ".venv/bin/python3",
+      "tools/perky/build_four_machine.py",
+      "--qualify-only",
+      "--work",
+      "out/perky/hybrid/baseline/build"
+    ],
+    "log": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/qualify.log",
+      "bytes": 1870,
+      "sha256": "ad118b78f3c30354fb5929d96223a32855eed2ecaf950edbcf765579e25bed22"
+    },
+    "floor_log": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/build/qualification-00.log",
+      "bytes": 55807,
+      "sha256": "8e3523d951ef40f74fe6ad77961666a8b0ad6f314f49b9c3f6c0ca243ee1234f"
+    }
+  },
+  "negative_checks": {
+    "status": "PASS",
+    "log": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/fail-closed-selftest.log",
+      "bytes": 341,
+      "sha256": "1220e70d6795ff2d69edc51614202c317aec2a8bcdddea2fbf78118b3ea868f4"
+    },
+    "cases": [
+      "required DSP upload hash tamper rejected",
+      "missing baseline emits structured BLOCKED without dependent commands"
+    ]
+  },
+  "syntax_check": {
+    "argv": [
+      ".venv/bin/python3",
+      "-m",
+      "py_compile",
+      "tools/verify/verify_perky_hybrid.py",
+      "tools/verify/verify_perky_hybrid_wt_profiles.py"
+    ],
+    "exit_status": 0
+  },
+  "wt_profile_probe": {
+    "status": "FAIL",
+    "comparisons": 216,
+    "mismatch_count": 276,
+    "mismatch_distribution": {
+      "engine-2/state": 108,
+      "engine-2/PCM": 30,
+      "engine-5/state": 108,
+      "engine-5/PCM": 30
+    },
+    "full_mismatch_records_sha256": "c1a0b8eec1a8cc3960c71d36ee808be3544c5da215eea31e4f975392f505cbc3",
+    "capture_set_sha256": "ca829e4ac986f38271fe0a99c9f9e5a58871804bde00bfe684e533000cee0a5e",
+    "full_local_report": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-contract/wt-profiles/report.json",
+      "bytes": 39140,
+      "sha256": "0ded4e176c3fd47022c23b210583a6558b2420aac2f555356664d739538c7a56"
+    },
+    "limits": [
+      "logical instances tested separately, simultaneous independence unproved",
+      "no release, long-tail, boundary sweep or original dirty-control trajectory proof"
+    ]
+  },
+  "history_inventory": [
+    {
+      "path": "AGENTS.md",
+      "commits": [
+        {
+          "commit": "58acc80687015e8aa7e60eb9b5155c8aa9445ac6",
+          "subject": "Merge upstream main feb7af16 into perky-machines; preserve PERKY4S placement and loader"
+        },
+        {
+          "commit": "247ce32827e546f9af679149429b43653e942ae9",
+          "subject": "docs(perky): align active guidance with hardware-verified PERKY4S; preserve historical milestones"
+        },
+        {
+          "commit": "e06dc89ce4c5f0b1604dc4384d0610f07109af68",
+          "subject": "docs: stale-claim and marker pass for golive"
+        },
+        {
+          "commit": "e00b39cbfad5afaf8ddbe244ad24cf8c6e81f3fb",
+          "subject": "AGENTS.md: cut History to the citation rule and recover recipe"
+        },
+        {
+          "commit": "efa8ddb76a4876e459559f8555b60c1e1f1a51c9",
+          "subject": "docs: move the trap register out of AGENTS.md into TRAPS.md"
+        },
+        {
+          "commit": "2d103a310621fe5b12c08f932aee49089073cb4b",
+          "subject": "docs: the rep sites are fixed in code, hardware open"
+        },
+        {
+          "commit": "427ca1f7d0722a7453f0a1ff6abf2f649c2f1f20",
+          "subject": "Ingest 12 Oct notes: rep in proc, DMA partition contention, stock FX costs, BRAIN suggestions"
+        },
+        {
+          "commit": "a0491653e9e63e83bce45db212efe36788f6ff9f",
+          "subject": "docs: refhash check is against the merge-base's shared baseline"
+        },
+        {
+          "commit": "d99998b8255915c8a0e92107cf1fcffdfdc1afa2",
+          "subject": "Merge pull request #655 from sambanks/brain-osw"
+        },
+        {
+          "commit": "42d9011dfbfdab03464e3a43cd6e110c517a6756",
+          "subject": "Gates: cache passes by input, machine-wide slots, scope a module change's shared half"
+        },
+        {
+          "commit": "5f6a425d001086d051475c4ce4cae39d8eda0ccb",
+          "subject": "Rename the settings store to BRAIN: module, remix, menu category, card folder, files and symbols"
+        },
+        {
+          "commit": "1db643e33631930459533b56f72ed0ffc2006411",
+          "subject": "Stock clamps out-of-count Part bytes at load; the core keeps no clamp of its own"
+        },
+        {
+          "commit": "3fd0b30545b11a8c614ebabd6fa5c42de2ab9d5d",
+          "subject": "Phase 3a: KITS replaces OCTAKIT and its three bridges; the Runtime machinery goes"
+        },
+        {
+          "commit": "228bd5e269c04982a28f87bc375ca9ab6208add6",
+          "subject": "Gates: native port binaries under any python3, once-per-run module gates, a content stamp for the port"
+        },
+        {
+          "commit": "22e36ce798e0092bd22bdf7f94e5a47ea4e89ad8",
+          "subject": "WAVE, SEND: mask knob words before shifts and tests; dsp_host -pword"
+        },
+        {
+          "commit": "e73d20a5e70069dfef602f13a843076c45237d1a",
+          "subject": "build_bus: marker-once on ROTINIT and XBUS_GATE, base literal counted per source and matched whole"
+        },
+        {
+          "commit": "c8b90f3a8e6b8bdc6dce4122732d674f886a582e",
+          "subject": "dsp_asm: data-ALU ops with two parallel moves; round-trip compares operands"
+        },
+        {
+          "commit": "0bf356de6fee75edd2900ddd18d12b19a77552da",
+          "subject": "Docs: say what \"the rig\" was in each place"
+        },
+        {
+          "commit": "d254e8a9a6eec85c4a8105980d6e581336fd61b9",
+          "subject": "Stock DSP mailbox at X:0x37F00; payload B's boot zero covers it"
+        },
+        {
+          "commit": "2d4a5791aeb7feb55c7311c4fd1466e64e4e8372",
+          "subject": "Ledger: plain spans, keeps, grown tables, conflicts, DSP ranges; Linked.defsyms"
+        },
+        {
+          "commit": "8540348c5704cf887fe6831efe0fb27fd516e000",
+          "subject": "Docs: 'section N' in place of the section sign; verify_docs refuses it"
+        },
+        {
+          "commit": "68e95148cfa9eac727aeb60036f9207c0dfa0caf",
+          "subject": "AGENTS.md: the 30 Sep docs layout, old paths mapped; a git-show citation"
+        },
+        {
+          "commit": "7f6d9cc2ed17ff9cfbef31069e9989424f105ff9",
+          "subject": "Module docs live in their modules; one README shape"
+        },
+        {
+          "commit": "f458c156d15a25d5e4f4723ad5e23adee6465e24",
+          "subject": "docs/guide and docs/contributing: one copy of each procedure"
+        },
+        {
+          "commit": "489daa5ef72305c6b52bb2768673eb2dc1b19af2",
+          "subject": "FULL=1 is a manual choice: nothing requires it (CONTRIBUTING, AGENTS, the PR template, TESTING, reach)"
+        },
+        {
+          "commit": "64221e2cca9ab07b18f9a7c4745df01ebe4d0e2b",
+          "subject": "make reach: QUICK by default (carrying remixes users flash, one floor remix, no identity or accept, 2 shards, background priority); FULL=1 the previous behaviour"
+        },
+        {
+          "commit": "3f68e32ac942b4bb369ff2c8eea2730885d8fecf",
+          "subject": "AGENTS: the forked-port shared-memory trap"
+        },
+        {
+          "commit": "44de3c253107ef0f2ed253461b1eceac28d9262f",
+          "subject": "Docs: start-here map, TESTING.md, WSL folded into BUILDING, CONTRIBUTING gates deduplicated, flex-seekbind READMEs (WIP)"
+        },
+        {
+          "commit": "5cf9705f21f2439ae7e2c8a8c5b354ad97ffa8be",
+          "subject": "Test remixes under remixes/test/: the seven one-module remixes move, names unchanged"
+        },
+        {
+          "commit": "79d20d4ef34d5ebbb0932f526f726f7ecb8324ff",
+          "subject": "The build's memo: packed runtimes and Runtime artifacts by the sha256 of their inputs; verify_scenesp2's three boots side by side"
+        },
+        {
+          "commit": "f00288828d269c931a0315d4c32433d1ac2aaec3",
+          "subject": "Docs: how to write a remix (BUILDING \u00a78), the emulator and check paths after the refactor"
+        },
+        {
+          "commit": "0c4f2ec5ca1fcf6b265c554b3fe60bd1609534a5",
+          "subject": "The gates follow the modules: schema.Gate + Module.dear; make accept for any remix; make reach classifies the diff"
+        },
+        {
+          "commit": "0c982cf6591eaf3eaa6748c62aca03cc32c636be",
+          "subject": "Remove PLAN.md and other outdated files; fix dead references"
+        },
+        {
+          "commit": "8648348114d1166191cfd7dedf1ac5d0e0bf89cb",
+          "subject": "The module table and the remix index are rendered from the manifests; remixes are directories"
+        },
+        {
+          "commit": "af630777f4874c1971827d5a4caaa5ff44e543e8",
+          "subject": "spectrum dg/dG through fs_rset, modulation mo_glide (TONE 1/128), reverb init clears TIME's glide, delay 1-PING from the run; census: the garbage start against a zero start; AGENTS.md: the lua displacement trap"
+        },
+        {
+          "commit": "e17a8b2ce680a8841504e863708dabbc8266ad1a",
+          "subject": "AGENTS.md: the a0 trap sits above"
+        },
+        {
+          "commit": "2ede5d991a952b04f9c816caed29d8c8d8f9774e",
+          "subject": "AGENTS.md: the asr-then-Z trap"
+        },
+        {
+          "commit": "1a73b97f6702fbff9e894a512ea95aa87cc86799",
+          "subject": "bottleservice: the rig + USB + Octakit; page-1 writes carry Octakit's token"
+        },
+        {
+          "commit": "8b5b740e528835a3c6bdfb40ec08b5f6087eb1bc",
+          "subject": "CI on GitHub: three firmware-free jobs, SHA-pinned, manual dispatch; contributor docs"
+        },
+        {
+          "commit": "93fabe4d3de2ef2206f408b3f25b7246af4f2e7a",
+          "subject": "AGENTS.md: the agent rules move there; rebase + required gates before a PR"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/PERKY4S_RELEASE.md",
+      "commits": [
+        {
+          "commit": "247ce32827e546f9af679149429b43653e942ae9",
+          "subject": "docs(perky): align active guidance with hardware-verified PERKY4S; preserve historical milestones"
+        },
+        {
+          "commit": "16a8de19a17ee4cba765cbdb30ca051f85af4e23",
+          "subject": "Create isolated host directory before fresh-worktree qualification"
+        },
+        {
+          "commit": "de6d7e7488956f1fc30e2f3427f1fc17b563b921",
+          "subject": "Reserve shared-P boundary guard for hardware-tested PERKY4S"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/UPSTREAM_INTEGRATION_2026-10-14.md",
+      "commits": [
+        {
+          "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+          "subject": "docs(perky): record upstream integration and local qualification; hold hardware approval"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/CF_FRAME_COST.md",
+      "commits": [
+        {
+          "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+          "subject": "docs(perky): record upstream integration and local qualification; hold hardware approval"
+        },
+        {
+          "commit": "247ce32827e546f9af679149429b43653e942ae9",
+          "subject": "docs(perky): align active guidance with hardware-verified PERKY4S; preserve historical milestones"
+        },
+        {
+          "commit": "8718ce86da46716c4e4b04bcc48ede68736b2469",
+          "subject": "perky: record the refined predictor budget (115.2 us, 91.3% accuracy)"
+        },
+        {
+          "commit": "7daaff218f01461fa696c4361689f0455f291ea7",
+          "subject": "perky: record the branch-predictor budget (117.3 us, 92% accuracy)"
+        },
+        {
+          "commit": "bbcc267f6e30ba81595374a4a85e5de3cf6d0f79",
+          "subject": "perky: record the branch-predictor budget (172.1 us, gate passes)"
+        },
+        {
+          "commit": "00b88c772d28aec447ae6c4f9d0723ffb8deb9c5",
+          "subject": "perky: price MUL at EMAC throughput (1 cycle) instead of latency (3)"
+        },
+        {
+          "commit": "1b8174d18e504f2036cf76f518bc24a3559d4c75",
+          "subject": "perky: cut ColdFire frame cost -- MUL cycle model + native shifts/reinterprets"
+        },
+        {
+          "commit": "57215a74533294cde3dc05d56210299faaa8fefb",
+          "subject": "perky: record the 254.9 us/frame budget; fix stale user-path label"
+        },
+        {
+          "commit": "6c10fa39c9d0c157bd494b7da7b15e130e267311",
+          "subject": "perky: note the pre-existing split-p-lock failure the release gate stops on"
+        },
+        {
+          "commit": "9eb8d1792edd709b8870cb7b95450191825ed34e",
+          "subject": "perky: finish item 2 -- hoist the wavetable block invariants too"
+        },
+        {
+          "commit": "febb475a8480f4f1a207aa20501e96cdac4886b5",
+          "subject": "perky: work the five third-party frame-cost items, and measure each"
+        },
+        {
+          "commit": "43bb58bbef42aaba5217206e2cb621379292c9a4",
+          "subject": "perky: correct the frame-cost record -- the short run flattered the fix"
+        },
+        {
+          "commit": "a10e1d24f6c206e338381bf3e2922938383bd517",
+          "subject": "perky: record why the frame/2 budget is out of reach, and how the model prices it"
+        },
+        {
+          "commit": "0a23d534fd09286038022e75b76f896c840d7ed4",
+          "subject": "perky: cut the ColdFire frame cost -- typed state access + hoist pk4_init"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/control_four_candidate.c",
+      "commits": [
+        {
+          "commit": "799ab24495d7c7cd203266a455b07168dfec68fd",
+          "subject": "Repair Complex controls against direct PerkyBits AU captures"
+        },
+        {
+          "commit": "11f0165f702ddac17bd61a5b19cdbe43cca740f9",
+          "subject": "Integrate reference-qualified Complex Drum and PERKY4 track UI"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/control_three_candidate.c",
+      "commits": [
+        {
+          "commit": "11f0165f702ddac17bd61a5b19cdbe43cca740f9",
+          "subject": "Integrate reference-qualified Complex Drum and PERKY4 track UI"
+        },
+        {
+          "commit": "ca23c76bce2dbe55f30b5fc5547d55e0ba04cdc7",
+          "subject": "Repair PERKY three-engine integration and qualify a core-owned candidate"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/control_cf_final.c",
+      "commits": [
+        {
+          "commit": "a522d2f2f9ccb9454aa76b3d7c37ec25042f8f1a",
+          "subject": "perky: fix record-commit codegen (hardware-confirmed) + measurement tooling"
+        },
+        {
+          "commit": "735c6b29db2a46c11c3289be2ece85de81b3709f",
+          "subject": "perky: hoist per-algo engine creation out of the audio callback"
+        },
+        {
+          "commit": "c77e9219951b4d60940b09b2fdd1eabe81f38d19",
+          "subject": "perky: block-cache every ColdFire renderer; remove Acoustic Hats"
+        },
+        {
+          "commit": "0a23d534fd09286038022e75b76f896c840d7ed4",
+          "subject": "perky: cut the ColdFire frame cost -- typed state access + hoist pk4_init"
+        },
+        {
+          "commit": "84ea0151ad1ca65cef8742e69eff95826a806b8b",
+          "subject": "perky: carry the PCM as a lossless stream so the card OS upgrade works"
+        },
+        {
+          "commit": "a76ab139f11576e8f39a40537fd22fa52abaff1c",
+          "subject": "perky: add Acoustic Hats (V4) -- 12 of 12 algorithms shipping"
+        },
+        {
+          "commit": "2292f22f7145e0080052453adc31beef19bc4b7e",
+          "subject": "perky: add Wavetable (V1/V2) -- T1 and T2 now have all three algorithms"
+        },
+        {
+          "commit": "a95028c3df5f1805e4d983a95663a7b9e631d2a5",
+          "subject": "perky: lay the four voices out on T1..T4 with the P\u0112RKONS algorithm silo"
+        },
+        {
+          "commit": "1345438fe167ac92519ab942e34c5d6b6116c935",
+          "subject": "perky: six-algo PERKY Machines engine + sequencer hit-drift fix"
+        },
+        {
+          "commit": "7de3c08f9feb0b2e29516dcd9b383c6ee73837f6",
+          "subject": "fix(perky): commit PCM into stock fixed source slot"
+        },
+        {
+          "commit": "7d90c0151d74421c87bb1e4e7533aeb128e32e00",
+          "subject": "fix(perky): latch hardware trigs and reorder SRC controls"
+        },
+        {
+          "commit": "07acc2efdbe2848a53fdfe01b048054211ecf887",
+          "subject": "perky: preserve runtime reinit in final four-algo control"
+        },
+        {
+          "commit": "6cca7a7611b7a0d64ad93aed1b5ac9b1d6b5576a",
+          "subject": "perky: align final machine control with qualified source"
+        },
+        {
+          "commit": "83d3fb12160f58266029e8d952b129584fa08fef",
+          "subject": "perky: add final four-track ColdFire machine control"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/control.c",
+      "commits": [
+        {
+          "commit": "ca23c76bce2dbe55f30b5fc5547d55e0ba04cdc7",
+          "subject": "Repair PERKY three-engine integration and qualify a core-owned candidate"
+        },
+        {
+          "commit": "fe2fbdb34a04101e9ef38eb8edabc341eb102c22",
+          "subject": "perky: add the COLDFIRE-side rung -- the DSP ladder alone is ambiguous"
+        },
+        {
+          "commit": "53c7ae0d1a2725f9613e5f337a010d8a044aa2ff",
+          "subject": "perky: REVERT the control-settle hoist -- a working gate proved it changes behaviour"
+        },
+        {
+          "commit": "c1afbb4fe278fa1867dd7dbd7ff9bcdd478ef2d9",
+          "subject": "perky: keep the hoist; withdraw two equivalence gates that could not fail"
+        },
+        {
+          "commit": "71acecdc2cee941b156337c5f4f4729cee2a16a2",
+          "subject": "perky: FIX the wedge -- hoist the resonant control settle out of the audio callback"
+        },
+        {
+          "commit": "5c5ebce5d59988aebe6183727c3fc92a752f2bcc",
+          "subject": "perky: ITEM 8 DONE -- the panel reaches the renderer, and the DSP budget did not move"
+        },
+        {
+          "commit": "29a6446ab73a246fc1103d75b95d8df9ba5b609a",
+          "subject": "perky: REPEATED TRIGGERS work and are gated -- plus two harness defects that hid it"
+        },
+        {
+          "commit": "4d1cdac8fb02dccd9f4b3ade7cfeca3eb5b3189e",
+          "subject": "perky: THE ACCEPTANCE GATE -- end-to-end production sim, all six cases, all three sounding"
+        },
+        {
+          "commit": "a2517803bca8464d85a4a9a68e7fe32eef5684d9",
+          "subject": "perky: FIX the Resonant silence -- the authentic fresh state now reaches the DSP"
+        },
+        {
+          "commit": "0dbc6d9bb1e648c95d10fe10d8ed3c4004c25e35",
+          "subject": "perky: FIX the panel bug, and record the deeper one -- the resonant engines do not self-start"
+        },
+        {
+          "commit": "6abcea1241bf70571dbecc06dacb429c242d3a90",
+          "subject": "perky: fix the pre-existing red fold-transport gate, and a bug it caught in mine"
+        },
+        {
+          "commit": "3976d7ae7f26783f492b29db94c9a47ffeca538b",
+          "subject": "perky: add the Resonant prepare path and wire the three-engine dispatch"
+        },
+        {
+          "commit": "944b58def7ffd912d7303150766b01777f385a35",
+          "subject": "perky: move MODE to main SRC page"
+        },
+        {
+          "commit": "2bd8d37592763735952db1d9d83b3eebc6436c37",
+          "subject": "perky: checkpoint authentic voice ports"
+        },
+        {
+          "commit": "3b210b6fd7c78eb741a9e16bee724f0a86b5db6d",
+          "subject": "perky: render MODE as stock three-position select"
+        },
+        {
+          "commit": "1ca2419e2dcc4f6ac1253f954312c8c80ab208f0",
+          "subject": "perky: keep engine family in proven source parameter storage"
+        },
+        {
+          "commit": "6c45998af43f54ee0f11214fe3a5141e61f3c4bc",
+          "subject": "perky: add ColdFire source-machine control implementation"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/machine.s",
+      "commits": [
+        {
+          "commit": "8325e21102c8a7369861be85bdf9c74b530bbb35",
+          "subject": "fix(perky): assemble recorder donor on ColdFire"
+        },
+        {
+          "commit": "5ba68d40e20798c0e5c7f6b2f72823fc485d4f6b",
+          "subject": "fix(perky): seed recorder donor for fresh FLEX scheduling"
+        },
+        {
+          "commit": "6d26dbf84acd13e92f45c2930679332920266c10",
+          "subject": "perky: reserve signature for proven PK1 marker only"
+        },
+        {
+          "commit": "c9e2f9996a1f20d6c372be93f7cc470721247d5e",
+          "subject": "perky: add ColdFire machine chooser and Part signature hooks"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/machine_four_ui.s",
+      "commits": [
+        {
+          "commit": "11f0165f702ddac17bd61a5b19cdbe43cca740f9",
+          "subject": "Integrate reference-qualified Complex Drum and PERKY4 track UI"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/cf_perky4.c",
+      "commits": [
+        {
+          "commit": "735c6b29db2a46c11c3289be2ece85de81b3709f",
+          "subject": "perky: hoist per-algo engine creation out of the audio callback"
+        },
+        {
+          "commit": "1b8174d18e504f2036cf76f518bc24a3559d4c75",
+          "subject": "perky: cut ColdFire frame cost -- MUL cycle model + native shifts/reinterprets"
+        },
+        {
+          "commit": "c77e9219951b4d60940b09b2fdd1eabe81f38d19",
+          "subject": "perky: block-cache every ColdFire renderer; remove Acoustic Hats"
+        },
+        {
+          "commit": "0a23d534fd09286038022e75b76f896c840d7ed4",
+          "subject": "perky: cut the ColdFire frame cost -- typed state access + hoist pk4_init"
+        },
+        {
+          "commit": "a76ab139f11576e8f39a40537fd22fa52abaff1c",
+          "subject": "perky: add Acoustic Hats (V4) -- 12 of 12 algorithms shipping"
+        },
+        {
+          "commit": "2292f22f7145e0080052453adc31beef19bc4b7e",
+          "subject": "perky: add Wavetable (V1/V2) -- T1 and T2 now have all three algorithms"
+        },
+        {
+          "commit": "0bc2a3a58efc7f24347cb0eda90e7df5647fb5b4",
+          "subject": "perky: add Slap (V3) -- T3 now has all three algorithms"
+        },
+        {
+          "commit": "7a952cb77e1aa4c2cf90be960a21d6052f49c534",
+          "subject": "perky: add Complex Drum (V2) to the voice map"
+        },
+        {
+          "commit": "6cc9e0d32e65da35706f190528ceb6cc31997c7a",
+          "subject": "perky: add Simple Drum (V1) to the T1..T4 voice map"
+        },
+        {
+          "commit": "1345438fe167ac92519ab942e34c5d6b6116c935",
+          "subject": "perky: six-algo PERKY Machines engine + sequencer hit-drift fix"
+        },
+        {
+          "commit": "efcacca878ae78d0d9f7c653f2ebf9eecdfa0930",
+          "subject": "perky: sync optimized bit-exact control settle core"
+        },
+        {
+          "commit": "c5c749761b7abd5ba703b8e10abdde343b441c25",
+          "subject": "perky: sync exact qualified ColdFire final sources and all-FX gates"
+        },
+        {
+          "commit": "39d7eebf23bac0636dbf3e425d31058e737dbe8f",
+          "subject": "perky: fix Karplus control prep in four-track core"
+        },
+        {
+          "commit": "86379101ae377e18f77501f21daee91cbee95876",
+          "subject": "perky: add four-track exact control and render core"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/cf_perky4.h",
+      "commits": [
+        {
+          "commit": "735c6b29db2a46c11c3289be2ece85de81b3709f",
+          "subject": "perky: hoist per-algo engine creation out of the audio callback"
+        },
+        {
+          "commit": "c77e9219951b4d60940b09b2fdd1eabe81f38d19",
+          "subject": "perky: block-cache every ColdFire renderer; remove Acoustic Hats"
+        },
+        {
+          "commit": "a76ab139f11576e8f39a40537fd22fa52abaff1c",
+          "subject": "perky: add Acoustic Hats (V4) -- 12 of 12 algorithms shipping"
+        },
+        {
+          "commit": "2292f22f7145e0080052453adc31beef19bc4b7e",
+          "subject": "perky: add Wavetable (V1/V2) -- T1 and T2 now have all three algorithms"
+        },
+        {
+          "commit": "0bc2a3a58efc7f24347cb0eda90e7df5647fb5b4",
+          "subject": "perky: add Slap (V3) -- T3 now has all three algorithms"
+        },
+        {
+          "commit": "7a952cb77e1aa4c2cf90be960a21d6052f49c534",
+          "subject": "perky: add Complex Drum (V2) to the voice map"
+        },
+        {
+          "commit": "6cc9e0d32e65da35706f190528ceb6cc31997c7a",
+          "subject": "perky: add Simple Drum (V1) to the T1..T4 voice map"
+        },
+        {
+          "commit": "a95028c3df5f1805e4d983a95663a7b9e631d2a5",
+          "subject": "perky: lay the four voices out on T1..T4 with the P\u0112RKONS algorithm silo"
+        },
+        {
+          "commit": "1345438fe167ac92519ab942e34c5d6b6116c935",
+          "subject": "perky: six-algo PERKY Machines engine + sequencer hit-drift fix"
+        },
+        {
+          "commit": "db3dfee853e50c88b32b1d2345246dd9d466cb89",
+          "subject": "docs(perky): distinguish engine ABI from SRC page order"
+        },
+        {
+          "commit": "ecd89f6f9e7e37557b9ccdbb46cf51d1b3d53e92",
+          "subject": "perky: align final runtime header with qualified source"
+        },
+        {
+          "commit": "2c69f218fe8a84f39ccffc2be381da89f290a485",
+          "subject": "perky: add four-voice ColdFire engine API"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/cf_wavetable.c",
+      "commits": [
+        {
+          "commit": "7cc4f48ab391ce74580cb59c3181e8174a2701e7",
+          "subject": "perky: block-cache the Fold/Wavetable/NoiseTone M1 envelopes"
+        },
+        {
+          "commit": "1b8174d18e504f2036cf76f518bc24a3559d4c75",
+          "subject": "perky: cut ColdFire frame cost -- MUL cycle model + native shifts/reinterprets"
+        },
+        {
+          "commit": "c77e9219951b4d60940b09b2fdd1eabe81f38d19",
+          "subject": "perky: block-cache every ColdFire renderer; remove Acoustic Hats"
+        },
+        {
+          "commit": "9eb8d1792edd709b8870cb7b95450191825ed34e",
+          "subject": "perky: finish item 2 -- hoist the wavetable block invariants too"
+        },
+        {
+          "commit": "febb475a8480f4f1a207aa20501e96cdac4886b5",
+          "subject": "perky: work the five third-party frame-cost items, and measure each"
+        },
+        {
+          "commit": "0a23d534fd09286038022e75b76f896c840d7ed4",
+          "subject": "perky: cut the ColdFire frame cost -- typed state access + hoist pk4_init"
+        },
+        {
+          "commit": "2292f22f7145e0080052453adc31beef19bc4b7e",
+          "subject": "perky: add Wavetable (V1/V2) -- T1 and T2 now have all three algorithms"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/cf_wavetable.h",
+      "commits": [
+        {
+          "commit": "2292f22f7145e0080052453adc31beef19bc4b7e",
+          "subject": "perky: add Wavetable (V1/V2) -- T1 and T2 now have all three algorithms"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/cf_resonant.c",
+      "commits": [
+        {
+          "commit": "07b34bffe8115c3fdd5867d91b3e1e3ec65770a5",
+          "subject": "perky: pack the snare's resonator state into 16-bit halves"
+        },
+        {
+          "commit": "2f4f324e38cadb6118d59be3a7b0d8feb62a14aa",
+          "subject": "perky: drop dead sign branch in the snare's first three decays"
+        },
+        {
+          "commit": "77b2cadf21bec2115f4963744ec871aedf64b5e3",
+          "subject": "perky: drop dead modulation/bypass branches in the resonant resonators"
+        },
+        {
+          "commit": "1b8174d18e504f2036cf76f518bc24a3559d4c75",
+          "subject": "perky: cut ColdFire frame cost -- MUL cycle model + native shifts/reinterprets"
+        },
+        {
+          "commit": "febb475a8480f4f1a207aa20501e96cdac4886b5",
+          "subject": "perky: work the five third-party frame-cost items, and measure each"
+        },
+        {
+          "commit": "0a23d534fd09286038022e75b76f896c840d7ed4",
+          "subject": "perky: cut the ColdFire frame cost -- typed state access + hoist pk4_init"
+        },
+        {
+          "commit": "1345438fe167ac92519ab942e34c5d6b6116c935",
+          "subject": "perky: six-algo PERKY Machines engine + sequencer hit-drift fix"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/cf_resonant.h",
+      "commits": [
+        {
+          "commit": "1345438fe167ac92519ab942e34c5d6b6116c935",
+          "subject": "perky: six-algo PERKY Machines engine + sequencer hit-drift fix"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/cf_noise_tone.c",
+      "commits": [
+        {
+          "commit": "7cc4f48ab391ce74580cb59c3181e8174a2701e7",
+          "subject": "perky: block-cache the Fold/Wavetable/NoiseTone M1 envelopes"
+        },
+        {
+          "commit": "1b8174d18e504f2036cf76f518bc24a3559d4c75",
+          "subject": "perky: cut ColdFire frame cost -- MUL cycle model + native shifts/reinterprets"
+        },
+        {
+          "commit": "c77e9219951b4d60940b09b2fdd1eabe81f38d19",
+          "subject": "perky: block-cache every ColdFire renderer; remove Acoustic Hats"
+        },
+        {
+          "commit": "0a23d534fd09286038022e75b76f896c840d7ed4",
+          "subject": "perky: cut the ColdFire frame cost -- typed state access + hoist pk4_init"
+        },
+        {
+          "commit": "efbcc1858beed889c614c98129ac2492db1f14e4",
+          "subject": "perky: keep Noise/Tone freestanding and fast"
+        },
+        {
+          "commit": "0bfdfa15f825f82225118dfaac241aa01dd923a6",
+          "subject": "perky: finalize freestanding bit-exact Noise-Tone renderer"
+        },
+        {
+          "commit": "36d961437647bb31f1e4959b42d73add7d36a9fb",
+          "subject": "perky: add bit-exact ColdFire Noise-Tone renderer oracle"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/cf_noise_tone.h",
+      "commits": [
+        {
+          "commit": "8d7c41881ba6482d51fe7f5717b48da55fcbc23f",
+          "subject": "perky: finalize freestanding Noise-Tone renderer API"
+        },
+        {
+          "commit": "36d961437647bb31f1e4959b42d73add7d36a9fb",
+          "subject": "perky: add bit-exact ColdFire Noise-Tone renderer oracle"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/cf_math.h",
+      "commits": [
+        {
+          "commit": "0a23d534fd09286038022e75b76f896c840d7ed4",
+          "subject": "perky: cut the ColdFire frame cost -- typed state access + hoist pk4_init"
+        },
+        {
+          "commit": "f8746126acf1c940539b14323f92660c90091183",
+          "subject": "perky: add freestanding ColdFire math helpers"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/cf_pcm_rice.h",
+      "commits": [
+        {
+          "commit": "84ea0151ad1ca65cef8742e69eff95826a806b8b",
+          "subject": "perky: carry the PCM as a lossless stream so the card OS upgrade works"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/wavetable_drum_compact.py",
+      "commits": [
+        {
+          "commit": "2bd8d37592763735952db1d9d83b3eebc6436c37",
+          "subject": "perky: checkpoint authentic voice ports"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/resonant_snare_compact.py",
+      "commits": [
+        {
+          "commit": "0bed605535aab6bdd2f304ced192d7718193839e",
+          "subject": "perky: add compact resonant drum renderers"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/resonant_bass_compact.py",
+      "commits": [
+        {
+          "commit": "0bed605535aab6bdd2f304ced192d7718193839e",
+          "subject": "perky: add compact resonant drum renderers"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/resonant_control_update.py",
+      "commits": [
+        {
+          "commit": "1345438fe167ac92519ab942e34c5d6b6116c935",
+          "subject": "perky: six-algo PERKY Machines engine + sequencer hit-drift fix"
+        }
+      ]
+    },
+    {
+      "path": "tools/perky/build_four_machine.py",
+      "commits": [
+        {
+          "commit": "de6d7e7488956f1fc30e2f3427f1fc17b563b921",
+          "subject": "Reserve shared-P boundary guard for hardware-tested PERKY4S"
+        },
+        {
+          "commit": "799ab24495d7c7cd203266a455b07168dfec68fd",
+          "subject": "Repair Complex controls against direct PerkyBits AU captures"
+        },
+        {
+          "commit": "11f0165f702ddac17bd61a5b19cdbe43cca740f9",
+          "subject": "Integrate reference-qualified Complex Drum and PERKY4 track UI"
+        }
+      ]
+    },
+    {
+      "path": "tools/perky/build_four_payload.py",
+      "commits": [
+        {
+          "commit": "799ab24495d7c7cd203266a455b07168dfec68fd",
+          "subject": "Repair Complex controls against direct PerkyBits AU captures"
+        },
+        {
+          "commit": "11f0165f702ddac17bd61a5b19cdbe43cca740f9",
+          "subject": "Integrate reference-qualified Complex Drum and PERKY4 track UI"
+        }
+      ]
+    },
+    {
+      "path": "tools/perky/build_three_machine.py",
+      "commits": [
+        {
+          "commit": "ca23c76bce2dbe55f30b5fc5547d55e0ba04cdc7",
+          "subject": "Repair PERKY three-engine integration and qualify a core-owned candidate"
+        }
+      ]
+    },
+    {
+      "path": "tools/perky/build_multi_machine_canary.py",
+      "commits": [
+        {
+          "commit": "11f0165f702ddac17bd61a5b19cdbe43cca740f9",
+          "subject": "Integrate reference-qualified Complex Drum and PERKY4 track UI"
+        },
+        {
+          "commit": "ca23c76bce2dbe55f30b5fc5547d55e0ba04cdc7",
+          "subject": "Repair PERKY three-engine integration and qualify a core-owned candidate"
+        },
+        {
+          "commit": "0252129441269a443c096358d4322000496e3fb7",
+          "subject": "perky: seal PERKY2F qualification and require verified release wrappers"
+        },
+        {
+          "commit": "93598f93d9c2aca1b475fc15dcbe343b84bf587d",
+          "subject": "perky: recover mandatory FX with verified two-core fragmented P installation"
+        },
+        {
+          "commit": "db7c6e4c70ffd0cb7e8c5577fa83bc5a8974966b",
+          "subject": "milestone: the wire is IN and make check is green; the canary stops on OT_PROJECT before reaching it"
+        },
+        {
+          "commit": "bf386ebd1106bad6c70bda24ff83d390f2a92756",
+          "subject": "milestone: the producer's fix -- the canary now stages the platform files its image was built from"
+        },
+        {
+          "commit": "c3a17732ab00a4c2c24da5d3909af9f122c3a39b",
+          "subject": "milestone: fix the ROOT CAUSE of the recurring provenance scare"
+        },
+        {
+          "commit": "0d1ff743206332418a50035f343e75fbbef4688a",
+          "subject": "milestone: the P/X/Y ledger was wrong in three ways -- P was overrun on paper and unclaimed"
+        },
+        {
+          "commit": "2bd8d37592763735952db1d9d83b3eebc6436c37",
+          "subject": "perky: checkpoint authentic voice ports"
+        }
+      ]
+    },
+    {
+      "path": "tools/perky/build_cf_final.py",
+      "commits": [
+        {
+          "commit": "c77e9219951b4d60940b09b2fdd1eabe81f38d19",
+          "subject": "perky: block-cache every ColdFire renderer; remove Acoustic Hats"
+        },
+        {
+          "commit": "70380c09799af6f07383e42fb572b731e2fd47b0",
+          "subject": "perky: port the branch onto the merged upstream (no firmware change)"
+        },
+        {
+          "commit": "a76ab139f11576e8f39a40537fd22fa52abaff1c",
+          "subject": "perky: add Acoustic Hats (V4) -- 12 of 12 algorithms shipping"
+        },
+        {
+          "commit": "2292f22f7145e0080052453adc31beef19bc4b7e",
+          "subject": "perky: add Wavetable (V1/V2) -- T1 and T2 now have all three algorithms"
+        },
+        {
+          "commit": "0bc2a3a58efc7f24347cb0eda90e7df5647fb5b4",
+          "subject": "perky: add Slap (V3) -- T3 now has all three algorithms"
+        },
+        {
+          "commit": "7a952cb77e1aa4c2cf90be960a21d6052f49c534",
+          "subject": "perky: add Complex Drum (V2) to the voice map"
+        },
+        {
+          "commit": "6cc9e0d32e65da35706f190528ceb6cc31997c7a",
+          "subject": "perky: add Simple Drum (V1) to the T1..T4 voice map"
+        },
+        {
+          "commit": "a95028c3df5f1805e4d983a95663a7b9e631d2a5",
+          "subject": "perky: lay the four voices out on T1..T4 with the P\u0112RKONS algorithm silo"
+        },
+        {
+          "commit": "1345438fe167ac92519ab942e34c5d6b6116c935",
+          "subject": "perky: six-algo PERKY Machines engine + sequencer hit-drift fix"
+        },
+        {
+          "commit": "800110ef39496a96fe1c7248c23da6d0fbd76cf8",
+          "subject": "perky: fix the ColdFire address-error fault in the CF render path"
+        },
+        {
+          "commit": "c9132b0f263ac7f241465e52c39fe050ba787c3c",
+          "subject": "perky: native-Windows emulator port, release gates, and correctness fixes"
+        },
+        {
+          "commit": "54eb10dd4d32735b6f2688dbbbb1d42c9f78365e",
+          "subject": "build(perky): require emulator user-path pass before wrapping"
+        },
+        {
+          "commit": "fc91997e42eb8e94d14c343b26e7b770cbead5ca",
+          "subject": "perky: self-test release guards before cross-toolchain preflight"
+        },
+        {
+          "commit": "6553bf132777ef0eafb93b4094c9255498caf029",
+          "subject": "perky: preserve stock DSP bytes in final CF release"
+        },
+        {
+          "commit": "e5802620f50a94dfec5313073cb9bdae0c1a3d0b",
+          "subject": "perky: restore byte-pinned final release builder"
+        },
+        {
+          "commit": "93855a625c80d3413cb5138af048b2c29912cba4",
+          "subject": "perky: validate release version and build arguments"
+        },
+        {
+          "commit": "e10df338256520fd6ef7284e2407ff1790fc12dc",
+          "subject": "perky: require final firmware wrapper round-trip"
+        },
+        {
+          "commit": "f16abddc59c6ce4e1b9d7cc2315128c71f544561",
+          "subject": "perky: record source and toolchain provenance in final release"
+        },
+        {
+          "commit": "49dc1b2daafbfd55d1bc84361607ff87307c3113",
+          "subject": "perky: harden final ColdFire toolchain preflight"
+        },
+        {
+          "commit": "a6b2d67dd1d8348c982c03d0001b5cc721d8b3d9",
+          "subject": "perky: gate generated ColdFire code before final link"
+        },
+        {
+          "commit": "ef3a9d4b91d47d9794a9e677a307b9e30502c12e",
+          "subject": "perky: fix final builder imports and preflight full toolchain"
+        },
+        {
+          "commit": "67df3f4c0dabe990e85a3bae50cf9f2f549ef93b",
+          "subject": "perky: record simultaneous four-voice callback proof"
+        },
+        {
+          "commit": "2d258196dda30064484887e60a3c4a171473faba",
+          "subject": "perky: record shipping callback proof in release manifest"
+        },
+        {
+          "commit": "0089f8ef51ae36f1b8795b4ae9aaaafc0edf43f7",
+          "subject": "perky: remove stale OT_PROJECT requirement from final ColdFire builder"
+        },
+        {
+          "commit": "218d8f9003581bcb7294420dfb44156097e50640",
+          "subject": "perky: add final ColdFire all-FX release builder"
+        }
+      ]
+    },
+    {
+      "path": "tools/perky/perky_cf_machine_module.py",
+      "commits": [
+        {
+          "commit": "c77e9219951b4d60940b09b2fdd1eabe81f38d19",
+          "subject": "perky: block-cache every ColdFire renderer; remove Acoustic Hats"
+        },
+        {
+          "commit": "70380c09799af6f07383e42fb572b731e2fd47b0",
+          "subject": "perky: port the branch onto the merged upstream (no firmware change)"
+        },
+        {
+          "commit": "a76ab139f11576e8f39a40537fd22fa52abaff1c",
+          "subject": "perky: add Acoustic Hats (V4) -- 12 of 12 algorithms shipping"
+        },
+        {
+          "commit": "2292f22f7145e0080052453adc31beef19bc4b7e",
+          "subject": "perky: add Wavetable (V1/V2) -- T1 and T2 now have all three algorithms"
+        },
+        {
+          "commit": "0bc2a3a58efc7f24347cb0eda90e7df5647fb5b4",
+          "subject": "perky: add Slap (V3) -- T3 now has all three algorithms"
+        },
+        {
+          "commit": "7a952cb77e1aa4c2cf90be960a21d6052f49c534",
+          "subject": "perky: add Complex Drum (V2) to the voice map"
+        },
+        {
+          "commit": "6cc9e0d32e65da35706f190528ceb6cc31997c7a",
+          "subject": "perky: add Simple Drum (V1) to the T1..T4 voice map"
+        },
+        {
+          "commit": "1345438fe167ac92519ab942e34c5d6b6116c935",
+          "subject": "perky: six-algo PERKY Machines engine + sequencer hit-drift fix"
+        },
+        {
+          "commit": "1a91b609643428a5efb0f864ca46545b9ae1ca58",
+          "subject": "docs(perky): align final module SRC order"
+        },
+        {
+          "commit": "c5c749761b7abd5ba703b8e10abdde343b441c25",
+          "subject": "perky: sync exact qualified ColdFire final sources and all-FX gates"
+        },
+        {
+          "commit": "9f0977cfde590eb8d958784800e2259c0e73d06e",
+          "subject": "perky: declare final ColdFire-only all-FX machine"
+        }
+      ]
+    },
+    {
+      "path": "tools/perky/perky_cf_assets.py",
+      "commits": [
+        {
+          "commit": "c77e9219951b4d60940b09b2fdd1eabe81f38d19",
+          "subject": "perky: block-cache every ColdFire renderer; remove Acoustic Hats"
+        },
+        {
+          "commit": "84ea0151ad1ca65cef8742e69eff95826a806b8b",
+          "subject": "perky: carry the PCM as a lossless stream so the card OS upgrade works"
+        },
+        {
+          "commit": "a76ab139f11576e8f39a40537fd22fa52abaff1c",
+          "subject": "perky: add Acoustic Hats (V4) -- 12 of 12 algorithms shipping"
+        },
+        {
+          "commit": "2292f22f7145e0080052453adc31beef19bc4b7e",
+          "subject": "perky: add Wavetable (V1/V2) -- T1 and T2 now have all three algorithms"
+        },
+        {
+          "commit": "1345438fe167ac92519ab942e34c5d6b6116c935",
+          "subject": "perky: six-algo PERKY Machines engine + sequencer hit-drift fix"
+        },
+        {
+          "commit": "c5c749761b7abd5ba703b8e10abdde343b441c25",
+          "subject": "perky: sync exact qualified ColdFire final sources and all-FX gates"
+        },
+        {
+          "commit": "e807e950f7f72a269269a4e4f2c136fa7378e592",
+          "subject": "perky: hash-pin final ColdFire assets to v1.2.1"
+        }
+      ]
+    },
+    {
+      "path": "modules/perky/generate_cf_final.py",
+      "commits": [
+        {
+          "commit": "99359e23ca7503d62053815f966275b7227d81d0",
+          "subject": "perky: schedule with register pressure (-fsched-pressure)"
+        },
+        {
+          "commit": "c77e9219951b4d60940b09b2fdd1eabe81f38d19",
+          "subject": "perky: block-cache every ColdFire renderer; remove Acoustic Hats"
+        },
+        {
+          "commit": "a76ab139f11576e8f39a40537fd22fa52abaff1c",
+          "subject": "perky: add Acoustic Hats (V4) -- 12 of 12 algorithms shipping"
+        },
+        {
+          "commit": "2292f22f7145e0080052453adc31beef19bc4b7e",
+          "subject": "perky: add Wavetable (V1/V2) -- T1 and T2 now have all three algorithms"
+        },
+        {
+          "commit": "0bc2a3a58efc7f24347cb0eda90e7df5647fb5b4",
+          "subject": "perky: add Slap (V3) -- T3 now has all three algorithms"
+        },
+        {
+          "commit": "7a952cb77e1aa4c2cf90be960a21d6052f49c534",
+          "subject": "perky: add Complex Drum (V2) to the voice map"
+        },
+        {
+          "commit": "6cc9e0d32e65da35706f190528ceb6cc31997c7a",
+          "subject": "perky: add Simple Drum (V1) to the T1..T4 voice map"
+        },
+        {
+          "commit": "1345438fe167ac92519ab942e34c5d6b6116c935",
+          "subject": "perky: six-algo PERKY Machines engine + sequencer hit-drift fix"
+        },
+        {
+          "commit": "800110ef39496a96fe1c7248c23da6d0fbd76cf8",
+          "subject": "perky: fix the ColdFire address-error fault in the CF render path"
+        },
+        {
+          "commit": "c9132b0f263ac7f241465e52c39fe050ba787c3c",
+          "subject": "perky: native-Windows emulator port, release gates, and correctness fixes"
+        },
+        {
+          "commit": "c5c749761b7abd5ba703b8e10abdde343b441c25",
+          "subject": "perky: sync exact qualified ColdFire final sources and all-FX gates"
+        },
+        {
+          "commit": "aa9c1b189f42983720360ffcfa74ae1fc8bac8ed",
+          "subject": "perky: add final ColdFire assembly generator"
+        }
+      ]
+    },
+    {
+      "path": "tools/verify/verify_perky_cf_final.py",
+      "commits": [
+        {
+          "commit": "c77e9219951b4d60940b09b2fdd1eabe81f38d19",
+          "subject": "perky: block-cache every ColdFire renderer; remove Acoustic Hats"
+        },
+        {
+          "commit": "a76ab139f11576e8f39a40537fd22fa52abaff1c",
+          "subject": "perky: add Acoustic Hats (V4) -- 12 of 12 algorithms shipping"
+        },
+        {
+          "commit": "2292f22f7145e0080052453adc31beef19bc4b7e",
+          "subject": "perky: add Wavetable (V1/V2) -- T1 and T2 now have all three algorithms"
+        },
+        {
+          "commit": "0bc2a3a58efc7f24347cb0eda90e7df5647fb5b4",
+          "subject": "perky: add Slap (V3) -- T3 now has all three algorithms"
+        },
+        {
+          "commit": "7a952cb77e1aa4c2cf90be960a21d6052f49c534",
+          "subject": "perky: add Complex Drum (V2) to the voice map"
+        },
+        {
+          "commit": "6cc9e0d32e65da35706f190528ceb6cc31997c7a",
+          "subject": "perky: add Simple Drum (V1) to the T1..T4 voice map"
+        },
+        {
+          "commit": "a95028c3df5f1805e4d983a95663a7b9e631d2a5",
+          "subject": "perky: lay the four voices out on T1..T4 with the P\u0112RKONS algorithm silo"
+        },
+        {
+          "commit": "1345438fe167ac92519ab942e34c5d6b6116c935",
+          "subject": "perky: six-algo PERKY Machines engine + sequencer hit-drift fix"
+        },
+        {
+          "commit": "2886c5aa82ba349a525651deb7c22ffcd4769d45",
+          "subject": "perky: pin PerkyBits native PCM reference sources"
+        },
+        {
+          "commit": "22eaad59ad32fc104fc4163b1ff9465a81e796fa",
+          "subject": "perky: require long-tail final qualification"
+        },
+        {
+          "commit": "a2ac3fb2fb8de6868832f5c4075da6d2ac558adb",
+          "subject": "perky: require ColdFire hot-loop and p-lock reversion gates"
+        },
+        {
+          "commit": "2e22d1f2f45a7d1783ae41fc4b14e298cfee00cb",
+          "subject": "perky: qualify non-sticky Algo and Mode p-locks"
+        },
+        {
+          "commit": "e926345577df9b742ce6025e3c7eba2ea13d3134",
+          "subject": "perky: require measured stock source-record ABI in final qualification"
+        },
+        {
+          "commit": "1ff85e37a9b0d2871d9ad1d53eb073574a9193c9",
+          "subject": "perky: gate final ColdFire runtime memory contract"
+        },
+        {
+          "commit": "8bbae40e5067f302fbf59cd91ab754ff98dce46b",
+          "subject": "perky: restore exact qualified final runner bytes"
+        },
+        {
+          "commit": "3b6c8c0a31abf5dddcf3b9169586c29fba0f0b05",
+          "subject": "perky: require Part and Bank lifecycle qualification"
+        },
+        {
+          "commit": "c50b8581533d4a7f202362d614b12281e172f781",
+          "subject": "perky: require simultaneous four-voice callback qualification"
+        },
+        {
+          "commit": "95d02ab345074975fe017f1b7432b3a951590b1b",
+          "subject": "perky: require shipping pk_render integration in final qualifier"
+        },
+        {
+          "commit": "a4d1f7e182feeba896f7b7041d28dae65ff14199",
+          "subject": "perky: pin exact qualified source bytes before final PCM gate"
+        },
+        {
+          "commit": "2af627064505e16970bcc9776a640b511a6ce463",
+          "subject": "perky: align final qualification gate with executed source"
+        },
+        {
+          "commit": "625bfcad69136f0f9b2a53eab0ae9332bc781717",
+          "subject": "perky: add final executable four-voice qualification gate"
+        }
+      ]
+    },
+    {
+      "path": "tools/verify/verify_perky_cf_runtime_memory_final.py",
+      "commits": [
+        {
+          "commit": "c77e9219951b4d60940b09b2fdd1eabe81f38d19",
+          "subject": "perky: block-cache every ColdFire renderer; remove Acoustic Hats"
+        },
+        {
+          "commit": "a76ab139f11576e8f39a40537fd22fa52abaff1c",
+          "subject": "perky: add Acoustic Hats (V4) -- 12 of 12 algorithms shipping"
+        },
+        {
+          "commit": "2292f22f7145e0080052453adc31beef19bc4b7e",
+          "subject": "perky: add Wavetable (V1/V2) -- T1 and T2 now have all three algorithms"
+        },
+        {
+          "commit": "0bc2a3a58efc7f24347cb0eda90e7df5647fb5b4",
+          "subject": "perky: add Slap (V3) -- T3 now has all three algorithms"
+        },
+        {
+          "commit": "7a952cb77e1aa4c2cf90be960a21d6052f49c534",
+          "subject": "perky: add Complex Drum (V2) to the voice map"
+        },
+        {
+          "commit": "6cc9e0d32e65da35706f190528ceb6cc31997c7a",
+          "subject": "perky: add Simple Drum (V1) to the T1..T4 voice map"
+        },
+        {
+          "commit": "1345438fe167ac92519ab942e34c5d6b6116c935",
+          "subject": "perky: six-algo PERKY Machines engine + sequencer hit-drift fix"
+        },
+        {
+          "commit": "03491c4594f88caaabd764f9915f9f48cea0a038",
+          "subject": "perky: gate final ColdFire runtime memory and init"
+        }
+      ]
+    }
+  ],
+  "goal2_prerequisite": "Resolve failing original-reference CF preparation/PCM and missing original controls; reconcile stale gates with fresh proof; complete exhaustive and simultaneous two-instance correctness, corrected target costs, DSP dependency closure and actual linked memory/readiness/container contracts; finish fresh qualification and executable zero-exit PASS_FOR_PROBE_BUILD. Hardware remains UNVERIFIED.",
+  "workspace_at_source_commit": {
+    "branch": "perky-cf-dsp-hybrid",
+    "perky_machines_ref": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+    "unrelated_dirty_files": {},
+    "new_worktrees": 0,
+    "pushes": 0,
+    "hybrid_flashable_images": 0,
+    "configuration": {
+      "system_identity": "GPT-6",
+      "variant": "not exposed to this agent",
+      "reasoning_effort": "not exposed to this agent",
+      "speed": "not exposed to this agent",
+      "requested": "gpt-6-astra / Max / Fast",
+      "prompt_changed_configuration": false
+    }
+  }
+}
