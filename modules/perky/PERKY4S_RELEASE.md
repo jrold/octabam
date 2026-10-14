@@ -43,6 +43,12 @@ OCTABAM_NO_CACHE=1 PERKY_EFT="$PWD/out/eft-qualified/elektron-firmware-tool" .ve
 .venv/bin/python3 tools/verify/verify_perky_four_provenance.py --report out/perky/four/PERKY4S_RELEASE.json
 ```
 
+A fresh-worktree harness bootstrap defect was also corrected: tests can relocate
+fixture output while keeping the host executable path. Both parent directories
+are now created before linking. The first qualification attempt stopped on that
+missing host directory; its failed receipt is retained separately. No firmware
+mismatch was observed, and no gate was disabled.
+
 The release JSON records every command, log hash, exact AU/component version,
 source and input hashes, memory ledger, component results, and committed rebuild.
 The permanent guard gate rejects preserved unsafe R placement; the old AU,

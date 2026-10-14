@@ -100,7 +100,7 @@ whether the original block has any additional defect. The responsive UI is
 evidence against calling this a complete CPU/UI hard lock; it does not identify
 which audio/transport worker has stopped or whether a DSP is waiting.
 
-The next hardware image is now **P4ROLDDSP**: T1 alone, Fold1, no FX, one manual
+The subsequent hardware test used **P4ROLDDSP**: T1 alone, Fold1, no FX, one manual
 sound trigger. It restores the complete frozen PERKY4 DSP component while
 retaining the exact R ColdFire runtime SHA-256
 `637af5f61a6dc5c46d1b3576585f338ac402d0c6dea36cc0cf4b8d2e3ddc27fe`.

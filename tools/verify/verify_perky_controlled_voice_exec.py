@@ -167,6 +167,9 @@ def build_host() -> None:
     if missing:
         fail("run `make setup` first; missing " + ", ".join(map(str, missing)))
     OUT.mkdir(parents=True, exist_ok=True)
+    # Callers can move fixture OUT while retaining the host path. A fresh
+    # worktree must create both directories before asking the linker to write.
+    HOST.parent.mkdir(parents=True, exist_ok=True)
     if HOST.exists() and HOST.stat().st_mtime > HOST_SRC.stat().st_mtime:
         return
     subprocess.run(
