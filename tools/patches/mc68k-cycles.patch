@@ -7,7 +7,7 @@ index 58a9337..bff67c2 100644
  	if((op & 0xf100) == 0x7000) return 1; /* MOVEQ */
  	if(family == 6 && (op & 0xff) != 0xff)
 -		return (op & 0x0f00) == 0 ? 2 : 3; /* BRA, BSR, Bcc */
-+		return (op & 0x0f00) == 0 ? ((op & 0x0100) ? 2 : 1) : 0; /* BRA 1, BSR 2, Bcc 0 (predictor) */
++		return (op & 0x0f00) == 0 ? 1 : (op & 0x0f00) == 0x0100 ? 2 : 0; /* BRA 1, BSR 2, Bcc 0 (predictor) */
  
  	/* Register and immediate long arithmetic/logical operations. */
  	switch(op & 0xfff8)
