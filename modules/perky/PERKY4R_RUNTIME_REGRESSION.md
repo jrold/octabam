@@ -4,7 +4,8 @@ The MKII user reports PERKY4R locking with T1 and T5 assigned to PERKY,
 including non-Complex algorithms and blank projects. The subsequent report
 confirms **PERKY4R, T1 alone, no FX: empty playback works; the first manual
 sound trigger or sequencer trig instantly locks**. A second PERKY voice and
-stock FX are not required. No diagnostic-image result has yet been reported. This
+stock FX are not required. A subsequent **P4RNDISP** manual trigger also stalls
+the sequencer; the user confirms its screen and encoders still respond. This
 supersedes any assumption that the failure is isolated to Complex controls.
 There is **no locally reproduced firmware failure and no stability fix claim**.
 
@@ -89,11 +90,21 @@ continues into stock AMP. Thus the observation narrows the failure to activation
 of this path, but does not yet distinguish initialization from first rendering
 or the stock continuation.
 
-The next hardware image is now **P4RNDISP**, rather than PLACE: T1 alone,
-Fold1, no FX, one manual sound trigger. It differs from the reported failing R
-by exactly two eight-word dispatch blocks, retaining all P placements. If it
-still locks, test **P4ROLDDSP** with the same single-trigger configuration to
-separate the DSP component from the unchanged R ColdFire runtime. Use only
+The P4RNDISP manual-trigger failure establishes that the new dispatch block is
+**not required** for the sequencer stall: both eight-word blocks were replaced
+by NOPs with all other words and P origins unchanged. This does not establish
+whether the original block has any additional defect. The responsive UI is
+evidence against calling this a complete CPU/UI hard lock; it does not identify
+which audio/transport worker has stopped or whether a DSP is waiting.
+
+The next hardware image is now **P4ROLDDSP**: T1 alone, Fold1, no FX, one manual
+sound trigger. It restores the complete frozen PERKY4 DSP component while
+retaining the exact R ColdFire runtime SHA-256
+`637af5f61a6dc5c46d1b3576585f338ac402d0c6dea36cc0cf4b8d2e3ddc27fe`.
+NDISP uses that same runtime. A successful OLDDSP first trigger would implicate
+the remaining DSP changes, physical placement or their upload integration;
+another failure would direct the next differential toward the ColdFire/runtime
+or shared loader path. Neither outcome is yet known. Use only
 Fold1/Simple on these diagnostic images. PLACE remains available as the later
 placement comparison. Firmware binaries and their hashes are unchanged.
 
@@ -190,5 +201,5 @@ If all fail, the next differential is the ColdFire/runtime or loader integration
 No algorithm changes are authorized by these outcomes alone.
 
 Current branch is `codex/perky4r-runtime-regression`. Source is committed clean;
-the release remains blocked on the first physical NDISP single-trigger experiment. No local
+the release remains blocked on the physical OLDDSP single-trigger experiment. No local
 command supplies the missing hardware discrimination.
