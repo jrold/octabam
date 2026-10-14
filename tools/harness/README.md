@@ -192,8 +192,8 @@ track — the same `(L/128)²` law, measured on MAIN/CUE by hardware capture
 rather than under the port (`docs/firmware/LEVEL_LAW.md`); the AMP stage
 was measured on a THRU and is inferred for FLEX/STATIC.
 
-**bottleservice's layout on a real set:** `tools/hw/ot_project.py rigproj SONGSET
-out/set/RIGSONG bottleservice` writes that layout (ids, defaults, mode
+**octabam-bus's layout on a real set:** `tools/hw/ot_project.py rigproj SONGSET
+out/set/RIGSONG octabam-bus` writes that layout (ids, defaults, mode
 views) into every part of a copy of the song set;
 `tools/harness/set_stems.py out/set/RIGSONG --bank B --part P --audio DIR
 --out D/stems` writes T1..T8 from each track's STATIC sample at its slot
@@ -248,7 +248,7 @@ probe (`--tone out/o9d/kickAB_late.wav`) for anything with a delay in it.
 
 ## pressure.py
 
-`python3 tools/harness/pressure.py price --remix bottleservice` enumerates every
+`python3 tools/harness/pressure.py price --remix octabam-bus` enumerates every
 per-core layout the remix lets a user select (four tracks × FX1 ∈ {none,
 the FX1 rows of ours} × FX2 ∈ {SEND, this core's server, ours on the FX2
 chooser, stock rows at 0}, at most one server per core) and sums the static
@@ -283,7 +283,7 @@ through a station per knob value and reports the −3 dB corner, the peak of
 Generate a local Octatrack project with eight simultaneous FLEX tracks, three active LFOs per track, 15 locked parameter slots per step (14 on the tracks `verify_set` probes), and the remix's costly DSP paths:
 
 ```sh
-python3 tools/harness/stress_project.py --remix bottleservice            # writes out/stress-project
+python3 tools/harness/stress_project.py --remix octabam-bus            # writes out/stress-project
 python3 tools/harness/stress_project.py --remix miniverb --layout   # print the placement, write nothing
 ```
 
@@ -318,21 +318,18 @@ out/emu/ot_emu --image out/mainos_bus.bin --card out/stress-run/card.img \
 
 Check for `run ended REACHED` and nonzero audio. On hardware, copy the generated `.work` and `.strd` files into a project directory under your set, and keep the generated `AUDIO` folder inside that project so `AUDIO/STRESS_LOOP.wav` resolves. Select A01, then switch through A02-A04. Lower monitoring level before starting: eight tracks at their dearest settings sum loudly. Watch for a freeze, dropout, incorrect Part/effect mode, or a parameter that stops following locks or LFOs. Repeat after each feature change and compare with the same image and project. The emulator run checks loading and short playback; a long hardware soak and manual pattern switching remain separate checks.
 
-## The burn knob (hardware)
+## The burn knob (hardware, retired 14 Oct 2026)
 
-`make burn` / `make burn-image BUILD=N` (`BURN=1` with `SPEC=1`: the
-shipping remix plus a `BURN` knob on SEND's second slot). SEND is on every
-track of every core, so either core's ceiling can be measured on demand:
-set up the configuration, sweep that SEND's `BURN` until the audio breaks,
-and `24 × BURN` = cycles/sample spare on that core in that configuration
-(a three-word body, `dsp/burn_send.inc`; the reverb's old two-block probe
-was 32/step, the original 16). `verify_burn.py` proves the knob inert at 0
-and 127 and the step exact on both cores. The difference between two
-configurations is the cost of the change, the only way to price a stock
-effect (instruction count is not cycles: one rewrite moved instructions
-508 → 512 while cycles fell 735 → 731). A configuration that freezes at
-`BURN = 0` is already over budget. The current numbers it produced are
-`docs/firmware/CHIP.md` section 2.
+A temporary diagnostic, not a shipping feature: `make burn` built the
+shipping remix plus a `BURN` knob on SEND's second slot (`BURN=1` with
+`SPEC=1`), so either core's ceiling could be measured on demand by
+sweeping that SEND's `BURN` until the audio broke (`24 × BURN` =
+cycles/sample spare on that core in that configuration). Removed because
+it cost payload A the words LOAD METER and PLOCKS P2 later needed, and
+nobody was running the sweep any more; recover it with
+`git log --all -- tools/verify/verify_burn.py dsp/burn_send.inc`. The
+measurements below are kept for their numbers, from the ORIGINAL probe
+(the reverb's own burn blocks, predating the SEND knob):
 
 Measured with the original probe (before the 22 Sep 2026 clock
 measurement, on a 4,535-cycle frame):

@@ -46,6 +46,19 @@ EFT_PIN=065d18f4195793e61891e387813488ee59f6d1ca
 # mode, the shared window, the unmapped-register hooks.
 DSP56300_PIN=8ccdd843adda9c18fc232a2ca50d6caccbf3cb1e
 
+# In a worktree vendor/ is a symlink to the main checkout's (AGENTS.md): the
+# fetches, `git checkout` of the pins, the patches and the dsp_host staging
+# below would rewrite it for every session on the machine. Refused here, so
+# no entry point (make setup, ci-dsp, ci-emu, dsp-repatch) can do it by
+# accident; run them from the main checkout.
+refuse_shared_vendor() {
+  if [ -L vendor ]; then
+    echo "vendor.sh: vendor/ is a symlink to $(readlink vendor): fetching, checking out the pins and patching it would change every worktree's toolchain." >&2
+    echo "           Run this from the main checkout (CI has its own vendor/)." >&2
+    exit 3
+  fi
+}
+
 pin_checkout() {  # dir url sha
   [ -d "$1" ] || git clone --no-checkout "$2" "$1"
   if [ "$(git -C "$1" rev-parse HEAD 2>/dev/null)" != "$3" ]; then
@@ -145,5 +158,6 @@ if [ "${BASH_SOURCE[0]}" = "$0" ]; then
   set -euo pipefail
   cd "$(dirname "$0")/.."
   [ "$#" -gt 0 ] || { echo "usage: scripts/vendor.sh mc68k|eft|dsp56300 ..."; exit 2; }
+  refuse_shared_vendor
   for t in "$@"; do "vendor_$t"; done
 fi

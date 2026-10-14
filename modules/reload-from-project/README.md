@@ -21,4 +21,4 @@ Built from [Zac-Kyoti/octatrack-kyoti-fw](https://github.com/Zac-Kyoti/octatrack
 ## Notes
 
 - All-tracks and whole-bank reload are not implemented.
-- Not with OCTAKIT, for now: the module declares the conflict. `[BANK]` + `[TRACK n]` calls stock Part RELOAD (`0x4004aab4`) from the unit, and Octakit's replacement of that routine halts for any caller but the menu's and FUNC+CUE's (the class `kits-reload` bridges for MIDI SCENES). The ledger cannot see it, because the call is not a `Detour`. A bridge is planned (`upstream/reference/handoffs/DIRECTJUMP_OCTAKIT_SCOPE.md`).
+- Octakit's conflict is dropped: Octakit is not in octabam since 6 Oct 2026 (KITS replaces it and plays through the stock Part slots), so `[BANK]` + `[TRACK n]` calls stock Part RELOAD (`0x4004aab4`) from the unit untouched. The call is not a `Detour`, so the ledger cannot see it; the handoff record is `upstream/reference/handoffs/DIRECTJUMP_OCTAKIT_SCOPE.md`.

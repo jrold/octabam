@@ -630,8 +630,9 @@ dwarmdone:
         move    #>$5,a                  ; a1:a0 = 84,672,000 = $050bfe00
         move    x1,a0
         andi    #$fe,ccr
-        rep     #$18
+        do      #$18,>norep_bd_01
         div     x0,a
+norep_bd_01:
         move    a0,b                    ; quotient, <= 58,800 (B2 clean: a0 < 2^23)
         asl     #$8,b,b                 ; << 8, as every published word
 tickz:

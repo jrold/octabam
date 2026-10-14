@@ -333,8 +333,8 @@ pattern. No float, heap allocation, runtime library or firmware bytes are
 vendored. The platform loader owns the code/tables and 1600 bytes of instance
 state (200 bytes per track). `generate_tables.py` designs the fixed-point
 tables; `generate_cpu.py` checks them before compiling the ColdFire unit.
-Its existing 10 MiB arena reservation is required (shared with other DRAM
-modules), reducing the available sample/recorder pool in a formerly ROM-only
+The platform's arena reservation is required (MEMORY sizes it from every DRAM
+module's claims), reducing the available sample/recorder pool in a formerly ROM-only
 remix. The rings themselves are already reserved by the stock OS.
 
 * `0x40002f44`: reset our state with the stock delay's ring reset.

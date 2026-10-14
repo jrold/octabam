@@ -17,6 +17,16 @@ def module(key, *gates):
     return types.SimpleNamespace(key=key, gates=gates)
 
 
+class PortRequired(unittest.TestCase):
+    def test_no_port_binary_is_not_built(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            self.assertFalse(module_gates.port_built(d))
+            (d / "out/emu").mkdir(parents=True)
+            (d / "out/emu/ot_emu").write_text("bin")
+            self.assertTrue(module_gates.port_built(d))
+
+
 class OnceGates(unittest.TestCase):
     def test_once_needs_remix_arg_and_the_isolated_stage(self):
         Gate("tools/verify/x.py", once=True)
@@ -65,6 +75,24 @@ class PortStamp(unittest.TestCase):
             exe = d / "ot_emu"; exe.write_bytes(b"\0")
             os.utime(exe, (0, 0))                          # an old binary; a touch can land in the same tick (CI)
             self.assertTrue(reach.port_is_stale(exe, src, d / "no-stamp"))
+
+
+class Reached(unittest.TestCase):
+    def test_a_change_reaches_the_modules_coupled_to_it(self):
+        from remix import registry
+        sel = registry.selected(registry.remix("octabam-bus"))
+        self.assertEqual(module_gates.reached({"RIG HOSTS"}, sel), {"RIG HOSTS"})
+        self.assertIn("MODE DEFAULTS", module_gates.reached({"CC MAP"}, sel))      # links its CC_MODEDEF1/2
+        self.assertTrue({"STORE", "SCENES P2", "PLOCKS P2"} <= module_gates.reached({"KITS"}, sel))
+        self.assertTrue({"REVERB SERVER", "SEND"} <= module_gates.reached({"DELAY SERVER"}, sel))   # the bus
+
+
+class Ledger(unittest.TestCase):
+    def test_first_fail_takes_the_fail_line(self):
+        import gate_ledger
+        self.assertEqual(gate_ledger.first_fail("a\n  [ok] b\n  [FAIL] c: d\n  [FAIL] e\n"), "[FAIL] c: d")
+        self.assertEqual(gate_ledger.first_fail("a\nlast line\n\n"), "last line")
+        self.assertEqual(gate_ledger.first_fail(""), "")
 
 
 if __name__ == "__main__":

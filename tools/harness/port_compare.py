@@ -3,7 +3,7 @@
 does `rig_render` (mixer model included) match the ColdFire port?
 
     python3 tools/harness/port_compare.py --project out/o9d/proj_t1eqA --remix bus
-    python3 tools/harness/port_compare.py --project PROJ --image out/mainos_bus.bin --remix bottleservice \\
+    python3 tools/harness/port_compare.py --project PROJ --image out/mainos_bus.bin --remix octabam-bus \\
         --tracks 1,2,5,8 --frames 400
 
 The port (`tools/emu/ot_emu`) boots IMAGE, loads PROJECT from a staged card,

@@ -188,6 +188,8 @@ def check(selected) -> list[str]:
     for m in selected:
         for h in (m.dsp.hooks if m.dsp is not None else ()):
             for pl in sorted(m.dsp.payloads):
+                if not h.on(pl):
+                    continue
                 site = h.site_on(pl)
                 hit = next((w for w in (site, site + 1) if (pl, w) in dsp_hooks), None)
                 if hit is not None:
@@ -196,6 +198,18 @@ def check(selected) -> list[str]:
                           f"overwrites the first, so the first section never runs")
                 for w in (site, site + 1):
                     dsp_hooks[(pl, w)] = m.name
+    # A pinned section (schema.DspSection.pins) owns words in the dead vector
+    # runs it was placed in. Two modules pinned at one address are refused
+    # here by name; an OVERLAP that is not an exact match is caught in
+    # build_bus, which refuses to pin over anything that is not still the
+    # stock self-jump it was audited as.
+    for m in selected:
+        for _pin in (m.dsp.pins if m.dsp is not None else ()):
+            for pl in sorted(m.dsp.payloads):
+                if (pl, _pin) in dsp_hooks:
+                    clash("DSP pin", dsp_hooks[(pl, _pin)], m.name,
+                          f"P:0x{_pin:05x} on payload {pl} -- both want the words there")
+                dsp_hooks[(pl, _pin)] = m.name
 
     # ---- on-chip SRAM windows (Claims.sram) --------------------------------
     sram: list[tuple[int, int, str, str]] = []
@@ -313,19 +327,29 @@ def check(selected) -> list[str]:
                               f"0x{max(ostart, pa):08x} -- both rewrite the same bytes")
                 pokes.append(span)
 
-    # ---- the audio page arena ---------------------------------------------
-    # The one thing to refuse here is a reservation that leaves the unit
-    # too little for samples and recorders. The platform's pages count
-    # whenever DRAM units exist.
+    # ---- the audio page arena (MEMORY, modules/memory) ---------------------
+    # The build sizes the platform's reserve from the linked runtime; what
+    # is declared is checked here: the DramRegions and the fixed claims
+    # (schema.ArenaReserve) must leave the unit its floor of pages, two
+    # fixed claims may not overlap, and a fixed claim needs the platform
+    # (a DRAM unit in the remix) to own a reserve at all.
     from remix import arena
-    reservations = []
-    if any(u.dram for m in selected for u in getattr(m, "linked", ())):
-        reservations.append(("octabam platform", "bottom", arena.PLATFORM_PAGES))
-    if reservations:
-        try:
-            arena.layout(reservations)
-        except SystemExit as e:
-            problems.append(str(e))
+    has_dram = any(u.dram for m in selected for u in getattr(m, "linked", ()))
+    fixed = [(m.name, r) for m in selected for r in getattr(m, "arena_reserves", ())]
+    for i, (oa, ra) in enumerate(fixed):
+        if not has_dram:
+            problems.append(f"{oa}: ArenaReserve {ra.label} needs the platform's arena reserve, "
+                            f"and this remix carries no DRAM unit")
+        for ob, rb in fixed[i + 1:]:
+            if ra.at < rb.end and rb.at < ra.end:
+                clash("arena reserve", f"{oa} ({ra.label})", f"{ob} ({rb.label})",
+                      f"0x{max(ra.at, rb.at):08x} -- both use the same arena bytes")
+    claimed = sum(r.size + r.align for m in selected for r in getattr(m, "dram_regions", ()))
+    reach = max([arena.BASE] + [r.end for _o, r in fixed]) - arena.BASE
+    if has_dram and claimed + reach > arena.MAX_RESERVE:
+        problems.append(f"arena: the declared DRAM regions ({claimed:,} B) and fixed claims "
+                        f"(to +{reach:,} B) exceed the {arena.MAX_RESERVE:,} B the platform may "
+                        f"reserve ({arena.MIN_PAGES_LEFT:,} pages stay for samples and recorders)")
 
     # ---- every fixed-address span against every other module's -------------
     # The passes above compare emit pokes with everything,
@@ -472,8 +496,29 @@ def check(selected) -> list[str]:
     # cannot follow them there, because the allocator keeps SEPARATE tables
     # and an FX1 slot tops out at 0x3fff while every FX2 buffer a module of
     # ours pins starts at 0x4000 or in the shared window.
+    # A module that holds no FX2 buffers and declares its shared-window words
+    # (LOAD METER: Claims.dsp_ranges) clashes only with a stock effect whose
+    # extent reaches one of them: stock.SLOT_EXTENT (measured) for a stock effect,
+    # Claims.buffer_words (declared) for a module's own.
+    def _outside_extent(a, b):
+        c = getattr(b, "claims", None)
+        if c is None or c.owns_fx2_buffers or not c.dsp_ranges:
+            return False
+        if any(r.half_relative for r in c.dsp_ranges):
+            return False
+        from remix import stock
+        ext = stock.SLOT_EXTENT.get(a.key)
+        if ext is None and a.claims.buffer_words:
+            ext = a.claims.buffer_words - 1       # a module's own declared buffer
+        if ext is None:
+            return False
+        return not any(r.start < base + ext + 1 and r.start + r.length > base
+                       for r in c.dsp_ranges for base in stock.SLOT_BASES)
+
     for a in stocked:
         for b in fixed:
+            if _outside_extent(a, b):
+                continue
             clash("stock instance buffer", a.name, b.name,
                   "the allocator's per-track FX2 buffer slots -- the stock "
                   "effect's buffer lands on whichever track hosts it and "

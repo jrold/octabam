@@ -152,7 +152,7 @@ def entry_points(mem_path, fxid):
 def run(mem, dur, tail, rev_params, send_params, verbose=False, amp=0.5,
         direct=False, wave_src=None, split=0, layout='RS', delay_params=None,
         inall=False,
-        pick=None, tempo=None, insert_params=None, feed=None):
+        pick=None, tempo=None, insert_params=None, feed=None, mute=()):
     """-> instance 0 (the reverb) as a list of 24-bit ints, warm-up trimmed.
 
     direct=True is the CONTROL: no SEND instance at all, the tone goes into the
@@ -276,8 +276,11 @@ def run(mem, dur, tail, rev_params, send_params, verbose=False, amp=0.5,
                 f"render an insert with --direct instead")
         r7s = ",".join(str(2 + 3 * k) for k, _ in live)   # FX2 at position k: 0x6200 + 0x300*k (three r7 bumps per track, git show 3ceba41:docs/history/COLDFIRE_PORT.md O11)
         als = ",".join(str(1 + 2 * k) for k, _ in live)
-        inmask = sum(1 << i for i, (_, c) in enumerate(live)
-                     if c == "S" or inall or (feed and c in feed))
+        # `mute`: live positions (layout indices) that get no tone -- a SEND
+        # there registers on the bus and sends silence (verify_bus's selftest
+        # client: the auto-gain divides by it, so it dilutes the others)
+        inmask = sum(1 << i for i, (k, c) in enumerate(live)
+                     if (c == "S" or inall or (feed and c in feed)) and k not in mute)
         # The three the CLI has flags for keep their flag-driven values;
         # anything else falls back to what its own manifest declares.
         par = dict(MODULE_DEFAULTS)

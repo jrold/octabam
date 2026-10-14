@@ -36,7 +36,7 @@ it keeps no accumulator state across a task switch.
 
 None known. It shares the platform reserve with the other DRAM modules
 (SYNTH MACHINE's engine, USB MIDI, USB AUDIO, MIDI SCENES) inside one
-runtime; `remixes/octatrick/` carries it beside the other three, USB
+runtime; `remixes/test/octatrick/` carries it beside the other three, USB
 MIDI, USB AUDIO OUT TRACKS MAIN CUE and USB AUDIO IN ABCD.
 
 ## Measured

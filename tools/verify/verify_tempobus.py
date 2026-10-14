@@ -2,8 +2,8 @@
 """TEMPO BUS under the port: the TEMPO key opens the bus screen, the knobs
 edit the hosts, the window closes clean.
 
-    python3 tools/verify/verify_tempobus.py bottleservice     # after verify_set
-    OT_PROJECT=<dir> make check REMIX=bottleservice            # the same, from make verify
+    python3 tools/verify/verify_tempobus.py octabam-bus     # after verify_set
+    OT_PROJECT=<dir> make check REMIX=octabam-bus            # the same, from make verify
 
 Boots the image and card verify_set staged (out/setverify/image.bin,
 card.img), drives the panel through `ot_emu --live-script` (key and encoder

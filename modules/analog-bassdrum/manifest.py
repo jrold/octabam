@@ -1,8 +1,12 @@
 """Analog BD: native source synthesis, one machine with 808/909 models."""
-from remix.schema import Category, Detour, Gate, Kind, Linked, Module, Poke, Proof, SymbolRef
+from remix.schema import ArenaReserve, Category, Detour, Gate, Kind, Linked, Module, Poke, Proof, SymbolRef
 H=bytes.fromhex
 MODULE=Module(
     name="analog-bassdrum", key="ANALOG BD", kind=Kind.CF_PATCH,
+    # the pre-boot DSP uploads' destinations and stages
+    # (tools/build/ab_image.py PRE: 0x40b00000..0x40bc0000 + 0x40000)
+    arena_reserves=(ArenaReserve("pre-boot upload scratch", 0x40B00000, 0x100000),),
+    requires=("MEMORY",),
     category=Category.MACHINES, author="repeat98", author_url="https://github.com/repeat98",
     doc="Analog BD track machine: switchable 808/909 circuit-informed synthesis.",
     proof=Proof.PORT, proof_note="source/AMP/main on both cores and engine-browser/hidden-control gates; hardware matching pending",

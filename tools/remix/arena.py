@@ -16,7 +16,8 @@ both for any number of reservations: bottom reservations stack upward from
 the stock base (the base literal moves past them), top reservations stack
 downward from the end (the count shrinks), and the four geometry literals
 are computed from the total. octabam's platform is the one reservation a
-remix makes today.
+remix makes today; MEMORY (modules/memory) sizes it per remix from the
+claims (a fixed 1,707 pages until 11 Oct 2026).
 
 N pages = N x 6 KB of sample/recorder memory, off the recorder share by
 default (Flex keeps its 64 MB cap). The region a reservation yields is
@@ -51,8 +52,15 @@ COUNT_SITE = (0x40096F82, PAGES, "page count")
 FILL_SITE = (0x40096FAC, PAGES + 1, "free-list fill limit")
 CLEAR_SITE = (0x40097008, (PAGES + 1) * PAGE, "arena clear length")
 CAP_SITE = (0x40097126, PAGES, "recorder page cap")
-PLATFORM_PAGES = 1707
 MIN_PAGES_LEFT = 2048                 # 12 MB for the unit; below this, refuse
+MAX_RESERVE = (PAGES - MIN_PAGES_LEFT) * PAGE   # the most a reservation may take
+# Frozen PERKY4S runtime geometry; ordinary remixes use MEMORY's sizing.
+PLATFORM_PAGES = 1707
+
+
+def pages_for(nbytes: int) -> int:
+    """Whole pages that hold `nbytes`."""
+    return -(-nbytes // PAGE)
 
 
 @dataclass(frozen=True)

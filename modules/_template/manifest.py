@@ -9,7 +9,7 @@ open. Delete every comment below once answered.
 docs/contributing/MODULES.md is the guide; tools/remix/schema.py the field list.
 This is the skeleton of a DSP effect. modules/character/ is a finished one
 (an in-place insert with its own render gate). A module that changes what
-the firmware does starts from modules/_template_cf/ (then modules/repitch/,
+the firmware does starts from modules/_template_cf/ (then modules/direct-jump-kyoti/,
 modules/midi-scenes/).
 """
 

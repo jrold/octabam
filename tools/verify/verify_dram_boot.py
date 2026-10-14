@@ -7,9 +7,14 @@ For the current REMIX (the image at out/mainos_bus.bin):
     once while its `fatal` hang never did -- so every hash gate passed;
   * the octabam window (out/platform/runtime/runtime.bin, when the remix
     has DRAM units) reads back equal to the linked runtime -- except for
-    bytes the runtime itself writes once it runs
-    (midi-scenes' state words are the known case), which are counted and
-    printed, not hidden.
+    bytes the runtime itself writes once it runs, which are counted and
+    printed, not hidden. Known cases: midi-scenes' state words; PLOCKS P2's
+    INITED sentinel, stamped with MAGIC ('PLK2') by plk_init the first time
+    it runs before handoff; BRAIN's brain_ts/brain_ts_last per-task CPU
+    table, written by brain_sched (the scheduler hook) on every task
+    switch from very early in boot, so a BRAIN-carrying remix always shows
+    some of these -- it is not a one-time stamp, and a boot that reaches
+    handoff later or schedules differently changes the count a little.
 
 SKIPs when the port is not built (`make emu-cf`) or the remix carries no
 DRAM payload. What this cannot see: caches (the port has none), the
@@ -76,7 +81,12 @@ print(f"  [{'PASS' if ok else 'FAIL'}] verify_dram_boot: {remix.name} boots to t
 for (a, n, p), (label, raw) in zip(dumps, expects):
     got = p.read_bytes() if p.exists() else b""
     diff = [i for i in range(min(len(got), len(raw))) if got[i] != raw[i]]
-    fine = len(got) == len(raw) and len(diff) <= 16
+    # 14 Oct 2026: the official remixes (octabam-bus/-core/-inserts) carry
+    # BRAIN and PLOCKS P2 through this gate for the first time and measured
+    # 41-42 (brain_ts/brain_ts_last plus PLOCKS P2's INITED stamp, see the
+    # module docstring above); 64 keeps headroom without going blind to a
+    # new undeclared writer.
+    fine = len(got) == len(raw) and len(diff) <= 64
     ok &= fine
     print(f"  [{'PASS' if fine else 'FAIL'}] verify_dram_boot: {label} at 0x{a:08x} == linked "
           f"runtime ({n:,} B) except {len(diff)} byte(s) the runtime wrote itself"

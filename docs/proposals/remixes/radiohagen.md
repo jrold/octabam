@@ -4,7 +4,7 @@ Requested by radiohagen (received 8 Oct 2026): the modules they run now.
 
 ## Selection
 
-[`bottleservice`](../../../remixes/bottleservice/README.md) plus RLEN PLEN
+[`bottleservice`](../../../remixes/octabam-bus/README.md) plus RLEN PLEN
 and TUNER.
 
 | module | in bottleservice | proof (module table, 8 Oct 2026) |

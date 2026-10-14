@@ -3,15 +3,15 @@
 
 Instructions are NOT hardware cycles. A local metering executable retains
 all stopwatch pairs instead of only the first 4096; engine/emulator sources
-are untouched. Requires an existing local out/emu build. Firmware remains
+are untouched. Needs out/emu's CMake tree (port_store.ensure_tree builds it). Firmware remains
 under out/. No hardware-safe percentage is inferred from these measurements.
 """
 import argparse,concurrent.futures,hashlib,json,os,re,shlex,statistics,subprocess,sys
 from pathlib import Path
 import bd808,bd909
 ROOT=bd909.ROOT
-sys.path[:0]=[str(ROOT/'tools'),str(ROOT/'tools/hw'),str(ROOT/'tools/verify')]
-import toolpath,ot_project as otp,verify_repitch as fixture,blockdump,recloop
+sys.path[:0]=[str(ROOT/'tools'),str(ROOT/'tools/hw'),str(ROOT/'tools/verify'),str(ROOT/'tools/emu')]
+import toolpath,ot_project as otp,verify_repitch as fixture,blockdump,recloop,port_store
 from remix import registry
 OUT=ROOT/'out/analog-bassdrum/load-benchmark'
 IMAGE=ROOT/'out/mainos_bus.bin'
@@ -32,7 +32,7 @@ def meter_host():
                 std::fclose(f);
             }
 ''');(d/'main.cpp').write_text(s)
-    build=ROOT/'out/emu';flags=(build/'CMakeFiles/ot_emu.dir/flags.make').read_text()
+    build=port_store.ensure_tree(ROOT);flags=(build/'CMakeFiles/ot_emu.dir/flags.make').read_text()
     args=[]
     for k in ('CXX_DEFINES','CXX_INCLUDES','CXX_FLAGS'):
         args+=shlex.split(re.search(r'^'+k+r' = (.*)$',flags,re.M)[1])

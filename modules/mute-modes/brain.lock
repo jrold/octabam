@@ -1,0 +1,21 @@
+{
+ "params": {},
+ "retired": {
+  "params": [],
+  "settings": []
+ },
+ "settings": {
+  "1": {
+   "labels": [
+    "CAVE",
+    "DRAM"
+   ],
+   "name": "PLACE",
+   "type": "option"
+  }
+ },
+ "store": {
+  "id": "kyoti.mute-modes",
+  "major": 1
+ }
+}

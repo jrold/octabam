@@ -7,6 +7,8 @@ On stock FILTER's id 0x04, FX1 only: an FX2 instance runs as a dry pass
 (`Claims(fx1_only=True)`, `verify_spectrum.py`); the FX2 chooser hides the
 row. The filter laws are from [audiojs/filter](https://github.com/audiojs/filter)
 (MIT) and Airwindows Capacitor2 (MIT), re-derived here (Sources, below).
+
+**SLOTS** (build setting, store `octabam.spectrum`): `FX1` (default) or `FX1+FX2`. With `FX1+FX2` an FX2 instance runs the station live and the FX2 chooser lists it; a remix pins it (`settings={("octabam.spectrum", "SLOTS"): Pin("FX1+FX2")}`). `tools/verify/verify_stations_fx2.py` renders the FX2 instance against the FX1 instance, bit for bit (`remixes/test/stations-fx2`). A remix with the bus keeps the default: its cycle budget is priced with the stations on FX1.
 Defaults are a bit-exact passthrough (FREQ 127, RES 0, ENV 64, LDP 0, WDTH
 64, MODE 0): the engine detects that block and copies nothing, because
 every part that chose FILTER runs this on FX1. A part's stored bytes are

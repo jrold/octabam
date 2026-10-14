@@ -115,6 +115,7 @@ reviewed; the falsifier is a hardware measurement of the unit's tick rate.
 | stock's own share | ≈1,410 (4,532 − 3,120) | ✅ by subtraction. ❌ ≈1,040 (on the 4,160 clock, until 22 Sep 2026) |
 | the historic "1,392 spare" | the 7 Aug bank's spare (ceiling 964 + 1,392 = 2,356, consistent) | ✅ then; superseded as a headline |
 | ❌ "the budget is 1,080" | the load one probe build happened to survive, never a ceiling | |
+| stock FX2 costs, idle-pass counting on the chip (Jannik Aßfalg's MKII, 1.40C, 12 Oct 2026) | DJ EQ 342/330, LO-FI 311/301, SPRING 299/288, CHORUS 295/285, FILTER 285/276, DARK 257/248, PLATE 249/241, PHASER 242/234, EQUALIZER 193/187, FLANGER 147/142, COMB 128/124, COMPRESSOR 102/99, SPATIALIZER 80/78, DELAY ~0 (core 1 / core 0, the dearest of as-picked, all-min, all-max; peaks 40-100 above). Busy = frame − passes × one pass (20.0 cycles core 0, 14.48 core 1) | ✅ hardware, a different method. Conflicts with the rows above: FILTER 276-285 on FX2 here against 192 on FX1; stock's share ~960 (core 0) / 510 (core 1) here against ≈1,410 by subtraction, which would leave ~3,570 on core 0, not 3,120. Not reconciled. Bryan T (12 Oct): the core 1 / core 0 ratio is 1.03-1.04 for every effect, which an error in core 1's 14.48 would explain (DJ EQ's 331 emulated instructions match core 0's 330) |
 | ❌ "FILTER credit", +768 on top of 3,120 (12–15 Sep 2026) | the four environment FILTERs are inside the 3,120 (the sum above), so adding them back double-counted; removed from the pricer | |
 
 The datasheet's 200 MIPS is the ceiling of the silicon. It cannot say what
@@ -124,8 +125,10 @@ contention costs; only the burn probe measures what is left after stock.
 ### The burn knob is a cycle meter
 
 The instrument behind the hardware rows above (`make burn`, `BURN` on
-SEND's second slot, `24 × BURN` = spare cycles/sample) and its first
-measurements: `tools/harness/README.md` "The burn knob".
+SEND's second slot, `24 × BURN` = spare cycles/sample; retired 14 Oct
+2026, a temporary diagnostic, not a shipping feature) and its first
+measurements: `tools/harness/README.md` "The burn knob (hardware, retired
+14 Oct 2026)". The measurements stand; the tool that made them does not.
 
 ### Static counts
 
@@ -278,4 +281,4 @@ damping state in the instance's own Y region.
   nor housekeeping; one server per bank is a design rule. ❌ "A single word
   written to `Y:0x34000` from payload A corrupts that track's audio":
   falsified by that bisect (its ADDR = 0 is `0x34000`).
-- Assembler traps: `AGENTS.md` "Traps that have already cost real work".
+- Assembler traps: `contributing/TRAPS.md` "Traps that have already cost real work".

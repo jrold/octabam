@@ -34,8 +34,8 @@ it; `/transport` taps the matrix keys. His text below still describes
 both backends.
 
 ```sh
-make panel REMIX=bottleservice                       # OT_PROJECT=<dir>, or the path in ~/.octabam_project
-make panel REMIX=bottleservice PANEL_PORT=8571 PANELARGS='--sound off'
+make panel REMIX=octabam-bus                       # OT_PROJECT=<dir>, or the path in ~/.octabam_project
+make panel REMIX=octabam-bus PANEL_PORT=8571 PANELARGS='--sound off'
 make panel-app                                   # out/Virtual Panel.app (File > Open Firmware Image: out/panel_<remix>.bin)
 ```
 
@@ -181,7 +181,7 @@ per-row state so held chords (FUNC+…) work. **Encoders** are rows
 **The LEDs** are the `0x2r <mask>` rows: `key_map.json` names each LED as
 `[row, bit]`; `/leds` returns the 17 row bytes.
 
-The older jump-table path (`press_key_live`, `RTOS_FORK.md` section 9) is kept in
+The older jump-table path (`press_key_live`, `git show 3ceba41:docs/history/RTOS_FORK.md` section 9) is kept in
 the server as `press()` — it calls a key's handler directly, which changes
 state but does not redraw under route A, so the UART path is the real one.
 
@@ -688,7 +688,7 @@ tooltip (the readout under the bed went 13 Sep 2026). Nothing is remembered acro
 where the fader is on load and every few seconds while idle.
 
 **The flow, as on the unit** (manual 10.3; every step through the matrix,
-Shift HOLDS FUNCTION for as long as it is down, so Shift + click = a FUNC combination; Option-click (or A + click) latches any other key, green, until it is clicked again, Escape or Shift up; holding Z and clicking holds the key only while Z is down):
+Shift HOLDS FUNCTION for as long as it is down, so Shift + click = a FUNC combination; Option-click (or A + click) latches any other key, green, until it is clicked again, Escape or Shift up (Escape lets go of latched keys when any are held; with none held it presses NO, and Enter presses YES); holding Z and clicking holds the key only while Z is down):
 
 1. Option-click **SCENE A**, click **TRIG 2**, click SCENE A again to let go:
    scene 2 is in slot A (the Part byte `blob+0x8ed90` 0 -> 1, the page's

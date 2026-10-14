@@ -66,7 +66,32 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
+      # the manual site's pages include the generated reference files, so
+      # they must exist before the doclinks scan of the tracked pages
+      - run: python3 tools/site/gen_pages.py
       - run: make verify-docs
+
+  site:
+    # The manual site builds: the generator runs the registry, and
+    # mkdocs --strict fails on a bad manifest, a broken link or a broken
+    # snippet include. The deploy is the Pages workflow on main; a PR
+    # builds without deploying.
+    name: manual site builds
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          # the generator loads the registry, whose manifests read the author submodules
+          submodules: true
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - run: pip install -r docs/site/requirements.txt
+      - run: python3 tools/site/gen_pages.py
+      - run: mkdocs build --strict --config-file docs/site/mkdocs.yml
 
   dsp-toolchain:
     name: dsp56300 + our patch (${{ matrix.os }})

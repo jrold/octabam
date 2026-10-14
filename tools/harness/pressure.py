@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Pressure-test a remix: every layout a user can select, priced and rendered.
 
-    python3 tools/harness/pressure.py price  [--remix bottleservice]        # A1: the static envelope
-    python3 tools/harness/pressure.py render [--remix bottleservice] [--top N] [--sample N] [--seconds S]
+    python3 tools/harness/pressure.py price  [--remix octabam-bus]        # A1: the static envelope
+    python3 tools/harness/pressure.py render [--remix octabam-bus] [--top N] [--sample N] [--seconds S]
                                                                       # A2: the worst under the meter + memory police
 
 PRICE enumerates, per core, every combination of FX1 x FX2 on the four

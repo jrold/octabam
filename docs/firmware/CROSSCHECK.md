@@ -3,7 +3,8 @@
 **Date.** 22 Sep 2026. **Scope.** Every stock-firmware claim in the 70
 commits of branch `stem-rec-poc` (STEM REC): `docs/firmware/STEM_REC.md`,
 `modules/stems/`, the STEM REC spec and plan, and their entries in
-`FAILURE_MODES.md`, `FLASHPLAN.md`, and `PLAN.md`.
+`FAILURE_MODES.md`, `git show 3ceba41:docs/history/FLASHPLAN.md`, and
+`git show 05113115:PLAN.md`.
 
 **Method.** A census script pulled every 8-digit firmware address from the
 lines those commits added (1,893 addresses) and looked each one up in seven

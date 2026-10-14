@@ -284,7 +284,7 @@ def _submodule_preflight() -> int:
     somebody else's module even when the remix under test has nothing to do
     with it -- and it failed as a bare FileNotFoundError traceback (Octakit's
     firmware.json, until 6 Oct 2026) or as an assembler "can't open" from
-    midi-scenes' sources. Measured on a fresh
+    a module's sources. Measured on a fresh
     clone: `make bus REMIX=recfix` succeeds, `make check REMIX=recfix` dies.
     That is a wall in front of the first thing an outside contributor is
     asked to run, so it gets a message instead of a traceback.
@@ -384,8 +384,6 @@ def main():
              lambda: DspRange("y", 0x7f00, 0x200, "x", half_relative=True)),
             ("a per-payload DspHook site naming a payload the section is not on",
              lambda: _hooked("h", site={"A": 0x4a7, "B": 0x29c})),
-            ("a per-payload DspHook site missing one of the section's payloads",
-             lambda: _hooked("h", site={"A": 0x4a7}, payloads=frozenset({"A", "B"}))),
             ("MenuEntry.stock_dsp without replaces",
              lambda: MenuEntry(fx2_id=0x1f, donor_desc=0x400d58b8, abbr=b"F",
                                fullname=b"F", stock_dsp=True)),
@@ -444,6 +442,21 @@ def main():
     else:
         bad += 1
         print(f"  [FAIL] SYNTH MACHINE + ANALOG BD: {pair}")
+    # LOAD METER's declared range (X:0x37F10..0x37F2F) against the measured
+    # extent of each buffered stock effect (stock.SLOT_EXTENT): none reaches it,
+    # SEND (no declared range) still clashes with every one of them.
+    _lm = registry.by_key("LOAD METER")
+    from remix import stock as _stk_ext
+    _buf = list(_stk_ext.SLOT_EXTENT)
+    _lm_hits = [k for k in _buf if any("stock instance buffer" in x
+                                       for x in ledger.check([_lm, registry.by_key(k)]))]
+    _send_hits = [k for k in _buf if not any("stock instance buffer" in x
+                                             for x in ledger.check([registry.by_key("SEND"), registry.by_key(k)]))]
+    if not _lm_hits and not _send_hits:
+        print("  [PASS] LOAD METER clashes with no buffered stock effect (measured extents); SEND still clashes with all seven")
+    else:
+        bad += 1
+        print(f"  [FAIL] stock instance buffer: LOAD METER clashes with {_lm_hits}; SEND does not with {_send_hits}")
 
     try:
         Param(b"SIXSIX")
@@ -453,8 +466,8 @@ def main():
         print("  [PASS] a six-character parameter name is refused")
 
     # ---- DspHook.stock per payload: a loop or branch target inside the -----
-    # displaced instruction differs per payload (REPITCH_REPEAT98_KYOTI's boot
-    # hook, `do b,LA` at A P:0x46 / B P:0x47)
+    # displaced instruction differs per payload (a hook on the boot memory
+    # clear, `do b,LA` at A P:0x46 / B P:0x47)
     _hk = DspHook({"A": 0x46, "B": 0x47},
                   {"A": (0x06cf00, 0x000049), "B": (0x06cf00, 0x00004a)}, "t")
     _one = DspHook(0x88, (0x627000, 0x000204), "t")
@@ -463,9 +476,12 @@ def main():
         _refused = False
     except ValueError:
         _refused = True
+    _sub = DspHook({"A": 0x2EC}, (0x60f000, 0x000205), "t")
     if (_hk.stock_on("A") == (0x06cf00, 0x000049) and _hk.stock_on("B") == (0x06cf00, 0x00004a)
-            and _one.stock_on("A") == _one.stock_on("B") == (0x627000, 0x000204) and _refused):
-        print("  [PASS] DspHook.stock per payload (and refused without a per-payload site)")
+            and _one.stock_on("A") == _one.stock_on("B") == (0x627000, 0x000204) and _refused
+            and _sub.on("A") and not _sub.on("B") and _one.on("A") and _one.on("B")):
+        print("  [PASS] DspHook.stock per payload (and refused without a per-payload site); "
+              "a site naming one payload hooks only that one")
     else:
         bad += 1
         print(f"  [FAIL] DspHook.stock per payload: {_hk.stock_on('A')}, {_hk.stock_on('B')}, "
@@ -857,24 +873,25 @@ def main():
     _rig = ("FILTER", "SPATIALIZER", "EQUALIZER", "PHASER", "FLANGER", "CHORUS",
                  "PLATE REV", "SPRING REV", "DARK REV", "COMPRESSOR", "LO-FI",
                  "DJ EQ", "COMB FILTER")
-    _want = {"mods": (), "ok-ms": (), "usb-out-tracks-main-cue": (), "usb-out-tracks": (), "usb-out-master": (),
+    _want = {"mods": (), "octabam-core": (), "usb-out-tracks-main-cue": (), "usb-out-tracks": (), "usb-out-master": (),
              "usb-out-tracks-post": (),
+             "remix-switch": (), "remix-switch-trace": (),   # REMIX SWITCH's park in dead vectors, no region words
              "usb-out-main-cue": (), "usb-out-main": (), "usb-midi": (), "stems": (),     # stock effects + ColdFire modules, no DSP words
-             "repitch": (), "plocks-p2": (), "scenes-midisc": (), "kits": (), "analog-bassdrum": ("SPRING REV",),
+             "rec-threshold": (), "plocks-p2": (), "scenes-midisc": (), "kits": (), "analog-bassdrum": ("SPRING REV",),
              "sidechain-compressor": ("SPRING REV",), "kyoti-mute-sidechain": ("SPRING REV",),   # its DSP section in SPRING's words
-             "repitch-repeat98-kyoti": ("SPRING REV",),   # its kernel in SPRING's P run, its tables in SPRING's X data (#603)
              # Zac Kyoti's ColdFire modules on the stock effects, no DSP words
              **{_k: () for _k in ("direct-jump-kyoti", "batch-bugfixes", "reload-from-project",
                                   "quantize-live-rec-toggle", "erase-empty-trigless-locks",
                                   "mute-modes", "kyoti-mute-jump", "kyoti-fixes", "rec-trig-mute")},
              # the twelve io remixes: the IN module's RX inject is placed in SPATIALIZER's words
              **{f"usb-io-{o}-{i}": ("SPATIALIZER",) for o in ("tracks", "tracks-main-cue", "main-cue", "main") for i in ("ab", "cd", "abcd")},
-             "octatrick": ("SPATIALIZER",),   # USB AUDIO IN ABCD's inject, as in the io remixes
+             "octatrick": ("SPATIALIZER",),   # USB AUDIO IN's ABCD inject, as in the io remixes
              "sos-capture": ("SPATIALIZER",),   # usb-io-tracks-ab + the recorder fixes
              "cfmeter": ("DARK REV",), "cfmeter-port": ("DARK REV",), "cfmeter-post": ("DARK REV",), "cfmeter-tracks": ("DARK REV",),   # the readout insert's words
              "waveload": ("DARK REV",), "waveload-port": ("DARK REV",),   # CF METER's readout insert, as cfmeter
              "wave": ("SPRING REV", "DARK REV"),   # WAVE runs in their words
              "transient": ("PLATE REV",),   # TRANSIENT runs in its words; the other 13 stay
+             "lofi2": ("PLATE REV", "SPRING REV"),   # LOFI2's 1,372 words with its table; PLATE alone is 594
              "testgen": ("PLATE REV",),     # TESTGEN runs in its words; the other 13 stay
              "vocoder": ("PLATE REV", "DJ EQ"),   # VOCODER runs in PLATE's words; DJ EQ out so the tables sit in X
              "euclid": ("SPATIALIZER", "FLANGER", "CHORUS", "COMB FILTER"),
@@ -917,8 +934,11 @@ def main():
              "perky-hw4": ("SPATIALIZER", "EQUALIZER", "PHASER", "FLANGER", "CHORUS",
                            "PLATE REV", "SPRING REV", "DARK REV", "COMPRESSOR",
                            "LO-FI", "DJ EQ", "COMB FILTER"),
-             "rig": _rig, "bottleservice": _rig,
-             "character-txtr": _rig}   # bottleservice with the TXTR station
+             "rig": _rig,
+             "character-txtr": _rig,   # octabam-bus with the TXTR station
+             "octabam-bus": _rig,
+             "octabam-inserts": _rig,   # COMPRESSOR's id is undisturbed since SIDECHAIN_COMPRESSOR was dropped (4dacb61d)
+             "stations-fx2": _rig}
     for _n in registry.remix_names():
         _r = registry.remix(_n)
         _hv = stock.region_of(stock.harvested(

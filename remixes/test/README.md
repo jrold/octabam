@@ -4,25 +4,31 @@ Each carries one module, or one combination, for that module's gates: `make chec
 
 | remix | contains | proof |
 |---|---|---|
+| [`analog-bassdrum`](analog-bassdrum/README.md) | Analog BD source machine, switchable 808/909, stock AMP and FX. | port-gated: source/UI under the port; earlier ANALOGBD1 auditioned on MK1, current revision unflashed |
 | [`batch-bugfixes`](batch-bugfixes/README.md) | stock effects with BATCH_BUGFIXES: the MIDI Plays-Free trig, empty-pattern LED and Part-change carryover fixes. | `make check` |
 | [`bus`](bus/README.md) | The plain two-server image: BusVerb + BusDelay + send bus + tempo sync. | on hardware: under earlier names |
+| [`bus-notempo`](bus-notempo/README.md) | bus with TEMPO SYNC's CAVE pinned OFF (diagnostic). | port-gated |
+| [`bus-tempo-replay`](bus-tempo-replay/README.md) | bus with TEMPO SYNC's CAVE pinned REPLAY (diagnostic). | port-gated |
 | [`cfmeter`](cfmeter/README.md) | octatrick (less TUNER and USB AUDIO IN) + CF METER on T8's FX2: ColdFire idle time and frame-interrupt duration, over USB. | port-gated: the readout chain under the port |
 | [`cfmeter-port`](cfmeter-port/README.md) | cfmeter without the idle loop: the port gate for the readout chain and the interrupt timing. | port-gated: the readout chain under the port |
 | [`cfmeter-post`](cfmeter-post/README.md) | octatrick (less TUNER and USB AUDIO IN) + CF METER on T8's FX2, with USB AUDIO OUT TRACKS POST in place of TRACKS MAIN CUE: the layout's ColdFire cost, over USB. | port-gated: the readout chain under the port |
 | [`cfmeter-tracks`](cfmeter-tracks/README.md) | octatrick (less TUNER and USB AUDIO IN) + CF METER on T8's FX2, with USB AUDIO OUT TRACKS in place of TRACKS MAIN CUE: the layout's ColdFire cost, over USB. | port-gated: the readout chain under the port |
-| [`character-txtr`](character-txtr/README.md) | bottleservice with CHARACTER TXTR (Character + Airwindows Pockey2 texture) on FX1 in place of CHARACTER: the image for measuring the texture stage's cost on a unit. | `make check` |
+| [`character-txtr`](character-txtr/README.md) | octabam-bus with CHARACTER TXTR (Character + Airwindows Pockey2 texture) on FX1 in place of CHARACTER: the image for measuring the texture stage's cost on a unit. | `make check` |
 | [`direct-jump-kyoti`](direct-jump-kyoti/README.md) | stock effects with DIRECT_JUMP_KYOTI: [PTN] + [YES] toggles an immediate, clock-locked pattern change. | `make check` |
 | [`erase-empty-trigless-locks`](erase-empty-trigless-locks/README.md) | stock effects with ERASE_EMPTY_TRIGLESS_LOCKS: an emptied trigless lock disappears. | `make check` |
 | [`euclid`](euclid/README.md) | Euclid rhythmic modulation: 12 dB LP/BP/HP or AMP, both FX slots. | local render: the module's render gates |
+| [`gateverb`](gateverb/README.md) | GATE VERB alone: the fixture of its render gate. | local render: `verify_gateverb`; not flashed |
 | [`kits`](kits/README.md) | KITS (255 Kits per project) on the stock effects. | port-gated: verify_kits under the port |
 | [`kyoti-fixes`](kyoti-fixes/README.md) | stock effects with QUANTIZE_LIVE_REC_TOGGLE, ERASE_EMPTY_TRIGLESS_LOCKS and BATCH_BUGFIXES together. | `make check` |
 | [`kyoti-mute-jump`](kyoti-mute-jump/README.md) | stock effects with MUTE_MODES and DIRECT_JUMP_KYOTI together. | `make check` |
 | [`kyoti-mute-sidechain`](kyoti-mute-sidechain/README.md) | stock effects with MUTE_MODES and SIDECHAIN_COMPRESSOR together: a muted KEY track keeps feeding the compressor (SC_KEY). | `make check` |
 | [`lofi-amf-fix`](lofi-amf-fix/README.md) | Reference minimal build: the LO-FI AMF mpysu->mpyuu fix, alone. | `make check` |
-| [`midi-scenes`](midi-scenes/README.md) | Reference minimal build: the MIDI SCENES ColdFire patch, alone. | `make check`: on hardware inside `ok-ms` |
+| [`lofi2`](lofi2/README.md) | LOFI2 beside the stock effects (all but PLATE REV and SPRING REV, whose words it takes). | `make check` |
+| [`midi-scenes`](midi-scenes/README.md) | Reference minimal build: the MIDI SCENES ColdFire patch, alone. | port-gated: `verify_scenes` against MIDISC2.1 under the port; not flashed |
 | [`miniverb`](miniverb/README.md) | Minimal allocator-owned FDN reverb. | local render: `make verify-miniverb` |
-| [`mods`](mods/README.md) | Every ColdFire mod in one image on the stock effects: MIDI SCENES, KITS, the recorder fixes, REPITCH, the KYOTI direct jump and reload, USB MIDI + AUDIO. | port-gated |
+| [`mods`](mods/README.md) | Every ColdFire mod in one image on the stock effects: MIDI SCENES, KITS, the recorder fixes, the KYOTI direct jump and reload, USB MIDI + AUDIO. | port-gated |
 | [`mute-modes`](mute-modes/README.md) | stock effects with MUTE_MODES: PERSONALIZE > MUTE MODE (OT, OTFX, OTFX-T, DT-T). | `make check` |
+| [`octatrick`](octatrick/README.md) | SYNTH MACHINE + SCALE QUANTIZER + DIRECT JUMP + TUNER + USB MIDI + USB AUDIO (20 channels out, 4 in onto A-D) on the stock effects less SPATIALIZER. | on hardware: Tim's MKI, test build 3.0 b40 (this selection at BUILD 40), 29 Sep 2026: USB AUDIO IN brings the Mac's audio onto the inputs in a one-minute check (long runs not yet tested). The same four modules with the 26 Sep USB AUDIO (out only) ran on the same MKI through the 2.9 test builds; the tuner works on test build 3.0 b40 (UP + TEMPO); the last two 2.9 fixes are not yet confirmed on hardware |
 | [`perky-cf-final`](perky-cf-final/README.md) | Perky Machines final four-algorithm milestone: T1/T2/T5/T6; SRC A-F = Decay/Tune/Param1/Param2/Mode/Algo; all stock FX retained. | `make check`: four independent ColdFire Perky voices; exact native PCM/control gates; stock DSP boot/payload byte identity required |
 | [`perky-cfmeter`](perky-cfmeter/README.md) | Perky Machines (T1/T2/T3/T4) with CF METER on T8's FX2: the frame interrupt's mean/longest duration and the frame period, on the unit. Diagnostic only -- FILTER and DARK REV are given up to the probe. | port-gated: four independent ColdFire Perky voices plus the CF METER frame-interrupt probe; the instrument for pricing the Perky frame on hardware |
 | [`perky-cfmeter-idle`](perky-cfmeter-idle/README.md) | Perky Machines (T1/T2/T3/T4) with CF METER and CF METER IDLE on T8's FX2: the frame interrupt's mean/longest duration, the frame period, and main's idle share, on the unit. Diagnostic only -- FILTER and DARK REV are given up to the probe. | port-gated: four independent ColdFire Perky voices plus the CF METER frame-interrupt probe and the idle-loop probe; the instrument for pricing the Perky frame and main's remaining slack on hardware at once |
@@ -32,14 +38,16 @@ Each carries one module, or one combination, for that module's gates: `make chec
 | [`perky-synth`](perky-synth/README.md) | PERKY Noise/Tone source canary using full packed X/Y state and the three-reverb donor region; stock reverbs intentionally omitted. | `make check`: development Noise/Tone synth canary; hardware flash pending |
 | [`plocks-p2`](plocks-p2/README.md) | Page-2 parameter locks (PLOCKS P2) and page-2 scene locks (SCENES P2), stock effects. | port-gated: verify_plocksp2 under the port |
 | [`quantize-live-rec-toggle`](quantize-live-rec-toggle/README.md) | stock effects with QUANTIZE_LIVE_REC_TOGGLE: QUANTIZE LIVE REC from [REC] + [PLAY]. | `make check` |
+| [`rec-threshold`](rec-threshold/README.md) | stock effects with the threshold-armed recorder TRIG THR, its LEV and an IN meter: the image for a unit. | on hardware: Chupitnik's MKII, 11-12 Oct 2026, THR1 to THR5 from the card: armed with TRACK 1 + REC AB, silence never records, the input starts the take, a second press cancels, LEV and IN on RECORDING SETUP 2, TRIG moved off THR while armed drops the arm; THR5 is this code |
 | [`rec-trig-mute`](rec-trig-mute/README.md) | stock effects with REC_TRIG_MUTE: [TRACK]+[NO]/[YES] mute/unmute recorder trigs. | `make check` |
 | [`reload-from-project`](reload-from-project/README.md) | stock effects with RELOAD_FROM_PROJECT: reload one track's sequence from the card while the transport runs. | `make check` |
-| [`repitch`](repitch/README.md) | stock effects with variable-speed REPITCH in the TSTR selector. | on hardware: MKII, unit undetermined, 16 Sep 2026 (OCTABAM81) |
-| [`repitch-repeat98-kyoti`](repitch-repeat98-kyoti/README.md) | stock effects with REPITCH_REPEAT98_KYOTI: RPCH / RPS9 / RPSP and QUAN; SPRING REV gives up its words: its P run for the DSP kernel, its own X data for the two table blocks (#603). | `make check` |
-| [`rig`](rig/README.md) | bottleservice's delay and reverb bus and FX1 stations, without USB, Octakit or the scene modules: the fixture of the CC MAP, Character and one-aux gates. | `make check` |
+| [`remix-switch`](remix-switch/README.md) | stock effects with BRAIN and REMIX SWITCH: MAIN MENU > BRAIN boots a .RMX from /BRAIN/REMIXES/, no flash write. | port-gated: the chainload under the port (verify_remixswitch) |
+| [`remix-switch-trace`](remix-switch-trace/README.md) | remix-switch + BOOT TRACE: a MIDI note per boot stage, to find where a boot after a switch hangs. | port-gated: the notes under the port (verify_boottrace) |
+| [`rig`](rig/README.md) | octabam-bus's delay and reverb bus and FX1 stations, without USB, Octakit or the scene modules: the fixture of the CC MAP, Character and one-aux gates. | `make check` |
 | [`scenes-midisc`](scenes-midisc/README.md) | MIDI SCENES + KITS + page-2 scene locks (SCENES P2) + page-2 parameter locks (PLOCKS P2), stock effects. | port-gated: verify_scenesp2 and verify_plocksp2 under the port |
 | [`sidechain-compressor`](sidechain-compressor/README.md) | stock effects with SIDECHAIN_COMPRESSOR in COMPRESSOR's row: KEY, KFLT, KGN and MON on page 2. | `make check` |
 | [`sos-capture`](sos-capture/README.md) | recorder fixes + USB MIDI + USB AUDIO OUT TRACKS + USB CROSSBAR + USB AUDIO IN AB (stock effects minus SPATIALIZER). | port-gated: `make check` under the port; not on hardware in this form |
+| [`stations-fx2`](stations-fx2/README.md) | SPECTRUM, CHARACTER and MODULATION on FX1 and FX2, beside the stock DELAY. | port-gated: `verify_stations_fx2` (dsp_host); not on a unit |
 | [`stems`](stems/README.md) | STEM REC on the stock effects: multitrack recording to the card, each track, MAIN, CUE and the inputs as separate WAV files. | on hardware: Yves's MKII, 6 Oct 2026 (STEMS3) |
 | [`tapeecho`](tapeecho/README.md) | Tape Echo replacing Spring Reverb, alone. | on hardware: the author's unit (OCTACLID4): six instances; a seventh freezes it, open |
 | [`testgen`](testgen/README.md) | TESTGEN on FX1 beside the stock effects (all but PLATE REV, whose words it takes). | on hardware: Ignorato's MKII, OCTABAM6, 4 Oct 2026 |
@@ -64,5 +72,6 @@ Each carries one module, or one combination, for that module's gates: `make chec
 | [`usb-out-tracks-main-cue`](usb-out-tracks-main-cue/README.md) | stock + USB MIDI + USB AUDIO (20 ch: tracks, MAIN, CUE). | port-gated |
 | [`usb-out-tracks-post`](usb-out-tracks-post/README.md) | stock + USB MIDI + USB AUDIO OUT TRACKS POST (16 ch: the tracks after their own MAIN gain). | on hardware: allmyfriendsaresynths's MKII, P3, 5 Oct 2026 (smoke test: 16 channels, LEVEL/mute/solo/crossfader follow) |
 | [`vocoder`](vocoder/README.md) | VOCODER beside the stock effects (all but PLATE REV, whose words it takes, and DJ EQ, so its table sits in X). | on hardware: Ignorato's MKII, OCTABAM12 (the earlier positions T1 T2 T5 T6), 4 Oct 2026; the current positions not flashed on this build |
+| [`wave`](wave/README.md) | Experiment: a 4-voice wavetable synth on FX2, played by a sine on its track; SCALE QUANTIZER, page-2 tools, USB out; DARK and SPRING REV give up their words. | on hardware: Sam's MKII, image 93, 3 Oct 2026: plays, PTCH and the CHROMATIC keys move the pitch |
 | [`waveload`](waveload/README.md) | CF METER + WAVE LOAD on stock: T8's FX2 BURN = K 4-voice wave engines per frame interrupt, read over USB. | on hardware: image 92, Sam's MKII, 3 Oct 2026 |
 | [`waveload-port`](waveload-port/README.md) | waveload without the idle loop: the port gate for the wave engines in the frame interrupt. | port-gated: the load path under the port |

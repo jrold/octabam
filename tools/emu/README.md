@@ -10,7 +10,6 @@ There are two ways to run the Octatrack's OS without flashing it:
   handoff and calls the firmware's draw and formatter code directly. It is used by:
   - the label gates in `make check` (`verify_labels`, `verify_modenames`,
     `verify_hidden`) and CC MAP's `verify_ccmap`;
-  - REPITCH's `verify_repitch_ui`;
   - `tools/build/stock_labels.py`;
   - the remixer's UNIT pane.
 
@@ -18,7 +17,7 @@ The records of how they were built:
 - the port: `git show 3ceba41:docs/history/COLDFIRE_PORT.md` (O1–O14) and
   `git show 666b6154:docs/firmware/COLDFIRE_PORT.md` (O14i–O24, Tim
   Hastie's; what is still in the port is [Port features](#port-features));
-- Tier-0: `git show 3ceba41:docs/history/EMU_BRINGUP.md` and `RTOS_FORK.md`.
+- Tier-0: `git show 3ceba41:docs/history/EMU_BRINGUP.md` and `git show 3ceba41:docs/history/RTOS_FORK.md`.
 
 Route A (`emu_rtos.py`) was retired on 26 Sep 2026 (60509404).
 
@@ -127,6 +126,27 @@ out/emu/ot_emu --image out/mainos_bus.bin --card out/card.img --set OCTABAM --pr
     once and forks one child per scenario from the identical loaded
     machine. The DSP cores' shared memory is copied private in each child
     (`unshareRanges`, `main.cpp`).
+- **Memory as a reset leaves it.** `--preload ADDR=FILE[;...]` puts a file's
+  bytes in memory before the boot runs. The port boots zeroed RAM with NOR
+  unmodelled: `0x3ffc` (NOR's bootstrap version) reads 0, so every boot takes
+  the entry's bootstrap-upgrade branch where a flashed unit goes straight to
+  `0x4000050c`; `--preload 0x3ffc=<04 08>` gives the hardware's path. A
+  unit's power-on also finds battery SRAM from its last session: dump
+  `0x10000000..0x100fffff` after a boot (`--mem-dump`) and preload it, or the
+  port measures the first-ever power-on only (PR #542's boot picker,
+  `docs/contributing/FAILURE_MODES.md`).
+- **A power-on's own load.** `--boot-load` (`--names-early --no-post`) writes the SET/PROJECT names
+  before the mount, as a unit that has run a project has them, and posts
+  nothing itself: the one LOAD PROJECT is the firmware's own (sys's media
+  case, through `0x4002574c`). With a short `--load-ms` the run goes on to
+  `--live-script` while the load is still held (`verify_remixswitch`'s boot
+  cases).
+- **Three things the DSP emulator does that the chip does not** (found
+  bringing up REMIX SWITCH's DSP park, 29 Sep 2026): `dsp peek <core> P <addr>`
+  answers 0 for `0x30000..0x3ffff` (it reads the core's own array, not the
+  shared window); `--dsp-pcwatch`'s a1/b1 print the accumulator shifted left
+  by 8; and inside a long interrupt (a `jsr` vector) no peripheral runs until
+  the handler's `rti`, so HI08 flags such as HTDE freeze.
 - **MIDI IN.**
   - `--midi FILE` takes one event per line: `<frames after the transport
     start> <hex bytes>`, or `pre <hex bytes>` (before the transport start,
@@ -153,6 +173,9 @@ out/emu/ot_emu --image out/mainos_bus.bin --card out/card.img --set OCTABAM --pr
   `0x80000810 + 72·t`.
 - **The card.**
   - `--card-out FILE` writes the card as the firmware left it.
+  - `--cmd-log-end FILE` writes every ATA command of the whole run, the
+    load and what follows it, one line each: `WHAT LBA COUNT | #n pc PC
+    TASK`. `--cmd-log` writes the load's commands only.
   - `emu_card.extract_image(bytes[, out_dir])` reads a FAT16 image back as
     `{path: bytes}`.
   - The firmware writes `LOG 000000.txt` in the card root during a load,
@@ -456,13 +479,234 @@ commands' reply formats are the header comment of `main.cpp`
 
 ## Speed
 
-- The port runs in event-horizon bursts (bit-exact).
-- `--dsp-rt` runs the DSP cores as JIT workers.
-- The gates run in lockstep mode.
-- Measured 25 Sep 2026 on a MacBook Air:
-  - the panel, paced, with `--dsp-rt`: 1.000× real time;
-  - unpaced on the OTLIVE fixture with both cores: 475–684 emulated ms per
-    wall second.
+What the port costs, where the time goes, and what each upstream has
+(12 Oct 2026; no core changed for this section). The 25 Sep figures from
+the earlier version of this section are kept in the table at the end.
+
+### Measured, 12 Oct 2026
+
+An Apple M3 (4 performance and 4 efficiency cores), macOS 26.6, the port
+built by `make emu-cf` (bursts, LTO, the page-table memory path; not PGO).
+Another session's gates ran beside every measurement (load average 3-5), so
+each number is one run or a range, not a quiet-machine figure. The
+fixture is `octatrick`'s `verify_set` command: the stock slice's image, the
+`OCTABAM89_setgate` project (bank 3) on a 64 MB card, LOAD PROJECT, then 900
+frames with both DSP cores in lockstep.
+
+| phase | with the cores (`--dsp`) | without (`--frame`) |
+|---|---|---|
+| the whole command | 27.7-28.6 s | 25.5 s |
+| boot to the RTOS handoff | 2.0 s (14.1 M ColdFire, 16.0 M DSP instructions per core) | 0.9 s |
+| LOAD PROJECT | about 23 s: 14.9 s emulated, 853 M ColdFire instructions | 17.8 s emulated, 1,991 M ColdFire instructions |
+| 900 frames (14,400 samples, 0.33 s of audio) | 2.0 s: 21.7 M ColdFire instructions, 10.8 M/s, 6.1x off real time | 0.33 s: 21.7 M ColdFire instructions, 66.6 M/s, real time |
+
+`--frame` takes its frame interrupt from a 16-sample timer instead of the
+cores' bank word, and its load ran 2.3 times the ColdFire instructions; the
+two columns are not the same workload (that the frame interrupt is the cause
+is inferred, not measured).
+
+Play speed through `--interactive` (PLAY, then `run 4000` ms of emulated
+time) and the time to the `ready` line (boot and LOAD PROJECT):
+
+| DSP cores | 4 s of PLAY | real time | `ready` after |
+|---|---|---|---|
+| none (`--frame`) | 5.1-5.2 s | 0.76-0.78x | 30-34 s |
+| lockstep interpreter (`--dsp`) | 31-40 s | 0.10-0.13x | 33-46 s |
+| JIT workers (`--dsp --dsp-rt`) | 6.0-8.3 s | 0.48-0.67x | 14.5-17.8 s |
+
+The lockstep interpreter executes 4,532 instructions per sample per core
+(about 200 M per second per core in real time, 400 M for both); the gate
+command above executes 3.1 G per core over its 15 s of emulated time.
+
+Where the host's time goes, from `sample` (1 ms) on the running process:
+
+| phase of the gate command (`--dsp`) | DSP cores | Musashi core | run loop, timers | memory, peripherals | V4e layer |
+|---|---|---|---|---|---|
+| LOAD PROJECT | 64.2% | 16.7% | 15.4% | 2.1% | 1.3% |
+| 900-frame play | 67.1% | 14.8% | 14.2% | 1.9% | 1.8% |
+
+The ColdFire alone (`--frame`, LOAD PROJECT): Musashi 38.8%, run loop 36.8%,
+V4e layer and register glue 17.4%, memory 6.4%. The V4e layer runs the
+instructions Musashi lacks; Musashi reaches it through its illegal-instruction
+exception.
+
+Reproduce: `python3 tools/verify/verify_set.py octatrick --stage-only` writes
+the command to `out/setverify/port.txt`; time it, or `sample <pid> 12` it with
+`--dsp`. `--profile` covers the boot and the frames but not the load (the
+sequencer clears it at the transport start).
+
+### What each upstream has
+
+| project | what it is | state, 12 Oct 2026 |
+|---|---|---|
+| `vendor/mc68k` ([joelanders/mc68k-md-mm](https://github.com/joelanders/mc68k-md-mm), GPL-3.0) | the ColdFire core: Musashi, an interpreter, with our V4e layer (`ot::v4e`) | pushed 9 Sep; our pin is its PR #4; PR #5 (HI08 command acceptance) is open |
+| [Musashi](https://github.com/kstenerud/Musashi) | the 68000-family interpreter underneath | pushed 8 Mar; no ColdFire V4e |
+| `vendor/dsp56300` ([dsp56300/dsp56300](https://github.com/dsp56300/dsp56300), GPL-3.0, the library gearmulator uses) | the DSP cores: an interpreter and a JIT (asmjit; x64 and arm64) | our pin is `8ccdd843` (21 Sep); the tip (9 Oct) is 49 commits ahead, with JIT fixes (DO loops, interrupts, poll fast-forward) and `fdd98fc5`, the interpreter's modulo bounds compared signed (the defect our AGU hunk fixes; our PR #13 was closed unmerged on 4 Oct) |
+| [markandrus/octemu](https://github.com/markandrus/octemu) | QEMU 11.1 (ColdFire MCF54455) patched, plus `octdsp` for the DSP cores, SDL2 front end | pushed 26 Sep; 13 QEMU patches (EMAC ISA C, accumulator extension packing, sticky saturation, fractional store sign, the MAC-with-load decode and mask reset, two TCG patches: `0008` skips the not-dirty walk for pages with no code, `0012` a guest-instruction budget); no speed figure published, the README lists "playback warbles"; sources MIT, the built binaries cannot be redistributed (QEMU GPL-2.0-only with the dsp56300 GPL-3.0-only) |
+| [timhastie/octa-panel](https://github.com/timhastie/octa-panel) | this port with the panel UI and CoreAudio output | pushed 1 Oct; its speed work (O15a-O24, below) is in this repository |
+| Unicorn 2.1.4 (QEMU 5.0.1 TCG) | `tools/emu/emu_bringup.py` (Tier-0, Python) | route A was retired 26 Sep (#448); 52 M instructions per second in an 18 Sep micro-benchmark; it needs the EMAC patch (`tools/patches/unicorn_emac_fractional.patch`) and a per-site shim for MAC-with-load |
+| a ColdFire V4e / MCF5445x core elsewhere | none found | GitHub search 12 Oct: V2-only projects, last pushed 2014-2021 |
+
+The Musashi "inline V4e" patch the 18 Sep note mentions (a 16.3 M
+instructions-per-second comparison, no DSP or audio) has no recorded author or
+source in this repository.
+
+Tim Hastie's port log (`git show 666b6154:docs/firmware/COLDFIRE_PORT.md`,
+O15a-O24, M5 Mac, 12-13 Sep) is the history of what the port already does:
+
+| step | result |
+|---|---|
+| before | 220 emulated ms per wall second without the cores, 97-100 with them |
+| O15a event-horizon bursts | 4.2x, bit for bit |
+| O15b LTO | +11% |
+| O15c page-table memory path | +28% |
+| O15d PGO (`pgo.sh`, opt-in) | +28% without the cores, +13% with: 1,642 and 171 ms per second; boot and load to `ready` 6.6 s and 18.4 s |
+| O17b `--dsp-rt` | 1,015-1,058 ms per second with both cores |
+| O17c | the `--dsp-rt` capture bit-identical to lockstep: 0 mismatches of 199,358 samples on the OTLIVE fixture, three runs |
+
+### The DSP JIT in this port
+
+- It is in the vendored tree and used by `--dsp-rt` only. `--dsp-rt` needs
+  `--interactive`; every batch mode, and so every gate, runs the lockstep
+  interpreter (`ot_emu --dsp --dsp-rt` without `--interactive` refuses to
+  start).
+- The interpreter is what the per-instruction instruments observe
+  (`--dsp-writes`, `--dsp-watch`, `--dsp-pcwatch`, `dsp watch|pcwatch|peek`);
+  the JIT workers are not observed. `verify_set`'s DSP data census uses
+  `--dsp-writes`.
+- The JIT's schedule is the ColdFire's emulated clock with a bounded lead and
+  fences (O17b/O17c). Its contract in general is functional (same onset within
+  16 samples, level within 1 dB); bit-identity to lockstep was shown on one
+  fixture.
+- `tools/patches/dsp56300.patch` carries hunks in `jit.h`, `jitblock.*`,
+  `jitdspregs.cpp` and `jitmem.*` (the shared window, the M-register fix from
+  O22) beside the interpreter-side ones (`dma.cpp`, `hdi08.*`, `dsp.cpp`, the
+  host-stepped mode); the AGU fix is interpreter-only.
+- 18 verifiers start the cores. A grep for the lockstep-only instruments
+  (`--dsp-writes`, `--dsp-peek`, `--block-dump`, `--audio-out` and the
+  others) finds none in `stems_panel`, `verify_analog_bassdrum_ui`,
+  `verify_boottrace`, `verify_kits`, `verify_plocksp2`, `verify_scenesp2`,
+  `verify_usb_post`; the other eleven use at least one. This was not audited
+  per gate.
+
+### Options for the gates, by gain over effort
+
+The gates spend about two thirds of the host's time in the DSP interpreter and
+a third in the ColdFire. A change to the ColdFire core alone is bounded by
+that third.
+
+1. **`--dsp-rt` for the gates that read no lockstep instrument.** Measured
+   12 Oct on one gate with the batch refusal lifted by hand (`OT_DSP_RT_BATCH=1`
+   in a scratch build; the refusal is a check in `main.cpp`, nothing else
+   changes): the KITS strand boot (`--dsp --live-script --mem-dump`, one
+   process) took 108.9 s in lockstep and 26.7, 26.6 and 27.0 s under the JIT.
+   All five memory dumps the gate reads (`strand_st`, `_img`, `_b3`, `_trk`,
+   `_eng`) are byte-identical to lockstep in all three JIT runs, and the log
+   has no halt word; `clean("strand")` reads only those, so its verdict is the
+   same.
+
+   **Forked gates (measured later the same day, scratch build).** A fork
+   keeps only the forking thread, so a `--scenario` child of a `--dsp-rt`
+   parent has no worker threads: its cores do not run (host words in 26,570
+   against 192,890, 1 host command against 720) and the scenario still exits
+   0. With each core's mutex and condition variable re-initialised in the
+   child and two fresh worker threads started there (about 25 lines:
+   `DspPair::rtAfterFork`, called in the child after `fork()`), the children's
+   host-port traffic equals lockstep's (192,890 words in, 61,660 out, 720
+   commands) and the JIT's code ran in the child without trouble on the M3.
+   `verify_scenesp2`, whose one load and forked scenarios use `--dsp`, gave
+   the same verdict twice (28 ok, 0 fail) in 15-16 s against 29-30 s in
+   lockstep. `verify_plocksp2` gave no change (98 s either way): it runs
+   `--dsp` in one `play` scenario only, and its time is ColdFire-bound loads
+   and power cycles. `verify_kits`' main fork runs without the cores at all
+   (`--dsp` is only on its strand boot), so the JIT does nothing there.
+   Not done: the parent is not quiesced before the fork; the interrupt trace
+   timestamps differ from lockstep's by fractions of a sample (the JIT is
+   functional, not byte-identical, outside the one fixture of O17c); no run
+   repeated enough to call it deterministic; nothing but arm64 macOS. The
+   gates that run the cores in one process without an instrument are
+   `verify_kits`' strand boot (106 s, already beside the fork since #670, so
+   it saves CPU and not wall time), `verify_boottrace`,
+   `verify_analog_bassdrum_ui`, `stems_panel` and `verify_usb_post` (not
+   measured). The whole-gate wall gain is about 15 s on `verify_scenesp2`
+   (a 39-48 s job beside `verify_plocksp2`'s 98-147 s). Lockstep stays the
+   default and the reference.
+2. **A PGO build in the port store** (`tools/emu/port_store.py`). Done 12 Oct:
+   `make emu-pgo` (or `python3 tools/emu/port_store.py pgo`) builds it once
+   per source state (306 s: the instrumented build, three training runs on a
+   card staged from the local project, the optimised build) and `install`
+   takes it when the store has one. When it has none, `install` copies the
+   plain build at once and starts the PGO build detached, at nice 10, one at
+   a time on the machine (`OCTABAM_PGO=0` asks for the plain build and starts
+   nothing).
+   Against the plain build of the same source, M3 under load average 5-10,
+   user CPU time (wall time moves with the load): the gate command 34.4 s to
+   27.5 s over four paired runs (1.25x); `verify_kits` bottleservice 1,702 s to
+   1,308 s over two (1.30x; wall 592 s to 509 s), the same 126 checks, 0
+   failures in each. Bit-exact: the gate command's block dump, card after,
+   DSP-write census, memory dumps and command log are byte-identical, and the
+   oracle's 25 checks agree (the render's `cpu` line differs only in its
+   wall-clock figures).
+3. **Re-pin `vendor/dsp56300` to the 9 Oct tip (7a5390e7, 49 commits past
+   8ccdd843).** Scoped 12 Oct in scratch trees; not done.
+   - By title: timers 6, JIT fixes 8, ESAI 7, DMA 5, host interface (HDI08,
+     SHI, the host-command queue) 7, interpreter semantics 8 (undefined
+     opcodes run as ILLEGAL, MOVEP, the DO-loop end, the signed modulo bounds,
+     scale-up limits), interrupts 2, memory, GPIO and build 6.
+   - Our patch (59 hunks) on the tip: 51 hunks apply, 8 are rejected in six
+     files. The AGU hunk is covered by upstream's signed compare (`fdd98fc5`;
+     equal for the base-0 pre-decrement, not tested over the whole space).
+     The masked-interrupt peripheral hunk is `823e697c`. Our unmapped-register
+     hooks are upstream's `setIoExtension`; `ot_emu`'s one call changes name.
+     Three hunks only need new context (`pendingInterruptCount`,
+     `peekStatusRegister`, `m_txFifoDepth`).
+   - `ot_emu` builds against the tip with those fix-ups and nothing else; the
+     `dsp_host`/`dsp_asm` build and upstream's `dsp56kTestRunner` were not
+     tried.
+   - Speed: none. The load phase of the gate command (853,049,038 ColdFire
+     instructions in both) took 22.4 s on the tip against 22.9 s on the pin,
+     the same flags, three paired runs.
+   - Behaviour: the first run after the load halts the firmware at frame 8
+     (`halt` at `0x4000ab40`; core 0 spins 3.88 G instructions on 53 host
+     commands). Bisected over the 49 commits (patch re-applied with the same
+     fix-ups at each): good to `2afc1c4f`, first bad `3cee91c9` ("DMA: a
+     channel enabled together with a new request source waits for the next
+     request"), which reworks the request semantics our DMA hunks also
+     change (the ESAI input feed, DCR2 rewritten every idle pass). The port
+     is to reconcile our DMA hunks with it.
+   - Estimate (not measured): half a day to a day to reconcile the DMA
+     hunks and pass the gate command, then the gates of the 22 Sep re-pin
+     (`scripts/refhash.sh check`, `verify-bus`, `verify-twocore`, every DSP
+     gate) and `ci-dsp` from the main checkout. The gain is a smaller patch
+     (about 60 lines fewer) and eight JIT fixes that matter to `--dsp-rt`
+     only.
+4. **Snapshot the machine after LOAD PROJECT** and restore it per gate.
+   Removes about 23 s per boot of the same image and project; a bottleservice
+   half boots at least seven times (`set`, `verify_scenesp2`,
+   `verify_plocksp2`, TEMPO BUS, USB MIDI twice, FX2 LOCK). `--scenario`
+   already forks after one load inside one gate. Needs the ColdFire RAM, both
+   DSP cores' state, the peripherals and the card serialised: a large change;
+   proof is a restored run's outputs byte-identical to a fresh boot's.
+5. **Inline the V4e instructions into Musashi.** The V4e layer is 17.4% of the
+   ColdFire-only load and 1.3-1.8% of the gate command, so it is under 2% of a
+   gate. Proof: the oracle.
+6. **A TCG ColdFire core** (octemu's patched QEMU 11.1, or Unicorn). The port's
+   ColdFire runs at 66-75 M instructions per second today, above Unicorn's
+   52 M micro-benchmark; the ColdFire is a third of a gate's host time, so a
+   factor of 3 on it is a factor of 1.3 on the gate. Needs the EMAC
+   differential (the three Unicorn defects, octemu's patches 0001, 0004,
+   0006, 0007, 0009, 0013), weeks of work, and a local build only
+   (QEMU is GPL-2.0-only).
+
+### Earlier figures
+
+- 18 Sep 2026: play 14.0x off real time with the cores (23,946 ColdFire
+  instructions per 16-sample frame, 66 M per second needed for real time);
+  Musashi about 16 M per second in the port then; Unicorn TCG 52 M per second
+  and without MAC-with-load.
+- 25 Sep 2026, a MacBook Air: the panel paced with `--dsp-rt` at 1.000x real
+  time; unpaced on the OTLIVE fixture with both cores, 475-684 emulated ms per
+  wall second.
 - `--profile` prints the hottest PCs over the boot and over the frames.
 - Where stock ColdFire time goes per frame: [`docs/firmware/ARCHITECTURE.md`
   section 6](../../docs/firmware/ARCHITECTURE.md).
@@ -474,7 +718,7 @@ commands' reply formats are the header comment of `main.cpp`
   knew only the fractional layout. Found by Jannik Aßfalg; `test_emac.cpp`
   holds both layouts.
 - **MACSR S/U** is bit 6 and selects 16-bit rounding in fractional mode
-  (see `AGENTS.md`); `test_emac.cpp`. The firmware sets `MACSR = 0x20`
+  (see `docs/contributing/TRAPS.md`); `test_emac.cpp`. The firmware sets `MACSR = 0x20`
   (fractional) at `0x4000cf60` and `0x4000d3ae`; the level chain at
   `0x4000ccae` runs at `0x60`.
 - **The uncached aliases** `0x4F…` and `0x4E…` are folded onto the cached
@@ -514,7 +758,7 @@ make emu-unicorn                     # the EMAC-fixed Unicorn
   `tools/patches/unicorn_emac_fractional.patch` and builds the m68k-only
   library into `.venv/lib/unicorn-emac/`. `emu_bringup` loads it through
   `LIBUNICORN_PATH`. The patch fixes five defects of stock Unicorn 2.1.4;
-  `AGENTS.md` has the detail:
+  `docs/contributing/TRAPS.md` has the detail:
   - the fractional-mode product is halved;
   - `msac` adds;
   - MAC-with-load reads Rx from the wrong word;

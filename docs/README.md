@@ -13,6 +13,7 @@ checkpoints, not the current MKII firmware or free DSP memory.
 
 | doc | what it is |
 |---|---|
+| [site/index.md](site/index.md) | the manual site (MkDocs, deployed to GitHub Pages on merges to main): choosing a remix, BRAIN, build and flash, safety — written for musicians |
 | [guide/BUILDING.md](guide/BUILDING.md) | what to install (macOS, Linux/WSL2), the toolchain, your own OS 1.40C, building an image, flashing from the card or over MIDI, after the flash, recovery, back to stock |
 | [../remixes/README.md](../remixes/README.md) | the remixes you can flash, with where each has run |
 | [guide/REMIXER.md](guide/REMIXER.md) | composing your own remix: the `make remix` TUI, or a `remix.py` by hand |
@@ -35,7 +36,8 @@ checkpoints, not the current MKII firmware or free DSP memory.
 | [contributing/TESTING.md](contributing/TESTING.md) | every gate, what it proves and cannot see; `make check`, `make reach`, shards, `make accept`, bit-identity, CI |
 | [contributing/TOOLING.md](contributing/TOOLING.md) | every tool by pipeline stage, and which README each tool directory has |
 | [contributing/FAILURE_MODES.md](contributing/FAILURE_MODES.md) | what has gone wrong on a unit: symptom, cause, fix, the gate that catches it |
-| [../AGENTS.md](../AGENTS.md) | working rules and the traps that have cost real work (for people and coding agents) |
+| [contributing/TRAPS.md](contributing/TRAPS.md) | the trap register: what has cost real work in the code, build, emulators and harness — symptom, fix, the gate that catches it |
+| [../AGENTS.md](../AGENTS.md) | working rules, worktrees, build and check, and the trap index (for people and coding agents) |
 
 ## The tools
 
@@ -54,13 +56,16 @@ checkpoints, not the current MKII firmware or free DSP memory.
 is the silicon and the cycle budget, [DSP.md](firmware/DSP.md) the audio
 DSP, and the rest one subsystem each (kernel, tables, parameter pages,
 menus, panel, MIDI, LFO, level law, recorder, sample save, storage,
-Parts and pattern changes in [PARTS.md](firmware/PARTS.md), step locks, the ColdFire delay routine in [COLDFIRE_DELAY.md](firmware/COLDFIRE_DELAY.md),
+the MIDI tracks' setup record, writers, outgoing MIDI and CTRL labels in [MIDI_TRACKS.md](firmware/MIDI_TRACKS.md), Parts and pattern changes in [PARTS.md](firmware/PARTS.md), step locks, the ColdFire delay routine in [COLDFIRE_DELAY.md](firmware/COLDFIRE_DELAY.md),
 REPITCH in [REPITCH.md](firmware/REPITCH.md)).
 
 ## Proposals
 
-[proposals/](proposals/): two OTX documents, a shared settings store for
-modules (draft, not implemented): [OTX_PROJECT_PROPOSAL.md](proposals/OTX_PROJECT_PROPOSAL.md)
+[proposals/](proposals/): [BRAIN.md](proposals/BRAIN.md), the design for
+settings, defaults and templates (6 Oct 2026; `modules/brain` builds it and
+measures it under the port, not on a unit), and the two
+OTX documents it starts from, nordseele's shared settings store (draft, not
+implemented): [OTX_PROJECT_PROPOSAL.md](proposals/OTX_PROJECT_PROPOSAL.md)
 and [OTX_MODULE_GUIDELINES.md](proposals/OTX_MODULE_GUIDELINES.md).
 
 [proposals/remixes/](proposals/remixes/README.md): remix proposals, each

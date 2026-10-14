@@ -154,9 +154,9 @@ instructions, B 46 / 6,251, zero undecodable.
 
 Two 32-entry pointer tables in X, indexed by the raw id, one load record
 (`X:0x00215`, 64 words; image `0x400e2345` A / `0x400f5a10` B). Both
-menus index the same tables (`AGENTS.md`, "an FX2 id is also an FX1 id").
+menus index the same tables (`contributing/TRAPS.md`, "an FX2 id is also an FX1 id").
 The FX1 dispatcher keeps the id in r1 across the init call (`P:0x4c8..0x4d7`);
-an init that moves r1 sends the proc call through P:0 (`AGENTS.md`,
+an init that moves r1 sends the proc call through P:0 (`contributing/TRAPS.md`,
 `verify_initregs`).
 
 | id | init | process | effect |
@@ -262,7 +262,21 @@ track 3 FX2), and payload B's boot zero loop (`P:0x40-0x4a`) clears
 `0x38000-0x3FFFF`), so the mailbox reads zero at B's first frame-loop pass
 as stock's does. Six operands carry this (A `P:0x9c`; B `P:0x41`, `P:0x43`,
 `P:0x45`, `P:0x4c`, `P:0x173`; `tools/remix/dsp_ranges.py`
-`STOCK_PATCHES`), each asserted stock before it is written. Payload A's own
+`STOCK_PATCHES`), each asserted stock before it is written. Buffered stock effects and the
+mailbox (13 Oct 2026, measured under the port, not on a unit: the `mods` image,
+all eight tracks THRU with tones on the inputs and the same stock effect on
+every track's FX2, 1,400 frames, `--dsp-dirty`, `--dsp-peek 0:Y:30000,65536`
+at the end): none of FLANGER, CHORUS, SPATIALIZER, COMB FILTER, PLATE REV,
+SPRING REV or DARK REV wrote a non-zero word in `0x37F00-0x37FFF`. The highest
+word written in the slot at `0x34000` (bank track 4 FX2 on core 0) is DARK REV's
+`0x37DA2`; the others stop at `0x34FFF` (SPRING REV), `0x34BFF` (COMB FILTER)
+and `0x34A5F` (SPATIALIZER), and FLANGER, CHORUS and PLATE REV wrote nothing
+there. Per-effect extents above a slot's base: `stock.SLOT_EXTENT`. The
+instrument sees non-zero writes only (a zero write is invisible, as is a slot
+that got no signal), at the stamped project's knob values; the extents equal
+fixed buffer sizes (2,048, 3,072, 4,096 words), which a stopped sweep would not.
+Falsified by any run in which one of the seven writes at or above `0x37F00`.
+Payload A's own
 boot zero (`P:0x40-0x49`, `Y:0x30000-0x37FFF`) also covers the mailbox, so
 core 0's first mailbox read at boot returns zeros; in stock that read
 returns the 16 words B's first frame-loop pass copies from its
@@ -285,9 +299,9 @@ low byte is never published.
 | register | meaning |
 |---|---|
 | `r6` | this instance's parameter block |
-| `r7` | per-instance state block, `x:0x20a + 0x100·k`; the dispatcher bumps it three times per track (`AGENTS.md`, "the harness's model of the dispatcher is not the dispatcher") |
+| `r7` | per-instance state block, `x:0x20a + 0x100·k`; the dispatcher bumps it three times per track (`contributing/TRAPS.md`, "the harness's model of the dispatcher is not the dispatcher") |
 | `n7` | frame count (also `x:0x20c`; 0 skips the effect) |
-| `r0` | audio block: the dispatcher passes `r0 = 0`, 16 interleaved L/R samples at `X:0`; stock code scratches `X:0x20–0xff` (`AGENTS.md`, `dsp_host -audio 0`) |
+| `r0` | audio block: the dispatcher passes `r0 = 0`, 16 interleaved L/R samples at `X:0`; stock code scratches `X:0x20–0xff` (`contributing/TRAPS.md`, `dsp_host -audio 0`) |
 | `r1` | effect id across the FX1 init call |
 
 The stub's `r0` in / `r1` out is the stub's convention; DARK REV saves `r0`
@@ -530,4 +544,4 @@ hardcoded entry offset.
 
 ## 8. Standing rules
 
-`docs/contributing/MODULES.md` "Rules for DSP code" and `AGENTS.md`.
+`docs/contributing/MODULES.md` "Rules for DSP code" and `docs/contributing/TRAPS.md`.

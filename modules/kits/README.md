@@ -2,7 +2,7 @@
 
 255 Kits per project. A Kit is a saved Part; each pattern plays the Kit
 assigned to it, through the stock Part slots. `Kind.CF_PATCH`: one DRAM
-unit (`kits.s`), 23 detours, nothing on the DSP. The firmware facts it
+unit (`kits.s`), 16 detours and STORE's events, nothing on the DSP. The firmware facts it
 stands on are [`docs/firmware/PARTS.md`](../../docs/firmware/PARTS.md).
 
 Credit: Em ([emuyia](https://github.com/emuyia)) designed Kits on the
@@ -10,7 +10,11 @@ Octatrack in [Octakit](https://github.com/emuyia/ems-octakit) (MIT,
 Copyright (c) 2026 June Kiff). KITS follows its design: Kits per
 project, LOAD KIT and SAVE KIT on PART and FUNC+PART with its key map, the
 list copy, paste, clear and undo, the pattern clipboard carrying the Kit, and the
-`NNN name` status line. It reads Octakit's `kits3a/b.work` files.
+`NNN name` status line, and the pool that keeps a slot's edits when its
+slot is taken. It reads Octakit's `kits3a/b.work` files.
+BUKKAKEBOREALIS ([bkkbrls-del](https://github.com/bkkbrls-del)) found and
+fixed in his OK-MS4.0 build the slot cases the edit pool and the
+unassigned-pattern rule below cover.
 Markers as in `CHIP.md`: ✅ measured, 📖 read from the code.
 
 ## What a Kit is
@@ -33,7 +37,7 @@ Appendix A section 3):
 | track levels and cue levels | `+0x12 + 2t`, `+0x13 + 2t` |
 | the machine type (Flex, Static, Thru, Neighbor, Pickup) | `+0x22 + t` |
 | PLAYBACK page settings, one set per machine type | `+0x2a + 30t + 6·machine` |
-| the Flex or Static sample slot each machine plays | not located |
+| the sample slot each machine plays: five bytes a track, Static at index 0, Flex at 1, Pickup at 4 (a value from `0x80` is a recorder buffer, 1-8: `0x86` is buffer 7) | `+0x2ca + 5t` |
 | LFO, AMP, FX1, FX2 page 1 | `+0x11a + 24t` |
 | LFO page 2 (destination, wave, multiplier, trig mode), AMP, FX1, FX2 page 2 | `+0x2f2 + 30t` |
 | the eight MIDI tracks' parameters | `+0x3e2 + 32(t−8)` |
@@ -81,7 +85,7 @@ which is not what an MD or MnM Kit holds.
 | LOAD KIT | PART | FUNC+MIDI |
 | SAVE KIT | FUNC+PART | FUNC+MIDI, then FUNC+BANK |
 | quick save (the Kit under the cursor, its name kept) | FUNC+PART, then FUNC+YES | FUNC+MIDI, FUNC+BANK, then FUNC+YES |
-| reload the current Kit | FUNC+CUE (stock Part Reload) | FUNC+CUE |
+| reload the current Kit from the library (KIT RELOADED) | FUNC+CUE | FUNC+CUE |
 | the pasted pattern plays a copy of its Kit in the next empty Kit | FUNC+PASTE+PART (PART while STOP is held after the paste) | FUNC+PASTE+MIDI |
 | save the Kit, copy it and the pattern to the next empty ones, play the copy | PTN+FUNC+RIGHT | PTN+FUNC+RIGHT |
 | copy / paste / clear an inactive pattern of the current bank (paste or clear again: undo) | hold PTN, FUNC and the pattern's TRIG; REC / STOP / PLAY | the same |
@@ -108,11 +112,25 @@ which is not what an MD or MnM Kit holds.
   stock.
 - In either list, FUNC+REC copies the Kit under the cursor, FUNC+STOP
   pastes onto it, FUNC+PLAY clears it; the same paste or clear again on
-  the same Kit undoes it.
-- The status line's Part field shows the current slot's Kit as `NNN
-  name` (Octakit's form; measured on the port's LCD: `009 ONE`). The
-  stock Part name is the Kit's first six characters (its field is seven
-  bytes).
+  the same Kit undoes it. A copy is a snapshot of the Part: for the
+  current pattern's Kit (or the current slot's) it is the live Part, edits
+  included; EMPTY KIT when there is nothing to copy, and the earlier copy
+  stays. A paste may land on the Kit it was copied from. A clear wipes
+  the whole record. A paste, clear or undo on the current pattern's Kit
+  applies at once: the Kit is loaded, or the Part cleared as the stock
+  Part Clear does.
+- With a KITS list open, a pattern change moves its cursor to that
+  pattern's Kit (LOAD KIT: below UNDO KIT; SAVE KIT: the first empty Kit
+  when the pattern has none).
+- The status line's Part field shows the current pattern's Kit as `NNN
+  name` (Octakit's form; measured on the port's LCD: `009 ONE`), `NNN ---`
+  when that Kit is cleared, and `NNN ---` with the slot's own number (bank
+  * 4 + Part + 1) when none is assigned, as in a NEW PROJECT (`001 ---`
+  read from the plane; stock draws `Pt:1 ONE`). The stock Part name is the
+  Kit's first six characters (its field is seven bytes).
+- PTN+FUNC+RIGHT saves into the pattern's own Kit, the slot's only when
+  it has none, and PTN's release then opens no SELECT PATTERN
+  (`0x460d173e`, the flag stock sets in the PATTERN+TRIG handler).
 
 ## How it works
 
@@ -123,13 +141,31 @@ which is not what an MD or MnM Kit holds.
   switch reads the Part byte then (PARTS.md section 3). A slot is free when
   no engine track names it while the transport runs, no queued or
   chained pattern's Part byte names it, and its working Part is byte for
-  byte the Kit KITS recorded there (outside MIDI SCENES' Part-window
-  bytes when it is in the remix: his code rewrites them in the current
-  Part from his own table after a project load, measured in ok-ms). A
-  slot whose content is in no Kit is
-  never copied over. With no free slot, or a request with an interrupt
-  level set (the arranger and repeat publish from the tick), the pattern
-  plays what is resident and the request is counted.
+  byte the Kit KITS recorded there (and, with MIDI SCENES, the slot's
+  lock table the Kit's). A slot with no Kit recorded is free when no
+  pattern of the bank names it, or when it holds the stock default Part
+  (`0x40005638`, what Part Clear writes; every slot of a NEW PROJECT)
+  with no scene lock: until 12 Oct 2026 a NEW PROJECT's patterns all
+  shared slot 1, and a playing switch to another Kit found no free slot
+  and played the Kit already there.
+- **The edit pool.** With no free slot, a slot nothing names whose Kit
+  is known (the pattern's own first, else the one used longest ago) has
+  its working Part, edits included, copied into a pool under that Kit
+  (64 entries in RAM; with MIDI SCENES the lock table too), and the Kit
+  is staged there. When the pooled Kit is staged again, the pool's Part
+  becomes the slot's working Part, unsaved; the library Kit changes only
+  on SAVE KIT (Octakit's spill, `runtime/manager.S`). The pool is cleared
+  at a project load and dropped for a Kit that is written, cleared or
+  loaded with LOAD KIT; it is not written to the card. Until 13 Oct 2026
+  a bank whose slots all held edits played the resident Part instead
+  (`verify_kits` editfull, editback).
+- **Unassigned patterns keep their Kit.** A pattern with no Kit plays
+  whatever its slot holds; before a Kit is copied over a slot, every such
+  pattern naming the slot is assigned the Kit the slot held (`verify_kits`
+  noasg).
+- With a full pool, or a request with an interrupt level set (the
+  arranger and repeat publish from the tick), the pattern plays what is
+  resident and the request is counted.
 - **LOAD KIT** writes the Kit into the current Part's saved copy and runs
   the stock Part Reload `0x4004aab4` (working copy, CS1 copy, engine
   apply, machine transitions). **SAVE KIT** runs the stock Part Save
@@ -143,7 +179,9 @@ which is not what an MD or MnM Kit holds.
   64 bytes of header (`KITS`, version 1, length, CRC-32 of the rest,
   an unused word), ASSIGN (256), the valid bits (32), RESID (64), then 256
   records of an 8-byte name, 8 reserved bytes and the 6,322-byte Part:
-  1,622,944 bytes. Record 256 is never a Kit: ASSIGN and RESID use 0xff
+  1,622,944 bytes (version 1). With MIDI SCENES in the remix, version 2: each
+  record carries the Part's 4,096-byte lock table after the Part (10,434 B a
+  record, 2,671,520 B). Record 256 is never a Kit: ASSIGN and RESID use 0xff
   for "no Kit". A Part found there at a load (Em's Kit 256, or a save
   into Kit 256 by a build before 255) moves to the next empty Kit; on
   Em's import the patterns her manifest gives Kit 256 move with it.
@@ -162,7 +200,7 @@ which is not what an MD or MnM Kit holds.
   card.
 - **Power-off.** RESID (with a magic and a sum) at `0x100f85a0` and ASSIGN
   at `0x100ffe00` in CS1 (stock references nothing there; PLOCKS P2 holds
-  `0x100f8600..0x100ffe00`). The power-up's bank load (the masked load
+  `0x100f8600..0x100fbdf0`). The power-up's bank load (the masked load
   returning to `0x40084d66` when no project has been loaded since boot)
   takes them from CS1.
 - The masked bank load `0x400905d4` is told apart by its return address
@@ -263,13 +301,36 @@ Not run on the unit: an unattended run with the BCR2000.
   tracks' steps and locks (`0x40039df4`), not the MIDI tracks.
 - `kits.work` is written whole (1.6 MB) when anything changed; Octakit's
   per-record writes are not carried.
-- MIDI SCENES' own Part reload hooks are on the stock call sites; LOAD
-  KIT calls the reload directly, so his post-reload restore does not run
-  for a Kit load (FUNC+CUE goes through his hooks as on stock). A staged
-  Kit carries the MIDI scene locks it was saved with in his Part-window
-  bytes; whether his table follows a staged slot is not measured.
+- MIDI SCENES (the rewrite) writes no Part byte: its lock tables are in
+  `scenes.work` and CS1 (`modules/midi-scenes/README.md`). With it in the
+  remix a Kit record carries the Part's 4,096-byte lock table (`kits.work`
+  version 2, 2,671,520 B; a version 1 file is read and its Kits get empty
+  tables). A version 2 file under an image without MIDI SCENES is refused
+  (`NOWRITE`, never overwritten), so flashing back loses no data; the Kits
+  are absent for the session.
 - Whether the CS1 range holds over a power-off on the unit is read from
   stock's use of CS1 (as PLOCKS P2), not measured.
+
+## Calls another module can take
+
+KITS has no callout today. A module that follows Kit changes (BRAIN's
+per-Kit knob names, for one) would take these routines in `kits.s` 📖
+(read 7 Oct 2026):
+
+| event | routine | covers |
+|---|---|---|
+| Kit to slot, every load | `load_into` (d0 Kit, d1 bank, d2 slot) | called from `stage_req` (lines 1290, 1340), `others_refresh` (1425) and `kits_load_current` (1745, LOAD KIT; d0 Kit, then the Part reload) |
+| slot to Kit, every save | `kits_saved` (hooked on Part Save's tail `0x4004a9c4`; d4 part, slot `bank*4 + part`, Kit `RESID[slot]`) | SAVE KIT, Part Save, SAVE ALL |
+| slot to Kit, explicit | `kits_save_current` (d0 Kit, a0 name; exported) | callers outside the Part Save path |
+| file written | `write_if_dirty` at the bank write `0x400917c8`; `kits_pstore` (`0x4008ee74`, SAVE PROJECT) | `kits.work` |
+| file read | `read_kits` (project load, power-up); `kits_preload` (`0x4008f180`, `.strd` to `.work`) | `kits.work` |
+
+Exports: `kits_load_current`, `kits_save_current`, `kits_stage`, `KIMG`,
+`KSTATE`. A hook for another module means a call at the end of `load_into`,
+`kits_saved` and `kits_save_current`. A Kit is a whole Part, so the MIDI
+setup record (`docs/firmware/MIDI_TRACKS.md`) travels with it. A Kit record
+(6338 bytes) has 4 reserved bytes; 480 bytes of knob names need a store keyed
+by Kit number.
 
 ## Gates
 

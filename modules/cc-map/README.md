@@ -80,7 +80,7 @@ the Part store is inert. The page-2 path posts nothing to the DSP. The
 per-frame copier `0x4000cae8` ships the live lane every frame.
 
 Selects are clamped to their count. A stored value past a select's count
-is used as an index and stalls the sequencer (AGENTS.md, "A part saved
+is used as an index and stalls the sequencer (docs/contributing/TRAPS.md, "A part saved
 under an older slot layout").
 
 After each write the cave calls `CC_MODEDEF2` (FX2) or `CC_MODEDEF1` (FX1)

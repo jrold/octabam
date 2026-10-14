@@ -10,7 +10,7 @@ AVAILABLE and `K` (reset to stock). Two defects this covers:
 - 27 Sep 2026 (86483481) the AVAILABLE pane read a variable the regroup
   had removed, and `make remix` raised NameError on its first draw;
 - `k` was bound both to cursor-up and to reset-to-stock, so moving up
-  threw the selection away (measured 30 Sep 2026: ok-ms -> stock).
+  threw the selection away (measured 30 Sep 2026: mods -> stock).
 [SKIP] without textual (`make emu-setup`).
 """
 import asyncio
@@ -46,13 +46,13 @@ async def run():
                     await pilot.pause()
             except Exception as e:                      # noqa: BLE001
                 fails.append(f"{name}: drawing raised {type(e).__name__}: {e}")
-        app.state.load("ok-ms")
+        app.state.load("mods")
         scr.pane, scr.cur = A.AVAILABLE, [3, 0, 0]
         await pilot.press("k")
         await pilot.pause()
-        if app.state.loaded_name != "ok-ms" or scr.cur[A.AVAILABLE] != 2:
+        if app.state.loaded_name != "mods" or scr.cur[A.AVAILABLE] != 2:
             fails.append(f"`k` in AVAILABLE: selection {app.state.loaded_name!r}, "
-                         f"cursor {scr.cur[A.AVAILABLE]} (want 'ok-ms', 2)")
+                         f"cursor {scr.cur[A.AVAILABLE]} (want 'mods', 2)")
         await pilot.press("K")
         await pilot.pause()
         if app.state.loaded_name != "stock":

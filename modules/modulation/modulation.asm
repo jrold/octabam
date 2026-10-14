@@ -1034,8 +1034,9 @@ mo_bcomb:
         move    x0,a                    ; a clean load: a0 = 0 for the divide
         move    x1,x0
         andi    #$fe,ccr                ; carry clear
-        rep     #$18
+        do      #$18,>norep_md_01
         div     x0,a                    ; 24 quotient bits land in a0
+norep_md_01:
         move    a0,x0
         move    x0,a
         move    #$63,n5

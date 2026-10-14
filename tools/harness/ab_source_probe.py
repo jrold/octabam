@@ -7,8 +7,11 @@ import pathlib
 import re
 import shlex
 import subprocess
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'tools/emu'))
+import port_store  # noqa: E402
 
 
 def build(out, core, pc, knobs):
@@ -36,7 +39,7 @@ def build(out, core, pc, knobs):
 '''.replace('CORE', str(core)).replace('PC', hex(pc)).replace('KNOBS', hex(knobs))
     src = out / 'dsp.cpp'
     src.write_text('#include <cstdlib>\n' + source.replace(marker, marker + probe))
-    builddir = ROOT / 'out/emu'
+    builddir = port_store.ensure_tree(ROOT)       # a store-installed out/emu has executables only
     flags = (builddir / 'CMakeFiles/ot_emu.dir/flags.make').read_text()
     args = []
     for name in ('CXX_DEFINES', 'CXX_INCLUDES', 'CXX_FLAGS'):

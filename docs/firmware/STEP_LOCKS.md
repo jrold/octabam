@@ -3,17 +3,17 @@
 OS 1.40C, ColdFire side. Where the sequencer's per-step parameter locks
 live, how they are recorded, played, copied and saved. Measured under the
 ColdFire port on the stock image with a real project (OCTABAM89_setgate,
-bank index 2) unless marked; ✅ measured, 📖 read from the code.
+bank index 2) unless marked; ✅ measured or read from the code.
 
 ## 1. Storage
 
 | what | address | |
 |---|---|---|
 | bank blob in RAM | `0x400e21e0 + bank·0x9b340`; the UI's bank pointer `0x46c82456` | ✅ |
-| pattern | blob + `p·0x8ed8` (16 patterns, then the Parts at `+0x8ed80`) | 📖 |
+| pattern | blob + `p·0x8ed8` (16 patterns, then the Parts at `+0x8ed80`) | ✅ |
 | audio track record | pattern + `t·0x91a` (the file's TRAC less its 8-byte tag and length) | ✅ |
 | step lock byte | track + `0x59 + step·32 + flat` | ✅ |
-| MIDI track record | pattern + `0x48d0 + t·0x8b0`, locks at pattern + `0x4900 + …` | 📖 |
+| MIDI track record | pattern + `0x48d0 + t·0x8b0`, locks at pattern + `0x4900 + …` | ✅ |
 | battery-backed copy of the current bank's patterns | `0x1001614e` + the same offsets (filled by `memcpy(0x1001614e, bank, 0x8ed80)` at `0x4000fb20` on load) | ✅ |
 
 `flat` is the page-1 slot index 0..29 (PLAYBACK, LFO, AMP, FX1, FX2 × 6);
@@ -42,10 +42,10 @@ on `0x80000012`.
 | stage | where | |
 |---|---|---|
 | step → per-track staging `0x46c7aa24 + t·32` (n = −1) or pending slot n | the record builder `0x4009d1e8(track, bank, pattern, step, n)`: plain path `0x4009d8c6` (fill `0xff` at `0x4009d8d0`, lock bytes at `0x4009d90a`), slide path `0x4009d704` (locks plus the slide deltas into `0x46c7(6ac0/7c32) + …`, which the frame ISR copies to `0x80001658`) | ✅ |
-| staging → pending `0x46c7ab30 + (n·8 + t)·32` | `0x4009b862`, `0x4009c042` copy loops (slot 0); `0x4009b220` resets slots 0..2 to `0xff` | 📖 |
-| pending → frame record `0x80001558 + t·32` | `0x4000bae8..0x4000bb02` (frame ISR) | 📖 |
-| apply | `0x4000c5ac..0x4000c612`: each byte ≠ `0xff` → live lane `0x80000810 + 72t + k` and DSP halfword `0x80000a50 + 64t + 2k` (`value << 8`); bit k set in `0x80001538[t]`; the byte consumed (`0xff`) unless flag bit 2 | 📖 |
-| restore at the next trig | `0x4000c4a8..0x4000c562`: every bit of `0x80001538[t]` → the Part's byte back into the live lane | 📖 |
+| staging → pending `0x46c7ab30 + (n·8 + t)·32` | `0x4009b862`, `0x4009c042` copy loops (slot 0); `0x4009b220` resets slots 0..2 to `0xff` | ✅ |
+| pending → frame record `0x80001558 + t·32` | `0x4000bae8..0x4000bb02` (frame ISR) | ✅ |
+| apply | `0x4000c5ac..0x4000c612`: each byte ≠ `0xff` → live lane `0x80000810 + 72t + k` and DSP halfword `0x80000a50 + 64t + 2k` (`value << 8`); bit k set in `0x80001538[t]`; the byte consumed (`0xff`) unless flag bit 2 | ✅ |
+| restore at the next trig | `0x4000c4a8..0x4000c562`: every bit of `0x80001538[t]` → the Part's byte back into the live lane | ✅ |
 
 The live lane's page-2 bytes start at `+0x20`; no stage carries them. All
 32 bits of `0x80001538[t]` are taken. Locks reach the live lane before the
@@ -63,7 +63,7 @@ frame builder's scene morph, which reads the live value as the knob.
 | clear pattern (FUNC+PLAY) | `0x4003a2e8` calls `0x40039df4` per track | ✅ |
 | copy pattern (FUNC+REC) | `0x40026dbc`: `memcpy(0x460c8122, pattern, 0x8ed8)` at `0x40026ed4` | ✅ |
 | paste pattern (FUNC+STOP) | `0x40026dbc` snapshots the target into `0x460bf218` (`0x40026f64`); `0x4002b9b0` writes clipboard → pattern and its battery-backed copy | ✅ |
-| undo restore | `0x4002b3b4` (from `0x460bf218`, gated on clipboard kind `0x460c80f0 == 5`) | 📖 |
+| undo restore | `0x4002b3b4` (from `0x460bf218`, gated on clipboard kind `0x460c80f0 == 5`) | ✅ |
 
 The clipboard `0x460c8122` and undo buffer `0x460bf218` are shared with
 the Part and scene operations; `0x460c80f0` holds the clipboard's kind.
@@ -84,16 +84,16 @@ Format strings in the image: `%s/bank%02d.work`, `%s/bank%02d.strd`,
 
 | routine | does | |
 |---|---|---|
-| `0x400917c8(?, mask, progress)` | write `bankNN.work` for each bank in the u16 mask: open, serialize `0x4008b278(fo, bank RAM)`, close (callers: background save `0x40084dc2` with the dirty mask less the current bank `0x80000002`, save-as `0x4008505c`, new project `0x400851e0`, card sync `0x400919e4` = SAVE PROJECT, ✅) | 📖 ✅ |
-| `0x4008eda4(?, mask, …)` | bank store: per bank in the mask, `0x40016388(dst .strd, src .work, 0)` (the stock file copy) | 📖 |
-| `0x4008f0b0` | bank reload: `.strd` → `.work` | 📖 |
-| `0x4008ee74` | project store: `project.work` → `.strd`, then every bank's `.work` → `.strd` through d5 = the copy (loaded at `0x4008ef9a`, `0x4008f02e`); SAVE PROJECT runs it after the bank write (✅) | 📖 ✅ |
-| `0x4008f180` | project reload: the reverse, d5 loaded at `0x4008f2a6`, `0x4008f33a` | 📖 |
-| `0x40090504` | load all 16 `bankNN.work` (the project load, caller `0x400852c8`) | 📖 |
-| `0x400905d4(?, mask, …)` | load the masked banks' `.work` (callers `0x40084d60`, `0x400853d8`, `0x40085452`) | 📖 |
-| `0x400909d8` | the empty project's RAM (callers `0x40085170`, `0x4008534c`, `0x4008548e`, `0x400854c2`, `0x4009159a`) | 📖 (Octakit's name) |
-| `0x4008ded0` | bank deserialize | 📖 (Octakit) |
-| `0x40016864` / `0x40016564` / `0x400166b8` / `0x4001660c` / `0x4001677c` | buffered open / read / write / seek / close; `0x40025230` the project directory | 📖 (Octakit) |
+| `0x400917c8(?, mask, progress)` | write `bankNN.work` for each bank in the u16 mask: open, serialize `0x4008b278(fo, bank RAM)`, close (callers: background save `0x40084dc2` with the dirty mask less the current bank `0x80000002`, save-as `0x4008505c`, new project `0x400851e0`, card sync `0x400919e4` = SAVE PROJECT, ✅) | ✅ ✅ |
+| `0x4008eda4(?, mask, …)` | bank store: per bank in the mask, `0x40016388(dst .strd, src .work, 0)` (the stock file copy) | ✅ |
+| `0x4008f0b0` | bank reload: `.strd` → `.work` | ✅ |
+| `0x4008ee74` | project store: `project.work` → `.strd`, then every bank's `.work` → `.strd` through d5 = the copy (loaded at `0x4008ef9a`, `0x4008f02e`); SAVE PROJECT runs it after the bank write (✅) | ✅ ✅ |
+| `0x4008f180` | project reload: the reverse, d5 loaded at `0x4008f2a6`, `0x4008f33a` | ✅ |
+| `0x40090504` | load all 16 `bankNN.work` (the project load, caller `0x400852c8`) | ✅ |
+| `0x400905d4(?, mask, …)` | load the masked banks' `.work` (callers `0x40084d60`, `0x400853d8`, `0x40085452`) | ✅ |
+| `0x400909d8` | the empty project's RAM (callers `0x40085170`, `0x4008534c`, `0x4008548e`, `0x400854c2`, `0x4009159a`) | ✅ (Octakit's name) |
+| `0x4008ded0` | bank deserialize | ✅ (Octakit) |
+| `0x40016864` / `0x40016564` / `0x400166b8` / `0x4001660c` / `0x4001677c` | buffered open / read / write / seek / close; `0x40025230` the project directory | ✅ (Octakit) |
 
 ## 6. The current bank over a power-off
 

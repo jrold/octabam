@@ -2,8 +2,8 @@
 """A real project on the built image under the ColdFire port: the routing
 facts a flash used to be the first test of.
 
-    python3 tools/verify/verify_set.py bottleservice --project ~/octa/backups/.../OCTABAM88 [--bank 2] [--frames 900]
-    OT_PROJECT=... [OT_BANK=2] make check REMIX=bottleservice   # the same, from make verify
+    python3 tools/verify/verify_set.py octabam-bus --project ~/octa/backups/.../OCTABAM88 [--bank 2] [--frames 900]
+    OT_PROJECT=... [OT_BANK=2] make check REMIX=octabam-bus   # the same, from make verify
 
 Stages the project (banks, project.work with [STATES] BANK= set to the
 tested bank, and every STATIC/FLEX sample the tested part's tracks name)
@@ -164,7 +164,7 @@ def main():
                     help="1-based (or OT_BANK); default: the project's saved bank")
     ap.add_argument("--frames", type=int, default=900,
                     help="after the transport start; the delay and the reverb each warm up 256 blocks, in series")
-    ap.add_argument("--load-ms", type=int, default=90000, help="ceiling for the load (the port ends it when the engine's queue is idle; bottleservice needs ~32 s)")
+    ap.add_argument("--load-ms", type=int, default=90000, help="ceiling for the load (the port ends it when the engine's queue is idle; octabam-bus needs ~32 s)")
     ap.add_argument("--set-name", default="OCTABAM")
     ap.add_argument("--name", default="RIG")
     ap.add_argument("--image-mb", type=int, default=64)

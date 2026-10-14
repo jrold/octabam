@@ -1,4 +1,4 @@
-| BusDelay MIDI-note publish -- ColdFire code cave
+| BusDelay MIDI-note publish -- a DRAM unit entered by a jsr at 0x40004d40
 |
 | Hooked from 0x40004d40 in the per-frame voice-record writer (0x40004bd2),
 | the routine that publishes the FX ids into the 32-halfword record the DSP
@@ -29,6 +29,7 @@
 |     note byte: 0x400d64c2[track], 0xff when released -> 0.
 
         .text
+        .global cave, replay
 cave:
         move.b  0xdbc(%a0),%d2          | displaced: FX2 id
         ext.w   %d2                     | displaced
@@ -47,3 +48,12 @@ cave:
 nkeep:  move.b  %d0,0x1b(%a2)           | halfword 13 low byte = note or 0
         move.l  (%sp)+,%d0
 skip:   rts
+
+| CAVE REPLAY (a diagnostic): the displaced instructions and nothing else,
+| so the hook can be told apart from the store. The three instructions hold
+| no pc-relative operand.
+replay:
+        move.b  0xdbc(%a0),%d2
+        ext.w   %d2
+        move.w  %d2,0x38(%a2)
+        rts

@@ -13,7 +13,7 @@ ROOT = HERE.parents[3]
 
 
 class ByGate(unittest.TestCase):
-    def jobs(self, remix="bottleservice"):
+    def jobs(self, remix="octabam-bus"):
         return check_shards.remix_jobs(remix, ROOT / "out/shards/0")
 
     def test_every_recipe_script_has_a_job(self):
@@ -42,18 +42,17 @@ class ByGate(unittest.TestCase):
     def test_module_gates_are_one_job_each(self):
         names = [j[0] for j in self.jobs()]
         self.assertIn("gate:verify_scenesp2", names)
-        self.assertIn("gate:verify_burn", names)
         self.assertEqual(len(names), len(set(names)))
 
     def test_every_job_carries_the_remix(self):
         for _n, _c, env, _s in self.jobs():
-            self.assertEqual(env["REMIX"], "bottleservice")
+            self.assertEqual(env["REMIX"], "octabam-bus")
 
     def test_without_a_venv_the_skip_jobs_still_stand_for_their_scripts(self):
         real = check_shards.ROOT
         try:
             check_shards.ROOT = pathlib.Path("/nonexistent-tree")   # no .venv there
-            jobs = [j for j in check_shards.remix_jobs("bottleservice", ROOT / "out/shards/0") if j[0] == "labels"]
+            jobs = [j for j in check_shards.remix_jobs("octabam-bus", ROOT / "out/shards/0") if j[0] == "labels"]
         finally:
             check_shards.ROOT = real
         self.assertEqual(jobs[0][1][0][0], "echo")
@@ -72,12 +71,12 @@ class Split(unittest.TestCase):
         self.assertEqual(check_shards.choose_split(["a", "b"], "b,zz", {}, 3), {"b"})
 
     def test_recorded_times_pick_the_long_pole(self):
-        times = {"bottleservice": 780.0, "usb": 140.0, "miniverb": 80.0, "euclid": 130.0}
-        self.assertEqual(check_shards.choose_split(list(times), "auto", times, 3), {"bottleservice"})
+        times = {"octabam-bus": 780.0, "usb": 140.0, "miniverb": 80.0, "euclid": 130.0}
+        self.assertEqual(check_shards.choose_split(list(times), "auto", times, 3), {"octabam-bus"})
         # nothing over 300 s: nothing split
         small = {k: 100.0 for k in times}
         self.assertEqual(check_shards.choose_split(list(small), "auto", small, 3), set())
 
     def test_without_a_record_nothing_is_split(self):
-        got = check_shards.choose_split(["bottleservice", "usb-midi", "octatrick"], "auto", {}, 3)
+        got = check_shards.choose_split(["octabam-bus", "usb-midi", "octatrick"], "auto", {}, 3)
         self.assertEqual(got, set())

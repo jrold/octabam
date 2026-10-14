@@ -1,5 +1,6 @@
 """The path classifier, against a fake registry and a fake dependency graph:
 no manifests, no firmware."""
+import os
 import pathlib
 import sys
 import unittest
@@ -71,7 +72,8 @@ REMIX = ["make check-remix REMIX=bamsep26", "make check-remix REMIX=miniverb"]
 COVER = [SHARED] + REMIX
 ACCEPT = 'make accept REMIXES="bamsep26 miniverb" STRESS_SOURCE=${STRESS_SOURCE}'
 IDENTITY = "python3 tools/verify/image_identity.py --base ${BASE}"
-BUILD = ["make test-acceptance", "scripts/refhash.sh check", IDENTITY, SHARED]
+BUS = "python3 tools/verify/verify_bus.py --base ${BASE}"
+BUILD = ["make test-acceptance", "scripts/refhash.sh check", BUS, IDENTITY, SHARED]
 
 
 def commands(paths, accept_runs_check=False, c=None):
@@ -84,21 +86,22 @@ def note(path, c=None):
 
 class ModuleAndRemixTests(unittest.TestCase):
     def test_module_reaches_every_remix_that_carries_it(self):
+        # the shared half scoped to the module's own shared gates
         self.assertEqual(commands(["modules/character/engine.asm"]),
-                         ['make check-shared REMIXES="bamsep26 usb"',
-                          "make check-remix REMIX=bamsep26", "make check-remix REMIX=usb",
+                         ['make check-shared REMIXES="bamsep26 usb" MODULES="CHARACTER"',
+                          'make check-remix REMIX=bamsep26 MODULES="CHARACTER"', 'make check-remix REMIX=usb MODULES="CHARACTER"',
                           'make accept REMIXES="bamsep26 usb" STRESS_SOURCE=${STRESS_SOURCE}'])
 
     def test_accept_runs_the_checks_of_the_remixes_it_accepts(self):
         self.assertEqual(commands(["modules/character/engine.asm"], accept_runs_check=True),
                          ['make accept REMIXES="bamsep26 usb" STRESS_SOURCE=${STRESS_SOURCE}'])
         cmds = commands(["modules/miniverb/a.asm", "tools/verify/verify_character.py"], accept_runs_check=True)
-        self.assertEqual(cmds, ['make check-shared REMIXES="bamsep26 usb"',
+        self.assertEqual(cmds, ['make check-shared REMIXES="bamsep26 usb" MODULES="CHARACTER"',
                                 "make accept REMIX=miniverb STRESS_SOURCE=${STRESS_SOURCE}"])
 
     def test_submodule_pin_is_the_module(self):
         self.assertEqual(commands(["modules/miniverb/upstream"]),
-                         ["make check REMIX=miniverb", "make accept REMIX=miniverb STRESS_SOURCE=${STRESS_SOURCE}"])
+                         ['make check-shared REMIXES="miniverb" MODULES="MINIVERB"', 'make check-remix REMIX=miniverb MODULES="MINIVERB"', "make accept REMIX=miniverb STRESS_SOURCE=${STRESS_SOURCE}"])
 
     def test_module_no_remix_carries_is_the_selftests_refusal(self):
         self.assertIn("no remix carries", note("modules/orphan/manifest.py"))
@@ -155,11 +158,17 @@ class DependencyTests(unittest.TestCase):
         self.assertIn("the cover (2 of 3 remixes)", note("tools/verify/verify_menu.py"))
 
     def test_a_manifest_gate_reaches_its_owners(self):
-        # remix_arg=False: the shared half for the owners' remixes
-        self.assertEqual(commands(["tools/verify/verify_character.py"]), ['make check-shared REMIXES="bamsep26 usb"'])
-        # remix_arg=True: the owners' full checks
+        # remix_arg=False: the owners' shared gates, for the owners' remixes
+        self.assertEqual(commands(["tools/verify/verify_character.py"]),
+                         ['make check-shared REMIXES="bamsep26 usb" MODULES="CHARACTER"'])
+        # remix_arg=True: the owners' per-remix halves
         self.assertEqual(commands(["tools/verify/verify_burn.py"]),
-                         ['make check-shared REMIXES="bamsep26 usb"', "make check-remix REMIX=bamsep26", "make check-remix REMIX=usb"])
+                         ['make check-remix REMIX=bamsep26 MODULES="SEND"', 'make check-remix REMIX=usb MODULES="SEND"'])
+        # once=True: run by the shared half, scoped to its owners
+        c = ctx()
+        c.gate_once = {"tools/verify/verify_burn.py": True}
+        self.assertEqual(commands(["tools/verify/verify_burn.py"], c=c),
+                         ['make check-shared REMIXES="bamsep26 usb" MODULES="SEND"'])
         self.assertIn("a gate of SEND", note("tools/verify/verify_burn.py"))
 
     def test_a_harness_file_reaches_what_runs_it(self):
@@ -170,7 +179,7 @@ class DependencyTests(unittest.TestCase):
         # rig_render also runs under verify_burn (SEND's gate, bamsep26 + usb): usb's check is not
         # among the cover's accepts, so it stays
         self.assertEqual(commands(["tools/harness/rig_render.py"], accept_runs_check=True),
-                         ["make test-acceptance", "make check REMIX=usb", ACCEPT])
+                         ["make test-acceptance", 'make check-remix REMIX=usb MODULES="SEND"', ACCEPT])
 
     def test_a_file_no_gate_depends_on_reaches_nothing(self):
         for p in ("tools/hw/bcr2000.py", "tools/harness/render_reverb.py", "tools/hw/new_tool.py"):
@@ -190,8 +199,14 @@ class DependencyTests(unittest.TestCase):
         self.assertEqual(commands(["tools/verify/reach.py"]), ["make test-acceptance"])
         self.assertEqual(commands(["tools/verify/tests/test_reach.py"]), ["make test-acceptance"])
 
+    def test_the_bus_gate_follows_the_bus(self):
+        # a module of remix bus, and the gate itself
+        self.assertIn(BUS, commands(["modules/send/send_client.asm"]))
+        self.assertIn(BUS, commands(["tools/verify/verify_bus.py"]))
+        self.assertNotIn(BUS, commands(["modules/character/engine.asm"]))
+
     def test_toolchain_and_port(self):
-        self.assertEqual(commands(["tools/patches/dsp56300.patch"]), ["make ci-dsp"] + COVER)
+        self.assertEqual(commands(["tools/patches/dsp56300.patch"]), ["make ci-dsp", BUS] + COVER)
         self.assertEqual(commands(["tools/emu/ot_emu/machine.h"]), ["make ci-emu", "make emu-cf"] + REMIX)
         self.assertEqual(commands(["scripts/refhash.sh"]), ["scripts/refhash.sh check"])
 
@@ -283,7 +298,7 @@ class PlanTests(unittest.TestCase):
         self.assertEqual([cmd for _, g, _ in rows for _, cmd in g], ["python3 tools/verify/verify_docs.py"])
         self.assertIn("display fields only", rows[0][2])
         c.read = lambda p: head.replace('key="X"', 'key="Y"')
-        self.assertIn("make check REMIX=bamsep26", [cmd for _, g, _ in reach.classify(["modules/character/manifest.py"], c) for _, cmd in g])
+        self.assertIn('make check-remix REMIX=bamsep26 MODULES="CHARACTER"', [cmd for _, g, _ in reach.classify(["modules/character/manifest.py"], c) for _, cmd in g])
 
     def test_remix_display_fields_alone_reach_the_docs_gate(self):
         base = 'REMIX = Remix(name="miniverb", doc="old", proof=Proof.PORT, proof_note="n", modules=("MINIVERB",))\n'
@@ -319,7 +334,8 @@ class PlanTests(unittest.TestCase):
             self.assertFalse(reach.port_is_stale(exe, d / "src"))
             os.utime(exe, (old - 100, old - 100))
             self.assertTrue(reach.port_is_stale(exe, d / "src"))
-            self.assertFalse(reach.port_is_stale(d / "missing", d / "src"))
+            # a missing binary is stale: without it the port gates SKIP
+            self.assertTrue(reach.port_is_stale(d / "missing", d / "src"))
 
     def test_sharded_gives_the_accept_line_jobs(self):
         items = [("accept", 'make accept REMIXES="bamsep26 miniverb" STRESS_SOURCE=${STRESS_SOURCE}', ["p"]),
@@ -333,8 +349,51 @@ class PlanTests(unittest.TestCase):
         items = reach.plan(reach.classify(["tools/verify/verify_menu.py"], ctx()))
         cmds = [c for _, c, _ in reach.sharded(items, 4)]
         self.assertEqual(cmds, ["python3 tools/verify/check_shards.py --jobs 4 bamsep26 miniverb"])
-        one = reach.plan(reach.classify(["remixes/miniverb/remix.py"], ctx()))
-        self.assertEqual(reach.sharded(one, 4), one)
+        # one remix: its shared half, then its per-remix half split by gate
+        one = reach.plan(reach.classify(["remixes/miniverb/remix.py"], ctx()), accept_runs_check=False)
+        self.assertEqual([c for _, c, _ in reach.sharded(one, 4)],
+                         ['make check-shared REMIXES="miniverb"', "python3 tools/verify/check_shards.py --jobs 4 miniverb",
+                          "make accept REMIX=miniverb STRESS_SOURCE=${STRESS_SOURCE}"])
+
+    def test_scoped_shared_lines_merge_and_an_unscoped_one_wins(self):
+        self.assertEqual(reach.shared_modules('make check-shared REMIXES="a" MODULES="KITS,CC MAP"'), ["KITS", "CC MAP"])
+        self.assertIsNone(reach.shared_modules('make check-shared REMIXES="a"'))
+        cmds = commands(["modules/character/a.asm", "modules/send/b.asm"])
+        self.assertIn('make check-shared REMIXES="bamsep26 usb" MODULES="CHARACTER,SEND"', cmds)
+        cmds = commands(["modules/character/a.asm", "tools/verify/verify_knob_clicks.py"])
+        self.assertEqual([c for c in cmds if c.startswith("make check-shared")], [SHARED_ALL])
+
+    def test_an_unscoped_shared_line_stands_for_its_own_remixes_modules(self):
+        # a tool change's floor (miniverb) beside a SEND change on bamsep26:
+        # CHARACTER, which only bamsep26 carries and nothing reached, stays out
+        rows = [("tools/x.py", [reach.cmd_check_shared(["miniverb"])], ""),
+                ("modules/send/b.asm", [reach.cmd_check_shared(["bamsep26"], ["SEND"])], "")]
+        cmds = [c for _, c, _ in reach.plan(rows, keys_of=ctx().keys_of)]
+        self.assertEqual(cmds, ['make check-shared REMIXES="bamsep26 miniverb" MODULES="MINIVERB,SEND"'])
+        # without the remixes' modules the unscoped line wins, as before
+        cmds = [c for _, c, _ in reach.plan(rows)]
+        self.assertEqual(cmds, ['make check-shared REMIXES="bamsep26 miniverb"'])
+
+    def test_per_remix_lines_carry_their_modules_into_the_shards(self):
+        rows = [("modules/send/a.asm", [reach.cmd_check_remix("bamsep26", ["SEND"])], ""),
+                ("modules/character/b.asm", [reach.cmd_check_remix("bamsep26", ["CHARACTER"])], "")]
+        self.assertEqual([c for _, c, _ in reach.plan(rows)],
+                         ['make check-remix REMIX=bamsep26 MODULES="CHARACTER,SEND"'])
+        rows.append(("tools/x.py", [reach.cmd_check_remix("bamsep26")], ""))
+        self.assertEqual([c for _, c, _ in reach.plan(rows)], ["make check-remix REMIX=bamsep26"])
+        items = reach.sharded([("check-remix", 'make check-remix REMIX=bamsep26 MODULES="CHARACTER,SEND"', ["p"]),
+                               ("check-remix", 'make check-remix REMIX=usb MODULES="SEND"', ["p"])], 3)
+        self.assertEqual(items[0][1], 'python3 tools/verify/check_shards.py --jobs 3 --modules "CHARACTER,SEND" bamsep26 usb')
+        self.assertEqual(reach.shards_line(items[0][1]), (["bamsep26", "usb"], ["CHARACTER", "SEND"]))
+        self.assertEqual([c for _, c, _ in reach.unsharded(items)],
+                         ['make check-remix REMIX=bamsep26 MODULES="CHARACTER,SEND"',
+                          'make check-remix REMIX=usb MODULES="CHARACTER,SEND"'])
+
+    def test_a_variant_only_gate_is_a_gate_of_its_module(self):
+        from remix import registry
+        scripts = {g.script for g in reach.variant_gates(registry.modules()["USB AUDIO OUT"])}
+        self.assertIn("tools/verify/verify_usb_post.py", scripts)
+        self.assertIn("tools/verify/verify_usb_align.py", scripts)
 
     def test_remixes_reached(self):
         rows = reach.classify(["modules/character/a.asm", "remixes/miniverb/remix.py"], ctx())
@@ -449,3 +508,32 @@ class TestRemixTests(unittest.TestCase):
         c = self.ctx_without_tests()
         self.assertIn("--remixes bamsep26 usb", c.identity()[1])
         self.assertNotIn("--remixes", ctx().identity()[1])
+
+
+class VendorWriterTests(unittest.TestCase):
+    """`reach --run` in a worktree must not run a step that writes the shared vendor/."""
+
+    def test_a_shared_vendor_runs_the_tree_build_for_ci_emu_and_leaves_ci_dsp_and_ci_to_ci(self):
+        cmd, note = reach.vendor_safe("ci-emu", "make ci-emu", True)
+        self.assertEqual(cmd, "make ci-emu-tree")
+        self.assertIn("scripts/vendor.sh", note)
+        for kind in ("ci-dsp", "ci"):
+            cmd, note = reach.vendor_safe(kind, f"make {kind}", True)
+            self.assertIsNone(cmd)
+            self.assertIn("left to CI", note)
+
+    def test_an_own_vendor_or_another_step_is_unchanged(self):
+        self.assertEqual(reach.vendor_safe("ci-dsp", "make ci-dsp", False), ("make ci-dsp", None))
+        self.assertEqual(reach.vendor_safe("check-shared", 'make check-shared REMIXES="a"', True),
+                         ('make check-shared REMIXES="a"', None))
+
+    def test_a_symlinked_vendor_is_shared(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            (d / "real").mkdir()
+            os.symlink(d / "real", d / "vendor")
+            self.assertTrue(reach.shared_vendor(d))
+            (d / "own").mkdir()
+            (d / "own" / "vendor").mkdir()
+            self.assertFalse(reach.shared_vendor(d / "own"))

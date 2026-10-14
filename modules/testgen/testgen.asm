@@ -193,8 +193,9 @@ tg_keep:
         move    x0,a0
         move    #$2,a1                  ; a short immediate to a1 is an integer; a2 stays 0
         andi    #$fe,ccr               ; C = 0, the first quotient bit's carry in
-        rep     #24
+        do      #24,>norep_tg_01
         div     x0,a
+norep_tg_01:
         move    a0,b                    ; P
         sub     #1,b
         move    x:(r7+$02),a            ; mode
@@ -460,8 +461,9 @@ tg_gen:
 tg_rst:
         move    r7,r5
         clr     a
-        rep     #$30
+        do      #$30,>norep_tg_02
         move    a,x:(r5)+
+norep_tg_02:
         move    #>$001db9,x0            ; 7609: the sweep starts at 20.0007 Hz
         move    x0,x:(r7+$03)
         move    #>$2a5f31,x0            ; L's seed, x = $2a5f31 2^23

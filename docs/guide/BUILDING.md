@@ -11,9 +11,9 @@ built on your own computer from your own copy of Octatrack OS 1.40C.
 > **Do not share a built image.** A built `.bin` or `.syx` contains
 > Elektron's OS.
 
-Pick a remix from [the remix index](../../remixes/README.md). The commands below use `ok-ms`
-(KITS + MIDI SCENES on the stock effects; with Octakit in KITS's place it
-was the smallest remix that has run on a unit); substitute any remix name.
+Pick a remix from [the remix index](../../remixes/README.md). The commands below use `octabam-bus`
+(the core ColdFire modules plus the delay and reverb bus); substitute any
+remix name.
 
 ## 0. What you need
 
@@ -47,8 +47,7 @@ make emu-setup
 ```
 
 `--recurse-submodules` fetches the module authors' repositories
-(`modules/midi-scenes/upstream` and
-`timhastie/octatrick-modules` under `modules/synth`, `modules/quantizer`,
+(`timhastie/octatrick-modules` under `modules/synth`, `modules/quantizer`,
 `modules/direct-jump` and `modules/tuner`) at the pinned commits. If you cloned without
 it: `git submodule update --init`.
 
@@ -134,12 +133,9 @@ for f in /opt/m68k-elf/bin/m68k-elf-*; do sudo ln -sf "$f" /usr/local/bin/; done
 
 - `pkgconf` is needed: without `pkg-config`, binutils' configure stops on
   `--with-zstd was given, but pkgconfig/libzstd.pc is not found`.
-- ✅ Octakit's runtime rebuilt to its author's bytes: "rebuilt runtime,
-  packed runtime and append all match the recipe" (`make bus REMIX=ok-ms`,
-  28 Sep 2026; KITS replaced Octakit on 6 Oct).
 - ✅ USB MIDI's linked unit matches its author's build at `0x400d24f0`,
-  1,124 bytes (`make bus REMIX=octatrick-usb`, 28 Sep 2026; octatrick-usb
-  became `octatrick` on 29 Sep).
+  1,124 bytes (`make bus REMIX=octatrick-usb`, 28 Sep 2026; the remix
+  became `octatrick` on 29 Sep and sits in remixes/test/).
 - ✅ This repository's pinned ColdFire bytes still match
   (`tools/build/label_fmt.py`), and `scripts/disasm.sh emac 0x40003664 8`
   still prints `msacl`.
@@ -208,7 +204,7 @@ build reads. Both directories are gitignored.
 ## 3. Build the image
 
 ```bash
-make image REMIX=ok-ms BUILD=1
+make image REMIX=octabam-bus BUILD=1
 ```
 
 Output:
@@ -236,7 +232,7 @@ cannot prove.
 
 ```bash
 make emu-cf                 # builds the local ColdFire emulator (cmake) and boots stock in it once
-make check REMIX=ok-ms      # build + every gate + boot under the emulator
+make check REMIX=octabam-bus      # build + every gate + boot under the emulator
 ```
 
 `make check` is two halves: `make check-shared` (the gates that do not
@@ -289,7 +285,9 @@ decodes the official file, validates its checksum and round-trips ours.
 4. Send `out/OCTATRACK_OS1.40C_OCTABAM1.syx`: from a SysEx app, or
    `make midi-flash PORT=<port> SYX=<file.syx>` (`tools/hw/midi_flash.py`),
    which paces the ~7,460 messages at the DIN rate. Filter MIDI clock on
-   that port. If the unit loses sync, re-enter the Startup Menu and send
+   that port, and merge nothing else into it: through a Midihub, a blank
+   preset with one pipe (the computer's port to the Octatrack's MIDI IN)
+   flashed where a performance preset ended in CHECKSUM ERROR (7 Oct 2026). If the unit loses sync, re-enter the Startup Menu and send
    again slower (`--ms 60`, or 100–300 ms between messages in a SysEx app).
 5. Wait through PREPARING FLASH → UPDATING FLASH. Do not power off or
    disconnect during either.
@@ -312,7 +310,7 @@ decodes the official file, validates its checksum and round-trips ours.
    the sequencer stalls on the first play. Re-selecting the effect on one
    track is not enough: the sequencer runs every track of the part. A
    project made on the unit after the flash needs no stamp.
-3. **The bus engines** (bottleservice): the delay runs on tracks 1–4, the
+3. **The bus engines** (octabam-bus): the delay runs on tracks 1–4, the
    reverb on tracks 5–8; a host on the wrong half falls back to a SEND
    (`stamp-defaults` warns per part). SEND's `DEL` and `REV` knobs are the
    two sends; each engine's wet comes out on the track that hosts it.

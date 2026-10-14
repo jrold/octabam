@@ -6,9 +6,12 @@
 # of the stock OS (out/raw/section_3_MAIN_OS.bin), so the baseline is untracked
 # and only means anything on the machine that saved it.
 #
-#   scripts/refhash.sh save     # on the tree you trust, BEFORE touching anything
-#   ...refactor...
 #   scripts/refhash.sh check    # every artifact and every build report must match
+#                               # the baseline of this branch's merge-base with
+#                               # origin/main (tools/verify/refhash_store.py: saved
+#                               # once per merge-base, shared by every worktree)
+#   scripts/refhash.sh save     # a LOCAL baseline of this tree, for
+#                               # REFHASH_LOCAL=1 scripts/refhash.sh check
 #
 # Why this matrix: a refactor of build_bus.py breaks things that still build,
 # still boot and still make sound. The cases pin the failure modes that have no
@@ -70,57 +73,25 @@ CASES=(
   "delayprobe-silence|XBUS=1 DELAYPROBE=silence"
   "delayprobe-send|XBUS=1 DELAYPROBE=send"
   "delayprobe-stock|XBUS=1 DELAYPROBE=stock"
-  "notempo|XBUS=1 SPEC=1 NOTEMPO=1"
-  "tempocave-replay|XBUS=1 SPEC=1 TEMPOCAVE=replay"
+  # TEMPO SYNC's CAVE setting (NOTEMPO=1 / TEMPOCAVE=replay until 11 Oct 2026)
+  "notempo|XBUS=1 SPEC=1 REMIX=test/bus-notempo"
+  "tempocave-replay|XBUS=1 SPEC=1 REMIX=test/bus-tempo-replay"
   "dnote|DEV=1 XBUS=1 DNOTE=84"
   "xbusbase|XBUS=1 SPEC=1 XBUS_BASE=35000"
 )
 
-# Everything build_bus.py can write. Cleared before each case so a stale
-# artifact from the previous case is never mistaken for this one's output.
-artifacts() {
-  ls out/mainos_bus.bin \
-     out/mainos_bus_dev.bin \
-     out/mainos_bus_mode*.bin \
-     out/mainos_bus_delayprobe_*.bin \
-     out/dsp/mem_dev_A.mem 2>/dev/null | sort
-}
-
-sha() { shasum -a 256 "$1" | cut -d' ' -f1; }
-
-# Three cases pin a FAILURE, and a Python traceback carries the source line
-# number, which every refactor moves. Normalising those out keeps what the
-# traceback actually asserts -- which exception, raised evaluating what -- and
-# drops the one field that is guaranteed to churn. Nothing else is touched:
-# the build report proper is compared verbatim, because tools parse it.
-normalise() {
-  sed -E -i.bak -e 's|File "[^"]*", line [0-9]+|File "<src>", line <n>|g' "$1" && rm -f "$1.bak"
-}
+# The artifacts a case leaves, their hashes and the normalised report (a
+# traceback's source line numbers move with every refactor, so they are
+# dropped; nothing else is touched, the report proper is compared verbatim
+# because tools parse it) are tools/verify/refhash_run.py's.
 
 run_matrix() {
-  local outdir="$1"
+  # tools/verify/refhash_run.py: the cases over REFHASH_JOBS trees (this one
+  # and scratch worktrees of it); the manifest is the same one the cases run
+  # one after another produced.
+  local outdir="$1" jobs="${2:-1}"
   rm -rf "$outdir"; mkdir -p "$outdir"
-  local manifest="$outdir/manifest.txt"
-  : > "$manifest"
-
-  for spec in "${CASES[@]}"; do
-    local name="${spec%%|*}" envs="${spec#*|}"
-    rm -f out/mainos_bus.bin out/mainos_bus_dev.bin out/mainos_bus_mode*.bin \
-          out/mainos_bus_delayprobe_*.bin out/dsp/mem_dev_A.mem
-    local log="$outdir/$name.log" rc=0
-    # shellcheck disable=SC2086 -- word splitting of $envs is the point
-    env REMIX=bus $envs python3 tools/build/build_bus.py > "$log" 2>&1 || rc=$?
-    normalise "$log"
-    {
-      echo "case $name rc=$rc"
-      while IFS= read -r f; do
-        [ -n "$f" ] || continue
-        echo "  $(sha "$f")  $f"
-      done < <(artifacts)
-      echo "  $(sha "$log")  <report>"
-    } >> "$manifest"
-    printf '  %-16s rc=%d\n' "$name" "$rc"
-  done
+  printf '%s\n' "${CASES[@]}" | python3 tools/verify/refhash_run.py "$outdir" --jobs "$jobs"
 }
 
 restore() {
@@ -131,16 +102,24 @@ restore() {
 case "${1:-}" in
   save)
     echo "refhash: saving baseline (${#CASES[@]} builds)"
-    run_matrix out/refhash/baseline
+    run_matrix out/refhash/baseline "${REFHASH_JOBS:-1}"
+    echo local > out/refhash/baseline/KEY
     restore
     echo
     echo "  baseline -> out/refhash/baseline/manifest.txt"
     ;;
   check)
+    # The baseline is the 24 builds of this branch's merge-base with
+    # REFHASH_BASE (origin/main), saved once for every worktree
+    # (tools/verify/refhash_store.py). REFHASH_LOCAL=1 compares against the
+    # baseline `save` left in this tree instead.
+    if [ "${REFHASH_LOCAL:-}" != "1" ]; then
+      python3 tools/verify/refhash_store.py fetch || exit 2
+    fi
     [ -f out/refhash/baseline/manifest.txt ] || {
       echo "refhash: no baseline -- run 'scripts/refhash.sh save' on a tree you trust"; exit 2; }
     echo "refhash: checking against baseline (${#CASES[@]} builds)"
-    run_matrix out/refhash/current
+    run_matrix out/refhash/current "${REFHASH_JOBS:-4}"
     restore
     echo
     if diff -u out/refhash/baseline/manifest.txt out/refhash/current/manifest.txt > out/refhash/manifest.diff; then

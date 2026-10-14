@@ -80,15 +80,16 @@ without them, `verify_docs` a stale copy). `proof` is one of `CHECK`,
 the gate. A remix declares `family` (`rig`, `effects`, `mods`,
 `reference`, `probes`) and the same `proof` pair.
 
-Settings a module keeps on the card (a checkbox, a profile) go in the
-shared OTX store once it exists, not in a file of the module's own;
-`docs/contributing/MODULES.md` "Settings on the card".
+Settings a module keeps on the card (a checkbox, a profile) go in BRAIN
+(`modules/brain`; `docs/proposals/BRAIN.md` is the design), and in no
+file of the module's own; `docs/contributing/MODULES.md` "Settings on the
+card".
 
 Two skeletons and two worked examples:
 
 | you are writing | copy | then read |
 |---|---|---|
-| a ColdFire modification (parts, kits, menus, MIDI, fixes) | `modules/_template_cf/` | `modules/repitch/` (one linked DRAM unit, detours and pokes), then `modules/midi-scenes/` (built from its author's repo as a submodule) |
+| a ColdFire modification (parts, kits, menus, MIDI, fixes) | `modules/_template_cf/` | `modules/direct-jump-kyoti/` (one linked DRAM unit and detours), then `modules/midi-scenes/` (built from its author's repo as a submodule) |
 | a DSP effect | `modules/_template/` | `modules/character/` (an in-place insert, its own render gate `verify_character`) |
 
 `docs/contributing/MODULES.md` is the full guide; `docs/contributing/PLACEMENT.md` says
@@ -118,8 +119,8 @@ The form depends on the module:
 | a floating source-linked cave | `reference(addr)` — the ratified bytes *at that address*, checked every build |
 | `Linked` units | `reference=(addr, sha256)`: the unit re-linked at the author's own address, compared every build |
 
-`tools/verify/verify_midiscenes.py` is the standing proof; write the
-equivalent for yours. When you port someone
+The reference comparison above is the standing proof; write the
+equivalent gate for yours. When you port someone
 else's mod, run their build against the shared stock image first and use
 its output as the oracle.
 
@@ -182,9 +183,9 @@ declares its dearest settings (`schema.Module.dear`); a module without them
 blocks the remix, by name, never a render at defaults.
 
 **If you changed the build rather than a module, prove it changed
-nothing**: `scripts/refhash.sh save` on a tree you trust, then
-`scripts/refhash.sh check` (24 configurations, artifacts *and* build
-reports, bit-identical), and `make identity` (every remix, base against
+nothing**: `scripts/refhash.sh check` (24 configurations, artifacts *and*
+build reports, bit-identical, against the baseline of your branch's
+merge-base with origin/main, saved once for every worktree), and `make identity` (every remix, base against
 head).
 
 **Say what was measured and what was inferred**, in the README, with what
@@ -214,6 +215,13 @@ STRESS_SOURCE=<a local project> make reach FULL=1 RUN=1 KEEP=1 JOBS=3
 #   JOBS=3: the per-remix lines over three worktrees at a time
 ```
 
+`CACHE=0`: run every gate job; by default a job whose image and inputs
+passed before on this machine is reported `cached` and not run, so the
+run before merging, after a rebase over unrelated work, is mostly cache
+hits ([TESTING.md section 6](docs/contributing/TESTING.md#6-make-reach-which-gates-a-change-reaches)).
+Jobs wait for one of the machine's gate slots (`OCTABAM_SLOTS`, default 3)
+when other sessions are running gates.
+
 Without `STRESS_SOURCE` the accept line cannot run, so the list carries
 the `make check` lines separately and names the accept line as blocked.
 A remix with a DSP module that declares no `dear` makes `make accept`
@@ -232,7 +240,7 @@ is a PR that changes the SHA and the version comment beside it.
 
 ## Etiquette
 
-- Read the traps in `AGENTS.md` before trusting an assembler, an
+- Read the traps in `docs/contributing/TRAPS.md` before trusting an assembler, an
   emulator, or a null result.
 - Collisions are refused by name; `make modules` prints the matrix. If
   your module cannot share an image with another although no claim

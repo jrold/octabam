@@ -184,8 +184,9 @@ ch_glz:
         move    a,x0                    ; gq = the denominator, >= 1/64
         move    #>$010000,a             ; 1/128 (a clean load: a0 = 0)
         andi    #$fe,ccr
-        rep     #$18
+        do      #$18,>norep_tx_01
         div     x0,a
+norep_tx_01:
         move    a0,x0
         move    x0,x:(r7+$18)           ; fold trim/2
 ; DRV 0 skips the saturation stage (a per-block flag, $4d; a forward skip
@@ -233,8 +234,9 @@ ch_cset:
         move    a,x0
         move    #$20,a                  ; num = 0.25 (a1), a2 = a0 = 0 (short: bits 23-16)
         andi    #$fe,ccr
-        rep     #$18
+        do      #$18,>norep_tx_02
         div     x0,a
+norep_tx_02:
         move    a0,x0
         move    x0,x:(r7+$27)           ; m/4 = 0.25/den: makeup/4
 ; SAT (slot 6, r6+$c's knob field) -> the mode flag $29 and per-mode words,
@@ -365,8 +367,9 @@ ch_kset:
         move    #$08,y1                 ; 1/16
         move    y1,a                    ; a clean load: a0 = 0 for the divide
         andi    #$fe,ccr                ; carry clear
-        rep     #$18
+        do      #$18,>norep_tx_03
         div     x0,a                    ; 24 quotient bits land in a0
+norep_tx_03:
         move    a0,x0
         move    x0,x:(r7+$39)           ; comp/2
 ; the P table: TUBE_UP (DaTube's curve: 17 values, then their 17 slopes)
@@ -405,8 +408,9 @@ ch_kset:
         move    a,x0                    ; d8 = the denominator
         move    #>$0ba2e9,a             ; 1/11 (a clean load: a0 = 0)
         andi    #$fe,ccr                ; carry clear
-        rep     #$18
+        do      #$18,>norep_tx_04
         div     x0,a                    ; 24 quotient bits land in a0
+norep_tx_04:
         move    a0,x0                   ; (1/11)/d8, flat unity
         move    x0,a
         add     #>$02fb7f,a             ; 0.0233
@@ -467,8 +471,9 @@ ch_txm:
         move    x0,x:(r7+$0c)
         move    #>$1fffff,a             ; (2^21 - 1)/2^23: a clean load, a0 = 0
         andi    #$fe,ccr
-        rep     #$18
+        do      #$18,>norep_tx_05
         div     x0,a
+norep_tx_05:
         move    a0,x0                   ; inv = 2^44 / RS, under 2^23
         move    x0,x:(r7+$08)
         move    x0,x:(r7+$0e)
@@ -593,8 +598,9 @@ ch_live:
         move    #$08,y1                 ; 1/16
         move    y1,a                    ; a clean load: a0 = 0 for the divide
         andi    #$fe,ccr
-        rep     #$18
+        do      #$18,>norep_tx_06
         div     x0,a                    ; (1/16)/(G/8) = 1/(2G) in a0
+norep_tx_06:
         move    a0,x0
         move    x0,a
         asl     #$1,a,a                 ; 1/G, 1.0 at DRV 0 (the store limits)

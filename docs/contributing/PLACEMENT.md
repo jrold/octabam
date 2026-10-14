@@ -8,13 +8,47 @@ it is, not an address; the build decides which bytes land where.
 | class | declared as | where it lands | budget |
 |---|---|---|---|
 | **ROM cave** | `CavePatch` (pinned hex, or a `.s` source that is the truth) | one of the OS image's free zero runs; floats after what precedes it unless pinned | ~8.4 KB total, shared by everyone |
-| **DRAM unit** | `Linked(..., dram=True)` | linked with every other DRAM unit in the remix as one image, packed, appended after the OS behind octabam's loader, depacked at boot into the platform's arena reserve | 10 MiB, off the unit's sample/recorder pool |
+| **DRAM unit** | `Linked(..., dram=True)` | linked with every other DRAM unit in the remix as one image, packed, appended after the OS behind octabam's loader, depacked at boot into the platform's arena reserve | the pages the remix claims (MEMORY), off the unit's sample/recorder pool |
 
 Until 6 Oct 2026 there was a third, the appended runtime (`Runtime` + 
 `ArenaReserve`): Em's Octakit, built from her recipe and carried as a
 payload of the same loader in its own 528 pages of the arena. KITS
 (`modules/kits`) replaced it; the class went with it (`git show
 2063370f:tools/remix/schema.py`).
+
+A DSP-side class exists for one kind of code (sanderlegit, PR #542):
+
+| class | declared as | where it lands | budget |
+|---|---|---|---|
+| **Pinned DSP section** | `DspSection(pins=(...), pin_split_label=...)` | fixed P addresses instead of the harvested effect region: the interrupt vectors stock leaves as `jmp *`. One address per piece, cut at one label with a one-word bridge jump, so a section can span two runs and cost the region nothing | ✅ read from the image: payload A 50 dead words (`$02..$0F`, `$1A..$1B`, `$1E..$3F`), payload B 58 (`$02..$0F`, `$14..$3F`) |
+
+Stock's unused vectors are self-jumps: an interrupt that fired there would
+spin the core in it for good, so stock never enables them.
+`tools/verify/verify_dspvectors.py` checks that on every build (the runs
+are all self-jumps; no DMA whose vector is in one has DIE set; no ESAI
+control word has an interrupt enable; the set of peripherals either
+payload configures is the audited one), and that gate is the licence for
+the class. The build refuses to pin over anything that is not still the
+stock pattern and asserts that both pieces assemble to the same length at
+either origin. The ledger claims the pin by name.
+
+REMIX SWITCH's DSP park is the one user: 31 words at `P:$20..$3E` (entered by
+`jsr` at `P:$1E`, host command `$0F`), a one-word bridge, and 8 words at
+`P:$06..$0D`. `$02` (stack error) and `$04` (illegal instruction) stay
+stock's freeze-traps. ✅ On an MKII, 29 Sep 2026: an image with stock's
+fourteen effects and the park wholly in dead vectors booted from a switch,
+played, and switched away again, so the chip runs code in the
+exception-vector slots and takes the bridge jump between two runs.
+
+The top of P is free and unreachable. ✅ Measured 29 Sep 2026: the core's
+default map gives 8K words of P (`0x2000`); payload A's code ends at
+`0x01fdf` (33 words spare), payload B's at `0x01d9f` (609). Code is placed
+by rewriting words inside the payload's existing load records and no
+record covers that space; a new record grows payload A's blob, and payload
+B's begins on the byte A's ends, so it would shift B, the
+`FUN_40001b18(0x400f59ef)` call site and the boot copy. Stock's low P is
+full: A loads all 8,159 words in 66 records, B all 7,583 in 46, with no
+holes.
 
 The OS-image edits every class needs (a detour at a stock instruction, a
 poke, a grown table) are `Detour`, `Poke`, `TableGrow`, wired by symbol;
@@ -52,7 +86,7 @@ at exit, the write watch folding the uncached alias.
 |---|---|---|
 | `0x40000000..0x47ffffff` | the cached SDRAM, 128 MB | boot code (ACR0 mask) + hardware |
 | `0x48000000..0x4fffffff` | the same memory uncached: `SDCS0 = 0x4000001b` is a 256 MB decode over a 128 MB part (NXP's own example uses `0x1a` for 128 MB); `CACR = 0xa50ce100` has `DDCM_P` (default data mode cache-inhibited) and `ACR0 = 0x4007e020` covers only the lower 128 MB copyback; no MMU | boot code; hardware (Octakit writes through `0x4dd0dde0` and executes at `0x45d0dde0`; mxldyn's canary at `0x47800000` was clobbered by the rings the OS addresses at `0x4f8…`) |
-| `0x40a955e0..0x46025de0` | the audio page arena: 14,602 × 6,144 B = 89,720,832 B = 85.56 MiB, Elektron's "85.5 MB" (cold init `0x40096f7a`: count `0x390a`, free-list fill to 14,603, `memset(0x40a955e0, 0x05590800)` at `0x40097006`; the Flex cap is the `0x04000000` literal at `0x40004028`). Octakit took the top 528 pages (until 6 Oct 2026), octamax 2.0 the bottom 64 (base moved to `0x40af55e0`), the platform reserve the bottom 1,707 | measured; both authors' placements hardware-proven |
+| `0x40a955e0..0x46025de0` | the audio page arena: 14,602 × 6,144 B = 89,720,832 B = 85.56 MiB, Elektron's "85.5 MB" (cold init `0x40096f7a`: count `0x390a`, free-list fill to 14,603, `memset(0x40a955e0, 0x05590800)` at `0x40097006`; the Flex cap is the `0x04000000` literal at `0x40004028`). Octakit took the top 528 pages (until 6 Oct 2026), octamax 2.0 the bottom 64 (base moved to `0x40af55e0`), the platform reserve the bottom pages its remix claims (1,707 in every DRAM remix until 11 Oct 2026; MEMORY) | measured; both authors' placements hardware-proven |
 | `0x45d0dde0..0x46025de0` | Octakit's window until 6 Oct 2026 ("reserved recorder pages"). Stock's engine zero-fills exactly this extent at project load, twice; her post-clear relocation re-depacks from a stage the OS never touches | measured |
 | `0x46025de0..0x4763d580` | zero-filled at boot by the loop after the boot detour (`0x40000518`); the base of stock's object pool (`pool_init(0x46025de0)` at `0x4002000e`): globals and heap. Not free; its first long is also zeroed by every clear that ends at the arena's top (the stock `memset` writes one long past a length that is a multiple of 16; `docs/firmware/STEM_REC.md` section 19.1) | static |
 | `0x47500a10` | an 8,704 B sector bounce buffer just below the rings (`0x4f500a10 − (offset & 511)` at `0x40091f94`) | static |
@@ -96,10 +130,13 @@ the Flex list reads FREE MEM 71.4 MB; the page count `0x390a` appears at
 `0x400d6b00`; as a module they claim `LAB_MENU`, 402 B at
 `0x400d64e0..0x400d6671`.
 
-octabam's runtime and stage live in 1,707 pages (10,487,808 B) taken off
-the bottom of the audio page arena, `0x40a955e0..0x41495de0`
-(`tools/remix/arena.py`, `PLATFORM_PAGES`), the way octamax 2.0 takes its
-64. The base literal moves up by that much at its 24 sites (23 direct plus
+octabam's runtime and stage live in pages taken off the bottom of the
+audio page arena at `0x40a955e0` (`tools/remix/arena.py`), the way
+octamax 2.0 takes its 64. MEMORY (`modules/memory/README.md`) sizes the
+reserve per remix from the claims: the linked runtime, its stage and
+`.bss`, every DramRegion and every fixed-address ArenaReserve (a fixed
+1,707 pages, 10,487,808 B, `0x40a955e0..0x41495de0`, until 11 Oct 2026).
+The base literal moves up by that much at its 24 sites (23 direct plus
 `lea base+6144` at `0x40094a62`), and the four geometry words (page count,
 free-list fill limit, arena clear length, recorder page cap) are computed
 from the reservation (`tools/remix/arena.py` stacks any number; until 6
@@ -110,6 +147,15 @@ left. The runtime is linked at the reserve's base; the stage follows it
 page-aligned; the ceiling is the reserve's end; a unit's `.bss` must end
 below it. KITS's library (1,622,944 B) and PLOCKS P2's table (1,572,864 B)
 are `.bss` there.
+
+**REMIX SWITCH's stage** (`modules/remix-switch`) is the top of this reserve,
+`0x41200000..0x41495de0`: a 64-byte mailbox, a 40-byte copy stub at
+`+0x100`, the staged image from `+0x1000` (2,706,400 B). The running OS
+writes it just before a reset and the next boot's OS entry reads it before
+anything else runs; nothing between a reset and the OS entry writes SDRAM
+outside the image the bootstrap unpacks (`docs/firmware/ARCHITECTURE.md`
+section 3a). In a remix carrying the module, `verify_remixswitch` refuses a
+runtime and stage that reach the mailbox.
 
 The OS never touches a reservation again: the arena clear starts at the
 new base, the boot-time copies follow the literal, and the page allocator
@@ -185,8 +231,8 @@ stock Part routines and the CC dispatch as stock, so none is needed (`git show 2
 
 ## Open
 
-- More than 10 MB is a bigger `PLATFORM_PAGES` (the ledger refuses below
-  2,048 pages left). The route that costs no sample memory (a remix with
+- The reserve is what the remix claims (MEMORY); the ledger refuses
+  claims that leave fewer than 2,048 pages. The route that costs no sample memory (a remix with
   the stock DELAY off both choosers detouring its frame routine
   `0x400031a0` so the eight rings are never written, 10.8 MB) is
   unmeasured; whether the routine has duties beyond the delay is the

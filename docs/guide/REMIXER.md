@@ -243,10 +243,10 @@ nothing else registers it. A remix that carries one module for that
 module's gates goes in `remixes/test/<name>/`; names are unique across
 both, and every tool takes the bare name (`make check REMIX=miniverb`).
 
-Copy an existing `remix.py` and edit it, or save one from the remixer (`s`). `remixes/bottleservice/remix.py`
+Copy an existing `remix.py` and edit it, or save one from the remixer (`s`). `remixes/octabam-bus/remix.py`
   is the bus with stations, hosts and ColdFire mods,
   `remixes/test/euclid/remix.py` an insert beside the stock effects,
-  `remixes/ok-ms/remix.py` two ColdFire mods and no DSP code.
+  `remixes/test/kits/remix.py` one ColdFire mod and no DSP code.
 
 ```python
 from remix.schema import Proof, Remix
@@ -290,6 +290,18 @@ REMIX = Remix(
   measured.
 - Two selected modules that claim one address, id, hook or buffer are
   refused by name; `make modules` prints the pairwise matrix.
+- `settings` fixes or re-defaults a module's settings for this image:
+  `(store id, setting name) -> value` or `Pin(value)`. A module whose
+  setting chooses its code (USB AUDIO OUT's `LAYOUT`, USB AUDIO IN's
+  `INPUTS`) builds that code:
+  `settings={("octabam.usb-audio-out", "LAYOUT"): Pin("MASTER")}`.
+  `python3 tools/remix/brain.py resolve mine` prints every setting and the
+  layer its value came from; the build report prints the same.
+- `defaults` replaces a knob's default in this image:
+  `(module key, mode, knob) -> byte`, with `mode` None for the knob's own
+  default or a MODE label for that mode's view, and `knob` the name the
+  panel shows: `defaults={("DELAY SERVER", "GRAIN", "PTCH"): 96}`. A value
+  outside the knob's count is refused.
 - `hidden`, `named`, `grains`: [MODULES.md](../contributing/MODULES.md).
 
 Then:

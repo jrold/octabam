@@ -21,8 +21,9 @@ core-private Y word, per-core FX2 buffer region or DSP data range
 
 **Modules come in kinds, and the traps below say which they belong to.** A
 **ColdFire module** (linked GNU-as units, detours by symbol, a runtime in
-DRAM: midisc, KITS, octalab, REPITCH) never touches the DSP and none of the DSP traps
-apply to it; its own traps are in the last section. On the DSP side an
+DRAM: KITS, midi-scenes, tempo-sync) never touches the DSP and none of the DSP traps
+apply to it; its own traps are the ColdFire half of
+`docs/contributing/TRAPS.md`. On the DSP side an
 insert has no bus role, no shared-window claim, sits in both payloads and
 runs on any track; a **server** pays for the rotation, the housekeeping
 election, the auto-gain and the payload asymmetry, and most of the DSP
@@ -34,9 +35,11 @@ the build refuses on drift. Never "port" by
 rewriting; run their build against the shared stock image first.
 
 **If you change the BUILD rather than a module, prove it changed nothing:**
-`scripts/refhash.sh save` on a tree you trust, then `scripts/refhash.sh check`
-— 24 configurations, artifacts and build reports, bit-identical. Every step
-of the DRAM platform landed under that gate. (Since 10 Sep 2026 the report
+`scripts/refhash.sh check` — 24 configurations, artifacts and build reports,
+bit-identical against the baseline of your branch's merge-base with
+origin/main (`tools/verify/refhash_store.py` saves it once per merge-base for
+every worktree; `REFHASH_LOCAL=1` compares against a `save` of this tree).
+(Since 10 Sep 2026 the report
 prints tool paths; a path change is a report change and needs a re-save
 after the artifacts are shown identical.)
 
@@ -89,14 +92,12 @@ the floor; `docs/contributing/TESTING.md` says what each gate proves and what
 none of them can see.
 
 **Before opening a PR, and again before merging one:** rebase onto
-`origin/main` and run every gate in `CONTRIBUTING.md` "Before you open a
-PR" on the rebased tree (`make reach` lists them from the diff; `RUN=1`
-runs them, quick by default; `FULL=1` only when someone chooses it); list
-each command and its result in the PR body.
-Gates run before the rebase are not a result. PR #396 was written on
-`4b07c52`; #415 and #437 renamed SEND's and BusDelay's knobs after that,
-the merge was textually clean in `pressure.py`, and its stress fixture
-failed on `SEND has no knob 'SEND'`.
+`origin/main`, then `make reach RUN=1 KEEP=1` on the rebased tree
+(`CONTRIBUTING.md` "Before you open a PR" is the rule and the reason);
+list each command and its result in the PR body. Passes whose image and
+inputs did not move are reported `cached`.
+
+## Worktrees and the shared checkout
 
 **For general upstream Octabam PRs unrelated to PERKY, use a separate Git
 worktree when concurrent sessions require isolation.** Several
@@ -124,639 +125,74 @@ delete; `OCTABAM_NO_CACHE=1` builds cold when a build result is in doubt.
 them from a COPY staged into `vendor/dsp56300/source/dsp_host/`, so in a
 worktree the shared binary is the main checkout's, whatever the branch's
 `tools/harness/dsp_host/dsp_host.cpp` says, and `dsp_host` ignores an
-option it does not know. PR #356 was reviewed twice (21–22 Sep 2026) as
-"MOD has no effect, residual 0.000" for exactly this reason: its
-`-paramfile` never ran, every render used default knobs, and the effect
-was fine (34 gates pass under its own host). A branch that changes
-`dsp_host.cpp` is built in an isolated tree, never into `vendor/`:
+option it does not know (PR #356 was reviewed twice, 21–22 Sep 2026, as
+"MOD has no effect, residual 0.000": its `-paramfile` never ran and every
+render used default knobs). A branch that changes `dsp_host.cpp` is built
+in an isolated tree, never into `vendor/` — the CMake recipe is
+`docs/contributing/TOOLING.md` section 1 — then point the harness at it
+(`benchmark_reverbs.HOST`, `send_probe`'s host path) for that run.
 
-```
-cat > /tmp/hostpr/CMakeLists.txt <<EOF
-cmake_minimum_required(VERSION 3.10)
-project(hostpr CXX)
-set(CMAKE_CXX_STANDARD 17)
-add_subdirectory(/ABS/PATH/TO/main/vendor/dsp56300 dsp56300)
-add_executable(dsp_host_pr /ABS/PATH/TO/worktree/tools/harness/dsp_host/dsp_host.cpp)
-target_include_directories(dsp_host_pr PRIVATE /ABS/PATH/TO/main/vendor/dsp56300/source)
-target_link_libraries(dsp_host_pr PRIVATE dsp56kEmu)
-EOF
-cmake -S /tmp/hostpr -B /tmp/hostpr/build -DCMAKE_BUILD_TYPE=Release && cmake --build /tmp/hostpr/build --target dsp_host_pr -j8
-```
+## The trap register
 
-then point the harness at it (`benchmark_reverbs.HOST`, `send_probe`'s
-host path) for that run.
+The traps that have already cost real work live in
+[`docs/contributing/TRAPS.md`](docs/contributing/TRAPS.md): symptom, what
+it cost, the fix, and what now gates each one. Add a new trap there the
+moment it costs real work, and add its line here.
 
-## Traps that have already cost real work
+**DSP side**
 
-**The assembler mis-encodes instructions, silently.** `dsp_asm` encodes
-`tfr a,b` as `rnd b`, and **any `mpy` operand order it doesn't know as
-`mpysu`** — found with `mpy x0,y0`, confirmed 9 Aug 2026 for `mpy x1,y1`
-and `mpy x0,x1` too (every shipping site is audited safe because its second
-operand is always positive, which is the only reason the engine works; the
-sites are counted per module in `build_bus.MPYSU_AUDITED`, and since 23 Sep
-2026 every `assemble()` round-trips its bytes through the disassembler and
-stops on any other mismatch or on a count that differs from the table). `mpysu` treats the SECOND operand as unsigned, so
-a negative multiplier there is silently corrupted. `mpy x0,y1` and
-`mpy y0,x0` encode signed. Both assemble clean and do the wrong thing.
-**Disassemble what you assemble** when a result surprises you — and always
-for a new `mpy` whose second operand can go negative. A related family bit
-us in shipping code: `cmp a,b` had encoded as `max a,b`, which updates only
-the C bit while `blt` tests N^V. **Until 4 Oct 2026 it had no encoding
-for a data-ALU op with two parallel moves** (XY, X:R, R:Y, class II):
-`clr`/`add`/... with one were InvalidInstruction, and `mpy`/`mac` fell
-to the non-parallel `mpysu`/`macsu` with both moves dropped (`mac
-x1,y0,b x:(r1)+,x1 y:(r7)+,y0` -> `0126a6`; the chip word is `f4f9ea`).
-`move x:(r1)-n1,x0 y:(r7)+,y0` encoded `(r1)` (`f0e100`): the XY form
-has no `(Rn)-Nn`. Against the stock payloads (A+B) the old `dsp_asm` got
-0 of 688 ALU+XY lines right (605 wrong, 83 refused) and 0 of 258 X:R/R:Y
-lines; the patch makes all 946 the stock word and leaves the result for
-the other 12,079 stock lines unchanged. A move token with no encoding is now
-InvalidInstruction, and the round-trip compares every operand field,
-parallel moves included. **And until 14 Sep 2026 it emitted only
-the TWO-WORD displaced move**: `move x:(r7+$15),a` assembled to
-`0a77ce 000015` where the chip (and every Elektron payload, 533 sites in A)
-has the one-word `0257de` for displacements −64..63 with a data-ALU
-register. `tools/patches/dsp56300.patch` adds the one-word form; every
-word or cycle number recorded for a displaced move before that date is 2
-where the assembler now emits 1 (the emulator's own cycle table prices the
-forms 3 and 2; hardware timing of the one-word form under OUR code is
-unmeasured — stock runs it every frame). **THE BINARY IS NOT THE SOURCE:**
-the encoder lives in the vendored `assembler.cpp` behind that patch, and
-a `dsp_asm` built before it silently emits the two-word form for every
-site — five images (8–12, 14 Sep 2026) and every price quoted with them
-were ~800 words / ~500 cycles heavier than the tree said, found only when
-another session's FREE table did not match. After any change under
-`tools/patches/`: `make dsp-repatch` (`scripts/setup.sh` does not
-re-patch a built tree; it stops when the tree lacks the current patch),
-then `make emu-cf`; after one under `tools/harness/dsp_host/`:
-`scripts/setup.sh`. `make check-asm` expects `0257de` for `move
-x:(r7+$15),a` and `f4f9ea` for `mac x1,y0,b x:(r1)+,x1 y:(r7)+,y0`.
+- [The assembler mis-encodes instructions, silently](docs/contributing/TRAPS.md#trap-asm) — `tfr a,b`→`rnd b`; unknown `mpy` operand orders→`mpysu` (second operand unsigned); `cmp a,b`→`max a,b`. Disassemble what you assemble.
+- [Reading `a0` exposes the fractional left shift](docs/contributing/TRAPS.md#trap-a0) — integer use of a0 is 2× the multiplier. Pin it with a predictable-arithmetic test.
+- [`asr #n,a,a` leaves the remainder in a0 and Z tests all 56 bits](docs/contributing/TRAPS.md#trap-asr-a0) — reload clean (`move a,x1 / move x1,a / tst a`) before a `teq`/`cmp` snap.
+- [A logical op leaves A2 stale; the next store saturates](docs/contributing/TRAPS.md#trap-a2-stale) — use the Tcc conditional transfers, not hand-rolled sign masks.
+- [A Tcc pair sharing one compare breaks if arithmetic lands between](docs/contributing/TRAPS.md#trap-tcc-pair) — park the compare's result; check what the code below assumed about condition codes.
+- [`move a,b` limits; `tfr a,b` moves all 56 bits](docs/contributing/TRAPS.md#trap-move-tfr) — interchangeable only when the source fits 24 bits.
+- [`Tcc` takes a register source; `clr` takes an accumulator](docs/contributing/TRAPS.md#trap-tcc-operands) — move the value through `x0`.
+- [`lua (rN+d)` takes d in −64..63 and wraps silently](docs/contributing/TRAPS.md#trap-lua) — past ±63: `move r7,r5 / move #imm,n5 / move (r5)+n5`.
+- [`dsp_asm` resolves labels by prefix](docs/contributing/TRAPS.md#trap-label-prefix) — no new label may have an existing label as its prefix (`warmz2` next to `warmz` branched into hyperspace).
+- [Build-time markers and base literals count in comments](docs/contributing/TRAPS.md#trap-markers) — don't spell `$30000` or the `; X` markers in comments.
+- [A form the chip has never run is not proven by the port](docs/contributing/TRAPS.md#trap-chip-form) — grep stock payloads before using a form.
+- [No `rep` in `init`/`proc`; no dense X work in a DMA's 8K block](docs/contributing/TRAPS.md#trap-rep-dma) — `tools/build/norep.py` refuses the former; the port models neither.
+- [`SPEC=1` requires `XBUS=1`](docs/contributing/TRAPS.md#trap-spec-xbus) — build-guarded; do not ungate.
+- [The track↔core mapping is inverted](docs/contributing/TRAPS.md#trap-track-core) — A = tracks 5-8 (BusVerb), B = 1-4 (BusDelay). Test reverb on track 5.
+- [SEND's `DEL` and `REV` are separate knobs](docs/contributing/TRAPS.md#trap-send-knobs) — `x:(r6+0)` and `x:(r6+1)`.
+- [A cloned descriptor inherits the donor's formatter, and it outranks the value count](docs/contributing/TRAPS.md#trap-formatter) — `verify_menu` checks renderer against count.
+- [Stock Unicorn halves fractional EMAC multiplies and adds where `msac` subtracts](docs/contributing/TRAPS.md#trap-unicorn-frac) — 2×/½-off ColdFire arithmetic → suspect the instrument; `emac_selftest` pins it.
+- [Unicorn's MAC-with-load decode has three defects](docs/contributing/TRAPS.md#trap-unicorn-macload) — the per-site shim stays.
+- [MACSR S/U is bit 6: 16-bit rounding on the ACC read-out](docs/contributing/TRAPS.md#trap-macsr) — read the CFPRM's MOVCLR pseudocode before touching `accRead`.
+- [The vendored AGU mis-stepped a pre-decrement from a modulo base](docs/contributing/TRAPS.md#trap-agu-modulo) — fixed in `agu.h`; the bit-identity gates audit it.
+- [A rewritten trampoline is not retranslated](docs/contributing/TRAPS.md#trap-trampoline) — never rewrite emulated code in place (`r.emac_slots`).
+- [A measurement can be structurally blind to what it rules out](docs/contributing/TRAPS.md#trap-blind-instrument) — before a null result, ask what the instrument cannot see.
+- [A bus client that registers and writes zero steals everyone's level](docs/contributing/TRAPS.md#trap-bus-zero-client) — N/(N+1) dilution; gate registration on the knob.
+- [r7 scratch `$00..$83` is the per-instance block; `$84+` hangs the unit](docs/contributing/TRAPS.md#trap-r7-scratch) — the slot census of the source is the truth, not the header map.
+- [A dump can resolve a dispatch entry for an effect it does not contain](docs/contributing/TRAPS.md#trap-dump-alias) — `SPEC=1` aliases the absent server to SEND; check which code the entry points at before believing negatives.
+- [Payload A's half of the shared window is fully owned](docs/contributing/TRAPS.md#trap-shared-window) — no delay lines below `0x38000`.
+- [An FX2 id is also an FX1 id](docs/contributing/TRAPS.md#trap-fx2-id) — schema refuses stock ids; a client keys its slot on r7, never X:$213.
+- [`dsp_host`'s default audio block sits in stock scratch](docs/contributing/TRAPS.md#trap-audio-block) — `-audio 0` for a stock render.
+- [An absolute stock-table address is right in A and 13 words off in B](docs/contributing/TRAPS.md#trap-stock-tables) — declare table addresses; audit both payloads.
+- [A knob word under an LFO has non-zero low bits](docs/contributing/TRAPS.md#trap-lfo-word) — mask with `and #>$7f0000`; store from `a1`/`b1`.
+- [A descriptor name filling its field leaves no NUL](docs/contributing/TRAPS.md#trap-name-nul) — fault PC = the field's ASCII; `schema.MenuEntry` refuses over-lengths.
+- [A part saved under an older slot layout stalls the sequencer](docs/contributing/TRAPS.md#trap-part-layout) — `stamp-defaults` on the card before play.
+- [The emulated load's part is not the part that plays](docs/contributing/TRAPS.md#trap-otemu-part) — write fixtures into every part of every bank.
+- [The harness's dispatcher model is not the dispatcher](docs/contributing/TRAPS.md#trap-dispatcher-model) — measure dispatcher facts under the port.
+- [An effect's `init` must preserve r1](docs/contributing/TRAPS.md#trap-init-r1) — `verify_initregs` refuses; zero through r5.
+- [A slot can draw a knob and publish nothing](docs/contributing/TRAPS.md#trap-knob-publish) — panel and DSP are separate; `docs/firmware/PARAM_PAGES.md`.
+- [Flash cycles are expensive](docs/contributing/TRAPS.md#trap-flash) — render locally and measure first.
+- [The unit misbehaves](docs/contributing/TRAPS.md#trap-failure-modes) — `docs/contributing/FAILURE_MODES.md` first; add new failures the moment they are seen.
+- [A persistent slot init doesn't clear holds the previous effect's state](docs/contributing/TRAPS.md#trap-dirty-state) — zero every slot the sample loop reads; `verify_dirtystate` refuses.
 
-**READING `a0` EXPOSES THE FRACTIONAL LEFT SHIFT THAT READING `a1` HIDES.**
-`mpy` aligns the Q46 product into Q47, so `a1` is the plain fractional
-product — which is why "mpy does not double here" is true, and stays true,
-for every module that reads a1 (all of them until 29 Aug 2026). Read the LOW
-word instead — the idiom for turning an integer product into a wrapping
-ramp — and you see the RAW 48-bit content, shift included, so the effective
-integer scale is **2× your multiplier**. Nimbus's grain window is one
-`mpy phase,2^(23-k)` plus `abs`; written with the arithmetically obvious
-`2^(24-k)` it assembled, rendered, and made a perfectly plausible granular
-noise while running the window at DOUBLE RATE, which put the two grains of
-each pair in phase instead of interleaving. Found by a DC gate, not by ear
-and not by any existing check: two triangle windows a half period apart sum
-to exactly 1, so **DC in must come back flat** — it came back with 2×-DC
-ripple, and went flat (−122 dB) when the multiplier was halved. If you use
-a0 for anything, pin it with a test whose arithmetic you can predict exactly.
+**ColdFire / DRAM side**
 
-**`asr #n,a,a` SHIFTS THE LOW BITS INTO a0, AND Z IS SET ONLY WHEN ALL 56
-BITS ARE ZERO.** A ramp step written as `sub x0,a / asr #6,a,a / teq y1,b`
-("a step that rounds to 0 snaps the run value onto its target") never
-snapped: a1 was 0, a0 held the shifted-out remainder, Z stayed clear, and
-every ramp sat up to 63 LSB under its knob for good (26 Sep 2026, found
-by `make verify-onebus`: a host's send at 100 was not bit-identical to a
-SEND's at 100). The same a0 remainder breaks `add x0,a / cmp x0,a / teq`
-(a 56-bit compare). Reload the step clean before testing it — `move a,x1 /
-move x1,a / tst a` — the one-word `move a,x1` drops a0. Sister of the
-"reading a0" trap above: the low word carries what a1 hides.
-
-**A logical op (`and`/`or`/`not`/`asr`-as-mask) on an accumulator leaves the
-extension byte (A2/B2) STALE, and the next `move a,x:` SATURATES to full
-scale.** Building a sign mask with `move a,b / asr #$17,b,b / not b` and
-storing the result writes `0x7FFFFF`, not the bits you computed — the
-store's limiter sees A2 inconsistent with A1's sign and clamps. This cost a
-long session on the gated-reverb envelope: a branchless mask-select looked
-correct and disassembled correctly but pinned the gate open, because every
-masked value saturated on store. **Fix: don't hand-roll sign masks. Use the
-conditional-transfer ops** — `tmi x0,a` (floor to 0 if negative), `teq x0,a`,
-`tpl`/`tge` — which move a CLEAN register into the accumulator, so no A2
-staleness. A plain `move #imm,reg` does NOT disturb the condition codes, so
-the `sub`/`tst` that sets the flag survives to the Tcc. (This is also why the
-sample loop stays branch-free: Tcc replaces the branch AND avoids the trap.)
-
-**A Tcc pair that shares ONE compare is broken by ANY arithmetic between
-them — and nothing at the second site looks wrong.** The branch-free idiom
-here is `cmp`/`tst` once, then several `Tcc`s that all read the same
-condition codes, relying on the fact that MOVES do not disturb them. That
-holds until someone inserts real work in the middle. GRAIN's two scatter
-latches (line L, line R) shared one wrap flag; adding a density gate
-containing `clr b` and `tst a` between them left line R testing garbage, so
-it re-latched a random read position EVERY SAMPLE instead of once per grain.
-That is broadband noise, and it was audible as a hiss **on the right channel
-only** — found by ear (13 Aug), not by any check, because `make check` and
-the bit-identity gate were both green: the code was deterministic and every
-mode still assembled. Fix: park the compare's RESULT in a scratch slot and
-restore the flag with `tst` before each Tcc that needs it. **When you add
-anything to a block, check what the code BELOW it assumed about the
-condition codes** — the dependency is invisible at the point you edit, and
-`clr`, `and`, `abs`, `tst` and every arithmetic op all set them. Same family
-as the A2-staleness trap: legal instructions, correct-looking source, wrong
-machine behaviour.
-
-**AN ACCUMULATOR-TO-ACCUMULATOR `move a,b` LIMITS; `tfr a,b` MOVES ALL 56
-BITS.** A parallel `tfr x1,a  a,x:(r3)+` written to replace `move a,x:(r3)+ /
-move a,b` differed on the bit-identity gate whenever `a` exceeded 24 bits
-(23 Sep 2026, Modulation's LINE loop; encodings confirmed by disassembly,
-found by bisecting one item). The two are interchangeable only when the
-source is known to fit.
-
-**`Tcc` takes a REGISTER source, never an accumulator, and `clr` takes an
-accumulator, never a register.** `tpl b,a` and `clr x0` are both
-InvalidInstruction — caught at assembly, which is the cheap case, but they
-look plausible enough to write repeatedly. Move the value through `x0`.
-
-**`lua (rN+d),rM` TAKES d IN −64..63, AND `dsp_asm` WRAPS ANYTHING LARGER
-SILENTLY.** `lua (r7+$46),r5` assembled to `0x042765`, the same word as
-`lua (r7-$3a),r5`, and the round-trip disassembly cannot object (a `lua`
-is a `lua`): Modulation's TONE glide read and wrote 58 words BELOW its
-block for one build (26 Sep 2026, caught by `verify_modulation`'s
-reference gates, not by the build). Past ±63 use `move r7,r5 / move
-#$46,n5 / move (r5)+n5`, the form the streams already use.
-
-**`dsp_asm` resolves labels by PREFIX, so no new label may have an existing
-label as its prefix.** Adding a loop labelled `warmz2` next to the existing
-`warmz` assembled to
-
-```
-do #<$40,>$13632     ; 064080 013631      (should have been 001374)
-```
-
-— `warmz`'s address `0x1363` with the leftover `2` appended. The loop branched
-into hyperspace and `dsp_host` SIGSEGVed with no diagnostic. Same family as the
-three above: clean assembly, wrong machine code. Found 9 Aug 2026, after three
-wrong guesses (emulator memory limits, buffer alignment, a stale modulo) that
-were all *reasoned about* rather than disassembled. **Disassembling first would
-have cost one step instead of four** — the rule above is not advice.
-
-**Build-time markers and base literals count when they appear in COMMENTS.**
-`build_bus.py` census-checks the number of `$30000` literals in the delay
-source and requires exactly one `; DMODE_OVERRIDE` / `; DINT_OVERRIDE`
-marker — and the substitution is a blanket text replace over the whole file.
-Writing *about* either in a comment trips the guard: both happened while
-documenting stage 5/6 (a comment explaining why mode 3's immediate must be
-decimal spelled the hex out; another explaining the override marker spelled
-the marker out). The build refuses, loudly, which is the guard working —
-describe them in prose instead of spelling them. The same goes for
-`; ROTLATCH` and `; ROTINIT`: the build substitutes a body at the FIRST
-occurrence, and on 21 Sep 2026 a housekeeping comment that said "the
-ROTLATCH check" took the tracker body while the real marker stayed a
-comment -- no client on either payload resolved its write offset, and
-`verify-bus` read it as every server's client count changing.
-`_marker_once` refuses a second occurrence of `; ROTLATCH`, `; ROTINIT` and
-`; XBUS_GATE`; the `; HOSTGUARD`, mode-override and delay-override markers are
-counted to exactly one before they are replaced.
-
-**AN INSTRUCTION FORM THE CHIP HAS NEVER RUN IS NOT PROVEN BY THE PORT.**
-The assembler encodes it, the vendored emulator decodes it the same way, and
-the chip may not: image 44 (21 Sep 2026) wedged on its first block on four
-one-word displaced Y stores (`move a,y:(r3+$1)`), a form with no site in
-either stock payload; the X form has 533. Before using a form, grep it in
-`out/dsp/payload_*.asm` (`tools/build/dsp_disasm_all.py`); no precedent means
-a hardware probe first, or the form everything else uses.
-
-**`SPEC=1` requires `XBUS=1`.** Without it the accumulators stay in core-private
-memory and each half of the tracks can reach only its own core's server — worse
-than today, **and it still makes sound.** The build guards this. Do not ungate it.
-
-**The track↔core mapping is INVERTED from old assumptions**: payload A serves
-**tracks 5-8** (BusVerb), payload B serves **tracks 1-4** (BusDelay).
-Measured 10 Aug 2026 via the MrkVerb32 marker flash, after the assumption cost
-two flashes and a session chasing "R13 is dead" (it was alive on tracks 5-8).
-Kept deliberately: delay on low tracks, reverb downstream. Test the reverb on
-**track 5**, not track 1.
-
-**SEND's `DEL` and `REV` are separate knobs**: `x:(r6+0)` and `x:(r6+1)`
-(again since 25 Sep 2026; one knob from 6 Sep). Driving the wrong one
-renders silence, which reads as a broken algorithm.
-
-**A DESCRIPTOR'S DISPLAY FORMATTER OVERRIDES ITS VALUE COUNT, and a cloned
-descriptor inherits the DONOR's.** A slot can carry a correct count, default,
-name and enable bit and still draw as something else entirely — or as nothing
-at all. Found on the 17 Aug flash: BusDelay clones SPRING REV, the formatter
-fix-up in `build_bus.py` was gated to the reverb, and three of six page-2
-slots drew wrong. WOW inherited SPRING TYPE's word-label renderer whose table
-has THREE entries, was asked to draw 0..127, and **drew no knob at all**;
-MODE inherited SPRING BAL's bipolar pair and drew as a balance dial reading
-−64…−60 instead of a 5-way select. Every existing check passed, because every
-field they checked was right. `verify_menu` now checks the renderer against
-the count (`count < 128` → the enumerated pair with `0x12a` zero; `128` → both
-formatters zero). **The general form: when you clone a descriptor, every field
-you did not explicitly write is the donor's, and some of them outrank the ones
-you did.** Same family as "a slot can draw a knob and publish nothing" — the
-panel and the DSP are separate mechanisms and neither validates the other.
-
-**STOCK UNICORN HALVES EVERY ColdFire FRACTIONAL-MODE MULTIPLY AND ADDS
-WHERE `msac` SUBTRACTS, and the firmware runs its EMAC in fractional mode
-(`MACSR = 0x20`).** Unicorn 2.1.4 computes `macl`/`macw` under `F/I = 1` as
-an UNSIGNED product `>> 32` where the MCF5445x does a SIGNED product `>> 31`
-(the 2.62 product shifted left one bit, upper 40 bits accumulated), and it
-reads the MAC/MSAC bit from the opcode word where ColdFire keeps it in the
-extension word, so every `msac` accumulated with the wrong sign (the
-sequencer's frame builder is one). One defect, three symptoms that were each
-investigated as firmware behaviour for a day (7 Sep 2026, RTOS_FORK
-section 10.16): the recorder length converter wrote 10,336 for Bryan's 20,672
-(explained away as "2-sample units"), the recorder's block walk stalled at
-3,072 samples ("needs a DSP position feed"), and the sequencer's per-frame
-timing byte advanced 8 per 16-sample frame, which dropped half the tempos'
-recorder trigs ("nothing re-locks the step clock", plus a compensation
-lever). The firmware's own reciprocal tables (`0x80003c20`: 2^31 / block
-size) said which side was wrong. `emu_bringup.emac_selftest` pins the
-semantics; `scripts/build_unicorn.sh` builds the fixed
-library (`tools/patches/unicorn_emac_fractional.patch`). The general rule is the
-same as "disassemble what you assemble": when firmware arithmetic comes out
-exactly 2× or ½ off, suspect the INSTRUMENT before inventing a unit, and
-find a site in the firmware whose constants only make sense one way.
-
-**STOCK UNICORN'S MAC-WITH-LOAD DECODE HAS THREE DEFECTS, WHICH IS WHY
-TIER-0 SHIMS IT PER SITE RATHER THAN THE FORM BEING ABSENT.** Found 22 Sep
-2026 by reading markandrus/octemu's independent fix against QEMU 11.1 and
-confirming the identical lines are present, verbatim, in Unicorn 2.1.4's
-own vendored QEMU 5.0.1 `target/m68k/translate.c`. In `DISAS_INSN(mac)`:
-(1) `rx = (ext & 0x8000) ? AREG(ext, 12) : DREG(insn, 12)` reads Rx from
-the OPCODE word instead of the extension word; (2)
-`dual = ((insn & 0x30) != 0 && (ext & 3) != 0)` reads Ry's own register
-field (ext bits 3-0, ANY MAC-with-load) as a dual-accumulate flag, and
-`cfv4e` has no `M68K_FEATURE_CF_EMAC_B`, so this `disas_undef`s an ordinary
-multiply into an illegal-instruction trap whenever Ry's low bits are set;
-(3) the EMAC address MASK register resets to zero instead of CFPRM's
-all-ones, and MAC-with-load ANDs its effective address with it, so every
-load reads address 0 regardless of the real operand. **Fixing (3) in
-`cpu.c`'s `m68k_cpu_reset` does nothing under Unicorn**: `src/uc.c` never
-calls `cc->reset()`, only `uc->reg_reset()` (`unicorn.c`), a separate,
-minimal function that clears `aregs`/`dregs`/`pc` and nothing else — found
-by a `UC_ERR_READ_UNMAPPED` on a `macl ...,%a0@,...` whose `a0` was a
-valid mapped address (the AND with a zeroed mask folded it to 0 first).
-The fix belongs in `unicorn.c`'s `reg_reset`, not `cpu.c` (kept there too,
-for documentation, since a future Unicorn version might wire up the real
-reset path). All three are in `tools/patches/unicorn_emac_fractional.patch`;
-`emu_bringup.emac_selftest` gained cases for them (fails on stock, passes
-fixed). The MAIN OS has zero true dual-accumulate instructions
-(`maaac`/`masac`/`msaac`/`mssac`), so forcing `dual = 0` is unconditionally
-safe for it. The per-site shim (`emu_bringup._emac_load_shim`) stays:
-the only differential against native decode ran route A with no project
-on the card, which executes none of the 435 hooked sites (0 shim calls
-either way), and route A was retired on 26 Sep 2026.
-
-**MACSR S/U IS BIT 6, AND IN FRACTIONAL MODE IT IS NOT SIGNED/UNSIGNED:
-it selects 16-BIT ROUNDING ON THE ACCUMULATOR READ-OUT.** The ColdFire port
-had S/U as bit 4 (that is R/T) and returned every `movclrl` as `ACC[39:8]`;
-the firmware's level chain at `0x4000ccae` runs at MACSR `0x60` and keeps the
-LOW words of two reads as a voice record's mode:level, which the CFPRM's
-pseudocode (`OMC,S/U == 01`: `ACC[39:24]` rounded into `Rx[15:0]`, upper half
-zero) puts there and a plain `>> 8` leaves at zero — every voice rendered
-silent for a whole session (8 Sep 2026, O9b). The self-test never exercised
-S/U. Read the CFPRM's MOVCLR pseudocode before touching `accRead`. The ACCext
-registers have two layouts as well (fractional: eight extension + eight
-low bits per accumulator; integer: sixteen extension bits), and the frame
-ISR saves and restores them in INTEGER mode every frame (`0x4000ac96`,
-`0x4000d968`); the port's write knew only the fractional layout until 23
-Sep 2026 and put the saved word's low byte into ACCn[7:0] on every restore
--- invisible to a stock A/A (deterministic), found by Jannik Aßfalg's A/B/A
-of a ColdFire patch. `test_emac.cpp` holds both layouts now.
-
-**THE VENDORED DSP AGU LEFT A MODULO BUFFER ON A PRE-DECREMENT FROM ITS
-BASE.** `x:-(r2)` with r2 = 0 and m2 = 0x3f gave `0xffffbf` where the chip
-gives `0x3f`, the next sixteen sample writes walked the peripheral registers,
-a timer interrupt came alive whose vector in payload B is `move x0,y:(r4)+`,
-and the corruption surfaced as a 196,608-iteration voice loop thirteen frames
-after the first trig. Found with a one-word write watch, a DSP PC watch with
-registers and an interrupt-vector histogram (O9b); fixed in `agu.h`. It is
-the eleventh vendored-emulator defect and `dsp_host` renders every effect on
-that AGU — `make check`'s bit-identity gates are the audit.
-
-**A REWRITTEN TRAMPOLINE IS NOT RETRANSLATED.** The ColdFire emulator's
-EMAC-with-load shim ran every shimmed instruction from one scratch address,
-rewriting its bytes each time; in a long-running Unicorn the address kept
-its first translation, so the trampoline executed whichever instruction had
-been translated there LAST — `msacl ..,%acc1` ran as the previous `msacl
-..,%acc0` and corrupted the sequencer's timing byte (RTOS_FORK section 10.16.2,
-7 Sep 2026). Fresh-Uc micro-tests could not show it; a per-instruction
-trace of the real run did. Rule: never rewrite emulated code in place — give
-each distinct instruction its own slot (`r.emac_slots`), and when a
-micro-test disagrees with the running emulator, the difference is state,
-so trace the running emulator.
-
-**A MEASUREMENT CAN BE STRUCTURALLY BLIND TO THE THING YOU ARE USING IT TO
-RULE OUT — and it will report "clean" with total confidence.** Two instances,
-both on 17 Aug 2026, both costing hours:
-- `send_probe`'s THD metric sums harmonics **2f..9f of a 438 Hz tone**. A
-  block-rate discontinuity (~2940 Hz) is not a harmonic of 438 Hz, so the
-  metric cannot see it. It reported −45 dB ("clean") on audio that hardware
-  measurement later showed carrying +22 to +31 dB of inharmonic hash. Every
-  "no change" conclusion drawn from it that day was worthless.
-- XBUS step 3 concluded "synchronisation not needed" from a cross-core send
-  measured **through the reverb** — the one consumer that smears per-sample
-  damage into a multi-second tail. It shipped a cross-core race for months.
-**Before trusting a null result, ask what the instrument physically cannot
-see.** A reverb cannot show you a discontinuity. A harmonic metric cannot show
-you an inharmonic one. A lock-step emulator cannot show you a race between
-two cores — `dsp_host` boots both payloads since 7 Sep 2026 and `-skew` can
-interleave them, but that is a fuzz of the hardware's timing, not the
-timing, so a local "clean" is still NOT evidence a bus timing defect is
-gone (a local red IS a defect). When local says clean and hardware says
-broken, believe the hardware and go looking for what the harness omits.
-
-**A BUS CLIENT THAT REGISTERS BUT CONTRIBUTES NOTHING STEALS EVERYONE ELSE'S
-LEVEL.** The auto-gain divides the accumulator by the number of registered
-clients, so a writer that registers unconditionally and then writes zero
-dilutes the real senders by N/(N+1) — **−6 dB with a single sender.** Two
-instances found the same day, 17 Aug: BusVerb registered for its `→DEL` send
-even when `→DEL` was off (since gated on the knob, measured −6.02 → +0.00 dB;
-the send itself was later retired), and BusDelay's own `IN` knob would have
-done it too if its default
-had stayed non-zero on a return track with no audio to send. **Gate the
-registration on the knob, and remember the level knob is usually decoded
-LATER in the block than the registration runs** — read it from `r6` directly,
-or use the previous block's value and accept one block of latency. Symptom to
-watch for: a level that is flat across sender count in one layout and drifts
-in another. It surfaced as an "unexplained residual" in a completely
-different effect's send level, and the effect being blamed was innocent.
-
-**r7 scratch `$00..$83` is the per-instance block; `$84+` hangs the unit**
-(a host track's own state lives there between calls, images 39–42). Each
-module's header maps its own block; a slot census of the source is the
-truth, not the map (23 Sep 2026: BusVerb's map said full and 14 slots had
-no reference; BusDelay's map listed nine slots the code never touches, and
-one it used twice — the PITCH decode's park on grain 3's scatter record).
-New per-track state goes in a free slot of the module's own block or the
-Y state table. (Do not scan for these with `"\$$s"` in a shell — it expands.)
-
-**A dump can resolve a perfectly plausible dispatch entry for an effect it
-does not contain.** `SPEC=1` (which `make render` sets) aliases the absent
-server's id to the SEND client — deliberately, so a wrong chooser pick
-becomes a send. Locally that alias renders a dry passthrough: silence over
-the bus, dry in a `--direct` control, no error anywhere. This produced the
-12 Aug "BusDelay outputs nothing in any config" session — the delay was
-never instantiated; every measurement ran a SEND. Delay work needs the
-hatch (`make render-delay`), and `send_probe.py` now dies when a D layout's
-DELAY entry equals SEND's. The general rule: before believing a *negative*
-result, check which code the dispatch entry actually points at — same
-family as "disassemble what you assemble".
-
-**IN THE SHIPPING REMIX, payload A's half of the shared window is FULLY
-OWNED** (a remix without the reverb frees it, which is how the insert
-collection has room to stack): stock's staging at `0x30000-0x30047`,
-BusVerb's buffers at `0x30800-0x357FF` (its `Claims.dsp_ranges`),
-stock's core 1 -> core 0 mailbox at `0x37F00-0x37F0F` (moved there from
-`0x38000` by every build; `docs/firmware/DSP.md` section 5), bus
-scratch at `0x36000-0x36157`
-(grew 12 Aug for the DELAY send counts + reciprocal table, 17 Aug when the
-accumulators went to FOUR buffers for the cross-core race fix, and 22 Sep
-2026 to EIGHT buffers plus the chain at `0x360d8..`).
-There is no free ground in it for delay lines — the DEV build places the
-delay at its shipping base `0x38000` (payload B's half) for exactly this
-reason. A delay based at `0x30000` sweeps the rotation word, all four ACC
-buffers and both role locks every 16,384 samples and blows up any
-multi-server layout (found 12 Aug, RDS full-scale garbage).
-
-**AN FX2 ID IS ALSO AN FX1 ID: the DSP dispatch tables are indexed by the
-raw id and shared by both menus.** A module on a stock effect's id replaces
-that effect's code wherever it is selected, FX1 included, and a remix that
-omits the module then aliases the id to SEND and takes the stock effect
-away from FX1 too. Rungs sat on EQUALIZER's `0x0c` and Nimbus on DJ EQ's
-`0x0d` from 29 Aug to 2 Sep 2026, in every local image, unflashed. The
-schema now refuses `STOCK_FX2_IDS`; the stock effects themselves are kept
-in a chooser by listing them in the remix (`tools/remix/stock.py`). The
-same table makes FX1's NONE (id 0) run the FALLBACK's code: SEND ran on
-every empty FX1 slot at r7 0x6100/0x6400/0x6700/0x6a00, sent from an
-unseen page byte and, on core 1, compared the rotation tracker before
-position 0's advance — one step ahead for good on the unit (images 40–47,
-21 Sep 2026; `modules/send/README.md` "An FX1 slot is not a client"). A client keys its slot on r7, never
-on X:$213 (stale at proc time), and `dsp_host` places FX2 slots at
-0x6200 + 0x300·pos (`verify_twocore` had 0x200·pos until image 48).
-
-**`dsp_host`'S DEFAULT AUDIO BLOCK (X:0x80) SITS INSIDE THE SCRATCH THE
-STOCK EFFECTS USE.** On hardware the dispatcher passes `r0 = 0`: the audio
-block is at X:0 and stock code scratches X:0x20–0xff every block. Our
-modules never touch low X, so the default was harmless for months and then
-made the stock FLANGER render as Nyquist-rate hash and five other stock
-effects 5–17 dB dirtier while passing as "credible" (2 Sep 2026). Eight
-instruction probes were spent clearing the emulator first. `send_probe`
-passes `-audio 0` for a stock render; if a stock effect sounds wrong
-locally, suspect the harness before the effect.
-
-**AN ABSOLUTE STOCK-TABLE ADDRESS IS RIGHT IN PAYLOAD A AND 13 WORDS OFF IN
-B, AND THE AUDITION RENDER CANNOT SHOW IT.** The payloads are linked
-separately: the 6,305-word curve bank is `X:0x438` in A and `X:0x42b` in B
-(the block below it is 23 words on A and 10 on B), and the Y tables shift by
-16. Stock code carries a different extension word per payload; a module is
-one source assembled into both, so a bare literal into a stock table is
-correct on tracks 5–8 and mistuned on 1–4, and past the end of the relocated
-table it reads garbage. Bryan T's LOFI2 shipped that way through a week of
-renders and several flashes (13 Sep 2026, `docs/firmware/TABLES.md`
-"Payload-relative addresses";
-measured here from our own image). `send_probe`'s single-payload render dumps
-payload A. Declare stock table addresses so the build rewrites them per
-payload, or read through a build-supplied base; and audit any stock-table
-read on BOTH payloads under `rig_render.py`. Our own modules were scanned
-14 Sep 2026 and read none.
-
-**A KNOB WORD UNDER AN LFO IS NOT A CLEAN WORD: BITS 8-15 ARE NON-ZERO, AND
-NO LOCAL RENDER WRITES THEM.** Each ColdFire halfword is one DSP word `<< 8`,
-and the firmware's LFO store (`movew %d0,%a1@` at `0x4000d07a`,
-`docs/firmware/LFO.md` section 5) writes the modulated value with its low byte
-free. Measured under the port (`ot_emu --watch-pc 0x4000d07a`, bottleservice
-with `tools/harness/stress_project.py`, 24 LFOs per part, depth 18-28 on
-FX1/FX2 knobs, 900 frames, 5 Oct 2026): 21,088 stores, 21,011 with a
-non-zero low byte (e.g. `d0 = 0x22fe` for knob 34); 147 stores had knob
-byte 0 and all 147 carried a non-zero low byte (largest knob byte seen
-0x7d), so a knob at 0 under an LFO is not a zero word. The gate project at
-LFO depth 0: 19,843 stores, all with a zero low byte. A knob at rest is
-clean; `dsp_host -params` takes 0..127 and writes clean words, so no render
-shows it. Two modules read the raw word: WAVE's `asr #$10` on OCT left a
-remainder in b0, `neg b` borrowed from b1 (one octave off at any OCT) and at
-OCT 4 `do n3` ran with LC = 0xffff (65,535 `asr` a block); SEND's
-registration `tst` on the raw DEL/REV word counted a track at knob 0 as a
-sender (N/(N+1) dilution of every other sender, -6.02 dB with one). Rule:
-mask a page word with `and #>$7f0000` before any shift, compare, select or
-`tst` use (the form the servers, Spectrum and BusVerb use); the
-`asr` then leaves a clean low word. After `and`, store from `a1`/`b1`
-(`move a1,x:`), not `move a,x:` (the A2-staleness trap above). The
-`dsp_host -pword k:off=hex` option writes a raw word after `-params`, and
-`verify_wave` / `verify_onebus` render dirty words.
-
-**A DESCRIPTOR NAME THAT EXACTLY FILLS ITS FIELD LEAVES NO NUL, AND THE
-CRASH LANDS SOMEWHERE ELSE ENTIRELY.** `abbr` is a 5-byte field holding FOUR
-characters plus a terminator; `fullname` is 13 bytes holding TWELVE (and the
-build tag is appended after your string). A 5-character abbr assembled,
-built, drew correctly on the panel and behaved normally under manual knob
-use — and threw a line-F exception (VEC:0B) the moment a parameter was
-**LFO-MODULATED**, faulting PC `0x48454C4C` = `"HELL"`. It presented as
-"custom effects can't be modulated", which points at the clone mechanism,
-not at a string. Found 2 Sep 2026 by Bryan T contributing `modules/hello/`,
-after the build accepted it silently. A faulting PC made of the field's own
-ASCII is a smashed return address, so the copy destination is fixed-size —
-INFERRED, the copy is not located; the rule itself is measured (all 30 stock
-page descriptors are ≤4 chars with byte 5 zero). `schema.MenuEntry` now
-refuses both over-lengths and `build_bus.py` re-checks the string it writes,
-tag included — which caught two diagnostic delay names (`BusDlyRPLY`,
-`BusDlyNOCF`) that had been filling all 13 bytes since 24 Aug 2026.
-
-**A PART SAVED UNDER AN OLDER SLOT LAYOUT FEEDS THE NEW LAYOUT ITS OLD
-BYTES, AND THE SEQUENCER STALLS ON THE FIRST PLAY.** Moving MODE from slot 7
-to slot 6 (4 Sep 2026) passed every local check and both hardware claims —
-then pressing play went 1, 2, 1 and froze, because every other track's part
-still held a 0–127 SHMR/MDEP byte in what was now a count-3 select, the
-"value outside its count is used as an index" trap in stored form. The
-schema cannot see stored data. Re-selecting the effect on the track you are
-looking at is NOT enough; the sequencer runs every track of the part. After
-any change to a slot's count, position or meaning: `tools/hw/ot_project.py
-stamp-defaults <project> <remix>` on the card BEFORE play, and say so in the
-flash notes. (Cause inferred from the symptom and a refreshed project
-running clean; not measured.)
-
-**THE PART THE EMULATED LOAD APPLIES IS NOT THE PART THAT PLAYS.** `ot_emu`'s
-load applies bank 1 part 1; its transport start re-applies the SAVED bank's
-pattern part and the refresher at `0x4000c19c` rewrites the live lane from
-it. A fixture that edited "part 1 and its saved copy" measured a track whose
-FX2 was still SEND — for a whole O9c session (8 Sep 2026): "the THRU monitor
-is pre-FX2", "the page-2 select never crosses" and "X:0x2c0 is the FX2
-instance" were all this one fixture, and the last was `stamp-slot` landing in
-the track's FX1 (it stamps both slots). Write fixtures into EVERY part of
-EVERY bank (`ot_project.py set-fx`, `stamp-slot`), and before believing a
-DSP-side "byte-identical" between two cards, run both with `--block-dump`
-and `tools/harness/blockdump.py diff`: if no host-port block differs, the
-cards did not differ where it matters.
-
-**THE HARNESS'S MODEL OF THE DISPATCHER IS NOT THE DISPATCHER.** `dsp_host`
-handed every effect r7 = 0x6100 + 0x100·(2·pos + fx−1); the stock
-dispatcher bumps r7 THREE times per track (the third unconditional, after
-FX2), so from position 1 on every r7 the harness used was wrong, and two
-modules that pinned a track by its r7 (the one-aux return on T8, the
-track-8 send refusal) matched in the harness and never on the unit — flash
-6's "the return never reaches T8", with `make verify-onebus` green on
-exactly that property. Found 8 Sep 2026 by running the shipping image from
-the card under the ColdFire port (`git show 3ceba41:docs/history/COLDFIRE_PORT.md` O11). Any module
-logic keyed on a dispatcher fact (r7, r6, X:0x213, instance blocks) is
-measured under the port (`ot_emu --dsp-pcwatch`), never modelled in
-`dsp_host`; and a hardware failure the lock-step harness cannot show goes to
-the port before it goes to a guess.
-
-**AN EFFECT'S `init` MUST PRESERVE r1: THE FX1 DISPATCHER KEEPS THE EFFECT
-ID THERE ACROSS THE INIT CALL.** `P:0x4c8..0x4d7`: `move b,r1`, `jsr
-INIT_TABLE[r1]`, then `move x:(r1+$235),r2 / jsr (r2)` for proc — so an init
-that returns with r1 moved sends the proc call through a garbage word to
-P:0 = the reset vector, and the core dies AT PROJECT LOAD, before a frame.
-Image 99 (13 Sep 2026) did this on every core that loaded a Spectrum on FX1:
-its new init zeroed 24 state slots with `move a,x:(r1)+`. It looked like the
-step-1 DSP hang and was found under the ColdFire port's last-PC ring in an
-hour; `dsp_host` cannot see it because it calls init and proc itself and
-never reads r1 between them. Proc may use r1 (the dispatcher reloads it
-after proc). `tools/verify/verify_initregs.py` refuses an init that writes
-r1/n1/m1 and runs in `make check`. Zero through r5.
-
-**A parameter slot can draw a knob and publish nothing.** The page descriptor
-and the DSP-side read are separate mechanisms; `dsp_host` pokes r6 directly, so
-everything looks live locally even when the real unit would publish nothing.
-See `docs/firmware/PARAM_PAGES.md`.
-
-**Flash cycles are expensive** — each one is a manual firmware write. Render
-locally and measure instead of guessing. This is why the emulator path exists.
-
-**When the unit misbehaves, check `docs/contributing/FAILURE_MODES.md` first** — the
-register of hardware failure modes (symptom -> cause -> fix). Add any new one
-the moment it is seen; do not let it live only in a commit message.
-
-**A PERSISTENT SLOT THAT INIT DOES NOT CLEAR HOLDS WHATEVER THE EFFECT
-BEFORE OURS LEFT IN THE BLOCK — AND NO LOCAL RENDER CAN SEE IT, BECAUSE THE
-PORT AND `dsp_host` BOOT ZEROED RAM.** Spectrum's init cleared `$00..$17`;
-filter B's two HP poles at `$38/$39` (`$3c/$3d` R) sat at cHP = 0 on the
-passthrough stamp, FROZEN, and `hp2 = yB − h2` subtracted a stale h2 from
-every sample forever: up to a full-scale DC on a station's output. An
-AC-coupled capture cannot see DC, so it surfaced as something else entirely
-— "the master compressor collapses the RIGHT channel above COMP 40" (the
-makeup clipped DC + audio to a constant on the channel whose offset was
-larger) — and cost 13–14 Sep 2026: three diagnostic images and 40 hardware
-taps rewriting a compressor block that was correct. Found by a LEVEL bisect
-across the tracks (post-FX mute cleared it, pre-FX mute did not: the station
-made it from state), then reproduced in one run once the instance block was
-pre-filled with garbage. Rules: (1) init zeroes EVERY slot the sample loop
-reads before it writes — `tools/verify/verify_dirtystate.py` (in `make
-verify`) renders each module from a garbage block on silence and refuses any
-output; (2) a channel-asymmetric failure in channel-symmetric code is a DATA
-asymmetry — go looking for what the instrument cannot see (DC, ultrasonics)
-before rewriting the code; a limiter ladder (×2/×4/×8 with the limiting
-store) makes DC visible through an AC-coupled capture; (3) when "which knob"
-does not localise a fault, "which TRACK" (LEVEL 0 per track, then AMP VOL vs
-MUTE) does.
-
-## Traps on the ColdFire / DRAM side (the platform work, 9–10 Sep 2026)
-
-**A WRITE-WATCH ON CACHED ADDRESSES IS BLIND TO A CLEAR THROUGH THE UNCACHED
-ALIAS.** The port mapped `0x4F...` as separate memory, so a watch on
-`0x477...` reported "8.8 MB free at 0x47700000" — the region is the stock
-delay's eight rings, cleared via the alias ~38 M instructions after the boot
-detour returns (Bryan's write-up had the ring base as `0x4F502C10` all
-along). Retracted; `machine.h` now folds the alias. The general rule is the
-instrument-blindness one: before trusting a null result, ask what the
-instrument physically cannot see, and check whether a second reading
-(here, Bryan T's delay write-up, `docs/firmware/COLDFIRE_DELAY.md`) already
-contradicts it.
-
-**THE BOOT VERIFIER BOOTED THE WRONG IMAGE.** `make verify` runs after the
-selftest, which builds every remix in turn and leaves the LAST one at
-`out/mainos_bus.bin`; the first in-pipeline run booted `warped` looking for
-midi-scenes' loader and reported "loader ran 0x". `verify_dram_boot` now
-rebuilds its remix first. Any verifier that reads `out/` must know who wrote
-it last.
-
-**`make … | grep | tail` reports tail's exit code, not make's.** Capture
-with `> log; echo $?`.
-
-**Matching an author's bytes with GNU as:** a same-unit label makes `lea`
-assemble PC-relative (write `lea SYM:l`); small `move.l #imm` becomes
-`moveq`; a `-Ttext` that is 2 mod 4 gets a leading `nop`. All correct code,
-all oracle failures.
-
-**A loader draft clobbered d0 across its copy loop and reused a0 after the
-hash.** Register discipline in a boot stub is not checkable by anything but
-the port: `verify_dram_boot` watches the loader's entry and its `fatal` hang.
-
-**TWO BUILDS ON ONE MACHINE CORRUPTED EACH OTHER THROUGH FIXED `/tmp`
-NAMES (10 Sep 2026).** `build_bus.assemble()` wrote `/tmp/build_bus_src.asm`,
-`.bin` and `.sym` by fixed name, so two sessions' `make check` — or the
-selftest's per-remix builds beside anyone else's build — read each other's
-assembler output: "STREAMZ overruns the region (2883 > 2724 words)",
-"selprobe dsp_asm exit 1", a different remix each time, on a clean checkout
-too. Found by a peer session. Scratch is `tempfile.mkdtemp` per process now
-(`verify_hello` likewise). A failure that moves between remixes across runs
-is a shared-scratch race before it is anything else; and a `make check`
-result taken while another build was running is not a result.
-
-**A MODULE THAT REPLACES A STOCK ROUTINE CAN MAKE EVERY OTHER CALLER
-OF IT A HALT.** Em's Octakit (in octabam until 6 Oct 2026) repointed the
-three stock calls to the page-1 writer `0x40054cd8` at her wrapper and
-made the writer's dirty store check a token above its arguments; TEMPO
-BUS and MODE DEFAULTS called the writer bare, so `bottleservice` halted
-under the port at frame 40 of `verify_set` on the first CC 68 (26 Sep
-2026; never flashed). Before calling a stock routine from a module, diff
-the routine and its callers against stock in the built image
-(`tools/build/where.py`): another module may own it.
-
-**A FORKED PORT SHARES ITS DSP MEMORY WITH ITS SIBLINGS UNLESS IT IS
-UNSHARED.** The vendored DSP memory is a `shm` object mapped `MAP_SHARED`
-several times (the bridged X/Y/P views, `dsp56kBase/mmuhelper.cpp`), so
-`fork()` gives every child the same DSP memory: the first `--scenario`
-run (29 Sep 2026) faulted a core in two of three children, PC outside P,
-while the third ran clean. `unshareRanges` in `tools/emu/ot_emu/main.cpp`
-copies each backing object into a private one after the fork. Anything
-new the port maps shared (a window, a ring for the host) needs the same
-treatment, or the children interfere and the failure moves between runs.
-
-**THE PORT RAN UNDER ROSETTA IN EVERY SHARD, AND NOTHING SAID SO.** `make
-reach` and `check_shards.py` run under `python3`; on this machine that is
-Intel Homebrew's (`/usr/local/bin`), and under it `uname -m` and
-`os.uname().machine` both say `x86_64`, so cmake built an x86_64 `ot_emu`
-that ran translated: 1.27x slower to the handoff, 1.75x on DSP frames
-(6 Oct 2026, both binaries side by side under the same load). The
-Makefile's `HOST_ARCH` and `check_shards.host_arch()` ask the kernel
-(`sysctl -n hw.optional.arm64`, the same answer under Rosetta; Linux keeps
-`uname -m`). `file out/emu/ot_emu` is the check; `make check-asm` prints
-the binaries' architecture.
-
-**The report is API, and it prints paths.** Moving a tool changed the build
-report (the hints name `tools/harness/send_probe.py`), which refhash
-correctly flagged with every artifact identical. Re-save only after proving
-the artifact lines match.
+- [A write-watch on cached addresses is blind to the uncached-alias clear](docs/contributing/TRAPS.md#trap-watch-alias) — `machine.h` folds the alias.
+- [The boot verifier booted the wrong image](docs/contributing/TRAPS.md#trap-boot-verifier) — a verifier that reads `out/` must know who wrote it last.
+- [`make … | grep | tail` reports tail's exit code](docs/contributing/TRAPS.md#trap-pipe-exit) — `> log; echo $?`.
+- [Matching an author's bytes with GNU as](docs/contributing/TRAPS.md#trap-gnu-as) — `lea SYM:l` for same-unit labels; `moveq`; the `-Ttext` 2-mod-4 `nop`.
+- [A loader draft clobbered d0 and reused a0 after the hash](docs/contributing/TRAPS.md#trap-loader-regs) — `verify_dram_boot` watches entry and `fatal`.
+- [Fixed `/tmp` names corrupted parallel builds](docs/contributing/TRAPS.md#trap-tmp-race) — mkdtemp per process now; a failure moving between remixes is a shared-scratch race.
+- [Replacing a stock routine can halt every other caller](docs/contributing/TRAPS.md#trap-stock-callee) — diff the routine and its callers with `tools/build/where.py`.
+- [A forked port shares its DSP memory with its siblings](docs/contributing/TRAPS.md#trap-fork-shm) — `unshareRanges`; new shared maps need the same.
+- [The port ran under Rosetta and nothing said so](docs/contributing/TRAPS.md#trap-rosetta) — `file out/emu/ot_emu` is the check.
+- [The report is API and prints paths](docs/contributing/TRAPS.md#trap-report-api) — re-save refhash only after the artifacts are shown identical.
 
 ## How claims are written here
 
@@ -770,80 +206,20 @@ same. Say what would falsify a claim. Do not write "found it" for something
 you have inferred, and when a retraction lands, propagate it to every document
 that repeated the old number — not just the one you were editing.
 
-## History
+## Removed files stay cited
 
-The tree was pruned hard in the octabam refactor: ~350 files of ColdFire
-archaeology, emulator scratch and 89 `reverbN.asm` voicing snapshots were
-removed. They are all still reachable — that is why the history was carried
-across rather than starting fresh.
-
-Comments still cite probes like `dsp/baseprobe.asm` or `dsp/ymemprobe.asm` as
-the provenance of a measurement. Those statements remain true; the files live
-in history. Recover one with:
+The tree was pruned hard in the octabam refactor (~350 files of ColdFire
+archaeology, emulator scratch, voicing snapshots) and `docs/history/` (18
+closed records) was removed 16 Sep 2026; all are still reachable in git.
+Comments cite removed probes (`dsp/baseprobe.asm`, `dsp/ymemprobe.asm`) as
+the provenance of a measurement, and those statements remain true. Recover
+one with:
 
 ```bash
 git log --all --oneline -- dsp/baseprobe.asm
 git show <sha>:dsp/baseprobe.asm
 ```
 
-Leave those citations alone. Rewriting them to remove a filename would erase
-how the number was obtained, which is the opposite of the point.
-
-On 10 Sep 2026 the tree was regrouped for the remixer: `tools/` into
-`build/ verify/ harness/ emu/ hw/ patches/` (plus `remix/` and `scratch/`),
-`docs/` into `remixer/ firmware/ effects/ history/`. `git log --follow` crosses
-the moves; older commit messages and memory notes name the flat paths.
-
-On 30 Sep 2026 the docs were regrouped by reader: `docs/guide/` (building,
-flashing, composing a remix), `docs/contributing/` (modules, testing,
-placement, tooling, the failure register), `docs/firmware/` (reverse
-engineering only), a README beside each tool (`tools/emu/`, `tools/harness/`,
-`tools/remix/`, `tools/panel/`), and each module's design in its own
-README (`docs/effects/` dissolved). The remix index is `remixes/README.md`.
-`make verify-docs` (in CI) refuses a link or a `docs/…`/`tools/…`/
-`modules/…`/`remixes/….md` path that does not resolve; a citation of a
-removed file uses `git show <sha>:<path>`. Old paths: `docs/remixer/X.md`
-is `docs/contributing/X.md` (MODULES, PLACEMENT, TESTING, TOOLING,
-FAILURE_MODES; ACCEPTANCE is TESTING section 8) or `docs/guide/` (REMIXER;
-FLASHING is BUILDING), EMU is `tools/emu/README.md`, HARNESS
-`tools/harness/README.md`; Tim Hastie's port log (O14i–O24) is
-`git show 666b6154:docs/firmware/COLDFIRE_PORT.md`.
-
-On 16 Sep 2026 `docs/history/` (18 closed records: BUS, RTOS_FORK,
-COLDFIRE_PORT, VOICING, NOTES, REVERB_LOG, XBUS_LOG, EXTERNAL_INGEST, ...)
-was removed. A citation of the form `docs/history/RTOS_FORK.md section 10.16` in a
-comment or a doc is still the provenance of what it sits beside; read it
-with `git show 3ceba41:docs/history/RTOS_FORK.md`.
-
-On 22 Sep 2026 `vendor/dsp56300`'s pin moved from `c051afad` (28 Jul) to
-`8ccdd843` (21 Sep, 144 commits later), prompted by reading
-`markandrus/octemu`'s independent RE and finding upstream had absorbed
-several of our own fixes in that span. `tools/patches/dsp56300.patch`
-dropped the hunks upstream now carries itself (MPYRI/MACRI, the DCOL
-12-bit width, "serve a DMA request raised before the channel was
-enabled", 2D/no-update DMA address modes, the assembler's
-TFR/CMP/CMPM/Tcc JJJ=000 encoding, JIT MPYI sign-extension, CCR overflow
-flags) and kept what is still ours (the AGU pre-decrement fix, the
-one-word displaced move, the DMA dual-counter reload, the host-stepped
-mode, the shared window, the unmapped-register hooks). Gated on: upstream's
-own `dsp56kTestRunner` suite, `scripts/refhash.sh check` against a
-pre-repin baseline (24 cases), `verify-bus`, `verify-spectrum-ident`,
-`verify-twocore`, and `make check` with a real project under the port
-(`verify_set`) -- all bit-identical or passing. Our own AGU fix is still
-an open, uncommented upstream PR (#13, since 8 Sep).
-
-Also 22 Sep 2026: measured whether a same-value `DCR` rewrite ever lands
-while a self-clearing DMA window is still open (octemu's independent
-QEMU fix names this a re-arm, not a no-op, that the vendored emulator was
-silently dropping). Instrumented `DmaChannel::setDCR` in an isolated
-clone, ran a real project 1200 frames under the port: DCR2 (the ESAI
-feed, `0xcc6220`, rewritten every idle-loop pass at `P:0x099`) landed
-with the window open on 1199 of 1200 rewrites. Ported octemu's renewal
-(`m_deRenewed`, in `setDCR`/`finishTransfer`) — but its block-dump
-against the same project, same frame count, is **bit-identical** with or
-without the fix, so it is landed defensively (matches the DMA manual's
-own semantics, costs nothing, `verify-twocore` and every gate stay
-green) rather than as a fix for an observed symptom. Not octemu's other
-DE-renewal hunk (disabling `HostTransmitData` as a request source):
-`ot_emu` drives HDI08 directly, never through a `DmaChannel`, so that
-half doesn't apply here (checked, not inferred).
+Leave those citations alone — rewriting one to remove a filename erases
+how the number was obtained. A citation of a removed file uses the form
+`git show <sha>:<path>` (`docs/history/` records: sha `3ceba41`).

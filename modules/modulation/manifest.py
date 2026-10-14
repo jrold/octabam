@@ -29,7 +29,8 @@ gives; the read offset is masked, not the address.
 
 Not a bus client: does not housekeep, does not write the bus."""
 
-from remix.schema import (Gate, Category, Proof, BusRole, Claims, DspSection, Formatter, Harness,
+from remix import stations
+from remix.schema import (Store, Gate, Category, Proof, BusRole, Claims, DspSection, Formatter, Harness,
                           Kind, MenuEntry, ModeView, Module, Param, YBase)
 
 _PLAIN = Formatter.PLAIN
@@ -155,11 +156,17 @@ MODULE = Module(
         r7_latch_slot=None,           # no ROTLATCH/ROTINIT: not a bus client
         gate_label=None,              # no housekeeping: a station never elects
     ),
+    # The default; the build setting SLOTS = FX1+FX2 lifts fx1_only and the
+    # dry flag (tools/remix/stations.py, verify_stations_fx2).
     # Two 1,024-word lines out of the 3,072 an FX1 slot gives. `fx1_only`
     # is the promise that an FX2 instance writes nothing; the ledger admits
     # it beside a server on that basis and verify_modulation proves it.
     claims=Claims(stock_instance_buffer=True, buffer_words=2048, fx1_only=True),
     harness=Harness(layout_char="3", is_server=False, bus_client=False),
-    gates=(Gate('tools/verify/verify_modulation.py', remix_arg=False),),
+    store=Store("octabam.modulation"),
+    settings=(stations.setting(),),
+    variant=stations.variant(lambda: MODULE),
+    gates=(Gate('tools/verify/verify_modulation.py', remix_arg=False),
+           Gate('tools/verify/verify_stations_fx2.py', remix_arg=False),),
     dear={'MIX': 127, 'FDBK': 127, 'DPTH': 127, 'MODE': 4, 'LOFI': 127},
 )

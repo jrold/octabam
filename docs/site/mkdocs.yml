@@ -1,0 +1,32 @@
+site_name: octabam manual
+site_url: https://sambanks.github.io/octabam/
+repo_url: https://github.com/sambanks/octabam
+repo_name: sambanks/octabam
+docs_dir: .
+site_dir: ../../out/site
+# the _remix-*.md fragments are snippet includes, not pages
+exclude_docs: reference/_remix-*.md
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - Choosing a remix: choosing.md
+  - Remixes:
+      - octabam-core: remix-core.md
+      - octabam-inserts: remix-inserts.md
+      - octabam-bus: remix-bus.md
+  - BRAIN: brain.md
+  - Modules reference: reference/modules.md
+  - Build and flash: build-flash.md
+  - Safety and recovery: safety.md
+  - Credits: reference/credits.md
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.snippets:
+      # resolved from the repository root: mkdocs runs there, locally and in CI
+      base_path: [docs/site]

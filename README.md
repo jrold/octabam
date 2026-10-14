@@ -69,15 +69,17 @@ from the card (section 5).
 | [**RIG HOSTS**](modules/rig-hosts/README.md) | [sambanks](https://github.com/sambanks) | A new part is born hosted: T1 FX2 = BusDelay, T5 = BusVerb, T8 = the stock DELAY, the rest SEND. | port-gated: a new project born hosted under the port |
 | [**SEND**](modules/send/README.md) | [sambanks](https://github.com/sambanks) | Bus client: DEL into the delay, REV into the reverb, from any track. The default effect. | on hardware: Sam's MKII |
 | [**TEMPO BUS**](modules/tempo-bus/README.md) | [sambanks](https://github.com/sambanks) | The TEMPO window lists and edits BusDelay's and BusVerb's knobs (UP/DOWN = row, A or B = value, LEFT/RIGHT = engine, FUNC + LEVEL = 0.1 BPM). | port-gated: `verify_set`; carried by image 88 on Sam's MKII, not exercised there |
-| [**TEMPO SYNC**](modules/tempo-sync/README.md) | [sambanks](https://github.com/sambanks) | ColdFire caves: publishes the held MIDI note to BusDelay, and draws BusDelay TIME as a tempo division. | on hardware: Sam's MKII |
+| [**TEMPO SYNC**](modules/tempo-sync/README.md) | [sambanks](https://github.com/sambanks) | ColdFire DRAM units: publishes the held MIDI note to BusDelay, and draws BusDelay TIME as a tempo division. | on hardware: Sam's MKII |
 
 ### Effects: on a track
 
 | module | author | what it does | proof |
 |---|---|---|---|
 | [**CHARACTER**](modules/character/README.md) | [sambanks](https://github.com/sambanks) | FX1 station: fold, saturation, tilt, compressor, width. | on hardware: Sam's MKII |
-| [**CHARACTER TXTR**](modules/character-txtr/README.md) | [sambanks](https://github.com/sambanks) | Character plus TXTR (Airwindows Pockey2): fold, texture, saturation, tilt, compressor, width. For testing: 4x this beside the reverb is unmeasured on hardware. | `make check` |
+| [**CHARACTER TXTR**](modules/character-txtr/README.md) | [sambanks](https://github.com/sambanks) | Character plus TXTR (Airwindows Pockey2): fold, texture, saturation, tilt, compressor, width. | `make check` |
 | [**EUCLID**](modules/euclid/README.md) | [repeat98](https://github.com/repeat98) | Euclidean LP/BP/HP/notch/amp sequencer: swing, envelope, gate, random and loop. | local render: its own render gates; not on hardware |
+| [**GATE VERB**](modules/gateverb/README.md) | [Emilie Gillet (Mutable Instruments), ported here](https://github.com/pichenettes/eurorack) | A gated plate reverb (Griesinger topology, after the reverb stage of Mutable Instruments Clouds): amount, input gain, time, diffusion, tone, gate. One FX2 slot per instance. | local render: `verify_gateverb` (dsp_host, against a float model of Clouds' reverb); not on a unit |
+| [**LOFI2**](modules/lofi2/README.md) | [Bryan T](https://github.com/bryantysinger) | Ring mod or frequency shifter, then sample-rate and bit reduction. | on hardware: Bryan T's MKII, images 96-99 (Oct 2026, this tree): tracks 1 and 5, five instances at once; `_bt_oct` build 11 (12 Oct 2026, the 414-cycle loop): eight in SHIFT at once, four per core, UP/DOWN switched while playing |
 | [**MINIVERB**](modules/miniverb/README.md) | [repeat98](https://github.com/repeat98) | Modulated diffused FDN reverb; independent FX2 buffers, smoothed controls. | local render: `make verify-miniverb`; not flashed |
 | [**MODULATION**](modules/modulation/README.md) | [sambanks](https://github.com/sambanks) | FX1 station: a modulation pedal -- Juno, Dimension, flanger, phaser, comb; FX1 only. | on hardware: Sam's MKII |
 | [**SIDECHAIN_COMPRESSOR**](modules/sidechain-compressor/README.md) | [Zac-Kyoti/octatrack-kyoti-fw](https://github.com/Zac-Kyoti/octatrack-kyoti-fw) | Stock COMPRESSOR with a side-chain KEY from any of T1-T8, a key filter, key gain and a key listen switch on page 2. | on hardware: the author's MKI, 4 Oct 2026, an octabam image with all six KYOTI modules and REC_TRIG_MUTE: ducking on one core and across cores both ways, KFLT/KGN/MON, a muted KEY in every MUTE MODE |
@@ -101,10 +103,9 @@ from the card (section 5).
 | [**PLOCKS P2**](modules/plocks-p2/README.md) | [sambanks](https://github.com/sambanks) | Parameter locks on FX1/FX2 page 2 (hold trigs, turn a knob on the SETUP page). | port-gated |
 | [**QUANTIZE_LIVE_REC_TOGGLE**](modules/quantize-live-rec-toggle/README.md) | [Zac-Kyoti/octatrack-kyoti-fw](https://github.com/Zac-Kyoti/octatrack-kyoti-fw) | QUANTIZE LIVE REC from the front panel: hold [REC], tap [PLAY] to see it, tap again while the toast is up to invert it. | on hardware: the author's MKI, 25 Sep 2026 (gesture) and 30 Sep 2026 (setting survives a power cycle) |
 | [**SCALE QUANTIZER**](modules/quantizer/README.md) | [timhastie/octatrick-modules](https://github.com/timhastie/octatrick-modules) | PROJECT > CONTROL > SEQUENCER > SCALE: the PTCH knob and CHROMATIC trig keys quantize to a scale (24 scales, OFF = stock); > ROOT: the note the scale is built on (C..B; key 1 of the CHROMATIC keyboard sounds it); > GLIDE: the synth's glide time (OFF, 1..127; the legato switch is the synth track's LEG setting); polyphonic chromatic keys on a synth track whose VOIC is 2..4; on a synth track PTCH is semitones (-64..+63) and the CHROMATIC octave runs -4..+4. | on hardware: `octatrick-usb` on his MKI, 26 Sep 2026 (OCTATRICK9) through 2.9; the last two 2.9 fixes under the port |
+| [**REC THRESHOLD**](modules/rec-threshold/README.md) | [Chupitnik](https://github.com/Chupitnik) | Recorder TRIG value THR: a REC press arms, and recording starts when the input passes the track's LEV (RECORDING SETUP 2, beside a live IN meter). | on hardware: Chupitnik's MKII, 11-12 Oct 2026, THR1 to THR5 from the card: armed with TRACK 1 + REC AB, silence never records, the input starts the take, a second press cancels, LEV and IN on RECORDING SETUP 2, TRIG moved off THR while armed drops the arm; THR5 is this code |
 | [**REC_TRIG_MUTE**](modules/rec-trig-mute/README.md) | [Zac-Kyoti/octatrack-kyoti-fw](https://github.com/Zac-Kyoti/octatrack-kyoti-fw) | [TRACK]+[NO]/[YES] mute/unmute the held tracks' recorder trigs; MIDI CC 80; '..' beside a muted track's status icon. | on hardware: the author's MKI, 2-3 Oct 2026 (standalone image and KYOTI V1.0; MIDI CC 80 not tried) |
 | [**RELOAD_FROM_PROJECT**](modules/reload-from-project/README.md) | [Zac-Kyoti/octatrack-kyoti-fw](https://github.com/Zac-Kyoti/octatrack-kyoti-fw) | Reload one track's sequence from the card without stopping the transport: [PTN]+[TRACK n], or [BANK]+[TRACK n] to re-apply the Part. | on hardware: the author's MKI (standalone image), sequencer and metronome phase kept; 1 Oct 2026 from DRAM in an octabam image with all six KYOTI modules |
-| [**REPITCH**](modules/repitch/README.md) | [repeat98](https://github.com/repeat98) | Adds TSTR REPITCH (STATIC/FLEX and the sample's own TIMESTRETCH): project-tempo following by playback speed, without grains; PTCH off. | on hardware: an MKII, 16 Sep 2026 (OCTABAM81); `verify_repitch` |
-| [**REPITCH_REPEAT98_KYOTI**](modules/repitch-repeat98-kyoti/README.md) | [Zac-Kyoti/octatrack-kyoti-fw](https://github.com/Zac-Kyoti/octatrack-kyoti-fw) | TSTR RPCH / RPS9 / RPSP: tempo-locked varispeed with S900/S950 and SP-1200 repitch emulations, and QUAN ratios on PTCH. | on hardware: the author's MKI, 5-8 Oct 2026, octabam images with every KYOTI module, REC_TRIG_MUTE and SIDECHAIN_COMPRESSOR, only SPRING REV given up: RPCH/QUAN, RPS9/RPSP, on T5-T8 beside SIDECHAIN, TSTR across a Part reload; four RPSP tracks per core with DARK REV, and up to three DJ EQs on T5-T8 |
 | [**RLEN PLEN**](modules/rlen-plen/README.md) | [sambanks](https://github.com/sambanks) | ColdFire cave: RLEN value PLEN (past MAX) = one loop of the track's pattern on its own scale, so TRIG ONE + QREC PLEN records the next pass and stops. | port-gated: 26 Sep 2026 |
 | [**STEM REC**](modules/stems/README.md) | [yvesrosius](https://github.com/yvesrosius) | Multitrack recording to the card: each track (after its fader), MAIN, CUE and the inputs as separate WAV files, 16 or 24 bits, up to 60 minutes. MAIN MENU > STEMS. | on hardware: Yves's MKII: STEMS1 (30 Sep 2026), T1-T8 for about two minutes; STEMS3 (6 Oct 2026), T1-T8 after the fader, MAIN and AB at 16 and 24 bits |
 | [**SYNTH MACHINE**](modules/synth/README.md) | [timhastie/octatrick-modules](https://github.com/timhastie/octatrick-modules) | A FLEX track whose sample is named SYNTH* plays a two-operator FM voice (STRT/LEN/RTRG/RTIM = ratio/index/feedback/decay); the DSP shapes and effects it as a sample. Its PLAYBACK page reads RATO/INDX/FDBK/DEC with icons and the title FM SYNTH; PTCH is semitones (-64..+63) and RATE is FINE (cents) on a synth track, 0c the moment a track becomes one. A FLEX or STATIC sample track with LEG MONO and GLIDE slides its pitch (2.8). | on hardware: `octatrick-usb` on his MKI, 26 Sep 2026 (OCTATRICK9) through 2.9; the last two 2.9 fixes under the port |
@@ -115,8 +116,9 @@ from the card (section 5).
 | module | author | what it does | proof |
 |---|---|---|---|
 | [**KITS**](modules/kits/README.md) | [sambanks](https://github.com/sambanks) | 255 Kits per project: PART = LOAD KIT, FUNC+PART = SAVE KIT (MKI: FUNC+MIDI, then FUNC+BANK); each pattern plays its Kit through the stock Part slots. After Em's Octakit. | on hardware: Sam's MKII (image A6, 6 Oct 2026): the Octakit import, ems-octakit #5, STOP/PTN+TRIG/PLAY with the Rytm, a rejected bank file, power cycles; `verify_kits` under the port |
-| [**MIDI SCENES**](modules/midi-scenes/README.md) | [bkkbrls-del/midisc](https://github.com/bkkbrls-del/midisc) | MIDI-driven scene locks (hold/morph/save/reload/clear/copy/paste), built from bkkbrls-del/midisc as linker-placed units. | on hardware: `ok-ms` on his unit, 14 Sep 2026 |
+| [**MIDI SCENES**](modules/midi-scenes/README.md) | [bkkbrls-del/midisc](https://github.com/bkkbrls-del/midisc) | Scene locks for the MIDI tracks (hold-to-lock, readout, unlock, lock LEDs, XF morph, scene clear / copy / paste), kept per Part in scenes.work and CS1. After bkkbrls-del's midisc. | port-gated: `verify_scenes` against MIDISC2.1 under the port, phase 1 scenarios (b1, b7, b3, b29copy, b29clear); the earlier 2.0 build ran on his unit as `ok-ms`, 14 Sep 2026 |
 | [**SCENES P2**](modules/scenes-p2/README.md) | [sambanks](https://github.com/sambanks) | Scene locks and the crossfader on FX1/FX2 page 2 (hold a scene, turn a page-2 knob). | port-gated: 26 Sep 2026 |
+| [**STORE**](modules/store/README.md) | [sambanks](https://github.com/sambanks) | Platform: the stock save, load, copy, CS1 and Part sites KITS and PLOCKS P2 share. | port-gated |
 
 ### MIDI and USB
 
@@ -124,15 +126,8 @@ from the card (section 5).
 |---|---|---|---|
 | [**CC FEEDBACK**](modules/cc-feedback/README.md) | [sambanks](https://github.com/sambanks) | Every knob value change is transmitted as its CC (page 1: 16-45; page 2: CC MAP's 62-73), so a controller's encoders follow the unit. | port-gated: `verify_ccfeedback` (Unicorn) and `verify_set` (the port's MIDI OUT bytes) |
 | [**CC MAP**](modules/cc-map/README.md) | [sambanks](https://github.com/sambanks) | MIDI CC 62-67 drive the FX2 engine's page-2 slots 6-11; CC 68-73 the FX1 station's. | on hardware: Sam's MKII (image 96, 13 Sep 2026) |
-| [**USB AUDIO IN AB**](modules/usb-audio-in-ab/README.md) | [bryantysinger](https://github.com/bryantysinger) | A stereo pair from the host into inputs A/B (UAC2 EP3 OUT, implicit feedback); the jacks while the stream is closed. C/D stay on the jacks. | port-gated: `verify_usb_in` under the port (28 Sep 2026); the four-channel form ran on Bryan T's MKII as usbin-test build 16 (27 Sep 2026) |
-| [**USB AUDIO IN ABCD**](modules/usb-audio-in-abcd/README.md) | [bryantysinger](https://github.com/bryantysinger) | Four channels from the host into inputs A-D (UAC2 EP3 OUT, implicit feedback); the jacks while the stream is closed. | port-gated: `verify_usb_in` under the port (28 Sep 2026); this channel set ran on Bryan T's MKII as usbin-test build 16 (27 Sep 2026), with its inject poked into SPATIALIZER's words |
-| [**USB AUDIO IN CD**](modules/usb-audio-in-cd/README.md) | [bryantysinger](https://github.com/bryantysinger) | A stereo pair from the host into inputs C/D (UAC2 EP3 OUT, implicit feedback); the jacks while the stream is closed. A/B stay on the jacks. | port-gated: `verify_usb_in` under the port (28 Sep 2026); the four-channel form ran on Bryan T's MKII as usbin-test build 16 (27 Sep 2026) |
-| [**USB AUDIO OUT MAIN**](modules/usb-audio-out-main/README.md) | [markandrus/octemu](https://github.com/markandrus/octemu) | MAIN L/R over USB (UAC2, 2 channels, 24-bit) every 250 us; the stereo pairing for USB AUDIO IN (markandrus/octemu's source, the MAIN layout ours). | port-gated: `verify_usb` under the port (28 Sep 2026); not on a unit |
-| [**USB AUDIO OUT MAIN CUE**](modules/usb-audio-out-main-cue/README.md) | [markandrus/octemu](https://github.com/markandrus/octemu) | MAIN and CUE over USB (UAC2, 4 channels, 24-bit) every 250 us; full speed carries MAIN alone (markandrus/octemu; the MAIN + CUE variant Bryan T's, from usbin-test's AUD_IN4). | on hardware: Bryan T's MKII, build 16 (usb-io), 27 Sep 2026, high speed; the full-speed MAIN-only path not run on a unit |
-| [**USB AUDIO OUT MASTER**](modules/usb-audio-out-master/README.md) | [markandrus/octemu](https://github.com/markandrus/octemu) | Track 8's L/R over USB (UAC2, 2 channels, 24-bit): the master track, post-FX pre-fader; USB AUDIO OUT TRACKS MAIN CUE's source, the T8 variant Sam Banks's. | port-gated: `verify_usb` under the port (27 Sep 2026); not on hardware |
-| [**USB AUDIO OUT TRACKS**](modules/usb-audio-out-tracks/README.md) | [markandrus/octemu](https://github.com/markandrus/octemu) | Sixteen 24-bit channels over USB (UAC2): the tracks post-FX pre-fader, no MAIN/CUE; the stereo sum at full speed (markandrus/octemu). | port-gated: `verify_usb` under the port (27 Sep 2026); this build not on hardware (image 69 ran the 16-channel layout from earlier source) |
-| [**USB AUDIO OUT TRACKS MAIN CUE**](modules/usb-audio-out-tracks-main-cue/README.md) | [markandrus/octemu](https://github.com/markandrus/octemu) | Twenty 24-bit channels over USB (UAC2): the tracks post-FX pre-fader, MAIN, CUE; the stereo sum at full speed (markandrus/octemu). Costs the ColdFire 27-50 us of each 362.8 us frame over OUT MAIN CUE, host or not (one MKII, 4 Oct 2026). | port-gated: bus reset and session-end shims (audio_reset_shim, audio_sessend_shim): the alt 0 request `verify_usb` under the port only, the `usbmidi_rx_bus_end` call on Ignorato's MKII (OCTABAM21, 9 Oct 2026, three replugs); the rest ran on Sam's MKII (image 64, 25 Sep 2026) and Tim's MKI (OCTATRICK9, 26 Sep 2026) |
-| [**USB AUDIO OUT TRACKS POST**](modules/usb-audio-out-tracks-post/README.md) | [markandrus/octemu](https://github.com/markandrus/octemu) | Sixteen 24-bit channels over USB (UAC2): each track after its own MAIN gain (LEVEL, mute, solo, XLV; MAIN_LEVEL left out); the stems' stereo sum at full speed. USB AUDIO OUT TRACKS MAIN CUE's source (markandrus/octemu), the POST layout allmyfriendsaresynths's (@clickysteve). | on hardware: allmyfriendsaresynths's MKII, P3 (usb-out-tracks-post), 5 Oct 2026: 16 channels, each track on its pair, LEVEL/mute/solo/crossfader follow; the gain engine nulled against MAIN in a 20-channel diagnostic build; 7 Oct 2026: streaming costs +2.8 µs a frame over OUT TRACKS (CF METER); MASTER TRACK and the no-host cost not on a unit |
+| [**USB AUDIO IN**](modules/usb-audio-in/README.md) | [bryantysinger](https://github.com/bryantysinger) | The host's channels into inputs A/B, C/D or A-D by its INPUTS setting (UAC2 EP3 OUT, implicit feedback); the jacks while the stream is closed. | port-gated: `verify_usb_in` under the port for each INPUTS value (28 Sep 2026); ABCD ran on Bryan T's MKII as usbin-test build 16 (27 Sep 2026), with its inject poked into SPATIALIZER's words |
+| [**USB AUDIO OUT**](modules/usb-audio-out/README.md) | [markandrus/octemu](https://github.com/markandrus/octemu) | The tracks, MAIN, CUE or track 8 over USB (UAC2, 2 to 20 channels, 24-bit), by its LAYOUT setting (markandrus/octemu; the POST layout allmyfriendsaresynths's, @clickysteve). | port-gated: each layout under the port (`verify_usb`); on a unit: TRACKS MAIN CUE on Sam's MKII (image 64, 25 Sep 2026) and Tim's MKI (OCTATRICK9, 26 Sep 2026), MAIN CUE on Bryan T's MKII (build 16, 27 Sep 2026), TRACKS POST on allmyfriendsaresynths's MKII (P3, 5 Oct 2026); the bus reset and session-end shims: the `usbmidi_rx_bus_end` call on Ignorato's MKII (OCTABAM21, 9 Oct 2026, three replugs); README.md per layout |
 | [**USB CROSSBAR**](modules/usb-crossbar/README.md) | [bryantysinger](https://github.com/bryantysinger) | The USB controller bursts and arbitrates first on the SDRAM and SRAM crossbar ports (SCM BCR, XBS PRS/CRS), set at boot; cures lost isochronous packet tails. | on hardware: the register values, written at stream-up by usbin-test builds 12-16 on Bryan T's MKII (26-27 Sep 2026); this boot-time write under the port only |
 | [**USB MIDI**](modules/usb-midi/README.md) | [markandrus/octemu](https://github.com/markandrus/octemu) | Class-compliant USB-MIDI in and out on the OT's own USB port, mirroring the DIN ports (markandrus/octemu). | on hardware: Sam's MKII (image 64, 25 Sep 2026: enumerates, receives 7,950 msg/s); Tim's MKI (OCTATRICK9, 26 Sep 2026); USB clock tempo on Kazeko's MKI (#633, 6 Oct 2026); transmit, and transmit after three cable replugs, on Ignorato's MKII (OCTABAM21, 9 Oct 2026, macOS and Windows 10) |
 
@@ -147,12 +142,22 @@ from the card (section 5).
 | [**PERKY STATEDBG**](modules/perkystate/) | [jrold](https://github.com/jrold) | Source-hook debug insert: replays the displaced stock instruction, applies the admission test, loads the engine state, writes silence, and returns to stock when the event is not ours. NO RENDERER. | `make check`: Source-hook debug insert with engine-state load; answers whether state load wedges. Not a build of the instrument. |
 | [**RECORDER LOOP FIX**](modules/recorder-loop-fix/README.md) | [sambanks](https://github.com/sambanks) | ColdFire caves: the recorder loop click -- seek on a same-sample FLEX re-bind, keep its counter, record exactly the arm spacing, and repeat the last sample where sound-on-sound would play a zero. | on hardware: OCTABAM83, 12 Sep 2026 (self-loop); Bryan T's MKII, sos-capture BUILD=95, 3 Oct 2026 (sound-on-sound) |
 
+### Settings
+
+| module | author | what it does | proof |
+|---|---|---|---|
+| [**BRAIN**](modules/brain/README.md) | [Sam Banks](https://github.com/sambanks) | The settings store on the unit: card-wide knob defaults read from BRAIN/card.work at each project load (docs/proposals/BRAIN.md). | port-gated: `verify_brain` under the port (6 Oct 2026); not on hardware |
+| [**MEMORY**](modules/memory/README.md) | [Sam Banks](https://github.com/sambanks) | Platform: the DRAM reserve in stock's audio page arena, sized from what the remix's modules claim. | port-gated: the reserve's size per remix in the build report; `verify_dram_boot` under the port |
+
 ### Reference
 
 | module | author | what it does | proof |
 |---|---|---|---|
+| [**BOOT TRACE**](modules/boot-trace/) | [sanderlegit](https://github.com/sanderlegit) | Probe: a MIDI note on MIDI OUT at each boot stage, the DSP upload's record echoes and any stall, for finding where a boot hangs. | on hardware: an MKII, 29 Sep 2026 (OCTABAM4-14); `verify_boottrace` |
 | [**CF METER**](modules/cfmeter/README.md) | [sambanks](https://github.com/sambanks) | Probe: frame-interrupt duration and (with CF METER IDLE) idle time, plus core 0's frame spin count, ESAI underrun/overrun frames and frame period, printed as audio on T8's FX2. | port-gated: ColdFire half on image 92 (Sam's MKII, 3 Oct 2026: interrupt 123.1 us stopped, 213.5 us playing); the DSP slots and DBRN under the port only (4 Oct 2026) |
 | [**CF METER IDLE**](modules/cfmeter-idle/README.md) | [sambanks](https://github.com/sambanks) | Probe: main's idle loop timed, for CF METER's idle-time slot. | `make check`: boots and loads a project under the port (28 Sep 2026); the idle number needs the unit |
+| [**LOAD METER**](modules/load-meter/README.md) | [sambanks](https://github.com/sambanks) | The frame interrupt's share of the ColdFire, each DSP core's busy time per frame and each effect call's cost, for BRAIN's OTOP screen. | port-gated: the window and both DSP cores' figures under the port (verify_loadmeter, verify_brain); not on a unit |
+| [**REMIX SWITCH**](modules/remix-switch/README.md) | [sanderlegit](https://github.com/sanderlegit) | MAIN MENU > BRAIN lists the raw OS images (.RMX) in /BRAIN/REMIXES/ and boots the one picked without writing the flash; a power-cycle returns to the flashed image. | on hardware: an MKII, 29 Sep 2026 (OCTABAM14 with BOOT TRACE): switched to its own image and to stock 1.40C, audio and play working; and with the park moved into the dead vector run (BSRETVEC) booted, played and switched away again -- 40 region words down to 18; `verify_remixswitch`. The list in BRAIN's pane and /BRAIN/REMIXES/ (8 Oct 2026): under the port only |
 | [**WAVE LOAD**](modules/waveload/README.md) | [sambanks](https://github.com/sambanks) | Probe: K 4-voice wave engines per frame interrupt (CF METER's BURN), for CF METER's duration readout. | on hardware: image 92, Sam's MKII, 3 Oct 2026: one 4-voice engine 69.2 us of the 362.8 us frame, clean beside four sample tracks |
 
 <!-- modules:end -->
@@ -185,13 +190,15 @@ is the map of what is free and what was measured.
 address and compares, and refuses on any drift.
 
 **Where a module's state lives.** An effect's twelve knobs are Part
-parameters and stay in the Part. Personal material (KITS's library,
-octalab's grooves) is in files the module owns and formats. A module's
-settings (menu options, a USB profile) have no shared home yet; the shared
-settings store for all modules, OTX, is specified in
-[docs/proposals/OTX_PROJECT_PROPOSAL.md](docs/proposals/OTX_PROJECT_PROPOSAL.md)
-(nordseele, draft 2, 26 Sep 2026) with author-facing
-[guidelines](docs/proposals/OTX_MODULE_GUIDELINES.md), and is not implemented.
+parameters and stay in the Part. Personal material (KITS's library) is in
+files the module owns and formats. A module's settings (menu options, a USB
+profile) live in BRAIN (`modules/brain`), the settings, defaults and
+templates store: SETTINGS, MIDI LOG, DEFAULTS, the project pair and TOOLS,
+designed in
+[docs/proposals/BRAIN.md](docs/proposals/BRAIN.md) (6 Oct 2026, starting
+from nordseele's
+[OTX proposal](docs/proposals/OTX_PROJECT_PROPOSAL.md)). Measured under the
+port only; not on a unit.
 
 ## Checking without a flash
 
@@ -237,7 +244,7 @@ module's page is `modules/<name>/README.md`, each remix's
 
 ```
 CONTRIBUTING.md    your first PR, the module contract, the oracle rule, the gates, what CI checks
-AGENTS.md          instructions and traps for coding agents (CLAUDE.md imports it)
+AGENTS.md          working rules and the trap index for coding agents (CLAUDE.md imports it; the full register: docs/contributing/TRAPS.md)
 .github/           CI (Ubuntu + macOS, SHA-pinned actions), the PR template
 modules/           the contributions, one directory each, each with its README
 remixes/           one directory per remix: remix.py (the selection, in chooser order) and README.md; README.md here is the index
@@ -272,6 +279,10 @@ This began as a fork of [mxldyn/octamax](https://github.com/mxldyn/octamax)
 by Maxolydian, whose reverse engineering of the OS format, memory map and
 parameter tables made any of this reachable; the upstream history is in
 this repository's log.
+
+BRAIN's LOAD view (`modules/load-meter`) follows the LOAD view design for the
+Machinedrum by Hamish Renton ([SamplesAndSnacks](https://github.com/SamplesAndSnacks)): the bounded
+reads, the `-` and `?` states, the refresh counter and the zero-cost close.
 
 `vendor/` pulls in [dsp56300](https://github.com/dsp56300/dsp56300),
 [mc68k](https://github.com/joelanders/mc68k-md-mm) and

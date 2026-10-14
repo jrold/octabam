@@ -13,6 +13,8 @@ below). Defaults are a bit-exact passthrough (DRV 0, FOLD 0, TONE 64, COMP
 this. A part's stored bytes are stock LO-FI's until `ot_project.py
 stamp-defaults` writes ours.
 
+**SLOTS** (build setting, store `octabam.character`): `FX1` (default) or `FX1+FX2`. With `FX1+FX2` an FX2 instance runs the station live and the FX2 chooser lists it; a remix pins it (`settings={("octabam.character", "SLOTS"): Pin("FX1+FX2")}`). `tools/verify/verify_stations_fx2.py` renders the FX2 instance against the FX1 instance, bit for bit (`remixes/test/stations-fx2`). A remix with the bus keeps the default: its cycle budget is priced with the stations on FX1.
+
 ## Knobs
 
 | page | slot | name | range | what it does |
@@ -24,7 +26,7 @@ stamp-defaults` writes ours.
 | 1 | 4 | TONE | bipolar, default 64 | a tilt after the saturator in every mode, drawn −64..+63: 0 flat and bit-exact, + bright, − dark: +3.5 dB above / −6 dB below the 1.2 kHz pivot at 127, the mirror at 0. It was RET, the bus return level, from 13 to 20 Sep 2026 (on T8 by dispatch position the last live engine's wet entered at the front of the chain and the hosts were stamped quiet; degraded on the unit, clean under the port, `docs/contributing/FAILURE_MODES.md`, removed) |
 | 1 | 5 | MIX | 0–127, default 127 | out = x + MIX·(w − x); MIX 127 is 127/128 |
 | 2 | 6 | SAT | TAPE / TUBE / INFL | TAPE = TapeHead: a state-variable split at TONE, the low and band parts through a cubic smoothstep, the top clean; drive 0.8× → 8× from a 17-word P table. TUBE = DaTube: u − u^P with the negative half driven twice as hard, level-compensated (a per-block division); the curve is a 17-pair P table. INFL = OInflator: a signed cubic, DRV is its Effect |
-| 2 | 7 | KEY | SELF / T1 | the compressor's key (29 Sep 2026). SELF: the track's own mono input, per sample. T1: the BusDelay host's peak \|mono in\| of T1 per block (`y:$990`, the bus scratch), × KLVL/64, held across the block into the same attack / release smoother. The host also counts its calls at `y:$991`; a count that has not moved for 4 blocks reads as silence (no delay host in the remix, or boot garbage). On the master (T8) KEY is ignored: T8 receives T1 in its input, so a T1 key there would duck T1 too. A KEY byte other than 1 reads as SELF |
+| 2 | 7 | KEY | SELF / T1 | the compressor's key (29 Sep 2026). SELF: the track's own mono input, per sample. T1: the BusDelay host's peak \|mono in\| of T1 per block (`y:$990`, the bus scratch), × KLVL/64, held across the block into the same attack / release smoother. The host also counts its calls at `y:$991`; a count that has not moved for 4 blocks reads as silence (no delay host in the remix, or boot garbage). On the master (T8) KEY is ignored: T8 receives T1 in its input, so a T1 key there would duck T1 too. A KEY byte other than 1 reads as SELF. In a remix with no bus server (no delay host) the build turns T1 into SELF (the `; NOBUS_KEY` line of `character.asm`), so a remix without BusDelay needs no SEND |
 | 2 | 8 | KLVL | 0–127, default 64 | scales T1's key level, 64 = unity |
 
 Page layout history: 16 Sep 2026 put MIX bottom right and SAT top left.

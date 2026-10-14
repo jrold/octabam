@@ -123,7 +123,6 @@ slot-11 byte (WOW, or 0) as TIME: stamp before play (`stamp-defaults
 
 ## Gates
 
-- The manifest's gate: `tools/verify/verify_burn.py`.
 - `make verify-bus`: 19 layouts (17 until 18 Aug 2026; the two `IN` cases
   were added after the delay's IN decode was deleted by a splice with 17/17
   still passing), the three carriers of the housekeeping block, the

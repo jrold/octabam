@@ -12,7 +12,19 @@ race: a green run is not evidence a timing fix works.
 
     make verify-bus SAVE=1     # on the tree you trust, BEFORE the edit
     ...make the bus change...
-    make verify-bus            # must come back 19/19 bit-identical
+    make verify-bus            # must come back bit-identical, every case
+
+    python3 tools/verify/verify_bus.py --base origin/main
+                               # no stamp: the DEV hatch of remix `bus` built
+                               # from the merge-base (image_identity's base
+                               # worktree) and from this tree, both rendered
+                               # (what `make reach` runs)
+
+The subject is remix `bus`: both servers, neither locked. A remix that
+locks its servers to position 0 (octabam-bus, rig, brain: HOSTGUARD)
+renders every layout that moves a server dry -- 11 of the cases came back
+digital silence that way from 27 Sep 2026 (a5bd2828 took the default remix,
+which was `bus`, away) until 12 Oct 2026.
 
 An on-demand gate around one edit, not a member of `make check`: the
 hashes cover the whole render (reverb engine, delay engine and bus
@@ -21,12 +33,20 @@ voicing change to either engine fails it. Stamp, edit, compare, let the
 reference go stale; it lives under out/ (gitignored).
 
 The sensitivity nudge is the SEND level, the one knob every case carries
-(a nudge on a delay knob leaves the seven reverb-only cases blind).
+(a nudge on a delay knob leaves the seven reverb-only cases blind). The
+second injected defect is a SEND at position 0 that registers on the bus
+and sends silence, the defect class the bus is prone to (AGENTS.md "a bus
+client that registers but contributes nothing"). Until 12 Oct 2026 it was
+an extra SEND carrying the same tone as the others, which 11 cases could
+not show: the auto-gain divides N identical sends by N, so the bus sum is
+the same (measured: SSR and SSRS hash alike).
 """
 import argparse
 import hashlib
 import json
+import os
 import pathlib
+import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -35,6 +55,20 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1])); import too
 import send_probe  # noqa: E402
 
 REF = ROOT / "out/dsp/bus_reference.json"
+BUS_REMIX = "bus"                              # both servers, neither locked
+
+
+def build_dev(tree):
+    """The DEV hatch (both servers, a real delay in payload A) of remix
+    `bus`, built in `tree`."""
+    env = dict(os.environ, REMIX=BUS_REMIX, DEV="1", XBUS="1")
+    for var in ("MAKEFLAGS", "MFLAGS", "MAKEOVERRIDES", "SPEC"):
+        env.pop(var, None)
+    r = subprocess.run([sys.executable, "tools/build/build_bus.py"], cwd=tree, env=env,
+                       capture_output=True, text=True)
+    if r.returncode:
+        sys.exit(f"verify_bus: the DEV hatch of {BUS_REMIX} did not build in {tree}:\n"
+                 f"{(r.stdout + r.stderr)[-1500:]}")
 REF_MEM = ROOT / "out/dsp/mem_ref_A.mem"      # only needed by --allow-lag
 DEV_MEM = ROOT / "out/dsp/mem_dev_A.mem"
 
@@ -184,13 +218,20 @@ BASE = dict(dur=0.12, tail=0.25, amp=0.5, level=100, dlevel=100,
             mix=127, dtime=20, dfdbk=70, din=40, dmix=127, raux=0)
 
 
-def render(mem, case, bump_level=0, extra_send=""):
+def render(mem, case, bump_level=0, extra_send="", silent_send=False):
     kw = dict(BASE)
     kw.update(case)
     kw["level"] = kw["level"] + bump_level
     kw["dlevel"] = kw["dlevel"] + bump_level
     if extra_send:
         kw["layout"] = extra_send + kw["layout"]
+    if silent_send:
+        # a SEND at position 0 that registers on the bus and sends silence:
+        # the defect class this gate exists for (AGENTS.md "a bus client that
+        # registers but contributes nothing"). An extra SEND carrying the same
+        # tone as the others is invisible by design -- the auto-gain divides N
+        # identical sends by N -- so the selftest injects this one instead.
+        kw["layout"] = "S" + kw["layout"]
 
     # Slots come from the manifests (the harness-knob-drift rule): the KEYS
     # keep their historical flag names, the indices follow the knob map.
@@ -218,7 +259,8 @@ def render(mem, case, bump_level=0, extra_send=""):
                           verbose=False, amp=kw["amp"], direct=False,
                           wave_src=None, split=kw.get("split", 0),
                           layout=kw["layout"], delay_params=dpar,
-                          pick=kw.get("pick"), inall=kw.get("inall", False))
+                          pick=kw.get("pick"), inall=kw.get("inall", False),
+                          mute=(0,) if silent_send else ())
     h = hashlib.sha256()
     for v in L:
         h.update(v.to_bytes(4, "little", signed=True))
@@ -262,6 +304,9 @@ def main():
                     help="candidate dump (default: the DEV delay hatch)")
     ap.add_argument("--save", action="store_true",
                     help="stamp the candidate as the new reference")
+    ap.add_argument("--base", metavar="REF",
+                    help="build the DEV hatch of remix `bus` from the merge-base with REF and from\n"
+                         "this tree, and compare the two (no stamp needed)")
     ap.add_argument("--selftest", action="store_true",
                     help="prove the harness can fail (see the module docstring)")
     ap.add_argument("--allow-lag", type=int, default=0, metavar="N",
@@ -281,12 +326,32 @@ def main():
                          "at the same buffer generation as the reference.")
     a = ap.parse_args()
 
+    if a.base:
+        from image_identity import base_tree, git
+        mb = git("merge-base", a.base, "HEAD", check=False)
+        if mb.returncode:
+            sys.exit(f"verify_bus: no merge-base with {a.base}: {mb.stderr.strip()}")
+        base = base_tree(mb.stdout.strip())
+        for tree in (base, ROOT):
+            build_dev(tree)
+        print(f"bus gate: remix {BUS_REMIX}, base {mb.stdout.strip()[:10]} ({a.base}) vs this tree")
+        refd = collect(base / "out/dsp/mem_dev_A.mem")
+        dead = [k for k, v in refd.items() if v["peak"] == 0]
+        if dead:
+            print("\n  DEAD RENDERS ON THE BASE -- a matching hash would prove nothing:")
+            for k in dead:
+                print(f"    {k}")
+            sys.exit(1)
+        REF.parent.mkdir(parents=True, exist_ok=True)
+        REF.write_text(json.dumps(refd, indent=1, sort_keys=True))
+        a.mem = str(DEV_MEM)
+
     mem = pathlib.Path(a.mem)
     if not mem.exists():
         sys.exit(f"missing {mem} -- build the hatch first:\n"
-                 f"  DEV=1 XBUS=1 python3 tools/build/build_bus.py")
+                 f"  REMIX={BUS_REMIX} DEV=1 XBUS=1 python3 tools/build/build_bus.py")
 
-    print(f"bus gate: {len(CASES)} cases against {mem.relative_to(ROOT)}")
+    print(f"bus gate: {len(CASES)} cases against {mem}")
     if a.allow_lag and not a.save:
         # A lag search needs the reference's SAMPLES, and the stamped file holds
         # only hashes -- so the reference build has to still be on disk. Rather
@@ -323,7 +388,8 @@ def main():
         print("\n  SELFTEST -- both perturbations MUST fail:")
         ok = True
         for label, kw in (("knob nudge (send level +1)", dict(bump_level=1)),
-                          ("one extra SEND on the bus", dict(extra_send="S"))):
+                          ("a silent SEND client at position 0 (registers, sends nothing)",
+                           dict(silent_send=True))):
             per = collect(mem, **kw)
             same = [k for k in ref if k in per and per[k]["sha"] == ref[k]["sha"]]
             if same:

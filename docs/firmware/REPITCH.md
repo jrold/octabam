@@ -1,6 +1,6 @@
 # Variable-speed playback: the firmware ground (REPITCH)
 
-The stock 1.40C facts the REPITCH module (`modules/repitch/README.md`)
+The stock 1.40C facts the REPITCH module (removed; `git show 0ac7db50:modules/repitch/README.md`)
 stands on: the page descriptors, the select widgets, the TSTR resolution,
 the voice renderer's readers of it and the playback increment. ✅ measured
 from 1.40C unless marked; 🟡 inferred.

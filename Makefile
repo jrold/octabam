@@ -17,6 +17,9 @@ DSP_ASM := vendor/dsp56300/build/source/dsp_host/dsp_asm
 # make keeps the spaces before a `#` and `make image` then splits its recipe.
 BUILD   ?= 79
 VERSION ?= OCTABAM$(BUILD)
+# The name an image calls itself and its .RMX file's: `<REMIX> <BUILD>`
+# (tools/remix/brain.py image_name), or RMX=NAME for `make rmx`
+IMAGE_NAME = $(shell echo "$(notdir $(REMIX)) $(BUILD)" | tr a-z A-Z | cut -c1-15 | sed 's/ *$$//')
 
 # Which modules the image carries. `make modules` lists what is available;
 # remixes/<name>/remix.py is the selection. There is no default: a target
@@ -25,6 +28,12 @@ VERSION ?= OCTABAM$(BUILD)
 # the registry for it by requirement (registry.fixture).
 define need-remix
 @test -n "$(REMIX)" || { echo "REMIX is unset: make $@ REMIX=<name>   (make modules lists them)"; exit 2; }
+endef
+# The gates that need the ColdFire port SKIP without it, so a run without
+# the port is green without them (a fresh worktree's reach passed without
+# verify_kits, 11 Oct 2026): the verify recipes refuse to start instead.
+define need-port
+@test -x out/emu/ot_emu || { echo "  [FAIL] $@: the ColdFire port is not built (make emu-cf); its gates would SKIP"; exit 2; }
 endef
 # The project the set gates (verify_set, verify_modedefaults) run under the
 # port: OT_PROJECT=<dir> on the command line, else the path in
@@ -71,6 +80,20 @@ bus-plain: ## Build without specialization (both servers on both cores)
 	$(need-remix)
 	REMIX=$(REMIX) python3 tools/build/build_bus.py
 
+.PHONY: rmx
+rmx: ## REMIX SWITCH: the build as an .RMX for /BRAIN/REMIXES/ on the card -> out/<NAME>.RMX (RMX=NAME, 15 characters; default <REMIX> <BUILD>). make image writes one too
+	$(need-remix)
+	@# The image names itself (BRAIN's heading, REMIX SWITCH's RUNNING row), so
+	@# the build is told the name the file gets. Recursive, because the name
+	@# must be set for `bus` itself.
+	RMXNAME="$(if $(RMX),$(RMX),$(IMAGE_NAME))" $(MAKE) --no-print-directory bus REMIX=$(REMIX)
+	python3 tools/build/make_rmx.py out/mainos_bus.bin "$(if $(RMX),$(RMX),$(IMAGE_NAME))"
+
+.PHONY: rmx-stock
+rmx-stock: ## REMIX SWITCH: your stock 1.40C MAIN OS as out/STOCK 1.40C.RMX (switch back to stock without flashing)
+	@test -f out/raw/section_3_MAIN_OS.bin || { echo "missing out/raw/section_3_MAIN_OS.bin -- run 'make os' then 'make recon'"; exit 1; }
+	python3 tools/build/make_rmx.py out/raw/section_3_MAIN_OS.bin "STOCK 1.40C"
+
 .PHONY: image
 image: bus ## Repack the build into a card-flashable .bin (see docs/guide/BUILDING.md); BUILD=N is required
 	$(need-remix)
@@ -86,9 +109,11 @@ image: bus ## Repack the build into a card-flashable .bin (see docs/guide/BUILDI
 	  echo "  Fix: rm -rf vendor/elektron-firmware-tool; make setup; make image REMIX=$(REMIX) BUILD=$(BUILD)"; exit 1; }
 	python3 tools/build/make_bin.py out/elek_$(BUILD).bin \
 	  -o out/OCTATRACK_$(VERSION).bin
+	python3 tools/build/make_rmx.py out/mainos_bus.bin "$(IMAGE_NAME)"
 	@echo
 	@echo "  card image: out/OCTATRACK_$(VERSION).bin"
 	@echo "  MIDI image: out/OCTATRACK_OS1.40C_$(VERSION).syx"
+	@echo "  REMIX SWITCH: out/$(IMAGE_NAME).RMX (/BRAIN/REMIXES/ on the card; MAIN MENU > BRAIN boots it without flashing)"
 	@echo "  -> docs/guide/BUILDING.md before you write either to hardware."
 
 # ------------------------------------------------- audition without flashing --
@@ -149,6 +174,16 @@ panel-app: ## Build the panel's macOS app (out/Virtual Panel.app; File > Open Fi
 	bash tools/panel/app/build.sh
 
 .PHONY: emu-cf
+emu-pgo: ## Build the PGO + LTO port for this tree's sources into the shared store (minutes, once per source state; needs OT_PROJECT) and install it
+	$(PY) tools/emu/port_store.py pgo
+	$(PY) tools/emu/port_store.py install
+
+.PHONY: emu-pgo
+emu-get: ## The ColdFire port for this tree's sources from the shared store (tools/emu/port_store.py): built once per source state for every worktree, copied into out/emu
+	$(PY) tools/emu/port_store.py install
+	./out/emu/ot_emu --image $(if $(IMAGE),$(IMAGE),out/raw/section_3_MAIN_OS.bin) >/dev/null
+
+.PHONY: emu-get
 emu-cf: ## Build and run the headless ColdFire machine (tools/emu/ot_emu) -- boots to the RTOS handoff
 	@# --fresh: a cache configured from another source path makes cmake
 	@# refuse rather than rebuild.
@@ -182,7 +217,7 @@ PORT ?= A
 .PHONY: port-compare
 port-compare: ## One part under the firmware (ot_emu) and under rig_render on the same input: make port-compare PROJECT=dir [IMAGE=out/mainos_bus.bin] [PCARGS='--tone out/o9d/kickAB_late.wav']
 	$(need-remix)
-	@test -n "$(PROJECT)" || { echo "usage: make port-compare PROJECT=out/o9d/proj_t1eqA [IMAGE=out/mainos_bus.bin REMIX=bottleservice] [PCARGS=...]"; exit 1; }
+	@test -n "$(PROJECT)" || { echo "usage: make port-compare PROJECT=out/o9d/proj_t1eqA [IMAGE=out/mainos_bus.bin REMIX=octabam-bus] [PCARGS=...]"; exit 1; }
 	python3 tools/harness/port_compare.py --project $(PROJECT) --remix $(REMIX) $(if $(IMAGE),--image $(IMAGE)) $(PCARGS)
 
 .PHONY: reverb
@@ -226,27 +261,36 @@ verify: verify-shared verify-remix ## The remix-independent gates, then the sele
 # that build their own image (remix_arg=False) do not depend on the remix,
 # and 25 checks used to repeat them 25 times (27 Sep 2026, ~3 h serially).
 REMIXES ?= $(REMIX)
+# MODULES: comma-separated module keys. Set, the shared half runs only
+# those modules' module gates and knob census (`make reach` sets it for a
+# module change: the other modules' shared gates are what they were); the
+# per-remix half (check-remix, verify-remix) runs its floor and the module
+# gates of every module those keys reach (module_gates.reached()).
+MODULES ?=
 .PHONY: verify-shared
-verify-shared: ## The gates that do not depend on the remix: ledger selftest, slots, replaces, docs, the remixer draws, label_fmt, knob census, remix-independent module gates (REMIXES="a b")
+verify-shared: ## The gates that do not depend on the remix: ledger selftest, slots, replaces, docs, settings and locks, the remixer draws, label_fmt, knob census, remix-independent module gates (REMIXES="a b")
 	@test -n "$(REMIXES)" || { echo "REMIXES is unset: make $@ REMIXES=\"<name> ...\"   (make modules lists them)"; exit 2; }
-	python3 tools/remix/selftest.py
-	python3 tools/verify/verify_slots.py
-	python3 tools/verify/verify_replaces.py --static
-	python3 tools/verify/verify_docs.py
-	$(PY) tools/verify/verify_remixer.py
-	python3 tools/build/label_fmt.py
+	$(need-port)
+	$(PY) tools/verify/step.py python3 tools/remix/selftest.py
+	$(PY) tools/verify/step.py python3 tools/verify/verify_slots.py
+	$(PY) tools/verify/step.py python3 tools/verify/verify_replaces.py --static
+	$(PY) tools/verify/step.py python3 tools/verify/verify_docs.py
+	$(PY) tools/verify/step.py python3 tools/remix/brain.py check
+	$(PY) tools/verify/step.py $(PY) tools/verify/verify_remixer.py
+	$(PY) tools/verify/step.py python3 tools/build/label_fmt.py
 	@# The knob click census: every continuous knob of the rig fixture's DSP
 	@# modules moved mid-render, plus the garbage-start gate. Builds its own
 	@# fixture (registry.fixture); remix-independent.
-	$(PY) tools/verify/verify_knob_clicks.py
+	$(PY) tools/verify/step.py $(PY) tools/verify/verify_knob_clicks.py $(if $(MODULES),--modules "$(MODULES)",--sample)
 	@# Isolated module gates that take no remix: each renders its module on
 	@# a scratch image it builds itself, or checks an author's oracle. Run
 	@# once for the union of the modules across REMIXES.
-	BUILD=$(BUILD) $(PY) tools/verify/module_gates.py --shared $(REMIXES)
+	BUILD=$(BUILD) $(PY) tools/verify/step.py $(PY) tools/verify/module_gates.py --shared $(REMIXES) $(if $(MODULES),--modules "$(MODULES)",)
 
 .PHONY: verify-remix
 verify-remix: ## The selected remix's own gates: dirty state, init regs, DRAM boot, labels, its module gates, menu, the set under the port, USB
 	$(need-remix)
+	$(need-port)
 	@# verify_dirtystate builds the remix's image itself (verify-shared and
 	@# verify_character leave theirs at out/mainos_bus.bin): a module started
 	@# from a garbage instance block must be silent on silence -- the unit's
@@ -265,7 +309,7 @@ verify-remix: ## The selected remix's own gates: dirty state, init regs, DRAM bo
 	else echo "  [SKIP] labels / mode names / hidden engines: no .venv (make emu-setup)"; fi
 	@# The module gates that take the remix (remix_arg=True) and build or
 	@# read its image; the remix-independent ones ran in verify-shared.
-	REMIX=$(REMIX) BUILD=$(BUILD) $(PY) tools/verify/module_gates.py $(REMIX) --stage isolated --remix-only
+	REMIX=$(REMIX) BUILD=$(BUILD) $(PY) tools/verify/module_gates.py $(REMIX) --stage isolated --remix-only $(if $(MODULES),--modules "$(MODULES)",)
 	@# The isolated gates build their own remixes over mainos_bus.bin.
 	@# Restore the selected image before inspecting its chooser tables.
 	$(MAKE) bus REMIX=$(REMIX)
@@ -283,7 +327,7 @@ verify-remix: ## The selected remix's own gates: dirty state, init regs, DRAM bo
 	@# The USB device model against the built image: stock's MSC function on
 	@# every image, the MIDI and audio functions when the remix carries them.
 	REMIX=$(REMIX) python3 tools/verify/verify_usb.py
-	REMIX=$(REMIX) BUILD=$(BUILD) $(PY) tools/verify/module_gates.py $(REMIX) --stage image
+	REMIX=$(REMIX) BUILD=$(BUILD) $(PY) tools/verify/module_gates.py $(REMIX) --stage image $(if $(MODULES),--modules "$(MODULES)",)
 
 .PHONY: verify-roll
 verify-roll: ## Prove an alternate REVERB engine is bit-identical: make verify-roll CAND=cand.asm [REF=modules/busverb/reverb_server.asm]
@@ -315,32 +359,16 @@ verify-bus: ## Prove a bus-layout change is behaviour-preserving. STAMP FIRST: m
 	@#   make verify-bus            <- every case bit-identical (the tool prints the count)
 	@# Needs the DEV hatch: the gate's whole point is exercising layouts that
 	@# carry BOTH servers, and only the hatch has a real delay in payload A.
-	DEV=1 XBUS=1 python3 tools/build/build_bus.py >/dev/null
+	@# Remix `bus` always: both servers, neither locked (a rig remix's locked
+	@# servers render every layout that moves them dry).
+	REMIX=bus DEV=1 XBUS=1 python3 tools/build/build_bus.py >/dev/null
 	python3 tools/verify/verify_bus.py $(if $(SAVE),--save) $(if $(SELFTEST),--selftest)
-
-.PHONY: burn
-burn: ## The RIG BURN image: the shipping remix + a cycle-burn knob on SEND's slot 2 (24 cycles/step, every core) -> out/mainos_bus.bin; `make burn-image BUILD=N` packs it
-	$(need-remix)
-	REMIX=$(REMIX) BUILD=$(BUILD) XBUS=1 SPEC=1 BURN=1 python3 tools/build/build_bus.py
-
-.PHONY: burn-image
-burn-image: burn ## Repack the RIG BURN build into a card-flashable .bin (BUILD=N: name it so the panel says which image it is)
-	@test -f $(SYX) || { echo "missing $(SYX) — run 'make os'"; exit 1; }
-	@test -x $(EFT) || { echo "missing $(EFT) — run 'make setup'"; exit 1; }
-	EFT_EMIT_CONTAINER=out/elek_$(BUILD)burn.bin $(EFT) \
-	  -i $(SYX) -c 3 out/mainos_bus.bin \
-	  -V $(VERSION)B -o out/OCTATRACK_OS1.40C_$(VERSION)B.syx
-	python3 tools/build/make_bin.py out/elek_$(BUILD)burn.bin \
-	  -o out/OCTATRACK_$(VERSION)B.bin
-	@echo
-	@echo "  card image: out/OCTATRACK_$(VERSION)B.bin   (the rig + BURN on SEND's slot 2)"
-	@echo "  MIDI image: out/OCTATRACK_OS1.40C_$(VERSION)B.syx"
 
 .PHONY: check
 .PHONY: check-remixes
 check-remixes: ## The per-remix half for REMIXES="a b c", JOBS=4 worktrees at a time (out/shards/<i>, each its own port build; logs in out/check_shards/)
 	@test -n "$(REMIXES)" || { echo "REMIXES is unset: make $@ REMIXES=\"<name> ...\"   (make modules lists them)"; exit 2; }
-	BUILD=$(BUILD) $(PY) tools/verify/check_shards.py --jobs $(or $(JOBS),4) $(REMIXES)
+	BUILD=$(BUILD) $(PY) tools/verify/check_shards.py --jobs $(or $(JOBS),4) $(if $(filter 0,$(CACHE)),--no-cache,) $(REMIXES)
 
 .PHONY: check-remix-gates
 check-remix-gates: ## One remix's per-remix half, one gate per job over JOBS=4 worktrees (the wall is the longest gate, not the list; OT_PROJECT as for check-remix)
@@ -348,11 +376,11 @@ check-remix-gates: ## One remix's per-remix half, one gate per job over JOBS=4 w
 	BUILD=$(BUILD) $(PY) tools/verify/check_shards.py --by-gate --jobs $(or $(JOBS),4) $(REMIX)
 
 check: bus cycles verify ## Everything that can be checked without hardware (the set gates run under the port when OT_PROJECT or ~/.octabam_project names a project)
-	@# verify_burn.py shells out to build_bus.py twice -- with and without
-	@# BURN=1, neither with XBUS/SPEC -- and each run overwrites
-	@# out/mainos_bus.bin. Left alone, `make check` finishes by leaving a
-	@# plain probe build at the shipping artifact's path, all green. Rebuild
-	@# so the file on disk is the one the checks were about.
+	@# A diagnostic gate can shell out to build_bus.py with its own env
+	@# (BURN=1 among them) and each run overwrites out/mainos_bus.bin.
+	@# Left alone, `make check` finishes by leaving a probe build at the
+	@# shipping artifact's path, all green. Rebuild so the file on disk
+	@# is the one the checks were about.
 	@$(MAKE) --no-print-directory bus >/dev/null
 	@echo
 	@echo "  all runnable checks passed (a [SKIP] line above names what did not run); out/mainos_bus.bin restored to the shipping build"
@@ -388,8 +416,8 @@ BASE ?= origin/main
 identity: ## Which remixes' images this branch moved: every remix built from BASE (a kept worktree under out/identity/base) and from this tree, compared byte for byte
 	python3 tools/verify/image_identity.py --base $(BASE)
 .PHONY: reach
-reach: ## The gates this branch's changes reach (the diff against BASE=origin/main), QUICK by default (the carrying remixes, no identity or accept, 2 shards, nice 10); FULL=1 every gate at full speed; TESTS=1 includes remixes/test/; RUN=1 runs them, KEEP=1 every one then a table, JOBS=n the per-remix work over n worktrees
-	$(PY) tools/verify/reach.py --base $(BASE) $(if $(FULL),--full,) $(if $(TESTS),--tests,) $(if $(RUN),--run,) $(if $(KEEP),--keep-going,) $(if $(JOBS),--jobs $(JOBS),) $(REACHARGS)
+reach: ## The gates this branch's changes reach (the diff against BASE=origin/main), QUICK by default (the carrying remixes, no identity or accept, a shard per free gate slot (at least 2), nice 10); FULL=1 every gate at full speed; TESTS=1 includes remixes/test/; RUN=1 runs them, KEEP=1 every one then a table, JOBS=n the per-remix work over n worktrees
+	$(PY) tools/verify/reach.py --base $(BASE) $(if $(FULL),--full,) $(if $(TESTS),--tests,) $(if $(RUN),--run,) $(if $(KEEP),--keep-going,) $(if $(JOBS),--jobs $(JOBS),) $(if $(filter 0,$(CACHE)),--no-cache,) $(REACHARGS)
 
 .PHONY: modules
 modules: ## List the module index and the available remixes
@@ -409,6 +437,7 @@ remix: ## The remixer: swap effects in and out, dial + hear them, build the imag
 # local instrumentation there goes with it.
 .PHONY: dsp-repatch
 dsp-repatch: ## Re-apply tools/patches/dsp56300.patch to vendor/dsp56300 (reverts its tracked edits), rebuild dsp_asm/dsp_host, check the one-word move
+	@test ! -L vendor || { echo "dsp-repatch: vendor/ is a symlink to another checkout's: this would rewrite it for every worktree; run it from the main checkout"; exit 3; }
 	git -C vendor/dsp56300 checkout -- source
 	git -C vendor/dsp56300 apply "$(CURDIR)/tools/patches/dsp56300.patch"
 	cmake --build vendor/dsp56300/build --target dsp56kDisassemble dsp_asm dsp_host -j8
@@ -454,6 +483,13 @@ ci-dsp: ## CI: dsp56300 at its pin + our patch, built; upstream's test runner; c
 .PHONY: ci-emu
 ci-emu: ## CI: build the ColdFire port (tools/emu/ot_emu) and run its unit tests that need no stock OS
 	scripts/vendor.sh mc68k dsp56300
+	@$(MAKE) --no-print-directory ci-emu-tree
+
+# ci-emu without fetching: the build and the tests, into out/emu-ci of this
+# tree, against the vendor/ already here. What `make reach RUN=1` runs in a
+# worktree, where scripts/vendor.sh is refused (vendor/ is shared).
+.PHONY: ci-emu-tree
+ci-emu-tree:
 	cmake -S tools/emu/ot_emu -B out/emu-ci -DCMAKE_BUILD_TYPE=Release
 	cmake --build out/emu-ci -j
 	ctest --test-dir out/emu-ci --output-on-failure -E '^(rtos|dsp|repitch-stock|repitch-patch)$$'

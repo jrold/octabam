@@ -48,6 +48,7 @@ per block, as -sched does), a trig-split block (the dispatcher's two calls
 per block; dsp_host makes one), and a step under the tone's own d3 floor.
 
     make verify-knobs                 # the census + the garbage start (~1.5 min)
+    python3 tools/verify/verify_knob_clicks.py --sample   # a sample of the knobs + the garbage start
     python3 tools/verify/verify_knob_clicks.py --only SPECTRUM --report out/k.md
 """
 import argparse
@@ -408,6 +409,21 @@ def garbage_census(mems, only):
     return "\n".join([head, *rows]), flags
 
 
+def sampled(cs):
+    """--sample: per module and mode, the first and last continuous knob
+    (selects and the STEPPED knobs are not flagged, so they are not
+    sampled). A block-rate step comes from how a module applies a knob
+    class, so one knob at each end of a page stands for the page."""
+    out, seen = [], {}
+    for c in cs:
+        if (c.count is not None and c.count < 128) or (c.key, c.label) in STEPPED:
+            continue
+        seen.setdefault((c.key, c.mode), []).append(c)
+    for group in seen.values():
+        out += [group[0]] + ([group[-1]] if len(group) > 1 else [])
+    return out
+
+
 def cases(only):
     out = []
     for key in BUS + STATIONS:
@@ -428,11 +444,26 @@ def main():
     ap.add_argument("--no-build", action="store_true", help="reuse out/dsp/_knobs/spec_*.mem")
     ap.add_argument("--report", help="write the table (markdown) here")
     ap.add_argument("--no-garbage", action="store_true", help="skip the garbage-start renders")
+    ap.add_argument("--sample", action="store_true",
+                    help="a quick sample of the knobs (sampled(): two per module and mode) and the whole "
+                         "garbage start; the full census is for a DSP module's own change (--modules) "
+                         "and make verify-knobs")
+    ap.add_argument("--modules", default="",
+                    help="comma-separated module keys (make check-shared MODULES=...): the census of those "
+                         "the fixture carries; none of them, nothing to run")
     a = ap.parse_args()
+    if a.modules:
+        keys = {k for k in a.modules.split(",") if k}
+        a.only = sorted(keys & set(BUS + STATIONS))
+        if not a.only:
+            print(f"knob census: not reached (none of {', '.join(sorted(keys))} is a DSP module of the fixture)")
+            return 0
     mems = ({0: SCRATCH / "spec_A.mem", 1: SCRATCH / "spec_B.mem"} if a.no_build else build())
     tone_file(SCRATCH / "tone.raw", END + 2 + send_probe.WARMUP_BLOCKS)
     ok = self_test()
     todo = cases(set(a.only) if a.only else None)
+    if a.sample and not a.modules:
+        todo = sampled(todo)
     with cf.ThreadPoolExecutor(max_workers=8) as ex:
         results = list(ex.map(lambda c: run_case(mems, c), todo))
     rows, sel, flags = [], [], []

@@ -3,7 +3,7 @@
 A module is one contribution: a DSP effect, a bus client, a ColdFire
 behaviour patch, or a combination. A remix is a named selection of modules
 composed into one image. `make modules` prints what exists; `make bus
-REMIX=<name>` builds a selection. `AGENTS.md` lists the traps; the ones a
+REMIX=<name>` builds a selection. `TRAPS.md` lists the traps; the ones a
 new module can walk into are repeated here where they apply.
 
 Decide first which kind you are writing.
@@ -19,7 +19,7 @@ Decide first which kind you are writing.
 - A **ColdFire module** changes what the firmware does (parts, kits, menus,
   MIDI, bug fixes) and touches no audio; midisc (`modules/midi-scenes`)
   and Octakit (`modules/octakit`) are this shape. Skeleton
-  `modules/_template_cf/`, worked example `modules/repitch/`, section
+  `modules/_template_cf/`, worked example `modules/direct-jump-kyoti/`, section
   "Declaring a ColdFire module" below; `docs/contributing/PLACEMENT.md` says
   where the bytes land.
 
@@ -32,12 +32,12 @@ buffer, both payloads, any track.
 modules/character/manifest.py      the declaration -- knobs, donor, id, ModeViews
 modules/character/character.asm    the engine -- init, proc, in place
 modules/character/README.md        status, measured vs inferred, what is open
-remixes/bottleservice/remix.py     a remix that carries it (FX1 and FX2)
+remixes/octabam-bus/remix.py      a remix that carries it (FX1 and FX2)
 tools/verify/verify_character.py   render gates against a float reference
 ```
 
 ```bash
-make check REMIX=bottleservice
+make check REMIX=octabam-bus
 python3 tools/remix/audition.py character out/dry/drums_110.wav DRV=64
 python3 tools/verify/verify_character.py
 ```
@@ -157,8 +157,8 @@ MODULE = Module(
 ```
 
 `key` appears in the build report, and the build report is API:
-`verify_delay.py`, `verify_roll.py` and `verify_burn.py` parse build
-stdout. Changing a key, or rewording a report line, is a breaking change.
+`verify_delay.py` and `verify_roll.py` parse build stdout. Changing a
+key, or rewording a report line, is a breaking change.
 
 ## Declaring an effect
 
@@ -288,7 +288,8 @@ FX1 and FX2, so a module on a stock id replaces that effect's code wherever
 the id is selected, FX1 included, and a remix that omits the module then
 aliases the id to SEND, which takes the stock effect away from FX1 too.
 Free ids: `0x06 0x07 0x09 0x0a 0x0b 0x0e 0x0f 0x17 0x1a 0x1b 0x1d 0x1e
-0x1f`, of which `0x1d 0x1e 0x1f` are unclaimed.
+0x1f`. EUCLID holds `0x1d` and LOFI2 `0x1f`; the selftest's placement
+probes build scratch fixtures on `0x1e`, so a module there fails them.
 
 The registry is the arbiter: `registry.modules()` refuses two modules on
 one id at import, whether or not any remix selects both. `make modules`
@@ -314,7 +315,7 @@ operator arrives at this mode.
 | | the remixer | the unit |
 |---|---|---|
 | `names` | the UNIT pane's rows follow the current MODE (`Module.knob_map_in`); `send_probe --set SCTR=40` resolves the alias | `tools/build/mode_names.py` emits a MODE formatter that rewrites the descriptor's name fields before printing its own word |
-| `defaults` | applied the moment MODE changes | `modules/mode-defaults` (in bottleservice): the FX1 and FX2 page-2 editors are detoured, and a MODE turned on the panel writes the view -- page 1 through the stock page-1 writer, page 2 with the editor's own stores; without the module, `stamp-defaults` writes them; a MODE over CC MAP goes through the same unit (the cave calls it) |
+| `defaults` | applied the moment MODE changes | `modules/mode-defaults` (in octabam-bus): the FX1 and FX2 page-2 editors are detoured, and a MODE turned on the panel writes the view -- page 1 through the stock page-1 writer, page 2 with the editor's own stores; without the module, `stamp-defaults` writes them; a MODE over CC MAP goes through the same unit (the cave calls it) |
 
 The unit half needs no new hook: a descriptor carries its twelve parameter
 names as 12 × 6 bytes at `E+0x4e`, the clones are writable RAM, and every
@@ -532,7 +533,7 @@ examples; each README has its sources, `THIRD_PARTY.md` the licences).
 
 ### Rules for DSP code, each established on hardware
 
-`AGENTS.md` has the assembler and arithmetic traps (`mpy`/`a0`, `mpysu`,
+`TRAPS.md` has the assembler and arithmetic traps (`mpy`/`a0`, `mpysu`,
 labels by prefix, Tcc and the condition codes) and the dispatcher rule
 (measure r7/r6/X:0x213 facts under the port). Beside those:
 
@@ -584,11 +585,12 @@ it places it. Symbols the unit `.global`s are what the detours name;
 cross-unit references resolve in the one link (a unit may name symbols of
 units before it). `dram=True` puts it in the platform runtime: every DRAM
 unit in the remix linked as one image at the base of the platform's arena
-reserve (1,707 pages, 10 MiB off the bottom of stock's audio page arena,
-the placement Octakit and octamax have both proven on hardware;
-`tools/remix/arena.py`, `docs/contributing/PLACEMENT.md`), packed, appended
-behind octabam's loader and depacked there at boot. The cost is 10 MB of
-the unit's 85.5 MB sample/recorder pool. `dram=False` places the unit in
+reserve (pages off the bottom of stock's audio page arena, the placement
+Octakit and octamax have both proven on hardware; sized per remix by
+MEMORY, `modules/memory/README.md`, `docs/contributing/PLACEMENT.md`),
+packed, appended behind octabam's loader and depacked there at boot. The
+cost is the pages the remix claims, off the unit's 85.5 MB
+sample/recorder pool. `dram=False` places the unit in
 one of the OS image's free zero runs (~8 KB, shared with everyone). Prefer
 DRAM unless the code has to run before the loader, or you are matching an
 author's ROM layout byte for byte. A unit's `.bss` (uninitialised; KITS's
@@ -653,8 +655,7 @@ A port is done when the author's build and this repo's build agree byte for byte
 address on every build, with its declared `defsyms` and this remix's
 `remix.inc`, and compares; a unit whose bytes depend on the remix gives
 `reference=fn` instead, `fn(modules) -> (addr, sha256)` naming the variant
-the author ratified for that selection. `tools/verify/verify_midiscenes.py`
-is the standing proof. When you port someone else's
+the author ratified for that selection. When you port someone else's
 mod, run their build against the shared stock image first and use its
 output as the oracle.
 
@@ -727,7 +728,7 @@ example of every item.
 - **Serialized meanings.** Parts and locks store the bytes. Append enum
   values; never insert. A slot whose meaning changes is a data migration
   even when the image loads: test old bytes across their full range, not
-  the old default (`AGENTS.md`, the MODE re-slot stall).
+  the old default (`TRAPS.md`, the MODE re-slot stall).
 - **Hooking the stock delay routine** means keeping its protocol: the
   scratch toggle at `0x40003624`, the state iterator `0x80006180 += 68`,
   a byte-for-byte fallback for every other id, and no ring sample held
@@ -760,63 +761,78 @@ Three kinds of state, three homes:
 |---|---|---|
 | an effect's twelve parameters | the Part (`docs/firmware/PARAM_PAGES.md`); a saved Part feeds a new layout its old bytes, and a value outside its count stalls the sequencer (`tools/hw/ot_project.py stamp-defaults`) | the descriptor |
 | personal material: Kits, grooves, presets, anything a musician would copy to another project on its own | files the module owns, beside the stock project files | the module |
-| the module's settings: how it behaves or looks (a checkbox, a menu option, a USB profile) | today: nowhere, or a private file (Octakit's Kits carry their own; octalab writes `octalab_grooves.map` and `octalab_generators.map`, "OTGM" v1). Proposed: one shared store per project, OTX | the shared core |
+| the module's settings: how it behaves or looks (a checkbox, a menu option, a USB profile) | today: nowhere, or a private file (KITS keeps two in its `kits.work` header; octalab writes `octalab_grooves.map` and `octalab_generators.map`, "OTGM" v1). Designed: the brain | the core |
 
-OTX is specified in nordseele's
-[`docs/proposals/OTX_PROJECT_PROPOSAL.md`](../proposals/OTX_PROJECT_PROPOSAL.md)
-(draft 2, 26 Sep 2026; the format and the precedence) and
-[`docs/proposals/OTX_MODULE_GUIDELINES.md`](../proposals/OTX_MODULE_GUIDELINES.md)
-(what an author declares; the same texts are published in nordseele/octalab `docs/`). Nothing of it is implemented on 27 Sep 2026;
-the manifest API below is the proposal's illustration, not
-`tools/remix/schema.py`.
+The design is [`docs/proposals/BRAIN.md`](../proposals/BRAIN.md) (6 Oct
+2026): settings, defaults and templates in one registry, resolved through
+four layers (manifest, remix, card, project), kept in a `.work` / `.strd`
+pair at the card root and one in the project. The BRAIN module
+(`modules/brain`) reads the card layer of settings and shows them in
+PROJ, BRAIN, SETTINGS (10 Oct 2026; its own two settings are MIDI LOG and
+DEFAULTS, `modules/brain/README.md`). The project layer and the CS1 block
+are not built. It starts from nordseele's OTX proposal
+([`OTX_PROJECT_PROPOSAL.md`](../proposals/OTX_PROJECT_PROPOSAL.md),
+[`OTX_MODULE_GUIDELINES.md`](../proposals/OTX_MODULE_GUIDELINES.md)), and
+its section 14 lists what is taken from OTX and what differs.
 
-What it fixes: `<set>/<project>/otx.work` (working) and `otx.strd`
-(written by SAVE PROJECT, read by RELOAD) hold every module's record in
-one file, `OTX1` magic, big-endian, records of typed TLVs, CRC-32 over
-the file and each payload. A firmware without a module skips that
-module's record on load and writes it back byte for byte on save; a
-newer minor's unknown keys get the same. An optional card-root UNIT file
-takes card-wide settings (USB AUDIO's profile is the first). One
-generated MAIN MENU root category (working label MODULES, name open)
-lists a GENERAL module and the modules in the image. Writes run from the
-storage task, coalesced ~2 s after the last edit, deferred while a
-recorder, CAPTURE or tape capture writes; `open("w")`, write, close, as
-stock's `project.work`.
-
-What a module declares (the proposal's syntax):
+What a module declares (BRAIN.md section 4): a `Store` with a stable
+namespaced id; per setting a numeric `key` never reused, a kind (`Binary`,
+`Option` with append-only labels, `Number`, `Trigger`, `Blob`), a default,
+a scope (`CARD` or `PROJECT`) and an apply policy (`LIVE`, `CALLBACK`,
+`NEXT_BOOT`, `BUILD`); a `key` on each `Param`, so a stored default or
+template survives a renamed or moved knob. A remix pins or re-defaults a
+value in its `remix.py`. A module builds and runs without the core: a
+setting then resolves at build.
 
 ```python
-store=Store(id="org.octalab.usbaudio", scope=Scope.UNIT),
-settings=(
-    Setting(key=1, name="USB AUDIO", group="audio", values=("OFF", "LIGHT", "FULL"),
-            default=0, apply=Apply.NEXT_CONNECT),
-),
+from remix.schema import Apply, Option, Scope, Setting, Store
+
+MODULE = Module(...,
+    store=Store("octabam.<module directory>"),
+    settings=(Setting(1, "IN", Option("OFF", "AB", "CD", "ABCD"),
+                      scope=Scope.CARD, apply=Apply.NEXT_BOOT),),
+)
 ```
 
-- a stable namespaced module `id` (the build refuses a duplicate; a menu
-  label may change, the id may not);
-- per setting a numeric `key` never reused for another meaning, a type
-  (`Binary` 0/1, `Option` an append-only index, `Number` signed 16-bit
-  with min/max/step/unit, `Trigger` never saved, `Blob` with a declared
-  byte maximum and its own editor), a default, a `scope` (PROJECT or
-  UNIT), an apply policy (`LIVE`, `CALLBACK`, `NEXT_CONNECT`,
-  `NEXT_BOOT`), optionally a group id for the menu;
-- idempotent callbacks: after every load the core hands each one the
-  validated value or the default, and again after an edit; no card I/O
-  from an audio interrupt; never another module's record;
-- a compatibility test: with the module removed from the image, editing
-  another module's setting and saving leaves this module's record byte
-  for byte.
+A ColdFire module reads a setting at run time through a gas macro that
+`remix.brain.read_macro(remix, mods, store_id, name, macro)` returns; the
+manifest puts it in the unit's `include`:
 
-What a module does not do: invent a settings file, a save hook or a menu
-root of its own for these values (`MAINMENU.md` section 5: two modules that both
-grow one submenu cannot coexist). Its personal-material files stay its
-own.
+```python
+def settings_inc(remix, mods):
+    return brain.read_macro(remix, mods, "octabam.<module directory>", "IN", "get_in")
+```
 
-Open on 27 Sep 2026 (the proposal's section 5): the UNIT filename and recovery
-policy, size ceilings, the menu's name and row structure, whether the
-stock project-copy commands carry the pair, boot ordering for UNIT
-before USB enumeration, write latency under CAPTURE.
+and the source writes `get_in %d0`. With BRAIN in the remix and the value
+neither pinned nor `Apply.BUILD`, that assembles to one absolute load from
+BRAIN's value table (`move.l brain_v_<store>_<key>,%d0`; the unit links
+against BRAIN's global); otherwise it assembles to `move.l #<value>,%d0`
+with the resolved value. The same source builds with and without BRAIN.
+`brain.live_table(remix, mods)` lists the settings the table holds: Binary,
+Option and Number settings, one long each. Blob and Trigger settings have
+no row yet, and `Apply.CALLBACK` has no callback field yet (it reads as
+`LIVE`).
+
+A setting declared `apply=Apply.BUILD` chooses code: the module's
+`variant(values)` returns the fields that differ (`linked`, `dsp`,
+`detours`, `claims`, `gates`, ...), given `{setting name: value}` with an
+Option as its label, and the build binds each selected module once per
+remix (`registry.bound`), so every reader of those fields sees the chosen
+code. An `include` callable reads the values from the bound module's
+`build_values`. `modules/usb-audio-out/manifest.py` is the worked example:
+one source, five layouts.
+
+Then `python3 tools/remix/brain.py lock <module>` writes
+`modules/<module>/brain.lock`, committed with the manifest; `make
+verify-shared` refuses a stale lock and a change that breaks a released key
+(a removed key not retired, a changed type, a moved or removed label).
+`python3 tools/remix/brain.py resolve <remix>` prints every setting's value
+and the layer it came from.
+
+Until the store exists a module does not invent a settings file, a save
+hook or a menu root of its own for these values (`MAINMENU.md` section 5:
+two modules that both grow one submenu cannot coexist). Its
+personal-material files stay its own.
 
 ## Declaring a ROM cave: `CavePatch`
 
@@ -845,7 +861,7 @@ work. The hook span is `len(hook_stock)`: the six-byte `jsr` followed by
 nops to the end of the displaced instructions, so `hook_stock` must be
 whole instructions, at least six bytes and even. A pc-relative instruction
 in `hook_stock` can be replaced (the cave does the work itself) but not
-replayed at the cave's address; `TEMPOCAVE=replay` refuses such a cave.
+replayed at the cave's address.
 
 A cave can register itself as another module's display formatter with
 `registers_formatter=FormatterReg(module=..., slot=...)`; naming the target
@@ -981,7 +997,7 @@ Specific to a module:
   measures a bus accumulator and so analyses only modules whose harness
   says `is_server`; render an insert with `--direct`.
 - Disassemble what you assemble: `dsp_asm` mis-encodes several instructions
-  silently (`AGENTS.md`).
+  silently (`TRAPS.md`).
 
 `dsp_host` boots both payloads (`-memB`; `tools/harness/rig_render.py` for
 all eight tracks), so a server on core 1 renders on core 1 with the shared

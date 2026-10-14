@@ -51,6 +51,17 @@ receipts are separate. See [PERKY4S](modules/perky/PERKY4S_RELEASE.md).
 
 ## Unreleased
 
+- Removed REPITCH_REPEAT98_KYOTI (`modules/repitch-repeat98-kyoti/`, its submodule mount and `remixes/test/repitch-repeat98-kyoti/`) at its author's request; `octabam-inserts` no longer carries it. Its ColdFire core started from repeat98's REPITCH, and its author is rewriting it without that code.
+- GATE VERB (`modules/gateverb`): a gated plate reverb for FX2 on PLATE REV's id, built on the reverb stage of Mutable Instruments Clouds (Emilie Gillet), ported to fixed point. Six knobs: AMNT GAIN TIME DIFF TONE GATE (the gate is new: hold 52 to 784 ms after the input falls quiet, then a 3 ms close; the tank keeps ringing). One FX2 slot per instance; in `octabam-inserts`. Under `dsp_host` only: a float model agrees to 58 dB (63 dB with the gate), the gate closes to exact silence, no write outside its 16,120-word ring. Not heard, not on a unit.
+- Stations: a `SLOTS` build setting on SPECTRUM, CHARACTER and MODULATION (`FX1`, the default, or `FX1+FX2`); `FX1+FX2` runs an FX2 instance live and lists the FX2 row. `tools/verify/verify_stations_fx2.py` (remix `stations-fx2`) renders FX2 against FX1, bit for bit. CHARACTER is a bus reader (`Harness.bus_reader`), not a client: a remix with CHARACTER and no server uses fallback NONE with no SEND, and the build turns its KEY = T1 into SELF there. `octabam-inserts`: stations on both menus, the stock DELAY, no SEND.
+- Removed `remixes/test/brain` and the example image templates `templates/amp-short.json` and `templates/midi-drums.json`. `verify_brain` and `verify_loadmeter` default to `octabam-bus`; `verify_brain` skips its image-template checks on a remix with no `templates`.
+- Remixes: `octabam-bus` and `octabam-inserts` (the core ColdFire modules with the bus, and with the inserts; port gates only, not flashed). `bottleservice` and `ok-ms` retired. `octatrick`, `analog-bassdrum` and `wave` moved to `remixes/test/` with their selections.
+- Ledger: LOAD METER (declared range `X:0x37F10..0x37F2F`, no FX2 buffers) no longer refuses the FX2 rows of the buffered stock effects. Measured under the port, none writes at or above `0x37F00` (highest in the slot: DARK REV `0x37DA2`; `docs/firmware/DSP.md` section 5, `stock.SLOT_EXTENT`). A module with no declared range (SEND) still refuses them.
+- Removed repeat98's REPITCH module (`modules/repitch/`) and `remixes/test/repitch/`; REPITCH_REPEAT98_KYOTI is the repitch. `remixes/test/mods` no longer carries a repitch. `docs/firmware/REPITCH.md` (stock facts) and the `verify_repitch*` fixtures stay.
+- Build: a selected module whose menu entry is `stock_dsp` keeps the stock effect it replaces out of the harvest (`stock.harvested`). SIDECHAIN_COMPRESSOR with COMPRESSOR on neither chooser wrote over its own `scdet` hook and the build refused. No existing remix changes (refhash 24/24; `sidechain-compressor` and `kyoti-mute-sidechain` list COMPRESSOR and build identical).
+- BRAIN: TOOLS > MIDI MONITOR (the last three messages, live) and TOOLS > LOAD (the frame interrupt's share, live; FUNC + LEVEL push on an MKII); LOAD METER (new) measures it (11 Oct, port: `verify_brain`).
+- BRAIN: SETTINGS list (PROJ, BRAIN, SETTINGS) with card-stored settings, a run-time value table and `remix.brain.read_macro` for modules; MIDI LOG and DEFAULTS are BRAIN's first two settings. Measured under the port only.
+- BRAIN: project pair (`brain.work`/`brain.strd` in the project folder), the project record written at SAVE PROJECT and compared at each load, TOOLS > PROJECT CHECK. Measured under the port only.
 - Analog BD: engine selection now lives only in the pool-style browser; the
   former SRC SETUP MODEL control and its encoder editing path are removed.
   Both source outputs are 12.04 dB louder than the 29 September revision,
@@ -60,6 +71,9 @@ receipts are separate. See [PERKY4S](modules/perky/PERKY4S_RELEASE.md).
   three output instructions; the 909 adds four instructions per sample.
 
 Remixes
+- `remixes/test/rec-threshold`: REC THRESHOLD on the stock effects (11-12 Oct, THR1 to THR5 above).
+- `remixes/test/brain`: bottleservice + BRAIN (7 Oct, port only).
+- Every remix that carried a USB AUDIO OUT or IN variant selects USB AUDIO OUT / USB AUDIO IN and pins LAYOUT / INPUTS; each image byte-identical to before (6 Oct, `make identity`).
 - KITS replaces OCTAKIT, SCENES KITS, SCENES P2 KITS and KITS RELOAD in bottleservice, ok-ms, mods and character-txtr; mods also carries DIRECT_JUMP_KYOTI and RELOAD_FROM_PROJECT; `remixes/test/octakit` removed, `remixes/test/kits` added (6 Oct, port only).
 - `usb-out-tracks-post`: stock + USB MIDI + USB AUDIO OUT TRACKS POST (5 Oct).
 - bottleservice takes the computer's stereo output onto inputs C/D (USB AUDIO IN CD + USB CROSSBAR); USB AUDIO OUT MASTER polls every 250 µs (28 Sep). Both IN modules out again on 4 Oct (#575, image A0 below).
@@ -76,6 +90,12 @@ Modules
 - SCENES P2: page-2 scene locks move from the 144-byte pool at Part `+0x17a2` (stock's LFO designs of MIDI tracks 2–8) to bytes 30 and 31 of the stock scene block, eight a scene; stock scene copy, paste, undo and clear carry them; builds beside MIDI SCENES. Locks saved by earlier images are not read (10 Oct, port only).
 - STEM REC: MAIN MENU > STEMS records every track to the card while the sequencer plays, one 16-bit stereo file per track, streamed, up to 60 min (Yves Rosius, 26-30 Sep).
 - STEM REC, piece 5: every track after its fader (its share of MAIN, from core 0's own gain arithmetic redone in the frame hook), MAIN, CUE and the inputs AB/CD as sources (stereo or mono), 24-bit files, an 8 MiB ring; the menu's labels keep moving when the card falls behind (Yves Rosius, 1-4 Oct).
+- BRAIN (new): the settings store on the unit (`docs/proposals/BRAIN.md`): card-wide knob defaults from `BRAIN/card.work` at each project load (MODE views through MODE DEFAULTS), SAVE AS DEFAULT and CLEAR DEFAULT in a BRAIN MAIN MENU category as engine-task jobs, `card.strd` at SAVE PROJECT (6-7 Oct, port: `verify_brain`).
+- USB AUDIO OUT (LAYOUT) and USB AUDIO IN (INPUTS) replace the five `usb-audio-out-*` and three `usb-audio-in-*` modules: a build-time setting chooses the code (`Module.variant`) (6 Oct); USB AUDIO OUT TRACKS POST became its sixth LAYOUT (8 Oct).
+- BRAIN: WRITE DEBUG LOG writes the last 256 MIDI messages, each with the sync flags and the playing and next pattern after its handler ran, to `/BRAIN/debug.txt` (7 Oct, image B1).
+- REMIX SWITCH (sanderlegit's OS SWITCH, PR #542, renamed): MAIN MENU > BRAIN > REMIXES lists the `.RMX` images in `/BRAIN/REMIXES/`, each named `<REMIX> <BUILD>`, and boots one without writing the flash; every remix with BRAIN carries it; PR #542's power-on picker is left out. Its DSP park sits in stock's dead interrupt vectors (`DspSection.pins`, `verify_dspvectors`), its chainloader in octabam's loader (`Linked.loader`). BOOT TRACE (sanderlegit) is its boot-stage probe. `make rmx`, `make rmx-stock`; `make image` writes the `.RMX` (8 Oct, port: `verify_remixswitch`; on an MKII as OS SWITCH, its own category, 29-30 Sep; under BRAIN as image B2, a switch on an MKII, 8 Oct).
+- BRAIN: the page shortcut (hold a page key + FUNC: SAVE AS DEFAULT, CLEAR DEFAULT, SAVE/LOAD/DELETE TEMPLATE over the page), FX templates as records in `card.work` applied through the stock writers, and a boot screen (a brain over OCTABAM, PIRATE FLAG's frame hook) (10 Oct, port: `verify_brain`).
+- BRAIN's pane: DEFAULTS, REMIXES and TOOLS sub-lists, each a row array BRAIN's list descriptor is repointed at (the stock menu engine has two levels) (8 Oct).
 - KITS (new): 256 Kits per project through the stock Part slots: each pattern's Kit is copied into a slot nothing plays before the pattern is scheduled; LOAD/SAVE KIT on the stock list menu with Octakit's key map, UNDO KIT, list copy/paste/clear/undo, AUTOSAVE and KEEP LEVELS, the pattern clipboard carrying the Kit, FUNC+PASTE+PART, PTN+FUNC+RIGHT, PTN+FUNC+TRIG; kits.work/kits.strd, migration of the stock Parts, import of Octakit's kits3a/b.work; no `illegal` (6 Oct, port: `verify_kits`, 89 checks; on the unit in image A6).
 - OCTAKIT, SCENES KITS, SCENES P2 KITS, KITS RELOAD removed, with the build's Runtime/ArenaReserve machinery (every other remix's image and report bit-identical; refhash 24/24); TEMPO BUS and MODE DEFAULTS no longer push Octakit's token (6 Oct).
 - USB AUDIO OUT TRACKS POST: the sixteen track channels after each track's own MAIN gain (LEVEL, mute, solo, XLV, core 0's 16-sample ramp; MAIN_LEVEL left out), `USB_LAYOUT = 5` of the shared source; every other layout byte-identical (5 Oct; on a MKII as P3, below; streaming cost +2.8 µs a frame over OUT TRACKS on the unit, the no-host cost not measured; MASTER TRACK checked under the port only).
@@ -125,6 +145,42 @@ Docs
 - ColdFire load on a unit: Bryan T's CF METER takes (4 Oct; `docs/firmware/ARCHITECTURE.md` section 6): ~16.5 µs per playing voice at CPI ~4.4 against the port, no first-voice premium (the morning's +37 µs retracted the same evening), the USB stack ~14 µs idle / ~25 µs playing, no crossbar contention; OUT TRACKS MAIN CUE costs 27–50 µs of frame interrupt over OUT MAIN CUE, most of it with no host connected; TSTR and the stock DELAY not measurable; interrupt levels from the ICR writes in `KERNEL.md`.
 - Removed: `PLAN.md`, `docs/TIMESTRETCH_PIPELINE.md` (27 Sep).
 
+## THR1 to THR5 — 11-12 Oct 2026 (`rec-threshold`, Chupitnik's builds)
+
+On Chupitnik's MKII, each flashed from the card; the first boot of THR1 ran
+1.40C's own BOOTSTRAP UPGRADE. Built from his branch before it was squashed
+into this module's commit (`make image REMIX=rec-threshold BUILD=N
+VERSION=THRN`, the remix then named `rec-threshold-fixed` for THR1 to THR4).
+THR5 is the module's commit.
+- THR1: REC THRESHOLD at a fixed −30 dB. THR shows on RECORDING SETUP; armed with TRACK 1 + REC AB, silence never records, the input starts the take, a second press cancels, a drum hit's attack is whole by ear.
+- THR2: LEV (−40 to −6 dB) and IN on RECORDING SETUP 2. Both work; the floor too high for quiet sources, IN too jittery.
+- THR3: LEV −58 to −7 dB, −40 when TRIG becomes THR; IN holds ~0.5 s and falls ~12 dB/s. The meter right; the range wanted −60 to 0.
+- THR4: LEV −60 to 0 dB (4 dB steps to −8, then 2 dB). Working. (Its "armed from inside a recording page it starts only sometimes" is retracted below.)
+- THR5: after review, a crossing fires at or over LEV and only for a track still on THR with its recorder idle. The THR4 checks again; LEV 0 dB, an ordinary source does not start it; TRIG moved from THR to ONE while armed, the input then records nothing, and the next press records at once as ONE. With RECORDING SETUP 1 or 2 open, TRIG ONE and THR record (12 Oct), as stock 1.40C does on the same unit: the THR1 to THR4 reading that the REC keys record nothing with a page open is retracted (`docs/contributing/FAILURE_MODES.md`).
+
+## STEMS7 — 8 Oct 2026 (`stems` at `92959832`, PR #644)
+
+On the unit (Yves's MKII, flash G): T1 to T8 at 24 bits on a project of
+eight Static tracks ran 61 s with `DONE`, the ring at most 21% full;
+twelve files at 24 bits stopped with RING FULL after 4.3 s. Every file
+whole: MAIN minus the stems' sum is 0 to 7 at every sample
+(`docs/firmware/STEM_REC.md` 17.6).
+- STEM REC, zero copy: the frame hook writes each file's bytes into the file's own ring through the uncached alias, and the writer hands the card whole sectors straight from the rings; `STATS.TXT` gives the card's time while recording and while saving.
+
+## STEMS5 — 8 Oct 2026 (`stems` at `19a3a113`)
+
+On the unit (flash E): the same eight tracks at 24 bits ran 18 s before
+RING FULL; six tracks and fewer at 24 bits, and eight at 16 bits, held.
+`STATS.TXT` showed the writer waiting for the processor (STEM_REC.md 17.5).
+- STEM REC: every sample in its file's byte order, the writer's copy in whole longs; `STATS.TXT` adds the copy's fastest frame and the card's fastest write.
+
+## STEMS4 — 8 Oct 2026 (`stems` at `ad73ee89`)
+
+On the unit (flash D): T1 to T8 at 24 bits on a project of eight Static
+tracks stopped with RING FULL after 6.75 s, every file whole; the first
+`STATS.TXT` put the limit in the writer's copy (STEM_REC.md 17.4).
+- STEM REC, the perf round: a lighter frame hook (staged a frame early, no limit where it can't act, the mirror's EMAC only on a multiply), `STATS.TXT` in each take's folder, T8 shown as `T8 MASTER` and left out of a take while MASTER TRACK is on.
+
 ## L1, C1 and C2 — 7 Oct 2026 (`usb-out-tracks-main-cue`, `cfmeter-tracks`, `cfmeter-post`, allmyfriendsaresynths's builds for #625)
 
 On allmyfriendsaresynths's (@clickysteve) MKII, built on main `6f9e5bc9`.
@@ -161,7 +217,7 @@ On allmyfriendsaresynths's (@clickysteve) MKII.
 - P2 (a 20-channel diagnostic build, not in the tree: these sixteen stems
   plus MAIN and CUE): a 196 s take nulled the stems against MAIN, 99.995%
   of ~17.3 M samples within 0..7 LSB, no gain/block misalignment at
-  ~16,700 level edges (`modules/usb-audio-out-tracks-post/README.md`).
+  ~16,700 level edges (`modules/usb-audio-out/README.md`, TRACKS POST).
 - Not run on a unit: MASTER TRACK, CF METER, a soak.
 
 ## sos-capture BUILD=94 and BUILD=95 — 3 Oct 2026 (Bryan T's builds)

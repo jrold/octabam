@@ -88,16 +88,23 @@ def _ensure_insert_mem(mod, log=print):
         return mem
     log(f"building a scratch image containing {mod.name} ...")
     send = registry.by_name("send")
+    # SEND refuses the FX2 row of a module that owns an allocator buffer (its
+    # scratch lies in the slots), so such a module is auditioned alone with
+    # the firmware's NONE as the fallback.
+    alone = bool(mod.claims is not None and mod.claims.stock_instance_buffer
+                 and not mod.claims.fx1_only)
+    modules = f'("{mod.key}",)' if alone else f'("{mod.key}", "{send.key}")'
+    fallback = "NONE" if alone else send.key
     scratch = ROOT / "remixes/_audition.py"
     scratch.write_text(
-        f'"""_audition -- scratch: {mod.name} + SEND, for the remixer.\n\n'
+        f'"""_audition -- scratch: {mod.name}{"" if alone else " + SEND"}, for the remixer.\n\n'
         f'Written and removed by tools/remix/audition.py.\n"""\n\n'
         f'from remix.schema import Remix\n\n'
         f'REMIX = Remix(\n'
         f'    name="_audition",\n'
         f'    doc="audition scratch",\n'
-        f'    modules=("{mod.key}", "{send.key}"),\n'
-        f'    fallback="{send.key}",\n'
+        f'    modules={modules},\n'
+        f'    fallback="{fallback}",\n'
         f')\n')
     keep = IMAGE.read_bytes() if IMAGE.exists() else None
     try:

@@ -10,6 +10,7 @@ set -euo pipefail
 source "$(dirname "$0")/vendor.sh"
 
 cd "$(dirname "$0")/.."
+refuse_shared_vendor
 
 echo "== 1) System tools (via Homebrew) =="
 need_brew=()

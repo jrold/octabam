@@ -48,7 +48,7 @@ writes its tables.
 
 ## What it costs
 
-- **DSP code:** 1,269 words. In remix [`wave`](../../remixes/wave/README.md)
+- **DSP code:** 1,269 words. In remix [`wave`](../../remixes/test/wave/README.md)
   it lives in DARK REV's and SPRING REV's harvested words (768 left), so
   both reverbs are off the chooser there.
 - **DSP memory:** one 16,384-word FX2 buffer per instance from the

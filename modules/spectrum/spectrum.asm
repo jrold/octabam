@@ -243,8 +243,9 @@ fs_sem_coeffs:
         move    #$10,y1                 ; 1/8
         move    y1,a                    ; a clean load: a0 = 0 for the divide
         andi    #$fe,ccr                ; carry clear
-        rep     #$18
+        do      #$18,>norep_sp_01
         div     x0,a                    ; 24 quotient bits land in a0
+norep_sp_01:
         move    a0,x0
         move    x0,x:(r7+$33)           ; d
 fs_skip_sem_coeffs:
@@ -362,8 +363,9 @@ fs_mcap:
         add     #>$010000,a             ; (1 + 15C)/128, < nl/8 always
         move    x1,x0
         andi    #$fe,ccr
-        rep     #$18
+        do      #$18,>norep_sp_02
         div     x0,a
+norep_sp_02:
         move    a0,x0
         move    x0,x:(r7+$76)           ; gn/16 = (1 + 15C)/(16 nl), <= 0.993:
                                         ; ring 0's target
@@ -485,8 +487,9 @@ fs_mladr:
         move    a,x0
         move    x1,a                    ; a clean load: a0 = 0, num < den
         andi    #$fe,ccr
-        rep     #$18
+        do      #$18,>norep_sp_03
         div     x0,a
+norep_sp_03:
         move    a0,x0                   ; G = g/(1+g), <= 0.65
         move    x0,x:(r7+$10)           ; G, the ramp's target
         move    x0,y1
@@ -502,8 +505,9 @@ fs_mladr:
         move    a,x0
         move    #$20,a                  ; num = 1/4 (a2 = a0 = 0): d/2 = (1/4)/den, <= 1/2
         andi    #$fe,ccr
-        rep     #$18
+        do      #$18,>norep_sp_04
         div     x0,a
+norep_sp_04:
         move    a0,x0
         move    x0,x:(r7+$14)           ; d/2
         move    x:(r7+$10),y1           ; G

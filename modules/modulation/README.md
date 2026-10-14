@@ -8,6 +8,8 @@ published, permissively licensed source (Modes and Sources, below;
 licences in `THIRD_PARTY.md`). Every mode outputs the wet only and MIX
 blends, so MIX 0 is an exact passthrough and MIX 127 the wet outright.
 
+**SLOTS** (build setting, store `octabam.modulation`): `FX1` (default) or `FX1+FX2`. With `FX1+FX2` an FX2 instance runs the station live and the FX2 chooser lists it; a remix pins it (`settings={("octabam.modulation", "SLOTS"): Pin("FX1+FX2")}`). `tools/verify/verify_stations_fx2.py` renders the FX2 instance against the FX1 instance, bit for bit (`remixes/test/stations-fx2`). A remix with the bus keeps the default: its cycle budget is priced with the stations on FX1.
+
 ## Knobs
 
 | page | slot | name | range | law | in the modes |

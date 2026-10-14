@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """The remix on the port with its screen and panel: play with it.
 
-    make emu-live REMIX=bottleservice                  # OT_PROJECT or ~/.octabam_project
-    python3 tools/emu/live.py bottleservice --project ~/octa/projects/RIG [--bank 2]
+    make emu-live REMIX=octabam-bus                  # OT_PROJECT or ~/.octabam_project
+    python3 tools/emu/live.py octabam-bus --project ~/octa/projects/RIG [--bank 2]
 
 Builds the remix (unless --image), stages the project onto a scratch card
 the way tools/verify/verify_set.py does, boots `ot_emu --live <fifo> --lcd

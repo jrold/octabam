@@ -20,7 +20,10 @@ vendor/
 .playwright-mcp/
 __pycache__/
 .venv/
+.venv-site/
 *.pyc
+# Generated manual site pages (tools/site/gen_pages.py; the deploy builds them)
+docs/site/reference/
 tools/hw/rec
 tools/hw/tone
 # the same two binaries at their pre-10-Sep path, still on some checkouts

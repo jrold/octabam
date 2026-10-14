@@ -1,7 +1,7 @@
 """rig -- the rig's selection with no ColdFire runtime, for the gates that
 build it.
 
-bottleservice without USB AUDIO, USB MIDI, Octakit and the scene modules:
+octabam-bus without USB AUDIO, USB MIDI, Octakit and the scene modules:
 the bus, the three stations, TEMPO SYNC, CC MAP, MODE DEFAULTS, RIG HOSTS.
 registry.fixture picks it for verify_ccmap and verify_ccfeedback (CC MAP on
 the hosts under unicorn, no Runtime), verify_character and verify_onebus.
@@ -13,7 +13,7 @@ from remix.schema import Proof, Remix
 REMIX = Remix(
     name="rig",
     family="rig", proof=Proof.CHECK, proof_note="",
-    doc="bottleservice's delay and reverb bus and FX1 stations, without USB, Octakit or the scene modules: the fixture of the CC MAP, Character and one-aux gates.",
+    doc="octabam-bus's delay and reverb bus and FX1 stations, without USB, Octakit or the scene modules: the fixture of the CC MAP, Character and one-aux gates.",
     modules=("REVERB SERVER", "DELAY SERVER", "SEND",
              "SPECTRUM", "CHARACTER", "MODULATION",
              "TEMPO SYNC", "CC MAP", "MODE DEFAULTS", "RIG HOSTS"),

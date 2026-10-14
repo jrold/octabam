@@ -99,7 +99,7 @@ count in this descriptor.
 
 15 effects; ids `04 05 08 0c 0d 10 11 12 13 14 15 16 18 19 1c`. The gaps
 are where a module's id goes (`MODULES.md`); a stock id is also an FX1 id
-(`AGENTS.md`).
+(`contributing/TRAPS.md`).
 
 ### PLAYBACK entries = machine types
 
@@ -242,7 +242,7 @@ AMP (per track, present for every machine type):
 
 `p11 TRIG` is the un-drawn AMP slot. Whether an AMP-page value reaches the
 DSP record, and whether enabling p11 gives it storage and publication, are
-unmeasured; a default outside its count stalls the sequencer (`AGENTS.md`).
+unmeasured; a default outside its count stalls the sequencer (`contributing/TRAPS.md`).
 
 ## 4. Page class handlers
 
@@ -303,6 +303,23 @@ track:
 | page 1 | `DB + 0x8ee9a + t·24` | LFO · AMP · FX1 · FX2 (FX1 p1 `+0x8eea6`, FX2 p1 `+0x8eeac`; = the page-1 writer's `flat − 6`) |
 | page 2, read by the dial | `DB + 0x8f072 + t·30` | LFO PMTR×3 WAVE×3 · AMP · FX1 (`+0x8f07e`) · FX2 (`+0x8f084`) · LFO MULT×3 TRIG×3 (`+0x8f08a`) |
 | page 2, PLAYBACK editor storage | `DB + 0x8ef5a + t·30 + 6·machine + slot` | indexed by `0x460d5c30` |
+
+Audio-track page homes, offsets from `DB + p·0x18b2` ✅ (read 7 Oct 2026,
+`t` = audio track, nothing run under the port):
+
+| page | page 1 | page 2 | page-2 editor |
+|---|---|---|---|
+| SRC / PLAYBACK | `+0x8edaa + t·30 + machine·6` | `+0x8ef5a + t·30 + machine·6` | `0x4003a474` (slot 2, delta) |
+| LFO | `+0x8ee9a + t·24` | PMTR/WAVE `+0x8f072 + t·30`; MULT/TRIG `+0x8f08a + t·30` | resolver `0x40057538` |
+| AMP | `+0x8eea0 + t·24` | `+0x8f078 + t·30` (live `0x8000083c + t·72`) | `0x4003adec` |
+| FX1 | `+0x8eea6 + t·24` | `+0x8f07e + t·30` | `0x4003abe4` |
+| FX2 | `+0x8eeac + t·24` | `+0x8f084 + t·30` | `0x4003a9dc` |
+
+The machine byte is `+0x8eda2 + t`. `0x40054cd8(track, flat, value)` covers
+all of page 1: flat 0-5 SRC (the current machine's block), 6-11 LFO, 12-17
+AMP, 18-23 FX1, 24-29 FX2. It does not reach page 2; page 2 goes through
+the editors (delta-based, reading globals) or an absolute write as in
+`MAINMENU.md` section 7. The MIDI tracks' homes are in `MIDI_TRACKS.md`.
 
 The bank file's page-2 block (`ot_project.P2_OFF 0x307 + t·30`, FX1 p2 at
 +0, FX2 p2 at +6) has the DB display array's order from the FX1 column on.
@@ -462,7 +479,7 @@ editor (`MAINMENU.md` section 7) writes even slots only; ✅ tag 84: MODE steps
 as a select on slot 6, SHMR/MDEP sweep 0–127 from slot 7 (a count-128 knob
 in a companion field works; the 10 Aug "near-boolean companion" reading was
 the inherited formatter). The first play after the move stalled on stored
-parts (`AGENTS.md`, stamp-defaults).
+parts (`contributing/TRAPS.md`, stamp-defaults).
 
 `dsp_host` implements this map (`cd8964a`); a param-driven companion
 renders bit-identical to the `MODE=`/`DMODE=` build-time overrides, which
@@ -505,14 +522,17 @@ hard-coded (`cmp #N` after a common prologue):
 
 A formatter overrides the count: a cloned slot inherits the donor's A/B,
 and a count-128 slot on a 3-entry word-label renderer draws nothing
-(`AGENTS.md`; `verify_menu` checks renderer against count).
+(`contributing/TRAPS.md`; `verify_menu` checks renderer against count).
 `tools/build/stock_labels.py` reads the stock labels by calling each A
 formatter under the emulator (`emu_bringup._call`): FILTER HP/LP
 "12dB|24dB", ENV "BASE|WDTH", EQ TYP "LOW|PEQ|HIGH", PHASER NUM "2..10",
 COMB PTCH "A#0".."A 9".
 
-Unmeasured: the buffer length behind `buf` (stock's longest label is 4
-chars; the modules' ≤ 5, "1/16T"); whether A is consulted where B's count matters.
+The buffer behind `buf`: five characters run on hardware (BusDelay
+"CLEAN"/"GRAIN"/"REVRS", BusVerb "PLATE", "1/16T"; stock's longest label is
+4); ten fault the unit (`VEC:04 ADDR 4E007890` on turning the knob,
+`docs/contributing/FAILURE_MODES.md`). Unmeasured: the length between,
+and whether A is consulted where B's count matters.
 
 ## 8. Not decoded
 

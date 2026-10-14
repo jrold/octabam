@@ -80,6 +80,11 @@ def set_project_text(dest):
             if count != 1:
                 raise ValueError(f"{path}: no {key.decode()} key")
         raw = raw.replace(b"MASTER_TRACK=1", b"MASTER_TRACK=0")
+        # the template's saved mute and solo states would silence tracks
+        for key in (b"TRACK_MUTE_MASK", b"TRACK_SOLO_MASK"):
+            raw, count = re.subn(rb"(\r?\n)" + key + rb"=\d+", lambda m: m.group(1) + key + b"=0", raw, count=1)
+            if count != 1:
+                raise ValueError(f"{path}: no {key.decode()} key")
         path.write_bytes(raw)
     otp.set_tempo(dest, 200 if LOAD else 120)
 

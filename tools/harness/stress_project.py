@@ -2,7 +2,7 @@
 """Build a repeatable, locally generated DSP and sequencer stress project
 for a remix.
 
-    python3 tools/harness/stress_project.py [--remix bottleservice] [--source <project>] [--out out/stress-project]
+    python3 tools/harness/stress_project.py [--remix octabam-bus] [--source <project>] [--out out/stress-project]
 
 The placement is derived from the selection (`layout`): each server on
 the first track of its core, SEND on the other FX2 slots when the remix

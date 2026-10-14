@@ -21,7 +21,8 @@ Page 1: DRV FOLD WDTH COMP TONE MIX; page 2: SAT KEY KLVL (29 Sep 2026:
 KEY and KLVL; 22 Sep 2026: TXTR removed,
 WDTH in its slot; 20 Sep 2026: TONE back on page 1 in the return's slot)."""
 
-from remix.schema import (Gate, Category, Proof, BusRole, Claims, DspSection, Formatter, Harness,
+from remix import stations
+from remix.schema import (Store, Gate, Category, Proof, BusRole, Claims, DspSection, Formatter, Harness,
                           Kind, MenuEntry, ModeView, Module, Param, YBase)
 
 _PLAIN = Formatter.PLAIN
@@ -109,16 +110,22 @@ MODULE = Module(
         r7_latch_slot=None,           # never reads the rotation
         gate_label=None,              # no housekeeping: a station never elects
     ),
+    # The default; the build setting SLOTS = FX1+FX2 lifts fx1_only and the
+    # dry flag (tools/remix/stations.py, verify_stations_fx2).
     # FX1 only: the rig's cycle envelope closes only with the stations on
     # FX1 (four Characters on both slots priced a core at 4,830 against
     # 3,120). The FX2 chooser hides the row; verify_character proves the
     # dry pass.
     claims=Claims(fx1_only=True),
-    # bus_client: KEY reads two words of the bus scratch (y:$990/$991), so
+    # bus_reader: KEY reads two words of the bus scratch (y:$990/$991), so
     # the build moves its `$9xx` literals to the shared window under XBUS.
     # It writes nothing there and never registers.
-    harness=Harness(layout_char="2", is_server=False, bus_client=True),
+    harness=Harness(layout_char="2", is_server=False, bus_reader=True),
+    store=Store("octabam.character"),
+    settings=(stations.setting(),),
+    variant=stations.variant(lambda: MODULE),
     gates=(Gate('tools/verify/verify_character.py', remix_arg=False),
+           Gate('tools/verify/verify_stations_fx2.py', remix_arg=False),
            Gate('tools/verify/verify_charkey.py', remix_arg=False)),
     dear={'DRV': 127, 'FOLD': 127, 'COMP': 127, 'MIX': 127, 'WDTH': 127, 'SAT': 0},
 )

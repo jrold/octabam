@@ -592,7 +592,7 @@ document.addEventListener("keydown", e => {
   // window's responder chain and macOS beeps on every auto-repeat.
   if (e.key === "a" || e.key === "A") { e.preventDefault(); aHeld = true; return; }
   if (e.key === "z" || e.key === "Z") { e.preventDefault(); zHeld = true; return; }
-  if (e.key === "Escape") { e.preventDefault(); if (!e.repeat) releaseHeld(); return; }
+  if (e.key === "Escape" && document.querySelector(".k.held")) { e.preventDefault(); if (!e.repeat) { releaseHeld(); escapeReleased = true; } return; }
 });
 document.addEventListener("keyup", e => {
   if (e.key === "Shift") { shiftHeld = false; releaseHeld(); }
@@ -793,6 +793,39 @@ document.addEventListener("keydown", e => {
 // The computer's arrow keys press the panel's arrows, held while held (the
 // unit does its own auto-repeat). The crossfader keeps LEFT/RIGHT while it
 // has focus (the handler above).
+// Enter is the YES key and Escape the NO key; Escape first lets go of
+// latched keys when any are held (the one press does one of the two).
+let escapeReleased = false;
+const NAV = {Enter: "yes", Escape: "no"};
+const navKey = e => {
+  const id = NAV[e.key];
+  if (!id) return null;
+  if (e.target.closest && e.target.closest("input, textarea, select, button, a")) return null;
+  return id;
+};
+document.addEventListener("keydown", e => {
+  const id = navKey(e);
+  if (!id) return;
+  e.preventDefault();
+  if (e.repeat || (e.key === "Escape" && escapeReleased)) return;
+  const k = mapKeys[id] || BUILTIN[id];
+  if (!k) return;
+  const el = document.querySelector(`.k[data-id="${id}"]`);
+  if (el) el.classList.add("down");
+  sendKey(k[0], k[1], true);
+});
+document.addEventListener("keyup", e => {
+  const id = navKey(e);
+  if (!id) return;
+  e.preventDefault();
+  if (e.key === "Escape" && escapeReleased) { escapeReleased = false; return; }
+  const k = mapKeys[id] || BUILTIN[id];
+  if (!k) return;
+  const el = document.querySelector(`.k[data-id="${id}"]`);
+  if (el) el.classList.remove("down");
+  sendKey(k[0], k[1], false);
+});
+
 const ARROWS = {ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right"};
 const arrowKey = e => {
   const id = ARROWS[e.key];

@@ -51,8 +51,9 @@ init:
         move    #>$ffffff,m5
         move    r7,r5
         clr     a
-        rep     #$7f                    ; every slot, $00..$7e
+        do      #$7f,>norep_vc_01  ; every slot, $00..$7e
         move    a,x:(r5)+
+norep_vc_01:
         rts
 
 proc:

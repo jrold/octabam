@@ -3,7 +3,7 @@
 PERSONALIZE > MUTE MODE chooses what a muted or soloed-out audio track does: OT (stock, an instant cut after the FX), OTFX (the dry sound cuts, FX tails ring out, the sequencer keeps running), OTFX-T (as OTFX, new trigs suppressed), DT-T (the sounding note plays out on its amp envelope, new trigs suppressed). Default OT.
 
 Built from [Zac-Kyoti/octatrack-kyoti-fw](https://github.com/Zac-Kyoti/octatrack-kyoti-fw)
-(submodule `upstream/`, pinned to `d3e0801`). `Kind.CF_PATCH`. Two linked ROM units (`patch_softmute.s`, `patch_mutemode.s`), six `jmp` detours, three `TableGrow`s for the PERSONALIZE label, getter and setter arrays, and four pokes: the row count at `0x40068fb2` (15 to 16 on an MKI, 16 to 17 on an MKII) and the three ANDY restore widenings `pea 0x64` to `pea 0x70`. The tables are grown with `insert_at=2`: MUTE MODE is row 2, after PREVIEW WITHOUT FX, as in the author's standalone build; LED BRIGHTNESS stays the last row, shown on an MKII only.
+(submodule `upstream/`, fork `sambanks/octatrack-kyoti-fw`, pinned to `bf5bfc0`). `Kind.CF_PATCH`. Two linked units (`patch_softmute.s`, `patch_mutemode.s`; ROM caves or DRAM by the `PLACE` setting, default CAVE), six `jmp` detours, three `TableGrow`s for the PERSONALIZE label, getter and setter arrays, and four pokes: the row count at `0x40068fb2` (15 to 16 on an MKI, 16 to 17 on an MKII) and the three ANDY restore widenings `pea 0x64` to `pea 0x70`. The tables are grown with `insert_at=2`: MUTE MODE is row 2, after PREVIEW WITHOUT FX, as in the author's standalone build; LED BRIGHTNESS stays the last row, shown on an MKII only.
 `upstream/octabam-modules/mute-modes/README.md` is the full description, with what was measured and what was inferred.
 
 ## Measured

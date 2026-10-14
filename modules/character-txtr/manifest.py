@@ -77,7 +77,7 @@ MODULE = Module(
     kind=Kind.DSP_EFFECT,
     category=Category.TRACK, author="sambanks", author_url="https://github.com/sambanks",
     proof=Proof.CHECK, proof_note="",
-    doc="Character plus TXTR (Airwindows Pockey2): fold, texture, saturation, tilt, compressor, width. For testing: 4x this beside the reverb is unmeasured on hardware.",
+    doc="Character plus TXTR (Airwindows Pockey2): fold, texture, saturation, tilt, compressor, width.",
     menu=MenuEntry(
         fx2_id=0x0d,                  # DJ EQ's: Character keeps LO-FI's 0x1c
         replaces="DJ EQ",

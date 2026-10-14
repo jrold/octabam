@@ -1,0 +1,22 @@
+{
+ "params": {},
+ "retired": {
+  "params": [],
+  "settings": []
+ },
+ "settings": {
+  "1": {
+   "labels": [
+    "ON",
+    "OFF",
+    "REPLAY"
+   ],
+   "name": "CAVE",
+   "type": "option"
+  }
+ },
+ "store": {
+  "id": "octabam.tempo-sync",
+  "major": 1
+ }
+}
