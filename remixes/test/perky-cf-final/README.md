@@ -1,5 +1,12 @@
 # PERKY CF FINAL — four-track ColdFire Perky Machines
 
+> **ARCHIVED EXPERIMENT — NOT THE CURRENT PERKY FIRMWARE.** This README
+> documents the original **ColdFire development/measurement profile**, including historical results and
+> instructions for *that specific image*. The working MKII release is
+> **PERKY4S** (T1/T5, Fold1/Fold2/Simple/Complex on DSP, 12 retained FX).
+> Read the [current PERKY status](../../../modules/perky/README.md) before building or flashing.
+> Do **not** treat older "flash next" instructions here as current guidance.
+
 The final four-track ColdFire Perky Machines profile: four independent PĒRKONS
 source voices (T1/T2/T5/T6) driven from the unified `PERKY PROBE` machine, with
 **every stock Octatrack FX retained** on both choosers.

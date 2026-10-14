@@ -1,5 +1,12 @@
 # `perky-dsp-3algo` — two Perky voices, three DSP algorithms
 
+> **ARCHIVED EXPERIMENT — NOT THE CURRENT PERKY FIRMWARE.** This README
+> documents the original **reduced three-algorithm DSP prototype**, including historical results and
+> instructions for *that specific image*. The working MKII release is
+> **PERKY4S** (T1/T5, Fold1/Fold2/Simple/Complex on DSP, 12 retained FX).
+> Read the [current PERKY status](../../modules/perky/README.md) before building or flashing.
+> Do **not** treat older "flash next" instructions here as current guidance.
+
 [Perky Machines](../../modules/perky/README.md) with a **reduced** target: only
 **T1 and T5** are Perky-capable, each with exactly **one** synthesis voice, and
 each exposing exactly **three** selectable algorithms — Fold Drum 1, Resonant

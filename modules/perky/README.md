@@ -1,63 +1,90 @@
-# PERKY — PĒRKONS-style source machines (work in progress)
+# PERKY — PĒRKONS-style source machines
 
-This directory is the development home for a native Octatrack source-machine
-port of the PerkyBits / PĒRKONS HD-01 engine families.  Acoustic Hats was
-removed: it is a PCM sample player whose ~450 KB of hat samples duplicate what
-the Octatrack's own sampler already does.
+## Current release: PERKY4S (Phase 2)
 
-**Status:** the ColdFire four-voice build renders ten engine families
-(Fold 1/2, Wavetable, Simple/Complex Drum, Resonant Drums, Slap, Karplus,
-Noise Hat, Noise/Tone) directly on the MCF54455 into ordinary stock source
-segments, with Tune/Decay/Algo/Prm1/Prm2/Mode p-locked on SRC A–F.  The PCM,
-control and state qualification passes bit-exactly against the pinned PerkyBits
-native references; hardware qualification is still pending.
+**PERKY4S is the current working DSP-based build**, confirmed by the user on
+an Octatrack MKII. This is **not** the earlier four-voice ColdFire prototype,
+the Noise/Tone canary, or the three-algorithm DSP test remix.
 
-The tracked `manifest.py` is an impulse probe. The full audible machine is
-composed by `tools/perky/build_machine_canary.py`; use the full builder to test
-shipping behavior. See [HANDOFF.md](HANDOFF.md) for verified evidence, local
-paths, build steps, known limits, and continuation toward all twelve families.
+- **Source commit:** `16a8de19a17ee4cba765cbdb30ca051f85af4e23`
+- **Hardware-tested MAIN OS SHA256:** `be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0`
+- **Audio tracks:** T1 (DSP core B) and T5 (DSP core A), one PERKY synthesis
+  voice per core. T2–T4 and T6–T8 remain normal Octatrack tracks.
+- **ALGO 1–4:** Fold Drum 1, Fold Drum 2, Simple Drum, Complex Drum.
+- **SRC A–F:** TUNE, DECAY, ALGO, PAR1, PAR2, MODE. All six support
+  parameter locks, including per-step ALGO/MODE changes.
+- **Integration:** native DSP56300-family source rendering through the
+  Octatrack's normal AMP, FX, LFO, scene and sequencing paths.
+- **Retained stock effects (12):** Filter, Spatializer, Equalizer, DJ EQ,
+  Phaser, Flanger, Chorus, Comb, Delay, Spring Reverb, Dark Reverb and Lo-Fi.
+  Plate Reverb and Compressor are not available in this release.
 
-The first milestone targeted **Noise / Tone** (voice 4, panel algorithm 2).
-It established the initial source-machine path:
+PERKY4S incorporates Complex Drum control corrections verified against the
+installed PerkyBits AU 0.2.0 and a guarded shared-DSP-program placement that
+resolved the preceding PERKY4R hardware sequencer stall. Its production MAIN
+OS is byte-identical to the successful P4RPG6 hardware probe. The user has
+also reported PERKY4S working on the MKII. The extent of prolonged physical
+stress testing is not established; local emulator/qualification results
+should not be mistaken for exhaustive silicon verification.
 
-1. a `PERKY` row in the stock machine chooser;
-2. per-track signature and Part persistence without consuming a sample slot;
-3. a custom source record delivered to both DSP cores;
-4. a DSP56300 Noise / Tone voice that is triggered at the stock event offset;
-5. stock AMP, FX1, FX2, LFO, scenes and p-lock plumbing after the synthesized
-   source;
-6. a local render gate against the PerkyBits native integer reference;
-7. measured P/X/Y footprint and cycles before more engines are admitted.
+### Current DSP memory limit
 
-The implementation follows the measured `modules/analog-bassdrum/` source
-machine seam rather than creating a second machine framework. Until the common
-machine plumbing is generalized, PERKY and ANALOG BD will be mutually
-exclusive because they need the same sixth chooser row, FLEX-signature storage
-and DSP source seam.
+Both cores use **770/774 safe private P-words** (four free per core).
+The shared executable tails hold **2,398 code words plus six uploaded NOP
+guard words**, consuming **2,404/2,404 shared P-words** (none free).
+These are the PERKY4S totals; earlier PERKY3R/PERKY4 memory tables describe
+earlier images. Shared P/X/Y aliasing, stock-effect buffers, and the
+end-of-window guard must be respected by future DSP work.
 
-No Elektron firmware bytes, PĒRKONS firmware bytes, samples or extracted table
-blobs belong in this repository. Reference fixtures must be generated from the
-user's own inputs at development/test time.
+### Source, build and qualification
 
-See [PORT.md](PORT.md) for the implementation plan and engine map, and
-[DSP_QUALIFICATION.md](DSP_QUALIFICATION.md) for current per-family evidence,
-cycle limits and production blockers.
+The release is assembled from this repository's sources by
+`tools/perky/build_four_machine.py`, not by a generic
+`make bus REMIX=perky-probe` or the obsolete `build_machine_canary.py`
+release path. The registered `modules/perky/manifest.py` is still a
+**diagnostic impulse probe**; the source for the shipping four-algorithm
+profile is assembled by the dedicated four-machine builder.
 
-Noise Hat's three candidate DSP modes now have original ARM PCM/state execution
-gates. See [NOISE_HAT.md](NOISE_HAT.md) for measured resources and the outstanding
-classic timing and production-integration gates. Family 010 remains unavailable
-in production images.
+Start with [PERKY4S release and reproducibility](PERKY4S_RELEASE.md),
+[the AU authenticity repair](PERKY4R_AU_REPAIR.md), and
+[the hardware placement investigation](PERKY4R_RUNTIME_REGRESSION.md).
+Packaging requires the user's own original Octatrack OS, qualified
+firmware-tool executable, reference assets, local toolchain and project
+fixture. These inputs and generated firmware images are deliberately
+not committed to this repository.
 
-Phase 2 development candidate: [PERKY4 release and hardware handoff](PERKY4_RELEASE.md),
-[exact memory ledger](PERKY4_MEMORY.md), and [Pickup feasibility audit](PICKUP_FEASIBILITY.md).
-This four-algorithm profile has its own local release runner; the registered
-probe manifest and preserved PERKY3R checkpoint remain unchanged.
+A local test and packaging procedure is documented in
+[PERKY4S_RELEASE.md](PERKY4S_RELEASE.md). The resulting firmware must
+match the MAIN OS SHA256 above before claiming byte-identity with the
+hardware-tested version. Tests run locally; do not use GitHub CI.
 
-Complex authenticity repair: [PERKY4R AU audit and capture procedure](PERKY4R_AU_REPAIR.md).
-PERKY4's original renderer comparisons proved arithmetic, while direct installed-AU
-qualification exposed its TUNE, modulation-frequency and maximum-DECAY control omissions.
+## Future work versus current functionality
 
-Runtime stability repair: [PERKY4S guarded placement and release procedure](PERKY4S_RELEASE.md).
-Its production MAIN OS is identical to P4RPG6, reported working on MKII T1/T5
-across all algorithms with Dark Reverb used on both. Full qualification receipts
-and physical test scope are recorded separately.
+Wavetable Drum V1/V2, Resonant, Noise/Tone, Karplus, Slap and Noise Hat
+have historical prototypes or qualification research, **but they are not
+available as additional ALGO choices in PERKY4S**. The wider target in
+[PERKY_MACHINES_TARGET.md](../../PERKY_MACHINES_TARGET.md) calls for four
+simultaneous independent tracks with all stock FX preserved; **PERKY4S
+is a tested Phase 2 milestone, not completion of that target**.
+
+## Historical experiments (not the current release)
+
+The early source-seam canary used Noise/Tone and a five-control page;
+the four-voice ColdFire experiment rendered ten families into source
+segments. Those experiments remain in the repository for reproducibility,
+but should not be used as descriptions of the working MKII firmware.
+
+- [Early architecture and checkpoints](HANDOFF.md) — historical material,
+  including obsolete ColdFire and older hardware-status claims.
+- [DSP family execution research](DSP_QUALIFICATION.md) — standalone
+  candidates, not a shipping ALGO list.
+- [PERKY4 source and MKII handoff](PERKY4_RELEASE.md) — predecessor release.
+- [PERKY4 physical memory](PERKY4_MEMORY.md) — predecessor memory ledger;
+  use PERKY4S_RELEASE.md for the current 0-free shared-P allocation.
+- [P4R/P4S runtime investigation](PERKY4R_RUNTIME_REGRESSION.md) —
+  hardware failure, controlled probes, and resolution.
+
+PERKY follows the existing Octabam source-machine seam (also explored by
+ANALOG BD); source-render hooks and machine-selection sites may collide
+with independently enabled modules. Do not assume the modules can be
+combined without a collision audit.

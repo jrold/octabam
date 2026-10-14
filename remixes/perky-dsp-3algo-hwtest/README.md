@@ -1,5 +1,12 @@
 # perky-dsp-3algo-hwtest — EXPERIMENTAL, for hardware timing measurement
 
+> **ARCHIVED EXPERIMENT — NOT THE CURRENT PERKY FIRMWARE.** This README
+> documents the original **reduced three-algorithm DSP prototype**, including historical results and
+> instructions for *that specific image*. The working MKII release is
+> **PERKY4S** (T1/T5, Fold1/Fold2/Simple/Complex on DSP, 12 retained FX).
+> Read the [current PERKY status](../../modules/perky/README.md) before building or flashing.
+> Do **not** treat older "flash next" instructions here as current guidance.
+
 **This build exists to be flashed for a burn sweep. It is not a release.**
 Its timing figures are software planning bounds; nothing here has been measured on
 an Octatrack.

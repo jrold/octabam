@@ -19,6 +19,22 @@ Pull requests are accepted: a module, a port of an existing mod, a fix, a
 doc correction. Issues are disabled and there is no request queue. The
 licence is MIT; a fork that takes requests and tracks issues is allowed.
 
+## Fork-specific PERKY status (Phase 2)
+
+This `perky-machines` branch includes **PERKY4S**, the four-algorithm,
+DSP-based source machine confirmed working on the user's Octatrack MKII.
+Its exact source checkpoint is `16a8de19a17ee4cba765cbdb30ca051f85af4e23` and the
+hardware-tested MAIN OS hash is `be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0`.
+PERKY runs on **T1 and T5**, retaining **12 stock effects** (Plate Reverb
+and Compressor are the donors). See
+[the current PERKY README](modules/perky/README.md) and
+[PERKY4S release notes](modules/perky/PERKY4S_RELEASE.md).
+
+**Note:** the automatically generated module table below still lists
+`PERKY PROBE` and `PERKY 3ALGO`, which are historical registered
+development modules. They are *not* the dedicated PERKY4S production
+builder or its hardware status.
+
 ## Start here
 
 | you want to | read |

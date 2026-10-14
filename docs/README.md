@@ -4,6 +4,11 @@ Where each doc is, by who reads it. A module's own page is
 `modules/<name>/README.md`, a remix's `remixes/<name>/README.md`, a tool's
 `tools/<dir>/README.md`.
 
+**Current PERKY firmware:** [PERKY4S status and source entry point](../modules/perky/README.md)
+and [PERKY4S release evidence](../modules/perky/PERKY4S_RELEASE.md).
+Earlier PERKY3R/PERKY4 and ColdFire research docs below describe historical
+checkpoints, not the current MKII firmware or free DSP memory.
+
 ## Building and flashing a remix
 
 | doc | what it is |
@@ -16,8 +21,8 @@ Where each doc is, by who reads it. A module's own page is
 | [../modules/perky/PERKY4_RELEASE.md](../modules/perky/PERKY4_RELEASE.md) | Four-algorithm local candidate, provenance workflow and MKII checklist |
 | [../modules/perky/PERKY4R_AU_REPAIR.md](../modules/perky/PERKY4R_AU_REPAIR.md) | Direct installed-AU capture, three demonstrated Complex control defects, repair gates and hardware comparison |
 | [../modules/perky/PERKY4R_RUNTIME_REGRESSION.md](../modules/perky/PERKY4R_RUNTIME_REGRESSION.md) | PERKY4R trigger stall, guarded placement, hardware results and controlled builds |
-| [../modules/perky/PERKY4S_RELEASE.md](../modules/perky/PERKY4S_RELEASE.md) | Guarded production build, local qualification and physical confirmation procedure |
-| [../modules/perky/PERKY4_MEMORY.md](../modules/perky/PERKY4_MEMORY.md) | Both DSP cores, physical aliases, exact free extents and modeled timing |
+| [../modules/perky/PERKY4S_RELEASE.md](../modules/perky/PERKY4S_RELEASE.md) | Current working MKII DSP release; guarded P placement, final P ledger, qualification and physical test scope |
+| [../modules/perky/PERKY4_MEMORY.md](../modules/perky/PERKY4_MEMORY.md) | Historical PERKY4 DSP ledger and timing; **not** the PERKY4S occupancy (see PERKY4S_RELEASE.md) |
 | [../modules/perky/PICKUP_FEASIBILITY.md](../modules/perky/PICKUP_FEASIBILITY.md) | Conditional ColdFire census only; Pickup and shared recorders preserved |
 
 ## Writing a module or changing the build
