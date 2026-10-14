@@ -112,6 +112,15 @@ and hashes; nothing proprietary is committed.
 
 Use the supplied original image and local PerkyBits checkout through
 `PERKONS_FIRMWARE` and `PERKYBITS_SOURCE` if their default Downloads paths differ.
+Set `PERKY_EFT` to PERKY4's already-qualified local packaging binary. Its SHA256
+is `c42f39e4a908abbdb4c65df706025a97fb024d1d869a55092e958f127d6bb619`;
+this task copies it to `out/perky/eft-qualified/elektron-firmware-tool` without
+changing the shared vendor tool. The shared tool left-justified the version
+field and was rejected by the strict wrapper gate; the pinned tool produces
+the required right-justified field. The failed attempt's command/error is
+preserved under `out/perky/au/packaging-default-tool-failure.log`. No verifier
+was relaxed. An absent or changed packaging tool blocks release.
+
 Initialize an isolated worktree with the dependencies described in `AGENTS.md`;
 copy its ignored engine fixtures and static assets from the trusted checkpoint,
 or regenerate them with the existing extraction/capture tools. The AU reference
@@ -143,7 +152,12 @@ floor produced **349 PASS markers, zero FAIL, two explicit archival SKIP**, with
 84 isolated module gates and four image gates passing. All 45 targeted commands
 had zero skips; the two archival omissions are covered by packaged upload/boot
 readback and generated four-profile odd-access checks. The original project
-inventory was unchanged. Packaging adds the required wrapper round-trip command.
+inventory was unchanged. The clean committed rebuild reproduced qualified MAIN OS SHA256
+`6499de13d66ab4099ad87521e93e3f362c4fa80259deb95b6e86190f20ecd495`.
+Packaging's wrapper round trip completed **47 successful commands, zero failed**,
+with 46 targeted commands and zero targeted skips. A separate final provenance
+check validated 609 committed program sources, 2,748 input receipts and all
+seven artifacts. Physical qualification remains pending.
 
 Both cores matched all 27 native four-second AU sounds with **zero PCM error**.
 Nine four-second 44.1 kHz source comparisons per core peaked at **1.1875 Q23
