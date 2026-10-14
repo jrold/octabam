@@ -16,6 +16,16 @@ including Image 90 (`usb-lean`). Other documents cite 94, 96 and 99 for
 
 The full text before this rewrite: `git show 666b6154:CHANGELOG.md`.
 
+## P4RPG6 — 14 Oct 2026 — PERKY4R stability discriminator
+
+The MKII user reports T1 and T5 working with every PERKY algorithm and Dark
+Reverb used on both: audio plays and the sequencer no longer stalls. PERKY4R
+and P4RNDISP stalled at the first sound trigger; P4ROLDDSP worked. P4RPG6 retains
+all AU repairs and reserves six mapped shared-P NOP words at the upper boundary.
+The normal PERKY4S build reproduces this MAIN OS byte for byte. Exact silicon
+prefetch behavior remains inferred; reported hardware scope and local release
+receipts are separate. See [PERKY4S](modules/perky/PERKY4S_RELEASE.md).
+
 ## PERKY2 — 6 Oct 2026 — perky-machine
 
 - Synthetic Noise/Tone canary: user confirmed working on their Octatrack after

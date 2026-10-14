@@ -14,7 +14,7 @@ import perky_emit_shards as E
 import all_fx_layout as L
 
 
-def plan(asm, tag):
+def plan(asm, tag, *, pad_guard=True):
     pieces, whole, dest, final, syms = E.emit(asm, tag)
     records = []
     ledger = []
@@ -28,6 +28,12 @@ def plan(asm, tag):
     for i, (a, w) in enumerate(records):
         assert all(not L.overlaps((a, a+len(w)), (b, b+len(v)))
                    for b, v in records[i+1:])
+    if pad_guard and any(name == 'pk_multi_complex_init' for name, *_ in pieces):
+        from perky_four_placement import PREFETCH_GUARD_START, PREFETCH_GUARD_WORDS
+        assert all(addr<0x30000 or addr+len(words)<=PREFETCH_GUARD_START for addr,words in records),'executable shard overlaps prefetch guard'
+        records.append((PREFETCH_GUARD_START, [0] * PREFETCH_GUARD_WORDS))
+        ledger.append(dict(name='mapped prefetch guard NOPs',
+                           start=PREFETCH_GUARD_START, length=PREFETCH_GUARD_WORDS))
     # The stock startup clears the complete aliased half-window AFTER upload.
     # Keep its local-Y clear and all stock-owned shared words; skip code tails.
     local=L.local_p_spans(tag)

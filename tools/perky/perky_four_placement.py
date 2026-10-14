@@ -6,8 +6,11 @@ Use a deterministic exhaustive packer rather than treating gaps as contiguous.
 """
 import all_fx_layout as L
 
+PREFETCH_GUARD_WORDS = 6
+PREFETCH_GUARD_START = 0x40000 - PREFETCH_GUARD_WORDS
 
-def place(pieces, syms, tag, externals):
+
+def place(pieces, syms, tag, externals, *, guard_words=PREFETCH_GUARD_WORDS):
     import perky_three_placement as three
     size = {n:b-a for n,a,b,_,_ in pieces}
     common = three.COMMON | {'pk_source_clock_prepare', 'pk_three_common_controls',
@@ -25,7 +28,9 @@ def place(pieces, syms, tag, externals):
             for n in names:
                 assert lo+size[n]<=hi, (t,n,'private overflow')
                 dest[t][n] = lo; lo += size[n]
-    spans = L.SAFE_SHARED_P_SPANS
+    # Keep the physical clear/claim spans unchanged; limit executable placement.
+    # Six mapped NOP words are reserved for sequential instruction prefetch.
+    spans = L.SAFE_SHARED_P_SPANS[:-1] + ((L.SAFE_SHARED_P_SPANS[-1][0],0x40000-guard_words),)
     owned = set(size)-common-set(fast)-set(entry)
     items = [(n,t,size[n]) for t in ('A','B') for n in owned]
     items += [(n,None,size[n]) for n in common]

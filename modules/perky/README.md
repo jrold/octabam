@@ -56,3 +56,8 @@ probe manifest and preserved PERKY3R checkpoint remain unchanged.
 Complex authenticity repair: [PERKY4R AU audit and capture procedure](PERKY4R_AU_REPAIR.md).
 PERKY4's original renderer comparisons proved arithmetic, while direct installed-AU
 qualification exposed its TUNE, modulation-frequency and maximum-DECAY control omissions.
+
+Runtime stability repair: [PERKY4S guarded placement and release procedure](PERKY4S_RELEASE.md).
+Its production MAIN OS is identical to P4RPG6, reported working on MKII T1/T5
+across all algorithms with Dark Reverb used on both. Full qualification receipts
+and physical test scope are recorded separately.

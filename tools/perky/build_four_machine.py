@@ -25,6 +25,7 @@ import build_multi_machine_canary as multi
 import build_machine_canary as base
 import perky_four_memory as memory
 ALGORITHMS=['Fold Drum 1','Fold Drum 2','Simple Drum','Complex Drum']
+HARDWARE_PG6_SHA256='be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0'
 
 def item(path):
     p=Path(path).resolve()
@@ -38,6 +39,7 @@ def build(work,version):
     image=multi.build_image(work,8,version,control_input=ROOT/'modules/perky/control_four_candidate.c',
         engine_ids=(0,3,2,5),local_only=True,src_only=True,phase2_ui=True)
     memory.supplement(work)
+    assert base.sha256(image)==HARDWARE_PG6_SHA256,'production build differs from hardware-tested P4RPG6'
     local_provenance=work/'provenance.json'
     provenance=json.loads(local_provenance.read_text())
     provenance['sha256'][str((work/'memory.json').relative_to(ROOT))]=base.sha256(work/'memory.json')
@@ -55,9 +57,9 @@ def main():
     modes.add_argument('--qualify-only',action='store_true')
     modes.add_argument('--package-qualified',action='store_true')
     ap.add_argument('--work',type=Path,default=ROOT/'out/perky/four')
-    ap.add_argument('--version',default='PERKY4R')
+    ap.add_argument('--version',default='PERKY4S')
     args=ap.parse_args();work=args.work.resolve();work.mkdir(parents=True,exist_ok=True)
-    assert args.version=='PERKY4R','Complex AU repair identifier is PERKY4R; old checkpoints are reserved'
+    assert args.version=='PERKY4S','Stability repair identifier is PERKY4S; old checkpoints are reserved'
     project=os.environ.get('OT_PROJECT')
     if not args.local_only:assert project and (Path(project)/'project.work').is_file(),'real OT_PROJECT required'
     results=[];result_lock=threading.Lock()
@@ -129,7 +131,11 @@ def main():
         for name in ('verify_perky_three_memory.py','verify_perky_four_startup.py',
                      'verify_perky_four_src_ui.py','verify_perky_four_ui.py'):
             run(*gate(name,extra=('--build',work)))
+        run(*gate('verify_perky_prefetch_guard.py',extra=('--build',work)))
+        run(*gate('verify_perky_prefetch_guard.py',extra=('--build',ROOT/'out/frozen/PERKY4R','--expect-unsafe')))
         run(*gate('verify_perky_cf_odd_access.py',extra=('--generated',work/'odd-audit')))
+        run([sys.executable,ROOT/'tools/perky/measure_runtime_images.py','--reference',ROOT/'out/frozen/PERKY4R','--candidate',work,'--out',work/'actual-image-cost','--engines','0','3','2','5'])
+        run([sys.executable,ROOT/'tools/verify/verify_perky_four_project.py','--image',image,'--project',project,'--work',work/'first-trigger-dry','--t1-only','--dry','--algorithm','0','--fixed-algorithm','--first-trigger-delay','16','--quantum','64'])
         batch([gate('verify_perky_synth_port.py',{'PERKY_SYNTH_IMAGE':image,'PERKY_TEST_ENGINE':e}) for e in (0,3,2,5)])
         for e in (0,5):
             run(*gate('verify_perky_four_fx.py',{'PERKY_FRAGMENT_BUILD':work,'PERKY_FX_WORK':work/f'stock-fx-{e}','PERKY_FX_ENGINE':e}))
@@ -186,6 +192,7 @@ def main():
     extra_sources['tools/harness/perky_au_capture.cpp']=base.sha256(ROOT/'tools/harness/perky_au_capture.cpp')
     extra_sources['Makefile']=base.sha256(ROOT/'Makefile')
     report={'extra_sources':extra_sources,'native_reference_commit':native_commit,'version':args.version,'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'starting_commit':'11f0165f702ddac17bd61a5b19cdbe43cca740f9',
+        'hardware_evidence':{'identifier':'P4RPG6','source_commit':'c303931ddd6391bc8f13e91799f6a9b545a3f15c','mainos_sha256':HARDWARE_PG6_SHA256,'production_mainos_identical':base.sha256(image)==HARDWARE_PG6_SHA256,'reported':'T1 and T5, all algorithms; Dark Reverb used on both; audio works and no sequencer stalls','duration_and_extended_matrix':'not specified'},
         'hardware_qualified':False,'algorithms':ALGORITHMS,'controls':['TUNE','DECAY','ALGO','PAR1','PAR2','MODE'],
         'voices':['T1','T5'],'artifacts':artifacts,'inputs':inputs,'commands':results,
         'project_input':q['project_input'],'committed_rebuild_sha256':base.sha256(image),
@@ -202,7 +209,7 @@ def main():
     component_paths += [ROOT/f'out/perky/four-clock-audio-{tag}/report.json' for tag in ('A','B')]
     component_paths += [ROOT/'out/perky/au-regression'/tag/'report.json' for tag in ('A','B')]
     component_paths += [ROOT/'out/perky/au-regression/control-contract/report.json']
-    component_paths += [work/'ui-report.json']
+    component_paths += [work/'ui-report.json',work/'actual-image-cost/report.json',work/'first-trigger-dry/result.json']
     component_paths += [work/f'{name}-t1-only-q64/result.json' for name in ('legacy','four')]
     component_paths += [work/f'{name}-t1-t5-q{quantum}/result.json' for name in ('legacy','four') for quantum in (16,64,256)]
     component_paths += [work/'four-t5-only-q64/result.json']
@@ -210,7 +217,7 @@ def main():
     report_path=work/(args.version+'_RELEASE.json');report_path.write_text(json.dumps(report,indent=2)+'\n')
     manifest.write_text(args.version+' MKII HARDWARE TEST CANDIDATE\n'+f'git={base.revision()}\n'
         +''.join(f'{n}_sha256={v["sha256"]}\n' for n,v in artifacts.items())
-        +'status=local qualification passed; physical qualification pending\n'
+        +'status=local qualification passed; identical P4RPG6 MAIN OS has reported MKII success; extended physical confirmation pending\n'
         +f'release_report={report_path}\nrelease_report_sha256={base.sha256(report_path)}\n')
     print(f'CANDIDATE: {card}\n{midi}\n{manifest}\n{report_path}')
 

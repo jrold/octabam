@@ -1,4 +1,4 @@
-# PERKY4R physical lock: unresolved release blocker
+# PERKY4R physical lock: guarded placement passes reported hardware cases
 
 The MKII user reports PERKY4R locking with T1 and T5 assigned to PERKY,
 including non-Complex algorithms and blank projects. The subsequent report
@@ -8,7 +8,9 @@ stock FX are not required. A subsequent **P4RNDISP** manual trigger also stalls
 the sequencer; the user confirms its screen and encoders still respond.
 **P4ROLDDSP subsequently plays sound and runs the sequencer without lockups.** This
 supersedes any assumption that the failure is isolated to Complex controls.
-There is **no locally reproduced firmware failure and no stability fix claim**.
+**P4RPG6 now passes reported MKII testing: T1 and T5, all algorithms,
+Dark Reverb used on both; audio plays and the sequencer does not stall.**
+The emulator still does not reproduce the original failure.
 
 Frozen comparison points are PERKY4 `11f0165f702ddac17bd61a5b19cdbe43cca740f9`
 and PERKY4R `afedc8925b616cbc9aa7786208f9aa4a14e7ae5d`. Their MAIN OS hashes are
@@ -161,10 +163,19 @@ all four algorithms on both cores, including cold hits and interior retriggers,
 without changing the 23040 ceiling. Direct AU evidence remains the earlier R
 capture; the new candidate preserves R's synthesis rather than retuning it.
 
-The next physical test is **P4RPG6, T1 alone, Fold1, no FX, one manual trigger**,
-followed by one sequencer trig. If it passes, test T5 and both voices, then
-Complex. No stability fix is claimed before that observation. The original
-PLACE candidate remains a separate placement-policy discriminator if needed.
+The user reports P4RPG6 working on T1 and T5 with all algorithms and Dark
+Reverb used on both. Test duration and exhaustive modulation/transition coverage
+were not specified. This supports the guarded placement as the stability repair
+for the reported first-trigger regression. It does not isolate an exact silicon
+prefetch depth: the packer necessarily relocates several shards.
+
+PERKY4S integrates that same six-word guard and explicit padding into the normal
+four-engine build. Its MAIN OS must be byte-identical to hardware-tested P4RPG6
+(`be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0`).
+The guard affects only four-engine placement; stock startup clear spans/bytes
+and the AU-qualified renderer/control source remain unchanged. The full release
+suite additionally runs the unsafe frozen-R negative control, actual-upload
+PCM/state/cost comparisons for all engines/cores, and delayed first activation.
 
 ## Controlled hardware images
 
@@ -241,5 +252,5 @@ If all fail, the next differential is the ColdFire/runtime or loader integration
 No algorithm changes are authorized by these outcomes alone.
 
 Current branch is `codex/perky4r-runtime-regression`. Source is committed clean;
-the release remains blocked on the physical PG6 single-trigger experiment. No local
-command supplies the missing hardware discrimination.
+the PG6 hardware discriminator has passed the cases reported above. The normal
+PERKY4S release still requires its complete local receipts and clean rebuild.

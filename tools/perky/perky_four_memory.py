@@ -19,7 +19,10 @@ def supplement(work):
     m['schema']='perky4-physical-memory-v1'
     shared=m['physical_shared_p']
     shared['free_extents']=gaps(L.SAFE_SHARED_P_SPANS,[(r['start'],r['start']+r['length']) for r in shared['extents']])
-    assert sum(b-a for a,b in shared['free_extents'])==shared['free']==6
+    assert sum(b-a for a,b in shared['free_extents'])==shared['free']==0
+    shared['executable_words']=sum(r['length'] for r in shared['extents'] if r['name']!='mapped prefetch guard NOPs')
+    shared['prefetch_padding_words']=sum(r['length'] for r in shared['extents'] if r['name']=='mapped prefetch guard NOPs')
+    assert shared['executable_words']==2398 and shared['prefetch_padding_words']==6
     for tag,c in m['cores'].items():
         local=[(r['start'],r['start']+r['length']) for r in c['p_shards'] if r['start']<0x30000]
         c['private_p']={'capacity':sum(b-a for a,b in L.local_p_spans(tag)),

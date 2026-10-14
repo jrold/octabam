@@ -15,7 +15,8 @@ Where each doc is, by who reads it. A module's own page is
 
 | [../modules/perky/PERKY4_RELEASE.md](../modules/perky/PERKY4_RELEASE.md) | Four-algorithm local candidate, provenance workflow and MKII checklist |
 | [../modules/perky/PERKY4R_AU_REPAIR.md](../modules/perky/PERKY4R_AU_REPAIR.md) | Direct installed-AU capture, three demonstrated Complex control defects, repair gates and hardware comparison |
-| [../modules/perky/PERKY4R_RUNTIME_REGRESSION.md](../modules/perky/PERKY4R_RUNTIME_REGRESSION.md) | Physical PERKY4R lock blocker, actual-image differentials and controlled hardware builds |
+| [../modules/perky/PERKY4R_RUNTIME_REGRESSION.md](../modules/perky/PERKY4R_RUNTIME_REGRESSION.md) | PERKY4R trigger stall, guarded placement, hardware results and controlled builds |
+| [../modules/perky/PERKY4S_RELEASE.md](../modules/perky/PERKY4S_RELEASE.md) | Guarded production build, local qualification and physical confirmation procedure |
 | [../modules/perky/PERKY4_MEMORY.md](../modules/perky/PERKY4_MEMORY.md) | Both DSP cores, physical aliases, exact free extents and modeled timing |
 | [../modules/perky/PICKUP_FEASIBILITY.md](../modules/perky/PICKUP_FEASIBILITY.md) | Conditional ColdFire census only; Pickup and shared recorders preserved |
 

@@ -47,7 +47,11 @@ def main():
         records=json.loads((new/'p-records.json').read_text()); changes=[]
         if name=='P4RNDISP':
             for tag in ('A','B'):
-                _,_,_,final,syms=E.emit(new/'multi.asm',tag)
+                from functools import partial
+                original=placement.place
+                placement.place=partial(original,guard_words=0)
+                try: _,_,_,final,syms=E.emit(new/'multi.asm',tag)
+                finally: placement.place=original
                 lo,hi=final(syms['p3sg_base']),final(syms['p4mod_base'])
                 assert hi-lo==8
                 for upload in ('A','B'):
@@ -72,13 +76,13 @@ def main():
             # One placement constraint; the frozen PERKY4R source is unchanged.
             # Assemble every reference at its final address with round-trip
             # checking. Do not splice machine-code addresses heuristically.
-            source=(ROOT/'tools/perky/perky_four_placement.py').read_text()
+            source=(ROOT/'tools/perky/perky_four_placement.py').read_text().replace('guard_words=PREFETCH_GUARD_WORDS','guard_words=0')
             needle="and (core is None or (a<0x38000)==(core=='A'))]"
             assert source.count(needle)==1
             constrained=source.replace(needle,"and (core is None or (a<0x38000)==(core=='A'))\n                   and (name != 'pk_three_common_controls' or i == 4)]")
             namespace={'L':placement.L};exec(compile(constrained,'bank1-placement','exec'),namespace)
             original=placement.place;placement.place=namespace['place']
-            try: plans={tag:F.plan(new/'multi.asm',tag) for tag in ('A','B')}
+            try: plans={tag:F.plan(new/'multi.asm',tag,pad_guard=False) for tag in ('A','B')}
             finally: placement.place=original
             union={}; ledgers={}
             for tag,(va,length) in zip(('A','B'),(A.PAYLOAD_A,A.PAYLOAD_B)):

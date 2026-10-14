@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Conservative shared-P boundary safety gate, not a silicon pipeline emulator."""
-import argparse,json
+import argparse,hashlib,json
 from pathlib import Path
 
 def main():
@@ -16,6 +16,7 @@ def main():
             if row['start']>=0x30000 and row['start']+row['length']>limit:
                 violations.append((tag,row['name'],hex(row['start']+row['length']-1)))
     if args.expect_unsafe:
+        assert hashlib.sha256((args.build/'fragmented-mainos.bin').read_bytes()).hexdigest()=='6499de13d66ab4099ad87521e93e3f362c4fa80259deb95b6e86190f20ecd495','unsafe negative control is not frozen PERKY4R'
         assert violations,'negative control no longer detects the preserved risk'
         print('[PASS] frozen-image negative control detects shared-P boundary risk:',violations)
         return

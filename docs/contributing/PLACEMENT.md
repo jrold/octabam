@@ -193,3 +193,19 @@ stock Part routines and the CC dispatch as stock, so none is needed (`git show 2
   question.
 - `0x46000000..0x47502c10`: measure with samples loaded and the recorder
   running before placing there.
+
+## PERKY4S shared-program boundary reservation
+
+The four-engine PERKY profile reserves the last six mapped shared-P words,
+0x3fffa..0x3ffff, for explicit NOP uploads on both cores. Executable placement
+uses 2398 shared words; the six guard words fill the 2404-word physical tail
+capacity. Private P remains 770/774 words per core. Full physical startup-clear
+spans remain unchanged; only the four-engine placement solver's usable bound
+shrinks. No stock FX or additional donor is removed.
+
+The original R T1 frame ended at 0x3fffe and stalled physical playback at the
+first sound trigger. The guarded P4RPG6 image passes the user's reported T1/T5,
+all-algorithm, Dark Reverb cases; normal PERKY4S reproduces that MAIN OS exactly.
+Instruction prefetch beyond mapped memory is the suspected mechanism, not an
+emulated or measured exact fetch depth. The permanent boundary gate rejects
+the frozen unsafe R placement. See [the release record](../../modules/perky/PERKY4S_RELEASE.md).

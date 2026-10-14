@@ -10,7 +10,7 @@ def digest(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def main():
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--report',type=Path,required=True)
     r=json.loads(ap.parse_args().report.read_text());commit=r['source_commit']
-    assert r['version'] in ('PERKY4','PERKY4R') and r['hardware_qualified'] is False
+    assert r['version'] in ('PERKY4','PERKY4R','PERKY4S') and r['hardware_qualified'] is False
     assert r['algorithms']==['Fold Drum 1','Fold Drum 2','Simple Drum','Complex Drum']
     assert r['controls']==['TUNE','DECAY','ALGO','PAR1','PAR2','MODE'] and r['voices']==['T1','T5']
     assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()==commit
@@ -34,7 +34,7 @@ def main():
         'verify_perky_four_src_ui.py','verify_perky_four_ui.py','verify_perky_four_startup.py',
         'verify_perky_synth_port.py','verify_perky_four_fx.py','verify_perky_four_project.py',
         'verify_perky_two_core_regression.py','verify_perky_final_wrappers.py'}<=names
-    if r['version']=='PERKY4R':
+    if r['version'] in ('PERKY4R','PERKY4S'):
         assert {'verify_perky_complex_au.py','verify_perky_complex_control_contract.py'}<=names
         captures=[c for c in r['commands'] if len(c['command'])>1 and Path(c['command'][1]).name=='verify_perky_complex_au.py']
         assert len(captures)==6 and sum('--baseline' in c['command'] for c in captures)==4
@@ -43,7 +43,11 @@ def main():
             assert len(report['comparisons'])==27 and all(c['peak_error_lsb']==0 for c in report['comparisons'])
             for path,sha in report['source_sha256'].items():assert digest(ROOT/path)==sha,(tag,path,'AU-qualified source drift')
             assert len(report['dynamic_AU_native'])==3 and len(report['integrated_AU_clock_trim'])==9
+    if r['version']=='PERKY4S':
+        assert 'verify_perky_prefetch_guard.py' in names
+        assert r['hardware_evidence']['production_mainos_identical']
+        assert r['hardware_evidence']['mainos_sha256']==r['artifacts']['mainos']['sha256']=='be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0'
     assert r['committed_rebuild_sha256']==r['artifacts']['mainos']['sha256']
     print(f'[PASS] {r["version"]} provenance: {len(sources)} committed sources, {len(r["inputs"])} inputs, '
-          f'{len(r["commands"])} successful commands, {len(r["artifacts"])} artifacts; hardware pending')
+          f'{len(r["commands"])} successful commands, {len(r["artifacts"])} artifacts; hardware scope recorded separately')
 if __name__=='__main__':main()

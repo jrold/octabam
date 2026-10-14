@@ -22,12 +22,9 @@ VERSION='P4RPG6'
 def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
 def guard_placer():
-    source=(ROOT/'tools/perky/perky_four_placement.py').read_text()
-    needle='    spans = L.SAFE_SHARED_P_SPANS\n'
-    assert source.count(needle)==1
-    source=source.replace(needle,'    spans = L.SAFE_SHARED_P_SPANS[:-1] + ((L.SAFE_SHARED_P_SPANS[-1][0],0x40000-6),)\n')
-    namespace={'L':placement.L};exec(compile(source,'prefetch-guard-placement','exec'),namespace)
-    return namespace['place']
+    # Explicit policy keeps the hardware-tested diagnostic reproducible.
+    from functools import partial
+    return partial(placement.place, guard_words=GUARD)
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
@@ -37,7 +34,7 @@ def main():
     assert sha(reference/'fragmented-mainos.bin')=='6499de13d66ab4099ad87521e93e3f362c4fa80259deb95b6e86190f20ecd495'
     normal=bytearray((reference/'fragmented-normal.bin').read_bytes())
     before=bytes(normal);prior=placement.place;placement.place=guard_placer()
-    try:plans={tag:F.plan(reference/'multi.asm',tag) for tag in ('A','B')}
+    try:plans={tag:F.plan(reference/'multi.asm',tag,pad_guard=False) for tag in ('A','B')}
     finally:placement.place=prior
     union={};ledgers={};changed_offsets=set()
     for tag,(va,length) in zip(('A','B'),(A.PAYLOAD_A,A.PAYLOAD_B)):
