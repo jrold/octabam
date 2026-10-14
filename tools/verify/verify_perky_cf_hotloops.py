@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 PERKY = ROOT / "modules/perky"
-RENDERERS = ("cf_fold.c", "cf_karplus.c", "cf_noise_tone.c")
+RENDERERS = ("cf_fold.c", "cf_karplus.c", "cf_noise_tone.c", "cf_wavetable.c", "cf_resonant.c")
 
 
 def strip_comments(text: str) -> str:
@@ -18,6 +18,15 @@ def strip_comments(text: str) -> str:
 def main() -> None:
     for name in RENDERERS:
         text = strip_comments((PERKY / name).read_text())
+        if name == 'cf_wavetable.c':
+            # Unsigned division/remainder by the pinned power-of-two table
+            # stride are shifts/masks, not runtime division. The target-code
+            # gate also rejects emitted div/rem instructions and helpers.
+            header = (PERKY/'cf_wavetable.h').read_text()
+            match = re.search(r'^#define PK_CF_WT_BANK_STRIDE (0x[0-9a-fA-F]+)u$', header, re.M)
+            if not match or (stride := int(match[1],16)) == 0 or stride & (stride-1):
+                raise AssertionError('WT bank stride is no longer an unsigned power of two')
+            text = re.sub(r'([/%])\s*PK_CF_WT_BANK_STRIDE\b', ' SHIFT_OR_MASK_CONSTANT ', text)
         # The final render files intentionally use shifts/multiply helpers only.
         # Division/modulo in these files would place a high-latency operation in
         # or adjacent to a 44.1-kHz hot path and must be reviewed explicitly.
@@ -42,7 +51,7 @@ def main() -> None:
 
     print(
         "PERKY CF hot loops: PASS "
-        "(no renderer div/mod/heap/libc; Noise/Tone wave/filter/noise setup outside sample loop)"
+        "(no runtime renderer div/mod/heap/libc; Noise/Tone wave/filter/noise setup outside sample loop)"
     )
 
 

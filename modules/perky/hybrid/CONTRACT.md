@@ -1,17 +1,18 @@
 # PERKY hybrid foundation contract
 
-This milestone is **BLOCKED**, with hardware feasibility **UNVERIFIED**.
-It creates evidence and executable refusals. It does not authorize a hybrid
-flashable image. The entry point is:
+Goal 1 qualifies the frozen PERKY4S baseline and the independent ColdFire
+foundation for a later probe build. The only success status is
+**PASS_FOR_PROBE_BUILD**; hardware feasibility remains **UNVERIFIED**.
+`PHASE1.md` and `PHASE1.json` record the executed result. No hybrid firmware
+is built by this stage. The executable entry point is:
 
 ```sh
 .venv/bin/python3 tools/verify/verify_perky_hybrid.py --stage baseline --work out/perky/hybrid
 ```
 
-Exit 1 and `BLOCKED` are expected until the original-reference failures and
-explicit missing acceptance checks in `PHASE1.md` are resolved. The verifier
-currently has no PASS path; adding a green status to a receipt cannot qualify
-unimplemented checks.
+Every required check must execute successfully or validate complete, unchanged
+prior execution evidence. Missing inputs, failed checks, required skips and
+source drift produce `BLOCKED` and a nonzero exit.
 
 ## Product invariant
 
@@ -55,8 +56,12 @@ cache. Any DSP-side change needs a quantified proposal and explicit approval.
 
 `BASELINE.json` records the boot-read-back uploads in their original record
 order, destinations, lengths and hashes, alongside the actual ownership ledger.
-It freezes 647 qualified sources as a conservative inventory. This is not yet
-an audited minimal dependency closure; that acceptance item remains open.
+Its 647-source inventory is retained as historical evidence. The separate
+`DSP_DEPENDENCIES.json` freezes 166 dependencies: executed payload/placement
+imports and reads, compiler includes, and explicitly labeled installation
+source tracing. Each hash is checked against its historical Git object.
+Independent CF files in the historical broad inventory may change only with
+fresh exact-reference qualification; the frozen DSP closure may not change.
 All firmware, native tables, captures and original receipts stay local and
 ignored. Only metadata, hashes, source code and reports are committed.
 
@@ -86,7 +91,7 @@ logical instances while retaining T1/T5 DSP transport and stock behavior on
 the other four tracks. No routing implementation is included here.
 
 `pk4_init`, `pk4_preinit_voice`, `pk4_prepare_event`, `pk4_process_segment`,
-`pk4_render` and `pk4_encode_stock_segment` remain unchanged. The profile probe
+`pk4_render` and `pk4_encode_stock_segment` retain their public API. The profile probe
 calls these production preparation/render functions through a narrow host
 bridge; it does not implement a replacement synthesizer.
 
@@ -99,7 +104,10 @@ modes per profile, raw endpoints/intermediate values, initialization, dirty
 control cadence, smoothing, retrigger/release, long tails, mode/family changes
 and simultaneous two-instance independence. Never normalize away behavioral
 differences. Object identity pointers are distinct from renderer state;
-the narrow WT probe excludes only bytes 0..31 containing that header.
+WT state comparisons cover bytes 0x1c..0x12b: the first smoother is included,
+and the adjacent original parameter array beginning at 0x12c is excluded.
+An independent original-memory sentinel test proves that object boundary.
+The full source captures and authoritative reference hashes remain unchanged.
 
 Any synthesis/control correction requires a failing original-reference test
 and subsequent exact PCM/state success. Source pins and final banners alone
@@ -118,23 +126,29 @@ bass/snare, third/third, V2/V2 and reversed assignments, plus a sufficient
 mode/profile sweep to find a worse pairing. Record the clock, cycles-to-time
 conversion, maxima/distribution, initialization separately, transitions and
 model limits. Those lower-level measurements cannot approve production or
-establish hardware feasibility. No such benchmark result is claimed here.
+establish hardware feasibility. See `PHASE1.md` for executed target costs.
 
 Inventory proposed linked text/rodata/data/BSS, exact two-instance state,
 stack, decoded assets, loader/runtime/preboot staging and reservations,
 including cached and uncached aliases. The decoded WT allocation is
 200704 bytes (4096 primary plus 196608 bank); reuse original hashes and
-lossless PKR1 packing. The historical generic engine's 118200 bytes are not
-a measured hybrid requirement or available-RAM proof.
+lossless PKR1 packing. The historical 118200-byte generic-engine figure is retracted: the target
+compiler measures 118096 bytes. Neither generic figure is a hybrid allocation
+or an available-RAM proof; the narrow two-instance diagnostic is linked and
+measured separately.
 
-The loader does not clear BSS. The runtime cookie handles engine readiness,
-but `pk_final_pcm_ready` is a separate uninitialized BSS byte; deterministic
-PCM readiness still needs executable proof. Do not assume it is zero.
+The loader does not clear BSS. Engine and PCM readiness therefore require
+loaded .data cookies. The PCM gate executes the actual shipping ensure path
+with poisoned BSS, rejects incorrect asset counts, compares every decoded
+byte, and proves that a READY call does not read or overwrite asset memory.
+PKR1 assets are serialized explicitly little-endian on the big-endian CF.
 The existing production DSP build's DRAM/preboot ledger is frozen metadata,
 not proof of a proposed hybrid allocation.
 
-The historical CF asset source documents a 1 MiB ELUP payload cap. Container
-and header accounting need separate validation; the reproduced uncompressed
+The pinned stock disassembly enforces a 1 MiB encrypted ELUP payload cap
+at 0x4007f396, after subtracting 12 bytes at 0x4007f390. Historical comments
+citing 0x4007f748 are retracted for this image. Container bytes are
+12 + align4(4 + ELEK bytes); the reproduced uncompressed
 MAIN is 1265674 bytes and is not itself an ELUP payload-size test.
 `build_cf_final.py` suppresses stock DSP mailbox remaps only after proving
 its CF-only remix owns no DSP. A hybrid must preserve PERKY4S remaps/uploads
@@ -149,5 +163,7 @@ upstream integration, CI, push or firmware package. Stage explicit paths.
 
 Resolve the failing reference checks and missing evidence before Goal 2.
 The only success status is PASS_FOR_PROBE_BUILD, with hardware feasibility
-UNVERIFIED. This blocked checkpoint stops before timing/packaging a profile
-whose correctness has not passed.
+UNVERIFIED. The verifier requires original-reference correctness, isolated target costs,
+initialization and a checked packaging budget before issuing that status.
+The budget preserves all frozen allocations and includes explicit integration
+allowances. Goal 2 must still validate the actual linked hybrid and container.

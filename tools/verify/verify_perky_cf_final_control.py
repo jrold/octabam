@@ -31,7 +31,7 @@ required = (
     'cursor_longs = 4u + 2u * count',
     'cursor[i] = 0u',
     'record = pk_final_fixed_slot(track, ping)',
-    'record[pre_longs + i] = encoded[i]',
+    'pk_final_commit_longs(record + pre_longs, encoded, post_longs)',
     'pre_longs + post_longs != 40u',
     'pk_asset_pitch',
     'pk_asset_m1_wave',
@@ -73,7 +73,7 @@ if 'cursor[i] = encoded[i]' in s or 'cursor[i] = record[i]' in s:
 
 print(
     'PERKY final CF control: PASS '
-    '(SRC A-F=TUNE/DECAY/ALGO/PRM1/PRM2/MODE; four tracks; four Algos; '
+    '(SRC A-F=TUNE/DECAY/ALGO/PRM1/PRM2/MODE; four tracks; family-local Algos; '
     'split-event p-lock staging; trigger latched across callback halves; '
     'moving cursor reservation + measured fixed track-slot PCM commit; '
     'redundant engine browser disabled)'

@@ -2,8 +2,10 @@
 """Probe production WT preparation against the original V1/V2 capture corpus.
 
 This is a host correctness test, not a ColdFire cost measurement. It reuses
-pk4_init/prepare_event/render unchanged. Only the original object's identity
-header (vtable/control pointers, bytes 0..31) is excluded from comparison.
+pk4_init/prepare_event/render. The original constructor/update/render isolated
+object probe proves owned state ends at 0x12c. V1's parameter array begins there;
+it is adjacent wrapper memory, not WT state. Compare every owned state byte
+after the identity header (0x1c..0x12b), including the first smoother word.
 """
 import argparse
 from collections import Counter
@@ -100,14 +102,14 @@ def main():
                         state = (byte*0x150)()
                         lib.state(logical,state)
                         got = bytes(state)
-                        different = [i for i in range(32,0x150) if got[i]!=want[i]]
+                        different = [i for i in range(0x1c,0x12c) if got[i]!=want[i]]
                         if different:
                             i = different[0]
                             mismatches.append({'original_engine':original,'logical_instance':logical,
                                 'mode':mode,'raw':raw,'stage':name,'kind':'state',
                                 'different_bytes':len(different),'first_offset':i,
-                                'got_window':got[max(32,i-4):i+8].hex(),
-                                'want_window':want[max(32,i-4):i+8].hex()})
+                                'got_window':got[max(0x1c,i-4):i+8].hex(),
+                                'want_window':want[max(0x1c,i-4):i+8].hex()})
                         if pcm_name:
                             p = case/pcm_name
                             captures[str(p.resolve())] = digest(p)

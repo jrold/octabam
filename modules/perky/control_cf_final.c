@@ -78,7 +78,11 @@ extern const uint8_t pk_asset_pcm_rice_end[];
 extern uint8_t pk_pcm_wt_base[];
 extern uint8_t pk_pcm_wt_bank[];
 
-static uint8_t pk_final_pcm_ready;
+/* The loader does not clear BSS. A loaded .data cookie must force decoding
+ * even when the destination and all ordinary static storage contain garbage. */
+#define PK_FINAL_PCM_COLD 0x504b5043u
+#define PK_FINAL_PCM_READY 0x504b5052u
+static uint32_t pk_final_pcm_cookie = PK_FINAL_PCM_COLD;
 
 static void pk_final_decode_pcm(void)
 {
@@ -86,19 +90,20 @@ static void pk_final_decode_pcm(void)
         { 2048u,   (int16_t *)(void *)pk_pcm_wt_base },
         { 98304u,  (int16_t *)(void *)pk_pcm_wt_bank },
     };
-    if (pk_cf_rice_unpack(pk_asset_pcm_rice,
+    if (pk_cf_rice_unpack_le(pk_asset_pcm_rice,
                           (uint32_t)(pk_asset_pcm_rice_end - pk_asset_pcm_rice),
                           targets, 2u))
-        pk_final_pcm_ready = 1u;
+        pk_final_pcm_cookie = PK_FINAL_PCM_READY;
 }
 
 /* First call is the UI tick, which runs long before any PERKY render, so the
  * one-time cost never lands in the audio callback; pk_render keeps the check
- * as a one-byte guard in case a render ever gets there first. */
-static void pk_final_ensure_pcm(void)
+ * as a readiness guard in case a render ever gets there first. */
+static int pk_final_ensure_pcm(void)
 {
-    if (!pk_final_pcm_ready)
+    if (pk_final_pcm_cookie != PK_FINAL_PCM_READY)
         pk_final_decode_pcm();
+    return pk_final_pcm_cookie == PK_FINAL_PCM_READY;
 }
 
 const uint8_t pk_defaults[12] = {
@@ -274,7 +279,8 @@ void pk_ui_tick(void)
 
 int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
 {
-    pk_final_ensure_pcm();
+    if (!pk_final_ensure_pcm())
+        return 0;
     volatile uint32_t *cursor;
     volatile uint16_t *fp;
     uint8_t src[6];

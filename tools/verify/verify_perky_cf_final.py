@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -78,6 +79,8 @@ def main() -> None:
         default=Path(os.environ.get("PERKYBITS_ROOT", Path.home() / "Downloads/perkybits")),
     )
     ap.add_argument("--work", type=Path, default=ROOT / "out/perky/cf-final-verify")
+    ap.add_argument("--requalify", action="store_true",
+                    help="preserve/audit historical source pins, then freshly execute the full suite on current sources")
     args = ap.parse_args()
 
     if not str(args.firmware) or not args.firmware.is_file():
@@ -85,6 +88,8 @@ def main() -> None:
     pb = args.perkybits.resolve()
     work = args.work.resolve()
     work.mkdir(parents=True, exist_ok=True)
+    if args.requalify:
+        (work/'qualification.json').write_text(json.dumps({'status':'RUNNING'})+'\n')
     if not (pb / "Source/NativeV121FoldDrums.cpp").is_file():
         raise SystemExit(f"not a PerkyBits checkout: {pb}")
     for name, expected in PERKYBITS_REFERENCE_SHA256.items():
@@ -101,7 +106,11 @@ def main() -> None:
         raise SystemExit("gcc/g++ required")
 
     # Pin exact production/test bytes before accepting historical PCM counts.
-    run([sys.executable, ROOT / "tools/verify/verify_perky_cf_qualified_sources.py"])
+    audit = work / "source-audit.json"
+    source_cmd = [sys.executable, ROOT / "tools/verify/verify_perky_cf_qualified_sources.py"]
+    if args.requalify:
+        source_cmd += ["--audit-current", audit]
+    run(source_cmd)
 
     # Static/final-architecture gates first.
     run([sys.executable, ROOT / "tools/verify/verify_perky_cf_final_control.py"])
@@ -201,13 +210,18 @@ def main() -> None:
         asset, "--work", work / "runtime-reset",
     ])
 
+    if args.requalify:
+        receipt = json.loads(audit.read_text())
+        for rel, expected in receipt['current_sources'].items():
+            if hashlib.sha256((ROOT / rel).read_bytes()).hexdigest() != expected:
+                raise AssertionError(f'source changed during qualification: {rel}')
+        receipt['status'] = 'PASS_FRESH_LEGACY_CF_QUALIFICATION'
+        receipt['scope'] = 'legacy four-algorithm exact PCM/state/long-tail gates and current adapter integration; WT/Resonant need separate exact-reference gates'
+        (work / "qualification.json").write_text(json.dumps(receipt, indent=2) + '\n')
     print("PERKY CF FINAL QUALIFICATION: PASS")
     print("  tracks=4 independent (Octatrack T1/T2/T3/T4)")
-    print("  SRC=A Decay,B Tune,C Param1,D Param2,E Mode,F Algo; all p-lock sequence/split gates passed")
-    print("  supported Algo=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3),"
-          "ResonantDrums(M1 snare/M2 bass/M3 noise-tone),"
-          "NoiseHat(M1 white/M2 metallic/M3 pulse stack),"
-          "SimpleDrum,ComplexDrum,Slap,Wavetable")
+    print("  SRC=A Tune,B Decay,C Algo,D Param1,E Param2,F Mode; p-lock sequence/split gates passed")
+    print("  exact native PCM/state/long-tail scope=Fold1,Fold2,Karplus,NoiseTone(M1/M2/M3); newer families require dedicated reference gates")
     print("  production control->PCM=196608 exact samples per Algo (786432 total)")
     print("  long-tail continuity=144 cases / 1179648 exact samples / 512 consecutive 16-sample blocks per case")
     print("  parameter coverage=10 algos x 3 modes x 4 controls x 128 OT positions, all audible")

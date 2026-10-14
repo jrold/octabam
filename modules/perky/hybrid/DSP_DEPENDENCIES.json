@@ -1,0 +1,1847 @@
+{
+  "schema": "perky.hybrid.frozen-sources.v1",
+  "baseline_commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+  "method": "Executed frozen PERKY4S payload composition and per-core placement; compiler C include closure; explicitly marked static installation closure. No MAIN build, flash wrapper or hybrid image.",
+  "limitations": [
+    "Imports are a conservative dependency envelope, not proof every imported function contributes bytes. Static installation closure is labeled separately; actual MAIN reproduction and upload equality are separate gates."
+  ],
+  "sources": {
+    "modules/analog-bassdrum/manifest.py": {
+      "sha256": "e32455c06e8d91f86ed432ddc84439e09ce6940550d76b3d2821cd335dc9c53c",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/analog-bassdrum/manifest.py"
+      }
+    },
+    "modules/batch-bugfixes/manifest.py": {
+      "sha256": "bd01f6212052d1c7add5332788653838dfc891d897c06a3f9d99ae2b1d246533",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/batch-bugfixes/manifest.py"
+      }
+    },
+    "modules/batch-bugfixes/upstream/octabam-modules/batch-bugfixes/manifest.py": {
+      "sha256": "77146eea33743bf40e62e327aca4e2cb37f6c3755aaf5a6e5e77b5b85858095b",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": "modules/batch-bugfixes/upstream",
+        "commit": "77f132f9a60c6afa98ea4486540f6107398bdad3",
+        "path": "octabam-modules/batch-bugfixes/manifest.py"
+      }
+    },
+    "modules/boot-trace/manifest.py": {
+      "sha256": "be0f2693f40b87d1dcdff8f77df2a229d700d3956f39ccb6dc7a3a5c2eb69e3b",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/boot-trace/manifest.py"
+      }
+    },
+    "modules/brain/manifest.py": {
+      "sha256": "ce1609c49c3456f977470b192f835600c6b37419bd9b0f5b9c1f1c2471db6a23",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/brain/manifest.py"
+      }
+    },
+    "modules/busdelay/manifest.py": {
+      "sha256": "57b389f90fa62ea211928974d2422a63529d80084c82445bc1160279138bb079",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/busdelay/manifest.py"
+      }
+    },
+    "modules/busverb/manifest.py": {
+      "sha256": "02efb176b7112dfc37fed1b75d65b0a859d0bab72572a629e35ce2626c2560b5",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/busverb/manifest.py"
+      }
+    },
+    "modules/cc-feedback/manifest.py": {
+      "sha256": "a0754342eafe07f568916af7facd2db3265f86e4a968b4eb9ab626d12f3ddd28",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/cc-feedback/manifest.py"
+      }
+    },
+    "modules/cc-map/manifest.py": {
+      "sha256": "af3770eb262bcf6044ee9a09bc826dca771aa7e8d7c169596794fb6e34c973e0",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/cc-map/manifest.py"
+      }
+    },
+    "modules/cfmeter-idle/manifest.py": {
+      "sha256": "b4ea427e4df6d73265c9bf778c744781b90783d885ae34549701e9c197f7bdea",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/cfmeter-idle/manifest.py"
+      }
+    },
+    "modules/cfmeter/manifest.py": {
+      "sha256": "a0112a54191b16df8035c051dab87f9cab7b26dfebc345948299469f2aac522a",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/cfmeter/manifest.py"
+      }
+    },
+    "modules/character-txtr/manifest.py": {
+      "sha256": "122f4186abdf0a4c8260c0a66f43222c39d47783c064fdc570de9b17028ae043",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/character-txtr/manifest.py"
+      }
+    },
+    "modules/character/manifest.py": {
+      "sha256": "b27fcc8edd76c744659c57e2415e42e12f2f694c96c9551450e1444de7bd748e",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/character/manifest.py"
+      }
+    },
+    "modules/direct-jump-kyoti/manifest.py": {
+      "sha256": "e18df80e5292a4067f708a1854a71ade100198353f0af1b4b55f32f82ef85791",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/direct-jump-kyoti/manifest.py"
+      }
+    },
+    "modules/direct-jump-kyoti/upstream/octabam-modules/direct-jump-kyoti/manifest.py": {
+      "sha256": "fda68c811022908c82b7cd2ab5e687a1558bf4fa5eef7219ebf7c4f25e8a6036",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": "modules/direct-jump-kyoti/upstream",
+        "commit": "329b801cf90f32cbca97c6699a908908968e4df6",
+        "path": "octabam-modules/direct-jump-kyoti/manifest.py"
+      }
+    },
+    "modules/direct-jump/manifest.py": {
+      "sha256": "e5f543aa62f6e5caf58945b2fc95271520e8a58b0cd7037c61b1045cc2c8ee67",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/direct-jump/manifest.py"
+      }
+    },
+    "modules/direct-jump/upstream/direct-jump/manifest.py": {
+      "sha256": "1627ffb3464f50092fdaeadc8fa5c28fbfa3eae791a354e523be6732dca8e752",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": "modules/direct-jump/upstream",
+        "commit": "525f4b19b04dc3ba3f3bae3b25abbf48df34a10a",
+        "path": "direct-jump/manifest.py"
+      }
+    },
+    "modules/erase-empty-trigless-locks/manifest.py": {
+      "sha256": "40d113f95906a34d4979dfd60f20a0f982916576d7948364da723be627d9af08",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/erase-empty-trigless-locks/manifest.py"
+      }
+    },
+    "modules/erase-empty-trigless-locks/upstream/octabam-modules/erase-empty-trigless-locks/manifest.py": {
+      "sha256": "bfb62ab92a55039524b6eb47ed8d08bdd5fb0ded6eadb3eef4772a58b45b80c7",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": "modules/erase-empty-trigless-locks/upstream",
+        "commit": "77f132f9a60c6afa98ea4486540f6107398bdad3",
+        "path": "octabam-modules/erase-empty-trigless-locks/manifest.py"
+      }
+    },
+    "modules/euclid/manifest.py": {
+      "sha256": "fd2c09ba7417b70cf9dfe0cfb3ccf1b955d42b885fd7e5ee0b78f54740c13c15",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/euclid/manifest.py"
+      }
+    },
+    "modules/fx2-lock/manifest.py": {
+      "sha256": "34c5468e6c6b1b5a3b3318bb2710a41eb211193ab28a4707c4585f86fc6ce880",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/fx2-lock/manifest.py"
+      }
+    },
+    "modules/gateverb/manifest.py": {
+      "sha256": "83143e050a19ab1dfa6c9946b9e99f68be5b83b88f0db3d9d4e33807b2908343",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/gateverb/manifest.py"
+      }
+    },
+    "modules/kits/manifest.py": {
+      "sha256": "98b7fe19ff8d36c8ff7d266f0a10b98eb6d4d790b65cb01dd5292bf154e03d47",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/kits/manifest.py"
+      }
+    },
+    "modules/load-meter/manifest.py": {
+      "sha256": "69ae37572bd3c05efe62f1da8621fbae301dba59bc6a4b7de9d522779d2042ae",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/load-meter/manifest.py"
+      }
+    },
+    "modules/lofi-amf-fix/manifest.py": {
+      "sha256": "920e0121e0656f8c223cf2e839865507c35583be92ca9f5257dfa9c4ef8ca415",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/lofi-amf-fix/manifest.py"
+      }
+    },
+    "modules/lofi2/manifest.py": {
+      "sha256": "2a098828d0dd9648463ffdac28033ba492c9f1e3f067c861d303026d733f6e52",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/lofi2/manifest.py"
+      }
+    },
+    "modules/memory/manifest.py": {
+      "sha256": "4f34d7c4ab0a0efe3e681a21af15d8f06aca175bf558c0aefa33c18d185723a6",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/memory/manifest.py"
+      }
+    },
+    "modules/midi-scenes/manifest.py": {
+      "sha256": "b86db6188e4e5fce56e3c0434b465c41bbd2b3361a80ffa47f94d87eb0d8e036",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/midi-scenes/manifest.py"
+      }
+    },
+    "modules/miniverb/manifest.py": {
+      "sha256": "72176ec0f11241d853e9dc8da65d3b1cd5bf95b7322613d59c5ff839132d6649",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/miniverb/manifest.py"
+      }
+    },
+    "modules/mode-defaults/manifest.py": {
+      "sha256": "90d57adcfe525d6e61204bca7d68f1fa8095fb0d0ffb15ffac052173d39411ab",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/mode-defaults/manifest.py"
+      }
+    },
+    "modules/modulation/manifest.py": {
+      "sha256": "91904fddf3067c52780d5a668eed69338f21ccec353666b8d887c7f0025db4f8",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/modulation/manifest.py"
+      }
+    },
+    "modules/mute-modes/manifest.py": {
+      "sha256": "adc2c760a27b3a9187f11302c0fd44b7fde1177362fe422577cfd9927ebde562",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/mute-modes/manifest.py"
+      }
+    },
+    "modules/mute-modes/upstream/octabam-modules/mute-modes/manifest.py": {
+      "sha256": "cb8ab27b4df5ffac6006fcef4adfdb4f5d35b2e0dda36fc60ee9b0fb2d74a2d4",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": "modules/mute-modes/upstream",
+        "commit": "bf5bfc0accd12d00df6186b1b3103cbbf932bdd7",
+        "path": "octabam-modules/mute-modes/manifest.py"
+      }
+    },
+    "modules/perky/all_fx_layout.py": {
+      "sha256": "cd928def953c012bfcd010099755b024a13b3b0f4a5c825a2649e1cc2ab076b0",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/all_fx_layout.py"
+      }
+    },
+    "modules/perky/complex_drum_compact.py": {
+      "sha256": "68ee98662c24df6c3f18525c5384a4ad2b8dcfc0a8ace4b8b1bd079cacd9c455",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/complex_drum_compact.py"
+      }
+    },
+    "modules/perky/complex_drum_production.py": {
+      "sha256": "2904f49a24b66d79fe12a1804df36e3c16fa3b0d4194b5ccd22113eda2fd2d39",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/complex_drum_production.py"
+      }
+    },
+    "modules/perky/fold_drum2_compact.py": {
+      "sha256": "c6d72a4f1f88f4a9b1f893b161944632cd1b9c5a76f149b4b578caeb7aa9e3b3",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/fold_drum2_compact.py"
+      }
+    },
+    "modules/perky/fold_drum_compact.py": {
+      "sha256": "e02d9c423b3ac0fa8ddfc42df478d7e781f425e06da005d6a015279224b1cc3c",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/fold_drum_compact.py"
+      }
+    },
+    "modules/perky/generate.py": {
+      "sha256": "95cb7960b540fb87acc116ccbef0adaa3847a9783447e1210fd355308e620ba4",
+      "roles": [
+        "observed-source-read",
+        "frozen-transport-installation-static-trace"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/generate.py"
+      }
+    },
+    "modules/perky/noise_tone_compact.py": {
+      "sha256": "8f30b745ffe49f81b8834a5aa772107f7428c612d3391a39491e44d54b0823cc",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/noise_tone_compact.py"
+      }
+    },
+    "modules/perky/noise_tone_ref.py": {
+      "sha256": "a75551db88d56bc1192b30ee8313b3d2f79ca421c01a5e1dd0bc85b6a09a5b28",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/noise_tone_ref.py"
+      }
+    },
+    "modules/perky/noise_tone_tables.py": {
+      "sha256": "c0a56056353814f05095c8b2f8dfaac9c70fd4a0cea27e7be3e16c7b551d7ccd",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/noise_tone_tables.py"
+      }
+    },
+    "modules/perky/noise_tone_word_model.py": {
+      "sha256": "d34cb0bc8f33ad41ae06f238eff96ba7afed7dbd48485dd1d2a05ad891b7acfa",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/noise_tone_word_model.py"
+      }
+    },
+    "modules/perky/simple_drum_compact.py": {
+      "sha256": "0fe95c4b57bd1cec2b13ba1aa8807df68d12bf24c2dcd4a4cc5405cb5936f351",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/simple_drum_compact.py"
+      }
+    },
+    "modules/perky/simple_drum_control.py": {
+      "sha256": "df108a857d49ec679e4355f7def9a4a7dd76fcc0056aee31a65e4c6f66e676f3",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/simple_drum_control.py"
+      }
+    },
+    "modules/perky/simple_drum_live.py": {
+      "sha256": "39f2cba67d1ca3a045fba2408d899c29e127bc29669ef8e53ea058d5abf18c72",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/simple_drum_live.py"
+      }
+    },
+    "modules/perky/simple_drum_ref.py": {
+      "sha256": "09caffdeae6a881ee38d2711d03984113e5146418717c780a116a1b5bf5094f2",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/simple_drum_ref.py"
+      }
+    },
+    "modules/perky/simple_drum_runtime_tables.py": {
+      "sha256": "4524e8d1877a478e1f922b3ad9263d3d205e842c601dc360cb86ea7586809a4e",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/simple_drum_runtime_tables.py"
+      }
+    },
+    "modules/perky/simple_drum_tables.py": {
+      "sha256": "f1d11e099b16b7e9c274a80273ee64dc5679d4ada910d7b98778384276774c26",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/simple_drum_tables.py"
+      }
+    },
+    "modules/perky/simple_drum_transport.py": {
+      "sha256": "66604f0a5ba9ad6f76c433f56b1dab6aebaef39b9e26bd3ed0d0190715537db5",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/simple_drum_transport.py"
+      }
+    },
+    "modules/perky/complex_drum_voice.asm": {
+      "sha256": "6f72b16caf76bc00f519befefda69ea7df0c8a00a44a539156685fd13da4dc7c",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/complex_drum_voice.asm"
+      }
+    },
+    "modules/perky/control.c": {
+      "sha256": "362d2d2969cb3c79a01d6d32c2f865ba58c9f191c8600bbcbea35e98c6ec35d2",
+      "roles": [
+        "frozen-control-compiler-dependency"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/control.c"
+      }
+    },
+    "modules/perky/control_four_candidate.c": {
+      "sha256": "f7027ed31101edbd96e8a9bbea4a3a636c03395ab8fcb9e67a46390acc47bcf2",
+      "roles": [
+        "frozen-control-compiler-dependency"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/control_four_candidate.c"
+      }
+    },
+    "modules/perky/control_three_candidate.c": {
+      "sha256": "37047a761e4b59ef0829e93c636d06ea81953d6cdcc5c311678ba9d00e419529",
+      "roles": [
+        "frozen-control-compiler-dependency"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/control_three_candidate.c"
+      }
+    },
+    "modules/perky/fold_drum2_seam.asm": {
+      "sha256": "fdfa55ad6801b9183cb35160c2f31dad3bc4ddde258875505fc3ad8bc4d81c33",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/fold_drum2_seam.asm"
+      }
+    },
+    "modules/perky/fold_drum2_voice.asm": {
+      "sha256": "99296e68e538af2a60fdfab3c4791f868347c8832e6b52d7eac68cef7da80b99",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/fold_drum2_voice.asm"
+      }
+    },
+    "modules/perky/fold_drum_voice.asm": {
+      "sha256": "8b16a0cd366c10eee1a0f19a92d171242988aa89bfccbd3281b464f93d4af1e5",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/fold_drum_voice.asm"
+      }
+    },
+    "modules/perky/manifest.py": {
+      "sha256": "584ac79ba2d90b9ee635d52b999675375c57c04ec7a4515bb7722069022e59de",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/manifest.py"
+      }
+    },
+    "modules/perky/noise_tone_envelope_native.asm": {
+      "sha256": "fdc5bd39615395bc994031d308fafade7f5d682cf5f9797ce457689c88bfe816",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/noise_tone_envelope_native.asm"
+      }
+    },
+    "modules/perky/noise_tone_envelope_native7.asm": {
+      "sha256": "4b6ba9be83fd4d8696e13f3970d70e3294d9e89e9303e95179e767a747d61f93",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/noise_tone_envelope_native7.asm"
+      }
+    },
+    "modules/perky/noise_tone_filter_native.asm": {
+      "sha256": "396fc0fed6dce8b5021457c591ede0d59f343f3a9e5d33ddbc5078be90f88d27",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/noise_tone_filter_native.asm"
+      }
+    },
+    "modules/perky/noise_tone_math.asm": {
+      "sha256": "fd46edad4ac398a498172961e0cf6497b7f9eb8092be1e5260f2991e0089bb61",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/noise_tone_math.asm"
+      }
+    },
+    "modules/perky/noise_tone_mix_native.asm": {
+      "sha256": "608667281f516f430cc828e816ba955877ff8bd26dad9ce1bd93b399c7a0e5eb",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/noise_tone_mix_native.asm"
+      }
+    },
+    "modules/perky/noise_tone_oscillator_native.asm": {
+      "sha256": "a4d682580214c04aafb49a01cd172bd781422e5a1b432277aeb0c9efc2eb654a",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/noise_tone_oscillator_native.asm"
+      }
+    },
+    "modules/perky/noise_tone_voice_native_xstate.asm": {
+      "sha256": "eb006bcf688eab5175458fe40b60a451450937461bbc54e0d51719c2546f5626",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/noise_tone_voice_native_xstate.asm"
+      }
+    },
+    "modules/perky/resonant_fresh.h": {
+      "sha256": "04a254204b4244a7080b96422ea00d72597079dd96971c711d8c789a8c83e2b3",
+      "roles": [
+        "frozen-control-compiler-dependency"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/resonant_fresh.h"
+      }
+    },
+    "modules/perky/simple_drum_delta.asm": {
+      "sha256": "16eea6c3efadc20e5196e9914f4da773575e137cc0a614a9853c4045c02f0252",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/simple_drum_delta.asm"
+      }
+    },
+    "modules/perky/simple_drum_envelope.asm": {
+      "sha256": "fe1623ded91791e70f74ca157ae189fa71210e1a80549b1e9523986862f914fa",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/simple_drum_envelope.asm"
+      }
+    },
+    "modules/perky/simple_drum_frequency.asm": {
+      "sha256": "7d4ec35feac89f2f967f79a30bb2ce354b8489ce452343d108a7ddbb8476ec36",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/simple_drum_frequency.asm"
+      }
+    },
+    "modules/perky/simple_drum_oscillator.asm": {
+      "sha256": "27d02fd7b59effacd27c37e84c42e6d85b0f46b766839b5e0746f1cf0ffe9f26",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/simple_drum_oscillator.asm"
+      }
+    },
+    "modules/perky/simple_drum_seam.asm": {
+      "sha256": "8ae28ef7a13273480e28e8a3dbb00706ca1fca3a44c270db1c60ad456724f250",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/simple_drum_seam.asm"
+      }
+    },
+    "modules/perky/simple_drum_voice.asm": {
+      "sha256": "c988fdd1be56883eb719fd1d4c3faea3cb5c4409c3b0e9e075104e1b073dbfb1",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/simple_drum_voice.asm"
+      }
+    },
+    "modules/perky/synth_seam_glue.asm": {
+      "sha256": "80d9286a1633fc1643db1686e9fda6c5e6843f6d6bd38a19ce2e870171ce5de4",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/synth_seam_glue.asm"
+      }
+    },
+    "modules/perky/synthetic_control_map.asm": {
+      "sha256": "5eabdf8dd2c235ccbdc88a35baa681d548e4f163928f4709679e930e8c718289",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/synthetic_control_map.asm"
+      }
+    },
+    "modules/perky3algo/manifest.py": {
+      "sha256": "e4029f3b07dd6f33f7f62c2f49f3bf4801941c9854250a8bf176096820eebc6a",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky3algo/manifest.py"
+      }
+    },
+    "modules/perkyhook/manifest.py": {
+      "sha256": "8aa9413ff049dbc0ab7513d34b75ecadb519b766ab15ee4445a37c3191ba4bc9",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perkyhook/manifest.py"
+      }
+    },
+    "modules/perkystate/manifest.py": {
+      "sha256": "682694883dae21c02fd07d6b5041df73a3d4dafbe57f4d84cd43a5a93614ec77",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perkystate/manifest.py"
+      }
+    },
+    "modules/plocks-p2/manifest.py": {
+      "sha256": "ed28fed07be83c2cc562a2adaf3d4943a354b30e701a02c14d5c9cda0a709d8a",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/plocks-p2/manifest.py"
+      }
+    },
+    "modules/quantize-live-rec-toggle/manifest.py": {
+      "sha256": "ebb13458ea6f88ce1a0331e83bd5a7efee038ddba01bdbb04f994cd9100f0835",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/quantize-live-rec-toggle/manifest.py"
+      }
+    },
+    "modules/quantize-live-rec-toggle/upstream/octabam-modules/quantize-live-rec-toggle/manifest.py": {
+      "sha256": "45d52f03b9fb532c4156f7d8f7d634032b4eb8cf6798a84d9405c1e36c3bbcd5",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": "modules/quantize-live-rec-toggle/upstream",
+        "commit": "77f132f9a60c6afa98ea4486540f6107398bdad3",
+        "path": "octabam-modules/quantize-live-rec-toggle/manifest.py"
+      }
+    },
+    "modules/quantizer/manifest.py": {
+      "sha256": "0cb4a79f7cd68e1881cd1076a0f6ba2e132b1c199da3a2d4923906b443797602",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/quantizer/manifest.py"
+      }
+    },
+    "modules/quantizer/upstream/quantizer/manifest.py": {
+      "sha256": "b28a9a120e3e6e5e4a5719404f8ff56667c22b582a0fd4595315b4d20ac7d9a4",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": "modules/quantizer/upstream",
+        "commit": "525f4b19b04dc3ba3f3bae3b25abbf48df34a10a",
+        "path": "quantizer/manifest.py"
+      }
+    },
+    "modules/rec-threshold/manifest.py": {
+      "sha256": "1b76ef177bd6120994bc603606e2f6c506b4c4450b356c91dea11d5718f72e7a",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/rec-threshold/manifest.py"
+      }
+    },
+    "modules/rec-trig-mute/manifest.py": {
+      "sha256": "ecd00ec3b9a3f8d52aeba1538bb88a55d5ab646a38b19f30727634eea8c95a91",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/rec-trig-mute/manifest.py"
+      }
+    },
+    "modules/rec-trig-mute/upstream/octabam-modules/rec-trig-mute/manifest.py": {
+      "sha256": "0b48801eb8908e5c35d2e30a5b60dc1f1c569d695cc10a295408106571d93c66",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": "modules/rec-trig-mute/upstream",
+        "commit": "0bc14c71ae651ff2c6962e198bf5e3c79a4aa129",
+        "path": "octabam-modules/rec-trig-mute/manifest.py"
+      }
+    },
+    "modules/recorder-loop-fix/manifest.py": {
+      "sha256": "d5e897be8bee6685b237501505abefa9610151db32952eea4c7c4dd356c369e1",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/recorder-loop-fix/manifest.py"
+      }
+    },
+    "modules/reload-from-project/manifest.py": {
+      "sha256": "7a6a6aba14ecf6fed24c716c013b61e51224538ad5c96dc0f848397d9c2575bc",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/reload-from-project/manifest.py"
+      }
+    },
+    "modules/reload-from-project/upstream/octabam-modules/reload-from-project/manifest.py": {
+      "sha256": "eafec7c516c177fa9cb8b7c440553e73a3ec5d40ba443a28e8ba0f984d269e4b",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": "modules/reload-from-project/upstream",
+        "commit": "329b801cf90f32cbca97c6699a908908968e4df6",
+        "path": "octabam-modules/reload-from-project/manifest.py"
+      }
+    },
+    "modules/remix-switch/manifest.py": {
+      "sha256": "400ddf2e9f8d1c0bb14f58217d887ea95afc3f78ca44443ae851e1db453d55a7",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/remix-switch/manifest.py"
+      }
+    },
+    "modules/rig-hosts/manifest.py": {
+      "sha256": "f1dd9486ab32439a0a4895c6cb6677827482f3af7728facfb01b1bbc0712dee4",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/rig-hosts/manifest.py"
+      }
+    },
+    "modules/rlen-plen/manifest.py": {
+      "sha256": "dc4e8e2c6322e9c833b158ba1bbf0785691566261b0293cc98779290809d4884",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/rlen-plen/manifest.py"
+      }
+    },
+    "modules/scenes-p2/manifest.py": {
+      "sha256": "daa8c5431abce339c7a5a5b51803fd6a43d28dda35b34148951ac1d9fac8deab",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/scenes-p2/manifest.py"
+      }
+    },
+    "modules/send/manifest.py": {
+      "sha256": "17a20e9615723508f251bd199ddea851122ead5f177acefbacea3432f8fdaaf4",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/send/manifest.py"
+      }
+    },
+    "modules/sidechain-compressor/manifest.py": {
+      "sha256": "0f62eb15b0890a4dac5c7592735671c8a63cdb650d9468a7de7cbacfe239430e",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/sidechain-compressor/manifest.py"
+      }
+    },
+    "modules/sidechain-compressor/upstream/octabam-modules/sidechain-compressor/manifest.py": {
+      "sha256": "6294b028c9bc3243a75d3b6926672e63d032357c8e8bc189c76888d5703a8811",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": "modules/sidechain-compressor/upstream",
+        "commit": "bf5bfc0accd12d00df6186b1b3103cbbf932bdd7",
+        "path": "octabam-modules/sidechain-compressor/manifest.py"
+      }
+    },
+    "modules/sidechain-compressor/upstream/tools/sc_tables.py": {
+      "sha256": "8045e06f97fa462ca3f986b5a46e8ee48f9f9663691ae291221ce8ed6489c71a",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": "modules/sidechain-compressor/upstream",
+        "commit": "bf5bfc0accd12d00df6186b1b3103cbbf932bdd7",
+        "path": "tools/sc_tables.py"
+      }
+    },
+    "modules/spectrum/manifest.py": {
+      "sha256": "444e8eab70834ac2c638f0d49dce4c169af0974665f4b83a995731e28fe71469",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/spectrum/manifest.py"
+      }
+    },
+    "modules/stems/manifest.py": {
+      "sha256": "a5d5d1b15c0c734fa36456f8579d289697df76dae5f4b956ce4b8b7840e6c857",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/stems/manifest.py"
+      }
+    },
+    "modules/store/manifest.py": {
+      "sha256": "dc9e28422e43b79cb12de71fa6d26be2de66f633a3945acc3563a78d00d09e71",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/store/manifest.py"
+      }
+    },
+    "modules/synth/manifest.py": {
+      "sha256": "11cb5133f7f20357e23cc1fa43f602d08a491fcd944ed4d56d31abffc139b631",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/synth/manifest.py"
+      }
+    },
+    "modules/synth/upstream/synth/manifest.py": {
+      "sha256": "df25a9e073040fde8d93a29d4f018464ff218a53194d308388e9d8267091dc45",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": "modules/synth/upstream",
+        "commit": "525f4b19b04dc3ba3f3bae3b25abbf48df34a10a",
+        "path": "synth/manifest.py"
+      }
+    },
+    "modules/tapeecho/manifest.py": {
+      "sha256": "659949252589bb9c88779f7f01ca72023061a2915b50576beb17d97879fac22a",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/tapeecho/manifest.py"
+      }
+    },
+    "modules/tempo-bus/manifest.py": {
+      "sha256": "76b461ba186b401d2457fa49030d3bb05028d1dda8d16c9cfb2d100a57269ff9",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/tempo-bus/manifest.py"
+      }
+    },
+    "modules/tempo-sync/manifest.py": {
+      "sha256": "48fc14bcef4445a2956647ff034b4187667ee2acbc69002138ca30bc74648649",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/tempo-sync/manifest.py"
+      }
+    },
+    "modules/testgen/manifest.py": {
+      "sha256": "ad503e1e4301fe278c45b5e2f980b5249d0f5ddb64bf13861511b08495bacfc9",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/testgen/manifest.py"
+      }
+    },
+    "modules/transient/manifest.py": {
+      "sha256": "bd15be2c9e5430a49cd9bd42a0501ce7b98c081e5bf57c193c7932cdbcf224c9",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/transient/manifest.py"
+      }
+    },
+    "modules/tuner/manifest.py": {
+      "sha256": "78a25fab33e91bbf8c92bd6985af0079058a5c65b3ef9992a84e82b38edea93c",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/tuner/manifest.py"
+      }
+    },
+    "modules/tuner/upstream/tuner/manifest.py": {
+      "sha256": "f01785aa15f62049700820d6f797f38a15e6a4ecede5939c4581559adf1d8a40",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": "modules/tuner/upstream",
+        "commit": "525f4b19b04dc3ba3f3bae3b25abbf48df34a10a",
+        "path": "tuner/manifest.py"
+      }
+    },
+    "modules/usb-audio-in/manifest.py": {
+      "sha256": "8591c35bca96ba2116f523870668b151ab5bf1e5891d5d8b633d1ce17802ae6f",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/usb-audio-in/manifest.py"
+      }
+    },
+    "modules/usb-audio-out/manifest.py": {
+      "sha256": "b0efdb21749b24d2e54209fbd4b20c736d1073447617793f4fda2f0f9b3971ba",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/usb-audio-out/manifest.py"
+      }
+    },
+    "modules/usb-crossbar/manifest.py": {
+      "sha256": "73f4bbb2ded252cb6c104dcf93e178d37bd67df35fe1e60ab20f36e54022a782",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/usb-crossbar/manifest.py"
+      }
+    },
+    "modules/usb-midi/descriptors.py": {
+      "sha256": "088324bba0f06a72c40c4292d2ea3f36b95bcbbbbef23f60ccf7f84db9aa01aa",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/usb-midi/descriptors.py"
+      }
+    },
+    "modules/usb-midi/manifest.py": {
+      "sha256": "32395e8af8026575bc9021940d2163f7c441d72c3c4ee16a4b6bfb991a0f10d4",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/usb-midi/manifest.py"
+      }
+    },
+    "modules/vocoder/vocoder_law.py": {
+      "sha256": "5d88a49d67da5cda5b5b08cfdd68083d5114fb174a5472e2ba21985ed8dccba2",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/vocoder/vocoder_law.py"
+      }
+    },
+    "modules/vocoder/manifest.py": {
+      "sha256": "bb4c31ccb0db90272b42d197021509c1f00d74b0c063c403412e0aea3c073df0",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/vocoder/manifest.py"
+      }
+    },
+    "modules/wave/generate.py": {
+      "sha256": "378db7ba3dce5459e220ac83d5ef9f4936a14a7456f162656cb2a88511d64b4e",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/wave/generate.py"
+      }
+    },
+    "modules/wave/manifest.py": {
+      "sha256": "eb72eee6dc409e9b4cae29b1340793892f3096e2adc5d9be0069cd01203616be",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/wave/manifest.py"
+      }
+    },
+    "modules/waveload/manifest.py": {
+      "sha256": "0a212de8dd6229cc6a9afca8645e7e056a4f869ea21320cd2b26e5f11c67e5d0",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/waveload/manifest.py"
+      }
+    },
+    "remixes/test/perky-machine/remix.py": {
+      "sha256": "2abab1276b30b3b80d79705ebe0b91efebd24d9e29f1839af4874dd0723c70f5",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "remixes/test/perky-machine/remix.py"
+      }
+    },
+    "tools/toolpath.py": {
+      "sha256": "dd195d7a4ec91e2bc87b41bccfaed43bd213ea09af0df9ee53391ac730473ca7",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/toolpath.py"
+      }
+    },
+    "tools/build/ab_records.py": {
+      "sha256": "71f44c4c54b281b5c813ffbab3abb98501620ad980582367004a1daeb2eeca45",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/build/ab_records.py"
+      }
+    },
+    "tools/build/build_bus.py": {
+      "sha256": "6a2612ce1a5924590989048881af9c594d89eaebf71a8357bc1bc079fdf5db47",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/build/build_bus.py"
+      }
+    },
+    "tools/build/dsp_modmap.py": {
+      "sha256": "211ab71ed62721f117751286f67cf246e476b5071cdb9f2fa38aba7481fe871e",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/build/dsp_modmap.py"
+      }
+    },
+    "tools/build/label_fmt.py": {
+      "sha256": "19594ed1ce6a14388a3aa73004d72eadc29f08d0beb22f34b6d97cac60d99d1b",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/build/label_fmt.py"
+      }
+    },
+    "tools/build/mode_names.py": {
+      "sha256": "7c0ac32bbe248112e5a528032b2a74f94bfc89702ca529743dee2a2a15a3264d",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/build/mode_names.py"
+      }
+    },
+    "tools/build/norep.py": {
+      "sha256": "47b7175bfdce5236b0d833dc8bee219c6415d3e8cb0e71cc80fe2b018d066ba5",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/build/norep.py"
+      }
+    },
+    "tools/build/perky_image.py": {
+      "sha256": "3aff4272ff0e45d9860ed2f162a668cd174180291f5fff6e92107afe3d7aa8e9",
+      "roles": [
+        "installation-python-import",
+        "frozen-transport-installation-static-trace"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/build/perky_image.py"
+      }
+    },
+    "tools/build/wide_dial.py": {
+      "sha256": "9fbc6acc972a570076468737d785014df14f115469a997337d398afb3ea1fcc7",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/build/wide_dial.py"
+      }
+    },
+    "tools/perky/build_fold_candidate.py": {
+      "sha256": "887321d148575aa848674036080ee9b11f7e764d9a36eed5b5ab5ffbe3c0131a",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/build_fold_candidate.py"
+      }
+    },
+    "tools/perky/build_four_machine.py": {
+      "sha256": "75ff07214829a683721aef550279e4e9bb866fa8b2c00a008483d0c30a8523c6",
+      "roles": [
+        "installation-python-import",
+        "observed-source-read",
+        "frozen-transport-installation-static-trace"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/build_four_machine.py"
+      }
+    },
+    "tools/perky/build_four_payload.py": {
+      "sha256": "d46cc6e525c7bcd14234f4ec230e64cd66637f0da8d736b7a7f360eeab528920",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/build_four_payload.py"
+      }
+    },
+    "tools/perky/build_machine_canary.py": {
+      "sha256": "5a11b59464b3feece3153d9875cba25b2e658449d244a6c33fede3838ae922c1",
+      "roles": [
+        "installation-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/build_machine_canary.py"
+      }
+    },
+    "tools/perky/build_multi_machine_canary.py": {
+      "sha256": "d7fa12192b84228dbd00470016e5ffd19122f585a3fe2d588c339bb4d4e8b11d",
+      "roles": [
+        "installation-python-import",
+        "frozen-transport-installation-static-trace"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/build_multi_machine_canary.py"
+      }
+    },
+    "tools/perky/build_multi_payload.py": {
+      "sha256": "1edc818fd9634d2f43f6276b582657819228c55260f756eb3f0d4ef4aa21f651",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/build_multi_payload.py"
+      }
+    },
+    "tools/perky/build_multi_synth_source.py": {
+      "sha256": "417fb0dc10bbd01f129d77fcc183246ccaf05f05003820600222a9c89885a321",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/build_multi_synth_source.py"
+      }
+    },
+    "tools/perky/build_noise_tone_payload.py": {
+      "sha256": "0048ecb0b767096dc9382cc9aab40ee859b8f6501cb859d62f0254d946399d64",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/build_noise_tone_payload.py"
+      }
+    },
+    "tools/perky/build_noise_tone_synth_source.py": {
+      "sha256": "187c1c65c47a72086a822363ac303d67070fdf2805ff136be39c7118127370cd",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/build_noise_tone_synth_source.py"
+      }
+    },
+    "tools/perky/build_simple_drum_runtime_payload.py": {
+      "sha256": "936315ac390d763ae1ac69e5de042dd97c42ba234170aef34a71aedaa4481dc4",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/build_simple_drum_runtime_payload.py"
+      }
+    },
+    "tools/perky/build_three_payload.py": {
+      "sha256": "a39c5836a9385d9c908846737e228ae9a24b174228a4254ca1a07844fd06f4f2",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/build_three_payload.py"
+      }
+    },
+    "tools/perky/fabricate_noise_tone_fixtures.py": {
+      "sha256": "11723964db362ab2eba4559f78e18027d0ab477cee1923f158f1c373a0346879",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/fabricate_noise_tone_fixtures.py"
+      }
+    },
+    "tools/perky/fold_rng_source.py": {
+      "sha256": "11847519144b8594fa13c4032ba67644306dc572c8c1093245388cc317b6d378",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/fold_rng_source.py"
+      }
+    },
+    "tools/perky/perky_emit_shards.py": {
+      "sha256": "224d3a14cb6404ca914feca24563c59823394fb0e490b9580da9fb56a80ba079",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/perky_emit_shards.py"
+      }
+    },
+    "tools/perky/perky_four_memory.py": {
+      "sha256": "7310aaa3654d4e554bd12cf00fc4180bfeceded30744bc51da07e5112dd2a410",
+      "roles": [
+        "installation-python-import",
+        "frozen-transport-installation-static-trace"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/perky_four_memory.py"
+      }
+    },
+    "tools/perky/perky_four_placement.py": {
+      "sha256": "834324359c8ff3a1a6a7648d727cf56bbad58bd3ff39cfe90f399c8279e90c77",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/perky_four_placement.py"
+      }
+    },
+    "tools/perky/perky_fragmented_image.py": {
+      "sha256": "86d6f9dff39006b131bb19144123361bd6663ca18579e3792efc98a14d94c97a",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/perky_fragmented_image.py"
+      }
+    },
+    "tools/perky/perky_machine_module.py": {
+      "sha256": "347b6581a5c3cbc7dcadeef90beed0fb8f292b2500b299fe78b8d3cb95b35218",
+      "roles": [
+        "installation-python-import",
+        "frozen-transport-installation-static-trace"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/perky_machine_module.py"
+      }
+    },
+    "tools/perky/perky_three_placement.py": {
+      "sha256": "1653e0ef79100f32214c76c33a669aa8daf6e9f15a0e062832509aa464249b76",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/perky_three_placement.py"
+      }
+    },
+    "tools/perky/repack_machine_loader.py": {
+      "sha256": "423d60d328ff4d115f8339d33f259e060c183aea651c7a04d34eaec89d3bcdb3",
+      "roles": [
+        "installation-python-import",
+        "frozen-transport-installation-static-trace"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/repack_machine_loader.py"
+      }
+    },
+    "tools/perky/source_clock.py": {
+      "sha256": "44be31af5dbf9cb206b87f168f352d4a88f166319ecaa50d7f818cbf2e60a5d4",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/source_clock.py"
+      }
+    },
+    "tools/perky/three_segment_source.py": {
+      "sha256": "71948bec6013d78405a7a20e8f68faeac1a755cac637716019b7977d4f55a86e",
+      "roles": [
+        "payload-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/perky/three_segment_source.py"
+      }
+    },
+    "tools/remix/__init__.py": {
+      "sha256": "c925cdb1d084a4e2bd02f8f13e87204bff38ff4c40087ec86a8f2fe1395f83f9",
+      "roles": [
+        "observed-source-read"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/__init__.py"
+      }
+    },
+    "tools/remix/arena.py": {
+      "sha256": "fec8094a474be14d19f84f4d70b33ed6952b3238354d35a7e81ddfe163593cad",
+      "roles": [
+        "placement-python-import",
+        "frozen-transport-installation-static-trace"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/arena.py"
+      }
+    },
+    "tools/remix/brain.py": {
+      "sha256": "060f898747319399cd4e274bd753c95782053cc2b6be70cb1753f4a93928cb52",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/brain.py"
+      }
+    },
+    "tools/remix/dsp_ranges.py": {
+      "sha256": "54b19a4dcf0ae9c35ef49f4c8cbef087752e6cc71167b68c981c017715360686",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/dsp_ranges.py"
+      }
+    },
+    "tools/remix/ledger.py": {
+      "sha256": "e958d3f1e8f783d66d563abe523525c6aeafa0fe188f44fb838cc947ec539f8e",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/ledger.py"
+      }
+    },
+    "tools/remix/pack.py": {
+      "sha256": "e8de3b6f8c07aa31aa75bbb28beb48a757b653f0a15c70b753539034768d3ab3",
+      "roles": [
+        "installation-python-import",
+        "frozen-transport-installation-static-trace"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/pack.py"
+      }
+    },
+    "tools/remix/platform_build.py": {
+      "sha256": "7a7d1b3a1fbfa756c3138309d01fec88cff47ba3dd1c90abea69eb8c29b6a83b",
+      "roles": [
+        "installation-python-import",
+        "frozen-transport-installation-static-trace"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/platform_build.py"
+      }
+    },
+    "tools/remix/registry.py": {
+      "sha256": "dbd09dc67329134384818ca874e39500878cae79681b68969a92663b1b2ef838",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/registry.py"
+      }
+    },
+    "tools/remix/schema.py": {
+      "sha256": "4ffa49c8ddc8d2a6580ce0421b535f96e47e955a6a6baac1e2c76a9411f4f5ca",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/schema.py"
+      }
+    },
+    "tools/remix/state.py": {
+      "sha256": "f17e0050459170d6b12e7024dde140239e729c15a343ba67d17f4b873213c871",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/state.py"
+      }
+    },
+    "tools/remix/stations.py": {
+      "sha256": "815a5921387ded4219b2b7b9107d0560dd4c1fa833780a77e7702025d188152f",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/stations.py"
+      }
+    },
+    "tools/remix/stock.py": {
+      "sha256": "2e0cf370e883799f11d8db5cb61d5b2e3f55a489cf22c4dc48efce11a7017999",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/stock.py"
+      }
+    },
+    "tools/remix/ybase.py": {
+      "sha256": "af74a8db70c4d499fd27c31626d1f1decc3b9aa561011fea636d38da4af71262",
+      "roles": [
+        "placement-python-import"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/ybase.py"
+      }
+    },
+    "modules/perky/machine.s": {
+      "sha256": "d6eb00d67d155eff14a5b38676c3fb701b2d3f52fc3937050bdeaca6158e3c23",
+      "roles": [
+        "frozen-transport-installation-static-trace"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/machine.s"
+      }
+    },
+    "modules/perky/machine_four_ui.s": {
+      "sha256": "693e3aa08ce4af1deead4f942cb68b2e202475d35c74c0250496e0c810106ef6",
+      "roles": [
+        "frozen-transport-installation-static-trace"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "modules/perky/machine_four_ui.s"
+      }
+    },
+    "tools/remix/loader.S": {
+      "sha256": "fda27938fb368be03c3cdaa6a838fe7e6bece304649a33b1b8901d201cc3defb",
+      "roles": [
+        "frozen-transport-installation-static-trace"
+      ],
+      "historical_object": {
+        "repository": ".",
+        "commit": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+        "path": "tools/remix/loader.S"
+      }
+    }
+  }
+}

@@ -133,6 +133,16 @@ Result: **PASS** for all **17 legal split positions**. The encoder is pinned to 
 
 ### ColdFire runtime memory/init
 
+**14 October 2026 correction:** the values below describe the old four-engine
+checkpoint and do not price the current generic core or the hybrid. Its
+256-byte stack ceiling was not measured and is retracted. Current m68k compiler
+layout is 29,522 bytes per generic track and 118,096 bytes per generic engine;
+the intervening 118,200-byte hand calculation assumed the wrong alignment.
+The completed two-voice foundation probe observes 460 bytes of stack (the
+earlier diagnostic observed 456), not a
+whole-machine ceiling. See [hybrid evidence](hybrid/PHASE1.md). The loader also
+does not initialize the former PCM-ready BSS byte; a loaded cookie is required.
+
 Result: **PASS**.
 
 - one track state: **5,580 bytes**

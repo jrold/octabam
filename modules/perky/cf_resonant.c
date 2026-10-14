@@ -164,10 +164,8 @@ static int32_t res_core_step(res_core_l*m,int32_t input,
      return position;}
 }
 
-/* The snare's three resonators have modulation=0 and bypass=0 for the whole
- * block (res_init_snare zeroes both and nothing rewrites them), so the two
- * runtime branches in res_core_step are dead code there.  This variant drops
- * them; the arithmetic is identical. */
+/* Bass NOISE_MAP alone has modulation=0 and bypass=0. Snare controls can
+ * set bypass, so the packed snare routine below must retain that branch. */
 static int32_t res_core_step_fast(res_core_l*m,int32_t input,
                                   const uint8_t*ia,const uint8_t*ib,int32_t*out_velocity){
     if(m->dirty){
@@ -187,12 +185,13 @@ static int32_t res_core_step_fast(res_core_l*m,int32_t input,
      return position;}
 }
 
-/* The snare's resonators also keep coeff_a/coeff_b in 0..65535 (res_interp's
+/* The snare's resonators keep coeff_a/coeff_b in 0..65535 (res_interp's
  * range) and position/velocity clamped to +-32767, so their loop-carried state
  * fits in 16-bit halves.  Packing halves the register footprint of the three
  * resonators (the snare's biggest spill source). */
-typedef struct { uint16_t coeff_a,coeff_b; int16_t position,velocity; int32_t pitch_a,pitch_b; uint8_t dirty; } res_core_fast_l;
+typedef struct { uint16_t coeff_a,coeff_b; int16_t position,velocity; int32_t pitch_a,pitch_b; uint8_t dirty,bypass; } res_core_fast_l;
 static void res_core_fast_load(res_core_fast_l*m,const uint8_t*s,const res_map*rm){
+    m->bypass=s[rm->bypass];
     m->dirty=s[rm->dirty];
     m->pitch_a=s16(r16(s,rm->pitch_a));
     m->pitch_b=s16(r16(s,rm->pitch_b));
@@ -217,7 +216,8 @@ static int32_t res_core_step_fast_packed(res_core_fast_l*m,int32_t input,
     }
     {int32_t coeff_a=(int32_t)m->coeff_a,position=(int32_t)m->position,coeff_b=(int32_t)m->coeff_b,velocity,filtered;
      velocity=(int32_t)m->velocity;
-     filtered=sub(input,asr(mullo(velocity,coeff_a),15));
+     filtered=input;
+     if(!m->bypass)filtered=sub(input,asr(mullo(velocity,coeff_a),15));
      position=clamp32767(add(position,asr(mullo(velocity,coeff_b),15)));
      m->position=(int16_t)position;
      filtered=sub(filtered,position);
@@ -251,22 +251,6 @@ static uint32_t res_dec_step(res_dec_l*m,int add_constant,uint32_t constant){
     if(count>0){count=sub(count,1);m->count=count;
         if(count==0){value=u32(add(s32(value),abs_arm(sign)));m->value=value;use_constant=0;}}
     if(sign<0)value=u32(neg(s32(value)));
-    if(use_constant)value=u32(add(s32(value),(int32_t)constant));
-    return value;
-}
-
-/* The snare's first three decays (SNARE_A/B/C) have sign hard-wired to zero
- * (res_init_snare writes 0 and nothing else touches the field), so the sign
- * branch and the abs_arm adjustment in res_dec_step are dead code there. */
-static uint32_t res_dec_step_pos(res_dec_l*m,int add_constant,uint32_t constant){
-    uint32_t value=(pk_cf_mul_lo_u32(m->mul,m->value))>>12;
-    int32_t count;int use_constant;
-    if(s32(value)<m->min)value=u32(m->min);
-    count=m->count;
-    m->value=value;
-    use_constant=add_constant&&count!=0;
-    if(count>0){count=sub(count,1);m->count=count;
-        if(count==0){use_constant=0;}}
     if(use_constant)value=u32(add(s32(value),(int32_t)constant));
     return value;
 }
@@ -386,11 +370,11 @@ int pk_cf_res_snare_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables
         int32_t first_drive,first_mix,second_mix,velocity1,velocity2,velocity3;
         int32_t random_value,term1,term2,term3,mixed;
         (void)res_env_step(&env);
-        a=res_dec_step_pos(&da,0,0u);
-        b=res_dec_step_pos(&db,1,0x0A3Du);
+        a=res_dec_step(&da,0,0u);
+        b=res_dec_step(&db,1,0x0A3Du);
         first_drive=add(s32(a),s32(b));
         (void)res_core_step_fast_packed(&r1,first_drive,t->interp_a,t->interp_b,&velocity1);
-        cv=res_dec_step_pos(&dc,1,0x3333u);
+        cv=res_dec_step(&dc,1,0x3333u);
         first_mix=add(velocity1,asr(first_drive,4));
         (void)res_core_step_fast_packed(&r2,s32(cv),t->interp_a,t->interp_b,&velocity2);
         second_mix=add(velocity2,asr(s32(cv),4));

@@ -2,6 +2,9 @@
 """Pin exact production/test/release sources behind Perky CF qualification."""
 from __future__ import annotations
 import hashlib
+import argparse
+import json
+import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -107,13 +110,55 @@ def file_digest(path: Path, expected: str) -> str:
     return hashlib.sha256(data).hexdigest()
 
 def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('--audit-current', type=Path,
+                    help='audit historical pins and record current differences for a fresh executable qualification; does not certify current sources')
+    args = ap.parse_args()
     failures=[]
+    audit = {'historical_pins': EXPECTED, 'current_sources': {}, 'differences': {}}
     for rel, expected in EXPECTED.items():
         path=ROOT/rel
         if not path.is_file(): failures.append(f"{rel}: missing"); continue
         got=file_digest(path, expected)
-        if got != expected: failures.append(f"{rel}: {got} != {expected}")
+        audit['current_sources'][rel] = hashlib.sha256(path.read_bytes()).hexdigest()
+        if got != expected:
+            if args.audit_current is None:
+                failures.append(f"{rel}: {got} != {expected}")
+                continue
+            # Preserve the authoritative historical expectation, and prove its
+            # original input is still available. Fresh tests, not a new pin,
+            # must qualify the changed source after this audit.
+            revisions = subprocess.check_output(
+                ['git', 'rev-list', '--all', '--', rel], cwd=ROOT, text=True).splitlines()
+            found = None
+            for rev in revisions:
+                blob = subprocess.run(['git', 'show', f'{rev}:{rel}'], cwd=ROOT,
+                                      stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+                if blob.returncode:
+                    continue
+                data = blob.stdout
+                h = ('git:' + hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+                     if expected.startswith('git:') else hashlib.sha256(data).hexdigest())
+                if h == expected:
+                    found = rev
+                    break
+            if found is None:
+                failures.append(f'{rel}: authoritative historical source cannot be recovered')
+            else:
+                audit['differences'][rel] = {'historical': expected, 'current': got,
+                                             'historical_revision': found}
     if failures: raise SystemExit("PERKY qualified-source identity: FAIL\n  " + "\n  ".join(failures))
+    if args.audit_current is not None:
+        for path in (ROOT/'modules/perky').glob('*.h'):
+            audit['current_sources'][str(path.relative_to(ROOT))] = hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in (Path(__file__), ROOT/'tools/verify/perky_cf_stock_record_encoder.c'):
+            audit['current_sources'][str(path.relative_to(ROOT))] = hashlib.sha256(path.read_bytes()).hexdigest()
+        audit['status'] = 'HISTORICAL_INPUTS_VERIFIED_CURRENT_REQUIRES_EXECUTION'
+        args.audit_current.parent.mkdir(parents=True, exist_ok=True)
+        args.audit_current.write_text(json.dumps(audit, indent=2) + '\n')
+        print(f"PERKY historical source audit: PASS ({len(EXPECTED)} preserved pins; "
+              f"{len(audit['differences'])} differences require fresh qualification)")
+        return
     print(f"PERKY qualified-source identity: PASS ({len(EXPECTED)} files byte-pinned to executed PCM/emulator qualification)")
 
 if __name__ == "__main__": main()

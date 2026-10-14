@@ -193,6 +193,10 @@ moment it costs real work, and add its line here.
 - [A forked port shares its DSP memory with its siblings](docs/contributing/TRAPS.md#trap-fork-shm) — `unshareRanges`; new shared maps need the same.
 - [The port ran under Rosetta and nothing said so](docs/contributing/TRAPS.md#trap-rosetta) — `file out/emu/ot_emu` is the check.
 - [The report is API and prints paths](docs/contributing/TRAPS.md#trap-report-api) — re-save refhash only after the artifacts are shown identical.
+- [An odd displacement can have an even effective address](docs/contributing/TRAPS.md#trap-cf-odd-base) — establish base parity; calibrate actual target read/write watches.
+- [A CF optimization assumed initialization values never change](docs/contributing/TRAPS.md#trap-cf-engine-invariants) — trace every writer and compare fresh triggers, controls, PCM, state and RNG.
+- [Native-endian decoded PCM is not an ARM table](docs/contributing/TRAPS.md#trap-cf-pcm-endian) — compare decoded bytes on ColdFire; a host round-trip is blind to the byte order.
+- [A BSS readiness flag can skip initialization](docs/contributing/TRAPS.md#trap-cf-ready-bss) — use a loaded nonzero cookie and poison BSS in the target probe.
 
 ## How claims are written here
 

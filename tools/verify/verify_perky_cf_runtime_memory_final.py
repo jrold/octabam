@@ -10,6 +10,8 @@ requires a loaded non-zero .data cookie to force the first pk4_init().
 from __future__ import annotations
 
 import re
+import subprocess
+import tempfile
 from pathlib import Path
 import sys
 
@@ -21,7 +23,6 @@ import perky_cf_assets  # noqa:E402
 PERKY = ROOT / "modules/perky"
 CONTROL_BYTES_32 = 24
 TRACKS = 4
-STACK_SCRATCH_MAX = 256
 
 
 def macro(path: Path, name: str) -> int:
@@ -48,7 +49,10 @@ def main() -> None:
     slap = macro(PERKY / "cf_slap.h", "PK_CF_SLAP_STATE_BYTES")
     wt = macro(PERKY / "cf_wavetable.h", "PK_CF_WT_STATE_BYTES")
 
-    # Frozen 32-bit MCF54455 layout: one engine object per Algo/Mode
+    # Historical hand arithmetic is retained below only to explain its error.
+    # Actual m68k layout uses two-byte member alignment. Do not infer a target
+    # sizeof or a stack ceiling from the host ABI.
+    # One engine object per Algo/Mode
     # (fold1, fold2, karplus, nt_m1, nt_shared, res_snare, res_bass, res_nt),
     # thirteen pk4_control blocks per track, two RNG u32s and three trailing
     # bytes; max member alignment is 4. The resonant family keeps one object
@@ -61,7 +65,6 @@ def main() -> None:
     engine = align4(TRACKS * track + 4 + 4)
     assets_struct = 4 * 4 + 4 * (4 + 4) + 4 + 4 + 4 + 4 + 4 + 4
     asset_bytes = sum(size for _label, _address, size, _sha in perky_cf_assets.ASSETS)
-    persistent_known = engine + assets_struct + asset_bytes
     reserve = arena.PLATFORM_PAGES * arena.PAGE
 
     if (fold1, fold2, karplus, nt, res, nh, sd, cd, slap, wt) != (0xF4, 0x134, 0x10E0, 0x120, 0x1D4, 0x2DF8, 0x120, 0x140, 0x2670, 0x150):
@@ -69,12 +72,20 @@ def main() -> None:
             f"final state-size drift: fold1={fold1:#x} fold2={fold2:#x} "
             f"karplus={karplus:#x} nt={nt:#x} res={res:#x} nh={nh:#x} sd={sd:#x} cd={cd:#x} slap={slap:#x}"
         )
-    if (track, engine, assets_struct, asset_bytes) != (29548, 118200, 72, 224284):
-        raise AssertionError(
-            f"final CF layout drift: track={track} engine={engine} "
-            f"assets_struct={assets_struct} asset_bytes={asset_bytes}"
-        )
-    if persistent_known + STACK_SCRATCH_MAX >= reserve:
+    sys.path.insert(0, str(PERKY))
+    from generate_cf_final import FLAGS
+    with tempfile.TemporaryDirectory(prefix='perky-layout-') as directory:
+        source, obj = Path(directory)/'layout.c', Path(directory)/'layout.o'
+        source.write_text('#include "cf_perky4.h"\n'
+                          'unsigned char measured_track[sizeof(pk4_track)];\n'
+                          'unsigned char measured_engine[sizeof(pk4_engine)];\n'
+                          'unsigned char measured_assets[sizeof(pk4_assets)];\n')
+        subprocess.run(['m68k-elf-gcc', *FLAGS, '-I', str(PERKY), '-c', str(source), '-o', str(obj)], check=True)
+        symbols = subprocess.check_output(['m68k-elf-nm', '-S', str(obj)], text=True)
+    sizes = {name:int(size,16) for size,name in re.findall(r'\b[0-9a-f]+\s+([0-9a-f]+)\s+\w\s+(measured_\w+)', symbols)}
+    track, engine, assets_struct = (sizes['measured_'+n] for n in ('track','engine','assets'))
+    persistent_known = engine + assets_struct + asset_bytes
+    if persistent_known >= reserve:
         raise AssertionError("Perky persistent data no longer fits platform reserve")
 
     source = (PERKY / "control_cf_final.c").read_text()
@@ -86,19 +97,23 @@ def main() -> None:
         "pk_final_runtime_cookie != PK_FINAL_RUNTIME_READY",
         "pk4_init(&pk_final_engine, &pk_final_assets);",
         "pk_final_runtime_cookie = PK_FINAL_RUNTIME_READY;",
+        "static uint32_t pk_final_pcm_cookie = PK_FINAL_PCM_COLD;",
+        "pk_final_pcm_cookie != PK_FINAL_PCM_READY",
+        "pk_cf_rice_unpack_le(pk_asset_pcm_rice,",
+        "pk_final_pcm_cookie = PK_FINAL_PCM_READY;",
     )
     for needle in required:
         if needle not in source:
             raise AssertionError(f"runtime-init contract drifted: missing {needle!r}")
 
-    margin = reserve - persistent_known - STACK_SCRATCH_MAX
+    margin = reserve - persistent_known
     print(
         "PERKY CF runtime memory: PASS "
         f"(32-bit track={track:,} B; engine={engine:,} B; "
         f"firmware assets={asset_bytes:,} B; asset view={assets_struct} B; "
-        f"callback scratch<={STACK_SCRATCH_MAX} B; "
-        f"known total<={persistent_known + STACK_SCRATCH_MAX:,}/{reserve:,} B; "
-        f"known margin={margin:,} B; deterministic .data init cookie required)"
+        f"stack requires separate target measurement; "
+        f"known data subtotal={persistent_known:,}/{reserve:,} B; "
+        f"reserve minus data={margin:,} B, not available machine RAM; deterministic .data init cookies required)"
     )
 
 

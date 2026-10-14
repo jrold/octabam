@@ -6,7 +6,8 @@ import re
 ROOT = Path(__file__).resolve().parents[2]
 P = ROOT / "modules/perky"
 FILES = (
-    "control_cf_final.c", "cf_perky4.c", "cf_fold.c", "cf_karplus.c", "cf_noise_tone.c"
+    "control_cf_final.c", "cf_perky4.c", "cf_fold.c", "cf_karplus.c", "cf_noise_tone.c",
+    "cf_wavetable.c", "cf_resonant.c", "cf_pcm_rice.h",
 )
 FORBIDDEN_SOURCE = re.compile(r"\b(?:u?int64_t|memset|memcpy|memmove)\b")
 

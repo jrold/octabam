@@ -116,6 +116,14 @@ static void prepare_nt(pk4_control*c,uint8_t*s,int m1,const uint8_t raw[4],uint8
 
 static int32_t res_pitch_helper(uint16_t index){uint32_t i=index>0xfffu?0xfffu:index;return s16((uint16_t)(i*3u+0x800u));}
 
+/* The original Resonant M3 constructor keeps both ARM oscillator callbacks.
+ * They are observable state even though this CF renderer dispatches directly.
+ * Original 0x08025a84 -> osc init 0x080283ec stores at oscillator +0x2c. */
+static void res_init_nt(uint8_t*s,uint8_t vel,uint8_t note,const pk4_assets*a){
+    nt_init(s,2,0,vel,note,a);
+    w32(s,0x58,PK4_SIMPLE_OSC_RENDER);
+    w32(s,0xf0,PK4_SIMPLE_OSC_RENDER);
+}
 static void res_init_bass(uint8_t*s,uint8_t vel,uint8_t note){
     common_init(s,PK4_RES_FAMILY_BYTES);
     w32(s,0xf8,0x00000d0cu); s[0xc4]=1; w32(s,0x10c,0x30u); s[0x158]=1;
@@ -188,6 +196,9 @@ static void res_update_snare(uint8_t*s,const uint32_t t[4],const pk4_assets*a){
     {uint8_t v=(uint8_t)(decay>obj8);s[0x10c]=v;s[0x130]=v;}
     if(decay>obj8){w32(s,0x1cc,(uint32_t)((p2<<4)&0xffffu));}
     else{
+        /* Original update 0x08026030 clears this floor on the finite-decay
+         * branch too; otherwise a prior sustained event leaks into the tail. */
+        w32(s,0x1cc,0);
         s[0xf8]=1;
         w16(s,0xfc,(uint16_t)(0x6fffu+decay));
         w16(s,0x120,(uint16_t)(0x6784u+decay));
@@ -472,22 +483,22 @@ static void wt_init(uint8_t*s,uint8_t vel,uint8_t note){
     unsigned i;for(i=0;i<PK_CF_WT_STATE_BYTES;++i)s[i]=0;
     w16(s,6,0x3fffu);w16(s,8,0x0ff0u);
     w32(s,0x38,PK4_DEFAULT_WAVE);w32(s,0x3c,PK4_DEFAULT_WAVE);
-    w32(s,0x58,PK4_SIMPLE_OSC_RENDER);
+    w32(s,0x58,PK4_SIMPLE_OSC_RENDER);w32(s,0x60,0x00020000u);
     w32(s,0x8c,0x00020001u);
     w16(s,0x90,50u);w16(s,0x92,0x1c70u);
     w16(s,0xa8,0x0800u);
     s[0x7a]=1u;
     s[0xc4]=0u;s[0xc5]=1u;s[0xca]=1u;s[0xcc]=1u;
-    w16(s,0xe4,0x5555u);w16(s,0xe6,0x2bu);
+    w32(s,0xdc,0x00010000u);w32(s,0xe0,0x03e80000u);w16(s,0xe4,0x5555u);w16(s,0xe6,0x2bu);
     s[0xf0]=1u;
-    w32(s,0x100,PK4_DEFAULT_WAVE);w32(s,0x108,PK4_DEFAULT_WAVE);
+    w32(s,0x100,PK4_DEFAULT_WAVE);w32(s,0x108,PK4_DEFAULT_WAVE);w32(s,0x120,0x080284edu);
     w16(s,0x94,env_rate_cfg(s,0x74,time_parameter(r16(s,0x0a)),0));
     w16(s,0x96,env_rate_cfg(s,0x74,time_parameter(0),1));
     (void)vel;(void)note;
 }
 static void wt_update(uint8_t*s,uint8_t panel_mode,const uint32_t t[4],const pk4_assets*a){
     uint32_t p[4],band,rel,abso;int32_t mix;
-    common_update(s,t,a,p);                            /* TUNE/DECAY/P1/P2 + envelope */
+    common_update(s,t,a,p);s[0x128]=panel_mode;                            /* TUNE/DECAY/P1/P2 + envelope */
     band=(((p[2]+1u)*15u)>>12u);
     rel=15u>band?15u-band:1u;
     if(rel<1u)rel=1u;
@@ -505,20 +516,42 @@ static void wt_trigger(uint8_t*s,uint8_t vel,uint8_t note){
     envelope_trigger(s,0x74);
     envelope_trigger(s,0xc4);
 }
-/* The same cadence Simple/Complex/Slap use: a dirty event runs two smoother
- * passes, commits the targets, then fifteen more (or fourteen plus a derive
- * when there is no trigger), then the trigger plus one deriving update. */
-static void prepare_wt(pk4_control*c,uint8_t*s,const uint8_t raw[4],uint8_t mode,uint8_t vel,uint8_t note,int trig,const pk4_assets*a){unsigned i;if(control_dirty(c,raw,mode)){common_smooth_only(s,c->targets);common_smooth_only(s,c->targets);control_commit(c,raw,mode);if(trig){for(i=0;i<15;i++)common_smooth_only(s,c->targets);}else{for(i=0;i<14;i++)common_smooth_only(s,c->targets);wt_update(s,mode,c->targets,a);}}if(trig){wt_trigger(s,vel,note);wt_update(s,mode,c->targets,a);}}
+/* Original WT wrapper cadence: two old-target passes, commit, then sixteen
+ * new-target passes (the last derives on a non-trigger event). A trigger is
+ * followed by one additional deriving update. Verified against the original
+ * ARM constructor/update/trigger and both WT capture profiles. */
+static void prepare_wt(pk4_control*c,uint8_t*s,const uint8_t raw[4],uint8_t mode,uint8_t vel,uint8_t note,int trig,const pk4_assets*a){unsigned i;if(control_dirty(c,raw,mode)){common_smooth_only(s,c->targets);common_smooth_only(s,c->targets);control_commit(c,raw,mode);if(trig){for(i=0;i<16;i++)common_smooth_only(s,c->targets);}else{for(i=0;i<15;i++)common_smooth_only(s,c->targets);wt_update(s,mode,c->targets,a);}}if(trig){wt_trigger(s,vel,note);wt_update(s,mode,c->targets,a);}}
 
+/* Original Voice-3 wrapper shares targets across its three Resonant objects.
+ * setAlgorithm updates the prior mode once; setMode updates the selected mode
+ * once, both before setSoundParameters commits and runs sixteen updates. */
+static void res_mode_update(uint8_t*snare,uint8_t*bass,uint8_t*nt,uint8_t mode,const uint32_t targets[4],const pk4_assets*a){
+    if(mode==0)res_update_snare(snare,targets,a);
+    else if(mode==1)res_update_bass(bass,targets,a);
+    else nt_update(nt,targets,a,0);
+}
+static void prepare_res_family(pk4_control*c,uint8_t*snare,uint8_t*bass,uint8_t*nt,const uint8_t raw[4],uint8_t mode,uint8_t vel,uint8_t note,int trig,const pk4_assets*a){
+    /* One family control history; three separately retained synthesis states. */
+    unsigned i;int dirty=control_dirty(c,raw,mode);
+    if(dirty){
+        res_mode_update(snare,bass,nt,c->valid?c->last_mode:1u,c->targets,a);
+        res_mode_update(snare,bass,nt,mode,c->targets,a);
+    }
+    if(mode<2)prepare_res(c,mode==0?snare:bass,mode==1,raw,mode,vel,note,trig,a);
+    else{
+        if(dirty){control_commit(c,raw,mode);for(i=0;i<16;i++)nt_update(nt,c->targets,a,0);}
+        if(trig){nt_trigger(nt,vel,note);nt_update(nt,c->targets,a,0);}
+    }
+}
 static uint32_t fold2_obj(unsigned track){return 0x20000000u+track*0x10000u;}
-static void pk4_algo_init(pk4_engine*e,unsigned tr,uint8_t algo,uint8_t mode,uint8_t vel,uint8_t note){pk4_track*t;uint16_t bit;t=&e->tracks[tr];bit=(uint16_t)(1u<<algo);if(t->initialized_mask&bit)return;if(algo==PK4_ALGO_FOLD1)fold1_init(t->fold1,mode,vel,note);else if(algo==PK4_ALGO_FOLD2)fold2_init(t->fold2,fold2_obj(tr),mode,vel,note);else if(algo==PK4_ALGO_KARPLUS)karplus_init(t->karplus,mode,vel,note);else if(algo==PK4_ALGO_RESONANT){res_init_snare(t->res_snare,vel,note);res_init_bass(t->res_bass,vel,note);nt_init(t->res_nt,2,0,vel,note,e->assets);}else if(algo==PK4_ALGO_NOISE_HAT){nh_init_limb0(t->nh);nh_init_limb1(t->nh);nh_init_delay(t->nh);nh_init_pulse(t->nh);}else if(algo==PK4_ALGO_SIMPLE_DRUM)pk_cf_sd_init(t->sd,mode,vel,note);else if(algo==PK4_ALGO_COMPLEX_DRUM)pk_cf_cd_init(t->cd,mode,vel,note);else if(algo==PK4_ALGO_SLAP)pk_cf_slap_init(t->slap,mode,vel,note);else if(algo==PK4_ALGO_WAVETABLE)wt_init(t->wt,vel,note);else {nt_init(t->nt_m1,0,1,vel,note,e->assets);nt_init(t->nt_shared,1,0,vel,note,e->assets);}t->initialized_mask|=bit;
+static void pk4_algo_init(pk4_engine*e,unsigned tr,uint8_t algo,uint8_t mode,uint8_t vel,uint8_t note){pk4_track*t;uint16_t bit;t=&e->tracks[tr];bit=(uint16_t)(1u<<algo);if(t->initialized_mask&bit)return;if(algo==PK4_ALGO_FOLD1)fold1_init(t->fold1,mode,vel,note);else if(algo==PK4_ALGO_FOLD2)fold2_init(t->fold2,fold2_obj(tr),mode,vel,note);else if(algo==PK4_ALGO_KARPLUS)karplus_init(t->karplus,mode,vel,note);else if(algo==PK4_ALGO_RESONANT){res_init_snare(t->res_snare,vel,63u);res_init_bass(t->res_bass,vel,63u);res_init_nt(t->res_nt,vel,63u,e->assets);}else if(algo==PK4_ALGO_NOISE_HAT){nh_init_limb0(t->nh);nh_init_limb1(t->nh);nh_init_delay(t->nh);nh_init_pulse(t->nh);}else if(algo==PK4_ALGO_SIMPLE_DRUM)pk_cf_sd_init(t->sd,mode,vel,note);else if(algo==PK4_ALGO_COMPLEX_DRUM)pk_cf_cd_init(t->cd,mode,vel,note);else if(algo==PK4_ALGO_SLAP)pk_cf_slap_init(t->slap,mode,vel,note);else if(algo==PK4_ALGO_WAVETABLE)wt_init(t->wt,vel,note);else {nt_init(t->nt_m1,0,1,vel,note,e->assets);nt_init(t->nt_shared,1,0,vel,note,e->assets);}t->initialized_mask|=bit;
 }
 
 /* One-time engine creation, hoisted out of the audio callback.  A voice's three-family-algo state is fully deterministic (mode is a placeholder the first prepare_event re-settles; velocity/note are overwritten by the trigger), so it can be primed in the UI task instead of on the first trig frame, which was the event-frame spike that overran the hardware deadline. */
 void pk4_preinit_voice(pk4_engine*e,unsigned tr,uint8_t vel,uint8_t note){const uint8_t*f;unsigned len,i;if(!e||!e->assets||tr>=PK4_TRACK_COUNT)return;f=pk4_family_engines[tr<PK4_VOICE_COUNT?tr:0u];len=pk4_voice_len(tr<PK4_VOICE_COUNT?tr:0u);for(i=0;i<len;i++){if(f[i]==PK4_ALGO_SIMPLE_DRUM||f[i]==PK4_ALGO_COMPLEX_DRUM)continue;pk4_algo_init(e,tr,f[i],0u,vel,note);}}
 
 int pk4_prepare_event(pk4_engine*e,unsigned tr,uint8_t decay,uint8_t tune,uint8_t p1,uint8_t p2,uint8_t mode,uint8_t algo,uint8_t vel,uint8_t note,int trig){pk4_track*t;uint8_t raw[4];if(!e||!e->assets||tr>=PK4_TRACK_COUNT||algo>=PK4_ALGO_COUNT||mode>2)return 0;t=&e->tracks[tr];raw[0]=tune;raw[1]=decay;raw[2]=p1;raw[3]=p2;pk4_algo_init(e,tr,algo,mode,vel,note);
-if(algo==PK4_ALGO_FOLD1)prepare_fold(&t->fold1_ctl,t->fold1,0,0,raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_FOLD2)prepare_fold(&t->fold2_ctl,t->fold2,1,fold2_obj(tr),raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_KARPLUS)prepare_karp(&t->karplus_ctl,t->karplus,raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_RESONANT){if(mode==0)prepare_res(&t->res_snare_ctl,t->res_snare,0,raw,mode,vel,note,trig,e->assets);else if(mode==1)prepare_res(&t->res_bass_ctl,t->res_bass,1,raw,mode,vel,note,trig,e->assets);else prepare_nt(&t->res_nt_ctl,t->res_nt,0,raw,2,vel,note,trig,e->assets);}else if(algo==PK4_ALGO_NOISE_HAT)prepare_nh(&t->nh_ctl,t->nh,raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_SIMPLE_DRUM)prepare_sd(&t->sd_ctl,t->sd,raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_COMPLEX_DRUM)prepare_cd(&t->cd_ctl,t->cd,raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_SLAP)prepare_slap(&t->slap_ctl,t->slap,raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_WAVETABLE)prepare_wt(&t->wt_ctl,t->wt,raw,mode,vel,note,trig,e->assets);else if(mode==0)prepare_nt(&t->nt_m1_ctl,t->nt_m1,1,raw,mode,vel,note,trig,e->assets);else prepare_nt(&t->nt_shared_ctl,t->nt_shared,0,raw,mode,vel,note,trig,e->assets);t->active_algo=algo;t->active_mode=mode;return 1;}
+if(algo==PK4_ALGO_FOLD1)prepare_fold(&t->fold1_ctl,t->fold1,0,0,raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_FOLD2)prepare_fold(&t->fold2_ctl,t->fold2,1,fold2_obj(tr),raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_KARPLUS)prepare_karp(&t->karplus_ctl,t->karplus,raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_RESONANT)prepare_res_family(&t->res_snare_ctl,t->res_snare,t->res_bass,t->res_nt,raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_NOISE_HAT)prepare_nh(&t->nh_ctl,t->nh,raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_SIMPLE_DRUM)prepare_sd(&t->sd_ctl,t->sd,raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_COMPLEX_DRUM)prepare_cd(&t->cd_ctl,t->cd,raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_SLAP)prepare_slap(&t->slap_ctl,t->slap,raw,mode,vel,note,trig,e->assets);else if(algo==PK4_ALGO_WAVETABLE)prepare_wt(&t->wt_ctl,t->wt,raw,mode,vel,note,trig,e->assets);else if(mode==0)prepare_nt(&t->nt_m1_ctl,t->nt_m1,1,raw,mode,vel,note,trig,e->assets);else prepare_nt(&t->nt_shared_ctl,t->nt_shared,0,raw,mode,vel,note,trig,e->assets);t->active_algo=algo;t->active_mode=mode;return 1;}
 
 int pk4_render(pk4_engine*e,unsigned tr,int16_t*d,uint32_t n){pk4_track*t;if(!e||!e->assets||tr>=PK4_TRACK_COUNT||!d)return 0;t=&e->tracks[tr];if(t->active_algo==PK4_ALGO_FOLD1){pk_cf_fold_tables ft;pk_cf_fold_rng r;unsigned i;ft.pitch=e->assets->pitch;ft.envelope1=e->assets->envelope1;ft.envelope2=e->assets->envelope2;for(i=0;i<4;i++)ft.waves[i]=e->assets->waves[i];r.low=t->rng_low;r.high=t->rng_high;if(!pk_cf_fold1_render(t->fold1,d,n,&ft,&r))return 0;t->rng_low=r.low;t->rng_high=r.high;return 1;}if(t->active_algo==PK4_ALGO_FOLD2){pk_cf_fold_tables ft;pk_cf_fold_rng r;unsigned i;ft.pitch=e->assets->pitch;ft.envelope1=e->assets->envelope1;ft.envelope2=e->assets->envelope2;for(i=0;i<4;i++)ft.waves[i]=e->assets->waves[i];r.low=t->rng_low;r.high=t->rng_high;if(!pk_cf_fold2_render(t->fold2,fold2_obj(tr),d,n,&ft,&r))return 0;t->rng_low=r.low;t->rng_high=r.high;return 1;}if(t->active_algo==PK4_ALGO_KARPLUS){pk_cf_karplus_tables kt={e->assets->envelope1,e->assets->envelope2};pk_cf_karplus_rng r={t->rng_low,t->rng_high};if(!pk_cf_karplus_render(t->karplus,d,n,&kt,&r))return 0;t->rng_low=r.low;t->rng_high=r.high;return 1;}if(t->active_algo==PK4_ALGO_RESONANT){pk_cf_res_tables rt;pk_cf_res_rng rr={t->rng_low,t->rng_high};rt.envelope1=e->assets->envelope1;rt.envelope2=e->assets->envelope2;rt.interp_a=e->assets->res_interp_a;rt.interp_b=e->assets->res_interp_b;if(t->active_mode==0){if(!pk_cf_res_snare_render(t->res_snare,d,n,&rt,&rr))return 0;}else if(t->active_mode==1){if(!pk_cf_res_bass_render(t->res_bass,d,n,&rt,&rr))return 0;}else{pk_cf_nt_shared_tables nt;pk_cf_nt_rng nr={t->rng_low,t->rng_high};unsigned i;nt.envelope1=e->assets->envelope1;nt.envelope2=e->assets->envelope2;for(i=0;i<4;i++){nt.waves[i].address=e->assets->waves[i].address;nt.waves[i].table=e->assets->waves[i].table;}if(!pk_cf_nt_shared_render(t->res_nt,d,n,&nt,&nr))return 0;rr.low=nr.low;rr.high=nr.high;}t->rng_low=rr.low;t->rng_high=rr.high;return 1;}if(t->active_algo==PK4_ALGO_NOISE_HAT){pk_cf_nh_tables ht;pk_cf_nh_rng hr={t->rng_low,t->rng_high};unsigned hm=nh_mode(t->active_mode);ht.envelope1=e->assets->envelope1;ht.envelope2=e->assets->envelope2;if(!pk_cf_nh_render(t->nh+(hm==2u?NH_PULSE:0),d,n,hm,&ht,&hr,e->nh_hold))return 0;t->rng_low=hr.low;t->rng_high=hr.high;return 1;}if(t->active_algo==PK4_ALGO_SLAP){pk_cf_fold_tables ft;pk_cf_fold_rng rng;unsigned i;ft.pitch=e->assets->pitch;ft.envelope1=e->assets->envelope1;ft.envelope2=e->assets->envelope2;for(i=0;i<4;i++)ft.waves[i]=e->assets->waves[i];rng.low=t->rng_low;rng.high=t->rng_high;if(!pk_cf_slap_render(t->slap,d,n,&ft,&rng))return 0;t->rng_low=rng.low;t->rng_high=rng.high;return 1;}if(t->active_algo==PK4_ALGO_COMPLEX_DRUM){pk_cf_fold_tables ft;unsigned i;ft.pitch=e->assets->pitch;ft.envelope1=e->assets->envelope1;ft.envelope2=e->assets->envelope2;for(i=0;i<4;i++)ft.waves[i]=e->assets->waves[i];if(!pk_cf_cd_render(t->cd,d,n,&ft))return 0;return 1;}if(t->active_algo==PK4_ALGO_SIMPLE_DRUM){pk_cf_fold_tables ft;unsigned i;ft.pitch=e->assets->pitch;ft.envelope1=e->assets->envelope1;ft.envelope2=e->assets->envelope2;for(i=0;i<4;i++)ft.waves[i]=e->assets->waves[i];if(!pk_cf_sd_render(t->sd,d,n,&ft))return 0;return 1;}if(t->active_algo==PK4_ALGO_WAVETABLE){pk_cf_wt_tables wt;wt.pitch=e->assets->pitch;wt.envelope1=e->assets->envelope1;wt.envelope2=e->assets->envelope2;wt.base_wave=e->assets->wt_base;wt.bank=e->assets->wt_bank;if(!pk_cf_wt_render(t->wt,d,n,&wt))return 0;return 1;}if(t->active_algo==PK4_ALGO_NOISE_TONE){if(t->active_mode==0){uint32_t ma=e->assets->m1_wave_address?e->assets->m1_wave_address:PK4_M1_WAVE_DEFAULT;return pk_cf_nt_m1_render(t->nt_m1,d,n,e->assets->m1_wave,ma,e->assets->m1_wave,ma);}else{pk_cf_nt_shared_tables nt;pk_cf_nt_rng r={t->rng_low,t->rng_high};unsigned i;nt.envelope1=e->assets->envelope1;nt.envelope2=e->assets->envelope2;for(i=0;i<4;i++){nt.waves[i].address=e->assets->waves[i].address;nt.waves[i].table=e->assets->waves[i].table;}if(!pk_cf_nt_shared_render(t->nt_shared,d,n,&nt,&r))return 0;t->rng_low=r.low;t->rng_high=r.high;return 1;}}for(uint32_t i=0;i<n;++i)d[i]=0;return 1;}
 

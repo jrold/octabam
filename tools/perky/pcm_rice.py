@@ -2,8 +2,9 @@
 """Lossless Rice coder for the Perkons PCM that has to live inside the OS image.
 
 The card OS upgrade refuses an ELUP `.bin` whose payload exceeds 1 MiB
-(`0x4007f748` computes `filesize - 12` and compares it with `0x100000`; over
-that it returns the error that prints "LENGTH ERROR").  PerkyMachines' firmware
+(pinned 1.40C subtracts 12 at `0x4007f390`, compares with `0x100000` at
+`0x4007f396`, and returns the error that prints "LENGTH ERROR").
+The historical `0x4007f748` cap citation was incorrect.  PerkyMachines' firmware
 assets -- the 48-table Wavetable bank and Acoustic Hats' closed/open/ride --
 are 648,716 bytes of effectively incompressible PCM, and aPLib gets ~nothing on
 them, so the payload went to 1.2 MB and the card path stopped working.

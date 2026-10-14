@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import re
+import subprocess
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -66,7 +68,9 @@ def main() -> None:
         "cursor_longs = 4u + 2u * count",
         "cursor[i] = 0u",
         "record = pk_final_fixed_slot(track, ping)",
-        "record[pre_longs + i] = encoded[i]",
+        "pk_final_commit_longs(record, encoded, pre_longs)",
+        "pk_final_commit_longs(record + pre_longs, encoded, post_longs)",
+        "dst[i] = src[i]",
         "pre_longs + post_longs != 40u",
     )
     for needle in control_needles:
@@ -82,6 +86,18 @@ def main() -> None:
         post = 4 + 2 * (16 - split)
         if pre + post != 40:
             raise AssertionError(f"split {split}: stock frame span != 40 longs")
+
+    # Execute the real encoder against an independent arithmetic oracle.
+    # The integration suite separately executes the actual noinline slot commit.
+    from verify_perky_cf_final import PRODUCTION_C
+    with tempfile.TemporaryDirectory(prefix="perky-record-") as temp:
+        exe = Path(temp) / "encoder"
+        subprocess.run(["cc", "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror",
+                        "-I", str(ROOT / "modules/perky"),
+                        str(ROOT / "tools/verify/perky_cf_stock_record_encoder.c"),
+                        *[str(ROOT / "modules/perky" / f"{n}.c") for n in PRODUCTION_C],
+                        "-o", str(exe)], check=True)
+        subprocess.run([str(exe)], check=True)
 
     print(
         "PERKY stock source-record ABI: PASS "

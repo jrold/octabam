@@ -2,8 +2,9 @@
 """Gate the lossless PCM stream that keeps the card OS upgrade working.
 
 The Octatrack's card upgrade refuses an ELUP `.bin` whose payload exceeds
-1 MiB (`0x4007f748`: `filesize - 12 > 0x100000` -> the error whose message is
-"LENGTH ERROR").  PerkyMachines' Wavetable bank is ~200 KB of incompressible
+1 MiB (pinned 1.40C: subtraction at `0x4007f390`, compare at `0x4007f396`;
+`filesize - 12 > 0x100000` returns "LENGTH ERROR"). The historical
+`0x4007f748` citation was not the cap check.  PerkyMachines' Wavetable bank is ~200 KB of incompressible
 PCM.  This gate packs those assets with the production coder
 (tools/perky/pcm_rice.py), decodes them back with the production ColdFire
 decoder (modules/perky/cf_pcm_rice.h) and requires every byte to come back.

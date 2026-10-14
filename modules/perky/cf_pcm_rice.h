@@ -8,8 +8,9 @@
  * PerkyMachines' firmware assets include 648 KB of effectively incompressible
  * PCM (the 48-table Wavetable bank and Acoustic Hats' three samples).  The
  * Octatrack's card OS upgrade refuses an ELUP .bin whose payload exceeds 1 MiB
- * (`0x4007f748`: `filesize - 12 > 0x100000` is the error that prints "LENGTH
- * ERROR"), and aPLib gets ~nothing on that PCM, so the payload had to shrink.
+ * (0x4007f390 subtracts 12, 0x4007f396 compares to 0x100000; failure prints
+ * "LENGTH ERROR"), and aPLib gets ~nothing on that PCM, so the payload had
+ * to shrink. The historical 0x4007f748 citation was wrong for this stock image.
  *
  * This is a FLAC-style fixed-predictor + Rice coder: order 2 inside each
  * 4096-sample block, one Rice parameter per block, 16-bit output exactly.  It
@@ -148,6 +149,34 @@ static inline int pk_cf_rice_unpack(const uint8_t *packed, uint32_t bytes,
             return 0;
     }
     return off <= bytes ? 1 : 0;
+}
+
+/* Firmware table readers consume little-endian bytes even on ColdFire.
+ * Keep the native-sample decoder API, then serialize its successful output
+ * explicitly. Host-only tests cannot detect this target byte-order boundary. */
+static inline int pk_cf_rice_unpack_le(const uint8_t *packed, uint32_t bytes,
+                                      const pk_cf_rice_target *targets,
+                                      unsigned ntargets)
+{
+    unsigned t;
+    if (!packed || bytes < 8u || !targets || !ntargets
+        || pk_cf_rice_u32le(packed + 4) != ntargets)
+        return 0;
+    for (t = 0; t < ntargets; ++t)
+        if (!targets[t].dst || !targets[t].count)
+            return 0;
+    if (!pk_cf_rice_unpack(packed, bytes, targets, ntargets))
+        return 0;
+    for (t = 0; t < ntargets; ++t) {
+        uint32_t i;
+        for (i = 0; i < targets[t].count; ++i) {
+            uint16_t sample = (uint16_t)targets[t].dst[i];
+            uint8_t *out = (uint8_t *)(void *)(targets[t].dst + i);
+            out[0] = (uint8_t)sample;
+            out[1] = (uint8_t)(sample >> 8);
+        }
+    }
+    return 1;
 }
 
 #endif

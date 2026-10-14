@@ -1,0 +1,101 @@
+{
+  "schema": "perky.hybrid.historical-report-aliases.v1",
+  "reason": "Canonical generated report paths are overwritten by fresh qualification; these byte-identical historical reports are reconstructed from the unchanged release receipt embedded results.",
+  "reports": {
+    "/Users/jrold/Downloads/octabam/out/perky/au-regression/A/report.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/00.json",
+      "bytes": 31606,
+      "sha256": "8c7630ae88278daf10f4fb33468a8f92b41c67c6aa1e8f55cdae95d514defb00"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/au-regression/B/report.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/01.json",
+      "bytes": 31606,
+      "sha256": "6c9b1acaa93f38dbd04ca33a4da44f185fe8ca8907ca8d4c9efdd045df34e5b9"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/au-regression/control-contract/report.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/02.json",
+      "bytes": 141,
+      "sha256": "dfadb7f346c4edb0b4c6d00deba54bc88b1bd08c0016ecba5b333b96c0a0dbaa"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/four-clock-audio-A/report.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/03.json",
+      "bytes": 239,
+      "sha256": "5a90c957bef66e63310a409cca7c71fe013bb2780452aa4de3d2c7cf944d5f1f"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/four-clock-audio-B/report.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/04.json",
+      "bytes": 239,
+      "sha256": "7b06467b671d30ddc140c66322c48a158ee94cce5d555a675bf5a8f322008e0c"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/four-renderer-A/report.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/05.json",
+      "bytes": 358,
+      "sha256": "31898df3a3b6210eed0012c81eeeae17ebc2086a007e0f99542b3e25179eecd0"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/four-renderer-B/report.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/06.json",
+      "bytes": 358,
+      "sha256": "507e5fc5f7e503607bbae5f22ebe52a1e1727295f80f98a8f0ca27058f3c3eb9"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/upstream-integration/candidate/actual-image-cost/report.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/07.json",
+      "bytes": 6451,
+      "sha256": "f5aa668b38bbef9c7d568545888337f111f92263e31f11bf6189f3cc43605346"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/upstream-integration/candidate/first-trigger-dry/result.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/08.json",
+      "bytes": 757,
+      "sha256": "e40bb3283ef1c69b22d028d86d26a4c99eb06194105a3f8d5b3185fdcdb4905e"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/upstream-integration/candidate/four-t1-only-q64/result.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/09.json",
+      "bytes": 785,
+      "sha256": "72c8f7f68ecab2c56ecd5730d67189c273ac83eedf7b45eabb94ad1210683850"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/upstream-integration/candidate/four-t1-t5-q16/result.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/10.json",
+      "bytes": 1170,
+      "sha256": "f249987c47f454414c42f5f7eeb3f4bfa501fcd89fea386e618dcc9479e6a90d"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/upstream-integration/candidate/four-t1-t5-q256/result.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/11.json",
+      "bytes": 1171,
+      "sha256": "ded27cc6783a179cd823039f9d6e2326262bc21002ccab09964c60764422e1c4"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/upstream-integration/candidate/four-t1-t5-q64/result.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/12.json",
+      "bytes": 1170,
+      "sha256": "b9edd53b23f99b326f5ae6109a4f6c17f258f7a47d310dd76b6a37173adc0403"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/upstream-integration/candidate/four-t5-only-q64/result.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/13.json",
+      "bytes": 784,
+      "sha256": "09486c1ecd81d85004b141a31fa92ac7c2a2e2c798f02336772a7f5060d02103"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/upstream-integration/candidate/legacy-t1-only-q64/result.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/14.json",
+      "bytes": 365,
+      "sha256": "fbf392e25ac915e5273f54307c5d8adcff0d3d2056d3dfe479696ad1c27bf105"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/upstream-integration/candidate/legacy-t1-t5-q16/result.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/15.json",
+      "bytes": 548,
+      "sha256": "32de64061208c95bc56e8627f4eb0ad3e67ebe752981f6bf9901fa2c45f09cf6"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/upstream-integration/candidate/legacy-t1-t5-q256/result.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/16.json",
+      "bytes": 549,
+      "sha256": "21f41ce4866be7b1d59b1a60d0dacf8bb5a2a044fecf0c1c415834fa01a9246e"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/upstream-integration/candidate/legacy-t1-t5-q64/result.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/17.json",
+      "bytes": 548,
+      "sha256": "279637761d2d791579c644111f04480578b709d793878eaaacb0df10526f8bf4"
+    },
+    "/Users/jrold/Downloads/octabam/out/perky/upstream-integration/candidate/ui-report.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/historical-components/18.json",
+      "bytes": 612,
+      "sha256": "9766da51d04af2b5fb28f21763a29b8ea3a3d0da4070954902b5dc815c7ad668"
+    }
+  }
+}

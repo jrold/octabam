@@ -836,3 +836,67 @@ the binaries' architecture.
 report (the hints name `tools/harness/send_probe.py`), which refhash
 correctly flagged with every artifact identical. Re-save only after proving
 the artifact lines match.
+
+<a name="trap-cf-engine-invariants"></a>
+
+### A CF optimization assumed initialization values never change
+
+On 14 Oct 2026, the hybrid foundation's unchanged Resonant reference gate
+failed at snare sample 1. Commit `77b2cadf` removed bypass handling because
+init wrote zero, but the control updater writes bypass from DECAY. Commit
+`2f4f324e` similarly removed signed decay handling, although the trigger writes
+three nonzero signs. Restoring both behaviors passed 1,536 continuation samples
+and 3,072 fresh/continuation samples plus 24 state stages. Trace all control,
+trigger and render writers before declaring a field invariant. The original
+firmware captures and hashes stayed unchanged; `verify_perky_cf_resonant_dsp.py`
+executes both gates. These are CF renderer fixes, independent of frozen PERKY4S. The
+broader original-ARM gate also caught an omitted WT mode flag, four constructor
+words and one new-target update; a retained snare noise floor on the finite
+DECAY branch; and separate Resonant control caches where the original shares
+one history across three objects initialized at note 63. Mode changes must run
+the original old-mode and new-mode updates before committing targets.
+`verify_perky_hybrid_original_profiles.py` checks control grids, mode/family
+retention and long release tails against the original executable, preserving
+its capture hashes. A renderer-only snapshot test cannot detect preparation
+or wrapper-history defects.
+
+<a name="trap-cf-pcm-endian"></a>
+
+### Native-endian decoded PCM is not an ARM table
+
+The PKR1 decoder returned native `int16_t` samples, but the WT renderer reads
+ARM little-endian table bytes. A host round-trip passed; execution on ColdFire
+found 199,516 differing bytes out of 200,704, all explained by swapping each
+sample's two bytes. `pk_cf_rice_unpack_le` now serializes successful decoder
+output explicitly. The target foundation gate compares all decoded bytes to
+the SHA-pinned original assets. Neither the stream nor the reference changed.
+
+<a name="trap-cf-ready-bss"></a>
+
+### A BSS readiness flag can skip initialization
+
+The platform loader does not zero BSS. `static uint8_t pk_final_pcm_ready`
+was emitted as `.comm` even with `-fno-zero-initialized-in-bss`; an arbitrary
+nonzero boot value could skip WT decoding. The CF adapter now uses a nonzero
+loaded `.data` COLD cookie, sets READY only after successful decoding, and
+refuses rendering on decode failure. The target probe poisons BSS before
+initialization. The compiler also disproved the old generic-engine arithmetic:
+actual m68k layout is 118,096 bytes, not the inferred 118,200. The old 256-byte
+stack ceiling was unsupported. The initial two-voice diagnostic observed 456
+bytes; the completed transition-aware probe observes 460. Neither observation
+is a full-machine stack ceiling.
+
+<a name="trap-cf-odd-base"></a>
+
+### An odd displacement can have an even effective address
+
+The Goal 1 narrow CF benchmark hoisted `lea voices+679,%a3`; a subsequent
+`move.w` at `935(%a3)` accesses `voices+1614`, which is even. Applying the
+production conservative odd-displacement gate to this different translation
+unit falsely rejected valid code. The production audit remains required.
+The diagnostic gate additionally calibrates both word/long read and write
+watches with even and deliberately odd addresses, then rejects any actual
+odd effective access during target calls. Readback outside target execution
+is excluded. This proves the exercised paths, not unseen compiler paths;
+never equate displacement parity with effective-address parity without
+establishing the base alignment.

@@ -54,7 +54,13 @@ a valid OS, `-3` length, `-4` checksum, `-5` MK1 not allowed (version code
 < "0156"), `-6` cannot downgrade (< "0178"). The MKI and MKII download
 pages serve the byte-identical 1.40C file (SHA256 `370c55a3…`), so `-5`
 compares the incoming file's version code and rejects pre-unification
-MK1-era files (inferred); octabam images keep code 0178.
+MK1-era files (inferred); octabam images keep code 0178. The payload-length
+check itself is measured at `0x4007f390` (subtract 12) and `0x4007f396`
+(compare 1 MiB) in stock MAIN SHA256 `164f3122…`, with error -3 at
+`0x4007f3a8`. Historical PERKY comments that assigned this check to
+`0x4007f748` are retracted; the frozen `build_machine_canary.py` retains its
+historical bytes. `verify_perky_hybrid_packaging.py` audits the actual guard
+and validates ELUP framing separately from uncompressed MAIN size.
 
 UI → write flow: OS UPGRADE menu → confirm → `os_upgrade` (stops audio,
 "WORKING PLEASE WAIT", enqueues a task) → scans the CF, validates →
