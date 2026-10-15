@@ -93,6 +93,8 @@ def decode_profiler_dump(raw: bytes) -> dict:
         "dtim3_hz": dtim3_hz,
         "read_overhead_ticks": read_overhead_ticks,
         "read_overhead_us": round(read_overhead_ticks * t_to_us, 4),
+        "read_calibration_observed": read_overhead_ticks > 0,
+        "read_overhead_scope": "Read-to-read timer interval; zero is unmeasured; not total instrumentation or silicon WCET",
         "frame_count": frame_count,
         "cf_active_frames": cf_active_frames,
         "dsp_active_frames": dsp_active_frames,

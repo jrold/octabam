@@ -25,7 +25,7 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def measure(probe, output, frames):
+def measure(probe, output, frames, *, profiler_enable=1, cf_arm=1):
     image, elf = probe/'mainos_PKHYB2P.bin', probe/'platform/runtime.elf'
     symbols = workload.load_elf_symbols(elf)
     nm = subprocess.check_output(['m68k-elf-nm', '-S', str(elf)], text=True)
@@ -50,9 +50,11 @@ def measure(probe, output, frames):
         syms=symbols, project_src=Path(baseline['project']['root']),
         work_dir=output/'workload', tone_path=ROOT/'out/perky/hybrid/probe/workload/HYB_SAMPLER_440.wav',
         frames=frames, cycle_clock=1.0,
+        profiler_enable=profiler_enable, cf_arm=cf_arm,
         watch_pcs=[frame_start, frame_end, *starts, *returns])
     assert hashes == {str(p): digest(p) for p in sources}, 'execution source drift'
     log = (output/'workload/port.log').read_text()
+    assert re.search(r'cycle clock: on, x1\.00.*at 264 MHz', log), 'clock/model mismatch'
     hits = re.findall(r'\[\s*\d+ cyc\s+(\d+)\] at (0x[0-9a-f]+).*?'
                       r'\[sp (0x[0-9a-f]+): ([^\]]+)\]', log)
     active = None
@@ -61,19 +63,26 @@ def measure(probe, output, frames):
     per_frame_empty = []
     empty_cycles = 0
     counts = defaultdict(list)
+    frame_sp = None
+    lowest_sp = None
+    deepest_observed = 0
     for cyc, pc, sp, stack in hits:
         cyc, pc = int(cyc), int(pc, 16)
         stack = [int(x, 0) for x in stack.split()]
         if pc == frame_start:
             assert frame is None
             frame, empty_cycles = cyc, 0
+            frame_sp = lowest_sp = int(sp, 16)
         elif pc == frame_end:
             assert frame is not None and active is None
+            assert int(sp, 16) == frame_sp+16, 'unbalanced ISR stack'
+            deepest_observed = max(deepest_observed, frame_sp+16-lowest_sp)
             spans.append(cyc-frame+11)
             per_frame_empty.append(empty_cycles)
             frame = None
         elif pc in starts:
             assert active is None and frame is not None
+            lowest_sp = min(lowest_sp, int(sp, 16))
             # C ABI stack: return PC, state*, destination*, sample count, ...
             active = (starts[pc], cyc, stack[3], int(sp, 16))
         elif pc in returns:
@@ -90,21 +99,26 @@ def measure(probe, output, frames):
     peak = max(range(len(spans)), key=spans.__getitem__)
     result = {
         'status': 'MEASURED_LOCAL_MODEL_ONLY', 'frames': frames,
+        'coldfire_clock_hz': workload.CF_CLOCK_HZ,
+        'stack_observation': {
+            'balanced_ISR_returns': len(spans),
+            'observed_depth_below_exception_frame_bytes': deepest_observed,
+            'scope': 'Sampled at engine entries only; lower bound, not stack/nesting qualification'},
         'execution_hashes': hashes, 'workload': row,
         'whole_ISR': {
-            'mean_us': statistics.mean(spans)/266,
-            'p99_us': order[int(.99*len(order))]/266,
-            'max_cycles': max(spans), 'max_us': max(spans)/266,
-            'deadline_misses': sum(x/266 > 16/44100*1e6 for x in spans),
+            'mean_us': statistics.mean(spans)/(workload.CF_CLOCK_HZ/1e6),
+            'p99_us': order[int(.99*len(order))]/(workload.CF_CLOCK_HZ/1e6),
+            'max_cycles': max(spans), 'max_us': max(spans)/(workload.CF_CLOCK_HZ/1e6),
+            'deadline_misses': sum(x/(workload.CF_CLOCK_HZ/1e6) > 16/44100*1e6 for x in spans),
             'peak_frame_index': peak,
-            'empty_render_us_in_peak_frame': per_frame_empty[peak]/266,
-            'mean_empty_render_us_per_frame': statistics.mean(per_frame_empty)/266,
-            'max_empty_render_us_per_frame': max(per_frame_empty)/266,
+            'empty_render_us_in_peak_frame': per_frame_empty[peak]/(workload.CF_CLOCK_HZ/1e6),
+            'mean_empty_render_us_per_frame': statistics.mean(per_frame_empty)/(workload.CF_CLOCK_HZ/1e6),
+            'max_empty_render_us_per_frame': max(per_frame_empty)/(workload.CF_CLOCK_HZ/1e6),
             'scope': 'Matched PC spans on every frame, plus LEA=1/RTE=10 model cycles'},
         'engine_calls': [
             {'engine': name, 'samples': count, 'calls': len(values),
              'mean_cycles': statistics.mean(values), 'max_cycles': max(values),
-             'mean_us': statistics.mean(values)/266, 'max_us': max(values)/266}
+             'mean_us': statistics.mean(values)/(workload.CF_CLOCK_HZ/1e6), 'max_us': max(values)/(workload.CF_CLOCK_HZ/1e6)}
             for (name, count), values in sorted(counts.items())],
         'limits': ['Corrected CPU-cycle model, not silicon/cache/stall qualification.',
                    'Engine spans include model JSR/RTS but not caller setup.']}
@@ -118,9 +132,12 @@ def main():
     ap.add_argument('--probe', type=Path, default=ROOT/'out/perky/hybrid/probe')
     ap.add_argument('--out', type=Path, required=True)
     ap.add_argument('--frames', type=int, default=4000)
+    ap.add_argument('--profiler-enable', type=int, choices=(0, 1), default=1)
+    ap.add_argument('--cf-arm', type=int, choices=(0, 1), default=1)
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
-    measure(args.probe.resolve(), args.out.resolve(), args.frames)
+    measure(args.probe.resolve(), args.out.resolve(), args.frames,
+            profiler_enable=args.profiler_enable, cf_arm=args.cf_arm)
 
 
 if __name__ == '__main__':

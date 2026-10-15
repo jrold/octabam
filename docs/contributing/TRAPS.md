@@ -923,6 +923,15 @@ stack ceiling was unsupported. The initial two-voice diagnostic observed 456
 bytes; the completed transition-aware probe observes 460. Neither observation
 is a full-machine stack ceiling.
 
+The hybrid's loaded cookies did not initialize inherited native control BSS.
+A stale valid smoother with matching Bank/Part and engine family bypassed lazy
+invalidation and changed the first split native record. The hybrid boot initializer
+now clears that control/prefix/trigger/UI history before RTOS handoff; native
+arithmetic and DSP bytes stay frozen. `verify_perky_hybrid_cold_safety.py` injects
+poison at the real loader-to-initializer call, including a matching stale tuple,
+then compares native records, initialized state and all decoded PCM to clean boot.
+The failing pre-fix receipt remains in the post-closeout safety evidence.
+
 <a name="trap-cf-odd-base"></a>
 
 ### An odd displacement can have an even effective address

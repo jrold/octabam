@@ -11,6 +11,7 @@
 // vendored Musashi is ColdFire V2 and this firmware is V4e. That report is
 // the work list for the ISA half of the port, one opcode at a time.
 #include <cstdio>
+#include <cmath>
 #include <chrono>
 #include <iostream>
 #include <map>
@@ -1302,6 +1303,7 @@ int main(int _argc, char** _argv)
 	std::string hostPortLog;	// every write into the DSP host-port window -> FILE (O8)
 	bool dsp = false;			// O8: put the two real DSP cores behind the host port
 	bool dspRt = false;			// O17: --dsp-rt -- the cores under the JIT on worker threads, on the lockstep schedule (dsp.cpp, THE REAL-TIME MODE); --interactive only
+	double pitClockHz = 264e6; // legacy route-A default; qualification can select the RM's bus clock
 	double dspRatio = ot::DspPair::g_dspIps / ot::DspPair::g_cfIps, dspIps = ot::DspPair::g_dspIps;	// their clock, in DSP instructions per ColdFire instruction / per sample (dsp.h says where 4532 comes from)
 	std::string dspLog;			// every host-side event on the DSP pair -> FILE
 	uint64_t dspTrace = 0;		// a status line per core every N DSP instructions
@@ -1414,6 +1416,7 @@ int main(int _argc, char** _argv)
 		else if(a == "--dsp-drain-paced")		dspDrainPaced = true;
 		else if(a == "--dsp-verbose")			dspVerbose = true;
 		else if(a == "--dsp-quantum" && i + 1 < _argc)	ot::DspPair::g_quantum = std::atof(_argv[++i]);	// O12: the core interleave quantum (instructions)
+		else if(a == "--pit-clock-hz" && i + 1 < _argc) pitClockHz = std::atof(_argv[++i]);
 		else if(a == "--dsp-lazy" && i + 1 < _argc)	dspLazy = std::atof(_argv[++i]);	// O16c: lazy batching of the pair, N DSP instructions (0 = exact)
 		else if(a == "--edma-log" && i + 1 < _argc)	edmaLog = _argv[++i];
 		else if(a == "--dsp-peek" && i + 1 < _argc)	dspPeek = _argv[++i];
@@ -1475,6 +1478,7 @@ int main(int _argc, char** _argv)
 			"              [--foreign-writes ADDR,LEN,FILE --stock-code LO-HI[;...]]  writes into the range from a PC outside stock's code, to FILE (verify_reserve_writes)\n"
 			"              [--cs1-in FILE]                                   CS1 (0x10000000) from FILE before the boot: a power cycle with an earlier --mem-dump 0x10000000,0x100000\n"
 			"              [--cf-frame-budget-us US] [--cf-frame-deadline F]  the ColdFire's real-time frame budget (a report) and its frame DEADLINE (models the unit's stall: the calibrated frame cost must fit the 362.8 us frame, F = the model-to-hardware cycle factor; --dsp --sequencer)\n"
+			"              [--pit-clock-hz HZ]                              PIT prescaler input (legacy default 264e6; configured bus 132e6)\n"
 			"              [--scenario \"LOG ARGS...\"]... [--scenario-jobs N]  load once, fork one child per scenario (stdout to LOG, ARGS its post-load options)\n");
 			return false;
 		}
@@ -1783,7 +1787,13 @@ int main(int _argc, char** _argv)
 	if(stop == ot::Machine::Stop::Handoff)
 	{
 		std::printf("vbr        : %#x (the firmware's own `movec %%a0,%%vbr` at 0x40000db6)\n", m.vbr());
-		ot::Rtos rtos(m, ips, 264e6, frame);
+		if(!(pitClockHz > 0.0) || !std::isfinite(pitClockHz))
+		{
+			std::fprintf(stderr, "invalid --pit-clock-hz (expected positive finite Hz)\n");
+			return 1;
+		}
+		std::printf("PIT clock  : %.0f Hz (legacy default 264000000; configured bus 132000000)\n", pitClockHz);
+		ot::Rtos rtos(m, ips, pitClockHz, frame);
 		// --mkii: the far end of the panel UART answers as an MKII panel
 		// (ot::MkiiPanel, periph.h): the loader handshake 0x4001f4dc and the
 		// 0x7r report asked for by `74 00`. The loader version it reports is

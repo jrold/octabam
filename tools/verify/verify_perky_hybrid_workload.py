@@ -69,7 +69,8 @@ SR = 44100
 FRAME_SAMPLES = 16
 FRAME_PERIOD_US = 16e6 / 44100.0  # 362.81179138321994 us
 ADVANCEMENT_MARGIN_US = 0.80 * FRAME_PERIOD_US  # 290.24943310657596 us
-CF_CLOCK_HZ = 266_000_000.0
+CF_CLOCK_HZ = 264_000_000.0
+PIT_CLOCK_HZ = 132_000_000.0  # RM 29.3: PCSR.PRE divides the internal bus clock
 DTIM3_HZ = 132_000_000.0
 RECORDER_BASE = 128
 SAMPLE_REL = "AUDIO/HYB_SAMPLER_440.wav"
@@ -195,7 +196,7 @@ def parse_ot_emu_log(log_text: str) -> dict:
     steady_m = re.search(r"worst after frame 50: #(\d+) (\d+) us", log_text)
     over_m = re.search(r"frames over the [\d.]+ us period: (\d+)", log_text)
     budget_m = re.search(
-        r"cf budget\s*:\s*(\d+) ColdFire cycles over the frames \((\d+) per frame of 16 samples = ([\d.]+) us at 266 MHz\)",
+        r"cf budget\s*:\s*(\d+) ColdFire cycles over the frames \((\d+) per frame of 16 samples = ([\d.]+) us at 264 MHz\)",
         log_text,
     )
     host_m = re.search(
@@ -210,13 +211,12 @@ def parse_ot_emu_log(log_text: str) -> dict:
     for c_id, cmds, instrs, k_per_f, tx_w, rx_w in core_matches:
         cmds_i = int(cmds)
         instrs_i = int(instrs)
-        # DSP56303 runs at 132 MHz (132e6 instructions/cycles per second -> 47,891 cycles per 362.81 us frame)
+        # Instructions are not elapsed DSP cycles; no busy-time conversion.
         mean_instr_per_frame = instrs_i / max(1, cmds_i)
         cores[f"core_{c_id}"] = {
             "frame_commands": cmds_i,
             "dsp_instructions": instrs_i,
             "mean_instructions_per_frame": round(mean_instr_per_frame, 1),
-            "mean_busy_us_at_132mhz": round(mean_instr_per_frame / 132.0, 2),
             "tx_words": int(tx_w),
             "rx_words": int(rx_w),
         }
@@ -505,6 +505,8 @@ def run_integrated_row(
         "--cf-frame-hist",
         "--cf-frame-budget-us",
         "362.8",
+        "--pit-clock-hz",
+        str(int(PIT_CLOCK_HZ)),
         "--poke-before-play",
         ";".join(pokes),
         "--mem-dump",
@@ -527,6 +529,7 @@ def run_integrated_row(
 
     log_text = log_path.read_text(errors="replace")
     assert "FAULT:" not in log_text and "ILLEGAL" not in log_text, f"Fault in {name}: see {log_path}"
+    assert f"PIT clock  : {int(PIT_CLOCK_HZ)} Hz" in log_text, 'PIT clock option not applied'
     assert "step       : unknown kind" not in log_text, f"Unexecuted workload action in {name}: see {log_path}"
     assert re.search(rf"frames run\s*:\s*{frames}\s+since transport start.*REACHED", log_text), (
         f"Did not reach {frames} frames in {name}: see {log_path}"
@@ -602,6 +605,8 @@ def run_integrated_row(
         "frames": frames,
         "simulated_seconds": round(frames * 16.0 / SR, 2),
         "cycle_clock_factor": cycle_clock,
+        "coldfire_clock_hz": CF_CLOCK_HZ,
+        "pit_clock_hz": PIT_CLOCK_HZ,
         "profiler_enabled": bool(profiler_enable),
         "cf_armed": bool(cf_arm),
         "ot_emu": emu_metrics,
@@ -977,8 +982,9 @@ def main() -> int:
         "hardware_feasibility": "UNVERIFIED",
         "clocks": {
             "coldfire_core_hz": int(CF_CLOCK_HZ),
+            "pit_clock_hz": int(PIT_CLOCK_HZ),
             "dtim3_bus_hz": int(DTIM3_HZ),
-            "dsp56303_core_hz": 132_000_000,
+            "dsp56303_core_hz": None,  # no clock/cycle completion calibration in this report
             "audio_sample_rate_hz": SR,
             "samples_per_frame": FRAME_SAMPLES,
             "frame_period_us": round(FRAME_PERIOD_US, 6),

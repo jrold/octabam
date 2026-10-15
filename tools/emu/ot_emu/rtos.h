@@ -544,7 +544,7 @@ namespace ot
 		// is the same one, slow down with it.
 		//
 		// With this on, a sample is what it is on the unit: `_hwFactor` scaled
-		// ColdFire cycles at 266 MHz over the audio rate (g_cfClockHz/
+		// ColdFire cycles at 264 MHz over the audio rate (g_cfClockHz/
 		// g_sampleHz = 6032 cycles). The frame period is then genuinely
 		// 96,505 cycles, the DSP keeps ITS cadence in real time, and a frame
 		// handler that costs more than a frame leaves the ColdFire behind --

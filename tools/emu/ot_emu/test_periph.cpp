@@ -40,6 +40,8 @@ namespace
 int main()
 {
 	std::printf("peripheral gate (models translated from tools/emu/emu_rtos.py):\n");
+	check("CPU cycle clock uses stock's configured 264 MHz, not VR266 rating",
+		ot::g_cfClockHz == 264e6);
 
 	// ---- PIT -------------------------------------------------------------
 	{
@@ -75,6 +77,14 @@ int main()
 	}
 
 	// ---- DMA timers ------------------------------------------------------
+	{
+		// Stock PCSR=0x0b36, PMR=643. RM table 29-3 selects bus/PRE.
+		ot::Pit pit("PIT0-configured-bus", 132e6);
+		pit.write(2, 2, 643, 0.0);
+		pit.write(0, 2, 0x0b36 | ot::Pit::EN, 0.0);
+		check("configured PIT bus clock gives 9.9917576 ms, not legacy 5 ms",
+			std::fabs(pit.periodSamples()/ot::g_sampleHz - 644.0*2048/132e6) < 1e-12);
+	}
 	{
 		// DTIM1 as the firmware programs it (0x40040498..0x400404a6): DTRR
 		// 68750 as a long, then DTMR 0x1d as a word = RST, bus/16, restart,

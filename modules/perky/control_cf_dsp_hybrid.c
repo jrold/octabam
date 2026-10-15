@@ -76,6 +76,8 @@ static int __attribute__((unused)) pk4_unused_process_segment_orig(pk4_engine *e
 
 /* Hardware free-running 132 MHz DMA timer 3 (initialized at boot by 0x400209c0). */
 #define PK_HYB_DTCN3 (*(volatile const uint32_t *)(uintptr_t)0xfc07c00cu)
+#define PK_HYB_DTMR3 (*(volatile const uint16_t *)(uintptr_t)0xfc07c000u)
+#define PK_HYB_DTRR3 (*(volatile const uint32_t *)(uintptr_t)0xfc07c004u)
 
 /* Generated at build time from the SHA-pinned user-supplied PĒRKONS v1.2.1 image. */
 extern const uint8_t pk_asset_pitch[];
@@ -253,6 +255,7 @@ uint32_t pk_hybrid_isr_enter_ticks = 0u;
 uint32_t pk_hybrid_wait_ticks[2] = {0u, 0u};
 static uint32_t pk_hybrid_previous_enter;
 static uint32_t pk_hybrid_previous_enter_valid;
+static uint32_t pk_hybrid_timer_calibrated;
 static uint32_t pk_hybrid_seen_running;
 static unsigned pk_hybrid_export_index;
 int32_t pk_hybrid_export_status = 0;
@@ -303,9 +306,8 @@ void pk_hybrid_reset_profiler(void)
     pk_hybrid_prof.cf_armed = pk_hybrid_cf_arm;
     pk_hybrid_prof.dtim3_hz = 132000000u;
     pk_hybrid_prof.period_min_ticks = 0xffffffffu;
-    uint32_t t0 = pk_hybrid_timer_now();
-    uint32_t t1 = pk_hybrid_timer_now();
-    pk_hybrid_prof.read_overhead_ticks = t1 - t0;
+    /* Stock enables DTIM3 later. Zero means unmeasured, not a free read. */
+    pk_hybrid_timer_calibrated = 0u;
     pk_hybrid_cur_cf_ticks = 0u;
     pk_hybrid_cur_ctrl_ticks = 0u;
     pk_hybrid_cur_rend_ticks = 0u;
@@ -503,6 +505,19 @@ int pk_hybrid_boot_init(void)
 {
     if (!pk_hybrid_ensure_pcm()) return 0;
     pk_hybrid_reset_profiler();
+    /* The loader does not clear BSS. Native control history can survive with
+     * the same Bank/Part and family, bypassing its lazy invalidation. Clear
+     * it here, before audio/UI; preserve the native producer's arithmetic. */
+    pk_hybrid_zero_u32(simple_controls, sizeof(simple_controls));
+    pk_hybrid_zero_u32(pk_prefix_controls, sizeof(pk_prefix_controls));
+    pk_hybrid_zero_u32(pk_prefix_valid, sizeof(pk_prefix_valid));
+    pk_hybrid_zero_u32(pk_trig_last, sizeof(pk_trig_last));
+    pk_hybrid_zero_u32(pk_trig_count, sizeof(pk_trig_count));
+    pk_hybrid_zero_u32(pk_ui_pending, sizeof(pk_ui_pending));
+    pk_hybrid_zero_u32(pk_ui_bank, sizeof(pk_ui_bank));
+    pk_hybrid_zero_u32(pk_ui_part, sizeof(pk_ui_part));
+    simple_bank = 0u;
+    simple_part = 0u;
     pk_hybrid_init_voice(&pk_hybrid_pristine);
     pk_hybrid_init_all_cf_voices();
     pk_hybrid_generation = 0u;
@@ -783,6 +798,16 @@ void pk_hybrid_ui_tick(void)
 void pk_hybrid_ui_tick(void)
 {
     if (pk_hybrid_rt_cookie != PK_HYB_RT_READY) return;
+    /* One bounded pair in task context after stock timer setup. This is the
+     * observed read-to-read interval, not total instrumentation overhead or
+     * a silicon WCET bound. Never reprogram/reset stock's timer. */
+    if (!pk_hybrid_timer_calibrated && PK_HYB_DTMR3 == 0x000bu
+        && PK_HYB_DTRR3 == 0xffffffffu) {
+        uint32_t t0 = pk_hybrid_timer_now();
+        uint32_t t1 = pk_hybrid_timer_now();
+        pk_hybrid_prof.read_overhead_ticks = t1 - t0;
+        pk_hybrid_timer_calibrated = 1u;
+    }
     unsigned cur_track = (unsigned)U8(0x100b14ccu) & 7u;
     U32(0x400d5f38u + PERKY_ROW * 4u) = pk_hybrid_page(cur_track);
 

@@ -1677,7 +1677,7 @@ namespace ot
 
 	// ONE instruction's worth of the audio clock. The stock rule is the fitted
 	// constant 1/m_ips; the cycle rule is the chip's own number, `_hwFactor`
-	// scaled ColdFire cycles at 266 MHz over 44,100 samples (6032 cycles is
+	// scaled ColdFire cycles at 264 MHz over 44,100 samples (5986 cycles is
 	// one sample). See setCycleClock for why the difference is the whole point.
 	void Rtos::advanceSample()
 	{

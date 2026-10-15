@@ -91,13 +91,24 @@ baud setup at `0x40010f76` loads it, shifts it right one, and divides by 32
 
 Every divider constraint the manual imposes holds for this word.
 
-🟡 **The PIT clock.** The firmware sets `PCSR = 0x0b36` (prescaler 2048)
-and `PMR = stored/409600 − 1 = 643` at `0x400005a8`. Fed the CPU clock
-that is a 5 ms tick, which is what the emulators model (`--pit-clock
-264e6`); fed the bus clock the chip uses, 2048 × 644 / 132 MHz = 9.99 ms,
-a 100 Hz tick. Event order, which the gates compare, is unaffected; every
-wall-clock figure in the port's records would be a factor of two out. Not
-reviewed; the falsifier is a hardware measurement of the unit's tick rate.
+✅ **Configured clock versus part rating (14 October 2026 audit).** VR266
+does not mean firmware runs at 266 MHz. The cycle-driven port now uses
+264 MHz; earlier 266 MHz hybrid observations remain historical evidence.
+Clock-dependent scheduling requires re-execution, not just rescaling a report.
+See [the post-closeout safety assessment](../../modules/perky/hybrid/SAFETY_QUALIFICATION.md).
+
+✅ **The PIT input, by register configuration and RM table 29-3.** The firmware
+sets `PCSR = 0x0b36` (prescaler 2048) and `PMR = stored/409600 − 1 = 643`
+at `0x400005a8`. The prescaler divides the internal bus clock: 2048 × 644 /
+132 MHz = 9.991758 ms. The port retains the legacy 264 MHz PIT default for
+earlier oracle comparisons; hybrid safety runs explicitly select
+`--pit-clock-hz 132000000` and record that choice. Physical tick rate remains
+unmeasured here. Source: [MCF54455RM, tables 8-3 and 29-3](https://www.nxp.com/docs/en/reference-manual/MCF54455RM.pdf).
+
+❌ Earlier wording said event order was unaffected and *every* port wall-clock
+figure could be a factor of two out. That was too broad: changing PIT relative
+to DTIM/audio can change event ordering, while the 16/44,100 s audio period
+does not change. Timing evidence must state both CPU and PIT clocks.
 
 ## 2. Cycles
 
