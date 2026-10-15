@@ -1,0 +1,2167 @@
+{
+  "schema": "octabam.perky.cf-optimization.v1",
+  "status": "SOURCE_OPTIMIZED; FINAL_LOCAL_QUALIFICATION_PENDING",
+  "experiment_limit": null,
+  "plateau_requirement": "Evaluate plausible changes against measured bottlenecks; no experiment-count stopping rule. Final card/MIDI packaging deferred until sustained local qualification.",
+  "hardware_baseline": "CF_OPTIMIZATION_HARDWARE.json",
+  "reference_commit": "b49b1c1b",
+  "qualified_firmware_source_commit": "7878b3d6e0f9738d99c2ac65997e47001f4dc75c",
+  "frozen_reference_stream_sha256": "93d24a575197579b341ea5a7ac9ea5978b808635d96b6b50e8652e5820014b4c",
+  "earlier_experiments": [
+    {
+      "trial": 1,
+      "change": "WT smoother values retained in registers",
+      "max_dense_cycles": 85255,
+      "decision": "retained"
+    },
+    {
+      "trial": 2,
+      "change": "Standalone WT pointer cache",
+      "max_dense_cycles": 85738,
+      "decision": "rejected: original dense max85562 regressed"
+    },
+    {
+      "trial": 3,
+      "change": "Direct frame PCM and volatile record encoder",
+      "max_dense_cycles": 84918,
+      "decision": "retained"
+    },
+    {
+      "trial": 4,
+      "change": "Outline preparation/render dispatch to avoid compiler duplication",
+      "max_dense_cycles": 82649,
+      "decision": "retained"
+    },
+    {
+      "trial": 5,
+      "change": "Omit overwritten resonant derives",
+      "max_dense_cycles": 82119,
+      "decision": "retained; not campaign endpoint"
+    }
+  ],
+  "intermediate_package": {
+    "version": "PKH3O1",
+    "preserved_at": "out/perky/hybrid/optimization/candidate/probe",
+    "status": "Preserved intermediate; sustained testing was stopped after user corrected campaign scope."
+  },
+  "experiments": [
+    {
+      "trial": "snare-register-pipeline",
+      "decision": "retained",
+      "reason": "Bound independent recurrences and keep resonator arithmetic in registers.",
+      "receipt": "out/perky/hybrid/optimization/snare-register-pipeline/BENCH.json",
+      "receipt_sha256": "b5d1a55ef39b49277b603ddc14a7e241b5f126788845916c653b17f22c726e69",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 9789.341666666667,
+          "max_cycles": 10161
+        },
+        "V1M2": {
+          "mean_cycles": 9818.625,
+          "max_cycles": 10045
+        },
+        "V1M3": {
+          "mean_cycles": 10012.408333333333,
+          "max_cycles": 10399
+        },
+        "V2M1": {
+          "mean_cycles": 9788.583333333334,
+          "max_cycles": 10161
+        },
+        "V2M2": {
+          "mean_cycles": 9818.508333333333,
+          "max_cycles": 10045
+        },
+        "V2M3": {
+          "mean_cycles": 10011.883333333333,
+          "max_cycles": 10385
+        },
+        "snare": {
+          "mean_cycles": 10061.658333333333,
+          "max_cycles": 11856
+        },
+        "bass": {
+          "mean_cycles": 10494.133333333333,
+          "max_cycles": 12209
+        },
+        "third": {
+          "mean_cycles": 9041.983333333334,
+          "max_cycles": 9557
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 330.8395061728395,
+          "max_cycles": 415
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 3112.1028806584363,
+          "max_cycles": 5517
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 3544.855967078189,
+          "max_cycles": 6578
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 3124.0041152263375,
+          "max_cycles": 6519
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3608.61316872428,
+          "max_cycles": 7523
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 3196.045267489712,
+          "max_cycles": 5854
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 3202.61316872428,
+          "max_cycles": 5835
+        }
+      }
+    },
+    {
+      "trial": "wt-envelope-pipeline",
+      "decision": "retained",
+      "reason": "Separate independent envelope passes; cache wave pointers at transitions.",
+      "receipt": "out/perky/hybrid/optimization/wt-envelope-pipeline/BENCH.json",
+      "receipt_sha256": "329cc5a62230d76ab5ce7229f91f5610572c35e685f11ec51bad6ed96a25ee02",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6802.041666666667,
+          "max_cycles": 7371
+        },
+        "V1M2": {
+          "mean_cycles": 6806.125,
+          "max_cycles": 7243
+        },
+        "V1M3": {
+          "mean_cycles": 6802.741666666667,
+          "max_cycles": 7378
+        },
+        "V2M1": {
+          "mean_cycles": 6800.758333333333,
+          "max_cycles": 7378
+        },
+        "V2M2": {
+          "mean_cycles": 6806.125,
+          "max_cycles": 7243
+        },
+        "V2M3": {
+          "mean_cycles": 6799.533333333334,
+          "max_cycles": 7350
+        },
+        "snare": {
+          "mean_cycles": 10078.458333333334,
+          "max_cycles": 11779
+        },
+        "bass": {
+          "mean_cycles": 10510.525,
+          "max_cycles": 12226
+        },
+        "third": {
+          "mean_cycles": 9038.716666666667,
+          "max_cycles": 9459
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 327.87242798353907,
+          "max_cycles": 410
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 3112.606995884774,
+          "max_cycles": 5524
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 3538.0,
+          "max_cycles": 6566
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 3151.3991769547324,
+          "max_cycles": 6575
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3618.6090534979426,
+          "max_cycles": 7544
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 3174.9588477366256,
+          "max_cycles": 5819
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 3203.6213991769546,
+          "max_cycles": 5895
+        }
+      }
+    },
+    {
+      "trial": "noise-tone-pipeline",
+      "decision": "rejected",
+      "reason": "Broader separated NT pipeline increased mean and worst costs.",
+      "receipt": "out/perky/hybrid/optimization/noise-tone-pipeline/BENCH.json",
+      "receipt_sha256": "07ff19437b1f2d2f6402f71d6cdedaacf1fc6754fd8709ebf27e581738e9c18b",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6802.508333333333,
+          "max_cycles": 7364
+        },
+        "V1M2": {
+          "mean_cycles": 6807.233333333334,
+          "max_cycles": 7243
+        },
+        "V1M3": {
+          "mean_cycles": 6805.658333333334,
+          "max_cycles": 7371
+        },
+        "V2M1": {
+          "mean_cycles": 6801.983333333334,
+          "max_cycles": 7364
+        },
+        "V2M2": {
+          "mean_cycles": 6811.491666666667,
+          "max_cycles": 7243
+        },
+        "V2M3": {
+          "mean_cycles": 6799.533333333334,
+          "max_cycles": 7350
+        },
+        "snare": {
+          "mean_cycles": 10515.2,
+          "max_cycles": 12240
+        },
+        "bass": {
+          "mean_cycles": 10507.55,
+          "max_cycles": 12275
+        },
+        "third": {
+          "mean_cycles": 9471.616666666667,
+          "max_cycles": 10058
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 339.74074074074076,
+          "max_cycles": 457
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 3123.841563786008,
+          "max_cycles": 5517
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 3552.3456790123455,
+          "max_cycles": 6544
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 3158.053497942387,
+          "max_cycles": 6568
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3622.9588477366256,
+          "max_cycles": 7488
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 3195.901234567901,
+          "max_cycles": 5861
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 3211.427983539095,
+          "max_cycles": 5888
+        }
+      }
+    },
+    {
+      "trial": "noise-tone-envelope-cache",
+      "decision": "retained",
+      "reason": "Cache only the shared envelope; retain the existing oscillator/noise loop.",
+      "receipt": "out/perky/hybrid/optimization/noise-tone-envelope-cache/BENCH.json",
+      "receipt_sha256": "57884014b3333ffbc9f4e7d5a5052c57862957d2c03bf9fc2ebd6846f19d6e87",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6802.041666666667,
+          "max_cycles": 7371
+        },
+        "V1M2": {
+          "mean_cycles": 6805.95,
+          "max_cycles": 7243
+        },
+        "V1M3": {
+          "mean_cycles": 6802.45,
+          "max_cycles": 7385
+        },
+        "V2M1": {
+          "mean_cycles": 6800.758333333333,
+          "max_cycles": 7378
+        },
+        "V2M2": {
+          "mean_cycles": 6805.716666666666,
+          "max_cycles": 7243
+        },
+        "V2M3": {
+          "mean_cycles": 6799.533333333334,
+          "max_cycles": 7350
+        },
+        "snare": {
+          "mean_cycles": 10078.458333333334,
+          "max_cycles": 11779
+        },
+        "bass": {
+          "mean_cycles": 10510.408333333333,
+          "max_cycles": 12219
+        },
+        "third": {
+          "mean_cycles": 8365.425,
+          "max_cycles": 8977
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 328.1604938271605,
+          "max_cycles": 408
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 3108.9053497942386,
+          "max_cycles": 5524
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 3538.633744855967,
+          "max_cycles": 6566
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 3158.514403292181,
+          "max_cycles": 6575
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3616.6213991769546,
+          "max_cycles": 7544
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 3176.514403292181,
+          "max_cycles": 5812
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 3205.6378600823045,
+          "max_cycles": 5895
+        }
+      }
+    },
+    {
+      "trial": "bass-pipeline",
+      "decision": "retained",
+      "reason": "Separate independent Bass drive, pitch, decay and noise passes.",
+      "receipt": "out/perky/hybrid/optimization/bass-pipeline/BENCH.json",
+      "receipt_sha256": "12acdf67d8a50a69b0f9ee33c11d658def025b72d1907c9d39a907d2ca46dae8",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6802.275,
+          "max_cycles": 7378
+        },
+        "V1M2": {
+          "mean_cycles": 6815.4,
+          "max_cycles": 7257
+        },
+        "V1M3": {
+          "mean_cycles": 6802.391666666666,
+          "max_cycles": 7364
+        },
+        "V2M1": {
+          "mean_cycles": 6801.283333333334,
+          "max_cycles": 7378
+        },
+        "V2M2": {
+          "mean_cycles": 6806.008333333333,
+          "max_cycles": 7243
+        },
+        "V2M3": {
+          "mean_cycles": 6799.533333333334,
+          "max_cycles": 7350
+        },
+        "snare": {
+          "mean_cycles": 10081.991666666667,
+          "max_cycles": 11570
+        },
+        "bass": {
+          "mean_cycles": 9056.566666666668,
+          "max_cycles": 9937
+        },
+        "third": {
+          "mean_cycles": 8369.566666666668,
+          "max_cycles": 8954
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 329.2551440329218,
+          "max_cycles": 410
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 3133.1316872427983,
+          "max_cycles": 5587
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 3558.740740740741,
+          "max_cycles": 6607
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 3159.8395061728397,
+          "max_cycles": 6561
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3620.4814814814813,
+          "max_cycles": 7530
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 3184.1481481481483,
+          "max_cycles": 5784
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 3211.716049382716,
+          "max_cycles": 5825
+        }
+      }
+    },
+    {
+      "trial": "emac-proven",
+      "decision": "retained",
+      "reason": "Exact specialized high products with raw MACSR/accumulator restoration.",
+      "receipt": "out/perky/hybrid/optimization/emac-proven/BENCH.json",
+      "receipt_sha256": "ec1a9030306947c5df5a7b9c0842174b628d8d3a89d194735a4cc122e3923ade",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6427.008333333333,
+          "max_cycles": 6763
+        },
+        "V1M2": {
+          "mean_cycles": 6700.225,
+          "max_cycles": 7035
+        },
+        "V1M3": {
+          "mean_cycles": 6441.241666666667,
+          "max_cycles": 6788
+        },
+        "V2M1": {
+          "mean_cycles": 6430.8,
+          "max_cycles": 6781
+        },
+        "V2M2": {
+          "mean_cycles": 6696.725,
+          "max_cycles": 7035
+        },
+        "V2M3": {
+          "mean_cycles": 6428.933333333333,
+          "max_cycles": 6770
+        },
+        "snare": {
+          "mean_cycles": 9893.991666666667,
+          "max_cycles": 11391
+        },
+        "bass": {
+          "mean_cycles": 8814.083333333334,
+          "max_cycles": 9672
+        },
+        "third": {
+          "mean_cycles": 8171.783333333334,
+          "max_cycles": 8766
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 335.0740740740741,
+          "max_cycles": 438
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 3146.641975308642,
+          "max_cycles": 5545
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 3566.893004115226,
+          "max_cycles": 6593
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 3163.3539094650205,
+          "max_cycles": 6553
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3625.205761316872,
+          "max_cycles": 7537
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 3199.991769547325,
+          "max_cycles": 5785
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 3222.144032921811,
+          "max_cycles": 5797
+        }
+      }
+    },
+    {
+      "trial": "short-block-context",
+      "decision": "partially retained",
+      "reason": "Zero-block fast paths and volatile contexts retained for RES/NT; WT volatile context reverted because it worsened its observed maximum.",
+      "receipt": "out/perky/hybrid/optimization/short-block-context/BENCH.json",
+      "receipt_sha256": "10ff79a71b3ad88d5ab861afa0c7b2c021566e3dd26ab10c1a0321360bc404b0",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6383.175,
+          "max_cycles": 7411
+        },
+        "V1M2": {
+          "mean_cycles": 6387.416666666667,
+          "max_cycles": 7405
+        },
+        "V1M3": {
+          "mean_cycles": 6383.408333333334,
+          "max_cycles": 7397
+        },
+        "V2M1": {
+          "mean_cycles": 6383.0,
+          "max_cycles": 7411
+        },
+        "V2M2": {
+          "mean_cycles": 6387.008333333333,
+          "max_cycles": 7405
+        },
+        "V2M3": {
+          "mean_cycles": 6382.358333333334,
+          "max_cycles": 7397
+        },
+        "snare": {
+          "mean_cycles": 9744.183333333332,
+          "max_cycles": 11092
+        },
+        "bass": {
+          "mean_cycles": 8404.091666666667,
+          "max_cycles": 9224
+        },
+        "third": {
+          "mean_cycles": 7958.283333333334,
+          "max_cycles": 8639
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 331.7037037037037,
+          "max_cycles": 463
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 3125.2098765432097,
+          "max_cycles": 5580
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 3570.7818930041153,
+          "max_cycles": 6670
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 3158.1975308641977,
+          "max_cycles": 6575
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3636.037037037037,
+          "max_cycles": 7551
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 3185.8477366255142,
+          "max_cycles": 5791
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 3208.5185185185187,
+          "max_cycles": 5894
+        }
+      }
+    },
+    {
+      "trial": "control-math-proven",
+      "decision": "retained",
+      "reason": "Exact arithmetic rate tables, fixed-denominator quotient and note conversion.",
+      "receipt": "out/perky/hybrid/optimization/control-math-proven/BENCH.json",
+      "receipt_sha256": "626c0207d5d2e508b93d421d4b5746b6fa28610aa19323af7c3c2829adfc0c3a",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6390.816666666667,
+          "max_cycles": 7383
+        },
+        "V1M2": {
+          "mean_cycles": 6393.541666666667,
+          "max_cycles": 7426
+        },
+        "V1M3": {
+          "mean_cycles": 6390.175,
+          "max_cycles": 7376
+        },
+        "V2M1": {
+          "mean_cycles": 6390.175,
+          "max_cycles": 7383
+        },
+        "V2M2": {
+          "mean_cycles": 6393.191666666667,
+          "max_cycles": 7426
+        },
+        "V2M3": {
+          "mean_cycles": 6389.183333333333,
+          "max_cycles": 7376
+        },
+        "snare": {
+          "mean_cycles": 9706.383333333333,
+          "max_cycles": 11029
+        },
+        "bass": {
+          "mean_cycles": 8406.425,
+          "max_cycles": 9420
+        },
+        "third": {
+          "mean_cycles": 7953.733333333334,
+          "max_cycles": 8625
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 335.5925925925926,
+          "max_cycles": 474
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2700.5041152263375,
+          "max_cycles": 4942
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2981.572016460905,
+          "max_cycles": 5715
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2597.2427983539096,
+          "max_cycles": 5484
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3026.6748971193415,
+          "max_cycles": 6432
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2713.1810699588477,
+          "max_cycles": 5005
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2731.366255144033,
+          "max_cycles": 5006
+        }
+      }
+    },
+    {
+      "trial": "no-unroll-selected",
+      "decision": "retained",
+      "reason": "Disable loop unrolling for WT/RES; retain original NT compiler behavior.",
+      "receipt": "out/perky/hybrid/optimization/no-unroll-selected/BENCH.json",
+      "receipt_sha256": "308d646fbc39bdeee9b05c8052c9991d28102c0d4683a687a8cf656d24e7623b",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6006.7,
+          "max_cycles": 6413
+        },
+        "V1M2": {
+          "mean_cycles": 6000.516666666666,
+          "max_cycles": 6374
+        },
+        "V1M3": {
+          "mean_cycles": 6006.35,
+          "max_cycles": 6385
+        },
+        "V2M1": {
+          "mean_cycles": 6006.175,
+          "max_cycles": 6413
+        },
+        "V2M2": {
+          "mean_cycles": 5998.358333333334,
+          "max_cycles": 6374
+        },
+        "V2M3": {
+          "mean_cycles": 5999.583333333333,
+          "max_cycles": 6378
+        },
+        "snare": {
+          "mean_cycles": 9521.516666666666,
+          "max_cycles": 10542
+        },
+        "bass": {
+          "mean_cycles": 8157.216666666666,
+          "max_cycles": 9218
+        },
+        "third": {
+          "mean_cycles": 7954.375,
+          "max_cycles": 8632
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 339.6831275720165,
+          "max_cycles": 467
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2673.4691358024693,
+          "max_cycles": 4825
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2973.7654320987654,
+          "max_cycles": 5561
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2591.4526748971193,
+          "max_cycles": 5428
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3012.6748971193415,
+          "max_cycles": 6383
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2702.551440329218,
+          "max_cycles": 5040
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2721.716049382716,
+          "max_cycles": 4983
+        }
+      }
+    },
+    {
+      "trial": "snare-small",
+      "decision": "rejected",
+      "reason": "Scalar short-block fallback improved small blocks but increased the observed Snare maximum.",
+      "receipt": "out/perky/hybrid/optimization/snare-small/BENCH.json",
+      "receipt_sha256": "2c130498ad1ac5218cc1463d73efcb219a2d17092da622c173eca31d90c7f582",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6002.325,
+          "max_cycles": 6399
+        },
+        "V1M2": {
+          "mean_cycles": 6002.675,
+          "max_cycles": 6381
+        },
+        "V1M3": {
+          "mean_cycles": 6006.7,
+          "max_cycles": 6427
+        },
+        "V2M1": {
+          "mean_cycles": 5999.933333333333,
+          "max_cycles": 6399
+        },
+        "V2M2": {
+          "mean_cycles": 6004.541666666667,
+          "max_cycles": 6381
+        },
+        "V2M3": {
+          "mean_cycles": 5999.583333333333,
+          "max_cycles": 6378
+        },
+        "snare": {
+          "mean_cycles": 9568.758333333333,
+          "max_cycles": 10767
+        },
+        "bass": {
+          "mean_cycles": 8072.341666666666,
+          "max_cycles": 9120
+        },
+        "third": {
+          "mean_cycles": 7965.283333333334,
+          "max_cycles": 8665
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 336.8888888888889,
+          "max_cycles": 460
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2694.454732510288,
+          "max_cycles": 4872
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 3002.8024691358023,
+          "max_cycles": 5672
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2610.4362139917694,
+          "max_cycles": 5490
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3026.185185185185,
+          "max_cycles": 6460
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2709.551440329218,
+          "max_cycles": 5013
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2744.7901234567903,
+          "max_cycles": 5032
+        }
+      }
+    },
+    {
+      "trial": "settled-controls",
+      "decision": "rejected",
+      "reason": "Fixed-point early exit improved some means but worsened fresh/dirty maxima.",
+      "receipt": "out/perky/hybrid/optimization/settled-controls/BENCH.json",
+      "receipt_sha256": "bbf3b8d2f42aad701ba3d3c4a64188909c56202c346c22671e3acae901d048c8",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6008.333333333333,
+          "max_cycles": 6406
+        },
+        "V1M2": {
+          "mean_cycles": 6007.983333333334,
+          "max_cycles": 6381
+        },
+        "V1M3": {
+          "mean_cycles": 6009.266666666666,
+          "max_cycles": 6413
+        },
+        "V2M1": {
+          "mean_cycles": 6008.158333333334,
+          "max_cycles": 6406
+        },
+        "V2M2": {
+          "mean_cycles": 6007.925,
+          "max_cycles": 6381
+        },
+        "V2M3": {
+          "mean_cycles": 6007.925,
+          "max_cycles": 6392
+        },
+        "snare": {
+          "mean_cycles": 9565.666666666666,
+          "max_cycles": 10806
+        },
+        "bass": {
+          "mean_cycles": 8079.458333333333,
+          "max_cycles": 9129
+        },
+        "third": {
+          "mean_cycles": 7970.941666666667,
+          "max_cycles": 8674
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 341.12345679012344,
+          "max_cycles": 406
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2717.6008230452676,
+          "max_cycles": 4994
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 3016.641975308642,
+          "max_cycles": 5739
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2627.7736625514403,
+          "max_cycles": 5647
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2763.679012345679,
+          "max_cycles": 6489
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2295.703703703704,
+          "max_cycles": 5058
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 1970.3456790123457,
+          "max_cycles": 4025
+        }
+      }
+    },
+    {
+      "trial": "snare-specialized",
+      "decision": "retained",
+      "reason": "Specialize the three resonator maps and mixing roles.",
+      "receipt": "out/perky/hybrid/optimization/snare-specialized/BENCH.json",
+      "receipt_sha256": "d457c8613c0f31d28646131cb63cb8e03ecd1819b7ecce95a945590a24fc8b76",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6006.816666666667,
+          "max_cycles": 6413
+        },
+        "V1M2": {
+          "mean_cycles": 6000.75,
+          "max_cycles": 6374
+        },
+        "V1M3": {
+          "mean_cycles": 6000.225,
+          "max_cycles": 6392
+        },
+        "V2M1": {
+          "mean_cycles": 6006.291666666667,
+          "max_cycles": 6413
+        },
+        "V2M2": {
+          "mean_cycles": 5998.591666666666,
+          "max_cycles": 6374
+        },
+        "V2M3": {
+          "mean_cycles": 5999.583333333333,
+          "max_cycles": 6378
+        },
+        "snare": {
+          "mean_cycles": 9088.35,
+          "max_cycles": 10091
+        },
+        "bass": {
+          "mean_cycles": 8100.458333333333,
+          "max_cycles": 9204
+        },
+        "third": {
+          "mean_cycles": 7945.741666666667,
+          "max_cycles": 8625
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 343.05349794238685,
+          "max_cycles": 460
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2674.3765432098767,
+          "max_cycles": 4818
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2984.769547325103,
+          "max_cycles": 5582
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2587.880658436214,
+          "max_cycles": 5435
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3013.337448559671,
+          "max_cycles": 6397
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2700.3621399176955,
+          "max_cycles": 5047
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2714.456790123457,
+          "max_cycles": 4955
+        }
+      }
+    },
+    {
+      "trial": "decay-specialized",
+      "decision": "retained",
+      "reason": "Specialize fixed decay maps and accumulate/constant policies.",
+      "receipt": "out/perky/hybrid/optimization/decay-specialized/BENCH.json",
+      "receipt_sha256": "e5b908c8337a29296a35776d056f867dd75172f61c741087d267ba6b26664c6a",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6006.35,
+          "max_cycles": 6413
+        },
+        "V1M2": {
+          "mean_cycles": 6004.6,
+          "max_cycles": 6381
+        },
+        "V1M3": {
+          "mean_cycles": 6002.441666666667,
+          "max_cycles": 6385
+        },
+        "V2M1": {
+          "mean_cycles": 6005.825,
+          "max_cycles": 6413
+        },
+        "V2M2": {
+          "mean_cycles": 6004.541666666667,
+          "max_cycles": 6381
+        },
+        "V2M3": {
+          "mean_cycles": 5999.583333333333,
+          "max_cycles": 6378
+        },
+        "snare": {
+          "mean_cycles": 9063.683333333332,
+          "max_cycles": 9935
+        },
+        "bass": {
+          "mean_cycles": 8003.141666666666,
+          "max_cycles": 9137
+        },
+        "third": {
+          "mean_cycles": 7959.625,
+          "max_cycles": 8672
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 325.36625514403295,
+          "max_cycles": 415
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2687.9444444444443,
+          "max_cycles": 4867
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 3001.909465020576,
+          "max_cycles": 5613
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2597.8765432098767,
+          "max_cycles": 5448
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3022.3251028806585,
+          "max_cycles": 6411
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2709.724279835391,
+          "max_cycles": 5026
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2733.814814814815,
+          "max_cycles": 5011
+        }
+      }
+    },
+    {
+      "trial": "range-clamp",
+      "decision": "rejected",
+      "reason": "Unsigned range clamp increased Snare mean and maximum.",
+      "receipt": "out/perky/hybrid/optimization/range-clamp/BENCH.json",
+      "receipt_sha256": "f906e7d35570c15c6e8b4c81b4563eb08e23c221ab55acd56a2774c91f11c751",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6006.583333333333,
+          "max_cycles": 6399
+        },
+        "V1M2": {
+          "mean_cycles": 6000.458333333333,
+          "max_cycles": 6374
+        },
+        "V1M3": {
+          "mean_cycles": 6005.591666666666,
+          "max_cycles": 6399
+        },
+        "V2M1": {
+          "mean_cycles": 6006.116666666667,
+          "max_cycles": 6399
+        },
+        "V2M2": {
+          "mean_cycles": 5998.3,
+          "max_cycles": 6374
+        },
+        "V2M3": {
+          "mean_cycles": 5999.583333333333,
+          "max_cycles": 6378
+        },
+        "snare": {
+          "mean_cycles": 9294.7,
+          "max_cycles": 10241
+        },
+        "bass": {
+          "mean_cycles": 7977.933333333333,
+          "max_cycles": 9190
+        },
+        "third": {
+          "mean_cycles": 7947.608333333334,
+          "max_cycles": 8625
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 325.3374485596708,
+          "max_cycles": 418
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2683.8395061728397,
+          "max_cycles": 4837
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2999.40329218107,
+          "max_cycles": 5610
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2604.0411522633744,
+          "max_cycles": 5463
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3024.0246913580245,
+          "max_cycles": 6439
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2707.938271604938,
+          "max_cycles": 5026
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2722.925925925926,
+          "max_cycles": 4969
+        }
+      }
+    },
+    {
+      "trial": "noise-counter-registers",
+      "decision": "rejected",
+      "reason": "Wider local noise-counter fields worsened relevant costs.",
+      "receipt": "out/perky/hybrid/optimization/noise-counter-registers/BENCH.json",
+      "receipt_sha256": "bdc93b57e3a6be70b9a61a46e5cac26bd579c47fdc53bd12a760bfa72ae0a9a4",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6002.5,
+          "max_cycles": 6378
+        },
+        "V1M2": {
+          "mean_cycles": 5998.65,
+          "max_cycles": 6374
+        },
+        "V1M3": {
+          "mean_cycles": 6004.016666666666,
+          "max_cycles": 6392
+        },
+        "V2M1": {
+          "mean_cycles": 6000.05,
+          "max_cycles": 6378
+        },
+        "V2M2": {
+          "mean_cycles": 5998.416666666667,
+          "max_cycles": 6374
+        },
+        "V2M3": {
+          "mean_cycles": 5999.583333333333,
+          "max_cycles": 6378
+        },
+        "snare": {
+          "mean_cycles": 9220.191666666668,
+          "max_cycles": 10040
+        },
+        "bass": {
+          "mean_cycles": 8125.233333333334,
+          "max_cycles": 9191
+        },
+        "third": {
+          "mean_cycles": 7950.7,
+          "max_cycles": 8632
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 334.93004115226336,
+          "max_cycles": 460
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2690.940329218107,
+          "max_cycles": 4867
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2995.1975308641977,
+          "max_cycles": 5598
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2601.5637860082306,
+          "max_cycles": 5462
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3015.382716049383,
+          "max_cycles": 6404
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2716.2633744855966,
+          "max_cycles": 5047
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2738.337448559671,
+          "max_cycles": 4990
+        }
+      }
+    },
+    {
+      "trial": "snare-output-fused",
+      "decision": "retained",
+      "reason": "Fuse final noise mixing and PCM output; remove the final buffer pass.",
+      "receipt": "out/perky/hybrid/optimization/snare-output-fused/BENCH.json",
+      "receipt_sha256": "6072ae56f0e6954261996f73ac4404d911a849775d0b8a6822cccf1ecb181abc",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6006.35,
+          "max_cycles": 6413
+        },
+        "V1M2": {
+          "mean_cycles": 6000.866666666667,
+          "max_cycles": 6374
+        },
+        "V1M3": {
+          "mean_cycles": 6000.575,
+          "max_cycles": 6406
+        },
+        "V2M1": {
+          "mean_cycles": 6005.941666666667,
+          "max_cycles": 6413
+        },
+        "V2M2": {
+          "mean_cycles": 5998.766666666666,
+          "max_cycles": 6374
+        },
+        "V2M3": {
+          "mean_cycles": 5999.583333333333,
+          "max_cycles": 6378
+        },
+        "snare": {
+          "mean_cycles": 8589.55,
+          "max_cycles": 9644
+        },
+        "bass": {
+          "mean_cycles": 7963.3,
+          "max_cycles": 9102
+        },
+        "third": {
+          "mean_cycles": 7966.8,
+          "max_cycles": 8639
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 327.843621399177,
+          "max_cycles": 416
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2693.072016460905,
+          "max_cycles": 4860
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 3005.855967078189,
+          "max_cycles": 5655
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2590.127572016461,
+          "max_cycles": 5456
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 3022.670781893004,
+          "max_cycles": 6411
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2708.341563786008,
+          "max_cycles": 5006
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2732.9218106995886,
+          "max_cycles": 5025
+        }
+      }
+    },
+    {
+      "trial": "control-thresholds-proven",
+      "decision": "retained",
+      "reason": "Exact repeated-rounding thresholds replace 14/15/16 smoothing iterations for bounded controls; full-width fallback retained.",
+      "receipt": "out/perky/hybrid/optimization/control-thresholds-proven/BENCH.json",
+      "receipt_sha256": "17267f4a783ac4b2f6ac78e9c7c7e449eb5229ecd99380254059158c7efe3c23",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6007.808333333333,
+          "max_cycles": 6413
+        },
+        "V1M2": {
+          "mean_cycles": 6006.408333333334,
+          "max_cycles": 6381
+        },
+        "V1M3": {
+          "mean_cycles": 6008.216666666666,
+          "max_cycles": 6399
+        },
+        "V2M1": {
+          "mean_cycles": 6007.575,
+          "max_cycles": 6413
+        },
+        "V2M2": {
+          "mean_cycles": 6006.466666666666,
+          "max_cycles": 6381
+        },
+        "V2M3": {
+          "mean_cycles": 6007.225,
+          "max_cycles": 6406
+        },
+        "snare": {
+          "mean_cycles": 8595.383333333333,
+          "max_cycles": 9623
+        },
+        "bass": {
+          "mean_cycles": 7958.575,
+          "max_cycles": 9109
+        },
+        "third": {
+          "mean_cycles": 7958.341666666666,
+          "max_cycles": 8632
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 345.8312757201646,
+          "max_cycles": 462
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2076.0864197530864,
+          "max_cycles": 3992
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2388.8189300411523,
+          "max_cycles": 4739
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2133.349794238683,
+          "max_cycles": 4712
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2459.1810699588477,
+          "max_cycles": 6380
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2097.8683127572017,
+          "max_cycles": 4190
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2116.41975308642,
+          "max_cycles": 4151
+        }
+      }
+    },
+    {
+      "trial": "control-crossing-guard",
+      "decision": "rejected",
+      "reason": "Skipping a duplicate sustain scan improved dirty controls but worsened the fresh-trigger maximum.",
+      "receipt": "out/perky/hybrid/optimization/control-crossing-guard/BENCH.json",
+      "receipt_sha256": "08a071c941f0d2afa17b2f13672e90b8f6265d493e7da17d8ca0f0c9d8414613",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6011.133333333333,
+          "max_cycles": 6441
+        },
+        "V1M2": {
+          "mean_cycles": 6008.858333333334,
+          "max_cycles": 6381
+        },
+        "V1M3": {
+          "mean_cycles": 6010.783333333334,
+          "max_cycles": 6422
+        },
+        "V2M1": {
+          "mean_cycles": 6010.666666666667,
+          "max_cycles": 6441
+        },
+        "V2M2": {
+          "mean_cycles": 6008.916666666667,
+          "max_cycles": 6381
+        },
+        "V2M3": {
+          "mean_cycles": 6010.258333333333,
+          "max_cycles": 6427
+        },
+        "snare": {
+          "mean_cycles": 8591.591666666667,
+          "max_cycles": 9679
+        },
+        "bass": {
+          "mean_cycles": 7961.55,
+          "max_cycles": 9116
+        },
+        "third": {
+          "mean_cycles": 7956.591666666666,
+          "max_cycles": 8637
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 336.7078189300411,
+          "max_cycles": 409
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 1896.5,
+          "max_cycles": 3264
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2220.0493827160494,
+          "max_cycles": 4002
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 1976.4897119341563,
+          "max_cycles": 3868
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2372.01646090535,
+          "max_cycles": 6609
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 1929.2962962962963,
+          "max_cycles": 3450
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 1930.358024691358,
+          "max_cycles": 3301
+        }
+      }
+    },
+    {
+      "trial": "control-shared-guard",
+      "decision": "rejected",
+      "reason": "Shared guard variant still worsened the fresh-trigger maximum.",
+      "receipt": "out/perky/hybrid/optimization/control-shared-guard/BENCH.json",
+      "receipt_sha256": "9574c9eca7c4740e8e003b57732bb5881be22223e23bf623f4cd92d53e8a0931",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6012.241666666667,
+          "max_cycles": 6434
+        },
+        "V1M2": {
+          "mean_cycles": 6010.141666666666,
+          "max_cycles": 6381
+        },
+        "V1M3": {
+          "mean_cycles": 6012.066666666667,
+          "max_cycles": 6434
+        },
+        "V2M1": {
+          "mean_cycles": 6012.066666666667,
+          "max_cycles": 6441
+        },
+        "V2M2": {
+          "mean_cycles": 6010.083333333333,
+          "max_cycles": 6381
+        },
+        "V2M3": {
+          "mean_cycles": 6011.308333333333,
+          "max_cycles": 6413
+        },
+        "snare": {
+          "mean_cycles": 8353.125,
+          "max_cycles": 9296
+        },
+        "bass": {
+          "mean_cycles": 7794.191666666667,
+          "max_cycles": 8712
+        },
+        "third": {
+          "mean_cycles": 7977.883333333333,
+          "max_cycles": 8639
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 338.30041152263374,
+          "max_cycles": 449
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 1965.2427983539094,
+          "max_cycles": 3432
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2229.6831275720165,
+          "max_cycles": 4164
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2002.5761316872429,
+          "max_cycles": 4032
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2385.8271604938273,
+          "max_cycles": 6653
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 1971.897119341564,
+          "max_cycles": 3540
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 1993.0658436213992,
+          "max_cycles": 3536
+        }
+      }
+    },
+    {
+      "trial": "control-noinline-res",
+      "decision": "rejected",
+      "reason": "Outlining the resonant prepare path worsened preparation maxima.",
+      "receipt": "out/perky/hybrid/optimization/control-noinline-res/BENCH.json",
+      "receipt_sha256": "e784cb3177a5be89d7d1a3ecb73927a42347e2287ac62418ca68e31fcfa88e84",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6011.833333333333,
+          "max_cycles": 6443
+        },
+        "V1M2": {
+          "mean_cycles": 6010.725,
+          "max_cycles": 6389
+        },
+        "V1M3": {
+          "mean_cycles": 6011.716666666666,
+          "max_cycles": 6443
+        },
+        "V2M1": {
+          "mean_cycles": 6011.658333333334,
+          "max_cycles": 6443
+        },
+        "V2M2": {
+          "mean_cycles": 6010.608333333334,
+          "max_cycles": 6389
+        },
+        "V2M3": {
+          "mean_cycles": 6011.075,
+          "max_cycles": 6443
+        },
+        "snare": {
+          "mean_cycles": 8597.366666666667,
+          "max_cycles": 9679
+        },
+        "bass": {
+          "mean_cycles": 7966.041666666667,
+          "max_cycles": 9123
+        },
+        "third": {
+          "mean_cycles": 7957.7,
+          "max_cycles": 8632
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 359.90946502057614,
+          "max_cycles": 556
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 1954.2263374485597,
+          "max_cycles": 3450
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2255.382716049383,
+          "max_cycles": 4194
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2030.679012345679,
+          "max_cycles": 4020
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2410.0,
+          "max_cycles": 6803
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 1972.5061728395062,
+          "max_cycles": 3658
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 1981.4238683127571,
+          "max_cycles": 3479
+        }
+      }
+    },
+    {
+      "trial": "no-peel",
+      "decision": "rejected",
+      "reason": "No object-code change from disabling loop peeling.",
+      "receipt": "out/perky/hybrid/optimization/no-peel/BENCH.json",
+      "receipt_sha256": "f4124455d0a6e2fa21fea02b2a1a80111012aaae42800e5ee2ca54b0ef904e4c",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6011.833333333333,
+          "max_cycles": 6443
+        },
+        "V1M2": {
+          "mean_cycles": 6010.725,
+          "max_cycles": 6389
+        },
+        "V1M3": {
+          "mean_cycles": 6011.716666666666,
+          "max_cycles": 6443
+        },
+        "V2M1": {
+          "mean_cycles": 6011.658333333334,
+          "max_cycles": 6443
+        },
+        "V2M2": {
+          "mean_cycles": 6010.608333333334,
+          "max_cycles": 6389
+        },
+        "V2M3": {
+          "mean_cycles": 6011.075,
+          "max_cycles": 6443
+        },
+        "snare": {
+          "mean_cycles": 8597.366666666667,
+          "max_cycles": 9679
+        },
+        "bass": {
+          "mean_cycles": 7966.041666666667,
+          "max_cycles": 9123
+        },
+        "third": {
+          "mean_cycles": 7957.7,
+          "max_cycles": 8632
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 359.90946502057614,
+          "max_cycles": 556
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 1954.2263374485597,
+          "max_cycles": 3450
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2255.382716049383,
+          "max_cycles": 4194
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2030.679012345679,
+          "max_cycles": 4020
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2410.0,
+          "max_cycles": 6803
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 1972.5061728395062,
+          "max_cycles": 3658
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 1981.4238683127571,
+          "max_cycles": 3479
+        }
+      }
+    },
+    {
+      "trial": "no-unswitch",
+      "decision": "rejected",
+      "reason": "Disabling unswitching globally regressed WT/Bass.",
+      "receipt": "out/perky/hybrid/optimization/no-unswitch/BENCH.json",
+      "receipt_sha256": "21842df2a6664e6e22c2c64598729480b246f16aa77bbecfd29cd90eea8c3c97",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 7455.925,
+          "max_cycles": 7678
+        },
+        "V1M2": {
+          "mean_cycles": 7527.491666666667,
+          "max_cycles": 7709
+        },
+        "V1M3": {
+          "mean_cycles": 7470.158333333334,
+          "max_cycles": 7706
+        },
+        "V2M1": {
+          "mean_cycles": 7455.633333333333,
+          "max_cycles": 7678
+        },
+        "V2M2": {
+          "mean_cycles": 7527.316666666667,
+          "max_cycles": 7709
+        },
+        "V2M3": {
+          "mean_cycles": 7469.516666666666,
+          "max_cycles": 7706
+        },
+        "snare": {
+          "mean_cycles": 8723.4,
+          "max_cycles": 9641
+        },
+        "bass": {
+          "mean_cycles": 8498.566666666668,
+          "max_cycles": 9393
+        },
+        "third": {
+          "mean_cycles": 7962.075,
+          "max_cycles": 8674
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 321.843621399177,
+          "max_cycles": 409
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 1894.3539094650205,
+          "max_cycles": 3224
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2215.1522633744858,
+          "max_cycles": 3908
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 1964.1604938271605,
+          "max_cycles": 3875
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2354.0699588477364,
+          "max_cycles": 6525
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 1917.0823045267489,
+          "max_cycles": 3443
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 1941.880658436214,
+          "max_cycles": 3347
+        }
+      }
+    },
+    {
+      "trial": "res-envelope-bulk",
+      "decision": "superseded",
+      "reason": "Initial exact block advancement reduced code size but helper calls worsened maxima.",
+      "receipt": "out/perky/hybrid/optimization/res-envelope-bulk/BENCH.json",
+      "receipt_sha256": "e4f20df41909a7246ffda52b2ee6250415c6b11d283a11a87e0a6654d82143ea",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6011.25,
+          "max_cycles": 6441
+        },
+        "V1M2": {
+          "mean_cycles": 6008.45,
+          "max_cycles": 6381
+        },
+        "V1M3": {
+          "mean_cycles": 6010.725,
+          "max_cycles": 6441
+        },
+        "V2M1": {
+          "mean_cycles": 6010.666666666667,
+          "max_cycles": 6441
+        },
+        "V2M2": {
+          "mean_cycles": 6008.45,
+          "max_cycles": 6381
+        },
+        "V2M3": {
+          "mean_cycles": 6010.258333333333,
+          "max_cycles": 6427
+        },
+        "snare": {
+          "mean_cycles": 8603.191666666668,
+          "max_cycles": 10625
+        },
+        "bass": {
+          "mean_cycles": 8085.908333333334,
+          "max_cycles": 10315
+        },
+        "third": {
+          "mean_cycles": 7957.875,
+          "max_cycles": 8625
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 334.63374485596705,
+          "max_cycles": 388
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 1884.2860082304526,
+          "max_cycles": 3236
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2203.0246913580245,
+          "max_cycles": 3981
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 1961.5390946502057,
+          "max_cycles": 3847
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2354.8189300411523,
+          "max_cycles": 6588
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 1890.5802469135801,
+          "max_cycles": 3426
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 1908.954732510288,
+          "max_cycles": 3295
+        }
+      }
+    },
+    {
+      "trial": "res-envelope-bulk-exact",
+      "decision": "superseded",
+      "reason": "Direct exact crossing arithmetic was insufficient without restoring helper inlining.",
+      "receipt": "out/perky/hybrid/optimization/res-envelope-bulk-exact/BENCH.json",
+      "receipt_sha256": "5a42de106f0edda34653830f5aec204d016195a58b7fcba25a62a9b00f5679cf",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6011.191666666667,
+          "max_cycles": 6448
+        },
+        "V1M2": {
+          "mean_cycles": 6008.391666666666,
+          "max_cycles": 6381
+        },
+        "V1M3": {
+          "mean_cycles": 6010.725,
+          "max_cycles": 6422
+        },
+        "V2M1": {
+          "mean_cycles": 6010.608333333334,
+          "max_cycles": 6448
+        },
+        "V2M2": {
+          "mean_cycles": 6008.333333333333,
+          "max_cycles": 6381
+        },
+        "V2M3": {
+          "mean_cycles": 6010.258333333333,
+          "max_cycles": 6427
+        },
+        "snare": {
+          "mean_cycles": 8688.541666666666,
+          "max_cycles": 10735
+        },
+        "bass": {
+          "mean_cycles": 8076.408333333334,
+          "max_cycles": 10352
+        },
+        "third": {
+          "mean_cycles": 7950.991666666667,
+          "max_cycles": 8625
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 338.2345679012346,
+          "max_cycles": 413
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 1896.9609053497943,
+          "max_cycles": 3257
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2218.4938271604938,
+          "max_cycles": 3988
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 1980.0329218106997,
+          "max_cycles": 3861
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2373.341563786008,
+          "max_cycles": 6588
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 1926.1851851851852,
+          "max_cycles": 3447
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 1922.6666666666667,
+          "max_cycles": 3294
+        }
+      }
+    },
+    {
+      "trial": "bulk-no-control-regression",
+      "decision": "retained",
+      "reason": "Exact block envelope advancement with forced helper inlining and a small local compiler scope; rejected control guards removed.",
+      "receipt": "out/perky/hybrid/optimization/bulk-no-control-regression/BENCH.json",
+      "receipt_sha256": "f1996fb194f02d2e26252d225f15903e29e2e1764d35a215cc58e9bbd8719a08",
+      "benchmark_status": "PASS_EXACT_FROZEN_REFERENCE",
+      "pair_render_cycles": {
+        "V1M1": {
+          "mean_cycles": 6008.158333333334,
+          "max_cycles": 6413
+        },
+        "V1M2": {
+          "mean_cycles": 6006.641666666666,
+          "max_cycles": 6381
+        },
+        "V1M3": {
+          "mean_cycles": 6007.516666666666,
+          "max_cycles": 6413
+        },
+        "V2M1": {
+          "mean_cycles": 6007.925,
+          "max_cycles": 6413
+        },
+        "V2M2": {
+          "mean_cycles": 6006.583333333333,
+          "max_cycles": 6381
+        },
+        "V2M3": {
+          "mean_cycles": 6007.225,
+          "max_cycles": 6406
+        },
+        "snare": {
+          "mean_cycles": 8363.508333333333,
+          "max_cycles": 9352
+        },
+        "bass": {
+          "mean_cycles": 7790.983333333334,
+          "max_cycles": 8705
+        },
+        "third": {
+          "mean_cycles": 7982.025,
+          "max_cycles": 8660
+        }
+      },
+      "preparation_cycles": {
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 331.3991769547325,
+          "max_cycles": 415
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2071.866255144033,
+          "max_cycles": 3992
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2387.4938271604938,
+          "max_cycles": 4750
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2125.283950617284,
+          "max_cycles": 4698
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2452.61316872428,
+          "max_cycles": 6366
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2092.395061728395,
+          "max_cycles": 4169
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2117.687242798354,
+          "max_cycles": 4184
+        }
+      }
+    }
+  ],
+  "native_producer_codegen_trial": {
+    "decision": "rejected",
+    "max_dense_cycles": 77850,
+    "reason": "Function-specific no-unroll shrank code but increased full-ISR worst time; original DSP producer compilation restored."
+  },
+  "full_ISR_checkpoints": {
+    "original_dense_cycles": 85562,
+    "retained_before_bulk_dense_cycles": 76129,
+    "original_snare_bass_cycles": 84942,
+    "retained_before_bulk_snare_bass_cycles": 75661,
+    "bulk_with_later_rejected_guard_dense_cycles": 75328,
+    "bulk_with_later_rejected_guard_snare_bass_cycles": 74895,
+    "frames_per_run": 4096,
+    "modeled_misses_each": 0,
+    "CPU_Hz": 264000000,
+    "nominal_period_us": 362.81179138321994,
+    "desired_80_percent_ceiling_us": 290.24943310657596
+  },
+  "exact_checks": {
+    "canonical_checks": {
+      "init": 252,
+      "prepare": 1953,
+      "render": 20403,
+      "compared_bytes": 90612864
+    },
+    "renderer_edges": 22270,
+    "matching_malformed_wave_refusals": 192,
+    "raw_EMAC_modes": 6,
+    "EMAC_products": 221184,
+    "control_math_checks": 438516,
+    "extra_sustain_transition_cases": 1080,
+    "original_author_native_ARM_sections": 19,
+    "original_author_native_ARM_status": "PASS",
+    "callback_source_RAM_state_RNG_cases": 1496
+  },
+  "remaining_work": [
+    "Confirm final combined source full-ISR measurements",
+    "Full sustained15-row60-second matrix plus10-minute worst row",
+    "Current-image DSP/FX, lifecycle, stack/IPL3, readiness and package regression gates",
+    "Committed-source reproducibility and one final unique card/MIDI package",
+    "Physical MKII A/B and new PRFs remain required after local qualification"
+  ],
+  "hardware_qualified": false
+}

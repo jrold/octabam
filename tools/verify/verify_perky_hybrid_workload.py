@@ -758,6 +758,7 @@ def main() -> int:
     ap.add_argument("--row-frames", type=int, default=165376, help="Frames per row (default 165,376 = 60.00 s)")
     ap.add_argument("--worst-frames", type=int, default=1653750, help="Frames for worst row (default 1,653,750 = 600.00 s)")
     ap.add_argument("--smoke", action="store_true", help="Run a short smoke test first")
+    ap.add_argument('--jobs', type=int, default=1, help='Independent matrix processes; frame counts and gates are unchanged')
     args = ap.parse_args()
 
     work = args.work.resolve()
@@ -798,22 +799,26 @@ def main() -> int:
     drift_res = run_seq_drift_gate_hybrid(image_path, project_src, workload_dir / "seq-drift")
     print("  PASS:", drift_res)
 
+    # Each row has its own generated card, logs and profiler dump. Parallelize
+    # only these independent processes; comparisons and worst-row selection
+    # still consume every completed result in the original order.
+    assert args.jobs >= 1
+    from concurrent.futures import ThreadPoolExecutor
+    pool = ThreadPoolExecutor(max_workers=args.jobs)
+    matrix = {}
+    for group, rows in (('mandatory', MANDATORY_ROWS), ('extra', EXTRA_ROWS)):
+        for index, (label, left, right) in enumerate(rows):
+            matrix[label] = pool.submit(run_integrated_row, label, left, right,
+                image_path=image_path, syms=syms, project_src=project_src,
+                work_dir=workload_dir / (group+'_'+label.replace('/', '_')),
+                tone_path=tone_path, frames=args.row_frames,
+                verify_block_audio=(group == 'mandatory' or index == 0))
+
     mandatory_results = []
     for idx, (label, t2_k, t6_k) in enumerate(MANDATORY_ROWS, 1):
         slug = label.replace("/", "_")
         print(f"[2/5] Mandatory row {idx}/{len(MANDATORY_ROWS)}: {label} ({args.row_frames} frames = {args.row_frames*16/SR:.1f} s)...")
-        res = run_integrated_row(
-            label,
-            t2_k,
-            t6_k,
-            image_path=image_path,
-            syms=syms,
-            project_src=project_src,
-            work_dir=workload_dir / f"mandatory_{slug}",
-            tone_path=tone_path,
-            frames=args.row_frames,
-            verify_block_audio=True,
-        )
+        res = matrix[label].result()
         mandatory_results.append(res)
         cf_isr = res["ot_emu"]["cf_ack_interval"]
         prof_us = res["dtim3_profiler"]["dtim3_us"]
@@ -827,18 +832,7 @@ def main() -> int:
     for idx, (label, t2_k, t6_k) in enumerate(EXTRA_ROWS, 1):
         slug = label.replace("/", "_")
         print(f"[3/5] Extra row {idx}/{len(EXTRA_ROWS)}: {label} ({args.row_frames} frames = {args.row_frames*16/SR:.1f} s)...")
-        res = run_integrated_row(
-            label,
-            t2_k,
-            t6_k,
-            image_path=image_path,
-            syms=syms,
-            project_src=project_src,
-            work_dir=workload_dir / f"extra_{slug}",
-            tone_path=tone_path,
-            frames=args.row_frames,
-            verify_block_audio=(idx == 1),
-        )
+        res = matrix[label].result()
         extra_results.append(res)
         cf_isr = res["ot_emu"]["cf_ack_interval"]
         prof_us = res["dtim3_profiler"]["dtim3_us"]
@@ -847,6 +841,7 @@ def main() -> int:
             f"MAX={cf_isr['max_us_exact']:.2f} us; PERKY DTIM3 max={prof_us['max_perky_service_us']:.2f} us"
         )
 
+    pool.shutdown()
     # Full ISR timer, not ACK interval, determines the worst service window.
     all_rows = mandatory_results + extra_results
     worst_row = max(

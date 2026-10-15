@@ -777,6 +777,9 @@ def main() -> int:
 
     work = args.work.resolve()
     probe_dir = work / "probe"
+    # Diagnostic tags may differ; negative package tests must target the exact
+    # artifact set named by this build, rather than the original probe tag.
+    builder.PROBE_VERSION = json.loads((probe_dir / 'BUILD.json').read_text())['version']
     baseline_dir = work / "baseline"
     gates_dir = probe_dir / "gates"
     gates_dir.mkdir(parents=True, exist_ok=True)

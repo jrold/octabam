@@ -1,3 +1,6 @@
+#if defined(__mcoldfire__)
+#pragma GCC optimize ("no-unroll-loops")
+#endif
 /* ColdFire renderer for the PĒRKONS v1.2.1 Resonant Drums family.
  *
  * Operates directly on the original ARM object (0x178 bytes for the bassdrum
@@ -18,10 +21,11 @@
  * decay's mul/min/sign, each resonator's coefficient/modulation/bypass, the
  * output mixes).  A 16-sample render now loads the working state once, runs
  * the recurrence in locals and commits once, the way cf_noise_hat already did.
- * The arithmetic and the order of every read-modify-write are unchanged, so
- * the object bytes and the PCM stay identical; only the traffic moved. */
+ * Independent block passes preserve the sample order within each recurrence.
+ * The object bytes, PCM and RNG are compared with the frozen implementation,
+ * including split lengths, malformed state and envelope transitions. */
 #include "cf_resonant.h"
-#include "cf_math.h"
+#include "cf_render_math.h"
 #include <limits.h>
 
 static uint16_t r16(const uint8_t*p,size_t o){return pk_cf_ld16(p,o);}
@@ -49,7 +53,7 @@ typedef struct { uint32_t coeff_a,coeff_b,position,velocity,modulation;
 typedef struct { uint16_t counter,reload; int16_t held; } res_noise_l;
 
 /* --- shared envelope (base 0x74), identical to the other CF engines ------- */
-static void res_env_load(res_env_l*m,const uint8_t*s,size_t b,const pk_cf_res_tables*t){
+static inline void __attribute__((always_inline)) res_env_load(res_env_l*m,const uint8_t*s,size_t b,const pk_cf_res_tables*t){
     m->st=s[b];
     m->v=s32(r32(s,b+0xc));
     m->f4=s[b+4];m->f6=s[b+6];m->f7=s[b+7];m->f10=s[b+0x10];
@@ -57,11 +61,11 @@ static void res_env_load(res_env_l*m,const uint8_t*s,size_t b,const pk_cf_res_ta
     m->rate_up=r16(s,b+0x20);m->rate_dn=r16(s,b+0x22);
     m->env1=t->envelope1;m->env2=t->envelope2;
 }
-static void res_env_store(uint8_t*s,size_t b,const res_env_l*m){
+static inline void __attribute__((always_inline)) res_env_store(uint8_t*s,size_t b,const res_env_l*m){
     s[b]=(uint8_t)m->st;
     w32(s,b+0xc,u32(m->v));
 }
-static uint16_t res_env_step(res_env_l*m){
+static inline uint16_t __attribute__((always_inline)) res_env_step(res_env_l*m){
     switch(m->st){
     case 0: if(m->f7||m->f4)m->st=1; break;
     case 1: m->v=s32(u32(m->v)+(uint32_t)m->rate_up);
@@ -88,7 +92,7 @@ static uint16_t res_env_step(res_env_l*m){
 static uint32_t res_rnd(pk_cf_res_rng*r){
     const uint32_t a=0x5851f42d,b=0x4c957f2d;
     uint32_t ol=r->low,oh=r->high,acc=pk_cf_mul_lo_u32(ol,a),pl=pk_cf_mul_lo_u32(ol,b),
-             ph=pk_cf_mul_hi_u32(ol,b),nl,carry,nh;
+             ph=pk_cf_render_rng_hi(ol),nl,carry,nh;
     acc+=pk_cf_mul_lo_u32(oh,b);nl=pl+1u;carry=nl<pl;nh=acc+ph+carry;
     r->low=nl;r->high=nh;return nh&0x7fffffffu;
 }
@@ -166,25 +170,6 @@ static int32_t res_core_step(res_core_l*m,int32_t input,
 
 /* Bass NOISE_MAP alone has modulation=0 and bypass=0. Snare controls can
  * set bypass, so the packed snare routine below must retain that branch. */
-static int32_t res_core_step_fast(res_core_l*m,int32_t input,
-                                  const uint8_t*ia,const uint8_t*ib,int32_t*out_velocity){
-    if(m->dirty){
-        m->coeff_b=(uint32_t)res_interp(ia,(uint32_t)m->pitch_a<<17);
-        m->coeff_a=(uint32_t)res_interp(ib,(uint32_t)m->pitch_b<<17);
-        m->dirty=0;
-    }
-    {int32_t coeff_a=s32(m->coeff_a),position=s32(m->position),coeff_b=s32(m->coeff_b),velocity,filtered;
-     velocity=s32(m->velocity);
-     filtered=sub(input,asr(mullo(velocity,coeff_a),15));
-     position=clamp32767(add(position,asr(mullo(velocity,coeff_b),15)));
-     m->position=u32(position);
-     filtered=sub(filtered,position);
-     velocity=clamp32767(add(velocity,asr(mullo(coeff_b,filtered),15)));
-     m->velocity=u32(velocity);
-     *out_velocity=velocity;
-     return position;}
-}
-
 /* The snare's resonators keep coeff_a/coeff_b in 0..65535 (res_interp's
  * range) and position/velocity clamped to +-32767, so their loop-carried state
  * fits in 16-bit halves.  Packing halves the register footprint of the three
@@ -207,26 +192,6 @@ static void res_core_fast_store(uint8_t*s,const res_map*rm,const res_core_fast_l
     w32(s,rm->velocity,(uint32_t)(int32_t)m->velocity);
     s[rm->dirty]=m->dirty;
 }
-static int32_t res_core_step_fast_packed(res_core_fast_l*m,int32_t input,
-                                         const uint8_t*ia,const uint8_t*ib,int32_t*out_velocity){
-    if(m->dirty){
-        m->coeff_b=(uint16_t)res_interp(ia,(uint32_t)m->pitch_a<<17);
-        m->coeff_a=(uint16_t)res_interp(ib,(uint32_t)m->pitch_b<<17);
-        m->dirty=0;
-    }
-    {int32_t coeff_a=(int32_t)m->coeff_a,position=(int32_t)m->position,coeff_b=(int32_t)m->coeff_b,velocity,filtered;
-     velocity=(int32_t)m->velocity;
-     filtered=input;
-     if(!m->bypass)filtered=sub(input,asr(mullo(velocity,coeff_a),15));
-     position=clamp32767(add(position,asr(mullo(velocity,coeff_b),15)));
-     m->position=(int16_t)position;
-     filtered=sub(filtered,position);
-     velocity=clamp32767(add(velocity,asr(mullo(coeff_b,filtered),15)));
-     m->velocity=(int16_t)velocity;
-     *out_velocity=velocity;
-     return position;}
-}
-
 /* --- multiplicative decay ramp ------------------------------------------ */
 typedef struct { size_t mul,count,value,sign,min; } dec_map;
 
@@ -261,6 +226,63 @@ static int16_t res_velocity_scale(uint8_t velocity,int32_t value){
     return (int16_t)o;
 }
 
+#if defined(__mcoldfire__)
+#pragma GCC push_options
+#pragma GCC optimize ("no-unswitch-loops")
+#endif
+static void __attribute__((noinline))
+res_advance_envelope(uint8_t*s,uint32_t n,const pk_cf_res_tables*t){
+    res_env_l env;res_env_load(&env,s,0x74u,t);
+    while(n){
+        /* These renderers retain the envelope state but never consume its
+         * sample value. A run that stays in attack/decay is exact integer
+         * addition/subtraction; preserve each transition with the original
+         * one-sample step. Corrupt/out-of-range values retain that step too. */
+        if(env.st==1&&env.v>=0&&env.v<=0xffffe){
+            uint32_t total=(uint32_t)env.v+(uint32_t)env.rate_up*n;
+            if(total<=0xffffeu){env.v=(int32_t)total;break;}
+            /* The crossing is within this block; rate_up is nonzero here. */
+            n-=(0xffffeu-(uint32_t)env.v)/(uint32_t)env.rate_up+1u;
+            env.v=0xfffff;env.st=(env.f4||env.f6)?4u:3u;continue;
+        }else if(env.st==4&&!env.f7&&env.v>0&&env.v<=0xfffff){
+            uint32_t decrement=(uint32_t)env.rate_dn*n;
+            if((uint32_t)env.v>decrement){env.v-=(int32_t)decrement;break;}
+            n-=((uint32_t)env.v+(uint32_t)env.rate_dn-1u)/(uint32_t)env.rate_dn;
+            env.v=0;env.st=env.f4?1u:0u;continue;
+        }else if((env.st==0&&!env.f7&&!env.f4)||env.st==2||
+                 (env.st==3&&(env.f7||(!env.f4&&env.f10)))||env.st>4){
+            break;
+        }
+        (void)res_env_step(&env);--n;
+    }
+    res_env_store(s,0x74u,&env);
+}
+#if defined(__mcoldfire__)
+#pragma GCC pop_options
+#endif
+
+static inline void __attribute__((always_inline))
+res_decay_block(uint8_t *s,const dec_map *map,int32_t *buffer,uint32_t n,
+           int accumulate,int add_constant,uint32_t constant){
+    res_dec_l decay;
+    uint32_t i;
+    res_dec_load(&decay,s,map);
+    for(i=0;i<n;i++){
+        int32_t value=s32(res_dec_step(&decay,add_constant,constant));
+        buffer[i]=accumulate?add(buffer[i],value):value;
+    }
+    res_dec_store(s,map,&decay);
+}
+
+static void __attribute__((noinline))
+res_noise_block(uint8_t *s,pk_cf_res_rng *rng,int32_t *buffer,uint32_t n){
+    res_noise_l noise;
+    uint32_t i;
+    res_noise_load(&noise,s);
+    for(i=0;i<n;i++)buffer[i]=res_noise_step(&noise,rng);
+    res_noise_store(s,&noise);
+}
+
 /* ======================= Resonant Bass (0x178) ========================== */
 static const res_map TONE_MAP={0xC4,0xC6,0xC8,0xD0,0xD4,0xCC,0xD8,0xDC,0xE0};
 static const res_map NOISE_MAP={0x158,0x15A,0x15C,0x164,0x168,0x160,0x16C,0x170,0x174};
@@ -269,77 +291,108 @@ static const dec_map BASS_B={0x110,0x114,0x118,0x11C,0x120};
 static const dec_map BASS_C={0x128,0x12C,0x130,0x134,0x138};
 static const dec_map BASS_L={0x144,0x148,0x14C,0x150,0x154};
 
-int pk_cf_res_bass_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables*t,pk_cf_res_rng*rng){
-    res_env_l env;res_dec_l la,lb,lc,ll;res_core_l tone,noise;res_noise_l nz;
-    uint32_t i,mix_ec,raw_pitch;
-    int32_t res_state;
-    uint8_t vel_byte;
-    if(!s||!d||!t||!rng||!t->envelope1||!t->envelope2||!t->interp_a||!t->interp_b)return 0;
-    res_env_load(&env,s,0x74u,t);
-    res_dec_load(&la,s,&BASS_A);res_dec_load(&lb,s,&BASS_B);
-    res_dec_load(&lc,s,&BASS_C);res_dec_load(&ll,s,&BASS_L);
-    res_core_load(&tone,s,&TONE_MAP);res_core_load(&noise,s,&NOISE_MAP);
-    res_noise_load(&nz,s);
-    mix_ec=(uint32_t)s32(r32(s,0xECu));
-    raw_pitch=r16(s,0xF0u);
-    res_state=s32(r32(s,0xE8u));
-    vel_byte=s[6];
+static void __attribute__((noinline))
+bass_drive_block(uint8_t*s,int32_t*drive,uint32_t n){
+    uint32_t i;
+    {res_dec_l decay;res_dec_load(&decay,s,&BASS_A);
+     for(i=0;i<n;i++){
+        uint32_t value=pk_cf_mul_lo_u32(decay.mul,decay.value)>>12;
+        int32_t count=decay.count;
+        if(s32(value)<decay.min)value=u32(decay.min);
+        decay.value=value;
+        if(count>0){count=sub(count,1);decay.count=count;
+            if(count==0){value=u32(add(s32(value),abs_arm(decay.sign)));decay.value=value;}}
+        drive[i]=s32(value);
+     }
+     res_dec_store(s,&BASS_A,&decay);}
+    {res_dec_l decay;res_dec_load(&decay,s,&BASS_B);
+     for(i=0;i<n;i++){
+        uint32_t value=pk_cf_mul_lo_u32(decay.mul,decay.value)>>12;
+        int32_t count=decay.count,first=drive[i];
+        if(s32(value)<decay.min)value=u32(decay.min);
+        if(count<0)first=neg(first);
+        first=add(first,count!=0?(1<<14):0);
+        decay.value=value;
+        if(count>0){count=sub(count,1);decay.count=count;
+            if(count==0){value=u32(add(s32(value),abs_arm(decay.sign)));decay.value=value;}}
+        if(decay.sign<0)value=u32(neg(s32(value)));
+        drive[i]=add(first,s32(value));
+     }
+     res_dec_store(s,&BASS_B,&decay);}
+}
+static void __attribute__((noinline))
+bass_pitch_block(uint8_t*s,uint16_t*pitches,uint32_t n){
+    res_dec_l decay;uint32_t i,raw=r16(s,0xf0u);
+    res_dec_load(&decay,s,&BASS_C);
     for(i=0;i<n;i++){
-        uint32_t mod_a,mod_b,mod_c,level;
-        int32_t count_a,count_b,count_c,drive,drive_quarter,pitch,signed_pitch;
-        int32_t tone_velocity,noise_velocity,res_input,res_delta,product,mixed,tripled;
-        int skip_pitch_offset;
-        (void)res_env_step(&env);
-        /* mod A */
-        mod_a=(pk_cf_mul_lo_u32(la.mul,la.value))>>12;
-        if(s32(mod_a)<la.min)mod_a=u32(la.min);
-        la.value=mod_a;
-        count_a=la.count;
-        if(count_a>0){count_a=sub(count_a,1);la.count=count_a;
-            if(count_a==0){mod_a=u32(add(s32(mod_a),abs_arm(la.sign)));la.value=mod_a;}}
-        /* mod B */
-        count_b=lb.count;
-        mod_b=(pk_cf_mul_lo_u32(lb.mul,lb.value))>>12;
-        if(s32(mod_b)<lb.min)mod_b=u32(lb.min);
-        if(count_b<0)mod_a=u32(neg(s32(mod_a)));
-        lb.value=mod_b;
-        mod_a=u32(add(s32(mod_a),count_b!=0?(1<<14):0));
-        if(count_b>0){count_b=sub(count_b,1);lb.count=count_b;
-            if(count_b==0){mod_b=u32(add(s32(mod_b),abs_arm(lb.sign)));lb.value=mod_b;}}
-        if(lb.sign<0)mod_b=u32(neg(s32(mod_b)));
-        drive=add(s32(mod_a),s32(mod_b));
-        /* mod C: pitch-offset timer */
-        mod_c=(pk_cf_mul_lo_u32(lc.mul,lc.value))>>12;
-        if(s32(mod_c)<lc.min)mod_c=u32(lc.min);
-        count_c=lc.count;
-        lc.value=mod_c;
-        skip_pitch_offset=(count_c==0);
-        if(count_c>0){count_c=sub(count_c,1);lc.count=count_c;
-            if(count_c==0){mod_c=u32(add(s32(mod_c),abs_arm(lc.sign)));lc.value=mod_c;skip_pitch_offset=1;}}
-        pitch=(int32_t)raw_pitch;
-        if(!skip_pitch_offset)pitch=(pitch+0x880)&0xffff;
-        signed_pitch=s16((uint16_t)pitch);
-        drive_quarter=asr(drive,4);
-        if(tone.dirty||s16((uint16_t)tone.pitch_a)!=signed_pitch){
-            tone.pitch_a=(int32_t)(uint16_t)pitch;tone.dirty=1;}
-        (void)res_core_step(&tone,drive,t->interp_a,t->interp_b,&tone_velocity);
-        res_input=add(tone_velocity,drive_quarter);
-        res_delta=sub(res_input,res_state);
-        level=res_dec_step(&ll,0,0u);
-        res_state=add(res_state,asr(mullo((int32_t)mix_ec,res_delta),15));
-        {int32_t nv=res_noise_step(&nz,rng);
-         (void)res_core_step_fast(&noise,nv,t->interp_a,t->interp_b,&noise_velocity);}
-        product=mullo(noise_velocity,s32(level));
-        mixed=add(res_state,asr(product,16));
-        tripled=add(mixed,add(mixed,mixed));
-        d[i]=res_velocity_scale(vel_byte,tripled);
+        uint32_t value=pk_cf_mul_lo_u32(decay.mul,decay.value)>>12;
+        int32_t count=decay.count;int skip=count==0;
+        if(s32(value)<decay.min)value=u32(decay.min);
+        decay.value=value;
+        if(count>0){count=sub(count,1);decay.count=count;
+            if(count==0){value=u32(add(s32(value),abs_arm(decay.sign)));decay.value=value;skip=1;}}
+        pitches[i]=(uint16_t)(skip?raw:raw+0x880u);
     }
-    res_env_store(s,0x74u,&env);
-    res_dec_store(s,&BASS_A,&la);res_dec_store(s,&BASS_B,&lb);
-    res_dec_store(s,&BASS_C,&lc);res_dec_store(s,&BASS_L,&ll);
-    res_core_store(s,&TONE_MAP,&tone);res_core_store(s,&NOISE_MAP,&noise);
-    res_noise_store(s,&nz);
-    w32(s,0xE8u,u32(res_state));
+    res_dec_store(s,&BASS_C,&decay);
+}
+static void __attribute__((noinline))
+bass_tone_block(uint8_t*s,const int32_t*drive,const uint16_t*pitches,
+                int32_t*acc,uint32_t n,const pk_cf_res_tables*t){
+    res_core_l tone;uint32_t i;int32_t state=s32(r32(s,0xe8u)),mix=s32(r32(s,0xecu));
+    res_core_load(&tone,s,&TONE_MAP);
+    for(i=0;i<n;i++){
+        int32_t velocity,input,delta;
+        if(tone.dirty||s16((uint16_t)tone.pitch_a)!=s16(pitches[i])){
+            tone.pitch_a=(int32_t)pitches[i];tone.dirty=1;}
+        (void)res_core_step(&tone,drive[i],t->interp_a,t->interp_b,&velocity);
+        input=add(velocity,asr(drive[i],4));delta=sub(input,state);
+        state=add(state,asr(mullo(mix,delta),15));acc[i]=state;
+    }
+    res_core_store(s,&TONE_MAP,&tone);w32(s,0xe8u,u32(state));
+}
+static void __attribute__((noinline))
+bass_noise_mix(uint8_t*s,const int32_t*input,const int32_t*level,
+               const int32_t*acc,int16_t*d,uint32_t n,const pk_cf_res_tables*t){
+    res_core_l noise;uint32_t i;uint8_t amplitude=s[6];
+    res_core_load(&noise,s,&NOISE_MAP);
+    if(noise.dirty&&n){
+        noise.coeff_b=res_interp(t->interp_a,(uint32_t)noise.pitch_a<<17);
+        noise.coeff_a=res_interp(t->interp_b,(uint32_t)noise.pitch_b<<17);noise.dirty=0;}
+    int32_t position=s32(noise.position),velocity=s32(noise.velocity);
+    int32_t ca=s32(noise.coeff_a),cb=s32(noise.coeff_b);
+    for(i=0;i<n;i++){
+        int32_t filtered=sub(input[i],asr(mullo(velocity,ca),15)),mixed;
+        position=clamp32767(add(position,asr(mullo(velocity,cb),15)));
+        filtered=sub(filtered,position);
+        velocity=clamp32767(add(velocity,asr(mullo(cb,filtered),15)));
+        mixed=add(acc[i],asr(mullo(velocity,level[i]),16));
+        d[i]=res_velocity_scale(amplitude,add(mixed,add(mixed,mixed)));
+    }
+    noise.position=u32(position);noise.velocity=u32(velocity);
+    res_core_store(s,&NOISE_MAP,&noise);
+}
+static void __attribute__((noinline))
+bass_level(uint8_t*s,int32_t*buffer,uint32_t n){
+    res_decay_block(s,&BASS_L,buffer,n,0,0,0u);
+}
+static void bass_chunk(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables*t,pk_cf_res_rng*rng){
+    int32_t drive[16],acc[16],level[16];uint16_t pitches[16];
+    res_advance_envelope(s,n,t);
+    bass_drive_block(s,drive,n);bass_pitch_block(s,pitches,n);
+    bass_tone_block(s,drive,pitches,acc,n,t);
+    bass_level(s,level,n);
+    res_noise_block(s,rng,drive,n);
+    bass_noise_mix(s,drive,level,acc,d,n,t);
+}
+int pk_cf_res_bass_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables*t,pk_cf_res_rng*rng){
+    if(!s||!d||!t||!rng||!t->envelope1||!t->envelope2||!t->interp_a||!t->interp_b)return 0;
+    if(!n)return 1;
+    volatile pk_cf_render_math_context context=pk_cf_render_math_begin();
+    do{
+        uint32_t count=n>16u?16u:n;bass_chunk(s,d,count,t,rng);
+        d+=count;n-=count;
+    }while(n);
+    pk_cf_render_math_end(context);
     return 1;
 }
 
@@ -352,45 +405,105 @@ static const dec_map SNARE_B={0x18C,0x190,0x194,0x198,0x19C};
 static const dec_map SNARE_C={0x1A4,0x1A8,0x1AC,0x1B0,0x1B4};
 static const dec_map SNARE_D={0x1BC,0x1C0,0x1C4,0x1C8,0x1CC};
 
-int pk_cf_res_snare_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables*t,pk_cf_res_rng*rng){
-    res_env_l env;res_dec_l da,db,dc,dd_;res_core_fast_l r1,r2,r3;res_noise_l nz;
+static void __attribute__((noinline))
+snare_decay_a(uint8_t*s,int32_t*buffer,uint32_t n){
+    res_decay_block(s,&SNARE_A,buffer,n,0,0,0u);
+}
+static void __attribute__((noinline))
+snare_decay_b(uint8_t*s,int32_t*buffer,uint32_t n){
+    res_decay_block(s,&SNARE_B,buffer,n,1,1,0x0a3du);
+}
+static void __attribute__((noinline))
+snare_decay_c(uint8_t*s,int32_t*buffer,uint32_t n){
+    res_decay_block(s,&SNARE_C,buffer,n,0,1,0x3333u);
+}
+static void __attribute__((noinline))
+snare_decay_d(uint8_t*s,int32_t*buffer,uint32_t n){
+    res_decay_block(s,&SNARE_D,buffer,n,0,0,0u);
+}
+
+/* Separate independent recurrences into short block passes. Each recurrence
+ * still visits samples in exactly the original order; only independent state
+ * machines move relative to one another. The noise pass is the sole RNG user.
+ * This bounds the live register set instead of spilling all three resonators
+ * and all four decays on every sample. */
+static inline void __attribute__((always_inline))
+snare_core(uint8_t *s,const res_map *map,const int32_t *input,
+           int32_t *acc,const int32_t *level,uint32_t n,int32_t mix,
+           int accumulate,const pk_cf_res_tables *t,int16_t *dst){
+    res_core_fast_l core;
     uint32_t i;
-    int32_t mix164,mix168;
-    uint8_t vel_byte;
-    if(!s||!d||!t||!rng||!t->envelope1||!t->envelope2||!t->interp_a||!t->interp_b)return 0;
-    res_env_load(&env,s,0x74u,t);
-    res_dec_load(&da,s,&SNARE_A);res_dec_load(&db,s,&SNARE_B);
-    res_dec_load(&dc,s,&SNARE_C);res_dec_load(&dd_,s,&SNARE_D);
-    res_core_fast_load(&r1,s,&RES1_MAP);res_core_fast_load(&r2,s,&RES2_MAP);res_core_fast_load(&r3,s,&RES3_MAP);
-    res_noise_load(&nz,s);
-    mix164=s32(r32(s,0x164u));mix168=s32(r32(s,0x168u));
-    vel_byte=s[6];
-    for(i=0;i<n;i++){
-        uint32_t a,b,cv,dd;
-        int32_t first_drive,first_mix,second_mix,velocity1,velocity2,velocity3;
-        int32_t random_value,term1,term2,term3,mixed;
-        (void)res_env_step(&env);
-        a=res_dec_step(&da,0,0u);
-        b=res_dec_step(&db,1,0x0A3Du);
-        first_drive=add(s32(a),s32(b));
-        (void)res_core_step_fast_packed(&r1,first_drive,t->interp_a,t->interp_b,&velocity1);
-        cv=res_dec_step(&dc,1,0x3333u);
-        first_mix=add(velocity1,asr(first_drive,4));
-        (void)res_core_step_fast_packed(&r2,s32(cv),t->interp_a,t->interp_b,&velocity2);
-        second_mix=add(velocity2,asr(s32(cv),4));
-        dd=res_dec_step(&dd_,0,0u);
-        random_value=res_noise_step(&nz,rng);
-        (void)res_core_step_fast_packed(&r3,random_value,t->interp_a,t->interp_b,&velocity3);
-        term1=asr(mullo(second_mix,mix168),15);
-        term2=asr(mullo(mix164,first_mix),15);
-        term3=asr(mullo(velocity3,s32(dd)),15);
-        mixed=add(add(term1,term2),term3);
-        d[i]=res_velocity_scale(vel_byte,add(mixed,mixed));
+    res_core_fast_load(&core,s,map);
+    if(core.dirty&&n){
+        core.coeff_b=(uint16_t)res_interp(t->interp_a,(uint32_t)core.pitch_a<<17);
+        core.coeff_a=(uint16_t)res_interp(t->interp_b,(uint32_t)core.pitch_b<<17);
+        core.dirty=0;
     }
-    res_env_store(s,0x74u,&env);
-    res_dec_store(s,&SNARE_A,&da);res_dec_store(s,&SNARE_B,&db);
-    res_dec_store(s,&SNARE_C,&dc);res_dec_store(s,&SNARE_D,&dd_);
-    res_core_fast_store(s,&RES1_MAP,&r1);res_core_fast_store(s,&RES2_MAP,&r2);res_core_fast_store(s,&RES3_MAP,&r3);
-    res_noise_store(s,&nz);
+    int32_t position=core.position,velocity=core.velocity;
+    const int32_t coeff_a=core.coeff_a,coeff_b=core.coeff_b;
+    for(i=0;i<n;i++){
+        int32_t term,filtered=input[i];
+        if(!core.bypass)filtered=sub(filtered,asr(mullo(velocity,coeff_a),15));
+        position=clamp32767(add(position,asr(mullo(velocity,coeff_b),15)));
+        filtered=sub(filtered,position);
+        velocity=clamp32767(add(velocity,asr(mullo(coeff_b,filtered),15)));
+        if(level)term=asr(mullo(velocity,level[i]),15);
+        else term=asr(mullo(add(velocity,asr(input[i],4)),mix),15);
+        if(dst){
+            int32_t mixed=add(acc[i],term);
+            dst[i]=res_velocity_scale(s[6],add(mixed,mixed));
+        }else acc[i]=accumulate?add(acc[i],term):term;
+    }
+    core.position=(int16_t)position;core.velocity=(int16_t)velocity;
+    res_core_fast_store(s,map,&core);
+}
+
+/* These passes have different fixed maps and mixing roles. Compile each
+ * with its actual constants so no sample selects map offsets or mix policy. */
+static void __attribute__((noinline))
+snare_first(uint8_t*s,const int32_t*input,int32_t*acc,uint32_t n,const pk_cf_res_tables*t){
+    snare_core(s,&RES1_MAP,input,acc,0,n,s32(r32(s,0x164u)),0,t,0);
+}
+static void __attribute__((noinline))
+snare_second(uint8_t*s,const int32_t*input,int32_t*acc,uint32_t n,const pk_cf_res_tables*t){
+    snare_core(s,&RES2_MAP,input,acc,0,n,s32(r32(s,0x168u)),1,t,0);
+}
+static void __attribute__((noinline))
+snare_noise(uint8_t*s,const int32_t*input,int32_t*acc,const int32_t*level,int16_t*dst,uint32_t n,const pk_cf_res_tables*t){
+    snare_core(s,&RES3_MAP,input,acc,level,n,0,1,t,dst);
+}
+
+static void snare_chunk(uint8_t *s,int16_t *d,uint32_t n,
+                        const pk_cf_res_tables *t,pk_cf_res_rng *rng){
+    int32_t drive[16],acc[16],level[16];
+    res_advance_envelope(s,n,t);
+    snare_decay_a(s,drive,n);
+    snare_decay_b(s,drive,n);
+    snare_first(s,drive,acc,n,t);
+    snare_decay_c(s,drive,n);
+    snare_second(s,drive,acc,n,t);
+    snare_decay_d(s,level,n);
+    res_noise_block(s,rng,drive,n);
+    snare_noise(s,drive,acc,level,d,n,t);
+}
+
+int pk_cf_res_snare_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables*t,pk_cf_res_rng*rng){
+    if(!s||!d||!t||!rng||!t->envelope1||!t->envelope2||!t->interp_a||!t->interp_b)return 0;
+    if(!n){
+        /* The original empty packed renderer narrows these twelve words even
+         * for malformed state. Preserve that behavior without all block passes. */
+        res_core_fast_l core;
+        res_core_fast_load(&core,s,&RES1_MAP);res_core_fast_store(s,&RES1_MAP,&core);
+        res_core_fast_load(&core,s,&RES2_MAP);res_core_fast_store(s,&RES2_MAP,&core);
+        res_core_fast_load(&core,s,&RES3_MAP);res_core_fast_store(s,&RES3_MAP,&core);
+        return 1;
+    }
+    volatile pk_cf_render_math_context context=pk_cf_render_math_begin();
+    do{
+        uint32_t count=n>16u?16u:n;
+        snare_chunk(s,d,count,t,rng);
+        d+=count;n-=count;
+    }while(n);
+    pk_cf_render_math_end(context);
     return 1;
 }

@@ -30,7 +30,7 @@ extern uint32_t pk_track_page(const volatile uint8_t *type_ptr)
 extern void pk_ui_tick(void)
     __asm__("pk_dsp_ui_tick_orig");
 extern int pk_render(unsigned track, unsigned ping, unsigned start, unsigned end)
-    __asm__("pk_dsp_render_orig");
+    __asm__("pk_dsp_render_orig") __attribute__((noinline));
 extern uint32_t pk_machine_glyph(unsigned track, uint32_t original)
     __asm__("pk_dsp_machine_glyph_orig");
 extern unsigned pk_ui_playing(unsigned track, unsigned original)
@@ -40,9 +40,9 @@ extern unsigned pk_ui_playing(unsigned track, unsigned original)
 
 /* Include cf_perky4.c with narrow static linkage so its internal wt_init,
  * res_init_snare, res_init_bass, res_init_nt, prepare_wt, prepare_res_family
- * and pk4_encode_stock_segment helpers are reused directly without modifying
- * the Phase 1-pinned cf_perky4.c/.h files or pulling unused CF engines into
- * the linked object.
+ * and pk4_encode_stock_segment helpers are reused directly. Their optimized
+ * behavior is checked against the frozen pre-optimization reference; unused
+ * CF engines are discarded from the linked object.
  */
 #include "cf_perky4.h"
 static void __attribute__((unused)) pk4_unused_init_orig(pk4_engine *e, const pk4_assets *a);
@@ -560,7 +560,7 @@ static void pk_hybrid_reset_at_event(unsigned inst)
  *   UI SRC page order: A TUNE (0), B DECAY (1), C ALGO (2), D PAR1 (3), E PAR2 (4), F MODE (5).
  *   Internal recovered engine order: decay, tune, p1, p2, mode, algo (where raw[0]=tune, raw[1]=decay, raw[2]=p1, raw[3]=p2).
  */
-int pk_hybrid_cf_prepare_event(unsigned inst,
+int __attribute__((noinline)) pk_hybrid_cf_prepare_event(unsigned inst,
                                uint8_t decay, uint8_t tune,
                                uint8_t p1, uint8_t p2,
                                uint8_t mode, uint8_t algo,
@@ -584,7 +584,7 @@ int pk_hybrid_cf_prepare_event(unsigned inst,
     return 1;
 }
 
-int pk_hybrid_cf_render_segment(unsigned inst, int16_t *dst, uint32_t count)
+int __attribute__((noinline)) pk_hybrid_cf_render_segment(unsigned inst, int16_t *dst, uint32_t count)
 {
     if (inst >= PK_HYB_CF_INSTANCE_COUNT || !dst || count > PK_HYB_BLOCK_SAMPLES)
         return 0;
@@ -649,6 +649,25 @@ pk_hybrid_commit_longs(volatile uint32_t *dst, const uint32_t *src, uint32_t cou
 {
     for (uint32_t i = 0; i < count; ++i)
         dst[i] = src[i];
+}
+
+/* Same stock FLEX record as pk4_encode_stock_segment, published directly to
+ * the owned fixed slot. Keep volatile long stores and a separate call: GCC
+ * otherwise duplicates the variable-length encoder throughout pk_render. */
+static uint32_t __attribute__((noinline))
+pk_hybrid_encode_slot(volatile uint32_t *dst, const int16_t *pcm, uint32_t count)
+{
+    if (!dst || !pcm || count > PK_HYB_BLOCK_SAMPLES) return 0u;
+    dst[0] = (count << 8) | count;
+    dst[1] = 0u;
+    dst[2] = 0x04000000u;
+    dst[3] = 0u;
+    for (uint32_t i = 0; i < count; ++i) {
+        uint32_t sample = (uint32_t)(int32_t)pcm[i] << 16;
+        dst[4u + 2u*i] = sample;
+        dst[5u + 2u*i] = sample;
+    }
+    return 4u + 2u*count;
 }
 
 /* Dynamic SRC page builder for hybrid tracks:
@@ -936,40 +955,49 @@ int pk_hybrid_render(unsigned track, unsigned ping, unsigned start, unsigned end
     }
     uint32_t t_ctrl1 = prof_on ? pk_hybrid_timer_now() : 0u;
 
-    int16_t pcm[PK_HYB_BLOCK_SAMPLES];
+    /* Render straight into the retained frame slice. The two stock callbacks
+     * own disjoint sample ranges; their concatenation is encoded only at the
+     * event boundary. This removes the temporary PCM and its copy. */
+    int16_t *pcm = pk_hybrid_frame_pcm[inst] + start;
     if (!pk_hybrid_cf_render_segment(inst, pcm, count)) {
         for (unsigned i = 0; i < count; ++i)
             pcm[i] = 0;
     }
-    for (unsigned i = 0; i < count; ++i)
-        pk_hybrid_frame_pcm[inst][start + i] = pcm[i];
-
     uint32_t t_rend1 = prof_on ? pk_hybrid_timer_now() : 0u;
 
-    /* Retain moving-cursor reservation independently of fixed-slot publication. */
-    for (uint32_t i = 0; i < cursor_longs; ++i)
-        cursor[i] = 0u;
+    /* The final callback publishes all 40 fixed-slot words before returning.
+     * Preserve cursor reservation, but avoid zero writes that this very
+     * callback immediately overwrites. Prefix callbacks still clear every
+     * reserved word, including when the stock packer changes ping. */
+    uintptr_t record_begin = (uintptr_t)pk_hybrid_fixed_slot(track, ping);
+    uintptr_t record_end = record_begin + 40u * sizeof(uint32_t);
+    uintptr_t cursor_begin = (uintptr_t)cursor;
+    uintptr_t cursor_end = (uintptr_t)(cursor + cursor_longs);
+    if (!event_boundary || cursor_end <= record_begin || cursor_begin >= record_end) {
+        for (uint32_t i = 0; i < cursor_longs; ++i)
+            cursor[i] = 0u;
+    } else {
+        for (uintptr_t address = cursor_begin; address < record_begin; address += 4u)
+            *(volatile uint32_t *)address = 0u;
+        for (uintptr_t address = record_end; address < cursor_end; address += 4u)
+            *(volatile uint32_t *)address = 0u;
+    }
     U32(0x80001c80u) = (uint32_t)(uintptr_t)(cursor + cursor_longs);
 
     if (event_boundary) {
-        uint32_t encoded[4u + 2u * PK_HYB_BLOCK_SAMPLES];
         volatile uint32_t *record = pk_hybrid_fixed_slot(track, ping);
         const unsigned split = start;
-        uint32_t pre_longs = pk4_encode_stock_segment(
-            encoded, pk_hybrid_frame_pcm[inst], split
+        uint32_t pre_longs = pk_hybrid_encode_slot(
+            record, pk_hybrid_frame_pcm[inst], split
         );
         if (!pre_longs)
             return 0;
-        pk_hybrid_commit_longs(record, encoded, pre_longs);
-
-        uint32_t post_longs = pk4_encode_stock_segment(
-            encoded, pk_hybrid_frame_pcm[inst] + split,
+        uint32_t post_longs = pk_hybrid_encode_slot(
+            record + pre_longs, pk_hybrid_frame_pcm[inst] + split,
             PK_HYB_BLOCK_SAMPLES - split
         );
         if (!post_longs)
             return 0;
-        pk_hybrid_commit_longs(record + pre_longs, encoded, post_longs);
-
         if (pre_longs + post_longs != 40u)
             return 0;
 

@@ -1,6 +1,7 @@
 #include "cf_perky4.h"
 #include <stddef.h>
 #include "cf_math.h"
+#include "cf_control_rates.h"
 
 #define PK4_DEFAULT_WAVE 0x080222a0u
 #define PK4_SIMPLE_OSC_RENDER 0x0802819du
@@ -16,9 +17,9 @@ static int32_t s32(uint32_t v){return (int32_t)v;}
 static uint32_t clamp12s(int32_t v){if(v<0)return 0;if(v>4095)return 4095;return (uint32_t)v;}
 static uint32_t target7(uint8_t v){v&=0x7fu;return v==127u?4095u:(uint32_t)v<<5;}
 static uint32_t smooth(uint32_t old,uint32_t target){return (3u*target+5u*old)>>3;}
-static uint16_t table16(const uint8_t *p,uint32_t i){return (uint16_t)p[2u*i]|(uint16_t)((uint16_t)p[2u*i+1u]<<8);}
+static uint16_t table16(const uint8_t *p,uint32_t i){return pk_cf_ld16(p,2u*i);}
 static uint32_t pitch_at(const pk4_assets *a,uint32_t i){return table16(a->pitch,i);}
-static int32_t note_offset(uint8_t note,const pk4_assets *a){uint32_t n=(uint32_t)note+3u,oct=n/12u,step=n%12u;return (int32_t)s16((uint16_t)(table16(a->chromatic,step)+(oct<<9)));}
+static int32_t note_offset(uint8_t note,const pk4_assets *a){uint32_t n=(uint32_t)note+3u,oct=(n*171u)>>11,step=n-12u*oct;return (int32_t)s16((uint16_t)(table16(a->chromatic,step)+(oct<<9)));}
 
 static uint16_t time_parameter(uint16_t prepared){
     uint32_t q=0x7fffu+((uint32_t)prepared<<2),mant=(q&0xfffu)+0x1000u,exp=(q>>12)&0xfu,v;
@@ -29,7 +30,20 @@ static uint16_t env_rate_cfg(const uint8_t *s,size_t base,uint16_t param,int dec
     size_t c=base+(decay?0x1cu:0x18u);uint32_t off=r16(s,c),scale=r16(s,c+2u);
     uint32_t prod=(48u*((scale-1u)&0xffffu)*(uint32_t)param)&U32_MASK;
     uint32_t den=(48u*((off+1u)&0xffffu)+(prod>>12))&U32_MASK;
+    /* Common amplitude attack: exact quotient, independent of object identity. */
+    if(den==96u)return 0x2aaau;
     return den? (uint16_t)(0xfffffu/den):0;
+}
+/* All 4096 prepared decay words for the three live envelope configurations.
+ * Arbitrary configuration/corrupt smoother values keep the original arithmetic. */
+static uint16_t common_decay_rate(const uint8_t*s,uint16_t decay){
+    if(decay<=4095u){
+        uint32_t cfg=r32(s,0x90u);
+        if(cfg==0x0fa00005u)return pk_cf_control_decay_rates[0][decay];
+        if(cfg==0x0fa00002u)return pk_cf_control_decay_rates[1][decay];
+        if(cfg==0x1c700032u)return pk_cf_control_decay_rates[2][decay];
+    }
+    return env_rate_cfg(s,0x74,time_parameter(decay),1);
 }
 static void envelope_trigger(uint8_t*s,size_t b){s[b+0x10]=1;s[b]=1;if(s[b+8])w32(s,b+0x0c,0);}
 
@@ -61,7 +75,7 @@ static void common_update_impl(uint8_t*s,const uint32_t t[4],const pk4_assets*a,
         uint16_t tune=(uint16_t)out[0],decay=(uint16_t)out[1],p1=(uint16_t)out[2],p2=(uint16_t)out[3];
         int32_t pi=(int32_t)s16((uint16_t)(tune-0x800u+(uint16_t)note_offset(s[7],a)));uint32_t ix=clamp12s(pi);
         w16(s,0xba,(uint16_t)ix);w16(s,0xbc,decay);w16(s,0xbe,p1);w16(s,0xc0,p2);if(derive)w32(s,0x34,pitch_at(a,ix));s[0x7b]=(uint8_t)(r16(s,8)<=decay);
-        if(derive){w16(s,0x94,env_rate_cfg(s,0x74,time_parameter(r16(s,0x0a)),0));w16(s,0x96,env_rate_cfg(s,0x74,time_parameter(decay),1));}
+        if(derive){w16(s,0x94,env_rate_cfg(s,0x74,time_parameter(r16(s,0x0a)),0));w16(s,0x96,common_decay_rate(s,decay));}
     }
 }
 static void common_update(uint8_t*s,const uint32_t t[4],const pk4_assets*a,uint32_t out[4]){common_update_impl(s,t,a,out,1);}
@@ -100,7 +114,15 @@ static void common_smooth_only(uint8_t*s,const uint32_t t[4]){unsigned i;for(i=0
  * register between passes. This changes no rounding or final state word. */
 static void common_smooth_many(uint8_t*s,const uint32_t t[4],unsigned n){
     unsigned k,i;for(k=0;k<4u;k++){uint32_t value=r32(s,0x1c+4u*k),target=t[k];
-        for(i=0;i<n;i++)value=smooth(value,target);
+        if(n>=14u&&n<=16u&&value<=4095u&&target<=4095u){
+            /* With bounded controls there is no unsigned overflow:
+             * smooth(v,t)=t+floor(5*(v-t)/8). Enumerated exact thresholds
+             * replace 14..16 rounded recurrences, not their rounding. */
+            int32_t delta=(int32_t)value-(int32_t)target;
+            int32_t offset=n==14u?pk_cf_control_smooth_14(delta):
+                n==15u?pk_cf_control_smooth_15(delta):pk_cf_control_smooth_16(delta);
+            value=target+(uint32_t)offset;
+        }else for(i=0;i<n;i++)value=smooth(value,target);
         w32(s,0x1c+4u*k,value);
     }
 }
@@ -557,22 +579,28 @@ static void wt_trigger(uint8_t*s,uint8_t vel,uint8_t note){
  * new-target passes (the last derives on a non-trigger event). A trigger is
  * followed by one additional deriving update. Verified against the original
  * ARM constructor/update/trigger and both WT capture profiles. */
-static void prepare_wt(pk4_control*c,uint8_t*s,const uint8_t raw[4],uint8_t mode,uint8_t vel,uint8_t note,int trig,const pk4_assets*a){unsigned i;if(control_dirty(c,raw,mode)){common_smooth_only(s,c->targets);common_smooth_only(s,c->targets);control_commit(c,raw,mode);if(trig){for(i=0;i<16;i++)common_smooth_only(s,c->targets);}else{for(i=0;i<15;i++)common_smooth_only(s,c->targets);wt_update(s,mode,c->targets,a);}}if(trig){wt_trigger(s,vel,note);wt_update(s,mode,c->targets,a);}}
+static void __attribute__((noinline)) prepare_wt(pk4_control*c,uint8_t*s,const uint8_t raw[4],uint8_t mode,uint8_t vel,uint8_t note,int trig,const pk4_assets*a){if(control_dirty(c,raw,mode)){common_smooth_many(s,c->targets,2u);control_commit(c,raw,mode);if(trig){common_smooth_many(s,c->targets,16u);}else{common_smooth_many(s,c->targets,15u);wt_update(s,mode,c->targets,a);}}if(trig){wt_trigger(s,vel,note);wt_update(s,mode,c->targets,a);}}
 
 /* Original Voice-3 wrapper shares targets across its three Resonant objects.
  * setAlgorithm updates the prior mode once; setMode updates the selected mode
  * once, both before setSoundParameters commits and runs sixteen updates. */
-static void res_mode_update(uint8_t*snare,uint8_t*bass,uint8_t*nt,uint8_t mode,const uint32_t targets[4],const pk4_assets*a){
-    if(mode==0)res_update_snare(snare,targets,a);
-    else if(mode==1)res_update_bass(bass,targets,a);
+static void res_mode_update(uint8_t*snare,uint8_t*bass,uint8_t*nt,uint8_t mode,const uint32_t targets[4],const pk4_assets*a,int derive){
+    if(mode==0)res_update_snare_impl(snare,targets,a,derive);
+    else if(mode==1)res_update_bass_impl(bass,targets,a,derive);
     else nt_update(nt,targets,a,0);
 }
-static void prepare_res_family(pk4_control*c,uint8_t*snare,uint8_t*bass,uint8_t*nt,const uint8_t raw[4],uint8_t mode,uint8_t vel,uint8_t note,int trig,const pk4_assets*a){
+static void __attribute__((noinline)) prepare_res_family(pk4_control*c,uint8_t*snare,uint8_t*bass,uint8_t*nt,const uint8_t raw[4],uint8_t mode,uint8_t vel,uint8_t note,int trig,const pk4_assets*a){
     /* One family control history; three separately retained synthesis states. */
     int dirty=control_dirty(c,raw,mode);
     if(dirty){
-        res_mode_update(snare,bass,nt,c->valid?c->last_mode:1u,c->targets,a);
-        res_mode_update(snare,bass,nt,mode,c->targets,a);
+        unsigned previous=c->valid?c->last_mode:1u;
+        /* Selected-mode preparation below always derives after its sixteen
+         * exact updates. Old-target passes must retain smoothing, finite
+         * decay writes and sticky flags, but their pitch-table/envelope-rate
+         * results are overwritten before any render. A mode being left must
+         * still retain its complete final derived state. */
+        res_mode_update(snare,bass,nt,previous,c->targets,a,previous!=mode);
+        res_mode_update(snare,bass,nt,mode,c->targets,a,0);
     }
     if(mode<2)prepare_res(c,mode==0?snare:bass,mode==1,raw,mode,vel,note,trig,a);
     else{

@@ -50,9 +50,9 @@ def environment(work, name):
     return env
 
 
-def run(work, name, frames):
+def run(work, name, frames, card=None):
     image=work/'probe/mainos_PKHYB2P.bin'
-    card=ROOT/('out/perky/hybrid/ipl3/dense/card.img' if name=='dense'
+    card=card or ROOT/('out/perky/hybrid/ipl3/dense/card.img' if name=='dense'
                else 'out/perky/hybrid/safety-final/fixture/card.img')
     cmd=[str(work/'observer/ot_emu_safety'),'--image',str(image),'--card',str(card),
         '--set','OCTABAM','--project','RIG','--load-ms','90000','--sequencer',
@@ -92,6 +92,7 @@ if __name__=='__main__':
     ap.add_argument('--build-observer',action='store_true')
     ap.add_argument('--run',choices=['mixed','dense','external'])
     ap.add_argument('--frames',type=int,default=2048)
+    ap.add_argument('--card',type=Path,help='Explicit integrated workload card; hash-pinned in run receipt')
     a=ap.parse_args();work=a.work.resolve()
     if a.build_observer:build_observer(work)
-    if a.run:run(work,a.run,a.frames)
+    if a.run:run(work,a.run,a.frames,a.card.resolve() if a.card else None)

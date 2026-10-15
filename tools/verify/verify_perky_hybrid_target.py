@@ -160,8 +160,8 @@ def main():
             phases[phase]={'count':len(v),'min':v[0],'mean':sum(v)/len(v),'median':v[len(v)//2],'p95':v[(len(v)-1)*95//100],'max':v[-1],'max_stack_bytes':max(int(r['stack_bytes']) for r in rs),'worst_case':max(rs,key=lambda r:int(r['cycles']))}
         for r in rows:
             if r['phase']!='init':totals[('tail' if r['phase']=='tail-render' else 'matrix',r['left'],r['right'],r['corner'],r['frame'])]+=int(r['cycles'])
-        report['timing']={'clock_hz':266000000,'clock_source':'tools/emu/ot_emu/periph.h:g_cfClockHz','sample_rate_hz':44100,'samples_per_frame':16,'frame_us':16*1000000/44100,'phases':phases,'max_control_plus_render_cycles':max(totals.values()),'max_control_plus_render_us':max(totals.values())/266,'decode_us':report['decode']['cycles']/266,'cycles_conversion':'microseconds = observed corrected-model cycles / 266'}
-        frame_budget_cycles=16*266000000/44100
+        report['timing']={'clock_hz':264000000,'clock_source':'tools/emu/ot_emu/periph.h:g_cfClockHz','sample_rate_hz':44100,'samples_per_frame':16,'frame_us':16*1000000/44100,'phases':phases,'max_control_plus_render_cycles':max(totals.values()),'max_control_plus_render_us':max(totals.values())/264,'decode_us':report['decode']['cycles']/264,'cycles_conversion':'microseconds = observed corrected-model cycles / 264'}
+        frame_budget_cycles=16*264000000/44100
         observed_stack_bytes=max([p['max_stack_bytes'] for p in phases.values()]+[report['decode']['stack_bytes'],report['shipping_pcm_readiness']['first_decode_stack_bytes'],report['shipping_pcm_readiness']['ready_call_stack_bytes']]+[c['stack_bytes'] for c in report['shipping_pcm_readiness']['rejected_cold_asset_counts']])
         if max(totals.values())>=frame_budget_cycles:raise RuntimeError('observed isolated control+render cost exhausts the 16-sample frame')
         if observed_stack_bytes>1024:raise RuntimeError('observed target stack exceeds the proposed 1024-byte reserve')

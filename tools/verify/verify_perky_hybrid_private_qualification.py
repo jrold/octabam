@@ -39,8 +39,10 @@ def units(work):
         log=out/(name+'.log');log.write_text('');execute(cmd,log)
         execute([str(out/name),*map(str,args)],log)
     cmd=p.read(observer/'OBSERVER_BUILD.json')['commands'][-2][:]
-    staged=observer/'private_stack_test.cpp';staged.write_bytes((HARNESS/'private_stack_test.cpp').read_bytes())
-    cmd[cmd.index(str(observer/'observer_test.cpp'))]=str(staged)
+    staged=out/'private_stack_test.cpp';staged.write_bytes((HARNESS/'private_stack_test.cpp').read_bytes())
+    source_slots=[i for i,arg in enumerate(cmd) if Path(arg).name=='observer_test.cpp']
+    assert len(source_slots)==1, 'observer build receipt must identify one test source'
+    cmd[source_slots[0]]=str(staged)
     cmd[cmd.index('-o')+1]=str(out/'private_stack_test')
     log=out/'private-unit.log';log.write_text('');execute(cmd,log)
     env=dict(os.environ,HYBRID_IRQ_ENTRY='0x40001000',HYBRID_IRQ_PRIVATE='0x4000100c',
@@ -157,7 +159,8 @@ def assess(work,out):
             'modeled_duration_misses':0,'deadline_us':16/44100*1e6,
             'unwaived_80_percent_ceiling_us':.8*16/44100*1e6,
             'shortfall_to_unwaived_margin_us':maximum/264-.8*16/44100*1e6,
-            'isolated_instruction_delta_cycles':4,'production_margin_waived':False},
+            'isolated_instruction_delta_cycles':4,'production_margin_waived':False,
+            'desired_80_percent_margin_met':maximum/264<=.8*16/44100*1e6},
         'receipt_hashes':{str(work/f):p.sha(work/f) for f in report_files},
         'source_hashes':{str(a.relative_to(ROOT)):p.sha(a) for a in [Path(__file__),
             ROOT/'tools/verify/perky_private_stack_bounds.py',ROOT/'tools/verify/verify_perky_hybrid_stack_structure.py',
@@ -168,7 +171,8 @@ def assess(work,out):
             'No silicon interrupt release-to-entry or worst-case instruction latency bound.',
             'Normal valid stock dispatch tables, indices, C ABI and seven-stage DMA protocol are qualification preconditions.',
             'Unchanged larger stock-task base graphs remain outside this bounded correction; their audio-related task-stack demand cannot increase.',
-            'Production 20% timing margin remains unwaived and unmet.'],
+            ('Desired 20% timing margin is met in these modeled runs; silicon timing remains unqualified.'
+             if maximum/264<=.8*16/44100*1e6 else 'Desired 20% timing margin remains unwaived and unmet.')],
         'hardware_flashed':False,'Goal_3_started':False}
     out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(report,indent=2)+'\n')
     print(report['status']);print(json.dumps(report['stack_budgets'],indent=2))

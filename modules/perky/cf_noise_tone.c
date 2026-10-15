@@ -1,5 +1,5 @@
 #include "cf_noise_tone.h"
-#include "cf_math.h"
+#include "cf_render_math.h"
 #include <limits.h>
 static uint16_t r16(const uint8_t*p){return pk_cf_ld16(p,0);}static uint32_t r32(const uint8_t*p){return pk_cf_ld32(p,0);}static void w16(uint8_t*p,uint16_t v){pk_cf_st16(p,0,v);}static void w32(uint8_t*p,uint32_t v){pk_cf_st32(p,0,v);}static int16_t s16(uint16_t u){return(int16_t)u;}static int32_t s32(uint32_t u){return(int32_t)u;}static uint32_t u32(int32_t s){return (uint32_t)s;}static int32_t asr(int32_t v,unsigned n){return v>>n;}static int32_t mullo(int32_t a,int32_t b){return s32(pk_cf_mul_lo_u32(u32(a),u32(b)));}static int16_t clamp16(int32_t v){if(v>INT16_MAX)return INT16_MAX;if(v<INT16_MIN)return INT16_MIN;return(int16_t)v;}
 typedef struct { uint8_t st; int32_t v; } nt_lin_env;
@@ -17,8 +17,24 @@ static int16_t m1sample(const uint8_t*t,uint32_t i){return s16(r16(t+(size_t)(i&
  * object on every sample; publish phase/current at the same call boundary. */
 int pk_cf_nt_m1_render(uint8_t*s,int16_t*d,uint32_t n,const uint8_t*a,uint32_t aa,const uint8_t*b,uint32_t ba){uint32_t k,phase,inc,phase_offset,current,next,reduction;uint8_t mute,velocity;nt_lin_cfg ec;nt_lin_env ee;if(!s||!d||!a||!b||s[0x75]!=0)return 0;phase=r32(s+0xd8);inc=r32(s+0xdc);phase_offset=r32(s+0xe0);current=r32(s+0xe4);next=r32(s+0xe8);reduction=r32(s+0xc8);mute=s[0xb8];velocity=s[6];nt_lin_load(&ec,&ee,s,0x74);for(k=0;k<n;k++){uint16_t e=nt_lin_step(&ec,&ee);const uint8_t*t;uint32_t lp,i,j;int32_t f,x,y,out;if(phase>reduction)phase-=reduction;phase+=inc;if(s32(phase)>0x100000){phase-=0x100000u;if(next!=current)current=next;}if(current==aa)t=a;else if(current==ba)t=b;else{w32(s+0xd8,phase);w32(s+0xe4,current);nt_lin_store(s,0x74,&ee);return 0;}lp=phase;if(phase_offset){lp+=phase_offset;if(s32(lp)>0x100000)lp-=0x100000u;}i=(lp>>9)&0x7ffu;j=(i+1u)&0x7ffu;f=(int32_t)(lp&0x1ffu);x=(int32_t)m1sample(t,i);y=(int32_t)m1sample(t,j);x=(int32_t)s16((uint16_t)(x+asr(mullo(y-x,f),9)));if(mute){d[k]=0;continue;}out=asr(mullo(x,(int32_t)e),17);out=asr(mullo(out,(int32_t)velocity),8);d[k]=clamp16(out);}w32(s+0xd8,phase);w32(s+0xe4,current);nt_lin_store(s,0x74,&ee);return 1;}
 static uint16_t tab16(const uint8_t*t,size_t i){return r16(t+i*2u);}static int16_t tabs16(const uint8_t*t,size_t i){return s16(tab16(t,i));}static const uint8_t*findwave(const pk_cf_nt_shared_tables*t,uint32_t a){unsigned i;for(i=0;i<4;i++)if(t->waves[i].table&&t->waves[i].address==a)return t->waves[i].table;return 0;}
-static uint16_t env(uint8_t*s,size_t b,const pk_cf_nt_shared_tables*t){uint8_t st=s[b];int32_t v=s32(r32(s+b+0xc));switch(st){case 0:if(s[b+7]||s[b+4])s[b]=1;break;case 1:v=s32(u32(v)+(uint32_t)r16(s+b+0x20));w32(s+b+0xc,u32(v));if(s[b+4]){if(v>0xffffe){s[b]=4;if(v>=0x100000){v=0xfffff;w32(s+b+0xc,u32(v));}}}else if(v>0xffffe){s[b]=s[b+6]?4:3;if(v>=0x100000){v=0xfffff;w32(s+b+0xc,u32(v));}}break;case 2:break;case 3:if(!s[b+7]&&(s[b+4]||!s[b+0x10]))s[b]=4;break;case 4:if(s[b+7])s[b]=1;else{v=s32(u32(v)-(uint32_t)r16(s+b+0x22));w32(s+b+0xc,u32(v));if(v<=0){v=0;w32(s+b+0xc,0);s[b]=s[b+4]?1:0;}}break;default:break;}if(s[b+1]!=1&&s[b+1]!=2)return(uint16_t)((u32(v)>>4)&0xffffu);{const uint8_t*c=s[b+1]==1?t->envelope1:t->envelope2;uint32_t raw,idx,nx;int32_t f,a,z;if(!c)return 0;raw=u32(v);idx=(raw>>10)&0x7ffu;nx=(idx+1)&0x7ffu;f=(int32_t)(raw&0x3ffu);a=(int32_t)tab16(c,idx);z=(int32_t)tab16(c,nx);return(uint16_t)(a+asr(mullo(z-a,f),10));}}
-static uint32_t rnd(pk_cf_nt_rng*r){const uint32_t a=0x5851f42d,b=0x4c957f2d;uint32_t ol=r->low,oh=r->high,acc=pk_cf_mul_lo_u32(ol,a),pl=pk_cf_mul_lo_u32(ol,b),ph=pk_cf_mul_hi_u32(ol,b),nl=pl+1u,carry=nl<pl,nh;acc+=pk_cf_mul_lo_u32(oh,b);nh=acc+ph+carry;r->low=nl;r->high=nh;return nh&0x7fffffffu;}
+static void __attribute__((noinline))
+nt_envelope_block(uint8_t*s,uint16_t*amplitude,uint32_t n,const pk_cf_nt_shared_tables*t){
+    nt_lin_cfg cfg;nt_lin_env value;uint32_t i;uint8_t curve=s[0x75];
+    nt_lin_load(&cfg,&value,s,0x74);
+    for(i=0;i<n;i++){
+        uint16_t amp=nt_lin_step(&cfg,&value);
+        if(curve==1||curve==2){
+            const uint8_t*c=curve==1?t->envelope1:t->envelope2;
+            if(!c)amp=0;
+            else{uint32_t raw=u32(value.v),ix=(raw>>10)&0x7ffu,nx=(ix+1)&0x7ffu;
+                int32_t first=tab16(c,ix),last=tab16(c,nx);
+                amp=(uint16_t)(first+asr(mullo(last-first,(int32_t)(raw&0x3ffu)),10));}
+        }
+        amplitude[i]=amp;
+    }
+    nt_lin_store(s,0x74,&value);
+}
+static uint32_t rnd(pk_cf_nt_rng*r){const uint32_t a=0x5851f42d,b=0x4c957f2d;uint32_t ol=r->low,oh=r->high,acc=pk_cf_mul_lo_u32(ol,a),pl=pk_cf_mul_lo_u32(ol,b),ph=pk_cf_render_rng_hi(ol),nl=pl+1u,carry=nl<pl,nh;acc+=pk_cf_mul_lo_u32(oh,b);nh=acc+ph+carry;r->low=nl;r->high=nh;return nh&0x7fffffffu;}
 typedef struct{uint16_t count,reload,value;} noise_fast;
 static void noise_fast_init(const uint8_t*s,size_t b,noise_fast*n){n->count=r16(s+b);n->reload=r16(s+b+2);n->value=r16(s+b+0x10);}
 static int16_t noise_fast_sample(noise_fast*n,pk_cf_nt_rng*r){if(n->count){n->count=(uint16_t)(n->count-1u);return s16(n->value);}n->count=n->reload;n->value=(uint16_t)rnd(r);return s16(n->value);}
@@ -33,4 +49,17 @@ typedef struct{uint32_t phase,inc,cur,next;const uint8_t*cur_table,*next_table;}
 static int osc_fast_init(const uint8_t*s,size_t b,const pk_cf_nt_shared_tables*t,osc_fast*o){o->phase=r32(s+b+4);o->inc=r32(s+b+8);o->cur=r32(s+b+0xc);o->next=r32(s+b+0x10);o->cur_table=findwave(t,o->cur);o->next_table=o->next==o->cur?o->cur_table:findwave(t,o->next);return o->cur_table&&o->next_table;}
 static int osc_fast_sample(osc_fast*o,int16_t*out){uint32_t ph=o->phase+o->inc,i,j;const uint8_t*tb;int32_t f,a,z;if(s32(ph)>0x100000){ph-=0x100000;if(o->next!=o->cur){o->cur=o->next;o->cur_table=o->next_table;}}o->phase=ph;tb=o->cur_table;if(!tb)return 0;i=(ph>>12)&0xffu;j=(i+1)&0xffu;f=(int32_t)(ph&0xfffu);a=(int32_t)tabs16(tb,i);z=(int32_t)tabs16(tb,j);*out=s16((uint16_t)(a+asr(mullo(z-a,f),12)));return 1;}
 static void osc_fast_store(uint8_t*s,size_t b,const osc_fast*o){w32(s+b+4,o->phase);w32(s+b+0xc,o->cur);}
-int pk_cf_nt_shared_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_nt_shared_tables*t,pk_cf_nt_rng*r){uint32_t i,mixu;int32_t mix,tonal_mix;uint8_t velocity;osc_fast o1,o2;noise_fast nzs;filt_fast flt;if(!s||!d||!t||!r)return 0;if(!osc_fast_init(s,0x2c,t,&o1)||!osc_fast_init(s,0xc4,t,&o2))return 0;noise_fast_init(s,0x60,&nzs);filt_fast_init(s,0x9c,&flt);mixu=r32(s+0xf8);mix=s32(mixu);tonal_mix=s32(0x00000fffu-mixu);velocity=s[6];for(i=0;i<n;i++){uint16_t amp=env(s,0x74,t);int32_t nz=(int32_t)noise_fast_sample(&nzs,r),acc,sum,tonal,out;int16_t a=0,b=0;filt_fast_sample(&flt,nz);filt_fast_sample(&flt,nz);acc=asr(mullo(mix,nz),13);if(!osc_fast_sample(&o1,&a)||!osc_fast_sample(&o2,&b))return 0;sum=asr(s32((uint32_t)((int32_t)a+(int32_t)b)),4);tonal=mullo(tonal_mix,sum);acc=s32(u32(acc)+u32(asr(tonal,9)));out=asr(mullo(acc,(int32_t)amp),16);out=asr(mullo(out,(int32_t)velocity),8);d[i]=clamp16(out);}noise_fast_store(s,0x60,&nzs);filt_fast_store(s,0x9c,&flt);osc_fast_store(s,0x2c,&o1);osc_fast_store(s,0xc4,&o2);return 1;}
+static int nt_shared_chunk(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_nt_shared_tables*t,pk_cf_nt_rng*r){uint16_t amplitudes[16];uint32_t i,mixu;int32_t mix,tonal_mix;uint8_t velocity;osc_fast o1,o2;noise_fast nzs;filt_fast flt;if(!s||!d||!t||!r)return 0;if(!osc_fast_init(s,0x2c,t,&o1)||!osc_fast_init(s,0xc4,t,&o2))return 0;if(!n)return 1;nt_envelope_block(s,amplitudes,n,t);noise_fast_init(s,0x60,&nzs);filt_fast_init(s,0x9c,&flt);mixu=r32(s+0xf8);mix=s32(mixu);tonal_mix=s32(0x00000fffu-mixu);velocity=s[6];for(i=0;i<n;i++){uint16_t amp=amplitudes[i];int32_t nz=(int32_t)noise_fast_sample(&nzs,r),acc,sum,tonal,out;int16_t a=0,b=0;filt_fast_sample(&flt,nz);filt_fast_sample(&flt,nz);acc=asr(mullo(mix,nz),13);if(!osc_fast_sample(&o1,&a)||!osc_fast_sample(&o2,&b))return 0;sum=asr(s32((uint32_t)((int32_t)a+(int32_t)b)),4);tonal=mullo(tonal_mix,sum);acc=s32(u32(acc)+u32(asr(tonal,9)));out=asr(mullo(acc,(int32_t)amp),16);out=asr(mullo(out,(int32_t)velocity),8);d[i]=clamp16(out);}noise_fast_store(s,0x60,&nzs);filt_fast_store(s,0x9c,&flt);osc_fast_store(s,0x2c,&o1);osc_fast_store(s,0xc4,&o2);return 1;}
+
+int pk_cf_nt_shared_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_nt_shared_tables*t,pk_cf_nt_rng*r){
+    if(!s||!d||!t||!r)return 0;
+    if(!n)return nt_shared_chunk(s,d,0,t,r);
+    int ok=1;volatile pk_cf_render_math_context context=pk_cf_render_math_begin();
+    do{
+        uint32_t count=n>16u?16u:n;
+        if(!nt_shared_chunk(s,d,count,t,r)){ok=0;break;}
+        d+=count;n-=count;
+    }while(n);
+    pk_cf_render_math_end(context);
+    return ok;
+}

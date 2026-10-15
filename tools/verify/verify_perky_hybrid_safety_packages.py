@@ -20,14 +20,14 @@ import verify_perky_final_wrappers as wrappers
 def run(probe, output):
     output.mkdir(parents=True, exist_ok=True)
     b = g.builder
-    files = {
-        'mainos': probe/'mainos_PKHYB2P.bin', 'elek': probe/'elek_PKHYB2P.bin',
-        'card': probe/'OCTATRACK_PKHYB2P.bin',
-        'midi': probe/'OCTATRACK_OS1.40C_PKHYB2P.syx',
-    }
+    build = json.loads((probe/'BUILD.json').read_text())
+    files = {name: Path(build['artifacts'][name]['path'])
+             for name in ('mainos', 'elek', 'card', 'midi')}
+    for name, path in files.items():
+        assert b.item_meta(path) == build['artifacts'][name], ('build artifact drift', name)
     hashes = {k: b.item_meta(p) for k, p in files.items()}
     base = [sys.executable, str(Path(wrappers.__file__)),
-            '--eft', str(b.base.EFT), '--version', b.PROBE_VERSION,
+            '--eft', str(b.base.EFT), '--version', build['version'],
             '--work', str(output/'roundtrip')]
     for flag, path in files.items():
         base += ['--'+flag, str(path)]

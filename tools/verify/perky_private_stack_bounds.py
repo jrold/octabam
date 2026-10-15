@@ -21,10 +21,12 @@ def reg(s):return 'a6' if s=='%fp' else (s[1:] if REG.fullmatch(s) else None)
 
 
 class ImageAudit(base.Audit):
-    def __init__(self, probe):
+    def __init__(self, probe, contracts=None):
         self.probe=probe
-        assert base.sha(probe/'mainos_PKHYB2P.bin')=='d254bc2f72a1c78d75f1652f89311d0b841246ad228fc6dc3324fd6717c00f48', 're-audit contracts for changed MAIN'
-        assert base.sha(probe/'platform/runtime.elf')=='3ec97322ae4ff9fbe53c6d58e051a7174bac324abe594e90db20ca0d702d9bcf', 're-audit contracts for changed ELF'
+        expected=contracts or {'image_sha256':'d254bc2f72a1c78d75f1652f89311d0b841246ad228fc6dc3324fd6717c00f48',
+            'elf_sha256':'3ec97322ae4ff9fbe53c6d58e051a7174bac324abe594e90db20ca0d702d9bcf'}
+        assert base.sha(probe/'mainos_PKHYB2P.bin')==expected['image_sha256'], 're-audit contracts for changed MAIN'
+        assert base.sha(probe/'platform/runtime.elf')==expected['elf_sha256'], 're-audit contracts for changed ELF'
         image=probe/'mainos_PKHYB2P.bin'
         self.data=image.read_bytes()
         self.layout=json.loads((probe/'platform/layout.json').read_text())
@@ -111,17 +113,25 @@ class ImageAudit(base.Audit):
         # GNU spills the sole helper pointer to fp-244 across the two
         # commit paths. All call loads of that slot in pk_render correspond
         # to pk_hybrid_commit_longs in control_cf_dsp_hybrid.c.
-        commit=self.symbols['pk_hybrid_commit_longs']
-        end=self.symbols['pk_render']+0x9762
-        for pc,(n,op,args) in self.code.items():
-            if self.symbols['pk_render']<=pc<end and op=='moveal' and args.startswith('%fp@(-244),'):
-                following=self.code.get(pc+n)
-                if following and following[1]=='jsr' and following[2]==args.split(',')[1]+'@':
-                    base.FIXED_CALLS[pc+n]=(commit,)
-        for site in (0x40c53bde,0x40c53cde,0x40c54e1c,0x40c55cd4):
-            base.FIXED_CALLS[site]=tuple(self.symbols[n] for n in ('res_update_bass_impl.constprop.0','res_update_snare_impl.constprop.0'))
-        base.FIXED_CALLS[0x40c4ec1e]=(commit,)
-        base.FIXED_CALLS[0x40c533a6]=(commit,)
+        if contracts is None:
+            commit=self.symbols['pk_hybrid_commit_longs']
+            end=self.symbols['pk_render']+0x9762
+            for pc,(n,op,args) in self.code.items():
+                if self.symbols['pk_render']<=pc<end and op=='moveal' and args.startswith('%fp@(-244),'):
+                    following=self.code.get(pc+n)
+                    if following and following[1]=='jsr' and following[2]==args.split(',')[1]+'@':
+                        base.FIXED_CALLS[pc+n]=(commit,)
+            for site in (0x40c53bde,0x40c53cde,0x40c54e1c,0x40c55cd4):
+                base.FIXED_CALLS[site]=tuple(self.symbols[n] for n in ('res_update_bass_impl.constprop.0','res_update_snare_impl.constprop.0'))
+            base.FIXED_CALLS[0x40c4ec1e]=(commit,)
+            base.FIXED_CALLS[0x40c533a6]=(commit,)
+        else:
+            # New compiler spills require an explicitly reviewed, image-pinned
+            # contract. Never reuse old runtime call-site addresses after edits.
+            for site,names in contracts['runtime_calls'].items():
+                pc=int(site,0)
+                assert self.code[pc][1].startswith(('jsr','bsr','jmp'))
+                base.FIXED_CALLS[pc]=tuple(self.symbols[n] for n in names)
         self.explicit_calls=set(base.FIXED_CALLS)
         self.resolutions={}
         self.flow_cache={}
@@ -297,9 +307,10 @@ def main():
     ap.add_argument('--probe',type=Path,default=ROOT/'out/perky/hybrid/private-stack/probe')
     ap.add_argument('--out',type=Path,default=ROOT/'out/perky/hybrid/private-stack/static/BOUNDS.json')
     ap.add_argument('--selftest',action='store_true')
+    ap.add_argument('--contracts',type=Path,help='Reviewed MAIN/ELF hash pins and runtime spill callees for a changed image')
     a=ap.parse_args()
     if a.selftest:unittest.main(argv=[sys.argv[0]])
-    audit=ImageAudit(a.probe)
+    audit=ImageAudit(a.probe,json.loads(a.contracts.read_text()) if a.contracts else None)
     restore=audit.symbols['pk_hybrid_irq_restore']
     assert audit.code[restore][1]=='moveal'
     audit.code[restore]=(6,'rte','') # analysis ends BEFORE A7 returns to the task

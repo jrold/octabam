@@ -1,3 +1,6 @@
+#if defined(__mcoldfire__)
+#pragma GCC optimize ("no-unroll-loops")
+#endif
 /* ColdFire renderer for the PĒRKONS v1.2.1 Wavetable Drum family (V1/V2 a2).
  *
  * Operates directly on the original 0x150-byte ARM object at the offsets the
@@ -11,7 +14,7 @@
  * 0x96, the raw pitch at 0xBA and the pitch-envelope amount at 0xEC.
  */
 #include "cf_wavetable.h"
-#include "cf_math.h"
+#include "cf_render_math.h"
 #include <limits.h>
 
 static uint16_t r16(const uint8_t*s,size_t o){return pk_cf_ld16(s,o);}
@@ -92,20 +95,16 @@ static int32_t pitch(uint16_t raw,const uint8_t*t){
  * increment so a render block can keep phase/increment in registers. */
 static uint32_t wt_frequency_step(uint32_t f){
     int32_t shifted=s32(f<<20);
-    int32_t hi=pk_cf_mul_hi_s32(shifted,s32(0x057619f1u));
+    int32_t hi=pk_cf_render_frequency_hi(shifted);
     int32_t result=asr(hi,10)-asr(shifted,31);
     return u32(result);
 }
 
-int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
+static int wt_render_chunk(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
     uint32_t i;
     uint32_t base;
-    /* Resolved wave views, kept across samples: the primary and secondary
-     * addresses only move at the object's own wave/phase transitions, so
-     * resolving all four every sample was four constant-folded address
-     * comparisons and a bank index for nothing. */
-    uint32_t a_cur=0xffffffffu,a_nc=0xffffffffu,a_sec=0xffffffffu,a_ns=0xffffffffu;
-    const uint8_t*wc=0,*wn=0,*sc=0,*sn=0;
+    /* Current wave views change only at the object's phase transition. */
+    const uint8_t *wc,*sc;
     /* Block invariants and block-local state.  The firmware-visible object is
      * observed at render-call boundaries, so avoid endian load/store traffic
      * for fields that are only consumed by this loop and commit them once. */
@@ -113,7 +112,8 @@ int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
     uint16_t mix,target_mix;
     uint8_t velocity,mute;
     wt_env_cfg ea_cfg,ep_cfg;
-    wt_env ea,ep;
+    wt_env ea,ep,initial_ea,initial_ep;
+    uint16_t amplitudes[16],pitch_envelopes[16];
     if(!s||!d||!t||!t->pitch||!t->base_wave||!t->bank)return 0;
     pe_amount=r16(s,0xec);half_rate=(s[0x128]==1u)?1u:0u;
     phase=r32(s,0xf4);step=r32(s,0xf8);
@@ -124,29 +124,40 @@ int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
     wt_env_load(&ea_cfg,&ea,s,0x74,t);
     wt_env_load(&ep_cfg,&ep,s,0xc4,t);
     base=(uint32_t)mullo(pitch(r16(s,0xba),t->pitch),0xbb80u)>>20;
+    initial_ea=ea;initial_ep=ep;
+    for(i=0;i<n;i++)amplitudes[i]=wt_env_step(&ea_cfg,&ea);
+    for(i=0;i<n;i++)pitch_envelopes[i]=wt_env_step(&ep_cfg,&ep);
+    wc=pk_cf_wt_wave(t,cur);sc=pk_cf_wt_wave(t,sec);
     for(i=0;i<n;i++){
-        const uint16_t amp=wt_env_step(&ea_cfg,&ea);
-        const uint16_t pe=wt_env_step(&ep_cfg,&ep);
+        const uint8_t *wn,*sn;
+        const uint16_t amp=amplitudes[i];
+        const uint16_t pe=pitch_envelopes[i];
         const uint32_t lo=(uint32_t)pe&0x1fffu,sh=13u-(uint32_t)(pe>>13);
         const int32_t factor=(int32_t)(((lo+0x2000u)>>sh)-1u);
         uint32_t frequency=base+((pe_amount*(uint32_t)factor)>>9);
-        uint32_t index,following,fraction,nc,ns;
+        uint32_t index,following,fraction;
         if(half_rate)frequency>>=1;
         step=wt_frequency_step(frequency);
         phase+=step;
         if(s32(phase)>0x100000){
             phase-=0x100000u;
             mix=target_mix;
-            if(cur!=target_cur){cur=target_cur;sec=target_sec;}
+            if(cur!=target_cur){cur=target_cur;sec=target_sec;
+                wc=pk_cf_wt_wave(t,cur);sc=pk_cf_wt_wave(t,sec);}
+
         }
         index=(phase>>9)&0x7ffu;following=(index+1)&0x7ffu;fraction=phase&0x1ffu;
-        nc=cur;ns=sec;
-        if(index>following&&target_cur!=cur){nc=target_cur;ns=target_sec;}
-        if(cur!=a_cur){wc=pk_cf_wt_wave(t,cur);a_cur=cur;}
-        if(nc!=a_nc){wn=pk_cf_wt_wave(t,nc);a_nc=nc;}
-        if(sec!=a_sec){sc=pk_cf_wt_wave(t,sec);a_sec=sec;}
-        if(ns!=a_ns){sn=pk_cf_wt_wave(t,ns);a_ns=ns;}
+        wn=wc;sn=sc;
+        if(index>following&&target_cur!=cur){
+            wn=pk_cf_wt_wave(t,target_cur);sn=pk_cf_wt_wave(t,target_sec);
+        }
         if(!wc||!wn||!sc||!sn){
+            /* Preserve the original partial-state commit on malformed wave
+             * addresses: only envelopes through the failed sample survive. */
+            uint32_t j;ea=initial_ea;ep=initial_ep;
+            for(j=0;j<=i;j++){
+                (void)wt_env_step(&ea_cfg,&ea);(void)wt_env_step(&ep_cfg,&ep);
+            }
             w32(s,0xf4,phase);w32(s,0xf8,step);
             w32(s,0x100,cur);w32(s,0x108,sec);w16(s,0x112,mix);
             wt_env_store(s,0x74,&ea);wt_env_store(s,0xc4,&ep);
@@ -176,4 +187,19 @@ int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
     w32(s,0x100,cur);w32(s,0x108,sec);w16(s,0x112,mix);
     wt_env_store(s,0x74,&ea);wt_env_store(s,0xc4,&ep);
     return 1;
+}
+/* Short independent envelope passes reduce register pressure in the oscillator
+ * loop. All samples are still generated in this call, without added latency.
+ * Chunks preserve the public renderer's arbitrary block-length contract. */
+int pk_cf_wt_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
+    if(!s||!d||!t||!t->pitch||!t->base_wave||!t->bank)return 0;
+    if(!n)return 1;
+    int ok=1;pk_cf_render_math_context context=pk_cf_render_math_begin();
+    do{
+        uint32_t count=n>16u?16u:n;
+        if(!wt_render_chunk(s,d,count,t)){ok=0;break;}
+        d+=count;n-=count;
+    }while(n);
+    pk_cf_render_math_end(context);
+    return ok;
 }

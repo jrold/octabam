@@ -37,8 +37,20 @@ has not been separately tested on an Octatrack or approved for pushing.
 The approved private audio-interrupt stack has a scoped local diagnostic
 qualification, with derived private and three-small-task stack budgets and exact
 new card/MIDI hashes: [private-stack qualification](hybrid/PRIVATE_STACK_QUALIFICATION.md).
-It awaits user review before any MKII test. The production 20% timing margin
-remains unwaived and unmet; PERKY4S remains the hardware-tested release.
+The user subsequently tested PKHYB2P on an MKII: T1/T2/T5 playback worked,
+while adding T6 caused UI sluggishness. Eight cumulative PRFs confirm the
+increased processing load; the latest interval averages 317.35 µs per ISR.
+The user reports mostly RES Snare on T2 and RES Bass on T6, including p-locks.
+See the [decoded hardware evidence](hybrid/CF_OPTIMIZATION_HARDWARE.json).
+
+The ongoing [ColdFire optimization campaign](hybrid/CF_OPTIMIZATION.json)
+preserves PKH3O1 as an intermediate build and uses bit-exact local benchmarks.
+Short checkpoints have reached 288.37 µs dense and 286.59 µs Snare/Bass worst
+ISR time, with zero modeled misses in 4,096 frames each. The original
+private-stack candidate missed the desired 20% timing margin; these short
+optimized checkpoints meet it, while final sustained qualification remains
+pending. No optimized candidate is hardware-qualified. PERKY4S remains the
+hardware-tested release.
 
 ### Current DSP memory limit
 
