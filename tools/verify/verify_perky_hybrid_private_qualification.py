@@ -101,7 +101,7 @@ def assess(work,out):
     assert observer['binary_sha256']==p.sha(work/'observer/ot_emu_safety')
     for file,digest in observer['extension_sources'].items():assert p.sha(file)==digest,file
     runs={};peak=0;maximum=0
-    for name in ('mixed','dense','external','lifecycle-final','saved-final-save','saved-final-reload'):
+    for name in ('mixed','dense','external','lifecycle-final','saved-final-save','saved-final-reload','snare-bass','scene-panel'):
         private=p.read(work/(name+'-private.json'))
         stack_path=work/('lifecycle-final/stack.json' if name=='lifecycle-final' else name+'-stack.json')
         stack=p.read(stack_path)
@@ -114,7 +114,7 @@ def assess(work,out):
         for t in stack['stacks']:
             key={'storage':'storage','keyrepeat':'keyrepeat','ui':'UI'}.get(t['task'])
             if key:assert t['observed_bytes']<=bounds['budgets']['residual_task_including_exit_and_all_IRQ_bytes'][key]
-        if name in ('mixed','dense','external'):
+        if name in ('mixed','dense','external','snare-bass'):
             receipt=p.read(work/(name+'-RUN.json'))
             assert receipt['process_exit']==0
             for file,digest in {**receipt['inputs'],**receipt['outputs']}.items():assert p.sha(file)==digest,file
@@ -139,10 +139,14 @@ def assess(work,out):
     assert saved_report['status']=='PASS_SCOPED_SAVE_RELOAD' and saved_report['input_hashes_unchanged']
     for file,digest in saved_report['inputs'].items():assert p.sha(file)==digest,file
     assert len(p.read(work/'lifecycle-final/SNAPSHOTS.json'))==14
+    scenes=p.read(work/'SCENE_PANEL.json')
+    assert scenes['status']=='PASS_ACTUAL_SCENE_FADER_DELIVERY' and len(scenes['events'])==9
+    assert scenes['inputs'][str(image)]==p.sha(image)
+    assert scenes['inputs'][str(elf)]==p.sha(elf)
     report_files=['probe/BUILD.json','probe/MEMORY.json','probe/DSP_IDENTITY.json','probe/PROBE_GATES.json',
         'static/BOUNDS.json','observer/OBSERVER_BUILD.json','unit/ALL_UNITS.json','COLD.json','BLOCK_IDENTITY.json','EMAC_IRQ.json',
         'resume-fixes/RUNTIME.json','package-check/PACKAGES.json','lifecycle-final/SNAPSHOTS.json',
-        'saved-project-final/SAVED_PROJECT.json']
+        'saved-project-final/SAVED_PROJECT.json','SCENE_PANEL.json']
     for file in ('COLD.json','resume-fixes/RUNTIME.json'):
         r=p.read(work/file);assert r['status']=='PASS' and r['image_sha256']==p.sha(image)
     assert p.read(work/'probe/PROBE_GATES.json')['status']=='PASS'
@@ -169,6 +173,7 @@ def assess(work,out):
             ROOT/'tools/verify/verify_perky_hybrid_private_stack.py',ROOT/'tools/verify/verify_perky_hybrid_safety.py',
             ROOT/'tools/verify/verify_perky_hybrid_guard_lifecycle.py',ROOT/'tools/verify/verify_perky_hybrid_saved_project.py',
             ROOT/'tools/verify/verify_perky_hybrid_block_identity.py',ROOT/'tools/verify/verify_perky_hybrid_emac_irq.py',
+            ROOT/'tools/verify/verify_perky_hybrid_scene_panel.py',
             *[a for a in HARNESS.glob('*') if a.suffix in ('.cpp','.h','.s')]]},
         'physical_risks':['No silicon cache/SDRAM/FlexBus arbitration or coherence measurement.',
             'The zero-pre-roll raw DSP capture has six initial pipeline-record differences; all cold source/control and every primed post-PLAY record are exact. Hardware startup audio remains unqualified.',

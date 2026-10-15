@@ -2340,7 +2340,7 @@
     "callback_source_RAM_state_RNG_cases": 1496
   },
   "remaining_work": [
-    "Commit selected source; uniquely named no-wrap reproducible MAIN; full actual-image qualification,15x60s+10min worst sustainedmatrix; final card/MIDI wrapping only after gates; hardware A/B remains pending."
+    "Complete remaining full-duration15-row matrix and1,653,750-frame stress; wrap immutableMAIN once; package rejection tests, finalqualification and reports."
   ],
   "hardware_qualified": false,
   "native_selected": {
@@ -2412,5 +2412,37 @@
       3500
     ],
     "receipt": "out/perky/hybrid/optimization/part-poke-corrected/ROW.json"
-  }
+  },
+  "scene_panel_checkpoint": {
+    "status": "PASS_IDENTICAL_POST_EVENT_SCENE_CONTROLS",
+    "original_cycles": 88195,
+    "optimized_cycles": 76525,
+    "original_us": 334.0719696969697,
+    "optimized_us": 289.86742424242425,
+    "CPU_hz": 264000000,
+    "improvement_percent": 13.23204263280231,
+    "events": 9,
+    "event_snapshot_frame_differences": [
+      {
+        "position": 0,
+        "original": 3505,
+        "optimized": 3506
+      },
+      {
+        "position": 32,
+        "original": 4664,
+        "optimized": 4665
+      }
+    ],
+    "limits": [
+      "Actual control delivery is identical at all nine post-event observations. Two observation frame counters differ by one after equal emulated-ms run requests; no claim of identical RTOS poll phase or whole interactive PCM stream.",
+      "Exact complete PCM/state/RNG trajectory comparison is supplied by the separate compiled-code differential gates."
+    ],
+    "inputs": {
+      "out/perky/hybrid/optimization/scene-original-reference/SCENE_PANEL.json": "c184ec889acf5fdc725b1ee790eab742dd5040e40fcdff37e06ecdf489395e80",
+      "out/perky/hybrid/optimization/final-PKH3O3/SCENE_PANEL.json": "9ab6d5e7d30319406be29912c344b6a7768f3dc09323a544e6418782d01a2242"
+    }
+  },
+  "selected_firmware_source_commit": "f87df2dec6aad2e55f09cd2198d66f188f44bf92",
+  "selected_MAIN_sha256": "4d28167445f30fd3b795e4d91567c4871e3655da072511d93b117f6cd350ed3f"
 }
