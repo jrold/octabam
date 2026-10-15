@@ -2302,6 +2302,13 @@
           "control_math_checks": 438516
         }
       }
+    },
+    {
+      "trial": "restrict-pointer-codegen",
+      "decision": "rejected",
+      "reason": "WT, Snare and Bass worst rendering costs regress; exact canonical and22270edgecallsPASS. No shipping source or firmware build changed.",
+      "receipt": "out/perky/hybrid/optimization/restrict-codegen/CODEGEN.json",
+      "receipt_sha256": "a1c3ccb0ea9cfdfd697b85f093a52f4036eb03ee52d65ac1eccc75a2db86eb14"
     }
   ],
   "native_producer_codegen_trial": {
@@ -2414,7 +2421,7 @@
     "receipt": "out/perky/hybrid/optimization/part-poke-corrected/ROW.json"
   },
   "scene_panel_checkpoint": {
-    "status": "PASS_IDENTICAL_POST_EVENT_SCENE_CONTROLS",
+    "status": "PASS_IDENTICAL_POST_EVENT_SCENE_CONTROLS_COMPLETE_IRQ_CAPTURES",
     "original_cycles": 88195,
     "optimized_cycles": 76525,
     "original_us": 334.0719696969697,
@@ -2435,14 +2442,17 @@
       }
     ],
     "limits": [
-      "Actual control delivery is identical at all nine post-event observations. Two observation frame counters differ by one after equal emulated-ms run requests; no claim of identical RTOS poll phase or whole interactive PCM stream.",
-      "Exact complete PCM/state/RNG trajectory comparison is supplied by the separate compiled-code differential gates."
+      "Every post-event raw control matches; timing can shift the observed frame boundary by one after equal emulated-ms requests. Exact PCM/state/RNG is verified separately."
     ],
     "inputs": {
-      "out/perky/hybrid/optimization/scene-original-reference/SCENE_PANEL.json": "c184ec889acf5fdc725b1ee790eab742dd5040e40fcdff37e06ecdf489395e80",
-      "out/perky/hybrid/optimization/final-PKH3O3/SCENE_PANEL.json": "9ab6d5e7d30319406be29912c344b6a7768f3dc09323a544e6418782d01a2242"
+      "out/perky/hybrid/optimization/scene-original-reference/SCENE_PANEL.json": "17c965e71b7bbe3d313c40f702c3f6b1b84a605e08d9bf085284d7b6315c1311",
+      "out/perky/hybrid/optimization/final-PKH3O3/SCENE_PANEL.json": "00a0db8df1306712e95472f41566665709f3a44f3710aceea8303b93317e45d1"
     }
   },
   "selected_firmware_source_commit": "f87df2dec6aad2e55f09cd2198d66f188f44bf92",
-  "selected_MAIN_sha256": "4d28167445f30fd3b795e4d91567c4871e3655da072511d93b117f6cd350ed3f"
+  "selected_MAIN_sha256": "4d28167445f30fd3b795e4d91567c4871e3655da072511d93b117f6cd350ed3f",
+  "qualification_binding_repairs": [
+    "Final scene test stops new test-frame release after STOP and drains the current exception, then requires balanced entries/returns and no in-flight scene capture. Existing bounded-frame gates retain their calibrated executed-RTE counters.",
+    "External fixture4096frames/4056MIDI clocks. Original1024-frame ticks987literal invalid. Rtos::ticks() is a100kIRQ-capped prefix; require positive prefix, uncapped observer total and all MIDI bytes consumed. Shipping sources unchanged."
+  ]
 }
