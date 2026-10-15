@@ -1,7 +1,7 @@
 {
   "schema": "octabam.perky.hybrid.post-closeout-safety.v1",
-  "status": "STOP_STRUCTURAL_SAFETY_CHANGE_APPROVAL_REQUIRED",
-  "recommendation": "B. STRUCTURAL SAFETY CHANGE REQUIRED",
+  "status": "BLOCKED_COMBINED_STACK_BOUND_UNVERIFIED_IPL3_SCOPED_CHECKS_PASS",
+  "recommendation": "BLOCKED \u2014 COMBINED STACK BOUND NOT ESTABLISHED",
   "branch": "perky-cf-dsp-hybrid",
   "goal2_closed_commit": "bee3830134b2061151a3628f6622347de2916f38",
   "verified_code_commit": "854f2aacad0f73e6654b27ed92a8be6d10666817",
@@ -23,7 +23,14 @@
       "git_commit": "bee3830134b2061151a3628f6622347de2916f38",
       "source_tree_clean": false
     },
-    "clean_commit_rebuild": "NOT_RUN; build-time source hashes instead verified exactly against committed blobs; not mislabelled a clean build"
+    "clean_commit_rebuild": "NOT_RUN; build-time source hashes instead verified exactly against committed blobs; not mislabelled a clean build",
+    "original_fields_scope": "Historical original build; the current derivative is separately bound by IPL3_guard_qualification. No fresh clean-commit rebuild or guarded wrappers were qualified.",
+    "post_link_guard_binding": {
+      "original": "a2d6915bc71a97d63f44e223e558cc4941d52113708f7ba92a57bdd669339b40",
+      "guarded": "055cced1bb5319c35ee7d4708359a60a3e207a69d73711d2d536beadca060fbe",
+      "all_other_MAIN_bytes_identical": true,
+      "fresh_rebuild": false
+    }
   },
   "artifacts": {
     "mainos": {
@@ -113,18 +120,29 @@
     },
     "deadline_us": 362.81179138321994,
     "unwaived_80pct_ceiling_us": 290.24943310657596,
-    "current_headroom_us": 39.04663986806844,
-    "current_margin_shortfall_us": 33.51571840857554,
-    "current_frame_fraction_used": 0.8923776988636364,
+    "current_headroom_us": 38.808003504432065,
+    "current_margin_shortfall_us": 33.75435477221191,
+    "current_frame_fraction_used": 0.8930354403409091,
     "mean_conditional_profiler_delta_us": 2.520488636363666,
     "mean_armed_delta_us": 55.21555018939395,
-    "scope": "ISR service code matched at every entry+4/RTE plus model LEA=1,RTE=10; excludes interrupt pending/vector-entry latency and release-to-completion bound. Differences of maxima are not overhead bounds. No concurrent DSP time added.",
+    "scope": "Earlier rows retained; latest current maximum comes from the new paired dense workload, equal in both images. No silicon WCET or margin waiver.",
     "historical_comparison": {
       "retained_old_image_CPU266_peak_us": 319.8609022556391,
       "same_old_image_rerun_CPU264_legacy_PIT264_peak_us": 322.28409090909093,
       "new_image_CPU264_legacy_PIT264_peak_us": 323.84090909090907
     },
-    "physical_WCET": "UNVERIFIED: cache-hit/zero-wait timing table, SDRAM/DMA/pipeline and nested-interrupt costs not bounded"
+    "physical_WCET": "UNVERIFIED: cache-hit/zero-wait timing table, SDRAM/DMA/pipeline and nested-interrupt costs not bounded",
+    "latest_IPL3_workload": {
+      "CPU_Hz": 264000000,
+      "PIT_Hz": 132000000,
+      "max_modeled_full_ISR_cycles": 85537,
+      "max_modeled_full_ISR_us": 324.0037878787879,
+      "deadline_us": 362.81179138321994,
+      "headroom_us": 38.808003504432065,
+      "engineering_margin_waived": false,
+      "engineering_margin_passed": false,
+      "physical_WCET_established": false
+    }
   },
   "timer": {
     "source": "DTIM3 DTCN3 0xfc07c00c; stock init 0x400209c0 writes DTMR3=0x000b; DTRR reset 0xffffffff",
@@ -568,7 +586,7 @@
     "modules/perky/cf_noise_tone.h": "9cbf001ccbdedb4ee25cd6ec88d8d804ac442a070b1f3ac4c26470c113417d45",
     "modules/perky/cf_math.h": "d621ce5f2738917e076cc74f8d3b6080b4d237e615e8f6f4fc42bc5dbdc83262",
     "modules/perky/cf_pcm_rice.h": "f321a94dc2629f64ece88b936a6656facf329b6df3b7f5b884bf0b230c7d563f",
-    "tools/perky/build_cf_dsp_hybrid.py": "71dc306ad33f043517297663204641be78d569d5749a729026175cf818f24a6f",
+    "tools/perky/build_cf_dsp_hybrid.py": "767b0d8a2214d2dc6de85ddca053b3e755dabd4b3c5204f1a3019d61c8afa611",
     "tools/perky/build_four_payload.py": "d46cc6e525c7bcd14234f4ec230e64cd66637f0da8d736b7a7f360eeab528920",
     "tools/perky/perky_fragmented_image.py": "86d6f9dff39006b131bb19144123361bd6663ca18579e3792efc98a14d94c97a",
     "tools/perky/repack_machine_loader.py": "423d60d328ff4d115f8339d33f259e060c183aea651c7a04d34eaec89d3bcdb3",
@@ -617,7 +635,7 @@
     "bytes": 15100,
     "sha256": "285b0b0dbf5cf90bb65da481e97cf740858148c9c4e0377d4ebbe8320263766a"
   },
-  "next_action": "STOP for user approval of the proposed sequencer IPL2-to-3 guard. Firmware remains unchanged. Lifecycle and dense-accounting completion UNVERIFIED under the structural-stop instruction. No probe recommendation, flash, push, optimization or Goal3.",
+  "next_action": "STOP this bounded task. Guard scoped checks and lifecycle/dense accounting pass; combined stock-task/ISR bound remains UNVERIFIED. No demonstrated firmware defect is invented, no guarded installable set is qualified, and no flash/push/Goal3/optimization is authorized.",
   "commands": [
     {
       "command": "cmake --build out/emu -j 4",
@@ -1420,5 +1438,1807 @@
       "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-final/final-observer/OBSERVER_BUILD.json": "62ea39812e1ada4d7217c44845dea5078266fa1feb26a8bcee6616c2e3396048",
       "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-final/final-observer-build.log": "102051488fb49e1271ba6059c9d2423d9c796edd783f2650fd79420a4606a4c6"
     }
-  }
+  },
+  "pre_IPL3_current_source_hashes": {
+    "modules/perky/control_cf_dsp_hybrid.c": "d371d609927a01141f8592e5f55f6ccdac2d236ccbf0f1c195ba43262326b1a1",
+    "modules/perky/hybrid_hooks.s": "be3aa61c638b8deb6ebeaf1ef8d6c7043a4d6c2cce888f727ed05ada3da2a1a4",
+    "modules/perky/control_four_candidate.c": "f7027ed31101edbd96e8a9bbea4a3a636c03395ab8fcb9e67a46390acc47bcf2",
+    "modules/perky/control_three_candidate.c": "37047a761e4b59ef0829e93c636d06ea81953d6cdcc5c311678ba9d00e419529",
+    "modules/perky/control.c": "362d2d2969cb3c79a01d6d32c2f865ba58c9f191c8600bbcbea35e98c6ec35d2",
+    "modules/perky/machine.s": "d6eb00d67d155eff14a5b38676c3fb701b2d3f52fc3937050bdeaca6158e3c23",
+    "modules/perky/machine_four_ui.s": "693e3aa08ce4af1deead4f942cb68b2e202475d35c74c0250496e0c810106ef6",
+    "modules/perky/cf_assets.s": "3d3d2fbf2421450e27712106c5c52dd554ab3d34df04099243b8dfef14654ca8",
+    "modules/perky/cf_perky4.c": "cae95c3c6e96c5126fab5013550d369ea1a9207d4c18f91bdfd4e0263ae77ed2",
+    "modules/perky/cf_perky4.h": "d16b0d7c24fc759e5690694143c0af61b015e59bbf29957632231ecdc49b97d8",
+    "modules/perky/cf_wavetable.c": "e203b681ff8c6268ee32337bd8e71fb05c580ecbef0828f1fe218cc28e357ad0",
+    "modules/perky/cf_wavetable.h": "71845d1551c844e270a71456ba4f779aa4f698df9e9eb403b08105ddc1bcbffe",
+    "modules/perky/cf_resonant.c": "c20a79df42872ab07d8bd6365a2a7dde8d948e59fe67767eaf95c67e2e7d7ca1",
+    "modules/perky/cf_resonant.h": "a11636313ff7e8c2e9bf9d6ad6f40439056a46adbabc103ae843e7f69465834f",
+    "modules/perky/cf_noise_tone.c": "08cbf517d53365740b5e89399233b5d4229e496bc822efe2f8aeb7af13b6eea6",
+    "modules/perky/cf_noise_tone.h": "9cbf001ccbdedb4ee25cd6ec88d8d804ac442a070b1f3ac4c26470c113417d45",
+    "modules/perky/cf_math.h": "d621ce5f2738917e076cc74f8d3b6080b4d237e615e8f6f4fc42bc5dbdc83262",
+    "modules/perky/cf_pcm_rice.h": "f321a94dc2629f64ece88b936a6656facf329b6df3b7f5b884bf0b230c7d563f",
+    "tools/perky/build_cf_dsp_hybrid.py": "71dc306ad33f043517297663204641be78d569d5749a729026175cf818f24a6f",
+    "tools/perky/build_four_payload.py": "d46cc6e525c7bcd14234f4ec230e64cd66637f0da8d736b7a7f360eeab528920",
+    "tools/perky/perky_fragmented_image.py": "86d6f9dff39006b131bb19144123361bd6663ca18579e3792efc98a14d94c97a",
+    "tools/perky/repack_machine_loader.py": "423d60d328ff4d115f8339d33f259e060c183aea651c7a04d34eaec89d3bcdb3",
+    "tools/perky/perky_cf_assets.py": "067984479b88314319356c7422a933dc5bed81dfadfbd0fe4a17fa58668fb709",
+    "modules/perky/generate_cf_final.py": "ff93a6716b576dd0661cdcbb5eb3e19f2a471a6fe76ca0dba3259656c7f342ca",
+    "tools/perky/perky_machine_module.py": "347b6581a5c3cbc7dcadeef90beed0fb8f292b2500b299fe78b8d3cb95b35218",
+    "tools/remix/loader.S": "fda27938fb368be03c3cdaa6a838fe7e6bece304649a33b1b8901d201cc3defb"
+  },
+  "pre_IPL3_timing_current_fields": {
+    "current_headroom_us": 39.04663986806844,
+    "current_margin_shortfall_us": 33.51571840857554,
+    "current_frame_fraction_used": 0.8923776988636364
+  },
+  "IPL3_guard_qualification": {
+    "schema": "octabam.perky.hybrid.ipl3-qualification.v1",
+    "decision": "BLOCKED \u2014 COMBINED STACK BOUND NOT ESTABLISHED",
+    "software_gates": {
+      "guard_local_IRQ_and_producer_checks": true,
+      "bounded_lifecycle": true,
+      "dense_delivery_locks_UI_DMA": true,
+      "combined_all_path_stack_bound": null
+    },
+    "demonstrated_guard_regression": false,
+    "guard_reverted": false,
+    "qualified_diagnostic_candidate": false,
+    "factory": {
+      "status": "PASS_ONLY_ADDED_OPERAND_POKE",
+      "module_claim_ledger": "PASS_ALL_12_EFFECTS",
+      "source_sha256": "767b0d8a2214d2dc6de85ddca053b3e755dabd4b3c5204f1a3019d61c8afa611",
+      "previous_factory_commit": "3167a977c78beda86ade048f3f71545c3005508d"
+    },
+    "original_MAIN_sha256": "a2d6915bc71a97d63f44e223e558cc4941d52113708f7ba92a57bdd669339b40",
+    "guarded_MAIN_sha256": "055cced1bb5319c35ee7d4708359a60a3e207a69d73711d2d536beadca060fbe",
+    "instruction_address": "0x400a1e64",
+    "operand_address": "0x400a1e66",
+    "operand_span_bytes": 2,
+    "actual_changed_bytes": 1,
+    "higher_priority_IRQs": "PASS actual UART6 unit + audio5/DMA6 integrated chains",
+    "clock_pairs": {
+      "paired": {
+        "status": "PASS",
+        "original": {
+          "requests": 143,
+          "services": 143,
+          "coalesced": 0,
+          "pending": 0,
+          "full_ISR_cycles": 85474
+        },
+        "guarded": {
+          "requests": 143,
+          "services": 143,
+          "coalesced": 0,
+          "pending": 0,
+          "full_ISR_cycles": 85474
+        },
+        "block_streams_byte_identical": true,
+        "modeled_full_ISR_cycle_delta": 0
+      },
+      "midi": {
+        "status": "PASS",
+        "original": {
+          "requests": 986,
+          "services": 986,
+          "coalesced": 0,
+          "pending": 0,
+          "consumed_F8_and_musical_counter": 984,
+          "full_ISR_cycles": 85484
+        },
+        "guarded": {
+          "requests": 986,
+          "services": 986,
+          "coalesced": 0,
+          "pending": 0,
+          "consumed_F8_and_musical_counter": 984,
+          "full_ISR_cycles": 85484
+        },
+        "block_streams_byte_identical": true,
+        "modeled_full_ISR_cycle_delta": 0
+      },
+      "dense": {
+        "status": "PASS",
+        "original_max_cycles": 85537,
+        "guarded_max_cycles": 85537,
+        "observed_peak_cycle_delta": 0,
+        "block_streams_byte_identical": true
+      }
+    },
+    "dense": {
+      "expected_first_run_per_track": 30,
+      "expected_UI_run_per_track": 31,
+      "actual_CF_trigs": [
+        31,
+        31
+      ],
+      "first_publications": {
+        "publications_per_track": {
+          "4": 4095,
+          "5": 4095,
+          "6": 4095,
+          "7": 4095,
+          "0": 4095,
+          "1": 4095,
+          "2": 4095,
+          "3": 4095
+        },
+        "native_trigger_records": {
+          "4": 30,
+          "0": 30
+        },
+        "leading_inactive_or_empty_publications": {
+          "4": 1,
+          "5": 1,
+          "6": 1,
+          "7": 1,
+          "0": 1,
+          "1": 1,
+          "2": 1,
+          "3": 1
+        },
+        "terminal_unpublished_nontrigger_frames": {
+          "0": 1,
+          "1": 1,
+          "2": 1,
+          "3": 1,
+          "4": 1,
+          "5": 1,
+          "6": 1,
+          "7": 1
+        },
+        "CF_split_geometry": "PASS all frames; source-to-fixed-slot-to-DMA",
+        "stock_source_record_geometry": "PASS all frames"
+      },
+      "UI_publications": {
+        "publications_per_track": {
+          "4": 4269,
+          "5": 4269,
+          "6": 4269,
+          "7": 4269,
+          "0": 4269,
+          "1": 4269,
+          "2": 4269,
+          "3": 4269
+        },
+        "native_trigger_records": {
+          "4": 31,
+          "0": 31
+        },
+        "leading_inactive_or_empty_publications": {
+          "4": 277,
+          "5": 277,
+          "6": 277,
+          "7": 277,
+          "0": 277,
+          "1": 277,
+          "2": 277,
+          "3": 277
+        },
+        "terminal_unpublished_nontrigger_frames": {
+          "0": 1,
+          "1": 1,
+          "2": 1,
+          "3": 1,
+          "4": 1,
+          "5": 1,
+          "6": 1,
+          "7": 1
+        },
+        "CF_split_geometry": "PASS all frames; source-to-fixed-slot-to-DMA",
+        "stock_source_record_geometry": "PASS all frames"
+      },
+      "sample_spacing": 2205,
+      "locks_reversion_ALGO_MODE": "PASS CF tuples; unchanged native transport gates reused",
+      "UI_enc_reports": 12,
+      "UI_key_edges": 16,
+      "sys_posts": 253,
+      "sys_consumed": 253,
+      "final_queue_backlog": 0
+    },
+    "real_chooser_tracks": [
+      1,
+      2,
+      5,
+      6
+    ],
+    "Part_change": true,
+    "real_working_and_playing_banks": [
+      0,
+      1,
+      0
+    ],
+    "cold_reload_six_controls": [
+      71,
+      112,
+      2,
+      72,
+      56,
+      0
+    ],
+    "actual_STOP_profile_export": {
+      "file": "PKH20000.PRF",
+      "bytes": 1864,
+      "sha256": "04e122f6b51e30cd6217d8f009be7cad52b5f7fc2380e6b7a81723bac22a38a2",
+      "valid_PKP2_header_and_even_sequence": true
+    },
+    "fresh_rebuild_or_guarded_wrapper_qualification": false,
+    "provenance": "Tested post-link operand change on frozen MAIN; module factory poke reproduces that exact image. No engine/runtime rebuild or new flash wrapper.",
+    "proven_software_scopes": [
+      "Exact operand and rollback identity; every other image byte unchanged",
+      "Actual level3 deferral and actual higher-priority IRQ execution in tested paths",
+      "Three paired clock/dense workloads have identical source/DSP blocks and maximum ISR cycles",
+      "Real chooser, Part, working/playing bank, saved-card reload and dense lock/UI/DMA paths"
+    ],
+    "demonstrated_software_defects": [],
+    "hardware_only_unknowns": [
+      "Physical cache/SDRAM/FlexBus/eDMA contention and coherence",
+      "Interrupt release-to-entry and release-to-completion timing on MKII",
+      "Per-core DSP completion under physical bus traffic",
+      "Physical timer/probe/export cost"
+    ],
+    "stack": {
+      "maximum_established_all_path_bytes": null,
+      "maximum_observed_audio_bytes": 1348,
+      "smallest_task_capacity_bytes": 2048,
+      "remaining_specific_path": "storage 0x4001ee30 -> indirect driver call 0x4001eef2 via [0x460d16cc]; interrupted A7 plus sequencer/audio/level6 chain has no closed bound",
+      "not_a_demonstrated_overflow": true,
+      "reports": [
+        {
+          "instructions": 930214427,
+          "frames": 2048,
+          "frame_returns": 2048,
+          "max_nesting": 3,
+          "max_frame_nesting": 3,
+          "max_frame_stack_bytes": 1316,
+          "minimum_frame_IPL": 5,
+          "source_writes": 1130488,
+          "DMA_starts": 86016,
+          "DMA_read_write_overlaps": 0,
+          "stacks": [
+            {
+              "task": "storage",
+              "base": 1175176236,
+              "capacity": 2048,
+              "observed_bytes": 76,
+              "minimum_sp": 1175178208,
+              "pc_at_minimum": 1073743896,
+              "instructions": 45,
+              "outside_extent": 0
+            },
+            {
+              "task": "keyrepeat",
+              "base": 1175275392,
+              "capacity": 2048,
+              "observed_bytes": 1352,
+              "minimum_sp": 1175276088,
+              "pc_at_minimum": 1086506890,
+              "instructions": 1542690,
+              "outside_extent": 0
+            },
+            {
+              "task": "ui",
+              "base": 1175278036,
+              "capacity": 2048,
+              "observed_bytes": 144,
+              "minimum_sp": 1175279940,
+              "pc_at_minimum": 1073809860,
+              "instructions": 629785,
+              "outside_extent": 0
+            },
+            {
+              "task": "engine",
+              "base": 1175297508,
+              "capacity": 16384,
+              "observed_bytes": 3016,
+              "minimum_sp": 1175310876,
+              "pc_at_minimum": 1073826712,
+              "instructions": 679791130,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2c",
+              "base": 1175318072,
+              "capacity": 8192,
+              "observed_bytes": 184,
+              "minimum_sp": 1175326080,
+              "pc_at_minimum": 1074348856,
+              "instructions": 8807,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2a",
+              "base": 1175432148,
+              "capacity": 8192,
+              "observed_bytes": 1428,
+              "minimum_sp": 1175438912,
+              "pc_at_minimum": 1086506890,
+              "instructions": 105271,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2b",
+              "base": 1175444804,
+              "capacity": 8192,
+              "observed_bytes": 180,
+              "minimum_sp": 1175452816,
+              "pc_at_minimum": 1073826712,
+              "instructions": 276147,
+              "outside_extent": 0
+            },
+            {
+              "task": "p1b",
+              "base": 1175475548,
+              "capacity": 8192,
+              "observed_bytes": 1644,
+              "minimum_sp": 1175482096,
+              "pc_at_minimum": 1086506890,
+              "instructions": 24127667,
+              "outside_extent": 0
+            },
+            {
+              "task": "main",
+              "base": 1187491544,
+              "capacity": 4096,
+              "observed_bytes": 1396,
+              "minimum_sp": 1187494244,
+              "pc_at_minimum": 1086506890,
+              "instructions": 141068156,
+              "outside_extent": 0
+            },
+            {
+              "task": "sys",
+              "base": 1175285220,
+              "capacity": 8192,
+              "observed_bytes": 1720,
+              "minimum_sp": 1175291692,
+              "pc_at_minimum": 1086506890,
+              "instructions": 43155897,
+              "outside_extent": 0
+            },
+            {
+              "task": "voice",
+              "base": 1187506720,
+              "capacity": 4096,
+              "observed_bytes": 40,
+              "minimum_sp": 1187510776,
+              "pc_at_minimum": 1073744852,
+              "instructions": 10695,
+              "outside_extent": 0
+            }
+          ],
+          "guard_writes_after_dispatch": 0,
+          "source_DMA_starts": 4096,
+          "DMA_active_restarts": 0,
+          "full_ISR_max_cycles": 85474,
+          "ISR_duration_misses": 0,
+          "source_DMA_shapes": [
+            [
+              0,
+              2147490960,
+              336,
+              4,
+              16,
+              1024
+            ],
+            [
+              0,
+              2147492304,
+              336,
+              4,
+              16,
+              1024
+            ],
+            [
+              0,
+              2147493648,
+              336,
+              4,
+              16,
+              1024
+            ],
+            [
+              0,
+              2147494992,
+              336,
+              4,
+              16,
+              1024
+            ]
+          ],
+          "render_calls": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "render_samples": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "sys_queue_max": 8,
+          "panel_ring_max": 0,
+          "interrupt_chains": [
+            [
+              65,
+              2047
+            ],
+            [
+              91,
+              12130
+            ],
+            [
+              96,
+              143
+            ],
+            [
+              97,
+              1537
+            ],
+            [
+              98,
+              12
+            ],
+            [
+              172,
+              2
+            ],
+            [
+              182,
+              44146
+            ],
+            [
+              16719,
+              2047
+            ],
+            [
+              24897,
+              1
+            ],
+            [
+              6373711,
+              1
+            ]
+          ]
+        },
+        {
+          "instructions": 894987137,
+          "frames": 1024,
+          "frame_returns": 1024,
+          "max_nesting": 2,
+          "max_frame_nesting": 2,
+          "max_frame_stack_bytes": 1316,
+          "minimum_frame_IPL": 5,
+          "source_writes": 610336,
+          "DMA_starts": 43008,
+          "DMA_read_write_overlaps": 0,
+          "stacks": [
+            {
+              "task": "storage",
+              "base": 1175176236,
+              "capacity": 2048,
+              "observed_bytes": 76,
+              "minimum_sp": 1175178208,
+              "pc_at_minimum": 1073743896,
+              "instructions": 45,
+              "outside_extent": 0
+            },
+            {
+              "task": "keyrepeat",
+              "base": 1175275392,
+              "capacity": 2048,
+              "observed_bytes": 1352,
+              "minimum_sp": 1175276088,
+              "pc_at_minimum": 1086506890,
+              "instructions": 1426334,
+              "outside_extent": 0
+            },
+            {
+              "task": "ui",
+              "base": 1175278036,
+              "capacity": 2048,
+              "observed_bytes": 1368,
+              "minimum_sp": 1175278716,
+              "pc_at_minimum": 1086506890,
+              "instructions": 780007,
+              "outside_extent": 0
+            },
+            {
+              "task": "engine",
+              "base": 1175297508,
+              "capacity": 16384,
+              "observed_bytes": 3016,
+              "minimum_sp": 1175310876,
+              "pc_at_minimum": 1073826712,
+              "instructions": 679791130,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2c",
+              "base": 1175318072,
+              "capacity": 8192,
+              "observed_bytes": 184,
+              "minimum_sp": 1175326080,
+              "pc_at_minimum": 1074348856,
+              "instructions": 8807,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2a",
+              "base": 1175432148,
+              "capacity": 8192,
+              "observed_bytes": 1428,
+              "minimum_sp": 1175438912,
+              "pc_at_minimum": 1086506890,
+              "instructions": 43029,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2b",
+              "base": 1175444804,
+              "capacity": 8192,
+              "observed_bytes": 180,
+              "minimum_sp": 1175452816,
+              "pc_at_minimum": 1073826712,
+              "instructions": 276147,
+              "outside_extent": 0
+            },
+            {
+              "task": "p1b",
+              "base": 1175475548,
+              "capacity": 8192,
+              "observed_bytes": 1644,
+              "minimum_sp": 1175482096,
+              "pc_at_minimum": 1086506890,
+              "instructions": 650174,
+              "outside_extent": 0
+            },
+            {
+              "task": "main",
+              "base": 1187491544,
+              "capacity": 4096,
+              "observed_bytes": 1396,
+              "minimum_sp": 1187494244,
+              "pc_at_minimum": 1086506890,
+              "instructions": 94756836,
+              "outside_extent": 0
+            },
+            {
+              "task": "sys",
+              "base": 1175285220,
+              "capacity": 8192,
+              "observed_bytes": 1880,
+              "minimum_sp": 1175291532,
+              "pc_at_minimum": 1086506890,
+              "instructions": 68213189,
+              "outside_extent": 0
+            },
+            {
+              "task": "voice",
+              "base": 1187506720,
+              "capacity": 4096,
+              "observed_bytes": 1348,
+              "minimum_sp": 1187509468,
+              "pc_at_minimum": 1086506890,
+              "instructions": 9473777,
+              "outside_extent": 0
+            }
+          ],
+          "guard_writes_after_dispatch": 0,
+          "source_DMA_starts": 2048,
+          "DMA_active_restarts": 0,
+          "full_ISR_max_cycles": 85484,
+          "ISR_duration_misses": 0,
+          "source_DMA_shapes": [
+            [
+              0,
+              2147490960,
+              336,
+              4,
+              16,
+              512
+            ],
+            [
+              0,
+              2147492304,
+              336,
+              4,
+              16,
+              512
+            ],
+            [
+              0,
+              2147493648,
+              336,
+              4,
+              16,
+              512
+            ],
+            [
+              0,
+              2147494992,
+              336,
+              4,
+              16,
+              512
+            ]
+          ],
+          "render_calls": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "render_samples": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "sys_queue_max": 8,
+          "panel_ring_max": 0,
+          "interrupt_chains": [
+            [
+              65,
+              1024
+            ],
+            [
+              91,
+              12740
+            ],
+            [
+              96,
+              986
+            ],
+            [
+              97,
+              1500
+            ],
+            [
+              98,
+              12
+            ],
+            [
+              100,
+              984
+            ],
+            [
+              172,
+              2
+            ],
+            [
+              182,
+              44146
+            ],
+            [
+              16719,
+              1024
+            ],
+            [
+              16730,
+              984
+            ]
+          ]
+        },
+        {
+          "instructions": 1013596773,
+          "frames": 4096,
+          "frame_returns": 4096,
+          "max_nesting": 3,
+          "max_frame_nesting": 3,
+          "max_frame_stack_bytes": 1316,
+          "minimum_frame_IPL": 5,
+          "source_writes": 2311838,
+          "DMA_starts": 172032,
+          "DMA_read_write_overlaps": 0,
+          "stacks": [
+            {
+              "task": "storage",
+              "base": 1175176236,
+              "capacity": 2048,
+              "observed_bytes": 76,
+              "minimum_sp": 1175178208,
+              "pc_at_minimum": 1073743896,
+              "instructions": 45,
+              "outside_extent": 0
+            },
+            {
+              "task": "keyrepeat",
+              "base": 1175275392,
+              "capacity": 2048,
+              "observed_bytes": 1228,
+              "minimum_sp": 1175276212,
+              "pc_at_minimum": 1086484584,
+              "instructions": 1574170,
+              "outside_extent": 0
+            },
+            {
+              "task": "ui",
+              "base": 1175278036,
+              "capacity": 2048,
+              "observed_bytes": 144,
+              "minimum_sp": 1175279940,
+              "pc_at_minimum": 1073809860,
+              "instructions": 668418,
+              "outside_extent": 0
+            },
+            {
+              "task": "engine",
+              "base": 1175297508,
+              "capacity": 16384,
+              "observed_bytes": 3016,
+              "minimum_sp": 1175310876,
+              "pc_at_minimum": 1073826712,
+              "instructions": 679789576,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2c",
+              "base": 1175318072,
+              "capacity": 8192,
+              "observed_bytes": 184,
+              "minimum_sp": 1175326080,
+              "pc_at_minimum": 1074348856,
+              "instructions": 8807,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2a",
+              "base": 1175432148,
+              "capacity": 8192,
+              "observed_bytes": 1428,
+              "minimum_sp": 1175438912,
+              "pc_at_minimum": 1086506890,
+              "instructions": 83033,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2b",
+              "base": 1175444804,
+              "capacity": 8192,
+              "observed_bytes": 180,
+              "minimum_sp": 1175452816,
+              "pc_at_minimum": 1073826712,
+              "instructions": 276146,
+              "outside_extent": 0
+            },
+            {
+              "task": "p1b",
+              "base": 1175475548,
+              "capacity": 8192,
+              "observed_bytes": 1644,
+              "minimum_sp": 1175482096,
+              "pc_at_minimum": 1086506890,
+              "instructions": 19436062,
+              "outside_extent": 0
+            },
+            {
+              "task": "main",
+              "base": 1187491544,
+              "capacity": 4096,
+              "observed_bytes": 1612,
+              "minimum_sp": 1187494028,
+              "pc_at_minimum": 1086506890,
+              "instructions": 223323210,
+              "outside_extent": 0
+            },
+            {
+              "task": "sys",
+              "base": 1175285220,
+              "capacity": 8192,
+              "observed_bytes": 1856,
+              "minimum_sp": 1175291556,
+              "pc_at_minimum": 1086506890,
+              "instructions": 48915828,
+              "outside_extent": 0
+            },
+            {
+              "task": "voice",
+              "base": 1187506720,
+              "capacity": 4096,
+              "observed_bytes": 40,
+              "minimum_sp": 1187510776,
+              "pc_at_minimum": 1073744852,
+              "instructions": 10695,
+              "outside_extent": 0
+            }
+          ],
+          "guard_writes_after_dispatch": 0,
+          "source_DMA_starts": 8192,
+          "DMA_active_restarts": 0,
+          "full_ISR_max_cycles": 85537,
+          "ISR_duration_misses": 0,
+          "source_DMA_shapes": [
+            [
+              0,
+              2147490960,
+              336,
+              4,
+              16,
+              2048
+            ],
+            [
+              0,
+              2147492304,
+              336,
+              4,
+              16,
+              2048
+            ],
+            [
+              0,
+              2147493648,
+              336,
+              4,
+              16,
+              2048
+            ],
+            [
+              0,
+              2147494992,
+              336,
+              4,
+              16,
+              2048
+            ]
+          ],
+          "render_calls": [
+            8191,
+            8191,
+            8191,
+            8191,
+            8191,
+            8191,
+            8191,
+            8191
+          ],
+          "render_samples": [
+            65536,
+            65536,
+            65536,
+            65536,
+            65536,
+            65536,
+            65536,
+            65536
+          ],
+          "sys_queue_max": 8,
+          "panel_ring_max": 0,
+          "interrupt_chains": [
+            [
+              65,
+              4094
+            ],
+            [
+              91,
+              15300
+            ],
+            [
+              96,
+              714
+            ],
+            [
+              97,
+              1620
+            ],
+            [
+              98,
+              13
+            ],
+            [
+              172,
+              2
+            ],
+            [
+              182,
+              44144
+            ],
+            [
+              16719,
+              4094
+            ],
+            [
+              24641,
+              1
+            ],
+            [
+              24897,
+              1
+            ],
+            [
+              25014,
+              2
+            ],
+            [
+              6308175,
+              1
+            ],
+            [
+              6373711,
+              1
+            ]
+          ]
+        },
+        {
+          "instructions": 1027571543,
+          "frames": 4546,
+          "frame_returns": 4546,
+          "max_nesting": 3,
+          "max_frame_nesting": 3,
+          "max_frame_stack_bytes": 1316,
+          "minimum_frame_IPL": 5,
+          "source_writes": 2497586,
+          "DMA_starts": 190932,
+          "DMA_read_write_overlaps": 0,
+          "stacks": [
+            {
+              "task": "storage",
+              "base": 1175176236,
+              "capacity": 2048,
+              "observed_bytes": 76,
+              "minimum_sp": 1175178208,
+              "pc_at_minimum": 1073743896,
+              "instructions": 45,
+              "outside_extent": 0
+            },
+            {
+              "task": "keyrepeat",
+              "base": 1175275392,
+              "capacity": 2048,
+              "observed_bytes": 1352,
+              "minimum_sp": 1175276088,
+              "pc_at_minimum": 1086506890,
+              "instructions": 1683625,
+              "outside_extent": 0
+            },
+            {
+              "task": "ui",
+              "base": 1175278036,
+              "capacity": 2048,
+              "observed_bytes": 148,
+              "minimum_sp": 1175279936,
+              "pc_at_minimum": 1073744234,
+              "instructions": 688127,
+              "outside_extent": 0
+            },
+            {
+              "task": "engine",
+              "base": 1175297508,
+              "capacity": 16384,
+              "observed_bytes": 3016,
+              "minimum_sp": 1175310876,
+              "pc_at_minimum": 1073826712,
+              "instructions": 679791282,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2c",
+              "base": 1175318072,
+              "capacity": 8192,
+              "observed_bytes": 184,
+              "minimum_sp": 1175326080,
+              "pc_at_minimum": 1074348856,
+              "instructions": 8807,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2a",
+              "base": 1175432148,
+              "capacity": 8192,
+              "observed_bytes": 116,
+              "minimum_sp": 1175440224,
+              "pc_at_minimum": 1073745490,
+              "instructions": 47456,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2b",
+              "base": 1175444804,
+              "capacity": 8192,
+              "observed_bytes": 180,
+              "minimum_sp": 1175452816,
+              "pc_at_minimum": 1073826712,
+              "instructions": 276152,
+              "outside_extent": 0
+            },
+            {
+              "task": "p1b",
+              "base": 1175475548,
+              "capacity": 8192,
+              "observed_bytes": 1644,
+              "minimum_sp": 1175482096,
+              "pc_at_minimum": 1086506890,
+              "instructions": 20388798,
+              "outside_extent": 0
+            },
+            {
+              "task": "main",
+              "base": 1187491544,
+              "capacity": 4096,
+              "observed_bytes": 1832,
+              "minimum_sp": 1187493808,
+              "pc_at_minimum": 1086506890,
+              "instructions": 233421673,
+              "outside_extent": 0
+            },
+            {
+              "task": "sys",
+              "base": 1175285220,
+              "capacity": 8192,
+              "observed_bytes": 2124,
+              "minimum_sp": 1175291288,
+              "pc_at_minimum": 1086506890,
+              "instructions": 51740998,
+              "outside_extent": 0
+            },
+            {
+              "task": "voice",
+              "base": 1187506720,
+              "capacity": 4096,
+              "observed_bytes": 40,
+              "minimum_sp": 1187510776,
+              "pc_at_minimum": 1073744852,
+              "instructions": 10695,
+              "outside_extent": 0
+            }
+          ],
+          "guard_writes_after_dispatch": 0,
+          "source_DMA_starts": 9092,
+          "DMA_active_restarts": 0,
+          "full_ISR_max_cycles": 84661,
+          "ISR_duration_misses": 0,
+          "source_DMA_shapes": [
+            [
+              0,
+              2147490960,
+              336,
+              4,
+              16,
+              2273
+            ],
+            [
+              0,
+              2147492304,
+              336,
+              4,
+              16,
+              2273
+            ],
+            [
+              0,
+              2147493648,
+              336,
+              4,
+              16,
+              2273
+            ],
+            [
+              0,
+              2147494992,
+              336,
+              4,
+              16,
+              2273
+            ]
+          ],
+          "render_calls": [
+            8539,
+            8539,
+            8539,
+            8539,
+            8539,
+            8539,
+            8539,
+            8539
+          ],
+          "render_samples": [
+            68320,
+            68320,
+            68320,
+            68320,
+            68320,
+            68320,
+            68320,
+            68320
+          ],
+          "sys_queue_max": 8,
+          "panel_ring_max": 10,
+          "interrupt_chains": [
+            [
+              65,
+              4517
+            ],
+            [
+              91,
+              19881
+            ],
+            [
+              96,
+              792
+            ],
+            [
+              97,
+              1656
+            ],
+            [
+              98,
+              13
+            ],
+            [
+              101,
+              28
+            ],
+            [
+              172,
+              2
+            ],
+            [
+              182,
+              44144
+            ],
+            [
+              16719,
+              4517
+            ],
+            [
+              16731,
+              27
+            ],
+            [
+              24641,
+              29
+            ],
+            [
+              25014,
+              2
+            ],
+            [
+              6308175,
+              29
+            ]
+          ]
+        },
+        {
+          "instructions": 1572114418,
+          "frames": 18075,
+          "frame_returns": 18074,
+          "max_nesting": 3,
+          "max_frame_nesting": 3,
+          "max_frame_stack_bytes": 1348,
+          "minimum_frame_IPL": 5,
+          "source_writes": 9702876,
+          "DMA_starts": 759150,
+          "DMA_read_write_overlaps": 0,
+          "stacks": [
+            {
+              "task": "storage",
+              "base": 1175176236,
+              "capacity": 2048,
+              "observed_bytes": 76,
+              "minimum_sp": 1175178208,
+              "pc_at_minimum": 1073743896,
+              "instructions": 45,
+              "outside_extent": 0
+            },
+            {
+              "task": "keyrepeat",
+              "base": 1175275392,
+              "capacity": 2048,
+              "observed_bytes": 1352,
+              "minimum_sp": 1175276088,
+              "pc_at_minimum": 1086506890,
+              "instructions": 2566942,
+              "outside_extent": 0
+            },
+            {
+              "task": "ui",
+              "base": 1175278036,
+              "capacity": 2048,
+              "observed_bytes": 1372,
+              "minimum_sp": 1175278712,
+              "pc_at_minimum": 1086506890,
+              "instructions": 1181534,
+              "outside_extent": 0
+            },
+            {
+              "task": "engine",
+              "base": 1175297508,
+              "capacity": 16384,
+              "observed_bytes": 3016,
+              "minimum_sp": 1175310876,
+              "pc_at_minimum": 1073826712,
+              "instructions": 679791241,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2c",
+              "base": 1175318072,
+              "capacity": 8192,
+              "observed_bytes": 184,
+              "minimum_sp": 1175326080,
+              "pc_at_minimum": 1074348856,
+              "instructions": 8807,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2a",
+              "base": 1175432148,
+              "capacity": 8192,
+              "observed_bytes": 116,
+              "minimum_sp": 1175440224,
+              "pc_at_minimum": 1073745490,
+              "instructions": 186764,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2b",
+              "base": 1175444804,
+              "capacity": 8192,
+              "observed_bytes": 180,
+              "minimum_sp": 1175452816,
+              "pc_at_minimum": 1073826712,
+              "instructions": 276152,
+              "outside_extent": 0
+            },
+            {
+              "task": "p1b",
+              "base": 1175475548,
+              "capacity": 8192,
+              "observed_bytes": 1644,
+              "minimum_sp": 1175482096,
+              "pc_at_minimum": 1086506890,
+              "instructions": 70430130,
+              "outside_extent": 0
+            },
+            {
+              "task": "main",
+              "base": 1187491544,
+              "capacity": 4096,
+              "observed_bytes": 1896,
+              "minimum_sp": 1187493744,
+              "pc_at_minimum": 1086506890,
+              "instructions": 682398385,
+              "outside_extent": 0
+            },
+            {
+              "task": "sys",
+              "base": 1175285220,
+              "capacity": 8192,
+              "observed_bytes": 2052,
+              "minimum_sp": 1175291360,
+              "pc_at_minimum": 1086484584,
+              "instructions": 95669010,
+              "outside_extent": 0
+            },
+            {
+              "task": "voice",
+              "base": 1187506720,
+              "capacity": 4096,
+              "observed_bytes": 40,
+              "minimum_sp": 1187510776,
+              "pc_at_minimum": 1073744852,
+              "instructions": 10695,
+              "outside_extent": 0
+            }
+          ],
+          "guard_writes_after_dispatch": 0,
+          "source_DMA_starts": 36150,
+          "DMA_active_restarts": 0,
+          "full_ISR_max_cycles": 84638,
+          "ISR_duration_misses": 0,
+          "source_DMA_shapes": [
+            [
+              0,
+              2147490960,
+              336,
+              4,
+              16,
+              9037
+            ],
+            [
+              0,
+              2147492304,
+              336,
+              4,
+              16,
+              9037
+            ],
+            [
+              0,
+              2147493648,
+              336,
+              4,
+              16,
+              9038
+            ],
+            [
+              0,
+              2147494992,
+              336,
+              4,
+              16,
+              9038
+            ]
+          ],
+          "render_calls": [
+            34493,
+            34491,
+            34491,
+            34491,
+            34491,
+            34491,
+            34491,
+            34491
+          ],
+          "render_samples": [
+            275952,
+            275936,
+            275936,
+            275936,
+            275936,
+            275936,
+            275936,
+            275936
+          ],
+          "sys_queue_max": 8,
+          "panel_ring_max": 10,
+          "interrupt_chains": [
+            [
+              65,
+              17955
+            ],
+            [
+              91,
+              67062
+            ],
+            [
+              96,
+              3149
+            ],
+            [
+              97,
+              2325
+            ],
+            [
+              98,
+              19
+            ],
+            [
+              101,
+              148
+            ],
+            [
+              172,
+              2
+            ],
+            [
+              182,
+              44141
+            ],
+            [
+              16719,
+              17955
+            ],
+            [
+              16731,
+              122
+            ],
+            [
+              24641,
+              117
+            ],
+            [
+              24667,
+              3
+            ],
+            [
+              24677,
+              3
+            ],
+            [
+              24897,
+              2
+            ],
+            [
+              24923,
+              3
+            ],
+            [
+              24933,
+              3
+            ],
+            [
+              25014,
+              5
+            ],
+            [
+              25921,
+              1
+            ],
+            [
+              6308175,
+              117
+            ],
+            [
+              6373711,
+              2
+            ],
+            [
+              6635855,
+              1
+            ]
+          ]
+        },
+        {
+          "instructions": 1641373507,
+          "frames": 19201,
+          "frame_returns": 19200,
+          "max_nesting": 3,
+          "max_frame_nesting": 3,
+          "max_frame_stack_bytes": 1316,
+          "minimum_frame_IPL": 5,
+          "source_writes": 10592560,
+          "DMA_starts": 806442,
+          "DMA_read_write_overlaps": 0,
+          "stacks": [
+            {
+              "task": "storage",
+              "base": 1175176236,
+              "capacity": 2048,
+              "observed_bytes": 76,
+              "minimum_sp": 1175178208,
+              "pc_at_minimum": 1073743896,
+              "instructions": 45,
+              "outside_extent": 0
+            },
+            {
+              "task": "keyrepeat",
+              "base": 1175275392,
+              "capacity": 2048,
+              "observed_bytes": 1352,
+              "minimum_sp": 1175276088,
+              "pc_at_minimum": 1086506890,
+              "instructions": 2625309,
+              "outside_extent": 0
+            },
+            {
+              "task": "ui",
+              "base": 1175278036,
+              "capacity": 2048,
+              "observed_bytes": 1384,
+              "minimum_sp": 1175278700,
+              "pc_at_minimum": 1086506890,
+              "instructions": 1206774,
+              "outside_extent": 0
+            },
+            {
+              "task": "engine",
+              "base": 1175297508,
+              "capacity": 16384,
+              "observed_bytes": 3016,
+              "minimum_sp": 1175310876,
+              "pc_at_minimum": 1073826712,
+              "instructions": 679791387,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2c",
+              "base": 1175318072,
+              "capacity": 8192,
+              "observed_bytes": 184,
+              "minimum_sp": 1175326080,
+              "pc_at_minimum": 1074348856,
+              "instructions": 8807,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2a",
+              "base": 1175432148,
+              "capacity": 8192,
+              "observed_bytes": 116,
+              "minimum_sp": 1175440224,
+              "pc_at_minimum": 1073745490,
+              "instructions": 198620,
+              "outside_extent": 0
+            },
+            {
+              "task": "p2b",
+              "base": 1175444804,
+              "capacity": 8192,
+              "observed_bytes": 180,
+              "minimum_sp": 1175452816,
+              "pc_at_minimum": 1073826712,
+              "instructions": 276152,
+              "outside_extent": 0
+            },
+            {
+              "task": "p1b",
+              "base": 1175475548,
+              "capacity": 8192,
+              "observed_bytes": 1644,
+              "minimum_sp": 1175482096,
+              "pc_at_minimum": 1086506890,
+              "instructions": 77530424,
+              "outside_extent": 0
+            },
+            {
+              "task": "main",
+              "base": 1187491544,
+              "capacity": 4096,
+              "observed_bytes": 1896,
+              "minimum_sp": 1187493744,
+              "pc_at_minimum": 1086506890,
+              "instructions": 752969394,
+              "outside_extent": 0
+            },
+            {
+              "task": "sys",
+              "base": 1175285220,
+              "capacity": 8192,
+              "observed_bytes": 2052,
+              "minimum_sp": 1175291360,
+              "pc_at_minimum": 1086506890,
+              "instructions": 87159557,
+              "outside_extent": 0
+            },
+            {
+              "task": "voice",
+              "base": 1187506720,
+              "capacity": 4096,
+              "observed_bytes": 40,
+              "minimum_sp": 1187510776,
+              "pc_at_minimum": 1073744852,
+              "instructions": 10695,
+              "outside_extent": 0
+            }
+          ],
+          "guard_writes_after_dispatch": 0,
+          "source_DMA_starts": 38402,
+          "DMA_active_restarts": 0,
+          "full_ISR_max_cycles": 84638,
+          "ISR_duration_misses": 0,
+          "source_DMA_shapes": [
+            [
+              0,
+              2147490960,
+              336,
+              4,
+              16,
+              9600
+            ],
+            [
+              0,
+              2147492304,
+              336,
+              4,
+              16,
+              9600
+            ],
+            [
+              0,
+              2147493648,
+              336,
+              4,
+              16,
+              9601
+            ],
+            [
+              0,
+              2147494992,
+              336,
+              4,
+              16,
+              9601
+            ]
+          ],
+          "render_calls": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "render_samples": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "sys_queue_max": 8,
+          "panel_ring_max": 10,
+          "interrupt_chains": [
+            [
+              65,
+              19079
+            ],
+            [
+              91,
+              35035
+            ],
+            [
+              96,
+              3345
+            ],
+            [
+              97,
+              2374
+            ],
+            [
+              98,
+              19
+            ],
+            [
+              101,
+              16
+            ],
+            [
+              172,
+              2
+            ],
+            [
+              182,
+              44210
+            ],
+            [
+              16719,
+              19079
+            ],
+            [
+              16731,
+              11
+            ],
+            [
+              24641,
+              120
+            ],
+            [
+              24897,
+              2
+            ],
+            [
+              24923,
+              2
+            ],
+            [
+              24933,
+              2
+            ],
+            [
+              25014,
+              8
+            ],
+            [
+              6308175,
+              120
+            ],
+            [
+              6373711,
+              2
+            ]
+          ]
+        }
+      ]
+    },
+    "timing": {
+      "CPU_Hz": 264000000,
+      "PIT_Hz": 132000000,
+      "max_modeled_full_ISR_cycles": 85537,
+      "max_modeled_full_ISR_us": 324.0037878787879,
+      "deadline_us": 362.81179138321994,
+      "headroom_us": 38.808003504432065,
+      "engineering_margin_waived": false,
+      "engineering_margin_passed": false,
+      "physical_WCET_established": false
+    },
+    "flash_authorized": false,
+    "Goal2_restarted": false,
+    "Goal3_started": false,
+    "synthesis_optimizations": 0,
+    "limits": [
+      "Arbitrary forced IRQ writes can coalesce; these are not musical clock events. The invalid phase-per-ack assertion was removed, not treated as a firmware regression.",
+      "Stack observations, including complete bounded playback/chooser/export traces, are not all-path ceilings.",
+      "The three sequencer pairs apply the cycle clock. Existing live/interactive paths retain their IPS sample clock even when the parsed cycle-clock option is supplied; their functional traces are not cycle-driven arrival/timing proofs.",
+      "A live quit can leave one in-flight ISR; completed ISR timings exclude that truncated final frame.",
+      "All wrappers remain unchanged historical artifacts; no guarded installable set is qualified."
+    ],
+    "source_sha256": {
+      "/Users/jrold/Downloads/octabam/tools/perky/build_cf_dsp_hybrid.py": "767b0d8a2214d2dc6de85ddca053b3e755dabd4b3c5204f1a3019d61c8afa611",
+      "/Users/jrold/Downloads/octabam/tools/perky/apply_hybrid_ipl_guard.py": "9fef6d115ab4c1b6298df25373d5e8a9b01cbf5b556c176778039200f229c922",
+      "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_ipl_guard.py": "9ca2fea2406b32f4f5cacb4d0041c08414a0a6205ee84916c13c95fb83a78953",
+      "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_guard_lifecycle.py": "7a70d823818690d7adf9ae3261a5ca78474f015b5ab13e24e6d69085d2e79c7c",
+      "/Users/jrold/Downloads/octabam/tools/harness/perky_hybrid_safety/guard_audit.h": "422906af0ef47e5821faa6c4df340918273370213d7878335667c1700bc2f91c",
+      "/Users/jrold/Downloads/octabam/tools/harness/perky_hybrid_safety/ipl_guard.cpp": "296c6a81e6183b25c626f9b56dc0c4a3858b66633deae3488769ea11e2f303a6",
+      "/Users/jrold/Downloads/octabam/tools/harness/perky_hybrid_safety/dense_fixture.py": "0093e733f4a1ab7d1c9dccf9aea5322f34b13742df0ea0eda18c4603bb5b8f81",
+      "/Users/jrold/Downloads/octabam/tools/harness/perky_hybrid_safety/bank_panel.py": "53e4cd49b383fd40a11dbbc570f3f626edb4d4945dcf3cd086063d23b2358738"
+    },
+    "evidence_sha256": {
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/paired-1-stack.json": "57c810c358f869ae89e3b27208391c2de45baf7bf80450317cab74533e682d98",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/midi-1-stack.json": "e72f905f079c796a9f1a0cac6003ac5d6d08dd482d3d8657ecb6e6de9bd5a35c",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/reload.log": "49c9d69ec5710f3b6b15e5e0e238d9c8ade84958eda0122c4abba130bcf7e767",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/lifecycle-driver.log": "a3bc15707d61bdc264e6f1e98ce6bc804d00686ca558561cb78ebc168146e2a7",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/paired-1-blocks.bin": "40d473cb163bc755715bd49e78f9c89b20040c7324c0ec8aadb4a8931725e082",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/reload-blocks.bin": "d144cc585e4aebee28911898e3fd385a0a02f5fed5ac3bcbb5b83b6ecbd19951",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/rollback-check.bin": "a2d6915bc71a97d63f44e223e558cc4941d52113708f7ba92a57bdd669339b40",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/midi-wire.txt": "66d2b1eebf8e52ebd74959d938f8358e207abcd14d148e1b0b0cd9775aa08aa9",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/midi-1-blocks.bin": "02c908291bbce35492dc75b24fab5d7edd2f38d6607aa402ed79a0cf2bec895e",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/midi-1.log": "31ae61cc000e2097289a328b854752b1718d086d076e23f39c6d05a5fd9e1e4e",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/midi-0.log": "4a11bb59ad8f4b15fe1b70d12a98c584168ff2a1a70a1cc5c2151fc8cd6fe195",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/trial-mainos.bin": "055cced1bb5319c35ee7d4708359a60a3e207a69d73711d2d536beadca060fbe",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/midi-0-stack.json": "13a5738522d8889f3aa0c071d67578522b29ddbe10b4b652781fde657d258fd6",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/banks-blocks.bin": "9e176e99ddcb3593d5ad66aa4416844729eed6bb9bb4f751002fa44d623704f4",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/TRIAL_PATCH.json": "c47c4db1760555c0101a24db4717a3d5836aa46c653504bc2a8f42da7b679244",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/reloaded-controls.bin": "8ad23ae88166f715dbb43e414d5dbdb9791ffbc69a0cebc98c8b9e6b7c00f8be",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/paired-0-stack.json": "afa5cffd51dcca0540a1944cbcbdfa160bc5ff8f215f8e4d7043c768867b93b6",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/guard.log": "ef16e59cb3bbe9c7b687e62e8074f7ca83692573716e4e13144e9b3c2626692a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/midi-0-blocks.bin": "02c908291bbce35492dc75b24fab5d7edd2f38d6607aa402ed79a0cf2bec895e",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/banks-stack.json": "f6dd91abfe0e70aca180b526479f5d1ef5100f64498f7da8972d377e2331fd21",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/UNIT.json": "e6e3f3692bba05b7c58df3daf31c7a78d791b00dd612f93ab50d1bed2c897292",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/paired-0.log": "73d69bb17d75b2308d758d916d1c73792ab7c048badca5c2a55a51b6af0e2d9c",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/FIXTURE_REPRODUCTION.json": "b708cb36bc1ae3b4191ecc479b656dd6bd0ed611a136d89a55c153f8dd668510",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/paired-1.log": "fae57b1abd452d0dfd86a1fc9a16c1c2d83732645348b78192d9f992f281322a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/PREFLIGHT.json": "dd9ee86f1e35e5fc7deab09ecab7608ce8108939fc82a7c4d739adc176ba128f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/bank-readiness.log": "342fa8166516c2850cb8e972149e453779fc075bc56d4025c919bdb0a5c665f3",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/paired-0-blocks.bin": "40d473cb163bc755715bd49e78f9c89b20040c7324c0ec8aadb4a8931725e082",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/banks.log": "db9eb60b1dfbf713014045d07161fb631dc6fce310be6a064c2747ea13962bfc",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/bank-readiness.py": "53e4cd49b383fd40a11dbbc570f3f626edb4d4945dcf3cd086063d23b2358738",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/LEDGER.json": "4ad27dae0f8d821ae3dd4f5ffad716c7a8e7769b9df783ba2b1a1d2eb7d9b2b2",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/compile.json": "25baa0ec424ac88b54f302fe3f8eba0a60f8c82338e187c937def685ed8dae40",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/lifecycle/stack.json": "8f515870c5506631ef953adf465f9e38200524ff4cc49ec1d51c56db5f1282b1",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/lifecycle/events.txt": "731821b936ee5c72c84fe8af6e23ba52eec6ee67afb9f1c6e78f740e03b8b961",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/lifecycle/blocks.bin": "1f4e78513a38dae34f8f73c5eda2a9d74b181847074d98f4f94158367f9ea573",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/lifecycle/SNAPSHOTS.json": "e6cb0cbcd41ebfbf255e3dbcdede02ab410b0b3eab73cf1711bc1906777fd763",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/lifecycle/port.log": "21495107133b98459d58d78262e4935ad828b0578af9c62da412effd72215f99",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/stack.json": "3ef56ac3cf31fc05a71717981de353e67f61b08b1febcae2b287c55af972c615",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/original-port.log": "a1ff9ecf27df6a7751368d8026d75c1c8192a6a57a172b1b64a93006f7dc994f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/original-prof.bin": "39581560dd9889c451edb92cdb9c6537e1c2066620ab848e03ee8c04e7f4bfa5",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/EXPECTED.json": "63d961a27016a0f792786fb6c2f98b23957b9da6fe31ee2dd9dfeba4c071f147",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/events.txt": "a99d58a499b1d3968fe207c91a35824902e3be957cb24114deb8678350fbf4f9",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/ui.script": "a236bcbccec921ee5aa4919904ea487966d2358a20737c71f4919d0e24ac018b",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/blocks.bin": "6f44553858252cde4d7534ec3ea5579199ba311594839b8dcbac93d279990530",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/ui-blocks.bin": "0ed15ff294faa5459e60a4abdc1cfa8d7e2498c2f341cb4f3245fdae5beab577",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/ui-port.log": "b46237c33dc834b1cb615200519841516e94e9e6546eb7137f379f331e38fffd",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/original-blocks.bin": "6f44553858252cde4d7534ec3ea5579199ba311594839b8dcbac93d279990530",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/ui-prof.bin": "4644fbf112f608486bb1d3940d5192c8c3ac627d83f83008d807610c189e8ffe",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/port.log": "7fe0dfd34fb81cb17218d259618a7765e206b424a723c94ce41decee0cb8975d",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/original-events.txt": "8cc20604b24917f762301876e0de68bba7d11cece9ae827d44289656654b8144",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/ui-part.bin": "68a083574a5e035e4de7cc587c497027484e398e71bf0abcc2d434752f972db0",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/ui-stack.json": "fc12e19c99f5fc4be383faee0c702afc24288a9db1c1232faa32ec0b78197a30",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/ui-events.txt": "72cd945a121dbc9e9ab389ee2347b185e6739ab012fc2e975c619a0318c1083f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/original-stack.json": "b9ce5771177a988bcb2b019e6fb6071df375ef1b17a509e4400354a4f12f707f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/audit/observer.h": "a213b9f6a0c6d3fd9fc0c7fb9ed2f5da32dc524a6cf8ba22191ad080a900ff91",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/audit/guard_audit.h": "422906af0ef47e5821faa6c4df340918273370213d7878335667c1700bc2f91c",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/audit/machine.cpp": "3890a49e2707333c7430c0fc9c55d3de3da7bafbaf9f9fe549f48cc02d538358",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/audit/BUILD.json": "d9049e7f321ee3d60a4cf46b3ab4ee0d6f771beaf8a97cdd6128a9c826202dd7",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/bank-panel/stack.json": "15c6fc8a659f5a23c829dddbb61f958e5fc5008dc707f4611abf99dff7783992",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/bank-panel/blocks.bin": "77646954788f1e00965678dcfc7f0cb45c7b6b01e36f761f4abab3e375ba98fc",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/bank-panel/port.log": "21495107133b98459d58d78262e4935ad828b0578af9c62da412effd72215f99"
+    }
+  },
+  "previous_final_safety_stop_is_historical": true
 }

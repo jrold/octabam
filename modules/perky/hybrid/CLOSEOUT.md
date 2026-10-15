@@ -2,18 +2,17 @@
 
 > Historical Goal 2 closeout. The later bounded software safety investigation is
 > [SAFETY_QUALIFICATION.md](SAFETY_QUALIFICATION.md). Its current decision is
-> **B. STRUCTURAL SAFETY CHANGE REQUIRED**: an actual-image adversarial test
-> demonstrates sequencer self-nesting on a 2,048-byte task stack, without an
-> established arrival/service bound. An IPL2→3 guard is proposed, not applied.
-> Normal-playback corruption/overflow/races were not reproduced. Complete real
-> machine/playing-bank transitions and dense event/trigger accounting remain
-> UNVERIFIED under the explicit structural-change stop condition. The prior
-> phrase “software safety defects” misclassified missing evidence and is retracted.
-> Real panel Part/STOP/START, working-bank queue
-> changes, saved controls/cold reload, and observed stack/DMA ownership now have
-> additional executable evidence. The corrected modeled worst is 323.765 µs at
-> CPU 264/PIT 132 MHz, with 39.047 µs headroom. Physical timing and the unwaived
-> missed 20% margin are separate from that software verdict. Goal 2 stays closed;
+> **BLOCKED — COMBINED STACK BOUND NOT ESTABLISHED**. The subsequently authorized
+> IPL2→3 operand guard passes its bounded local IRQ and producer tests. Real
+> chooser/Part/playing-bank, guarded saved-card reload, dense trigger/lock/UI/DMA
+> accounting and paired timing checks have scoped passes. No guard regression,
+> corruption or ownership race was reproduced. The interrupted-stock-task plus
+> nested-ISR ceiling is still UNVERIFIED; missing evidence is not a firmware bug.
+> The new dense modeled maximum is 324.004 µs in both original and guarded images
+> at CPU 264/PIT 132 MHz, with 38.808 µs headroom. The previous 323.765 µs was the
+> earlier workload maximum. Physical timing and the unwaived missed 20% margin
+> are separate from the software stack gate. No guarded installable set is
+> qualified and no flash is recommended. Goal 2 stays closed;
 > the historical timings and missing-test descriptions below are preserved as history.
 
 **CLOSED — UNQUALIFIED. Assessment complete; implementation qualification incomplete.**

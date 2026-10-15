@@ -55,7 +55,7 @@ import perky_image  # noqa:E402
 import perky_machine_module  # noqa:E402
 import repack_machine_loader  # noqa:E402
 from remix import arena, pack, platform_build, registry  # noqa:E402
-from remix.schema import Detour, DspRange, Linked  # noqa:E402
+from remix.schema import Detour, DspRange, Linked, Poke  # noqa:E402
 from verify_perky_table_image import exact_record, parse_upload  # noqa:E402
 
 HYBRID_CF_UNITS = (
@@ -171,6 +171,10 @@ def build_hybrid_module(original, *, generated_dir: Path, dsp_source: str):
     return dataclasses.replace(
         full,
         linked=linked,
+        pokes=full.pokes + (
+            Poke(0x400a1e66, bytes.fromhex('2200'), bytes.fromhex('2300'),
+                 note='authorized sequencer IPL3 guard: defer same-level reentry'),
+        ),
         detours=full.detours + (
             Detour(0x4001fbf8, bytes.fromhex('48794000aad0'), 'pkhybrid', 'pk_hybrid_isr',
                    'full CF frame ISR entry, independent of source callbacks', kind='lea'),

@@ -1,11 +1,44 @@
 # Bounded hybrid safety observer
 
-These tools inspect the existing hybrid; they do not build firmware or authorize
-installation. The final bounded decision is **B: structural safety change
-required**, with lifecycle and dense-accounting completion still UNVERIFIED.
+These tools inspect the existing hybrid; they do not authorize installation.
+The authorized IPL3 operand guard has scoped local passes. Real chooser/Part/
+playing-bank and dense delivery/lock/UI/DMA checks now pass their bounded cases.
+The combined all-path stock-task/ISR stack bound remains **UNVERIFIED**, and
+the current assessment is **BLOCKED**. No firmware defect is invented from it.
 Read `modules/perky/hybrid/SAFETY_QUALIFICATION.md` for the verdict and limits.
 
-Run only the new, bounded actual-image stack check and its decision selftests:
+Current entry points, using the retained private artifacts:
+
+```sh
+.venv/bin/python3 tools/perky/apply_hybrid_ipl_guard.py out/perky/hybrid/probe/mainos_PKHYB2P.bin out/perky/hybrid/ipl3/trial-mainos.bin
+.venv/bin/python3 tools/verify/verify_perky_hybrid_ipl_guard.py --selftest
+.venv/bin/python3 tools/verify/verify_perky_hybrid_ipl_guard.py --unit
+.venv/bin/python3 tools/verify/verify_perky_hybrid_ipl_guard.py
+```
+
+The final command reuses recorded runs and intentionally exits1 for the missing
+stack ceiling after its scoped assertions pass. `--unit` executes the actual
+handler and original-image negative controls; it does not repeat the workload
+matrix. `--revert` on the patch tool restores the exact old hash into a separate
+output. Original inputs are never overwritten. The module factory's additional
+poke is compared with the previous factory and reproduces the exact trial.
+
+`guard_audit.h` augments a staged copy of the existing observer: actual source
+tuples, CF delivered-trigger counters and sys queue posts/returns. CF preparation
+is inlined in the renderer, so its exported wrapper PC is not used as an event
+oracle. `dense_fixture.py NEW_OUTPUT_DIR` regenerates the 300 BPM fixture from the
+existing private safety card and was checked byte-identical to the used card.
+`verify_perky_hybrid_guard_lifecycle.py` drives the real chooser/Part/bank path;
+`bank_panel.py` is the separately accepted bank-only panel trace. It selects the
+pattern trig directly from BANK B: SELECT PTN, without reopening PATTERN, and
+waits at most four seconds for queued changes.
+
+Recorded runs and hashes are in `out/perky/hybrid/ipl3/IPL3_QUALIFICATION.json`.
+Sources, compiler/link commands and all accepted inputs stay in this checkout;
+no proprietary image/project bytes belong in Git. The current verdict does not
+qualify a fresh rebuild or any flash wrapper.
+
+Historical pre-authorization stack check (original unguarded image):
 
 ```sh
 .venv/bin/python3 tools/verify/verify_perky_hybrid_safety_stop.py --selftest

@@ -143,7 +143,7 @@ run observed vector `0x60` → `0x41` → `0x4f`, nesting three handlers on the 
 task stack. This is an observed chain, not an all-path stack ceiling; see
 [the bounded safety report](../../modules/perky/hybrid/SAFETY_QUALIFICATION.md).
 
-The 15 Oct final bounded actual-image test also forces source32 again after the
+The 15 Oct pre-authorization actual-image test also forces source32 again after the
 IPL2 write: the level3 handler reenters itself, consuming another 8-byte exception
 frame and 208-byte save on the interrupted task stack. Nine deliberately forced
 entries plus 16 task bytes use 1,960 of keyrepeat's 2,048 bytes. The test stops
@@ -151,7 +151,17 @@ before a tenth would exceed it. This is an adversarial arrival test, not a
 normal-playback overflow or a proven physical arrival schedule. No finite
 arrival/service bound closes that cycle. A disposable IPL3 counterfactual defers
 the next request locally; firmware remains unchanged and that guard is not yet
-qualified. See the report's structural-change approval boundary.
+qualified at checkpoint `3167a977`.
+
+The subsequently authorized hybrid module changes only the two-byte operand at
+`0x400a1e66` to `0x2300`. Actual handler tests defer source32 until RTE while
+UART6 and integrated audio5/eDMA6 still execute. Three paired clock/dense runs
+have identical source/DSP blocks and maximum ISR cycles; the new bounded modeled
+maximum is 85,537 cycles / 264 MHz = 324.003788 µs in both images. Real chooser,
+Part, bank and dense UI/lock delivery paths also have scoped passes. This guard
+does not switch A7 or establish the combined stock-task/nested-ISR stack ceiling;
+that missing bound still blocks a qualified diagnostic candidate. See the
+[current safety report](../../modules/perky/hybrid/SAFETY_QUALIFICATION.md).
 
 Time-slice: PIT0 `0xfc080000`, prescaler 2¹¹ (PCSR `0x0b36` at init,
 `0x0b3f` on every switch), PMR is 643. Correction (14 Oct 2026): stock

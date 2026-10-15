@@ -1,227 +1,226 @@
-# Final bounded pre-hardware safety decision — 15 October 2026
+# Authorized IPL3 guard qualification — 15 October 2026
 
-**B. STRUCTURAL SAFETY CHANGE REQUIRED — STOP FOR APPROVAL.**
+**BLOCKED — COMBINED STACK BOUND NOT ESTABLISHED.**
 
-The actual sequencer interrupt can reenter itself on a stock 2,048-byte task
-stack. Its priority is 3, but it clears its force request and lowers IPL to 2
-before doing its work. A new actual-image test establishes the recursion and
-its stack growth. No finite arrival/service bound has been established to limit
-that recursion. The minimum proposed remedy is an IPL 2→3 guard at the existing
-mask write; it has been tested only in a disposable emulator machine and **has
-not been applied to firmware**. It is not yet a qualified fix.
+The authorized minimal guard is implemented and its **bounded local checks pass**.
+Real chooser/Part/playing-bank transitions, saved-card reload and dense
+trigger/lock/UI/DMA accounting now have additional executable passes. No guard
+regression, corruption, DMA ownership race or modeled deadline failure was
+reproduced. **The guarded firmware is not locally qualified for a physical probe:**
+the combined interrupted-stock-task/ISR upper bound is still UNVERIFIED.
+Missing evidence is not being called a demonstrated firmware defect.
 
-This is a structural safety-case failure, **not a reproduced normal-playback
-stack overflow, memory corruption, DMA race or deadline failure**. The prior
-report's phrase “software safety defects” incorrectly grouped missing lifecycle
-and trigger evidence with demonstrated defects. That classification is retracted.
+This is the final result of the bounded authorization beginning at
+`3167a977c78beda86ade048f3f71545c3005508d`. It does not satisfy the requested
+qualified-candidate acceptance. The remaining stack obligation could not be
+closed within this bounded task. No architectural change, synthesis optimization,
+flash, push, branch/worktree creation or Goal 3 work was performed. Stop here.
 
-The user's final bounded objective explicitly requires stopping for approval
-when a structural stack change is required. That stop condition is reached.
-The other two completion gates remain UNVERIFIED; this report does not claim
-three successful investigations or recommend a hardware probe. No firmware
-correction, optimization, flash, push, branch, worktree or Goal 3 work occurred.
-Goal 2 remains closed. Start checkpoint: `689860d71b1b7447223885481c209cc4df5adaf6`.
+## Exact implementation and identity
 
-## Results and executable evidence
+Preflight checked the original MAIN hash, disassembly and actual interrupt
+behavior **before creating the trial**:
 
-| Area | Final result | Evidence and limit |
-|---|---|---|
-| Stack safety | **FAIL: structural bound** | Actual-image forced arrivals produce nine live sequencer frames on keyrepeat; no all-path bound. A test-only IPL3 control defers another level3 request. |
-| Lifecycle completion | **UNVERIFIED** | Prior real Part/STOP/START, working-bank A→B→A, signature/dispatcher components and actual SAVE/cold-reload passes are retained. Full real chooser/machine and playing-bank transitions during mixed playback were not completed before the stack stop. |
-| Dense locks/trigger accounting | **UNVERIFIED** | Prior actual source ownership/cursor and bounded panel passes are retained. No independent expected→delivered dense-pattern/lock/reversion/ALGO/MODE/UI-event count is claimed. |
+- `0x400a1e64`: original instruction `46fc 2200`, `move.w #0x2200,sr`.
+- `0x400a1e66`: two-byte operand, file offset `0xa1a66` relative to MAIN base
+  `0x40000400`. It becomes `0x2300`; the opcode remains `0x46fc`.
+- The operand write spans two bytes; **one byte actually differs**, `0x22→0x23`
+  at `0x400a1e66`. Every other MAIN byte is identical.
+- Actual boot installs source 32/vector `0x60` at level 3, handler `0x400a1e0c`.
+  It masks to 7, reserves 208 bytes and clears the force bit before the mask write.
 
-New entry point:
+The hybrid module factory in `tools/perky/build_cf_dsp_hybrid.py` now declares
+only this additional operand poke. An executable comparison against the factory
+at `3167a977` verifies every other module field unchanged, including hooks, DSP,
+FX and claims. Applying that declaration to the frozen MAIN exactly reproduces
+the tested post-link trial. `tools/perky/apply_hybrid_ipl_guard.py` provides the
+strict hash-bound application and inverse operation without overwriting inputs.
+
+| Artifact | SHA256 |
+|---|---|
+| Original MAIN, preserved | `a2d6915bc71a97d63f44e223e558cc4941d52113708f7ba92a57bdd669339b40` |
+| Guarded post-link trial, 1,483,190 bytes | `055cced1bb5319c35ee7d4708359a60a3e207a69d73711d2d536beadca060fbe` |
+| Unchanged runtime ELF | `f35c87b393ecc798eb103fcf9672f7b44ca64bf1f3df684d644d63b96e512a9e` |
+
+Trial: `out/perky/hybrid/ipl3/trial-mainos.bin`. This is a derivative of the
+existing build11 image; it is **not a fresh runtime rebuild or a newly qualified
+installable set**. Existing encrypted/card/MIDI wrappers still contain the old
+image. No guarded wrappers were produced. Frozen DSP uploads, six-word guard,
+all twelve retained FX, engines and assets remain byte-identical. Existing exact
+PCM/state/RNG and dependency evidence is retained for the unchanged code; three
+new original/guarded integration pairs also have byte-identical source/DSP blocks.
+
+The inverse patch was tested and restores the exact original MAIN hash.
+No legitimate guard regression triggered the mandatory revert condition; the
+verified guard is retained. Firmware correction iterations: one. Synthesis
+optimization iterations: zero.
+
+## Executable result
 
 ```sh
-.venv/bin/python3 tools/verify/verify_perky_hybrid_safety_stop.py --selftest
-.venv/bin/python3 tools/verify/verify_perky_hybrid_safety_stop.py
+.venv/bin/python3 tools/verify/verify_perky_hybrid_ipl_guard.py --selftest
+.venv/bin/python3 tools/verify/verify_perky_hybrid_ipl_guard.py --unit
+.venv/bin/python3 tools/verify/verify_perky_hybrid_ipl_guard.py
 ```
 
-Five decision selftests pass. The actual-image C++ harness exits **0** after both
-unchanged-image nesting and counterfactual checks pass. The assessment command
-exits **1 intentionally**, reporting decision B; that is the failed qualification
-gate, not a crashed test. Inputs, linked libraries, test source, commands, binary
-and log hashes are in `out/perky/hybrid/safety-close/FINAL_SAFETY_STOP.json`, also
-embedded in [SAFETY_QUALIFICATION.json](SAFETY_QUALIFICATION.json).
-The original bounded receipts are hash-checked and reused, not rerun.
+Five decision/input selftests pass. The focused actual-image C++ test exits0.
+The consolidator checks the recorded runs without repeating them and deliberately
+exits **1 for the unverified essential stack gate**, after scoped assertions pass.
+It does not label that qualification failure a reproduced firmware bug.
 
-The first harness draft wrongly omitted the task exit return address; a trace
-also showed that the CPU executes the task's PEA before acknowledging the first
-request. The accepted harness asserts the actual interrupted-task usage of
-16 bytes and decodes every actual exception vector. These were harness
-corrections, not firmware defect fixes. Firmware correction iterations: **0**.
+New receipt: `out/perky/hybrid/ipl3/IPL3_QUALIFICATION.json`, embedded in
+[SAFETY_QUALIFICATION.json](SAFETY_QUALIFICATION.json). It binds the trial,
+module declaration, test sources, linked libraries, observer sources, private
+fixtures, logs, records and outputs. Reproduction inputs are the existing private
+safety fixture and saved card; no proprietary image/project bytes are committed.
+The supplemental observer is linked from staged emulator sources; shared emulator
+sources, libraries and executable are unchanged.
 
-## 1. Exact stack path and capacity
+| Obligation | Result | Established scope |
+|---|---|---|
+| Exact guard/rollback and other-byte preservation | **PASS** | Full-file comparison and inverse hash |
+| Level3 non-reentry / one deferred request | **PASS locally** | Full quiescent actual handler; guarded exception-entry SPs stay equal; original image reenters as negative control |
+| Legitimate higher-priority IRQs | **PASS locally** | Actual UART6 unit input; actual audio5/eDMA6 integrated chains |
+| Actual clock producers | **PASS bounded pairs** | 143/143 internal requests/services; 986/986 external-clock workload requests/services; zero pending/coalesced requests |
+| Full-ISR timing impact | **PASS observed comparison** | Same maximum cycles and identical source/DSP blocks in all three original/guarded pairs |
+| Real chooser, Part, working/playing banks | **PASS bounded paths** | T1/T2/T5/T6 deselection/reselection, Part change and actual panel A→B→A |
+| Saved-project compatibility | **PASS scoped** | Reuse prior actual SAVE; guarded cold reload restores all six edited controls and four active hybrid chains |
+| Dense triggers / locks / UI / DMA | **PASS bounded paths** | Counts, sample spacing, CF delivery counters, native DMA trigger records, lock tuples, queue accounting and modeled ownership |
+| Combined all-path stack ceiling | **UNVERIFIED — blocking** | No closed stock-task/indirect-callee and nested-ISR bound |
 
-Actual boot installs vector `0x60` at `0x400a1e0c` and INTC0 source32 at level3.
-The test reaches actual keyrepeat TCB `0x460d4f80`, created with stack
-`[0x460d4780,0x460d4f80)`, 2,048 bytes. It writes source32's bit in the actual
-modeled INTC force register. Controller delivery and the CPU's exception entry
-execute normally; no synthetic ISR or substituted task stack is used.
+## Stack: what the guard proves and what it does not
 
-The self-cycle is:
+The actual keyrepeat task is created with `[0x460d4780,0x460d4f80)`, 2,048 bytes.
+Each sequencer invocation adds eight aligned exception bytes plus 208 handler
+bytes. The original negative control reenters; the guarded handler defers the
+request until it returns, with the next exception entering at the same SP.
+Actual audio5 and level6 work still execute above IPL3. Same-level ATA DMA14 work
+is deferred while that mask remains3. No returning level7 completion guarantee
+is claimed; its terminal halt remains a fault policy outside the bounded probe.
 
-1. `0x400a1e0c`: mask to IPL7.
-2. `0x400a1e10`: reserve 208 bytes; save registers in that allocation.
-3. `0x400a1e1a`: clear source32's force bit.
-4. `0x400a1e64`: write SR `0x2200`, permitting level3 again.
-5. A new source32 request enters the same handler before the older one returns.
+The original nine-frame adversarial nesting result remains historical evidence,
+not a natural playback overflow. Arbitrary host writes can still merge in the
+single force latch while masked. They are **not independent musical ticks**:
+the sequencer uses due flags and countdown state. An early test assertion that
+multiplied IRQ acknowledgements by a fixed phase increment was invalid and was
+removed. It is not reported as lost musical ticks or a firmware fix. Actual
+producer/workflow results, below, are the clock evidence.
 
-Each aligned invocation adds **8 exception bytes + 208 handler bytes = 216**,
-before deeper sequencer calls. The accepted trace is:
+All accepted new observed task extents and bottom watches remained clean.
+Maximum observed audio requirement is **1,348 bytes**, including observed nested
+work; the earlier1,316 observation is not a ceiling. Created-task capacities are
+unchanged: storage/keyrepeat/UI 2,048; voice 4,096; p2a/p2b/p2c/p1b/sys 8,192;
+engine 16,384. Main's 4,096-byte extent remains inferred from adjacent allocations.
+Across the new traces, smallest-task observed maxima include storage 76,
+keyrepeat 1,352 and UI 1,384 bytes. Those are observations, not reserves or bounds.
 
-| Live sequencer depth | Interrupted task B | Sequencer B | Combined B | Free B |
-|---:|---:|---:|---:|---:|
-|1|16|216|232|1,816|
-|3|16|648|664|1,384|
-|6|16|1,296|1,312|736|
-|9|16|1,944|1,960|88|
-|10, arithmetic only|16|2,160|2,176|−128|
+**Maximum established all-path combined requirement: UNKNOWN.** The guard still
+runs on interrupted-task A7. It does not turn the unused runtime-arena stack
+allowance into an interrupt stack. The unchanged compiler audit's 680-byte render,
+80-byte CF adapter and 348-byte snare entries are individual frames, not a closed
+sum of stock callers, arguments, return addresses and higher-priority handlers.
 
-The tenth request was **not issued**. Its prologue would reserve below the stack
-bottom and its register save would write there. The test stops in-bounds.
+The specific unresolved example is storage entry `0x4001ee30` → indirect call
+`0x4001eef2`, through the driver table at `[0x460d16cc]`. No closed bound for that
+preemptible call chain plus sequencer/audio/level6 work has been established.
+Qualification needs the combined requirement compared with its 2,048-byte
+capacity. A clean observed peak does not discharge that obligation. No overflow
+or unsafe numerical ceiling was demonstrated, so no additional byte fix can
+honestly be designated necessary from these results. Closing this specific
+budget is the remaining remedy to the safety case; stack relocation/resizing
+would be a separately approved structural change, not silently added here.
 
-These arrivals are deliberately adversarial host force writes at the handler's
-unmask point. They are **not a naturally reproduced playback sequence or an
-assertion that hardware can generate requests at that rate**. Actual firmware
-producers include the source32 force sites at `0x40005a74` and `0x4000ae00`.
-A proof based on bounded production rate and complete sequencer service time
-has not been established; the permitted nesting graph itself contains a cycle.
-Consequently increasing a finite task stack alone does not close that graph.
+## Actual producers, progression and timing
 
-The hybrid audio ISR uses interrupted-task A7. It temporarily saves 16 bytes,
-then returns to the stock audio frame reserving 252 bytes; these saves are
-sequential. Compiler audit covers 47 functions, with individual frames of 680
-bytes for render, 80 for the CF adapter and 348 for snare. These individual sizes
-are not a complete sum of arguments, return addresses and callees. Audio level5
-can interrupt the sequencer, and level6 eDMA/UART work can interrupt audio.
-The prior run actually observed `0x60→0x41→0x4f`, 9,370 balanced audio entries,
-and a **1,316-byte observed audio maximum including observed nested work**.
-That peak does not bound every level6 path, interrupted task, or sequencer body.
-Level7's terminal halt path also has no returning-service guarantee.
+Three original/guarded pairs used CPU 264 MHz, PIT 132 MHz and the cycle-driven
+clock, real DSP payloads and simultaneous native DSP/CF/stock playback:
 
-**Maximum established all-path combined requirement: UNKNOWN; no finite bound
-for the unrestricted self-cycle.** The new 1,960-byte forced-case observation
-and prior peaks are not ceilings. Available DRAM is not an interrupt stack.
+| Workload | Frames each image | Tick source writes / services, each | Max full ISR cycles, original / guard | Source/DSP blocks |
+|---|---:|---:|---:|---|
+| Existing mixed snare fixture |2,048|143 /143|85,474 /85,474|Identical |
+| External MIDI clock |1,024|986 /986|85,484 /85,484|Identical |
+| Eight-track dense locks at 300 BPM |4,096|Producer counts separately checked in bounded UI run|85,537 /85,537|Identical |
 
-Prior accepted capacities / combined observations, preserved unchanged:
+External input comprised 984 F8 bytes, one per16-sample frame, about 2,756 bytes/s
+(below the MIDI wire limit), plus two startup source requests. The firmware
+consumed all bytes and its musical clock counter reached 984. Source force writes,
+clears and services agree; no request remained pending or coalesced in these
+runs. This does not prove every malformed or arbitrarily timed input safe.
 
-| Task | Capacity B | Prior observed use B |
-|---|---:|---:|
-|storage|2,048|76|
-|keyrepeat|2,048|1,352|
-|UI|2,048|148|
-|engine|16,384|3,016|
-|p2c / p2a / p2b|8,192 each|184 / 116 / 180|
-|p1b|8,192|2,124|
-|main, inferred extent|4,096|1,888|
-|sys|8,192|2,104|
-|voice|4,096|40|
+The dense fixture has eight active tracks, every step triggered, alternating
+six-control locks and reversion, disabled source LFOs and retained active FX.
+The first run delivers 30 triggers per track; the UI run delivers 31 per track.
+All successive source events are exactly **2,205 samples apart at 300 BPM**,
+including active retriggers and repeated pattern loops. No cumulative drift was
+observed. Native published trigger flags and CF delivery counters match.
 
-Main's extent is inferred from adjacent allocations, not a captured create size.
-The ten other task sizes are actual RTOS create arguments. The existing observer
-calibration covers both step paths, leading LEA/SR entries, level5→6 nesting,
-RTE balance, guard/extent violations and positive/negative modeled DMA overlap.
+The existing live/interactive runners retain their instruction-rate sample clock;
+the parsed cycle-clock option is applied by the sequencer runner. Consequently
+the UI/chooser traces establish functional ordering and counted delivery in that
+model, not cycle-driven physical arrival guarantees. The three paired sequencer
+workloads above are the cycle-driven timing/progression comparisons.
 
-## Proposed minimum structural change — approval required
+New bounded modeled maximum: **324.003788 µs**, deadline **362.811791 µs**,
+headroom **38.808004 µs**. The previous323.765152 µs remains a correct earlier
+workload result; the denser case extends the observed maximum. Its85,537-cycle
+maximum is the same in original and guarded images: observed guard peak delta0.
+The 80% ceiling remains 290.249433 µs, now missed by 33.754355 µs. **The 20% engineering
+margin remains UNWAIVED.** No synthesis optimization was attempted.
 
-Change the immediate operand at `0x400a1e66` from `0x2200` to `0x2300`, retaining
-IPL≥3 during sequencer processing. This is a **two-byte image operand change**,
-with **0 extra DRAM, 0 extra stack, 0 added instructions and 0 direct modeled
-instruction-cost delta**. No interrupt-stack architecture or arena is proposed.
-Audio5 and DMA/UART6 remain eligible by priority. Same-level ATA DMA14 completion
-is deferred along with sequencer reentry; its service delay must be assessed.
+## Lifecycle and concurrency details
 
-The disposable-memory counterfactual boots a second real machine, changes only
-that operand, admits one actual tick, then forces another. Through the first
-actual body call (`0x400a1608`), the second request stays pending and no second
-sequencer frame appears. The original input file remains hash-identical.
-This establishes the local guard mechanism only. It does not prove whole-body
-callee mask behavior, eventual tick counts, ATA latency, or total stack safety.
-The force bit can coalesce arrivals while masked, so replacing recursion with
-deferral needs explicit delivery/count semantics.
+Actual SRC SETUP opened on PERKY row 5. Moving to FLEX row 1 and committing removed
+the signature on each of T1/T2/T5/T6; returning to PERKY restored it while other
+native/CF/stock tracks continued. Deselecting retained the old stored six values;
+fresh PERKY admission intentionally initialized six defaults. Track selection
+and dense knob edits retained each track's own control state. A real Part change
+selected another pre-staged Part with its six controls and signatures intact.
 
-Acceptance for this proposed change, if authorized: audit all sequencer callees
-and SR restores; test pending delivery/counts and absence of recursive growth;
-close the finite task+sequencer+CF-engine+level6 bound against every capacity;
-check ATA14 service under audio5/DMA6; complete the two remaining lifecycle and
-dense-accounting gates; then recheck DSP/guard/FX/PCM/state/RNG identities and
-corrected-clock ISR timing. The proposal alone does not qualify those results.
-No claim is made that this one operand necessarily suffices for the entire bound.
+The first bank script reopened PATTERN after BANK B had already opened
+“BANK B: SELECT PTN”; that replaced the temporary choice. It was a harness-path
+failure, not a demonstrated guard defect. The corrected real-panel path selects
+the pattern trig directly and waits for the queued switch. Working and playing
+banks both change A→B→A. The separate corrected bank run also performs actual
+STOP-to-card profile export, producing `PKH20000.PRF`. Bank/Part tests remain
+bounded cases, not every possible loader interleaving.
 
-## 2. Retained lifecycle evidence and precise missing result
+The actual earlier SAVE PROJECT receipt is reused. A fresh guarded boot loads
+that saved card, restores T2's `[71,112,2,72,56,0]` exactly and produces significant
+post-FX audio on T1/T2/T5/T6 over 512 frames. Serialization, init, native control,
+PCM/state/RNG and six-word-guard code did not change.
 
-The accepted linked-component gate passed 32 signature creation/removal/donor/
-SRAM-mirror cases across two banks, four Parts and T1/T2/T5/T6; eight actual stock
-continuation delegations; and four generation handoffs matching first-trigger
-records and all 3,948 live CF state/RNG bytes. The actual panel changed Part to2
-and exercised PLAY→STOP→PLAY→STOP. The stock sys queue changed the **working**
-bank A→B→A over 2,048 frames; the playing bank stayed A.
+The dense UI run supplies 16 key edges and 12 encoder reports; all are consumed.
+Encoder deltas total+2 for each of A..F across the two selected CF tracks.
+These one-detent reports leave the stored MODE choice unchanged; MODE transitions
+are established by the lock tuples, not inferred from encoder report counts. There are 253 sys posts and 253 dequeues,
+with zero final backlog. Alternating locked tuples and subsequent base-value
+reversion match the fixture, including ALGO/MODE transitions.
 
-Actual MKII SAVE PROJECT retained 256 staged working-Part signatures and all six
-edited T2 controls `[71,112,2,72,56,0]`. A fresh boot reloaded those controls and
-rendered all four hybrid post-FX chains for 512 frames, with native DSP T1/T5 and
-CF T2/T6 active concurrently. Those tests are reused with their original limits.
-DSP/CF routing is fixed by track; UI selection is not a same-track engine switch.
+For every captured active publication, native trigger flags match source events;
+CF fixed-slot segment geometry matches the event split and sums to 16 samples;
+stock records decode to 16 samples. The initial empty/inactive publications and
+one terminal nontrigger frame not yet published at capture end are accounted
+separately. No trigger is hidden in that terminal exception. The unchanged exact
+transport tests retain their moving-cursor/fixed-slot/trailing 176-byte proof.
+Modeled source ownership watches report zero overlaps or restarts, and all
+accepted complete ISR samples meet the modeled period. A live quit can interrupt
+a final ISR; it is excluded from completed-duration claims rather than called
+an unbalanced firmware return.
 
-**Missing:** verified real chooser deselection/reselection and playing-bank
-transitions during mixed playback, with routing, retained state and stale-record
-checks through the transition. No failing case or fix is invented. No new
-lifecycle completion run was made after the structural stop condition.
+## Physical uncertainties and stop
 
-## 3. Retained UI/DMA evidence and precise missing result
+Physical cache/SDRAM/FlexBus/eDMA arbitration/coherence, interrupt release-to-entry
+and release-to-completion latency, independent core completion, and actual timer/
+probe/export cost remain unmeasured. Emulation establishes none of their silicon
+worst cases. Physical timing is not made a prerequisite for its diagnostic
+experiment; the **software stack qualification gap** is the blocking criterion.
 
-The accepted 3.4-second panel run observed 17,635 dispatcher entries per track,
-18,740 source DMA starts, 5,190,502 source CPU writes, zero active-source overlaps,
-zero channel restarts, zero stack-extent/bottom-watch violations and zero modeled
-ISR duration misses. Source TCDs used NBYTES336/CITER4/SOFF16. Source addresses
-were `0x80001c90/0x800021d0/0x80002710/0x80002c50` (4,685 starts each).
-The mover's contiguous 1,344-byte snapshot defines this modeled ownership claim;
-it is not every silicon stride/modulo/cache mode.
-
-Existing exact transport tests distinguish moving cursor `0x80001c80` from fixed
-publication `0x80001c90 + ping*0xa80 + track*336` and preserve the trailing176
-bytes. Panel input drained, sampled peak2 bytes; firmware RX peak10/32 and sys
-queue peak8. Encoder coalescing prevents assuming one event per detent.
-
-**Missing:** independent expected/delivered dense triggers, lock/reversion and
-ALGO/MODE transitions, CF/DSP records and DMA publications, plus UI consumed/
-queued/dropped counts during mixed DSP/CF/stock playback. Queue peaks and audible
-output do not establish these counts. No dropped trigger, corruption or ownership
-race was reproduced; no fix is claimed. No new dense run followed the stack stop.
-
-## Corrected timing, identity and disposition
-
-CPU **264 MHz**, PIT **132 MHz**. Retained modeled worst full ISR **323.765 µs**;
-frame deadline **362.812 µs**; modeled headroom **39.047 µs**. The 80% ceiling is
-290.249 µs, missed by 33.516 µs; **20% engineering margin remains UNWAIVED**.
-The shorter panel peak of 320.947 µs does not replace that worst.
-
-Remaining hardware-only uncertainties are physical cache/SDRAM/FlexBus/eDMA
-arbitration and coherence; interrupt release-to-entry and completion latency;
-independent two-core completion under bus contention; and physical timer-read/
-probe/export overhead. Emulator service windows do not establish silicon WCET.
-Neither physical timing nor the missed margin causes decision B or is being made
-a prerequisite for the experiment intended to measure it.
-
-Candidate MAIN remains **1,483,190 bytes**, SHA256
-`a2d6915bc71a97d63f44e223e558cc4941d52113708f7ba92a57bdd669339b40`.
-Runtime ELF SHA256
-`f35c87b393ecc798eb103fcf9672f7b44ca64bf1f3df684d644d63b96e512a9e`.
-No firmware hash changed. Existing DSP identity/166 dependencies, 28 generated
-identity checks, exact PCM/state/RNG oracle, nine CTests, 24-case refhash and
-package/roundtrip evidence remain scoped passes for this unchanged firmware;
-they were not repeated. Original PERKY4S DSP uploads, six-word guard, engines
-and all twelve effects remain untouched.
-
-Rollback reference remains PERKY4S source
+No qualified guarded installable set is offered, and no flash authorization is
+requested. The known physical rollback remains PERKY4S source
 `16a8de19a17ee4cba765cbdb30ca051f85af4e23`, MAIN SHA256
 `be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0`.
-No installation is recommended. Structural implementation requires user approval;
-any later flash would require separate explicit user authorization. Stop here.
+No hardware changed. The current bounded task stops with the guard's scoped
+passes and one explicit unverified essential gate.
 
-Historical reports and receipts remain available in
-`git show 689860d:modules/perky/hybrid/SAFETY_QUALIFICATION.md` and the archived
-`bounded_followup` object in the JSON report. The commit containing this report
-records only the verified host tools and documentation; its exact ID is supplied
-in the final handoff.
+Historical pre-guard report: `git show 3167a977:modules/perky/hybrid/SAFETY_QUALIFICATION.md`.
+The exact commit containing this implementation and assessment is in the final handoff.
