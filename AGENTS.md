@@ -162,7 +162,7 @@ moment it costs real work, and add its line here.
 - [MACSR S/U is bit 6: 16-bit rounding on the ACC read-out](docs/contributing/TRAPS.md#trap-macsr) — read the CFPRM's MOVCLR pseudocode before touching `accRead`.
 - [The vendored AGU mis-stepped a pre-decrement from a modulo base](docs/contributing/TRAPS.md#trap-agu-modulo) — fixed in `agu.h`; the bit-identity gates audit it.
 - [A rewritten trampoline is not retranslated](docs/contributing/TRAPS.md#trap-trampoline) — never rewrite emulated code in place (`r.emac_slots`).
-- [A measurement can be structurally blind to what it rules out](docs/contributing/TRAPS.md#trap-blind-instrument) — before a null result, ask what the instrument cannot see.
+- [A measurement can be structurally blind to what it rules out](docs/contributing/TRAPS.md#trap-blind-instrument) — before a null result, ask what the instrument cannot see; before-step IRQ observers must distinguish observation from execution (private-stack switch/RTE window controls).
 - [A probe builder's success label is not qualification](docs/contributing/TRAPS.md#trap-hybrid-receipts) — bind sustained timing, active audio, lifecycle and timer evidence to the actual image and recorded source commit.
 - [A bus client that registers and writes zero steals everyone's level](docs/contributing/TRAPS.md#trap-bus-zero-client) — N/(N+1) dilution; gate registration on the knob.
 - [r7 scratch `$00..$83` is the per-instance block; `$84+` hangs the unit](docs/contributing/TRAPS.md#trap-r7-scratch) — the slot census of the source is the truth, not the header map.

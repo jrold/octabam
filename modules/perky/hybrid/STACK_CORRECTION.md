@@ -1,6 +1,10 @@
 # Stack correction decision — 15 October 2026
 
-**Deliverable B: STOP for approval of a dedicated audio-interrupt stack.**
+**Historical deliverable B; subsequently approved and implemented.**
+
+The approved successor is [PRIVATE_STACK_QUALIFICATION.md](PRIVATE_STACK_QUALIFICATION.md),
+with the changed firmware, scoped private/residual budgets and new package hashes.
+The decision and unchanged checkpoint evidence below predate that approval.
 
 Starting checkpoint: `821cc49c05728b6e3730ce3c934dfef7f04b7b90`, existing
 `perky-cf-dsp-hybrid` checkout. The IPL3 guard is preserved. No firmware source,

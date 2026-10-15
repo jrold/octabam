@@ -1,0 +1,481 @@
+{
+  "schema": "octabam.perky.hybrid.private-stack-qualification.v1",
+  "status": "LOCALLY_QUALIFIED_DIAGNOSTIC_SCOPED_TO_APPROVED_STACK_CORRECTION; REVIEW_BEFORE_HARDWARE",
+  "firmware_source_commit": "7878b3d6e0f9738d99c2ac65997e47001f4dc75c",
+  "hybrid_source_id": "0c8ca62ab6058b38e2363f8ecb0041c04ce11099ce42dbaf0de21d7201cdde52",
+  "artifacts": {
+    "mainos": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/mainos_PKHYB2P.bin",
+      "bytes": 1483166,
+      "sha256": "d254bc2f72a1c78d75f1652f89311d0b841246ad228fc6dc3324fd6717c00f48"
+    },
+    "fragmented_normal": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/fragmented-normal.bin",
+      "bytes": 1335990,
+      "sha256": "a35734045f3378aa12cdb794547c255d69c6d42989effc67fc1ce49368cd0bc9"
+    },
+    "runtime_elf": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/platform/runtime.elf",
+      "bytes": 360940,
+      "sha256": "3ec97322ae4ff9fbe53c6d58e051a7174bac324abe594e90db20ca0d702d9bcf"
+    },
+    "runtime_raw": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/platform/runtime.raw",
+      "bytes": 359716,
+      "sha256": "e0700a520ba1305fad26121ddf6f7dcaedb989ef7a9339483c5e8ec61e89ca89"
+    },
+    "dsp_identity_report": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/DSP_IDENTITY.json",
+      "bytes": 15204,
+      "sha256": "498f7bdc062d88f426a49d39a1a64903e2876e71d9bcaf9e229d4d48d3d6f5b8"
+    },
+    "memory_report": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/MEMORY.json",
+      "bytes": 78892,
+      "sha256": "9fe3fd8d3ce988758379ddf8cd1a846847b974f25d5d1818250cddf2c8cb0f9b"
+    },
+    "elek": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/elek_PKHYB2P.bin",
+      "bytes": 809134,
+      "sha256": "c0328837340929a1bee7a0b837baecd77662bd1702b25284775d01a92b51e1a4"
+    },
+    "card": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/OCTATRACK_PKHYB2P.bin",
+      "bytes": 809152,
+      "sha256": "aec75e1484ed37f70801d51ba78d44fbd83501d4c9875799acf7f8328c4652c4"
+    },
+    "midi": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/OCTATRACK_OS1.40C_PKHYB2P.syx",
+      "bytes": 1130251,
+      "sha256": "f155d1eff0b816250bb17b656b3353b3d08df7afaab74d2ed768027069a20304"
+    },
+    "notes": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/PKHYB2P_PROBE_NOTES.txt",
+      "bytes": 1269,
+      "sha256": "ee97afc747b76d1e6e50aef1a8e05185d01070750b5d20f6d0f389f7a8e77f34"
+    }
+  },
+  "stack_budgets": {
+    "private_audio_including_higher_nesting_bytes": 1526,
+    "private_capacity_bytes": 4096,
+    "private_remaining_bytes": 2570,
+    "residual_by_level_bytes": {
+      "1": 107,
+      "2": 39,
+      "3": 695,
+      "4": 111,
+      "5": 83,
+      "6": 218
+    },
+    "residual_irq_sum_bytes": 1253,
+    "residual_task_including_exit_and_all_IRQ_bytes": {
+      "storage": 1577,
+      "keyrepeat": 1361,
+      "UI": 1841
+    },
+    "task_capacity_bytes": 2048,
+    "bottom_instrumentation_bytes": 32,
+    "comparison_only_other_tasks": "Audio prefix/tail cannot exceed the old audio exception/frame requirement. Their unchanged base call graphs below remain outside this bounded correction; no new all-path stock-OS proof is claimed."
+  },
+  "static_scope_limits": [
+    "Uses the pinned firmware C ABI: d2..d7/a2..a6 preserved across calls; valid stock tables/indices and seven-stage eDMA protocol. Contract provenance is documented in PRIVATE_STACK_QUALIFICATION.md.",
+    "Unknown callbacks/jump tables remain blocking.",
+    "Private boundary excludes original exception frame; nested IRQ costs must be added."
+  ],
+  "unchanged_larger_stock_task_graphs": {
+    "voice": {
+      "status": "OPEN",
+      "reason": "indirect jsr at 0x40005576; chain 0x40005540"
+    },
+    "p2a": {
+      "status": "OPEN",
+      "reason": "indirect jsr at 0x40017f68; chain 0x40091d18 -> 0x40017e78"
+    },
+    "p2b": {
+      "status": "OPEN",
+      "reason": "indirect jsr at 0x400921f2; chain 0x400921c4"
+    },
+    "p2c": {
+      "status": "OPEN",
+      "reason": "indirect jsr at 0x400944d6; chain 0x4009203c -> 0x40094334"
+    },
+    "engine": {
+      "status": "OPEN",
+      "reason": "indirect jmp at 0x4008486c; chain 0x4008445c"
+    },
+    "p1b": {
+      "status": "OPEN",
+      "reason": "indirect jmp at 0x40098800; chain 0x40098a5c -> 0x4009871c"
+    },
+    "sys": {
+      "status": "OPEN",
+      "reason": "unresolved trap at 0x400a6872"
+    }
+  },
+  "memory": {
+    "private_stack": {
+      "region_base": "0x415ffd80",
+      "region_bytes": 4192,
+      "bottom_guard": [
+        "0x415ffd80",
+        "0x415ffda0"
+      ],
+      "stack_base": "0x415ffda0",
+      "stack_top": "0x41600da0",
+      "stack_bytes": 4096,
+      "top_guard": [
+        "0x41600da0",
+        "0x41600dc0"
+      ],
+      "saved_A7": "0x41600dc0",
+      "padding_bytes": 28,
+      "initialization": "saved A7 is written on every IRQ before read; guards/stack have no initial-value dependency"
+    },
+    "physical_overlaps": [],
+    "extra_sampler_bytes": 0,
+    "extra_sampler_pages": 0
+  },
+  "runs": {
+    "mixed": {
+      "private": {
+        "switched": 2048,
+        "restored": 2048,
+        "private_capacity_bytes": 4096,
+        "private_observed_peak_bytes": 1308,
+        "prefix_observed_peak_bytes": 8,
+        "minimum_private_IPL": 5,
+        "ownership_register_frame_or_mask_violations": 0,
+        "fence_writes": 0,
+        "saved_A7_writes": 2049,
+        "terminal_saved_store_before_private": 1,
+        "in_flight_at_capture_end": 1
+      },
+      "full_ISR_max_cycles": 85526,
+      "ISR_duration_misses": 0,
+      "DMA_read_write_overlaps": 0,
+      "task_observed_bytes": {
+        "storage": 76,
+        "keyrepeat": 112,
+        "ui": 144,
+        "engine": 3016,
+        "p2c": 184,
+        "p2a": 120,
+        "p2b": 180,
+        "p1b": 856,
+        "main": 624,
+        "sys": 984,
+        "voice": 40
+      }
+    },
+    "dense": {
+      "private": {
+        "switched": 4096,
+        "restored": 4096,
+        "private_capacity_bytes": 4096,
+        "private_observed_peak_bytes": 1308,
+        "prefix_observed_peak_bytes": 8,
+        "minimum_private_IPL": 5,
+        "ownership_register_frame_or_mask_violations": 0,
+        "fence_writes": 0,
+        "saved_A7_writes": 4097,
+        "terminal_saved_store_before_private": 1,
+        "in_flight_at_capture_end": 1
+      },
+      "full_ISR_max_cycles": 85562,
+      "ISR_duration_misses": 0,
+      "DMA_read_write_overlaps": 0,
+      "task_observed_bytes": {
+        "storage": 76,
+        "keyrepeat": 112,
+        "ui": 144,
+        "engine": 3016,
+        "p2c": 184,
+        "p2a": 120,
+        "p2b": 180,
+        "p1b": 856,
+        "main": 624,
+        "sys": 984,
+        "voice": 40
+      }
+    },
+    "external": {
+      "private": {
+        "switched": 1024,
+        "restored": 1024,
+        "private_capacity_bytes": 4096,
+        "private_observed_peak_bytes": 1308,
+        "prefix_observed_peak_bytes": 44,
+        "minimum_private_IPL": 5,
+        "ownership_register_frame_or_mask_violations": 0,
+        "fence_writes": 0,
+        "saved_A7_writes": 1025,
+        "terminal_saved_store_before_private": 1,
+        "in_flight_at_capture_end": 1
+      },
+      "full_ISR_max_cycles": 85530,
+      "ISR_duration_misses": 0,
+      "DMA_read_write_overlaps": 0,
+      "task_observed_bytes": {
+        "storage": 76,
+        "keyrepeat": 88,
+        "ui": 144,
+        "engine": 3016,
+        "p2c": 184,
+        "p2a": 120,
+        "p2b": 180,
+        "p1b": 376,
+        "main": 624,
+        "sys": 984,
+        "voice": 580
+      }
+    },
+    "lifecycle-final": {
+      "private": {
+        "switched": 28392,
+        "restored": 28392,
+        "private_capacity_bytes": 4096,
+        "private_observed_peak_bytes": 1340,
+        "prefix_observed_peak_bytes": 40,
+        "minimum_private_IPL": 5,
+        "ownership_register_frame_or_mask_violations": 0,
+        "fence_writes": 0,
+        "saved_A7_writes": 28392,
+        "terminal_saved_store_before_private": 0,
+        "in_flight_at_capture_end": 0
+      },
+      "full_ISR_max_cycles": 84523,
+      "ISR_duration_misses": 0,
+      "DMA_read_write_overlaps": 0,
+      "task_observed_bytes": {
+        "storage": 76,
+        "keyrepeat": 536,
+        "ui": 548,
+        "engine": 3016,
+        "p2c": 184,
+        "p2a": 116,
+        "p2b": 180,
+        "p1b": 856,
+        "main": 608,
+        "sys": 1388,
+        "voice": 40
+      }
+    },
+    "saved-final-save": {
+      "private": {
+        "switched": 16536,
+        "restored": 16536,
+        "private_capacity_bytes": 4096,
+        "private_observed_peak_bytes": 460,
+        "prefix_observed_peak_bytes": 8,
+        "minimum_private_IPL": 5,
+        "ownership_register_frame_or_mask_violations": 0,
+        "fence_writes": 0,
+        "saved_A7_writes": 16537,
+        "terminal_saved_store_before_private": 1,
+        "in_flight_at_capture_end": 1
+      },
+      "full_ISR_max_cycles": 21306,
+      "ISR_duration_misses": 0,
+      "DMA_read_write_overlaps": 0,
+      "task_observed_bytes": {
+        "storage": 76,
+        "keyrepeat": 516,
+        "ui": 576,
+        "engine": 3016,
+        "p2c": 184,
+        "p2a": 104,
+        "p2b": 180,
+        "p1b": 228,
+        "main": 568,
+        "sys": 1032,
+        "voice": 40
+      }
+    },
+    "saved-final-reload": {
+      "private": {
+        "switched": 512,
+        "restored": 512,
+        "private_capacity_bytes": 4096,
+        "private_observed_peak_bytes": 1308,
+        "prefix_observed_peak_bytes": 8,
+        "minimum_private_IPL": 5,
+        "ownership_register_frame_or_mask_violations": 0,
+        "fence_writes": 0,
+        "saved_A7_writes": 513,
+        "terminal_saved_store_before_private": 1,
+        "in_flight_at_capture_end": 1
+      },
+      "full_ISR_max_cycles": 85505,
+      "ISR_duration_misses": 0,
+      "DMA_read_write_overlaps": 0,
+      "task_observed_bytes": {
+        "storage": 76,
+        "keyrepeat": 112,
+        "ui": 148,
+        "engine": 3016,
+        "p2c": 184,
+        "p2a": 120,
+        "p2b": 180,
+        "p1b": 856,
+        "main": 616,
+        "sys": 984,
+        "voice": 40
+      }
+    }
+  },
+  "block_identity": {
+    "mixed": {
+      "records": 20480,
+      "all_source_and_DSP_records_identical": true,
+      "reference_sha256": "40d473cb163bc755715bd49e78f9c89b20040c7324c0ec8aadb4a8931725e082"
+    },
+    "dense": {
+      "records": 40960,
+      "all_source_and_DSP_records_identical": true,
+      "reference_sha256": "6f44553858252cde4d7534ec3ea5579199ba311594839b8dcbac93d279990530"
+    }
+  },
+  "private_max_observed_bytes": 1340,
+  "timing": {
+    "full_ISR_max_observed_cycles": 85562,
+    "CPU_MHz": 264,
+    "full_ISR_max_observed_us": 324.0984848484849,
+    "modeled_duration_misses": 0,
+    "deadline_us": 362.81179138321994,
+    "unwaived_80_percent_ceiling_us": 290.24943310657596,
+    "shortfall_to_unwaived_margin_us": 33.84905174190891,
+    "isolated_instruction_delta_cycles": 4,
+    "production_margin_waived": false
+  },
+  "receipt_hashes": {
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/BUILD.json": "80851a45b228e98136763b44b5e19b4dbcdb83fa5dffd4abd52fef7a253f933a",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/MEMORY.json": "9fe3fd8d3ce988758379ddf8cd1a846847b974f25d5d1818250cddf2c8cb0f9b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/DSP_IDENTITY.json": "498f7bdc062d88f426a49d39a1a64903e2876e71d9bcaf9e229d4d48d3d6f5b8",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/PROBE_GATES.json": "aa3e25dd6534bed34cfa9bdca34b24d5ff5da3cb3a9ea20ff3be98d3a77c5378",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/static/BOUNDS.json": "d2e931844617390e168bb3378ae4734f278c6174b2d44fbc716712dece28adef",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/observer/OBSERVER_BUILD.json": "25901c4de42946f749fc799131d41a25458aeb3315cd5e3907601356f2070797",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/unit/ALL_UNITS.json": "e31fce101be9f4e6844a9cf5c37cbd7335dbb9f212c542477c116ce20a8c5623",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/COLD.json": "2e0b0a58765d65177855ed5c57168f9d646f567118dc45cf7e49fb773f1a4e4f",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/resume-fixes/RUNTIME.json": "3de90d77c2fcfa62a8de148708792ec297f52aa9c5f705cfdcb673d8a07a6790",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/package-check/PACKAGES.json": "86359b8d980e6ede8ee64320557f6ddc0fe413e8fd88676ef311d31adfee937a",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/lifecycle-final/SNAPSHOTS.json": "b3c6da7c907631e434431b4a4573d573d96584e372fe0b96e2685438969e3157",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/saved-project-final/SAVED_PROJECT.json": "3921259ecfff6b184575fbbfe2d326fe49e48df107fb62fc013766e177f309df"
+  },
+  "source_hashes": {
+    "tools/verify/verify_perky_hybrid_private_qualification.py": "aa2989b2866302c8c3b9febb4fae8668a0e51f4fe74cd8e115db328559d3fae4",
+    "tools/verify/perky_private_stack_bounds.py": "cb651ef899b9f5ca07beaee384d02e7026f185805e79b2eb9818b0f65d048155",
+    "tools/verify/verify_perky_hybrid_stack_structure.py": "d1e6f392d3fe3ea3e7c4ffecaffa59e690af88744eb3ab267f191542b602bc96",
+    "tools/verify/verify_perky_hybrid_private_stack.py": "d9f5b7e97cabb294da87b1923bb208919d9568906b66d60e12f1a02bee647725",
+    "tools/verify/verify_perky_hybrid_safety.py": "33073d6e5d40e49d6f6223137e3c7c88dce9ed7b9981c0bbc030f8cb364be5c5",
+    "tools/verify/verify_perky_hybrid_guard_lifecycle.py": "e975b95abf702f9a546738a28ab25a8dc646204895482cfd05b8b811f7b746f9",
+    "tools/verify/verify_perky_hybrid_saved_project.py": "0a09e7dd75eca983a9d7d39890d25be0e6ce2c14b4a115357cc40fbf7b0b213d",
+    "tools/harness/perky_hybrid_safety/private_stack_nesting.cpp": "46757f7e1cc7b0476c0dc62d422e58dd09379cef49fdd3b5d86f49f3febf8b58",
+    "tools/harness/perky_hybrid_safety/observer_test.cpp": "a34d4e9f5077b478256064cc02435237873adeee79e11e28c1f1e01abbb10df4",
+    "tools/harness/perky_hybrid_safety/observer.h": "063a255ec54a9e343794dadf10a45c4bcc74a659946ffa1978327b6c37bc9ced",
+    "tools/harness/perky_hybrid_safety/stack_reentry.cpp": "ef1681e680098c34c898305dec600a7c7fd1f9086b606fec299bb371ecbe413a",
+    "tools/harness/perky_hybrid_safety/private_stack_test.cpp": "f00f763a0d053df54604dd1d979629613700b98aaea330f6187f776e82f0ecf3",
+    "tools/harness/perky_hybrid_safety/stack_instruction_cost.s": "59f11c9c2e70e6f87c8b9b4c223f711c7d1940c40288bdf2e9d7fce33d8a9946",
+    "tools/harness/perky_hybrid_safety/ipl_guard.cpp": "296c6a81e6183b25c626f9b56dc0c4a3858b66633deae3488769ea11e2f303a6",
+    "tools/harness/perky_hybrid_safety/private_stack_observer.h": "3c341e5e8be7720acf0efd5b743ba3658eeca32b6f37d28921516de7931e5645",
+    "tools/harness/perky_hybrid_safety/private_stack_test.s": "90ca1057840ac03e816b8c6f9e680b69b2a8aa1a3eab5a3b895641728e075d67",
+    "tools/harness/perky_hybrid_safety/guard_audit.h": "422906af0ef47e5821faa6c4df340918273370213d7878335667c1700bc2f91c",
+    "tools/harness/perky_hybrid_safety/private_stack_ownership.cpp": "476bccc3c92b9d30d140cf5423c2ec84cb04fa41a02a94899616e74ee9148803",
+    "tools/harness/perky_hybrid_safety/stack_ownership.cpp": "7df2a4a5a5a9bbdcff5df782ca23e54f8a768d6e66db0b7ffe70d1d378921195"
+  },
+  "physical_risks": [
+    "No silicon cache/SDRAM/FlexBus arbitration or coherence measurement.",
+    "No silicon interrupt release-to-entry or worst-case instruction latency bound.",
+    "Normal valid stock dispatch tables, indices, C ABI and seven-stage DMA protocol are qualification preconditions.",
+    "Unchanged larger stock-task base graphs remain outside this bounded correction; their audio-related task-stack demand cannot increase.",
+    "Production 20% timing margin remains unwaived and unmet."
+  ],
+  "hardware_flashed": false,
+  "Goal_3_started": false,
+  "rebuild_identity": {
+    "status": "PASS",
+    "source_commit": "7878b3d6e0f9738d99c2ac65997e47001f4dc75c",
+    "artifacts": {
+      "mainos": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/mainos_PKHYB2P.bin",
+        "bytes": 1483166,
+        "sha256": "d254bc2f72a1c78d75f1652f89311d0b841246ad228fc6dc3324fd6717c00f48"
+      },
+      "runtime_elf": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/platform/runtime.elf",
+        "bytes": 360940,
+        "sha256": "3ec97322ae4ff9fbe53c6d58e051a7174bac324abe594e90db20ca0d702d9bcf"
+      },
+      "runtime_raw": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/platform/runtime.raw",
+        "bytes": 359716,
+        "sha256": "e0700a520ba1305fad26121ddf6f7dcaedb989ef7a9339483c5e8ec61e89ca89"
+      },
+      "elek": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/elek_PKHYB2P.bin",
+        "bytes": 809134,
+        "sha256": "c0328837340929a1bee7a0b837baecd77662bd1702b25284775d01a92b51e1a4"
+      },
+      "card": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/OCTATRACK_PKHYB2P.bin",
+        "bytes": 809152,
+        "sha256": "aec75e1484ed37f70801d51ba78d44fbd83501d4c9875799acf7f8328c4652c4"
+      },
+      "midi": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe/OCTATRACK_OS1.40C_PKHYB2P.syx",
+        "bytes": 1130251,
+        "sha256": "f155d1eff0b816250bb17b656b3353b3d08df7afaab74d2ed768027069a20304"
+      }
+    },
+    "tested_build_parent": "df076029be989bf8b57c07fce4d12eca8fd50917"
+  },
+  "evidence_hashes": {
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/committed-build.log": "109920be9efa0e757c8699aa159d547b83070ea68de943b2ea0656a2e09c57aa",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/TESTED_BUILD.json": "ad4b8cc73fb43bbaff2b78abbf43c0d103dc93890435a17336953580fff99d0e",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/REBUILD_IDENTITY.json": "4a1c14a974233dd32ad361f439fff1cd4495399f2cb7f9517fada4681a5eddb3",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/units-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/probe-gates.log": "7b2ddaeaa20009e3dfa8c75cda4f94289dfbb6018020f317339587a52f1cd0a0",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/runtime-check.log": "3de90d77c2fcfa62a8de148708792ec297f52aa9c5f705cfdcb673d8a07a6790",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/cold-check.log": "2e0b0a58765d65177855ed5c57168f9d646f567118dc45cf7e49fb773f1a4e4f",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/packages-check.log": "86359b8d980e6ede8ee64320557f6ddc0fe413e8fd88676ef311d31adfee937a",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/mixed-RUN.json": "a66ffb80a4e0fa72b9a2cdcdc38326264ed2698c4ac85b54597b10d2a00723d5",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/mixed-stack.json": "87731cc3ec150ea71b0836d890ee231db905e73abcdaff69f7793877ab36b9b0",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/mixed-private.json": "c09c21e30e9999cfcf2e0987f707d9a12b156818d05a5dc1b364bd20a5b48e2d",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/mixed-blocks.bin": "40d473cb163bc755715bd49e78f9c89b20040c7324c0ec8aadb4a8931725e082",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/mixed.log": "d794ed51ad8eda018a94c7eca5b24d154e204d00ddd655b6ae4df3ed3f9f4921",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/dense-RUN.json": "8fcd9eabc69568feaa86319a93f37d22ec57950964c01d831371b9ce5064a1c6",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/dense-stack.json": "b5451682d4265f0af96448d2b380043df5eb0ef7ded80e3b0a009ca0d944b0b6",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/dense-private.json": "fdff4ad16c0fee3877bc7c6a256a90c23ab775859f860e86dd7244b69fa2f59b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/dense-blocks.bin": "6f44553858252cde4d7534ec3ea5579199ba311594839b8dcbac93d279990530",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/dense.log": "b33a1618ec81c5505db0c775122a0fa39faa0bd1344c89cd92863f6d23fc2dd8",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/external-RUN.json": "9ef00069728a21a6d4dd277663e5df034fa72d69ec571a2f303bfee933497b20",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/external-stack.json": "d442beec5c6835e31f9f264c3a47e1899931668325dd02303cc3e57c64f4c85e",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/external-private.json": "3f5c5c20e3e999fd68b66e3be25d6194bc580c3989535e6b1867306c5cd1427a",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/external-blocks.bin": "0d50a39c64db0b61a39a4882cc9d1349008b229576b3d9a04f3144eb7052523a",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/external.log": "a5180ecce3192b3045f7b1d2c0ed7a297fcf837633abcda7b7b32c7c59848f09",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/lifecycle-final/port.log": "21495107133b98459d58d78262e4935ad828b0578af9c62da412effd72215f99",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/lifecycle-final/stack.json": "a79a8d03c4a190e5e828c1a190f64a1c92d282e3af926434a8be9573fc1df58d",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/lifecycle-final-private.json": "3af0f468fafa044ec51505edc6cc1751a3ef7574a5e49b065abcc8cd07dbccca",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/lifecycle-final/SNAPSHOTS.json": "b3c6da7c907631e434431b4a4573d573d96584e372fe0b96e2685438969e3157",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/lifecycle-final/blocks.bin": "a6092c85c347778f3ec1b78fffdb3e60be9d396b7f80832c814daa86cffed7aa",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/lifecycle-final/card.img": "d65ca39de0917c4f413608f702a0d117ad06fc1768e23dba73aabd5f75d9c3b5",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/saved-project-final/save.log": "eb856080865c4c955859204af85d44a83a2445d53273c0a4407b5bf7e0107469",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/saved-project-final/reload.log": "54c572e4388d1947a94fb93c0cf6885eddff82db40b714785a22c660172f6486",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/saved-project-final/saved-card.img": "8cfd9d6577a6f18d02b9d87d953cf995563d172a6db2e96d0248a9538e0a4233",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/saved-project-final/reload-records.bin": "d144cc585e4aebee28911898e3fd385a0a02f5fed5ac3bcbb5b83b6ecbd19951",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/saved-project-final/reload-controls.bin": "8ad23ae88166f715dbb43e414d5dbdb9791ffbc69a0cebc98c8b9e6b7c00f8be",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/saved-final-save-private.json": "c636af21a95963ed7992ead9a45be9cd708609ccdf4a344ce97864ff9075f056",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/saved-final-save-stack.json": "1959de92fd1ce2fda075be2f9b142c307e064fc724768e3188a8b3225f1d8189",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/saved-final-reload-private.json": "1bb01c74f6a4585ce357a9982de367b82e326e9d89928ca03b617d9f8e586c69",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/private-stack/saved-final-reload-stack.json": "00fee2fc629061f89b0aa76ef10ea559da294a9bd3c1674fedca8418a3e42582",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-final/fixture/card.img": "a7a907bc6c841236f4ba133952150eac0a79d76c12d8e0c5f49b0227c69340d7",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/dense/card.img": "e8d49827fcd2e7024d793c6d4ffdc4ed9701ca41ae3ff3d2c421241301f75eef"
+  },
+  "host_linked_library_hashes": {
+    "/Users/jrold/Downloads/octabam/out/emu/CMakeFiles/ot_emu.dir/main.cpp.o": "8b0091897112a0f886c4825bd4cf7be65b596c5401ec0a876eaac2a41e83e788",
+    "/Users/jrold/Downloads/octabam/out/emu/libot_machine.a": "13753d0643258b936241d9fda96dc9393314e57373647c9c091860891b9601bc",
+    "/Users/jrold/Downloads/octabam/out/emu/mc68k/lib68kEmu.a": "89a7794d7d22434b853d0684a2f9e8ad1ba76d39a5d1bb141f287788220880d5",
+    "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a": "f2f104dfc7de7f93018f80f4d1af12756da4aeb9c09c5b7eff0da1725c1475e5",
+    "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kBase/libdsp56kBase.a": "4e33f574194b36102e516d8c85a8c23ab33a4f3cc81843307452d5a15f44b34c",
+    "/Users/jrold/Downloads/octabam/out/emu/dsp56300/asmjit/libasmjit.a": "508ef4b41b98cdbdd87f2bbe343dd0fe9f63660a02538efb516bbe040fc970b5"
+  }
+}

@@ -87,6 +87,9 @@ def assess(work,out):
     build=p.read(work/'probe/BUILD.json');image=work/'probe/mainos_PKHYB2P.bin'
     for item in build['artifacts'].values():
         assert p.sha(item['path'])==item['sha256'] and Path(item['path']).stat().st_size==item['bytes']
+    sys.path.insert(0,str(ROOT/'tools/perky'))
+    import build_cf_dsp_hybrid as builder
+    assert builder.hybrid_source_id()==build['hybrid_source_id'], 'firmware sources drifted'
     elf=work/'probe/platform/runtime.elf';syms=p.symbols(elf)
     assert image.read_bytes()[0x400a1e66-0x40000400:0x400a1e68-0x40000400]==bytes.fromhex('2300')
     bounds=p.read(work/'static/BOUNDS.json')
@@ -143,7 +146,7 @@ def assess(work,out):
     memory=p.read(work/'probe/MEMORY.json')['coldfire_dram'];assert memory['physical_overlaps']==[]
     report={'schema':'octabam.perky.hybrid.private-stack-qualification.v1',
         'status':'LOCALLY_QUALIFIED_DIAGNOSTIC_SCOPED_TO_APPROVED_STACK_CORRECTION; REVIEW_BEFORE_HARDWARE',
-        'firmware_source_commit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+        'firmware_source_commit':build['git_commit'],
         'hybrid_source_id':build['hybrid_source_id'],'artifacts':build['artifacts'],
         'stack_budgets':bounds['budgets'],'static_scope_limits':bounds['limits'],
         'unchanged_larger_stock_task_graphs':{k:v for k,v in bounds['roots'].items() if v['status']=='OPEN'},

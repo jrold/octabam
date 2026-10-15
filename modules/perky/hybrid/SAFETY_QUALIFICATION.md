@@ -1,12 +1,16 @@
 # Authorized IPL3 guard qualification — 15 October 2026
 
-**BLOCKED — COMBINED STACK BOUND NOT ESTABLISHED.**
+**Historical IPL3-only result: combined stack bound was not established.**
+
+The subsequently approved private-stack correction and its current scoped local
+diagnostic qualification are in [PRIVATE_STACK_QUALIFICATION.md](PRIVATE_STACK_QUALIFICATION.md).
+The IPL3-only evidence below is preserved for its original image and task.
 
 The subsequent bounded stack-correction task returns **deliverable B**, with
 resolved storage-read bounds, verified task initialization and available DRAM,
-and a concrete private-audio-stack proposal awaiting approval. See
-[STACK_CORRECTION.md](STACK_CORRECTION.md). The guarded firmware remains unchanged
-and unqualified; the IPL3 evidence below is preserved.
+and a concrete private-audio-stack proposal, subsequently approved. See
+[STACK_CORRECTION.md](STACK_CORRECTION.md). The preserved IPL3-only trial remains unchanged; its qualification was blocked
+at that checkpoint. The IPL3 evidence below is preserved.
 
 The authorized minimal guard is implemented and its **bounded local checks pass**.
 Real chooser/Part/playing-bank transitions, saved-card reload and dense

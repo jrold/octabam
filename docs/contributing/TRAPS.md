@@ -419,6 +419,14 @@ timing, so a local "clean" is still NOT evidence a bus timing defect is
 gone (a local red IS a defect). When local says clean and hardware says
 broken, believe the hardware and go looking for what the harness omits.
 
+PERKY private-stack qualification, 15 Oct 2026, found another instance:
+a before-instruction observer sees the same PC again when a higher interrupt
+preempts it. Counting the first private instruction or RTE at every observation
+double-counted switches/returns. Check the CPU's pending-interrupt mask before
+counting execution. The private observer calibrates five switch windows in both
+stepping modes, including IRQ arrival immediately before RTE; complete model
+ISR time must equal executed cycles excluding the interrupted task instruction.
+
 <a name="trap-hybrid-receipts"></a>
 
 ### A probe builder's success label is not qualification

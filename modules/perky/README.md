@@ -32,6 +32,14 @@ in Git history. Its merged source and local qualification are recorded in
 [the integration report](UPSTREAM_INTEGRATION_2026-10-14.md). The merged branch
 has not been separately tested on an Octatrack or approved for pushing.
 
+### Hybrid diagnostic candidate
+
+The approved private audio-interrupt stack has a scoped local diagnostic
+qualification, with derived private and three-small-task stack budgets and exact
+new card/MIDI hashes: [private-stack qualification](hybrid/PRIVATE_STACK_QUALIFICATION.md).
+It awaits user review before any MKII test. The production 20% timing margin
+remains unwaived and unmet; PERKY4S remains the hardware-tested release.
+
 ### Current DSP memory limit
 
 Both cores use **770/774 safe private P-words** (four free per core).
