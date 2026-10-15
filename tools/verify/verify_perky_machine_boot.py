@@ -38,6 +38,8 @@ def main():
                          'SAME build as --image')
     ap.add_argument('--normal-image', type=Path, default=ROOT / 'out/mainos_bus.bin')
     ap.add_argument('--p-records', type=Path, help='exact appended P records for this build')
+    ap.add_argument('--runtime-init-cookie', action='append', default=[],
+                    help='explicit loaded cookie SYMBOL=COLD:READY hex values; all other bytes stay exact')
     args = ap.parse_args()
     p_records = json.loads(args.p_records.read_text()) if args.p_records else {}
 
@@ -54,6 +56,19 @@ def main():
     normal = args.normal_image.read_bytes()
     layout = json.loads((args.platform / 'layout.json').read_text())
     raw_runtime = (args.platform / 'runtime.raw').read_bytes()
+    if args.runtime_init_cookie:
+        symbols = platform_build._nm(args.platform / 'runtime.elf', ROOT)
+        expected_runtime = bytearray(raw_runtime)
+        seen = set()
+        for spec in args.runtime_init_cookie:
+            name, values = spec.split('=', 1)
+            cold, ready = (int(x, 16).to_bytes(4, 'big') for x in values.split(':'))
+            at = symbols[name] - layout['base']
+            assert at not in seen and 0 <= at <= len(raw_runtime) - 4
+            assert raw_runtime[at:at+4] == cold, f'loaded COLD cookie mismatch: {name}'
+            expected_runtime[at:at+4] = ready
+            seen.add(at)
+        raw_runtime = bytes(expected_runtime)
     ywords, meta = perky_image.load_tables(packed)
     xwords = perky_image.load_state_init(packed, meta)
     extra_x = perky_image.extra_state_init(meta)

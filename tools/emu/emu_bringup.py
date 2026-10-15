@@ -394,6 +394,13 @@ def boot(image=None, count=BUDGET, on_draw=None):
             mu.emu_start(pc, 0, count=BURST)
         except UcError as e:
             r.error = str(e); break
+        # A hybrid may execute compiler-generated ISA_C initialization before
+        # the RTOS handoff. Use the same qualified instruction shims as _call;
+        # every other trap still stops the boot.
+        npc = _isa_c_shim(mu, r) or _movem_shim(mu, r) or _emac_load_shim(mu, r)
+        if npc is not None:
+            pc = npc
+            continue
         if r.trap:
             break
         pc = mu.reg_read(UC_M68K_REG_PC)

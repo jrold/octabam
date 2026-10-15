@@ -244,6 +244,9 @@ def run_probe_stage(work: Path, b: dict, frozen_val: dict) -> int:
             '--platform', probe_dir / 'platform',
             '--normal-image', probe_dir / 'fragmented-normal.bin',
             '--p-records', probe_dir / 'p-records.json',
+            '--runtime-init-cookie', 'pk_hybrid_pcm_cookie=504b5043:504b5052',
+            '--runtime-init-cookie', 'pk_hybrid_rt_cookie=504b4843:504b4852',
+            '--runtime-init-cookie', 'pk_hybrid_prof_cookie=504b5443:504b5452',
         )),
         ('probe', 'prefetch-guard', gate('verify_perky_prefetch_guard.py', '--build', probe_dir)),
         ('probe', 'odd-access', gate('verify_perky_cf_odd_access.py', '--generated', probe_dir / 'odd-audit')),
@@ -260,6 +263,7 @@ def run_probe_stage(work: Path, b: dict, frozen_val: dict) -> int:
             '--work', probe_dir / 'wrapper-verify',
         )),
         ('probe', 'hybrid-gates', gate('verify_perky_hybrid_probe_gates.py', '--work', work)),
+        ('probe', 'hybrid-runtime', gate('verify_perky_hybrid_runtime.py', '--work', work)),
     ]
 
     log_dir = probe_dir / 'verify-logs'

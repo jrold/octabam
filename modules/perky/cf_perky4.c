@@ -55,15 +55,16 @@ static void common_init(uint8_t*s,size_t n){
     w16(s,0x94,env_rate_cfg(s,0x74,0x1000,0));w16(s,0x96,env_rate_cfg(s,0x74,0x1000,1));
 }
 static void common_trigger(uint8_t*s,uint8_t velocity,uint8_t note){s[6]=velocity?velocity:1;if(note)s[7]=note;envelope_trigger(s,0x74);}
-static void common_update(uint8_t*s,const uint32_t t[4],const pk4_assets*a,uint32_t out[4]){
+static void common_update_impl(uint8_t*s,const uint32_t t[4],const pk4_assets*a,uint32_t out[4],int derive){
     unsigned i;for(i=0;i<4u;i++){out[i]=smooth(r32(s,0x1c+4u*i),t[i]);w32(s,0x1c+4u*i,out[i]);}
     {
         uint16_t tune=(uint16_t)out[0],decay=(uint16_t)out[1],p1=(uint16_t)out[2],p2=(uint16_t)out[3];
         int32_t pi=(int32_t)s16((uint16_t)(tune-0x800u+(uint16_t)note_offset(s[7],a)));uint32_t ix=clamp12s(pi);
-        w16(s,0xba,(uint16_t)ix);w16(s,0xbc,decay);w16(s,0xbe,p1);w16(s,0xc0,p2);w32(s,0x34,pitch_at(a,ix));s[0x7b]=(uint8_t)(r16(s,8)<=decay);
-        w16(s,0x94,env_rate_cfg(s,0x74,time_parameter(r16(s,0x0a)),0));w16(s,0x96,env_rate_cfg(s,0x74,time_parameter(decay),1));
+        w16(s,0xba,(uint16_t)ix);w16(s,0xbc,decay);w16(s,0xbe,p1);w16(s,0xc0,p2);if(derive)w32(s,0x34,pitch_at(a,ix));s[0x7b]=(uint8_t)(r16(s,8)<=decay);
+        if(derive){w16(s,0x94,env_rate_cfg(s,0x74,time_parameter(r16(s,0x0a)),0));w16(s,0x96,env_rate_cfg(s,0x74,time_parameter(decay),1));}
     }
 }
+static void common_update(uint8_t*s,const uint32_t t[4],const pk4_assets*a,uint32_t out[4]){common_update_impl(s,t,a,out,1);}
 static int control_dirty(const pk4_control*c,const uint8_t raw[4],uint8_t mode){unsigned i;if(!c->valid||c->last_mode!=mode)return 1;for(i=0;i<4u;i++)if(c->last_raw[i]!=raw[i])return 1;return 0;}
 static void control_commit(pk4_control*c,const uint8_t raw[4],uint8_t mode){unsigned i;for(i=0;i<4;i++){c->last_raw[i]=raw[i];c->targets[i]=target7(raw[i]);}c->last_mode=mode;c->valid=1;}
 
@@ -95,6 +96,15 @@ static void nt_update(uint8_t*s,const uint32_t t[4],const pk4_assets*a,int m1){u
  * exact integer recurrence here, including Karplus/M1's second TUNE smoothing,
  * and run the expensive derive only for the last surviving state. */
 static void common_smooth_only(uint8_t*s,const uint32_t t[4]){unsigned i;for(i=0;i<4u;i++)w32(s,0x1c+4u*i,smooth(r32(s,0x1c+4u*i),t[i]));}
+/* Apply the same integer recurrence n times; keep each value in a
+ * register between passes. This changes no rounding or final state word. */
+static void common_smooth_many(uint8_t*s,const uint32_t t[4],unsigned n){
+    unsigned k,i;for(k=0;k<4u;k++){uint32_t value=r32(s,0x1c+4u*k),target=t[k];
+        for(i=0;i<n;i++)value=smooth(value,target);
+        w32(s,0x1c+4u*k,value);
+    }
+}
+
 static void karplus_smooth_only(uint8_t*s,const uint32_t t[4]){common_smooth_only(s,t);w32(s,0x1c,smooth(r32(s,0x1c),t[0]));}
 static void nt_smooth_only(uint8_t*s,const uint32_t t[4],int m1){common_smooth_only(s,t);if(m1){w32(s,0x1c,smooth(r32(s,0x1c),t[0]));w16(s,0x0a,r16(s,0x28));}}
 
@@ -158,9 +168,9 @@ static void res_init_snare(uint8_t*s,uint8_t vel,uint8_t note){
     s[6]=vel?vel:1;s[7]=note;
 }
 
-static void res_update_bass(uint8_t*s,const uint32_t t[4],const pk4_assets*a){
+static void res_update_bass_impl(uint8_t*s,const uint32_t t[4],const pk4_assets*a,int derive){
     uint32_t p[4],mod_a,mod_b,mod_c,r2,r3;uint16_t obj8,decay,p1,p2;int32_t count_a,count_b,count_c,index;
-    common_update(s,t,a,p);
+    common_update_impl(s,t,a,p,derive);
     obj8=r16(s,8);decay=r16(s,0xbc);p1=r16(s,0xbe);p2=r16(s,0xc0);
     s[0xd8]=(uint8_t)(decay>obj8);
     if(decay>obj8){r2=(uint32_t)((p1<<4)&0xffffu);}
@@ -188,10 +198,12 @@ static void res_update_bass(uint8_t*s,const uint32_t t[4],const pk4_assets*a){
      w32(s,0xcc,r3>>24);}
     (void)mod_a;(void)mod_b;(void)mod_c;(void)count_a;(void)count_b;(void)count_c;
 }
+static void res_update_bass(uint8_t*s,const uint32_t t[4],const pk4_assets*a){res_update_bass_impl(s,t,a,1);}
 
-static void res_update_snare(uint8_t*s,const uint32_t t[4],const pk4_assets*a){
+
+static void res_update_snare_impl(uint8_t*s,const uint32_t t[4],const pk4_assets*a,int derive){
     uint32_t p[4];uint16_t obj8,decay,p1,p2;uint32_t r2,r3;int32_t r0;uint8_t d1,d2,d3;
-    common_update(s,t,a,p);
+    common_update_impl(s,t,a,p,derive);
     obj8=r16(s,8);decay=r16(s,0xbc);p1=r16(s,0xbe);p2=r16(s,0xc0);
     {uint8_t v=(uint8_t)(decay>obj8);s[0x10c]=v;s[0x130]=v;}
     if(decay>obj8){w32(s,0x1cc,(uint32_t)((p2<<4)&0xffffu));}
@@ -225,6 +237,8 @@ static void res_update_snare(uint8_t*s,const uint32_t t[4],const pk4_assets*a){
     w32(s,0x168,(0x55f0u+((uint32_t)p1<<2))&U32_MASK);
     w16(s,0x16c,p2);
 }
+static void res_update_snare(uint8_t*s,const uint32_t t[4],const pk4_assets*a){res_update_snare_impl(s,t,a,1);}
+
 
 static void res_trigger_bass(uint8_t*s,uint8_t vel,uint8_t note){
     common_trigger(s,vel,note);
@@ -253,7 +267,30 @@ static void prepare_res(pk4_control*c,uint8_t*s,int bass,const uint8_t raw[4],ui
     unsigned i;
     if(control_dirty(c,raw,mode)){
         control_commit(c,raw,mode);
-        for(i=0;i<16;i++){if(bass)res_update_bass(s,c->targets,a);else res_update_snare(s,c->targets,a);}
+        int bounded=1;
+        for(i=0;i<4u;i++)if(r32(s,0x1c+4u*i)>4095u||c->targets[i]>4095u)bounded=0;
+        if(!bounded){
+            /* Out-of-contract/corrupt state keeps the complete reference path. */
+            for(i=0;i<16;i++){if(bass)res_update_bass_impl(s,c->targets,a,i==15u);else res_update_snare_impl(s,c->targets,a,i==15u);}
+        }else{
+            uint32_t decay;unsigned pending=0;uint16_t threshold=r16(s,8);
+            /* Within 0..4095 every smoother and derived pitch coefficient is
+             * monotone. First+last updates therefore retain every sticky
+             * coefficient-change flag. A finite->sustain crossing must also
+             * retain the LAST finite-decay fields, not just its first values.
+             * No render or other observer runs inside this preparation call. */
+            if(bass)res_update_bass_impl(s,c->targets,a,0);else res_update_snare_impl(s,c->targets,a,0);
+            decay=r32(s,0x20);
+            for(i=1;i<15u;i++){
+                decay=smooth(decay,c->targets[1]);
+                if(decay<=threshold&&smooth(decay,c->targets[1])>threshold){
+                    common_smooth_many(s,c->targets,pending);pending=0;
+                    if(bass)res_update_bass_impl(s,c->targets,a,0);else res_update_snare_impl(s,c->targets,a,0);
+                }else ++pending;
+            }
+            common_smooth_many(s,c->targets,pending);
+            if(bass)res_update_bass_impl(s,c->targets,a,1);else res_update_snare_impl(s,c->targets,a,1);
+        }
     }
     if(trig){
         if(bass){res_trigger_bass(s,vel,note);res_update_bass(s,c->targets,a);}
@@ -532,14 +569,14 @@ static void res_mode_update(uint8_t*snare,uint8_t*bass,uint8_t*nt,uint8_t mode,c
 }
 static void prepare_res_family(pk4_control*c,uint8_t*snare,uint8_t*bass,uint8_t*nt,const uint8_t raw[4],uint8_t mode,uint8_t vel,uint8_t note,int trig,const pk4_assets*a){
     /* One family control history; three separately retained synthesis states. */
-    unsigned i;int dirty=control_dirty(c,raw,mode);
+    int dirty=control_dirty(c,raw,mode);
     if(dirty){
         res_mode_update(snare,bass,nt,c->valid?c->last_mode:1u,c->targets,a);
         res_mode_update(snare,bass,nt,mode,c->targets,a);
     }
     if(mode<2)prepare_res(c,mode==0?snare:bass,mode==1,raw,mode,vel,note,trig,a);
     else{
-        if(dirty){control_commit(c,raw,mode);for(i=0;i<16;i++)nt_update(nt,c->targets,a,0);}
+        if(dirty){control_commit(c,raw,mode);common_smooth_many(nt,c->targets,15u);nt_update(nt,c->targets,a,0);}
         if(trig){nt_trigger(nt,vel,note);nt_update(nt,c->targets,a,0);}
     }
 }
