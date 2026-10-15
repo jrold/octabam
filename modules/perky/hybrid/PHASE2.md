@@ -1,84 +1,115 @@
-# Goal 2 recovery — 14 October 2026
+# PERKY hybrid continuation — 14 October 2026
 
-**INCOMPLETE / BLOCKED: modeled deadline miss; timing review required. DO NOT FLASH PKHYB2P.**
-No locally qualified hybrid probe or hardware test request is issued.
-`PHASE2.json` contains commands, evidence hashes, deliverable status and limits.
+**INCOMPLETE / BLOCKED. DO NOT FLASH. Both optimization iterations used.**
+Cold-start initialization and full-ISR instrumentation are implemented and
+locally tested. The final short-run modeled ISR peak is **319.861 us**,
+including the small entry/return correction: zero observed period misses,
+**29.611 us above** the proposed 290.249433 us advancement margin. The full
+sustained workload and silicon qualification remain incomplete.
 
-Recovered checkout: `perky-cf-dsp-hybrid`, HEAD
-`82947daee3bf7d02efe947774f3c157620cd50a4`. One modified verifier and five
-untracked files were present. The existing runtime, builder, tests, firmware
-and logs were inspected and reused. Their inventory and original receipts
-are preserved under `out/perky/hybrid/resume-goal2/`. No branch, worktree,
-upstream integration, CI, push or physical update was performed.
+Branch `perky-cf-dsp-hybrid`; committed build source `28701a6d84b3ebaf679eb5ae774d8f28d5646c2d`.
+Runtime/optimization commit `ce882def`; measurement-harness correction
+`28701a6d`. GPT-6.1 Sol / High, one agent, no model or speed override.
+The preserved `perky-machines` ref remains `4ff6aa4456502424bff5bea62e7b55aa36d7b4a4`.
 
-Local session metadata identifies **gpt-6.1-sol / high**, one agent. Speed
-is not exposed; no speed or model override was made.
+## What changed
 
-## Executed recovery results
+The hybrid loader decodes the lossless assets and initializes the two compact
+CF voices plus a pristine reset template after hash verification, before RTOS
+handoff. Loaded COLD/READY cookies replace BSS readiness assumptions. The audio
+ISR owns generation changes and copies the 1,974-byte template at the event
+boundary; UI callbacks never reset live state. No decoding, large constructor,
+allocation or filesystem work occurs in `pk_render`.
 
-| Check | Result |
-|---|---|
-| `verify_perky_hybrid.py --stage baseline --work out/perky/hybrid` | PASS_FOR_PROBE_BUILD, 18/18 gates; includes 9 corrected-emulator CTest tests |
-| `verify_perky_hybrid_workload.py --work out/perky/hybrid --smoke` | PASS: 22,450-frame T2/T6 split drift, 1,000-frame snare row, and source/post-FX audio assertions in a separate 2,400-frame capture |
-| `resume-goal2/diagnose_row.py` | 27,563 frames: 95,599 cycles maximum = 359.395 us at modeled 266 MHz; no deadline misses; FAIL proposed 80% margin |
-| `resume-goal2/diagnose_transition.py` | 4,000 frames: 98,632 cycles maximum = 370.796992 us; **one deadline miss**; runtime generation reaches 3 |
-| `resume-goal2/diagnose_cold_callback.py` | **FAIL lifecycle**: observed waveform-asset writes inside signed T2 `pk_render` with COLD readiness, before UI initialization |
-| Repaired `verify_perky_hybrid.py --stage probe --work out/perky/hybrid` | Eight executable gates PASS; aggregate correctly **BLOCKED** for missing qualification evidence |
-| `verify_perky_hybrid_evidence_selftest.py` | PASS, 9 tests; subsequent image/tool binding checks included |
-| Clean-source rebuild, complete sustained matrix, physical MKII | NOT-RUN |
+A CF-only entry/tail hook measures each whole audio ISR once, independently
+of split source callbacks. DTIM3 is declared at the established stock 132 MHz.
+Fixed counters/rings, wrap-safe subtraction, a histogram, bounded seqlock
+snapshots and two separate HC polling-site counters are included. HC sites
+are not assumed to represent independent DSP core completions. No DSP code,
+upload, placement, table or guard changed.
 
-Commands above use `.venv/bin/python3 tools/verify/` for verifier scripts and
-`.venv/bin/python3 out/perky/hybrid/` for the recovery diagnostic drivers.
-Full argv, exit statuses and hashed logs are in `PHASE2.json`.
+**No CF METER reading is required.** The UI task automatically writes a fresh
+`/PKH20000.PRF` (then increasing names) after observing RUN followed by STOP.
+It never overwrites an existing file. The 1,864-byte record contains a source
+identity and coherent counters; `tools/perky/read_hybrid_profile.py` validates
+it against the exact BUILD.json. Actual stock filesystem export passed under
+the port. Physical card export and silicon timer read cost remain unverified.
 
-The frame period is 16/44100 seconds = 362.811791 us. The observed transition
-run peak is **7.985201 us over that period** and **80.547559 us above the
-proposed 290.249433 us margin**. Worst frame index: 1378. These are corrected
-model observations, not measured MKII timing or a complete workload bound.
-No performance optimization was attempted. No reliable prior iteration ledger
-exists; zero prior targeted performance iterations were identifiable.
+## Two measured, bit-exact iterations
 
-The transition diagnostic uses the inherited workload's documented memory
-pokes at frames 1000/2000 to change both Part indices. It does not exercise
-the complete stock UI Bank/Part change. Its 4,000 frames do not reach the
-family-transition locks at steps 46/58. Its histogram maximum/miss count is
-used; the host budget mean covers a different interval when scripted actions
-split execution and is not accepted as the whole-run mean. An initial local
-driver used unsupported `part` actions and was terminated; that log is
-preserved and excluded from accepted evidence.
+Same 4,000-frame delayed-trigger / Part-index-poke short case, corrected
+`--cf-cycles-clock 1.0`; these are runtime late-stamp spans, not hardware bounds:
 
-The historical T3 smoke assertion does **not** reproduce. Assertions were
-not weakened. T3's inherited playback values match the stock FLEX descriptor
-defaults, including LEN and RTIM. No playback or synthesis parameter was
-changed. The sole workload-script edit rejects unexecuted `--step` actions;
-its original bytes and execution hash are preserved separately.
+| State | Max ISR timer span | Result |
+|---|---:|---|
+| Fixed initialization/profiling, before optimization | 368.167 us | Period exceeded |
+| Iteration 1: defer overwritten control derives to last pass | 349.598 us | Bit-exact; 80% margin fails |
+| Iteration 2: retain exact smoother recurrence and required boundary/sticky updates | 315.871 us | Bit-exact; 80% margin fails |
 
-## Implementation and qualification gaps
+Both iterations passed all 19 original-reference sections. The final packaged
+adapter passed 1,024 frames / 2,048 exact source records and complete two-voice
+state/RNG snapshots, every split offset, plus eight out-of-range fallback cases.
+No third performance iteration was attempted.
 
-| Deliverable | Status and evidence |
-|---|---|
-| Foundation | COMPLETE+VALIDATED for unchanged CF/reference and frozen DSP inputs. Aggregate source inventory predates verifier-only recovery changes. |
-| Composition | IMPLEMENTED+UNVERIFIED. Existing MAIN/runtime/builder source hashes match, but runtime and builder are untracked and absent from recorded source commit. |
-| Frozen DSP | COMPLETE+VALIDATED: original generation/uploads/guard, startup and actual-image P/X/Y readback checks pass. Frozen source was not changed. |
-| Dispatcher, transport, UI | PARTIAL: 192 native record comparisons, 288 CF split cases, independent T2/T6, fixed-slot sentinels/cursor and UI stubs pass. Full source-handoff and original-state proof remains missing. |
-| Hybrid PCM/state/RNG | IMPLEMENTED+UNVERIFIED. Phase 1 helpers pass original-reference tests; that does not independently prove the new adapter. |
-| Initialization | FAILED. Asset decode remains reachable in `pk_render`; Bank/Part changes also initialize both instances there. Generation-safe ownership/readiness is unqualified. |
-| Hardware profiler | FAILED. Runtime assumes 88 MHz; qualified stock DTIM3 uses 132 MHz. It sums PERKY callbacks and groups 27,563 frames into 60,630 entries. No full-ISR measurement, coherent export, wrap/overhead proof or silicon extraction path is qualified. |
-| Memory/packaging | PARTIAL. Actual link/map and 200,704-byte waveform BSS evidence exist. Wrapper/cap/round-trip gates pass. The stack reserve is not a measured hybrid ceiling. |
-| Twelve retained FX | PARTIAL. Four actual-image configurations preserve both cores' P/X/Y and tables with all 12 effects assigned. Their gate does not independently prove active nonzero processing by every effect. |
-| Integrated workload | FAILED deadline; long matrix NOT-RUN. Seven >=60-second combinations, additional/reversed cases and worst >=600-second run remain required. |
-| Corruption tests | PARTIAL. Existing release/card/DSP-span checks and receipt tests pass; complete lifecycle/loader fault coverage remains unqualified. |
-| Clean commit/rebuild/hardware handoff | MISSING / WITHHELD. The verified receipt-gate repair is committed as `8a01675e`; incomplete inherited runtime/build code remains untracked. |
+A separate final 4,000-frame snare/snare comparison measured **319.861 us**
+for the complete corrected ISR model span, leaving 42.951 us to the period.
+Mean conditional profiler overhead was **3.195 us**; disarming CF reduced
+mean service by **54.949 us**. Common hook overhead remains in the off run;
+differences of maxima are not an overhead bound. External PC pairs cover
+4,000 frames; adding the model's first LEA (1 cycle) and RTE (10 cycles)
+accounts for the omitted instructions. The runtime late stamp itself excludes
+small entry/footer work. Its boot calibration reading zero is not evidence
+of zero physical timer-read cost. Cache/stall effects and silicon remain unproven.
 
-The original notes' `LOCAL_PROBE_QUALIFIED_HARDWARE_PENDING` claim is
-withdrawn. The previous TIMING statement that long tests were skipped by user
-permission is not accepted for this goal. Original binary bytes are preserved;
-BUILD/TIMING/notes now explicitly describe the blocked state. Original receipts
-remain archived. No PERKY4S output was overwritten or relabeled.
+**Retraction:** recovery's 98,632 cycles / 370.797 us was ACK-to-ACK CPU work,
+including intervening tasks, not an ISR duration. The original ISR-miss
+interpretation is withdrawn everywhere in the current reports. Independent
+new ISR timing reproduced a true pre-optimization overrun as shown above.
+The inherited `--poke-before-play` long-word syntax also wrote only one byte;
+invalid off/disarmed comparisons were discarded. New code writes four explicit
+bytes and asserts the effective switch and counter activity.
 
-The next step is user timing/design review under the objective's explicit
-modeled-overrun gate. Any later work must qualify initialization and a real
-full-frame hardware profiler, then use at most the remaining two identifiable
-targeted, measured, bit-exact CF/control/packing optimization iterations.
-No extra FX removal, synthesis approximation, or DSP change is authorized.
-See `HW_PROBE_REQUEST.md` and `GOAL2_RESUME_HANDOFF.md`.
+## Verification and limits
+
+- PASS: baseline/CF foundation 18/18 (including corrected-emulator CTest),
+  original-reference PCM/state/control gates, boot/loaded-cookie readback,
+  single ownership, 192 native comparisons, 288 CF split cases and UI bounds.
+- PASS: frozen DSP identity and both-core P/X/Y/table readback through four
+  600-frame configurations assigning all twelve retained FX. Independent
+  nonzero processing proof for every effect remains incomplete.
+- PASS: final smoke, 22,450-frame sequencer split drift and separate eight-track
+  source/post-FX audio capture. The historical T3 assertion does not reproduce.
+- PASS: dirty initialization, no RT asset writes/UI reset, snapshot collision,
+  timer wrap, actual filesystem export, six profile-file negatives and nine
+  evidence negatives. Direct-call lifecycle fixtures are not complete stock
+  Bank/Part replay or backlog bounds.
+- PASS: `REFHASH_JOBS=1 scripts/refhash.sh check`, all 24 cases bit-identical.
+- PASS: committed-source rebuild; MAIN, fragmented image, ELF and raw runtime
+  bit-identical. Only unrelated user text remains untracked. Baseline receipt
+  predates a decoder whitespace cleanup and measurement-switch helper fix;
+  synthesis inputs are identical and exact executed source hashes are retained.
+- BLOCKED as expected: aggregate probe gate. Current card/MIDI/ELUP wrappers
+  are deliberately absent. Archived old wrappers were hash-checked against
+  their preserved copies before removal from the current probe directory.
+- NOT RUN after the two-iteration stopping gate: all mandatory/additional
+  >=60-second rows, worst >=600-second run, complete lifecycle/backlog stress,
+  current wrapper corruption/cap roundtrip and physical MKII tests.
+
+The actual ELF has 200,704 decoded waveform BSS bytes and 3,948 live CF voice
+bytes. Physical normalized extents do not overlap; the stack reservation is
+not a measured hybrid ceiling. Current MAIN is only a simulation input:
+`out/perky/hybrid/probe/mainos_PKHYB2P.bin`, SHA256
+`46bd31dba62651500de6c672ec0e3e50c38533f8edbe39cd12e200318c93ca2a`.
+
+The first plain refhash helper unexpectedly created temporary checkouts,
+contrary to the workspace restriction. Their source identity was audited;
+only those helper checkouts were removed. The compliant single-checkout rerun
+passed, and `git worktree list` now contains only the original directory.
+Evidence is in `out/perky/hybrid/resume-fixes/`; complete commands, hashes and
+status-by-contract are in PHASE2.json. No flash, push, upstream integration,
+CI or Goal 3 work occurred.
+
+The stopping gate is the remaining margin after two iterations. Review that
+shortfall and the unrun qualification scope before authorizing further work.
+Hardware handoff remains withheld; automatic STOP-to-card export avoids any
+CF METER reading in a future qualified run.

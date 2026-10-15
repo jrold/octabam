@@ -1,260 +1,896 @@
 {
-  "schema": "octabam.perky.hybrid.phase2.recovery.v1",
-  "status": "INCOMPLETE_BLOCKED_TIMING_REVIEW_REQUIRED",
-  "hardware_feasibility": "UNVERIFIED",
+  "schema": "octabam.perky.hybrid.phase2.v2",
+  "status": "INCOMPLETE_BLOCKED_TWO_ITERATIONS_EXHAUSTED",
   "branch": "perky-cf-dsp-hybrid",
-  "recovered_head": "82947daee3bf7d02efe947774f3c157620cd50a4",
-  "verification_commit": "8a01675efb6fbccff306ad5f9d49cca0b23179f4",
-  "model": {
-    "id": "gpt-6.1-sol",
-    "reasoning": "high",
-    "speed": "not exposed; no override made",
-    "agents": 1
+  "source_HEAD": "28701a6d84b3ebaf679eb5ae774d8f28d5646c2d",
+  "runtime_implementation_commit": "ce882def",
+  "measurement_harness_commit": "28701a6d",
+  "report_HEAD_note": "HEAD at report generation equals source_HEAD; this report is committed separately afterward.",
+  "configuration": {
+    "model": "gpt-6.1-sol",
+    "reasoning_effort": "high",
+    "agents": 1,
+    "speed": "not exposed; no override"
   },
-  "initial_inventory": {
-    "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/initial-inventory.json",
-    "bytes": 35632,
-    "sha256": "3a44c50765a9c0209cd63a9d9bfd437efe61210522ef3a1983eaff19734a8c1a"
+  "reconstructed_prior_state": "At 942f6572 inherited runtime/builder/gates/workload were untracked and unqualified; cold decode reachable in callback, 88MHz callback-only profiler, misleading success notes. Reused code and preserved artifacts; not restarted.",
+  "preserved_perky_machines_ref": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+  "preserved_dirty_file": {
+    "path": "/Users/jrold/Downloads/octabam/PERKY_Hybrid_Goal2_Gemini_Argon4.txt",
+    "bytes": 15100,
+    "sha256": "285b0b0dbf5cf90bb65da481e97cf740858148c9c4e0377d4ebbe8320263766a"
   },
-  "execution_source_provenance": {
-    "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/execution-source-identities.json",
-    "bytes": 959,
-    "sha256": "0da3889543c96a269943488cd695ab03bafd4e919d96f19317c98a35b510bb13"
+  "workspace_exception": "Plain refhash helper unexpectedly created temporary checkouts. Audited main-source identity and removed only helper checkouts; reran with JOBS=1 and cached baseline. Only original checkout remains. No upstream/CI/push/flash.",
+  "deliverables": {
+    "foundation": {
+      "status": "COMPLETE+VALIDATED",
+      "evidence_or_limit": "18/18 gates PASS_FOR_PROBE_BUILD on final CF synthesis source. Later differences: decoder trailing whitespace and measurement-switch harness only; exact executed source hashes retained in results.json."
+    },
+    "composition": {
+      "status": "COMPLETE+VALIDATED",
+      "evidence_or_limit": "Single exported dispatcher and hook/symbol owner; original native producer source reused."
+    },
+    "frozen_DSP": {
+      "status": "COMPLETE+VALIDATED",
+      "evidence_or_limit": "PERKY4S uploads/payloads/immutable tables/guard exact; four actual-image FX configurations preserve both cores P/X/Y."
+    },
+    "transport_UI": {
+      "status": "COMPLETE+VALIDATED_BOUNDED",
+      "evidence_or_limit": "192 native record comparisons, 288 CF split cases, independent T2/T6, slot-tail/cursor preservation and UI bounds pass; final smoke and sequencer drift pass."
+    },
+    "CF_PCM_state_RNG": {
+      "status": "COMPLETE+VALIDATED_BOUNDED",
+      "evidence_or_limit": "Both iterations pass original-reference 19 sections. Final image: 1024 frames, 2048 exact records/full two-voice state snapshots; 8 corrupt-smoother fallback cases."
+    },
+    "cold_start": {
+      "status": "COMPLETE+VALIDATED",
+      "evidence_or_limit": "Loader initializes before RTOS, loaded cookies, poisoned state, no RT asset writes, UI does not reset active state; wrap and snapshot-collision fixtures pass."
+    },
+    "Bank_Part_lifecycle": {
+      "status": "PARTIAL",
+      "evidence_or_limit": "Audio-owned generation reset at event boundary; direct-call Part switch and short live Part-index pokes pass. Complete stock UI Bank/Part stress remains NOT_RUN."
+    },
+    "profiler": {
+      "status": "PARTIAL",
+      "evidence_or_limit": "132 MHz stock DTIM3, once-per-ISR span, 32-bit wrap fixture, coherent UI snapshots, corrected PC spans and valid on/off/disarmed controls. Silicon read cost/completion/backlog bound UNVERIFIED."
+    },
+    "card_export": {
+      "status": "COMPLETE+VALIDATED_LOCAL_ONLY",
+      "evidence_or_limit": "Actual stock filesystem writes 1864-byte PKH20000.PRF after stop; source-matched CLI decode and six malformed-file negatives pass. No CF METER readings or DSP insert required; silicon untested."
+    },
+    "memory_packaging": {
+      "status": "PARTIAL",
+      "evidence_or_limit": "Actual ELF/map/physical-normalization and nonoverlap PASS. 200704 decoded PCM bytes; 3948 live voice bytes. Stack reserve not a measured ceiling; current wrappers/cap roundtrip NOT_RUN and withheld."
+    },
+    "retained_FX": {
+      "status": "PARTIAL",
+      "evidence_or_limit": "All twelve assigned during four 600-frame real-image configurations; DSP tables preserved. Independent nonzero processing for every effect not established."
+    },
+    "timing": {
+      "status": "FAILED_80_PERCENT_MARGIN",
+      "evidence_or_limit": "Both measured bit-exact optimization iterations used. Final short-run corrected full ISR model max 319.860902 us; zero observed misses; 29.611469 us over proposed margin. Not a sustained bound."
+    },
+    "integrated_matrix": {
+      "status": "NOT_RUN_STOPPING_GATE",
+      "evidence_or_limit": "Seven >=60 s rows, additional/reversed rows, worst >=600 s and full lifecycle/backlog stress withheld after two-iteration margin failure."
+    },
+    "negative_gates": {
+      "status": "PARTIAL",
+      "evidence_or_limit": "Nine evidence negatives, original release guards and six profile negatives PASS. New package corruption tests NOT_RUN because no current wrappers emitted."
+    },
+    "source_rebuild": {
+      "status": "COMPLETE+VALIDATED",
+      "evidence_or_limit": "Committed build inputs match source commit; MAIN, fragmented image, ELF and runtime raw reproduce exactly. Unrelated user text remains untracked."
+    },
+    "hardware_handoff": {
+      "status": "WITHHELD",
+      "evidence_or_limit": "INCOMPLETE/BLOCKED. No flash package, no physical update, no push, no Goal 3."
+    }
   },
   "commands": [
     {
-      "command": ".venv/bin/python3 tools/verify/verify_perky_hybrid.py --stage baseline --work out/perky/hybrid",
-      "result": "PASS_FOR_PROBE_BUILD (18/18; before recovery verifier edits)",
-      "exit_status": 0,
-      "log": {
-        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/baseline.log",
-        "bytes": 2345,
-        "sha256": "def2ba1b04d24d5f5951d5bfba9affc972b03aa2d5089c79df0b591782fbe1db"
+      "command": ".venv/bin/python3 tools/verify/verify_perky_hybrid.py --stage baseline --work out/perky/hybrid/resume-fixes",
+      "result": "PASS_FOR_PROBE_BUILD 18/18",
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/results.json",
+        "bytes": 476880,
+        "sha256": "204105969cd7f3886810fcddcec6271abad40e474fe717236bb574a7bb33a6ea"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 tools/verify/verify_perky_hybrid_runtime.py --frames 1024",
+      "result": "PASS; 2048 exact records and full state/RNG; boot/lifecycle/snapshot/wrap/file ABI fixtures",
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/RUNTIME_1024.json",
+        "bytes": 1441,
+        "sha256": "aa1c2eb2b41d7b2676a56c9e1f6ba0c509fbeaa86618e9b7ce3a9bf2d7f27546"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 out/perky/hybrid/resume-fixes/final_safety.py",
+      "result": "PASS owner/dispatch/UI and both-core readbacks with twelve FX assignments",
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/SAFETY.json",
+        "bytes": 1568,
+        "sha256": "c59223b04e45bf3f56a397704ee9043297150116c280d4a5a188cd73d2d5c54e"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 out/perky/hybrid/resume-fixes/measure_overhead_resume.py",
+      "result": "PASS execution, verified on/off/disarmed controls; FAIL proposed margin",
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/OVERHEAD.json",
+        "bytes": 18901,
+        "sha256": "b15a8a701e962e8fddc1d0f72ccb28e6a19cdffe0d43c7161f088a554e1c2bba"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 out/perky/hybrid/resume-fixes/check_card_export.py",
+      "result": "PASS actual firmware filesystem export after scripted STOP",
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/CARD_EXPORT.json",
+        "bytes": 8630,
+        "sha256": "f6772b0e31791c8ab7243f1a3d3cbf37d543a1edb33f64132493924d40fd3056"
       }
     },
     {
       "command": ".venv/bin/python3 tools/verify/verify_perky_hybrid_workload.py --work out/perky/hybrid --smoke",
-      "result": "PASS; seq drift 22450 frames and integrated 1000 frames plus all-eight-track audio assertions in 2400-frame capture",
-      "exit_status": 0,
+      "result": "PASS; T2/T6 22450-frame split drift, 1000-frame row and separate all-track audio capture",
       "log": {
-        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/smoke.log",
-        "bytes": 3877,
-        "sha256": "ab03538bc33d6e915d05acbbfb921b1fc42bb12bafef96faeaf5b50187b7dee1"
-      }
-    },
-    {
-      "command": ".venv/bin/python3 out/perky/hybrid/resume-goal2/diagnose_row.py",
-      "result": "PASS execution; FAIL 80% timing margin; 27563 frames, no period misses",
-      "exit_status": 0,
-      "log": {
-        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/snare-10s.log",
-        "bytes": 2844,
-        "sha256": "9726e99ad3fdf3b0484ec46d89eb462807082ec731b966ca7642d6f6bf9b9a29"
-      }
-    },
-    {
-      "command": ".venv/bin/python3 out/perky/hybrid/resume-goal2/diagnose_transition.py",
-      "result": "FAIL deadline gate; 4000 frames, 1 miss; final script uses documented poke actions",
-      "exit_status": 0,
-      "log": {
-        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/transitions-index.log",
-        "bytes": 2843,
-        "sha256": "f5f3a4a4d69be74b88e067920c3231a2873b922e9e08c8517f2efa86861bc953"
-      }
-    },
-    {
-      "command": ".venv/bin/python3 out/perky/hybrid/resume-goal2/diagnose_cold_callback.py",
-      "result": "FAIL lifecycle contract (decoded-asset writes in callback); diagnostic execution succeeded",
-      "exit_status": 0,
-      "log": {
-        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/cold-callback.log",
-        "bytes": 645,
-        "sha256": "d5f2435f015ea9376ec66e3d830ea689f14d6209966f5e6f4f3dce46996df94b"
-      }
-    },
-    {
-      "command": ".venv/bin/python3 tools/verify/verify_perky_hybrid.py --stage probe --work out/perky/hybrid",
-      "result": "BLOCKED; all 8 executable commands PASS, missing evidence refused. Subsequent image/tool receipt binding additions tested separately.",
-      "exit_status": 1,
-      "log": {
-        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/probe-repaired.log",
-        "bytes": 984,
-        "sha256": "bd3ed76ce4636df6596e5d1a12f63271f772cbf334c198b0e18ccda8eb59139f"
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/smoke-final.log",
+        "bytes": 3952,
+        "sha256": "568a133ac951de18cb0c0521119f9a7e7af4b2ffd3cc70483119dd38626d8d65"
       }
     },
     {
       "command": ".venv/bin/python3 tools/verify/verify_perky_hybrid_evidence_selftest.py",
-      "result": "PASS 9/9 negative/structural tests",
-      "exit_status": 0,
+      "result": "PASS 9 tests",
       "log": {
-        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/evidence-selftest.log",
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/evidence-final.log",
         "bytes": 107,
-        "sha256": "5d7a03ba8edf9bfa1d13102e407e2fb284bf7b3d2631233c7a9d8c787450df62"
+        "sha256": "500f3dbceef562b9223762a4ff08c9d091dc87705d62d38888e49e20428d4943"
       }
     },
     {
-      "command": "git diff --check",
-      "result": "PASS",
-      "exit_status": 0
-    },
-    {
-      "command": "clean-source rebuild/reproducibility, long matrix, physical update",
-      "result": "NOT-RUN; review gate reached"
-    },
-    {
-      "command": ".venv/bin/python3 out/perky/hybrid/resume-goal2/final_audit.py",
-      "exit_status": 0,
-      "result": "PASS refusal/preservation audit: 13 reasons reject qualification, 8 unchanged binary/runtime files, 166 frozen DSP sources",
+      "command": "REFHASH_JOBS=1 scripts/refhash.sh check",
+      "result": "PASS all 24 configurations bit-identical; cached baseline, sole checkout",
       "log": {
-        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/final-audit.log",
-        "sha256": "64e4a71f6fd0c3cbefb2591ce436b11d3ba945ba565face07b533696d51aab6e",
-        "bytes": 105
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/refhash-single-checkout.log",
+        "bytes": 716,
+        "sha256": "222503550582ffff2b917dae036e291e790d90c788ac1c67206b8d02eae0e8c8"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 tools/perky/build_cf_dsp_hybrid.py --profile probe --work out/perky/hybrid --no-wrap",
+      "environment": "BASELINE.json environment, PERKYBITS_SOURCE unset",
+      "result": "PASS reproducible from committed source; DSP and memory PASS",
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/REPRODUCIBILITY.json",
+        "bytes": 1827,
+        "sha256": "2c74d7b78d65390acad74ffb18e71abdd2ebc490e23c4f219ba59f7bffc561ff"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 tools/verify/verify_perky_hybrid.py --stage probe --work out/perky/hybrid",
+      "result": "BLOCKED as required; no current wrappers, incomplete sustained/lifecycle/silicon proof, failed margin",
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/VERIFY_PROBE.json",
+        "bytes": 16406,
+        "sha256": "6512d388fe723438c4cd1ba5884347f9493a7ead93feea267d0bd9cf7d4d9431"
       }
     }
   ],
-  "deliverables": [
+  "baseline_commands": [
     {
-      "deliverable": "foundation",
-      "status": "COMPLETE+VALIDATED",
-      "evidence_or_limit": "18/18 baseline checks and all 9 corrected CTest tests; original CF/reference paths unchanged."
+      "name": "ctest",
+      "argv": [
+        "ctest",
+        "--test-dir",
+        "/Users/jrold/Downloads/octabam/out/emu",
+        "--output-on-failure"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/baseline/ctest-gate.log",
+        "bytes": 1035,
+        "sha256": "4fe7e2956fa414cc85c707391d3cd4eb5b2837030b145887c62854da55250470"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/cmake/4.4.2/bin/ctest",
+        "bytes": 15317144,
+        "sha256": "729772880220d2b2731ac84d745a61b5958cf1c34a885c238c8086dd60d4a794"
+      }
     },
     {
-      "deliverable": "composition",
-      "status": "IMPLEMENTED+UNVERIFIED",
-      "evidence_or_limit": "Existing runtime/builder image/source hashes match, but code is untracked and absent from recorded source commit."
+      "name": "release-guards",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_release_guards_selftest.py"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/baseline/release-guards-gate.log",
+        "bytes": 284,
+        "sha256": "a3108b8db4b24b10dbf24ac60434ecc9fe94fd2cb4eeb22fd68afe3d84e9d83e"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
     },
     {
-      "deliverable": "frozen_DSP",
-      "status": "COMPLETE+VALIDATED",
-      "evidence_or_limit": "Generation/upload/guard identity, startup and P/X/Y readback gates pass on actual hybrid; no DSP changes."
+      "name": "prefetch-guard",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_prefetch_guard.py",
+        "--build",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/reproduction"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/baseline/prefetch-guard-gate.log",
+        "bytes": 96,
+        "sha256": "4803e5b60cc378cd1ec9f8abfb765d83071825ec5748f8e5dcfbe93be13634e2"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
     },
     {
-      "deliverable": "dispatch_transport_UI",
-      "status": "PARTIAL",
-      "evidence_or_limit": "192 native record comparisons, 288 CF split cases, independence, slot/cursor and UI stub gates pass. Full cold source-handoff and original-state comparison not established."
+      "name": "dsp-dependencies",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_dsp_dependencies.py",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/dsp-dependencies"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/baseline/dsp-dependencies-gate.log",
+        "bytes": 690,
+        "sha256": "75931db7596d810adac84c5a6655f8f8543b72031e5480e30ec219a4ee0e3efb"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
     },
     {
-      "deliverable": "integrated_original_PCM_state",
-      "status": "IMPLEMENTED+UNVERIFIED",
-      "evidence_or_limit": "Phase 1 helpers are qualified; the new hybrid adapter has not had an independent full PCM/state/RNG differential."
+      "name": "completed-qualification",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_baseline_qualification.py",
+        "--build",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume/baseline/build",
+        "--report",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/baseline-qualification.json"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/baseline/completed-qualification-gate.log",
+        "bytes": 111,
+        "sha256": "7132e3a4d961b324580c744d3f78e4db614ba8b9578d1d266d013ee2426ae051"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
     },
     {
-      "deliverable": "initialization_lifecycle",
-      "status": "FAILED",
-      "evidence_or_limit": "Observed decoded-wave writes in pk_render. Bank/Part reset initializes both instances in callback. No qualified generation-safe ownership handoff."
+      "name": "legacy",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_final.py",
+        "--requalify",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--perkybits",
+        "/Users/jrold/Downloads/perkybits",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/legacy"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/legacy-gate.log",
+        "bytes": 54129,
+        "sha256": "fa51e5267e291e29465b21afa1b4ad292de54c3bf608d0766e7aee0d2cd36293"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
     },
     {
-      "deliverable": "hardware_profiler",
-      "status": "FAILED",
-      "evidence_or_limit": "Wrong declared frequency, wrong frame grouping, callbacks only, no silicon export path or qualified overhead/wrap tests."
+      "name": "wavetable",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_wavetable_dsp.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/wavetable"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/wavetable-gate.log",
+        "bytes": 2660,
+        "sha256": "d1918c65d1feaef4e9bb41be200c961c4337b42f95594d9c215d14232a22e15a"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
     },
     {
-      "deliverable": "memory_and_packaging",
-      "status": "PARTIAL",
-      "evidence_or_limit": "Actual link/map, 200704 decoded bytes and wrapper cap/round-trip evidence exist; stack reserve is not a measured hybrid ceiling; clean-source reproduction absent."
+      "name": "resonant",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_resonant_dsp.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/resonant"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/resonant-gate.log",
+        "bytes": 5944,
+        "sha256": "90610d1edd39e588742af1c13879394dd9cda1c55ab8e8ef17c7ee61e7ebe5f3"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
     },
     {
-      "deliverable": "retained_FX",
-      "status": "PARTIAL",
-      "evidence_or_limit": "All 12 assigned in 4 actual-image both-core readback configurations; immutable bytes/tables preserved. Gate does not independently prove nonzero active processing by each effect."
+      "name": "noise-tone",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_noise_tone.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--source",
+        "/Users/jrold/Downloads/perkybits"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/noise-tone-gate.log",
+        "bytes": 1019,
+        "sha256": "277f797479372e3133c0eb2053af0ae9cf6ae99f147486075d09bf9437298cba"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
     },
     {
-      "deliverable": "integrated_workload",
-      "status": "FAILED",
-      "evidence_or_limit": "Smoke passes. 27563-frame row exceeds 80% margin; 4000-frame delayed-trigger/Part-index test misses deadline once. Long matrix NOT-RUN."
+      "name": "noise-tone-controls",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_noise_evidence.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--source",
+        "/Users/jrold/Downloads/perkybits",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/noise-tone-controls"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/noise-tone-controls-gate.log",
+        "bytes": 13697,
+        "sha256": "e5b92b44e4534536eb234dac113fe75040946eaacadee34f9e07b53bad8db295"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
     },
     {
-      "deliverable": "negative_tests",
-      "status": "PARTIAL",
-      "evidence_or_limit": "Wrapper/card/DSP-span/release guards and 9 receipt tests pass; full lifecycle/loader fault coverage remains unqualified."
+      "name": "freestanding",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_freestanding.py"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/freestanding-gate.log",
+        "bytes": 76,
+        "sha256": "409e760d65b10a14c92a5de6a2f76115048fa4ae1f6659d47a6731479c35e817"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
     },
     {
-      "deliverable": "Phase2_and_hardware_handoff",
-      "status": "PARTIAL",
-      "evidence_or_limit": "This recovery creates blocked reports and withheld hardware request, not a qualified flash handoff."
+      "name": "hotloops",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_hotloops.py"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/hotloops-gate.log",
+        "bytes": 121,
+        "sha256": "e1f7de3deba61720cce3365bdbc0b2317a8eedec4cb8e4ded6499c8a4d01974e"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
     },
     {
-      "deliverable": "clean_source_commit_reproducibility",
-      "status": "MISSING",
-      "evidence_or_limit": "Verified verifier/tests committed; inherited incomplete runtime/builder remain untracked. No new flashable build or reproducibility claim."
+      "name": "stock-record",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_stock_record_abi.py"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/stock-record-gate.log",
+        "bytes": 282,
+        "sha256": "0c7576fd585ce68fe7ae17a6ea4818fafc97d1baa1c56268a83d8b47ee226cda"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
+    },
+    {
+      "name": "runtime-memory",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_runtime_memory_final.py"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/runtime-memory-gate.log",
+        "bytes": 305,
+        "sha256": "c4bb8d43de9aa82b65cbb39da9f790e10c1bf564c622842db17fecd2b84b5eb7"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
+    },
+    {
+      "name": "wt-profiles",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_wt_profiles.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/wt-profiles"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/wt-profiles-gate.log",
+        "bytes": 600,
+        "sha256": "27ff07eab70a67b055538ff6b4ffe4b9ba06eb025c971066d88b22c9ed14a00b"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
+    },
+    {
+      "name": "original-profiles",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_original_profiles.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--perkybits",
+        "/Users/jrold/Downloads/perkybits",
+        "--unicorn-build",
+        "/Users/jrold/Downloads/perkybits/build-local/_deps/unicorn-build",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/original-profiles"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/original-profiles-gate.log",
+        "bytes": 13719,
+        "sha256": "a0807e0541944faabc875199822cd32e98339b91f969ad4d48b9423c94437a31"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
+    },
+    {
+      "name": "target",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_target.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/target"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/feasibility/target-gate.log",
+        "bytes": 239,
+        "sha256": "453b30a2f2941604c82bc3c196f63b05c93277a23e4264a7b715d8e4f54c5f28"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
+    },
+    {
+      "name": "packaging",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_packaging.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--target-report",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/target/report.json",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/packaging"
+      ],
+      "environment": {
+        "PERKONS_FIRMWARE": "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "PERKYBITS_ROOT": "/Users/jrold/Downloads/perkybits",
+        "OT_PROJECT": "/Users/jrold/Documents/EZBot templates/Hyper FX 1.0.6 Template by EZBOT/Hyper FX 1FF 1.0.6",
+        "PERKY_EFT": "/Users/jrold/Downloads/octabam/out/eft-qualified/elektron-firmware-tool",
+        "REFHASH_JOBS": "1",
+        "REFHASH_LOCAL": "1"
+      },
+      "exit_status": 0,
+      "status": "PASS",
+      "skipped_required_test": false,
+      "source_drift_during_execution": [],
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/feasibility/packaging-gate.log",
+        "bytes": 2343,
+        "sha256": "bc983f4f68ed1d24d5460502ee96365ec9515dbd0e6a75121174deff8751a2f4"
+      },
+      "tool": {
+        "path": "/opt/homebrew/Cellar/python@3.14/3.14.7/Frameworks/Python.framework/Versions/3.14/bin/python3.14",
+        "bytes": 34640,
+        "sha256": "87d4df53fd91304be5bac391fb204643c36b7df2023c04a0953bcbc7d4fdf634"
+      }
     }
   ],
   "artifacts": {
-    "BUILD.json": {
-      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/BUILD.json",
-      "bytes": 6881,
-      "sha256": "0b2dd565891c2bf91d423f3757e106d567e350d75b9b9f1c49e6a71afbf085a3"
+    "mainos": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/mainos_PKHYB2P.bin",
+      "bytes": 1483674,
+      "sha256": "46bd31dba62651500de6c672ec0e3e50c38533f8edbe39cd12e200318c93ca2a"
     },
-    "MEMORY.json": {
-      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/MEMORY.json",
-      "bytes": 75203,
-      "sha256": "9b0117eac34594bbe86d3881eab08d3591bc0fd3a4a1152547b8cb94dce747ac"
+    "fragmented_normal": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/fragmented-normal.bin",
+      "bytes": 1336498,
+      "sha256": "eccb5ccfe50d295122cae712ee987caeaaabf2dcd2e5265b549389ea30dad451"
     },
-    "TIMING.json": {
-      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/TIMING.json",
-      "bytes": 3577,
-      "sha256": "b7f14ecf75b6c8513f1bc73a68180accba015623976622b572ad60e2a568f281"
+    "runtime_elf": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/platform/runtime.elf",
+      "bytes": 360508,
+      "sha256": "290b82c30c0f813df159a555a01f5f81cb43b2cb93ebe9571196491a07fad0e6"
     },
-    "DSP_IDENTITY.json": {
+    "runtime_raw": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/platform/runtime.raw",
+      "bytes": 351300,
+      "sha256": "a7d43bf20e1f1bf60a274039f6ab57ca4f907fd779e3392d5880c8db5235b203"
+    },
+    "dsp_identity_report": {
       "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/DSP_IDENTITY.json",
       "bytes": 15204,
-      "sha256": "a450a6c7e6a43a147ed7ffc421d13abe30958f1106df4e1459d436cd311579fd"
+      "sha256": "cf98bf7f2a260bfb03e83fcc0584e8e99ff5addb95a797b544b942f9c9ec1ad9"
     },
-    "VERIFY_PROBE.json": {
-      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/VERIFY_PROBE.json",
-      "bytes": 15413,
-      "sha256": "c74805131b4c735f77ac76a81fe4da70097676029d4e5f0c1404877a064dbc5f"
+    "memory_report": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/MEMORY.json",
+      "bytes": 77418,
+      "sha256": "4658e799bdf8c8c42afb5e5b1f0c9428db47eba78c7b37331349b014423755d5"
+    }
+  },
+  "evidence_files": [
+    {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/BUILD.json",
+      "bytes": 7436,
+      "sha256": "782890a6beab2c59033a3a130143a6e98966b62be53ce6e3e964019e5b3c51a5"
     },
-    "PROBE_GATES.json": {
+    {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/MEMORY.json",
+      "bytes": 77418,
+      "sha256": "4658e799bdf8c8c42afb5e5b1f0c9428db47eba78c7b37331349b014423755d5"
+    },
+    {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/DSP_IDENTITY.json",
+      "bytes": 15204,
+      "sha256": "cf98bf7f2a260bfb03e83fcc0584e8e99ff5addb95a797b544b942f9c9ec1ad9"
+    },
+    {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/TIMING.json",
+      "bytes": 24448,
+      "sha256": "d8577a44eada5caf55917c5f39c912ed5685d399cb3cab84432f30fa83f87c11"
+    },
+    {
       "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/PROBE_GATES.json",
-      "bytes": 1921,
-      "sha256": "aa3e25dd6534bed34cfa9bdca34b24d5ff5da3cb3a9ea20ff3be98d3a77c5378"
+      "bytes": 4797,
+      "sha256": "42c7952b85e02ea5371329928a930386f31b32655fdb575e77d18f003ab4d151"
     },
-    "mainos_PKHYB2P.bin": {
-      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/mainos_PKHYB2P.bin",
-      "bytes": 1477746,
-      "sha256": "df77a52a56941f1fbb6a97f3cfdc118cf03596b87c22b6389717ee1fe8e6c582"
+    {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/PROFILE_NEGATIVES.json",
+      "bytes": 650,
+      "sha256": "8e68a143bef92f5d9bc01cf1f480a8a4f6729087b2e5fd4335e4f5f80b905d26"
     },
-    "elek_PKHYB2P.bin": {
-      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/elek_PKHYB2P.bin",
-      "bytes": 803276,
-      "sha256": "be4a58f9ec35c7686c7f2bc04a9701503afe6193b6fbfc90d0feffc48643e9d7"
+    {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/PERFORMANCE_ITERATIONS.json",
+      "bytes": 1892,
+      "sha256": "c7599fd34f8155f88c74272e32b5a65fdac7ff0d1aee63fc2dd2e2e69fd69c23"
     },
-    "OCTATRACK_PKHYB2P.bin": {
-      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/OCTATRACK_PKHYB2P.bin",
-      "bytes": 803292,
-      "sha256": "fa222e0bdb3a54dba617e03902300bda93cece2368a9cc55495d00af60db5f40"
+    {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/refhash-cleanup.json",
+      "bytes": 4746,
+      "sha256": "eaf9b60f9f78dc7a98fefe4663d3dffbf2ea5cebe5ae88d2cb683a4a51e6a0b7"
     },
-    "OCTATRACK_OS1.40C_PKHYB2P.syx": {
-      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/OCTATRACK_OS1.40C_PKHYB2P.syx",
-      "bytes": 1122068,
-      "sha256": "7beb8da5069a77d85c6a6d10a882ac111bb85fc995014a5c64a9ad1f3bc085f3"
+    {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/STALE_WRAPPERS.json",
+      "bytes": 753,
+      "sha256": "43d41cd735fe5162f1ee5f2bbc3334532ffe106df9c2a0dc3efdd3353732133b"
+    },
+    {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/PKH20000.PRF",
+      "bytes": 1864,
+      "sha256": "87f3c9c2bb8aa32127a975f42a8c296e1f51b53c6172419f89ba9e2aab03a847"
     }
-  },
-  "rollback": {
-    "perky4s_main_sha256": "be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0",
-    "perky4s_card": {
-      "path": "/Users/jrold/Downloads/octabam/out/OCTATRACK_PERKY4S.bin",
-      "bytes": 570824,
-      "sha256": "bc9367ec56b2f310f733d0808a88e74e44da32b63f9483468af09760f7ac8fa9"
-    },
-    "stock_midi": {
-      "path": "/Users/jrold/Downloads/octabam/downloads/extracted/OCTATRACK_OS1.40C.syx",
-      "bytes": 656304,
-      "sha256": "0a8d2d2b35c2cc78fa338576adc1af0cbc094cef973255103165c73edd87f2b6"
-    }
-  },
-  "stopping_gate": "Corrected modeled timing exceeds the frame period. User review is required before treating any fully armed probe as safe. Hardware request withheld.",
-  "limits": [
-    "No new firmware binaries emitted, flashed or pushed.",
-    "No optimization iterations attempted; no DSP source or frozen dependency changed.",
-    "A first local transition driver used unsupported part actions and was terminated; its log remains transitions.log. It is not accepted evidence.",
-    "Prior TIMING claim that long runs were skipped by user permission is not accepted for this goal.",
-    "Aggregate source hash inventory predates verifier-only recovery edits; unchanged synthesis/reference hashes support its stated foundation scope, not clean final-tree qualification."
   ],
-  "final_audit": {
-    "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/FINAL_AUDIT.json",
-    "sha256": "b0163caf77e7f7a1211b4fdcbb4ff232333750016d8aed5878641de7116626aa",
-    "status": "PASS preservation/frozen checks; qualification remains BLOCKED"
-  }
+  "performance_iterations": {
+    "limit": 2,
+    "iterations": [
+      {
+        "number": 1,
+        "status": "MEASURED_BIT_EXACT",
+        "target": "Resonant control preparation: compute overwrite-only pitch/envelope-rate fields on final pass; preserve all 16 smoother/side-effect passes",
+        "before_source_sha256": "87f26018c28e05a8a4f4696e09c514f6f346a0bd0eef81b2e78b4d6574bfe818",
+        "before_measurement": "out/perky/hybrid/resume-fixes/iteration0/MEASURE_BASELINE.json",
+        "after_source_sha256": "08b3f47e4003e129960399757767b6231011cd65b87dcaf44ec74883fb498643",
+        "after_measurement": "out/perky/hybrid/resume-fixes/MEASURE_ITERATION1.json",
+        "original_reference_status": "PASS 19 sections; see original-iteration1/receipt.json",
+        "shipping_adapter_comparison": "PASS 512 frames, 1024 records and state/RNG snapshots against fixed iteration0",
+        "before_ISR_max_us": 368.167,
+        "after_ISR_max_us": 349.598
+      },
+      {
+        "number": 2,
+        "status": "MEASURED_BIT_EXACT_LIMIT_REACHED",
+        "target": "Batch exact smoother recurrence between retained first/last and finite-decay-boundary updates; preserve sticky state; batch third-mode overwrite-only updates",
+        "before_source_sha256": "08b3f47e4003e129960399757767b6231011cd65b87dcaf44ec74883fb498643",
+        "before_measurement": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/iteration1/MEASURE_ITERATION1.json",
+        "after_source_sha256": "cae95c3c6e96c5126fab5013550d369ea1a9207d4c18f91bdfd4e0263ae77ed2",
+        "after_measurement": "out/perky/hybrid/resume-fixes/MEASURE_ITERATION2.json",
+        "original_reference_status": "PASS 19 sections, see original-iteration2/receipt.json",
+        "shipping_adapter_comparison": "PASS 1024 frames; 2048 records and state/RNG comparisons",
+        "after_ISR_max_us": 315.871,
+        "deadline_misses": 0,
+        "remaining_to_80pct_us": 25.621566893424017
+      }
+    ]
+  },
+  "timing": {
+    "scope": "short snare/snare local-model runs only; not sustained matrix or hardware bound",
+    "global_max_full_cf_frame_us": 319.8609022556391,
+    "global_deadline_misses": 0,
+    "global_within_80pct_margin": false,
+    "remaining_to_80pct_us": 29.61146914906311,
+    "headroom_to_period_us": 42.950889127580865
+  },
+  "profiler_comparison": {
+    "profiler_mean_delta_us": 3.194656954887222,
+    "profiler_max_delta_us": 2.2669172932331207,
+    "armed_mean_delta_us": 54.948951127819555,
+    "note": "Differences of maxima are not a per-frame worst overhead bound; common hooks remain installed with profiling off."
+  },
+  "retraction": "The earlier 98632 cycles / 370.797 us and one miss measure ACK-to-ACK work including tasks, not ISR duration. New entry/tail instrumentation reproduced a real ISR overrun (368.167 us) before optimization. Current docs retract original ISR interpretation.",
+  "stopping_gate": "Two iterations used; final short model peak exceeds 80% target by 29.611469 us. No further optimization or DSP changes authorized in this bounded task.",
+  "smallest_next_step": "Review remaining margin and incomplete qualification scope before authorizing any additional performance work or hardware package. Existing STOP-to-card export removes CF METER reading requirement."
 }

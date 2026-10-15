@@ -1,109 +1,105 @@
-# Goal 2 resumed-session handoff — INCOMPLETE / BLOCKED
+# Goal 2 handoff — INCOMPLETE / BLOCKED
 
-**Timing review required. Do not flash PKHYB2P. No local qualification or
-production approval was issued. Goal 3 remains blocked.**
+Branch `perky-cf-dsp-hybrid`. Build-source HEAD at report generation:
+`28701a6d84b3ebaf679eb5ae774d8f28d5646c2d`. This report is committed separately afterward; the build source
+is immutable in BUILD.json. Runtime/optimizations: `ce882def`; measurement
+switch/scope repair: `28701a6d`. Model: GPT-6.1 Sol / High, one agent; speed not
+exposed, no override. **Do not flash, push, start Goal 3 or attempt a third
+optimization under the current authorization.**
 
-Branch: `perky-cf-dsp-hybrid`. Recovered HEAD:
-`82947daee3bf7d02efe947774f3c157620cd50a4`. HEAD at this audit / verified
-repair commit: `8a01675e` (the documentation commit containing this handoff
-follows it). `perky-machines` remains
-`4ff6aa4456502424bff5bea62e7b55aa36d7b4a4`.
-Model metadata: gpt-6.1-sol, high, one agent; speed is not exposed and was
-not overridden. No branching/worktree/clone, upstream integration, CI or push.
+## Reconstructed prior state and new work
 
-## Reconstructed prior state
+At continuation HEAD `942f6572`, inherited runtime, builder and hybrid tests
+were untracked. They had useful dispatch/transport code and an unqualified
+built image, but callback asset decoding, UI/audio reset ownership and an
+88 MHz callback-only profiler were invalid. Their original bytes/artifacts
+remain in `out/perky/hybrid/resume-fixes/before/` and recovery archives.
+Reused them; did not start over.
 
-Argon left a modified `tools/verify/verify_perky_hybrid.py`, plus untracked
-runtime, builder, two hybrid gate scripts and the user's
-`PERKY_Hybrid_Goal2_Gemini_Argon4.txt`. Existing PKHYB2P MAIN/card/MIDI,
-BUILD/MEMORY/DSP_IDENTITY/TIMING, tests and logs were present. No Phase 2
-source reports or hardware request existed. Initial source/artifact hashes
-and prior receipts are in `out/perky/hybrid/resume-goal2/initial-inventory.json`
-and `prior-*.json`. Existing builder/runtime hashes matched BUILD, but its
-recorded source commit contains neither; its clean-tree/qualified-note claims
-were unsupported. The earlier T3 smoke failure does not reproduce.
+New implementation initializes lossless assets and compact voices in the
+loader before RTOS, uses loaded cookies, and gives the audio ISR ownership
+of event-boundary generation resets. CF-only entry/tail hooks, 132 MHz DTIM3,
+bounded counters/rings, coherent UI snapshots, separate HC polling counters
+and automatic STOP-to-card `.PRF` export replace callback grouping. The user
+needs **no CF METER reading**. No DSP insert or frozen DSP change was made.
 
-## New work and preserved dirty files
+Both performance iterations are used: same short case 368.167 -> 349.598 ->
+315.871 us runtime timer peak. Original-reference 19 sections and packaged
+PCM/state/RNG comparisons pass. Iteration 2 batches exact smoother recurrence
+and retains first/last and finite-decay-boundary side effects; corrupt state
+uses the reference fallback. Ledger: resume-fixes/PERFORMANCE_ITERATIONS.json.
 
-`8a01675e` commits only the verifier's refusal checks, correct qualified EFT
-path, mandatory FX execution, nine receipt regression tests, and the trap
-record/AGENTS link. A following documentation commit records PHASE2.md/json,
-this handoff and the withheld HW_PROBE_REQUEST.md. No synthesis or frozen DSP
-source changed. No optimization iteration was attempted; prior total unknown,
-zero identifiable. Keep the two-iteration total limit for later work.
+A separate final short case measured **319.860902 us** complete model ISR,
+zero observed misses, **29.611469 us above** the 80% margin. Profiler mean
+delta 3.194657 us; armed mean delta 54.948951 us. PC pairs cover all 4,000
+frames; first LEA + RTE add 11 corrected model cycles. This is not hardware
+or sustained qualification. Boot-model timer-read calibration zero is not
+physical zero cost. HC polling sites are not independent-core completion proof.
 
-All five original untracked files remain outside commits. Runtime, builder,
-probe-gates script and user text retain their initial hashes. The workload
-script has one new assertion rejecting unknown scripted-action warnings
-(current SHA256 `51d76001056f0e043622650fd89542517a83a07a51a43f9f27140c1185433453`).
-Its original bytes are preserved as
-`out/perky/hybrid/resume-goal2/prior-verify_perky_hybrid_workload.py`
-(SHA256 `61b75d7f1c370cd74b566609df15950528dd5ce116e7b2b48f302f4953ac547b`).
-The bounded measurements executed that original version. No LEN/RTIM or other
-fixture/synthesis controls were changed. No stash, clean or unrelated staging.
+Retractions: old 370.797 us/one miss represented ACK-to-ACK task-inclusive work,
+not ISR latency. New instrumentation independently reproduced the initial true
+ISR overrun. Inherited on/off pokes wrote only a byte, leaving flags enabled;
+invalid comparisons were discarded. Four-byte pokes now assert effective flags.
 
-Original firmware bytes are intact. BUILD/TIMING/notes were corrected to
-BLOCKED; original receipts and notes were archived. The untracked builder
-source still needs repair: it emits a premature qualified note and omits
-untracked files from its cleanliness check. Do not use it to approve a flash.
+## Executed checks
 
-## Executed commands and evidence
+All Python commands below use `.venv/bin/python3` from the repository root.
+Exact argv, result/log hashes and every major contract status are in PHASE2.json.
 
-See `PHASE2.json` for full argv, exit statuses, artifact/log hashes and every
-major deliverable's status. All paths below are relative to this checkout.
+- PASS: `tools/verify/verify_perky_hybrid.py --stage baseline --work out/perky/hybrid/resume-fixes`, 18/18 including corrected CTest and original-reference gates.
+  Later source changes only cleaned decoder whitespace and fixed measurement
+  switch setup; current synthesis source matches the tested snapshot.
+- PASS: `tools/verify/verify_perky_hybrid_runtime.py --frames 1024`, 2,048 exact
+  records/full state/RNG, all splits, eight fallback cases, poisoned readiness,
+  no RT asset writes/UI reset, snapshot collision, wrap and export ABI.
+  Evidence: resume-fixes/RUNTIME_1024.json (preserved before aggregate rerun).
+- PASS: `out/perky/hybrid/resume-fixes/final_safety.py`, single ownership,
+  192 native comparisons, 288 CF split cases, UI and four 600-frame both-core
+  readbacks with twelve FX assigned. Per-effect nonzero audio remains unproven.
+- PASS: `tools/verify/verify_perky_hybrid_workload.py --work out/perky/hybrid --smoke`,
+  22,450-frame split drift and eight-track audio; no historical T3 failure.
+- PASS execution / FAIL margin: `out/perky/hybrid/resume-fixes/measure_overhead_resume.py`,
+  three 4,000-frame comparisons; effective disabled/disarmed flags verified.
+- PASS: `out/perky/hybrid/resume-fixes/check_card_export.py`, actual stock FS
+  writes 1,864-byte PKH20000.PRF after scripted STOP; source-matched decoder.
+  Six malformed-record tests rejected; evidence in PROFILE_NEGATIVES.json.
+- PASS: `tools/verify/verify_perky_hybrid_evidence_selftest.py`, 9 negative tests.
+- PASS: `REFHASH_JOBS=1 scripts/refhash.sh check`, all 24 cases bit-identical.
+- PASS: `tools/perky/build_cf_dsp_hybrid.py --profile probe --work out/perky/hybrid --no-wrap`,
+  clean committed build inputs and exact MAIN/fragmented/ELF/raw reproduction.
+- EXPECTED BLOCKED: `tools/verify/verify_perky_hybrid.py --stage probe --work out/perky/hybrid`;
+  wrappers absent, timing margin failed, sustained/lifecycle/silicon evidence missing.
 
-- PASS: `.venv/bin/python3 tools/verify/verify_perky_hybrid.py --stage baseline --work out/perky/hybrid`
-  — 18/18; corrected CTest 9/9, original CF reference/PCM/state and frozen DSP.
-  Executed before verifier-only recovery edits; not a final-tree qualification.
-- PASS: `.venv/bin/python3 tools/verify/verify_perky_hybrid_workload.py --work out/perky/hybrid --smoke`
-  — 22,450 split-drift frames; 1,000 integrated frames; eight-track audio
-  assertions in separate 2,400-frame capture. No assertion weakened.
-- EXECUTED / FAIL margin: `.venv/bin/python3 out/perky/hybrid/resume-goal2/diagnose_row.py`
-  — 27,563 frames, 95,599 cycles maximum = 359.395 us, zero misses.
-- EXECUTED / FAIL deadline: `.venv/bin/python3 out/perky/hybrid/resume-goal2/diagnose_transition.py`
-  — 4,000 frames, max 98,632 cycles = **370.796992 us**, one miss at frame
-  1378, **7.985201 us over period**, 80.547559 us over proposed 80% margin.
-  Part-index pokes at frames 1000/2000, not complete UI Bank/Part changes;
-  too short to reach family-transition locks. Use histogram maximum/misses,
-  not the host budget mean. `transitions-index.json` and its port log are proof.
-  The earlier unsupported-action driver was terminated and excluded.
-- EXECUTED / FAIL lifecycle: `.venv/bin/python3 out/perky/hybrid/resume-goal2/diagnose_cold_callback.py`
-  — decoded-waveform writes observed inside COLD T2 `pk_render`; this diagnoses
-  a real-time contract violation, not decoder duration.
-- BLOCKED (exit 1): `.venv/bin/python3 tools/verify/verify_perky_hybrid.py --stage probe --work out/perky/hybrid`
-  — all eight executable gates pass, including wrappers and both-core P/X/Y/FX
-  configurations; missing qualification evidence refused. Final image/tool
-  receipt binding additions are tested separately, not another long rerun.
-- PASS: `.venv/bin/python3 tools/verify/verify_perky_hybrid_evidence_selftest.py` (9/9),
-  `git diff --check`, and `.venv/bin/python3 out/perky/hybrid/resume-goal2/final_audit.py`
-  (13 qualification refusal reasons; eight preserved binary/runtime files;
-  all 166 frozen DSP dependencies match).
-- NOT-RUN: mandatory >=60s matrix, additional/reversed rows, worst >=600s,
-  profiler-on/off/armed comparisons, full lifecycle, clean-source rebuild and
-  physical MKII. No new flashable artifact was emitted.
+NOT RUN at the two-iteration stopping gate: full >=60 s matrix and >=600 s
+worst row; complete stock Bank/Part and backlog stress; independently active
+nonzero processing for every retained effect; current wrapper/corruption/cap
+qualification; physical MKII validation. Therefore no qualified probe exists.
 
-Unqualified MAIN SHA256:
-`df77a52a56941f1fbb6a97f3cfdc118cf03596b87c22b6389717ee1fe8e6c582`.
-Unqualified card SHA256:
-`fa222e0bdb3a54dba617e03902300bda93cece2368a9cc55495d00af60db5f40`.
-Rollback PERKY4S MAIN remains
+## Artifacts and workspace
+
+Simulation MAIN: `out/perky/hybrid/probe/mainos_PKHYB2P.bin`,
+SHA256 `46bd31dba62651500de6c672ec0e3e50c38533f8edbe39cd12e200318c93ca2a`.
+Runtime ELF SHA256 `290b82c30c0f813df159a555a01f5f81cb43b2cb93ebe9571196491a07fad0e6`.
+Frozen original MAIN remains
 `be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0`.
-Exact paths, remaining hashes and rollback card/MIDI are in PHASE2.json and
-HW_PROBE_REQUEST.md. Never substitute these unqualified binaries for PERKY4S.
+BUILD/MEMORY/TIMING/DSP_IDENTITY and VERIFY_PROBE are in that probe directory;
+all before/after cases and hashed receipts are in resume-fixes/. Current
+wrappers were not emitted; old wrappers were checked against archived copies
+before removal from the current output directory. Never use archived wrappers.
 
-## Blocker and smallest next step
+Preserved unrelated untracked `PERKY_Hybrid_Goal2_Gemini_Argon4.txt`:
+SHA256 `285b0b0dbf5cf90bb65da481e97cf740858148c9c4e0377d4ebbe8320263766a`.
+It was not staged or edited. `perky-machines` remains
+`4ff6aa4456502424bff5bea62e7b55aa36d7b4a4`. No upstream/CI/push/physical update.
 
-The objective requires user review before a fully armed probe can be treated
-as safe after modeled timing exceeds the frame period. Review the 370.797 us
-failure and the unresolved lifecycle/profiler design before further qualification.
-The current profiler is not usable: 88 MHz assumption versus qualified 132 MHz,
-callback sums instead of ISR time, and 60,630 groups for 27,563 real frames;
-no qualified physical export, wrap/overhead proof or coherent snapshot.
+Workspace exception: the first plain refhash helper unexpectedly created
+checkouts. Source identity was audited and only its helper checkouts removed;
+`refhash-cleanup.json` records this. The subsequent JOBS=1 cached-baseline run
+passed and only the original checkout remains. Do not repeat plain refhash
+without inspecting its worker/baseline behavior.
 
-After that review: establish initialization before real-time callbacks and a
-bounded generation-safe handoff; qualify full-frame hardware instrumentation
-without changing frozen DSP; repair builder provenance; only then attempt
-bounded, measured, bit-exact improvements and the complete workload gates.
-The existing split/UI tests do not replace independent integrated PCM/state/RNG,
-source-handoff, per-effect active-audio, stack or clean-rebuild proof.
-The hardware request is explicitly withheld until these requirements pass.
+The smallest next step is review of the remaining 29.611 us modeled margin
+shortfall and unrun qualification scope before any additional optimization
+or package/hardware authorization. Stop here under the current two-iteration
+limit. Future qualified hardware extraction can use automatic card files;
+it need not impose CF METER readings on the user.
