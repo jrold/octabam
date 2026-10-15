@@ -1,11 +1,11 @@
 {
   "schema": "octabam.perky.hybrid.phase2.v2",
-  "status": "INCOMPLETE_BLOCKED_THREE_ITERATIONS_EXHAUSTED",
+  "status": "CLOSED_UNQUALIFIED_ASSESSMENT_COMPLETE",
   "branch": "perky-cf-dsp-hybrid",
   "source_HEAD": "19d1810429765d4a1c4e18bd24d92b9fa2c6f1f3",
   "runtime_implementation_commit": "ce882def",
   "measurement_harness_commit": "28701a6d",
-  "report_HEAD_note": "HEAD at report generation equals source_HEAD; this report is committed separately afterward.",
+  "report_HEAD_note": "Compiled source remains source_HEAD; final closeout commit/status is recorded in out/perky/hybrid/closeout/FINAL_GIT.json after committing.",
   "configuration": {
     "model": "gpt-6.1-sol",
     "reasoning_effort": "high",
@@ -819,8 +819,8 @@
     },
     {
       "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/TIMING.json",
-      "bytes": 25675,
-      "sha256": "add28f8ce9ef783e3e6d2ac72e8d3304c1b8d265d7749043614892d35560f51d"
+      "bytes": 25853,
+      "sha256": "b1487c47ea55ee2765ece0e0da25a95a8d05f45915fd9bbbaaccf8af4c66a3c7"
     },
     {
       "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/PROBE_GATES.json",
@@ -923,11 +923,19 @@
     "note": "Differences of maxima are not a per-frame worst overhead bound; common hooks remain installed with profiling off."
   },
   "retraction": "The earlier 98632 cycles / 370.797 us and one miss measure ACK-to-ACK work including tasks, not ISR duration. New entry/tail instrumentation reproduced a real ISR overrun (368.167 us) before optimization. Current docs retract original ISR interpretation.",
-  "stopping_gate": "Original two iterations plus one explicitly authorized additional iteration consumed. Candidate rejected for peak regression; retained runtime unchanged and 80% margin still failed. No fourth iteration.",
-  "smallest_next_step": "Review a separately scoped CF event/control investigation before any further optimization; no hardware package or physical test requested.",
+  "stopping_gate": "User ended bounded Goal2 investigation. No more optimization; margin is not waived. Qualification incomplete independently of margin.",
+  "smallest_next_step": "Goal2 is closed. Recommendation only: separately authorized non-optimization investigation of clock/timer discrepancy and missing lifecycle/stack/package safety gates before considering hardware. Do not start it automatically.",
   "additional_iteration": {
     "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/iteration3/RESULT.json",
     "bytes": 7410,
     "sha256": "716f533564fc6344f3ed232b8fca40259370a542fe449aca4975192423267c31"
+  },
+  "functional_qualification_independent_of_margin": false,
+  "further_performance_experiments_authorized": false,
+  "safety_margin_waived": false,
+  "closeout": {
+    "path": "/Users/jrold/Downloads/octabam/modules/perky/hybrid/CLOSEOUT.json",
+    "bytes": 33288,
+    "sha256": "4178b63562f4184459720b69d5f7be94f6ff3e64d293670d80d05b188f86f7b1"
   }
 }

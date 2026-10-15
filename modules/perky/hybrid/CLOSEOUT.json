@@ -1,0 +1,704 @@
+{
+  "schema": "octabam.perky.hybrid.goal2.closeout.v1",
+  "status": "CLOSED_UNQUALIFIED_ASSESSMENT_COMPLETE",
+  "functional_qualification_independent_of_margin": false,
+  "production_or_hardware_qualification": false,
+  "further_performance_experiments_authorized": false,
+  "safety_margin_waived": false,
+  "start_HEAD": "9b8039491631dfcb88f71e5c83662638a44f2820",
+  "branch": "perky-cf-dsp-hybrid",
+  "compiled_source_commit": "19d1810429765d4a1c4e18bd24d92b9fa2c6f1f3",
+  "retained_artifacts": {
+    "mainos": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/mainos_PKHYB2P.bin",
+      "bytes": 1483674,
+      "sha256": "46bd31dba62651500de6c672ec0e3e50c38533f8edbe39cd12e200318c93ca2a"
+    },
+    "fragmented_normal": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/fragmented-normal.bin",
+      "bytes": 1336498,
+      "sha256": "eccb5ccfe50d295122cae712ee987caeaaabf2dcd2e5265b549389ea30dad451"
+    },
+    "runtime_elf": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/platform/runtime.elf",
+      "bytes": 360508,
+      "sha256": "290b82c30c0f813df159a555a01f5f81cb43b2cb93ebe9571196491a07fad0e6"
+    },
+    "runtime_raw": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/platform/runtime.raw",
+      "bytes": 351300,
+      "sha256": "a7d43bf20e1f1bf60a274039f6ab57ca4f907fd779e3392d5880c8db5235b203"
+    },
+    "dsp_identity_report": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/DSP_IDENTITY.json",
+      "bytes": 15204,
+      "sha256": "cf98bf7f2a260bfb03e83fcc0584e8e99ff5addb95a797b544b942f9c9ec1ad9"
+    },
+    "memory_report": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/MEMORY.json",
+      "bytes": 77418,
+      "sha256": "4658e799bdf8c8c42afb5e5b1f0c9428db47eba78c7b37331349b014423755d5"
+    }
+  },
+  "qualified_diagnostic_firmware_available": false,
+  "gate_matrix": [
+    {
+      "gate": "source_identity",
+      "status": "PASS",
+      "assessment": "Current MAIN/ELF/raw and all BUILD source/tool hashes match recorded commit 19d18104; frozen dependencies/inputs/historical ancestry validated by closeout audit."
+    },
+    {
+      "gate": "emulator_CTest",
+      "status": "PASS",
+      "assessment": "Fresh closeout ctest: 9/9, 0 failures; emac, periph, rtos, dsp, repitch-stock, repitch-patch, ColdFireTiming, Hdi08Receive and ColdFireDivide. Passing instruction tests do not calibrate physical execution time."
+    },
+    {
+      "gate": "foundation",
+      "status": "PASS_PREREQUISITE_ONLY",
+      "assessment": "18/18 baseline gates PASS_FOR_PROBE_BUILD. Cached completed-release qualification is PERKY4S, not this hybrid. CF synthesis hashes remain exact; workload-switch setup and decoder whitespace differ since that execution."
+    },
+    {
+      "gate": "original_CF_reference",
+      "status": "PASS_BOUNDED",
+      "assessment": "Current cf_perky4.c: original-reference 19 sections, 22098 cases, 325277 state checks, 3046272 PCM samples, 0 failures, 138 release calls. This is engine/control conformance, not all hybrid system behavior."
+    },
+    {
+      "gate": "hybrid_runtime",
+      "status": "PASS_BOUNDED",
+      "assessment": "Retained-image RUNTIME_1024.json: 1024 frames, 2048 exact source records and complete two-voice state/RNG; all 16 split offsets; eight corrupt-smoother fallbacks."
+    },
+    {
+      "gate": "dispatch_transport_UI",
+      "status": "PASS_BOUNDED",
+      "assessment": "Retained-image owner/dispatch/UI gates: unique owners; 192 original native record comparisons, 288 CF split cases, independent instances, trailing 176 slot bytes/cursor preservation, ALGO bounds and formatter stubs. Not a complete physical UI workflow test."
+    },
+    {
+      "gate": "cold_boot",
+      "status": "PASS_BOUNDED",
+      "assessment": "Whole-machine positive loader/RTOS handoff and exact loaded bytes allowing only three expected COLD->READY cookie changes; A/B extended uploads and pointer/append readback PASS. Voice/template poison covers 5922 bytes. No RT waveform writes; UI does not reset live CF state in tested Part-index fixture."
+    },
+    {
+      "gate": "lifecycle",
+      "status": "UNEXECUTED_REQUIRED_SCOPE",
+      "assessment": "Complete stock Bank/Part UI/load lifecycle, repeated changes, full hybrid BSS poisoning/native-global initialization audit, cold source handoff under all scheduled loads and sustained retrigger/reversion stress are not established by direct-call/index-poke fixtures."
+    },
+    {
+      "gate": "frozen_DSP",
+      "status": "PASS",
+      "assessment": "All DSP identity checks true; exact generated code/tables/layout, preboot and unpacked A/B uploads, MAIN bootstrap/static payload span and pointers. Private P770/774 each, shared P2398+6=2404; four private spare words remain unused."
+    },
+    {
+      "gate": "stock_FX_preservation",
+      "status": "PASS_IDENTITY_AND_BOUNDED_READBACK",
+      "assessment": "Retained hybrid startup-diff/dsp-memory gates preserve every retained stock FX program and dispatch entry. Four 600-frame actual-image configurations assign all 12 FX with exact both-core P/X/Y and immutable-table readback."
+    },
+    {
+      "gate": "stock_FX_active_processing",
+      "status": "UNEXECUTED_REQUIRED_SCOPE",
+      "assessment": "Assignment/readback gate does not assert independent nonzero active processing of each of the 12 effects; all-eight-track smoke audio is a different, limited configuration."
+    },
+    {
+      "gate": "real_project_audio",
+      "status": "PASS_BOUNDED",
+      "assessment": "Final smoke: real project sequencer, T2/T6 22450-frame split drift; 1000-frame integrated snare/snare run and separate 2400-frame eight-track source/post-FX nonzero audio capture. Historical T3 assertion does not reproduce; assertions not weakened."
+    },
+    {
+      "gate": "six_control_integration",
+      "status": "PARTIAL",
+      "assessment": "Six-slot mapping and callback event semantics tested; locks/LFOs/scenes are configured in fixtures. Complete end-to-end assertions for every control, scene/crossfader/LFO combination, project persistence and all Bank/Part paths are not established."
+    },
+    {
+      "gate": "static_memory",
+      "status": "PASS_BOUNDED",
+      "assessment": "Actual ELF sections, normalized aliases, preboot/runtime/stage reservation checks and mutual nonoverlap PASS; decoded PCM200704 B, live CF state3948 B. Does not prove absence of all physical recorder/DMA/cached-alias interference."
+    },
+    {
+      "gate": "stack_and_memory_stress",
+      "status": "UNEXECUTED_REQUIRED_SCOPE",
+      "assessment": "4096-byte stack reserve is declared, not a proven nested call/interrupt high-water ceiling. Full sampler/recorder/streaming/DMA and long lifecycle interference stress missing."
+    },
+    {
+      "gate": "current_firmware_wrappers",
+      "status": "NOT_RUN_MISSING_ARTIFACTS",
+      "assessment": "No matching current ELEK/card/MIDI wrappers were emitted. Wrapper command exits1 for missing ELEK. Combined negative gate exits1 at missing card before remaining package tests. No malformed-current-wrapper defect or payload-cap overflow has been demonstrated."
+    },
+    {
+      "gate": "firmware_cap_roundtrip",
+      "status": "UNEXECUTED_REQUIRED_SCOPE",
+      "assessment": "Current compressed ELUP payload <=1048576 B, exact 12-byte outer overhead, decrypt/checksum/MAIN roundtrip and current corruption/fatal cases not verified. Raw MAIN1483674 B is not the encrypted-payload size test. Baseline component budget/old wrappers do not qualify this image."
+    },
+    {
+      "gate": "negative_tests",
+      "status": "PASS_BOUNDED",
+      "assessment": "Fresh closeout 9 evidence-refusal tests pass; six profile-file negatives reject. Earlier generic release guards pass. These do not replace current package/loader corruption and full lifecycle fault coverage."
+    },
+    {
+      "gate": "profiler_logic_export",
+      "status": "PASS_LOCAL_ONLY",
+      "assessment": "Once-per-ISR counters, direct-call 32-bit wrap (64 ticks), snapshot collision/no-spin, UI STOP file ABI and actual firmware filesystem export tested locally; 1864-byte source-matched PRF. No CF METER reading needed."
+    },
+    {
+      "gate": "profiler_silicon_and_clock",
+      "status": "UNVERIFIED",
+      "assessment": "Hybrid silicon timer/read cost/export untested; boot read calibration zero is not zero physical cost. Modeled conversion266MHz conflicts with documented configured CPU264MHz. No physical release-to-entry latency or instrumentation tail bound."
+    },
+    {
+      "gate": "modeled_deadline_retained",
+      "status": "PASS_OBSERVED_SHORT_RUN_ONLY",
+      "assessment": "Current retained 4000-frame complete ISR service-code window max85083 cycles/266=319.860902us, 0 observed duration misses; not an exhaustive deadline or release-to-completion bound."
+    },
+    {
+      "gate": "engineering_margin",
+      "status": "FAIL_OBSERVED",
+      "assessment": "319.860902us > 290.249433us by29.611469us. No waiver granted; remains failed even though short-run modeled duration stays below the period."
+    },
+    {
+      "gate": "mandatory_integrated_matrix",
+      "status": "UNEXECUTED_REQUIRED_SCOPE",
+      "assessment": "Seven >=60s combinations, V2/V2 and reversed/heavier cases, worst >=600s, dense combined event/family/mode/long-tail/lifecycle stress and UI/event backlog bound not completed on retained image."
+    },
+    {
+      "gate": "independent_DSP_completion",
+      "status": "UNEXECUTED_REQUIRED_SCOPE",
+      "assessment": "No separate calibrated per-core exchange/completion maxima. Two HC poll sites are not assumed to be two cores. Accepted short exchange reports have zero words_not_in_time, which is only modeled local evidence."
+    },
+    {
+      "gate": "reproducibility",
+      "status": "PASS",
+      "assessment": "Committed-source rebuild/restoration is bit-identical for MAIN, fragmented normal image, ELF and raw runtime. Whole checkout contains preserved unrelated untracked user text."
+    },
+    {
+      "gate": "rejected_iteration3",
+      "status": "PASS_HISTORICAL_PRESERVATION",
+      "assessment": "Bit-exact zero-render candidate: mean -0.605us but peak +0.150us and p99 +0.335us. Rejected, archived, and no runtime change retained. All three authorized attempts consumed."
+    },
+    {
+      "gate": "hardware_probe",
+      "status": "NOT_QUALIFIED",
+      "assessment": "No controlled probe recommended now; essential independent safety/packaging/lifecycle/clock gates missing and margin unwaived. Candidate defaults CF armed and has no probe-specific deadline abort; short duration is not containment."
+    }
+  ],
+  "baseline_executions": [
+    {
+      "name": "ctest",
+      "argv": [
+        "ctest",
+        "--test-dir",
+        "/Users/jrold/Downloads/octabam/out/emu",
+        "--output-on-failure"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/baseline/ctest-gate.log",
+        "bytes": 1035,
+        "sha256": "4fe7e2956fa414cc85c707391d3cd4eb5b2837030b145887c62854da55250470"
+      }
+    },
+    {
+      "name": "release-guards",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_release_guards_selftest.py"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/baseline/release-guards-gate.log",
+        "bytes": 284,
+        "sha256": "a3108b8db4b24b10dbf24ac60434ecc9fe94fd2cb4eeb22fd68afe3d84e9d83e"
+      }
+    },
+    {
+      "name": "prefetch-guard",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_prefetch_guard.py",
+        "--build",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/baseline/reproduction"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/baseline/prefetch-guard-gate.log",
+        "bytes": 96,
+        "sha256": "4803e5b60cc378cd1ec9f8abfb765d83071825ec5748f8e5dcfbe93be13634e2"
+      }
+    },
+    {
+      "name": "dsp-dependencies",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_dsp_dependencies.py",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/dsp-dependencies"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/baseline/dsp-dependencies-gate.log",
+        "bytes": 690,
+        "sha256": "75931db7596d810adac84c5a6655f8f8543b72031e5480e30ec219a4ee0e3efb"
+      }
+    },
+    {
+      "name": "completed-qualification",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_baseline_qualification.py",
+        "--build",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume/baseline/build",
+        "--report",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/baseline-qualification.json"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/baseline/completed-qualification-gate.log",
+        "bytes": 111,
+        "sha256": "7132e3a4d961b324580c744d3f78e4db614ba8b9578d1d266d013ee2426ae051"
+      }
+    },
+    {
+      "name": "legacy",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_final.py",
+        "--requalify",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--perkybits",
+        "/Users/jrold/Downloads/perkybits",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/legacy"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/legacy-gate.log",
+        "bytes": 54129,
+        "sha256": "fa51e5267e291e29465b21afa1b4ad292de54c3bf608d0766e7aee0d2cd36293"
+      }
+    },
+    {
+      "name": "wavetable",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_wavetable_dsp.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/wavetable"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/wavetable-gate.log",
+        "bytes": 2660,
+        "sha256": "d1918c65d1feaef4e9bb41be200c961c4337b42f95594d9c215d14232a22e15a"
+      }
+    },
+    {
+      "name": "resonant",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_resonant_dsp.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/resonant"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/resonant-gate.log",
+        "bytes": 5944,
+        "sha256": "90610d1edd39e588742af1c13879394dd9cda1c55ab8e8ef17c7ee61e7ebe5f3"
+      }
+    },
+    {
+      "name": "noise-tone",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_noise_tone.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--source",
+        "/Users/jrold/Downloads/perkybits"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/noise-tone-gate.log",
+        "bytes": 1019,
+        "sha256": "277f797479372e3133c0eb2053af0ae9cf6ae99f147486075d09bf9437298cba"
+      }
+    },
+    {
+      "name": "noise-tone-controls",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_noise_evidence.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--source",
+        "/Users/jrold/Downloads/perkybits",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/noise-tone-controls"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/noise-tone-controls-gate.log",
+        "bytes": 13697,
+        "sha256": "e5b92b44e4534536eb234dac113fe75040946eaacadee34f9e07b53bad8db295"
+      }
+    },
+    {
+      "name": "freestanding",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_freestanding.py"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/freestanding-gate.log",
+        "bytes": 76,
+        "sha256": "409e760d65b10a14c92a5de6a2f76115048fa4ae1f6659d47a6731479c35e817"
+      }
+    },
+    {
+      "name": "hotloops",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_hotloops.py"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/hotloops-gate.log",
+        "bytes": 121,
+        "sha256": "e1f7de3deba61720cce3365bdbc0b2317a8eedec4cb8e4ded6499c8a4d01974e"
+      }
+    },
+    {
+      "name": "stock-record",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_stock_record_abi.py"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/stock-record-gate.log",
+        "bytes": 282,
+        "sha256": "0c7576fd585ce68fe7ae17a6ea4818fafc97d1baa1c56268a83d8b47ee226cda"
+      }
+    },
+    {
+      "name": "runtime-memory",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_cf_runtime_memory_final.py"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/runtime-memory-gate.log",
+        "bytes": 305,
+        "sha256": "c4bb8d43de9aa82b65cbb39da9f790e10c1bf564c622842db17fecd2b84b5eb7"
+      }
+    },
+    {
+      "name": "wt-profiles",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_wt_profiles.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/wt-profiles"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/wt-profiles-gate.log",
+        "bytes": 600,
+        "sha256": "27ff07eab70a67b055538ff6b4ffe4b9ba06eb025c971066d88b22c9ed14a00b"
+      }
+    },
+    {
+      "name": "original-profiles",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_original_profiles.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--perkybits",
+        "/Users/jrold/Downloads/perkybits",
+        "--unicorn-build",
+        "/Users/jrold/Downloads/perkybits/build-local/_deps/unicorn-build",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/original-profiles"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/cf-contract/original-profiles-gate.log",
+        "bytes": 13719,
+        "sha256": "a0807e0541944faabc875199822cd32e98339b91f969ad4d48b9423c94437a31"
+      }
+    },
+    {
+      "name": "target",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_target.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/target"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/feasibility/target-gate.log",
+        "bytes": 239,
+        "sha256": "453b30a2f2941604c82bc3c196f63b05c93277a23e4264a7b715d8e4f54c5f28"
+      }
+    },
+    {
+      "name": "packaging",
+      "argv": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python3",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_packaging.py",
+        "--firmware",
+        "/Users/jrold/Downloads/perkons_both_v1.2.1-0-gbcccfd0.img",
+        "--target-report",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/target/report.json",
+        "--work",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/packaging"
+      ],
+      "exit_status": 0,
+      "status": "PASS",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/qualification/feasibility/packaging-gate.log",
+        "bytes": 2343,
+        "sha256": "bc983f4f68ed1d24d5460502ee96365ec9515dbd0e6a75121174deff8751a2f4"
+      }
+    }
+  ],
+  "timing_evidence": [
+    {
+      "case": "Fixed init/profiler before optimization, delayed-trigger/Part-index short case",
+      "disposition": "superseded",
+      "frames": 4000,
+      "scope": "runtime late timer stamp excludes small entry/footer",
+      "max_us": 368.167,
+      "duration_misses": 2,
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/MEASURE_BASELINE.json",
+        "bytes": 5113,
+        "sha256": "fbb3274a0e3e22ac617a71c224b4390dd3a1da475773c63fd53091d2eb98a585"
+      }
+    },
+    {
+      "case": "Fixed init/profiler before optimization, STOP/export short case",
+      "disposition": "superseded",
+      "frames": 4000,
+      "scope": "runtime late timer stamp excludes small entry/footer",
+      "max_us": 374.538,
+      "duration_misses": 4,
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/iteration0/CARD_EXPORT.json",
+        "bytes": 8586,
+        "sha256": "3ed53c7c24271cda124fc53fca6f4a84a6ade8f5d641fc003098cfc395986c48"
+      }
+    },
+    {
+      "case": "Iteration1 same delayed-trigger case",
+      "disposition": "superseded",
+      "frames": 4000,
+      "scope": "runtime late timer stamp excludes small entry/footer",
+      "max_us": 349.598,
+      "duration_misses": 0,
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/MEASURE_ITERATION1.json",
+        "bytes": 5116,
+        "sha256": "63d89972f89ad907c0a58c8451bc065b1c77ce0009b9db059ebaa8d41690162e"
+      }
+    },
+    {
+      "case": "Iteration2 same delayed-trigger case",
+      "disposition": "superseded measurement-only profile variant",
+      "frames": 4000,
+      "scope": "runtime late timer stamp excludes small entry/footer",
+      "max_us": 315.871,
+      "duration_misses": 0,
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/MEASURE_ITERATION2.json",
+        "bytes": 5111,
+        "sha256": "8eed9122dd41429d51414510fca7d8009c344d0b3014d1b1e24161f02d74b091"
+      }
+    },
+    {
+      "case": "Retained final complete ISR window",
+      "disposition": "retained",
+      "frames": 4000,
+      "scope": "entry-code through RTE with11 model cycles for omitted LEA/RTE",
+      "max_us": 319.8609022556391,
+      "duration_misses": 0,
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/iteration3/before-measurement/MEASUREMENT.json",
+        "bytes": 9940,
+        "sha256": "95c62d5a20cfc209a9390ffc4867ad34bd1f53ede876602abdb0801d6a0b9b9f"
+      }
+    },
+    {
+      "case": "Rejected zero-render complete ISR window",
+      "disposition": "rejected",
+      "frames": 4000,
+      "scope": "entry-code through RTE with11 model cycles for omitted LEA/RTE",
+      "max_us": 320.0112781954887,
+      "duration_misses": 0,
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/iteration3/after-measurement/MEASUREMENT.json",
+        "bytes": 9678,
+        "sha256": "884934dde6a654c1c39f4d338257f62601fd8eb808d9d672e3bd1f5362fb0294"
+      }
+    }
+  ],
+  "retained_summary": {
+    "period_us": 362.81179138321994,
+    "engineering_limit_us": 290.24943310657596,
+    "max_cycles": 85083,
+    "max_us_at_model266MHz": 319.8609022556391,
+    "observed_duration_misses": 0,
+    "headroom_us": 42.950889127580865,
+    "headroom_percent_of_period": 11.838338815789475,
+    "remaining_to_margin_us": 29.61146914906311,
+    "allowed_slowdown_before_period_percent": 13.427989737005653,
+    "sensitivity_only_same_cycles_at264MHz_us": 322.28409090909093,
+    "sensitivity_only_headroom_at264MHz_us": 40.527700474129006,
+    "sensitivity_note": "Arithmetic rescaling only, not a rerun or corrected whole-system prediction; interrupt/DSP scheduling might change."
+  },
+  "risk_assessment": [
+    "No physical cache-hit/miss, SDRAM/bus/eDMA contention bound; core table includes MCF5206E timings, V4e adjustments and fallback estimates.",
+    "Configured CPU264MHz/documented bus132MHz vs modeled CF266MHz discrepancy unresolved.",
+    "Service-code window excludes pending interrupt latency and exception entry/vector costs; no full release-to-completion/backlog bound.",
+    "First-frame maximum; short requested duration does not avoid it. Miss counters are observational, no probe-specific abort.",
+    "Two-core asynchronous exchange and physical underrun/overrun behavior uncalibrated; frozen bytes do not prove all mixed-load scheduling.",
+    "STOP export runs outside callback but depends on responsive UI/card operations; it may fail to capture a stall and physical I/O can contend with ongoing audio.",
+    "Stack high-water, full runtime BSS/native-state lifecycle and sampler/recorder/DMA safety scope not fully closed.",
+    "Current wrapper/cap/roundtrip/corruption gates absent; old packages are unsafe substitutes as evidence."
+  ],
+  "restricted_probe_assessment": {
+    "conceptually_possible": true,
+    "existing_candidate_justified_now": false,
+    "reason": "Diagnostic uncertainty need not require production-grade timing proof, but independent load/boot/memory/lifecycle/package safety and a trustworthy bounded timing/stop path must precede installation. Those gates are missing here; short duration alone does not mitigate first-frame faults.",
+    "conditions_for_separate_future_review": [
+      "Reconcile clock/configuration and scope; establish timer progress/read overhead/period reference and capture coverage without changing frozen DSP.",
+      "Close boot/BSS, event/lifecycle, stack/nesting and physical-memory interference safety scope; validate retained FX activity and bounded representative mixed integration.",
+      "Validate exact current package/cap/checksum/roundtrip and corruption refusal, source identity and known rollback.",
+      "Separately approved restricted activation, finite stop/abort/capture and failure/rollback protocol; explicitly review unwaived engineering-margin failure. No such protocol or image is created now."
+    ]
+  },
+  "single_recommendation": "TARGETED_NON_OPTIMIZATION_INVESTIGATION_OF_DEMONSTRATED_QUALIFICATION_BLOCKERS: clock/timer basis discrepancy and missing lifecycle/stack/package safety evidence. No hardware probe now, no additional optimization under Goal2, no infeasibility claim.",
+  "fresh_closeout_checks": [
+    {
+      "command": "ctest --test-dir out/emu --output-on-failure",
+      "result": "PASS 9/9",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/closeout/ctest.log",
+        "bytes": 1035,
+        "sha256": "221b48a9ea604f71474874e0d23fa472a308a73d67c31fa608c34b79059329d6"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 tools/verify/verify_perky_hybrid_evidence_selftest.py",
+      "result": "PASS 9/9",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/closeout/evidence-selftest.log",
+        "bytes": 107,
+        "sha256": "500f3dbceef562b9223762a4ff08c9d091dc87705d62d38888e49e20428d4943"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 out/perky/hybrid/closeout/audit_evidence.py",
+      "result": "PASS metadata/source/input/tool/log identity audit only; functional/hardware qualification NOT_ESTABLISHED",
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/closeout/AUDIT.json",
+        "bytes": 10149,
+        "sha256": "c525d89d688265400c422ce410efe785ad766d55bb13579070693e202ee57d8a"
+      }
+    }
+  ],
+  "code_evidence": [
+    {
+      "path": "/Users/jrold/Downloads/octabam/docs/firmware/CHIP.md",
+      "bytes": 18064,
+      "sha256": "5431a06abedd121feb17a3a4f9758a1eb4290bbebc3f45218b7c382bbd5d183f"
+    },
+    {
+      "path": "/Users/jrold/Downloads/octabam/vendor/mc68k/Musashi/m68kcfcycles.h",
+      "bytes": 5260,
+      "sha256": "a911a2a1cc2408dca2bafa78a7ab9dae49ecb859511866ac10c87d744078fba2"
+    },
+    {
+      "path": "/Users/jrold/Downloads/octabam/tools/emu/ot_emu/rtos.cpp",
+      "bytes": 81822,
+      "sha256": "693a037447c65da397790487222c89b066e1aaca9f71d3baea904d01909302e9"
+    },
+    {
+      "path": "/Users/jrold/Downloads/octabam/tools/verify/measure_perky_hybrid_zero_render.py",
+      "bytes": 5744,
+      "sha256": "6f1c53dcda60cdc98176036416336ca835c06834894d157675d7a5479dcaca44"
+    },
+    {
+      "path": "/Users/jrold/Downloads/octabam/modules/cfmeter/README.md",
+      "bytes": 12940,
+      "sha256": "bbba40811c1b2d89e9addd4c7d038d4d320526bcf3971f1b7ba9e63981f1e327"
+    },
+    {
+      "path": "/Users/jrold/Downloads/octabam/modules/perky/control_cf_dsp_hybrid.c",
+      "bytes": 39425,
+      "sha256": "c262f85180b7c4f8aadd641394d01909296d9a36978073f0b92c3a475e9a9f99"
+    },
+    {
+      "path": "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_probe_gates.py",
+      "bytes": 35513,
+      "sha256": "a0393c0c1823f25eb2b15875e6f4566324d2c7ab8c936ab9860d529ea217ba39"
+    },
+    {
+      "path": "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_machine_boot.py",
+      "bytes": 6946,
+      "sha256": "767dfeee8c5646dd302c8ae5d46b93e3bfa11d78d77a0fb0e687768abf1d8770"
+    }
+  ],
+  "history": {
+    "rejected_candidate": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/iteration3/RESULT.json",
+      "bytes": 7410,
+      "sha256": "716f533564fc6344f3ed232b8fca40259370a542fe449aca4975192423267c31"
+    },
+    "restoration": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/iteration3/RESTORED.json",
+      "bytes": 1635,
+      "sha256": "11972c0bcb3bdb697f237fc3abf42cd331982521ea3bf51c2d257c07ad2c35cb"
+    },
+    "retraction": "370.797us/one recovery over-budget count was ACK-to-ACK task-inclusive work, not a true ISR miss. Historical true pre-optimization timer overruns368.167/374.538us remain documented; retained image observed none."
+  },
+  "workspace": {
+    "perky_machines_ref": "4ff6aa4456502424bff5bea62e7b55aa36d7b4a4",
+    "preserved_untracked": {
+      "path": "/Users/jrold/Downloads/octabam/PERKY_Hybrid_Goal2_Gemini_Argon4.txt",
+      "bytes": 15100,
+      "sha256": "285b0b0dbf5cf90bb65da481e97cf740858148c9c4e0377d4ebbe8320263766a"
+    },
+    "final_git_record": "out/perky/hybrid/closeout/FINAL_GIT.json written after closeout commit",
+    "no_source_or_runtime_change": true,
+    "no_branch_worktree_flash_push_goal3": true
+  },
+  "limits": "Existing bounded measurements audited only; no new performance candidate, timing workload, package or hardware experiment executed for closeout."
+}

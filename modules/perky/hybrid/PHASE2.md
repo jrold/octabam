@@ -1,6 +1,9 @@
-# PERKY hybrid continuation — 14 October 2026
+# PERKY hybrid implementation history — closed 14 October 2026
 
-**INCOMPLETE / BLOCKED. DO NOT FLASH. Original two plus one additional iteration used.**
+**CLOSED / UNQUALIFIED. No further performance experiments or margin waiver.**
+The final engineering verdict and exact PASS/FAIL/NOT-RUN matrix are in
+[CLOSEOUT.md](CLOSEOUT.md) and CLOSEOUT.json. This page retains implementation
+history; the closeout supersedes its earlier next-step wording.
 Cold-start initialization and full-ISR instrumentation are implemented and
 locally tested. The final short-run modeled ISR peak is **319.861 us**,
 including the small entry/return correction: zero observed period misses,
@@ -109,11 +112,13 @@ Evidence is in `out/perky/hybrid/resume-fixes/`; complete commands, hashes and
 status-by-contract are in PHASE2.json. No flash, push, upstream integration,
 CI or Goal 3 work occurred.
 
-The stopping gate is the remaining margin after the original two iterations
-and one explicitly authorized, rejected third attempt. Review that
-shortfall and the unrun qualification scope before authorizing further work.
-Hardware handoff remains withheld; automatic STOP-to-card export avoids any
-CF METER reading in a future qualified run.
+The bounded investigation is closed after the original two improvements and
+one rejected extra attempt. Functional/safety qualification remains incomplete
+independently of the timing margin. The single closeout recommendation is a
+targeted non-optimization investigation of clock/timer and missing safety gates;
+no hardware probe or additional tuning is authorized. Hardware handoff remains
+withheld. Automatic card export avoids CF METER reading if a future probe is
+separately qualified and approved.
 
 ## Authorized additional iteration
 
