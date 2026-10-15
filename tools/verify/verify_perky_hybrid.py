@@ -123,9 +123,217 @@ def validate_frozen(b):
             'historical_commands':len(r['commands']),'main_sha256':b['main_sha256']}
 
 
+def probe_evidence_errors(probe_dir: Path) -> list[str]:
+    """Refuse qualification based on report existence or a partial smoke run.
+
+    These checks supplement executable gates; they cannot manufacture missing
+    lifecycle, hardware-profiler, or sustained workload evidence.
+    """
+    errors = []
+    reports = {}
+    for name in ('BUILD', 'TIMING', 'PROBE_GATES'):
+        try:
+            reports[name] = json.loads((probe_dir / f'{name}.json').read_text())
+        except (OSError, ValueError) as exc:
+            errors.append(f'{name}: missing or invalid evidence: {exc}')
+            reports[name] = {}
+    build, timing, gates = (reports[n] for n in ('BUILD', 'TIMING', 'PROBE_GATES'))
+    for rel, expected in build.get('sources', {}).items():
+        path = ROOT / rel
+        if not path.is_file() or sha(path) != expected:
+            errors.append(f'probe source drift: {rel}')
+        try:
+            recorded = subprocess.check_output(
+                ['git', 'show', f'{build["git_commit"]}:{rel}'], cwd=ROOT,
+                stderr=subprocess.DEVNULL)
+            if hashlib.sha256(recorded).hexdigest() != expected:
+                errors.append(f'probe source differs from recorded commit: {rel}')
+        except (KeyError, subprocess.CalledProcessError):
+            errors.append(f'probe source absent from recorded commit: {rel}')
+    if not build.get('sources'):
+        errors.append('probe build lacks source hashes')
+    for label, meta in build.get('artifacts', {}).items():
+        try:
+            path = Path(meta['path'])
+            if not path.is_file() or path.stat().st_size != meta['bytes'] or sha(path) != meta['sha256']:
+                errors.append(f'probe artifact drift: {label}')
+        except (KeyError, TypeError):
+            errors.append(f'invalid probe artifact metadata: {label}')
+    for name in ('TIMING', 'PROBE_GATES'):
+        evidence = reports[name].get('evidence', {})
+        for label in ('mainos', 'runtime_elf'):
+            expected = build.get('artifacts', {}).get(label, {}).get('sha256')
+            if not expected or evidence.get(label + '_sha256') != expected:
+                errors.append(f'{name} is not bound to the actual hybrid {label}')
+        emu = ROOT / 'out/emu/ot_emu'
+        if not emu.is_file() or evidence.get('emulator_sha256') != sha(emu):
+            errors.append(f'{name} emulator identity missing or stale')
+    if timing.get('status') != 'LOCAL_MODEL_WITHIN_BUDGET_HARDWARE_PENDING':
+        errors.append('required sustained timing qualification is incomplete or requires review')
+    summary = timing.get('summary', {})
+    if summary.get('global_deadline_misses') != 0 or summary.get('global_within_80pct_margin') is not True:
+        errors.append('full-frame timing has not passed the deadline and 80% margin gates')
+    # The old callback-sum profiler is not a full-frame hardware measurement.
+    if timing.get('hardware_profiler_qualification', {}).get('status') != 'PASS':
+        errors.append('hardware full-frame profiler frequency/wrap/overhead/export path unqualified')
+    if timing.get('clocks', {}).get('dtim3_bus_hz') != 132_000_000:
+        errors.append('DTIM3 frequency must agree with the qualified 132 MHz stock timer')
+    mandatory = {('V1', 'V1'), ('V1', 'V2'), ('V2', 'snare'), ('V1', 'bass'),
+                 ('snare', 'snare'), ('bass', 'snare'), ('third', 'third')}
+    extra = {('V2', 'V2'), ('V2', 'V1'), ('snare', 'V2'), ('bass', 'V1'), ('snare', 'bass')}
+    for key, expected in (('mandatory_rows_60s', mandatory), ('extra_rows_60s', extra)):
+        rows = timing.get(key, [])
+        if not isinstance(rows, list):
+            errors.append(f'invalid workload rows: {key}')
+            continue
+        qualified = set()
+        for row in rows:
+            if row.get('frames', 0) < 165375:
+                errors.append(f'workload row shorter than 60 simulated seconds: {row.get("row")}')
+                continue
+            audio = row.get('audio_verification') or {}
+            if any(audio.get(f'T{t}', {}).get('chain_significant', 0) <= 64 for t in range(1, 9)):
+                errors.append(f'workload lacks all-eight-track active audio proof: {row.get("row")}')
+            qualified.add((row.get('t2'), row.get('t6')))
+        if not expected <= qualified:
+            errors.append(f'missing sustained workload combinations: {key}')
+    if timing.get('worst_row_10min', {}).get('frames', 0) < 1653750:
+        errors.append('worst-row ten-minute workload incomplete')
+    if not timing.get('profiler_and_arm_comparisons'):
+        errors.append('profiler-on/off and CF armed/disarmed comparisons missing')
+    if gates.get('dsp_readback_and_12_fx', {}).get('status') != 'PASS':
+        errors.append('both-core DSP readback and retained FX gate missing or skipped')
+    if gates.get('lifecycle_and_reference', {}).get('status') != 'PASS':
+        errors.append('hybrid cold-start/Bank/Part generation and original-reference gate unqualified')
+    return errors
+
+
+def run_probe_stage(work: Path, b: dict, frozen_val: dict) -> int:
+    probe_dir = work / 'probe'
+    result = {
+        'schema': 'octabam.perky.hybrid.phase2.v1',
+        'stage': 'probe',
+        'status': 'BLOCKED',
+        'hardware_feasibility': 'UNVERIFIED',
+        'source_commit': git('rev-parse', 'HEAD'),
+        'frozen_validation': {'status': 'PASS', **frozen_val},
+        'commands': [],
+        'unresolved_requirements': [],
+    }
+    py = str(ROOT / '.venv/bin/python3')
+    env = os.environ.copy()
+    env.update(b['environment'])
+    env.pop('PERKYBITS_SOURCE', None)
+    execution_environment = {k: env[k] for k in b['environment'] if k in env}
+
+    mainos = probe_dir / 'mainos_PKHYB2P.bin'
+    elek = probe_dir / 'elek_PKHYB2P.bin'
+    card = probe_dir / 'OCTATRACK_PKHYB2P.bin'
+    midi = probe_dir / 'OCTATRACK_OS1.40C_PKHYB2P.syx'
+
+    def gate(name, *extra):
+        return [py, str(ROOT / 'tools/verify' / name), *map(str, extra)]
+
+    plans = [
+        ('probe', 'ctest', ['ctest', '--test-dir', str(ROOT / 'out/emu'), '--output-on-failure']),
+        ('probe', 'machine-boot', gate(
+            'verify_perky_machine_boot.py',
+            '--image', mainos,
+            '--packed', probe_dir,
+            '--platform-work', probe_dir / 'platform-loader',
+            '--platform', probe_dir / 'platform',
+            '--normal-image', probe_dir / 'fragmented-normal.bin',
+            '--p-records', probe_dir / 'p-records.json',
+        )),
+        ('probe', 'prefetch-guard', gate('verify_perky_prefetch_guard.py', '--build', probe_dir)),
+        ('probe', 'odd-access', gate('verify_perky_cf_odd_access.py', '--generated', probe_dir / 'odd-audit')),
+        ('probe', 'startup-diff', gate('verify_perky_four_startup.py', '--build', probe_dir)),
+        ('probe', 'dsp-memory', gate('verify_perky_three_memory.py', '--build', probe_dir)),
+        ('probe', 'wrappers', gate(
+            'verify_perky_final_wrappers.py',
+            '--mainos', mainos,
+            '--elek', elek,
+            '--card', card,
+            '--midi', midi,
+            '--eft', env['PERKY_EFT'],
+            '--version', 'PKHYB2P',
+            '--work', probe_dir / 'wrapper-verify',
+        )),
+        ('probe', 'hybrid-gates', gate('verify_perky_hybrid_probe_gates.py', '--work', work)),
+    ]
+
+    log_dir = probe_dir / 'verify-logs'
+    log_dir.mkdir(parents=True, exist_ok=True)
+    for _cat, name, argv in plans:
+        log = log_dir / f'{name}.log'
+        with log.open('w') as out:
+            rc = subprocess.run(argv, cwd=ROOT, env=env, stdout=out, stderr=subprocess.STDOUT, timeout=900).returncode
+        text = log.read_text(errors='replace')
+        skipped = bool(re.search(r'\[SKIP\]|:\s*SKIP\b|^SKIP\b', text, re.M))
+        status = 'PASS' if rc == 0 and not skipped else 'FAIL'
+        result['commands'].append({
+            'name': name,
+            'argv': argv,
+            'environment': execution_environment,
+            'exit_status': rc,
+            'status': status,
+            'log': item(log),
+        })
+        print(f'{status}: {name} (exit {rc}); {log}', flush=True)
+
+    # Validate required generated hybrid artifacts and JSON reports (must NOT be historical PERKY4S or CF-only images)
+    required_files = ('BUILD.json', 'MEMORY.json', 'DSP_IDENTITY.json', 'TIMING.json')
+    artifacts = {}
+    for fname in required_files:
+        fpath = probe_dir / fname
+        if not fpath.is_file():
+            result['unresolved_requirements'].append(f'missing probe report: {fpath}')
+        else:
+            artifacts[fname] = item(fpath)
+
+    for label, fpath in (('mainos', mainos), ('elek', elek), ('card', card), ('midi', midi)):
+        if not fpath.is_file():
+            result['unresolved_requirements'].append(f'missing probe binary: {fpath}')
+        else:
+            artifacts[label] = item(fpath)
+
+    if mainos.is_file():
+        m_sha = sha(mainos)
+        if m_sha == b['main_sha256']:
+            result['unresolved_requirements'].append('probe mainos matches historical PERKY4S image (not hybrid)')
+
+    if (probe_dir / 'DSP_IDENTITY.json').is_file():
+        dsp_id = json.loads((probe_dir / 'DSP_IDENTITY.json').read_text())
+        if dsp_id.get('status') != 'PASS':
+            result['unresolved_requirements'].append('DSP_IDENTITY.json status is not PASS')
+        if dsp_id.get('frozen_perky4s_main_sha256') != b['main_sha256']:
+            result['unresolved_requirements'].append('DSP_IDENTITY.json baseline MAIN hash mismatch')
+
+    if (probe_dir / 'MEMORY.json').is_file():
+        mem_rep = json.loads((probe_dir / 'MEMORY.json').read_text())
+        if mem_rep.get('status') != 'PASS':
+            result['unresolved_requirements'].append('MEMORY.json status is not PASS')
+        if mem_rep.get('coldfire_dram', {}).get('decoded_waveform_bss_bytes') != 200704:
+            result['unresolved_requirements'].append('MEMORY.json decoded_waveform_bss_bytes != 200704')
+        if mem_rep.get('coldfire_dram', {}).get('physical_overlaps'):
+            result['unresolved_requirements'].append('MEMORY.json physical DRAM overlaps detected')
+
+    result['artifacts'] = artifacts
+    result['unresolved_requirements'].extend(probe_evidence_errors(probe_dir))
+    result['failed_commands'] = [c['name'] for c in result['commands'] if c['status'] != 'PASS']
+    for name in result['failed_commands']:
+        result['unresolved_requirements'].append(f'required probe check failed: {name}')
+
+    if not result['unresolved_requirements']:
+        result['status'] = 'LOCAL_PROBE_QUALIFIED_HARDWARE_PENDING'
+    (probe_dir / 'VERIFY_PROBE.json').write_text(json.dumps(result, indent=2) + '\n')
+    print(f'{result["status"]}; hardware feasibility UNVERIFIED; {probe_dir / "VERIFY_PROBE.json"}', flush=True)
+    return 0 if result['status'] == 'LOCAL_PROBE_QUALIFIED_HARDWARE_PENDING' else 1
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument('--stage',choices=['baseline'],required=True)
+    ap.add_argument('--stage',choices=['baseline','probe'],required=True)
     ap.add_argument('--work',type=Path,default=ROOT/'out/perky/hybrid')
     ap.add_argument('--baseline-build',type=Path,default=ROOT/'out/perky/hybrid/resume/baseline/build',
                     help='completed build_four_machine.py --qualify-only work directory')
@@ -143,12 +351,15 @@ def main():
         result['baseline_manifest'] = item(BASELINE)
         result['dependency_manifest'] = item(ROOT/'modules/perky/hybrid/DSP_DEPENDENCIES.json')
         result['report_archive_manifest'] = item(ROOT/'modules/perky/hybrid/BASELINE_REPORT_ARCHIVE.json')
-        result['frozen_validation'] = {'status':'PASS',**validate_frozen(b)}
+        frozen_val = validate_frozen(b)
+        result['frozen_validation'] = {'status':'PASS',**frozen_val}
     except (AssertionError,OSError,KeyError,ValueError,subprocess.CalledProcessError) as exc:
         result['frozen_validation'] = {'status':'FAIL','error':str(exc)}
         (work/'results.json').write_text(json.dumps(result,indent=2)+'\n')
         print(f'BLOCKED: frozen evidence invalid: {exc}',flush=True)
         return 1
+    if args.stage == 'probe':
+        return run_probe_stage(work, b, frozen_val)
     env = os.environ.copy()
     env.update(b['environment'])
     # Legacy gates disagree on whether SOURCE means checkout or Source/.

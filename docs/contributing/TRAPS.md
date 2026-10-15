@@ -419,6 +419,28 @@ timing, so a local "clean" is still NOT evidence a bus timing defect is
 gone (a local red IS a defect). When local says clean and hardware says
 broken, believe the hardware and go looking for what the harness omits.
 
+<a name="trap-hybrid-receipts"></a>
+
+### A probe builder's success label is not qualification
+
+PERKY Goal 2 recovery, 14 Oct 2026: the inherited builder wrote
+`LOCAL_PROBE_QUALIFIED_HARDWARE_PENDING` into its notes before the workload
+gates ran. The aggregate verifier required a TIMING file but did not inspect
+its contents, skipped the retained-FX gate, and did not bind reports to the
+generated image or recorded source commit. The existing DTIM3 counter used
+88 MHz instead of the qualified 132 MHz, summed only PERKY callbacks, and
+counted 60,630 groups during 27,563 real frames. Its zero misses could not
+qualify whole-frame timing. A bounded delayed-trigger/Part-index test of
+the same image measured 98,632 modeled CF cycles (370.797 us at 266 MHz),
+one deadline miss in 4,000 frames. This is model evidence, not hardware timing.
+
+Gate report contents, durations, active audio, source commit, image/tool
+hashes, lifecycle and timer/export qualification before issuing a success
+status. `verify_perky_hybrid_evidence_selftest.py` checks refusal of smoke,
+stale-image, missing-audio, skipped-FX, missing-lifecycle, wrong-clock,
+uncommitted-source and corrupted-artifact receipts. The hybrid remains
+unqualified; those negative tests do not replace its missing positive gates.
+
 <a name="trap-bus-zero-client"></a>
 
 ### A bus client that registers but contributes nothing steals everyone else's level
