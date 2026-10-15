@@ -43,19 +43,29 @@ increased processing load; the latest interval averages 317.35 µs per ISR.
 The user reports mostly RES Snare on T2 and RES Bass on T6, including p-locks.
 See the [decoded hardware evidence](hybrid/CF_OPTIMIZATION_HARDWARE.json).
 
-The ongoing [ColdFire optimization campaign](hybrid/CF_OPTIMIZATION.json)
-preserves PKH3O1 as an intermediate build and uses bit-exact local benchmarks.
-The selected PKH3O3 implementation reaches 279.98 µs dense, 277.34 µs
-Snare/Bass and 289.87 µs with enabled scenes and fader input, versus 324.10,
-321.75 and 334.07 µs on the original image. These are measured local full-ISR
-comparisons at CPU264/PIT132, with zero modeled deadline misses. All fifteen
-60-second workload rows have passed; a separate 24,000-frame sequencer run
-also verifies late MODE/ALGO locks and reversions. The continuous ten-minute
-stress and final package qualification remain pending. Exact PCM/state/RNG,
-original-author comparisons, retained FX, lifecycle and saved-project checks
-pass. The desired 20% margin is met by these observed local spans; silicon
-cache, bus arbitration and UI responsiveness remain unqualified. No final
-PKH3O3 updater has been emitted. PERKY4S remains the hardware-tested release.
+The [ColdFire optimization campaign](hybrid/CF_OPTIMIZATION.json) has reached a
+measured practical plateau, with PKH3O1 preserved as an intermediate build.
+The locally qualified **PKH3O3** diagnostic and its exact artifact hashes are
+recorded in [the final qualification report](hybrid/CF_OPTIMIZATION_QUALIFICATION.json).
+Its firmware inputs are committed at `f87df2de`; two builds reproduce the same
+MAIN, runtime ELF and raw runtime. The final card/MIDI wrap uses that tested MAIN.
+
+PKH3O3 reaches 279.98 µs dense, 277.34 µs Snare/Bass and 289.87 µs with enabled
+scenes and fader input, versus 324.10, 321.75 and 334.07 µs on the original image.
+These are local executed full-ISR comparisons at CPU264/PIT132. All fifteen
+60-second workload rows and the continuous ten-minute Snare/Snare row completed
+with zero modeled deadline misses. Separate all-eight-track audio captures cover
+eight matrix configurations; the 24,000-frame sequencer test also verifies late
+MODE/ALGO locks and reversions. Exact PCM/state/RNG, original-author comparisons,
+retained FX, lifecycle, saved-project and package checks pass at their stated scopes.
+
+The desired 20% margin is met by the observed local spans; the scene maximum
+clears that target by only 0.38 µs. Silicon cache, bus arbitration, startup audio
+and UI responsiveness remain unqualified. Six initial DSP readback/mix differences
+in the zero-pre-roll port capture remain explicitly recorded; all cold source
+records and all initialized post-PLAY records are exact. Use fresh MKII PRFs for
+the hardware A/B decision. Nothing was flashed or pushed. PERKY4S remains the
+hardware-tested release.
 
 ### Current DSP memory limit
 

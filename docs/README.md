@@ -29,6 +29,7 @@ checkpoints, not the current MKII firmware or free DSP memory.
 | [../modules/perky/hybrid/PRIVATE_STACK_QUALIFICATION.md](../modules/perky/hybrid/PRIVATE_STACK_QUALIFICATION.md) | Original private-stack qualification and packages; later MKII observations and optimization evidence below |
 | [../modules/perky/hybrid/CF_OPTIMIZATION_HARDWARE.json](../modules/perky/hybrid/CF_OPTIMIZATION_HARDWARE.json) | Eight real MKII PRFs: exact layout, cumulative intervals, timing and limits |
 | [../modules/perky/hybrid/CF_OPTIMIZATION.json](../modules/perky/hybrid/CF_OPTIMIZATION.json) | ColdFire optimization experiments, preserved checkpoints, exact tests and final qualification status |
+| [../modules/perky/hybrid/CF_OPTIMIZATION_QUALIFICATION.json](../modules/perky/hybrid/CF_OPTIMIZATION_QUALIFICATION.json) | PKH3O3 final local qualification, artifact hashes, completed sustained tests and hardware limits |
 | [../modules/perky/hybrid/STACK_CORRECTION.md](../modules/perky/hybrid/STACK_CORRECTION.md) | Bounded stack correction: verified task/driver ownership and DRAM; historical private audio-stack architecture/cost proposal, subsequently approved |
 | [../modules/perky/hybrid/PHASE2.md](../modules/perky/hybrid/PHASE2.md) | Hybrid Goal 2 implementation/measurement history; final status in CLOSEOUT.md, **not qualified** |
 | [../modules/perky/hybrid/ITERATION3.md](../modules/perky/hybrid/ITERATION3.md) | Additional authorized CF empty-render experiment: exact but rejected for worse peak timing; prior runtime restored |

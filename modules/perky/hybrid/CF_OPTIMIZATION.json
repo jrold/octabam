@@ -1,6 +1,6 @@
 {
   "schema": "octabam.perky.cf-optimization.v1",
-  "status": "IMPLEMENTATION_CHECKPOINT_PASSED_FINAL_QUALIFICATION_PENDING",
+  "status": "LOCALLY_QUALIFIED_OPTIMIZED_DIAGNOSTIC_HARDWARE_PENDING",
   "experiment_limit": null,
   "plateau_requirement": "Evaluate plausible changes against measured bottlenecks; no experiment-count stopping rule. Final card/MIDI packaging deferred until sustained local qualification.",
   "hardware_baseline": "CF_OPTIMIZATION_HARDWARE.json",
@@ -2327,7 +2327,11 @@
     "modeled_misses_each": 0,
     "CPU_Hz": 264000000,
     "nominal_period_us": 362.81179138321994,
-    "desired_80_percent_ceiling_us": 290.24943310657596
+    "desired_80_percent_ceiling_us": 290.24943310657596,
+    "final_dense_cycles": 73916,
+    "final_snare_bass_cycles": 73217,
+    "final_scene_cycles": 76525,
+    "original_scene_cycles": 88195
   },
   "exact_checks": {
     "canonical_checks": {
@@ -2346,9 +2350,7 @@
     "original_author_native_ARM_status": "PASS",
     "callback_source_RAM_state_RNG_cases": 1496
   },
-  "remaining_work": [
-    "Complete continuous1,653,750-frame stress and profiler/armed comparisons; guarded wrap of immutable MAIN; actual package roundtrip/rejection gates and final report binding; release bundle and final audit."
-  ],
+  "remaining_work": [],
   "hardware_qualified": false,
   "native_selected": {
     "exact_receipt": "out/perky/hybrid/optimization/native-selected-current-edges/EDGE_RECEIPT.json",
@@ -2393,7 +2395,7 @@
     }
   },
   "implementation_plateau": {
-    "status": "SELECTED_FOR_SUSTAINED_QUALIFICATION",
+    "status": "MEASURED_PRACTICAL_PLATEAU_LOCAL_QUALIFICATION_PASSED",
     "basis": [
       "Measured WT/RES/NT register and block restructuring, envelope advancement, exact EMAC products, control quotient/tables/settling, redundant derives, direct record writes and cursor stores.",
       "Compiler unrolling, unswitching, peeling, helper boundaries, branch/clamp variants, small-block alternatives and broader NT passes measured; regressions rejected.",
@@ -2402,7 +2404,7 @@
       "Native-endian alternate wave storage and voice/cache realignment have no measured silicon stall benefit. They expand storage or alter ABI for a small instruction saving; obtain fresh hardware PRFs before cache-specific architecture changes.",
       "Unattributed hardware time plus DSP callback averages169.64us of317.35us latest interval; its causes cannot be assigned to CF synthesis from aggregate PRFs. No hardware architectural-limit claim."
     ],
-    "reopen_if": "Sustained qualification exposes a regression or a new substantial measured synthesis bottleneck."
+    "reopen_if": "Fresh MKII profiling establishes a new substantial bottleneck or a reproducible regression. This is a practical measured plateau, not a proven hardware architectural limit."
   },
   "part_handoff_test_correction": {
     "original_result": "FAIL expected3 generations, observed2; preserved final-PKH3O2/workload-check.log",
@@ -2563,7 +2565,7 @@
     "scope_correction": "The4000-frame handoff row does not reach step46/58. Separate24000-frame actualsequencer test proves bothmode/familylocks and reversions. Firstdriver reusedobserverfilenames forsecondaryaudio; primary24k reports savedbeforeoverwrite and hashvalidated. Originalbindingfailure retained; nofirmwarechange."
   },
   "sustained_matrix_checkpoint": {
-    "status": "PASS_FIFTEEN_60_SECOND_ROWS_CONTINUOUS_STRESS_PENDING",
+    "status": "PASS_ALL_FIFTEEN_ROWS_AND_CONTINUOUS_TEN_MINUTE_WORST_ROW",
     "CPU_hz": 264000000,
     "PIT_hz": 132000000,
     "rows": [
@@ -2688,6 +2690,148 @@
         "receipt_sha256": "45ce153edb296cf98f59806e31afcc1ef7cccdbb44c7b260d0ea87f3261d3843"
       }
     ],
-    "scope": "DTIM3 instrumented ISR spans omit entry-save and post-stamp footer. Strict executed full-ISR comparisons are reported separately. Continuous1,653,750-frame stress still running."
-  }
+    "scope": "Fifteen165376-frame rows and continuous1653750-frame actual worst Snare/Snare row completed. Zero modeled deadline misses. DTIM3 timer excludes entry-save and footer; nine strict executed full-ISR contexts reported separately."
+  },
+  "final_qualification": {
+    "status": "LOCALLY_QUALIFIED_OPTIMIZED_DIAGNOSTIC_HARDWARE_PENDING",
+    "report": "CF_OPTIMIZATION_QUALIFICATION.json",
+    "report_sha256": "c6408466e996776ce800105513c0d7d6c4bd6187152aca93d81c50f94cd2eead",
+    "firmware_source_commit": "f87df2dec6aad2e55f09cd2198d66f188f44bf92",
+    "hybrid_source_id": "5075d00a751d9627df383470c1db156e1627484a8fb35fed2d88db871bc02785",
+    "artifacts": {
+      "mainos": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/optimization/final-PKH3O3/probe/mainos_PKH3O3.bin",
+        "bytes": 1464119,
+        "sha256": "4d28167445f30fd3b795e4d91567c4871e3655da072511d93b117f6cd350ed3f",
+        "delivery_path": "/Users/jrold/Downloads/PERKY_PKH3O3_f87df2de/MAIN_PKH3O3.bin"
+      },
+      "card": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/optimization/final-PKH3O3/probe/OCTATRACK_PKH3O3.bin",
+        "bytes": 787968,
+        "sha256": "b3da2b296301dd174acbb3aad3c9de89d9d47244f0c804dd778d83d168186d57",
+        "delivery_path": "/Users/jrold/Downloads/PERKY_PKH3O3_f87df2de/PKH3O3.bin"
+      },
+      "midi": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/optimization/final-PKH3O3/probe/OCTATRACK_OS1.40C_PKH3O3.syx",
+        "bytes": 1100665,
+        "sha256": "2f3bd6fb8fe782f50c983f15ec728b9ffd57fc642055856b5c26ec1e12a101cc",
+        "delivery_path": "/Users/jrold/Downloads/PERKY_PKH3O3_f87df2de/PKH3O3.syx"
+      }
+    },
+    "sustained": {
+      "required_matrix_rows": 15,
+      "frames_per_row": 165376,
+      "worst_row": "snare/snare",
+      "continuous_stress_frames": 1653750,
+      "summary": {
+        "worst_discovered_row": "snare/snare",
+        "global_max_ack_interval_cycles": 94585,
+        "scope_caveat": "ISR timer excludes entry save and post-stamp footer; not a hardware bound",
+        "global_max_full_cf_frame_us": 279.477,
+        "global_max_full_cf_frame_pct_of_period": 77.03,
+        "global_headroom_to_period_us": 83.335,
+        "global_headroom_to_80pct_margin_us": 10.772,
+        "global_within_80pct_margin": true,
+        "global_deadline_misses": 0,
+        "global_max_isr_timer_us": 279.477
+      },
+      "total_required_sustained_frames": 4134390,
+      "separate_all_track_audio_configurations": 8,
+      "proof": "Every row matches its saved ROW receipt and the actual port log reports the full requested frame count REACHED. Source/ELF/runner inputs are hash bound. DTIM3 spans and strict executed ISR costs retain separate scopes."
+    },
+    "strict_executed_full_ISR": {
+      "full_ISR_max_observed_cycles": 76525,
+      "CPU_MHz": 264,
+      "full_ISR_max_observed_us": 289.86742424242425,
+      "modeled_duration_misses": 0,
+      "deadline_us": 362.81179138321994,
+      "unwaived_80_percent_ceiling_us": 290.24943310657596,
+      "shortfall_to_unwaived_margin_us": -0.38200886415171453,
+      "isolated_instruction_delta_cycles": 4,
+      "production_margin_waived": false,
+      "desired_80_percent_margin_met": true
+    },
+    "short_contexts": {
+      "mixed": {
+        "full_ISR_max_cycles": 73887,
+        "modeled_misses": 0,
+        "DMA_overlaps": 0
+      },
+      "dense": {
+        "full_ISR_max_cycles": 73916,
+        "modeled_misses": 0,
+        "DMA_overlaps": 0
+      },
+      "external": {
+        "full_ISR_max_cycles": 73911,
+        "modeled_misses": 0,
+        "DMA_overlaps": 0
+      },
+      "lifecycle-final": {
+        "full_ISR_max_cycles": 72986,
+        "modeled_misses": 0,
+        "DMA_overlaps": 0
+      },
+      "saved-final-save": {
+        "full_ISR_max_cycles": 21313,
+        "modeled_misses": 0,
+        "DMA_overlaps": 0
+      },
+      "saved-final-reload": {
+        "full_ISR_max_cycles": 73898,
+        "modeled_misses": 0,
+        "DMA_overlaps": 0
+      },
+      "snare-bass": {
+        "full_ISR_max_cycles": 73217,
+        "modeled_misses": 0,
+        "DMA_overlaps": 0
+      },
+      "scene-panel": {
+        "full_ISR_max_cycles": 76525,
+        "modeled_misses": 0,
+        "DMA_overlaps": 0
+      },
+      "transitions": {
+        "full_ISR_max_cycles": 72042,
+        "modeled_misses": 0,
+        "DMA_overlaps": 0
+      }
+    },
+    "all_track_audio_scope": "Separate all-eight-track audio captures cover eight matrix configurations, plus actual scene and transition fixtures. All fifteen sustained rows prove both CF and both DSP voices active; the additional rows do not each contain a separate block dump.",
+    "scoped_regressions": "Original-author/ARM, canonical whole-state/PCM/RNG, render/control edge cases, transport, native DSP records, twelve FX, private-stack/IPL3/ownership, UI/lifecycle, saved projects, PRF export, reproducibility, wrappers and corruption rejection all pass at their recorded scopes.",
+    "raw_cold_pipeline_result": "FAIL on six initial DSP readback/mix records in the zero-pre-roll port capture; retained explicitly. All cold source records and every initialized post-PLAY record are exact.",
+    "scope_limits": [
+      "No silicon cache/SDRAM/FlexBus arbitration or coherence measurement.",
+      "The zero-pre-roll raw DSP capture has six initial pipeline-record differences; all cold source/control and every primed post-PLAY record are exact. Hardware startup audio remains unqualified.",
+      "No silicon interrupt release-to-entry or worst-case instruction latency bound.",
+      "Normal valid stock dispatch tables, indices, C ABI and seven-stage DMA protocol are qualification preconditions.",
+      "Unchanged larger stock-task base graphs remain outside this bounded correction; their audio-related task-stack demand cannot increase.",
+      "Desired 20% timing margin is met in these modeled runs; silicon timing remains unqualified."
+    ],
+    "package_single_wrap": "Final MAIN was unchanged by the one final card/MIDI wrap after the complete sustained qualification. PKH3O1 and original PKHYB2P preserved.",
+    "final_audit": "All local requirement checks and309 current file hashes passed; final documentation commit recorded separately in final audit.",
+    "hardware_qualified": false,
+    "hardware_flashed": false,
+    "pushed": false,
+    "repository_check": {
+      "command": "make check REMIX=perky-probe",
+      "status": "PASS_ALL_RUNNABLE_CHECKS",
+      "shared_isolated": {
+        "run": 84,
+        "failed": 0
+      },
+      "image": {
+        "run": 4,
+        "failed": 0
+      },
+      "optional_without_OT_PROJECT": [
+        "fragmented FX runtime",
+        "PERKY probe port"
+      ],
+      "candidate_equivalent_scope": "Selected PKH3O3 actual-project FX, all-eight-track audio, ownership, lifecycle and scene/transition fixtures executed separately and passed. Optional generic fixture skips do not replace candidate checks.",
+      "log": "/Users/jrold/Downloads/octabam/out/perky/hybrid/optimization/repository-check-native.log"
+    }
+  },
+  "next_physical_test": "/Users/jrold/Downloads/PERKY_PKH3O3_f87df2de/MKII_AB_TEST.txt"
 }
