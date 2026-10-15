@@ -309,8 +309,35 @@ static void simple_update(PKSimpleControl *s)
     for (unsigned i = 0; i < 4; ++i)
         s->prepared[i] = (3u*s->targets[i] + 5u*s->prepared[i]) >> 3;
 }
+#if defined(PK_HYBRID_NATIVE_FAST_SMOOTH) && PK_HYBRID_NATIVE_FAST_SMOOTH && defined(__mcoldfire__)
+#include "cf_control_rates.h"
+static uint32_t __attribute__((cold,noinline))
+pk_hybrid_simple_settle_full_width(uint32_t value,uint32_t target)
+{
+    for(unsigned i=0;i<16u;i++)value=(3u*target+5u*value)>>3;
+    return value;
+}
+static void __attribute__((noinline)) pk_hybrid_simple_settle(PKSimpleControl *s)
+{
+    /* Same sixteen rounded updates; intermediate values have no observer.
+     * Every target is written immediately before this call. Full-width
+     * corrupt prepared/target words still use the original recurrence. */
+    for(unsigned i=0;i<4u;i++){
+        uint32_t value=s->prepared[i],target=s->targets[i];
+        if((value|target)<=4095u)
+            value=target+(uint32_t)pk_cf_control_smooth_16((int32_t)value-(int32_t)target);
+        else value=pk_hybrid_simple_settle_full_width(value,target);
+        s->prepared[i]=value;
+    }
+}
+#endif
 static unsigned simple_div(unsigned n, unsigned d)
 {
+#if defined(PK_HYBRID_NATIVE_HW_DIV) && PK_HYBRID_NATIVE_HW_DIV && defined(__mcoldfire__)
+    /* The restoring loop consumes only bits 19..0 and returns all ones
+     * for divisor zero. Preserve both cases on the hardware divider. */
+    return d ? (n & 0xfffffu) / d : 0xfffffu;
+#else
     unsigned q=0, r=0;
     for (unsigned i=20; i != 0; --i) {
         r=(r<<1)|((n>>(i-1))&1u);
@@ -318,6 +345,7 @@ static unsigned simple_div(unsigned n, unsigned d)
         if (r>=d) {r-=d; q|=1;}
     }
     return q;
+#endif
 }
 static unsigned simple_rate(unsigned control, unsigned offset, unsigned scale)
 {
@@ -330,6 +358,48 @@ static unsigned simple_time(unsigned value)
     unsigned t=e>11u ? (m<<(e-12u))&0xffffu : (m>>(12u-e))&0xffffu;
     return ((((t-1u)>>1)&0x7fffu)-0x7fu)&0xffffu;
 }
+#if defined(PK_HYBRID_NATIVE_SHARED_RATE) && PK_HYBRID_NATIVE_SHARED_RATE && defined(__mcoldfire__)
+#include "cf_control_rates.h"
+static unsigned pk_hybrid_native_fold_rate(unsigned prepared)
+{
+    return prepared<=4095u ? pk_cf_control_decay_rates[2][prepared]
+                          : simple_rate(simple_time(prepared),50u,7280u);
+}
+#endif
+
+#if defined(PK_HYBRID_NATIVE_SKIP_DERIVE) && PK_HYBRID_NATIVE_SKIP_DERIVE
+/* Fold/Complex consume the same smoothed state and metadata, then replace
+ * all Simple-specific derived fields before publishing the local packet. */
+static inline void __attribute__((always_inline))
+pk_hybrid_simple_prepare_state(PKSimpleControl *s, uint8_t *p, unsigned trig)
+{
+    if (s->valid && s->family != p[11]) {
+        s->valid=0;
+        for(unsigned i=0;i<4;++i) s->prepared[i]=s->targets[i]=0;
+    }
+    s->family=p[11];
+    unsigned dirty=!s->valid, mode=p[6]>2u ? 2u : p[6];
+    for(unsigned i=0;i<4;++i) if(s->last[i]!=p[i]) dirty=1;
+    if(s->mode!=mode) dirty=1;
+    if(dirty) {
+        simple_update(s); simple_update(s);
+        for(unsigned i=0;i<4;++i) {
+            unsigned v=p[i]>127u ? 127u : p[i];
+            s->targets[i]=v==127u ? 4095u : v<<5;
+            s->last[i]=p[i];
+        }
+#if defined(PK_HYBRID_NATIVE_FAST_SMOOTH) && PK_HYBRID_NATIVE_FAST_SMOOTH && defined(__mcoldfire__)
+        pk_hybrid_simple_settle(s);
+#else
+        for(unsigned i=0;i<16;++i) simple_update(s);
+#endif
+        s->mode=(uint8_t)mode; s->valid=1;
+    }
+    if(trig) simple_update(s);
+    p[0]=(uint8_t)(s->prepared[0]>>8); p[1]=(uint8_t)s->prepared[0];
+    p[8]=(uint8_t)mode; p[9]=(uint8_t)(s->prepared[1]>=4080u); p[10]=0; p[11]=2;
+}
+#endif
 void pk_simple_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig)
 {
     if (s->valid && s->family != p[11]) {
@@ -347,7 +417,11 @@ void pk_simple_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig)
             s->targets[i]=v==127u ? 4095u : v<<5;
             s->last[i]=p[i];
         }
+#if defined(PK_HYBRID_NATIVE_FAST_SMOOTH) && PK_HYBRID_NATIVE_FAST_SMOOTH && defined(__mcoldfire__)
+        pk_hybrid_simple_settle(s);
+#else
         for(unsigned i=0;i<16;++i) simple_update(s);
+#endif
         s->mode=(uint8_t)mode; s->valid=1;
     }
     if(trig) simple_update(s);
@@ -362,8 +436,16 @@ void pk_simple_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig)
  */
 void pk_fold_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig)
 {
+#if defined(PK_HYBRID_NATIVE_SKIP_DERIVE) && PK_HYBRID_NATIVE_SKIP_DERIVE
+    pk_hybrid_simple_prepare_state(s,p,trig);
+#else
     pk_simple_prepare(s,p,trig);
+#endif
+#if defined(PK_HYBRID_NATIVE_SHARED_RATE) && PK_HYBRID_NATIVE_SHARED_RATE && defined(__mcoldfire__)
+    unsigned values[3]={pk_hybrid_native_fold_rate(s->prepared[1]),
+#else
     unsigned values[3]={simple_rate(simple_time(s->prepared[1]),50,7280),
+#endif
                         s->prepared[2],s->prepared[3]};
     for(unsigned i=0;i<3;++i) {
         p[2+2*i]=(uint8_t)(values[i]>>8);

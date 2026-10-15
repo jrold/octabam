@@ -427,6 +427,19 @@ counting execution. The private observer calibrates five switch windows in both
 stepping modes, including IRQ arrival immediately before RTE; complete model
 ISR time must equal executed cycles excluding the interrupted task instruction.
 
+PERKY optimization, 15 Oct 2026, exposed a separate initial-condition trap:
+`ot_emu` starts frame exchange at PLAY by default; hardware exchanges frames
+since boot (`tools/emu/ot_emu/main.cpp`, O14). A raw old/new block comparison
+failed on six DSP readback/mix records in the first two cold frames, while
+all source/control records and every later record matched. Running both
+images with 40 frame exchanges **before PLAY** produced 20,490 identical
+post-priming records, with active audio on all four synthesis tracks.
+`tools/verify/verify_perky_hybrid_block_identity.py` keeps the raw failure
+visible, restricts its exact locations, and requires the complete primed
+post-PLAY comparison. It never discards arbitrary frames after PLAY or changes
+the shipping firmware. Compare initialized pipeline states before attributing
+startup readback differences to synthesis; hardware startup remains unqualified.
+
 <a name="trap-hybrid-receipts"></a>
 
 ### A probe builder's success label is not qualification

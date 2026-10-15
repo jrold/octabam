@@ -6,11 +6,19 @@
 
 static void pk_complex_prepare(PKSimpleControl *s, uint8_t *p, unsigned trig)
 {
+#if defined(PK_HYBRID_NATIVE_SKIP_DERIVE) && PK_HYBRID_NATIVE_SKIP_DERIVE
+    pk_hybrid_simple_prepare_state(s, p, trig);
+#else
     pk_simple_prepare(s, p, trig);
+#endif
     unsigned tune = s->prepared[0];
     unsigned values[4] = {
         tune > 4095u ? 4095u : tune,
+#if defined(PK_HYBRID_NATIVE_SHARED_RATE) && PK_HYBRID_NATIVE_SHARED_RATE && defined(__mcoldfire__)
+        pk_hybrid_native_fold_rate(s->prepared[1]),
+#else
         simple_rate(simple_time(s->prepared[1]), 50u, 7280u),
+#endif
         simple_div(0xfffffu, (43244160u - 9552u*s->prepared[2]) >> 12),
         s->prepared[3]
     };

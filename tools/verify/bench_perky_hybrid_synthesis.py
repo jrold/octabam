@@ -26,13 +26,14 @@ def run(work, reference):
     hd = ROOT / 'tools/harness/perky_cf'
     sources = [hd/'hybrid_cf_bench.c', *[ROOT/'modules/perky'/f'{n}.c'
                for n in ('cf_wavetable', 'cf_resonant', 'cf_noise_tone')],
-               hd/'hybrid_cf_render_math.c']
+               hd/'hybrid_cf_render_math.c', hd/'hybrid_native_math.c']
     # The frozen executable contains the native pre-optimization recurrence.
     expected = json.loads((reference/'shadow-result.json').read_text())
     assert expected['status'] == 'PASS_EXACT_TARGET_NATIVE'
     frozen = json.loads((reference/'report.json').read_text())
     assert sha(reference/'runner') == frozen['artifact_sha256']['runner'], 'frozen native runner drift'
     inputs = [*sources, *sorted((ROOT/'modules/perky').glob('*.h')),
+              *sorted((ROOT/'modules/perky').glob('*.c')),
               ROOT/'modules/perky/cf_perky4.c', hd/'hybrid_cf_bench.ld',
               hd/'hybrid_cf_bench_layout.h', reference/'runner',
               reference/'shadow-result.json', *sorted((reference/'assets').glob('*.bin')),
@@ -54,11 +55,29 @@ def run(work, reference):
             obj = work/(source.stem+'.o'); objects.append(obj)
             command(['m68k-elf-gcc', *flags, '-c', source, '-o', obj], source.stem)
             command(['m68k-elf-gcc', *flags, '-S', source, '-o', work/(source.stem+'.s')], source.stem+'-assembly')
+        # The reference objects use the unchanged default producer, and a
+        # hardware-divider-only intermediate, with every symbol namespaced.
+        # This compares actual compiled prepare functions and complete states.
+        for prefix, smooth, divide in (('ref_', 0, 0), ('hw_', 0, 1)):
+            raw = work/(prefix+'native-raw.o'); obj = work/(prefix+'native.o')
+            command(['m68k-elf-gcc', *flags, '-DPK_HYBRID_NATIVE_HW_DIV='+str(divide),
+                     '-DPK_HYBRID_NATIVE_FAST_SMOOTH='+str(smooth),
+                     '-DPK_HYBRID_NATIVE_SKIP_DERIVE=0', '-DPK_HYBRID_NATIVE_SHARED_RATE=0', '-c',
+                     hd/'hybrid_native_math.c', '-o', raw], prefix+'native-compile')
+            command(['m68k-elf-objcopy', '--prefix-symbols='+prefix, raw, obj], prefix+'native-symbols')
+            objects.append(obj)
         command(['m68k-elf-gcc', '-mcpu=54455', '-nostdlib', '-Wl,--gc-sections',
                  '-Wl,--undefined=bench_prepare', '-Wl,--undefined=bench_render',
                  '-Wl,--undefined=ready_cookie', '-Wl,--undefined=bench_layout',
                  '-Wl,--undefined=bench_math_probe',
                  '-Wl,--undefined=bench_control_math_probe',
+                 '-Wl,--undefined=bench_native_math_probe',
+                 '-Wl,--undefined=bench_native_div',
+                 '-Wl,--undefined=bench_original_native_div',
+                 '-Wl,--undefined=bench_native_prepare',
+                 '-Wl,--undefined=ref_bench_native_prepare',
+                 '-Wl,--undefined=hw_bench_native_prepare',
+                 '-Wl,--undefined=bench_native_control_size',
                  '-T', hd/'hybrid_cf_bench.ld', *objects, '-lgcc', '-o', work/'target.elf'], 'link')
         command(['m68k-elf-objcopy', '-O', 'binary', work/'target.elf', work/'target.bin'], 'binary')
         (work/'target.nm').write_bytes(subprocess.check_output(['m68k-elf-nm', '-S', '--size-sort', str(work/'target.elf')]))

@@ -63,7 +63,7 @@ struct Target {
         m68k_set_reg(cpu,M68K_REG_PC,symbols.at(name));machine.write32(sp,end);
         unsigned offset=4;for(auto a:args){machine.write32(sp+offset,a);offset+=4;}
         uint64_t steps=0,before=machine.getCycles();
-        uint64_t limit=name=="bench_control_math_probe"?300000000:name=="bench_math_probe"?100000000:10000000;
+        uint64_t limit=(name=="bench_control_math_probe"||name=="bench_native_math_probe")?300000000:name=="bench_math_probe"?100000000:10000000;
         while(machine.pcFast()!=end)if(++steps>limit||!machine.stepFast())throw std::runtime_error("call "+name+" "+machine.why());
         if(m68k_get_reg(cpu,M68K_REG_SP)!=sp+4)throw std::runtime_error("SP mismatch");
         last_cycles=machine.getCycles()-before;
@@ -120,6 +120,68 @@ int main(int argc,char **argv) {
            candidate.machine.read32(candidate.symbols.at("control_math_failures"))!=0 ||
            candidate.machine.read32(candidate.symbols.at("control_math_checks"))!=438516)
             throw std::runtime_error("exact envelope-rate or note conversion failed");
+    }
+    bool native_math_checked=candidate.symbols.count("bench_native_math_probe");
+    uint64_t div_before_sum=0,div_after_sum=0,div_before_max=0,div_after_max=0;
+    if(native_math_checked) {
+        if(candidate.call("bench_native_math_probe")!=1 ||
+           candidate.machine.read32(candidate.symbols.at("native_math_failures"))!=0 ||
+           candidate.machine.read32(candidate.symbols.at("native_math_checks"))!=331776)
+            throw std::runtime_error("exact 20-bit hardware division failed");
+        std::ofstream div_costs(std::string(argv[3])+"/native-div-costs.csv");
+        div_costs<<"divisor,software_cycles,hardware_cycles\n";
+        for(unsigned divisor=0;divisor<8192;divisor++) {
+            unsigned a=candidate.call("bench_original_native_div",{0xfffff,divisor});
+            uint64_t before=candidate.last_cycles;
+            unsigned b=candidate.call("bench_native_div",{0xfffff,divisor});
+            uint64_t after=candidate.last_cycles;
+            if(a!=b)throw std::runtime_error("native division wrapper differential");
+            div_before_sum+=before;div_after_sum+=after;
+            div_before_max=std::max(div_before_max,before);div_after_max=std::max(div_after_max,after);
+            div_costs<<divisor<<','<<before<<','<<after<<'\n';
+        }
+    }
+    uint64_t native_prepare_cases=0,native_prepare_before_sum=0,native_prepare_hw_sum=0,native_prepare_after_sum=0;
+    uint64_t native_prepare_before_max=0,native_prepare_hw_max=0,native_prepare_after_max=0;
+    if(candidate.symbols.count("ref_bench_native_prepare")) {
+        unsigned size=candidate.call("bench_native_control_size");
+        if(size!=40)throw std::runtime_error("unexpected native control layout");
+        std::ofstream native_costs(std::string(argv[3])+"/native-prepare-costs.csv");
+        native_costs<<"family,case,original_cycles,hardware_div_cycles,settled_cycles\n";
+        uint32_t seed=0x514ba731u;unsigned tune=0,decay=0,p1=0,p2=0;
+        const unsigned families[4]={0,2,3,5};
+        for(unsigned i=0;i<16384;i++) {
+            unsigned family=families[(i/17)%4],mode=(i/24)%4,trig=i%3==0;
+            if(i%8==0){seed=1664525u*seed+1013904223u;tune=seed>>24;
+                seed=1664525u*seed+1013904223u;decay=seed>>24;
+                seed=1664525u*seed+1013904223u;p1=seed>>24;
+                seed=1664525u*seed+1013904223u;p2=seed>>24;}
+            if(i%127<3) {
+                std::vector<uint8_t> bytes(size);
+                for(auto& byte:bytes){seed=1664525u*seed+1013904223u;byte=i%127==0?0:uint8_t(seed>>24);}
+                if(i%127){bytes[38]=family;bytes[37]=1;bytes[36]=i%127==1?7:std::min(mode,2u);}
+                if(i%127==2){bytes[32]=tune;bytes[33]=decay;bytes[34]=p1;bytes[35]=p2;}
+                for(auto prefix:{"ref_","hw_",""})for(unsigned k=0;k<size;k++)
+                    candidate.machine.write8(candidate.symbols.at(std::string(prefix)+"native_control")+k,bytes[k]);
+            }
+            candidate.call("ref_bench_native_prepare",{family,tune,decay,p1,p2,mode,trig});
+            uint64_t before=candidate.last_cycles;
+            candidate.call("hw_bench_native_prepare",{family,tune,decay,p1,p2,mode,trig});
+            uint64_t hw=candidate.last_cycles;
+            candidate.call("bench_native_prepare",{family,tune,decay,p1,p2,mode,trig});
+            uint64_t after=candidate.last_cycles;
+            for(auto object:{std::pair<std::string,unsigned>{"native_control",size},{"native_packet",12}})
+                for(unsigned k=0;k<object.second;k++){
+                    uint8_t value=candidate.machine.read8(candidate.symbols.at(object.first)+k);
+                    for(auto prefix:{"ref_","hw_"})
+                        if(value!=candidate.machine.read8(candidate.symbols.at(std::string(prefix)+object.first)+k))
+                            throw std::runtime_error("native control/packet differential "+std::to_string(i)+" "+object.first);
+                }
+            native_prepare_cases++;native_prepare_before_sum+=before;native_prepare_hw_sum+=hw;native_prepare_after_sum+=after;
+            native_prepare_before_max=std::max(native_prepare_before_max,before);
+            native_prepare_hw_max=std::max(native_prepare_hw_max,hw);native_prepare_after_max=std::max(native_prepare_after_max,after);
+            native_costs<<family<<','<<i<<','<<before<<','<<hw<<','<<after<<'\n';
+        }
     }
     std::ofstream costs(std::string(argv[3])+"/render-edge-costs.csv");
     costs<<"profile,mode,instance,count,case,reference_cycles,candidate_cycles,status\n";
@@ -220,6 +282,6 @@ int main(int argc,char **argv) {
     reference.alignment.finish(std::string(argv[3])+"/reference-edge-alignment.json");
     candidate.alignment.finish(std::string(argv[3])+"/candidate-edge-alignment.json");
     std::ofstream report(std::string(argv[3])+"/RENDER_EDGES.json");
-    report<<"{\"status\":\"PASS_EXACT_TARGET_REFERENCE\",\"render_calls\":"<<calls<<",\"matched_failure_calls\":"<<failed_wave_calls<<",\"block_lengths\":41,\"max_block_samples\":257,\"all_state_PCM_RNG_and_guards_equal\":true,\"EMAC_product_checks\":"<<(math_checked?221184:0)<<",\"EMAC_raw_register_mode_cases\":"<<(math_checked?6:0)<<",\"control_transition_cases\":"<<control_transition_cases<<",\"control_math_checks\":"<<(control_checked?438516:0)<<"}\n";
+    report<<"{\"status\":\"PASS_EXACT_TARGET_REFERENCE\",\"render_calls\":"<<calls<<",\"matched_failure_calls\":"<<failed_wave_calls<<",\"block_lengths\":41,\"max_block_samples\":257,\"all_state_PCM_RNG_and_guards_equal\":true,\"EMAC_product_checks\":"<<(math_checked?221184:0)<<",\"EMAC_raw_register_mode_cases\":"<<(math_checked?6:0)<<",\"native_division_checks\":"<<(native_math_checked?331776:0)<<",\"native_division_mean_cycles_before\":"<<(div_before_sum/8192.0)<<",\"native_division_mean_cycles_after\":"<<(div_after_sum/8192.0)<<",\"native_division_max_cycles_before\":"<<div_before_max<<",\"native_division_max_cycles_after\":"<<div_after_max<<",\"native_prepare_cases\":"<<native_prepare_cases<<",\"native_prepare_mean_before\":"<<(native_prepare_before_sum/16384.0)<<",\"native_prepare_mean_hw_div\":"<<(native_prepare_hw_sum/16384.0)<<",\"native_prepare_mean_after\":"<<(native_prepare_after_sum/16384.0)<<",\"native_prepare_max_before\":"<<native_prepare_before_max<<",\"native_prepare_max_hw_div\":"<<native_prepare_hw_max<<",\"native_prepare_max_after\":"<<native_prepare_after_max<<",\"control_transition_cases\":"<<control_transition_cases<<",\"control_math_checks\":"<<(control_checked?438516:0)<<"}\n";
     std::cout<<"PASS exact renderer edges: "<<calls<<" calls, "<<failed_wave_calls<<" matching refusal paths\n";
 }

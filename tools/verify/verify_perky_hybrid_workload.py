@@ -522,10 +522,15 @@ def run_integrated_row(
         for st in extra_steps:
             cmd.extend(["--step", st])
 
+    # The 10-minute simulated stress contains 1.65M full OS/DSP frames.
+    # Bound host wall time separately; preserve every simulated frame even
+    # when interpreter throughput or concurrent local jobs is below real time.
+    host_timeout_seconds=max(1800,frames/100)
     with log_path.open("w") as f:
         f.write(" ".join(cmd) + "\n")
         f.flush()
-        subprocess.run(cmd, cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, check=True, timeout=1800)
+        subprocess.run(cmd, cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, check=True,
+                       timeout=host_timeout_seconds)
 
     log_text = log_path.read_text(errors="replace")
     assert "FAULT:" not in log_text and "ILLEGAL" not in log_text, f"Fault in {name}: see {log_path}"
@@ -598,11 +603,12 @@ def run_integrated_row(
 
     card.unlink(missing_ok=True)
 
-    return {
+    result = {
         "row": name,
         "t2": t2_key,
         "t6": t6_key,
         "frames": frames,
+        "host_timeout_seconds": host_timeout_seconds,
         "simulated_seconds": round(frames * 16.0 / SR, 2),
         "cycle_clock_factor": cycle_clock,
         "coldfire_clock_hz": CF_CLOCK_HZ,
@@ -613,6 +619,10 @@ def run_integrated_row(
         "dtim3_profiler": prof_metrics,
         "audio_verification": audio_verification,
     }
+    result['inputs'] = {str(p): hashlib.sha256(p.read_bytes()).hexdigest()
+                        for p in (image_path, image_path.parent/'platform/runtime.elf', Path(__file__))}
+    (work_dir/'ROW.json').write_text(json.dumps(result, indent=2)+'\n')
+    return result
 
 
 def run_seq_drift_gate_hybrid(image_path: Path, project_src: Path, work_dir: Path) -> dict:
@@ -912,9 +922,17 @@ def main() -> int:
     )
 
     # Exercise live Part change + delayed first trigger + family/mode transitions
-    part_step_spec = [
-        "1000:poke:0x100b14cf=01;0x80000003=01",
-        "2000:poke:0x100b14cf=00;0x80000003=00",
+    # The delayed first trigger is step 4 (~1378 frames at 120 BPM).
+    # Switching at frame 1000 changes Part before either CF voice activates,
+    # so it cannot test a handoff from an already running Part 0 voice.
+    # Preserve the three-generation requirement and prove each activation.
+    part_probe_dir = workload_dir/'live_part_handoff'
+    part_step_spec = []
+    for frame in (1999, 2500, 3500):
+        part_step_spec.append(f'{frame}:dump:{syms["pk_hybrid_prof"]:#x},1780={part_probe_dir}/handoff-{frame}.bin')
+    part_step_spec += [
+        "2000:poke:0x100b14cf=01;0x80000003=01",
+        "3000:poke:0x100b14cf=00;0x80000003=00",
     ]
     part_handoff_run = run_integrated_row(
         f"{w_label}_live_part_handoff_delayed_trig_transitions",
@@ -935,6 +953,12 @@ def main() -> int:
     assert part_handoff_run["dtim3_profiler"]["handoff_generation"] >= 3, (
         f"Expected handoff_generation >= 3 across live Part switch, got {part_handoff_run['dtim3_profiler']['handoff_generation']}"
     )
+    part_observations = [decode_profiler_dump((part_probe_dir/f'handoff-{f}.bin').read_bytes())
+                         for f in (1999, 2500, 3500)]
+    assert [r['handoff_generation'] for r in part_observations] == [1, 2, 3]
+    for previous, current in zip(part_observations, part_observations[1:]):
+        assert all(b > a > 0 for a, b in zip(previous['dtim3_ticks']['inst_calls'],
+                                            current['dtim3_ticks']['inst_calls']))
 
     print(
         f"[5/5] Running 10-minute worst-case stress run on {w_label} ({args.worst_frames} frames = {args.worst_frames*16/SR:.1f} s)..."

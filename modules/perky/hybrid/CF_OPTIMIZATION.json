@@ -1,6 +1,6 @@
 {
   "schema": "octabam.perky.cf-optimization.v1",
-  "status": "SOURCE_OPTIMIZED; FINAL_LOCAL_QUALIFICATION_PENDING",
+  "status": "IMPLEMENTATION_CHECKPOINT_PASSED_FINAL_QUALIFICATION_PENDING",
   "experiment_limit": null,
   "plateau_requirement": "Evaluate plausible changes against measured bottlenecks; no experiment-count stopping rule. Final card/MIDI packaging deferred until sustained local qualification.",
   "hardware_baseline": "CF_OPTIMIZATION_HARDWARE.json",
@@ -2119,6 +2119,189 @@
           "max_cycles": 4184
         }
       }
+    },
+    {
+      "trial": "native-hardware-division",
+      "decision": "retained",
+      "reason": "Replace 20-round restoring division with exact 20-bit-masked hardware quotient; preserve divisor-zero semantics.",
+      "BENCH.json": {
+        "path": "out/perky/hybrid/optimization/native-hardware-division/BENCH.json",
+        "sha256": "645a8f916f3cca4f9a0195e62341418220f4ed8bffa7384473c99bdcdfe4ad81",
+        "result": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "RENDER_EDGES.json": {
+        "path": "out/perky/hybrid/optimization/native-hardware-division-edges/RENDER_EDGES.json",
+        "sha256": "101e45266aff93db796caa557e06589660b7fde3d09a088be60ba40660e92b42",
+        "result": {
+          "status": "PASS_EXACT_TARGET_REFERENCE",
+          "render_calls": 22270,
+          "matched_failure_calls": 192,
+          "block_lengths": 41,
+          "max_block_samples": 257,
+          "all_state_PCM_RNG_and_guards_equal": true,
+          "EMAC_product_checks": 221184,
+          "EMAC_raw_register_mode_cases": 6,
+          "native_division_checks": 327680,
+          "native_division_mean_cycles_before": 334.425,
+          "native_division_mean_cycles_after": 54.7029,
+          "native_division_max_cycles_before": 373,
+          "native_division_max_cycles_after": 58,
+          "control_transition_cases": 1080,
+          "control_math_checks": 438516
+        }
+      }
+    },
+    {
+      "trial": "native-control-settling",
+      "decision": "retained",
+      "reason": "Exact 16-round bounded settling; original full-width recurrence fallback.",
+      "BENCH.json": {
+        "path": "out/perky/hybrid/optimization/native-control-settling/BENCH.json",
+        "sha256": "2f2139b6e8389558dd974bfb683f78337dff08affd77630930cfeb3c43bc4cc9",
+        "result": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "RENDER_EDGES.json": {
+        "path": "out/perky/hybrid/optimization/native-control-settling-edges/RENDER_EDGES.json",
+        "sha256": "8616b27b0a2a1bb020e76617ce1deb40349231e92e122fde7483c35642e1c0df",
+        "result": {
+          "status": "PASS_EXACT_TARGET_REFERENCE",
+          "render_calls": 22270,
+          "matched_failure_calls": 192,
+          "block_lengths": 41,
+          "max_block_samples": 257,
+          "all_state_PCM_RNG_and_guards_equal": true,
+          "EMAC_product_checks": 221184,
+          "EMAC_raw_register_mode_cases": 6,
+          "native_division_checks": 327680,
+          "native_division_mean_cycles_before": 334.427,
+          "native_division_mean_cycles_after": 54.7029,
+          "native_division_max_cycles_before": 373,
+          "native_division_max_cycles_after": 58,
+          "native_prepare_cases": 16384,
+          "native_prepare_mean_before": 881.716,
+          "native_prepare_mean_hw_div": 449.737,
+          "native_prepare_mean_after": 351.679,
+          "native_prepare_max_before": 1701,
+          "native_prepare_max_hw_div": 1325,
+          "native_prepare_max_after": 1282,
+          "control_transition_cases": 1080,
+          "control_math_checks": 438516
+        }
+      }
+    },
+    {
+      "trial": "native-prepare-elision",
+      "decision": "rejected",
+      "reason": "Outlined state prefix regressed mean and max versus hardware division plus settling.",
+      "BENCH.json": {
+        "path": "out/perky/hybrid/optimization/native-prepare-elision/BENCH.json",
+        "sha256": "1ecdc466ea9cc86224506fb8693d317d8fc6922722133eb8a0332fcb575fe59e",
+        "result": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "RENDER_EDGES.json": {
+        "path": "out/perky/hybrid/optimization/native-prepare-elision-edges/RENDER_EDGES.json",
+        "sha256": "e07099159e54324e7b51d0133db6920faca916ee73f94178a127eba9d2c991ef",
+        "result": {
+          "status": "PASS_EXACT_TARGET_REFERENCE",
+          "render_calls": 22270,
+          "matched_failure_calls": 192,
+          "block_lengths": 41,
+          "max_block_samples": 257,
+          "all_state_PCM_RNG_and_guards_equal": true,
+          "EMAC_product_checks": 221184,
+          "EMAC_raw_register_mode_cases": 6,
+          "native_division_checks": 327680,
+          "native_division_mean_cycles_before": 334.425,
+          "native_division_mean_cycles_after": 54.7029,
+          "native_division_max_cycles_before": 373,
+          "native_division_max_cycles_after": 58,
+          "native_prepare_cases": 16384,
+          "native_prepare_mean_before": 877.38,
+          "native_prepare_mean_hw_div": 449.653,
+          "native_prepare_mean_after": 387.978,
+          "native_prepare_max_before": 1673,
+          "native_prepare_max_hw_div": 1311,
+          "native_prepare_max_after": 1351,
+          "control_transition_cases": 1080,
+          "control_math_checks": 438516
+        }
+      }
+    },
+    {
+      "trial": "native-prepare-inline",
+      "decision": "retained",
+      "reason": "Inline identical state prefix; omit Simple derives overwritten by Fold/Complex.",
+      "BENCH.json": {
+        "path": "out/perky/hybrid/optimization/native-prepare-inline/BENCH.json",
+        "sha256": "8f7175d9a7ebc4fc27b48417d5a5daab822d3dc2b4f8ea98ccdc9954cf6c8d1e",
+        "result": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "RENDER_EDGES.json": {
+        "path": "out/perky/hybrid/optimization/native-prepare-inline-edges/RENDER_EDGES.json",
+        "sha256": "fed4864b8c14b4b31ec3afb6a70a98e4f1f19bd441247a1f193ffb18c2446e2e",
+        "result": {
+          "status": "PASS_EXACT_TARGET_REFERENCE",
+          "render_calls": 22270,
+          "matched_failure_calls": 192,
+          "block_lengths": 41,
+          "max_block_samples": 257,
+          "all_state_PCM_RNG_and_guards_equal": true,
+          "EMAC_product_checks": 221184,
+          "EMAC_raw_register_mode_cases": 6,
+          "native_division_checks": 327680,
+          "native_division_mean_cycles_before": 334.427,
+          "native_division_mean_cycles_after": 54.7029,
+          "native_division_max_cycles_before": 373,
+          "native_division_max_cycles_after": 58,
+          "native_prepare_cases": 16384,
+          "native_prepare_mean_before": 882.674,
+          "native_prepare_mean_hw_div": 450.153,
+          "native_prepare_mean_after": 343.094,
+          "native_prepare_max_before": 1694,
+          "native_prepare_max_hw_div": 1314,
+          "native_prepare_max_after": 1277,
+          "control_transition_cases": 1080,
+          "control_math_checks": 438516
+        }
+      }
+    },
+    {
+      "trial": "native-shared-rate",
+      "decision": "retained",
+      "reason": "Reuse existing exact 4096-entry Fold decay table; full-width fallback; no additional hybrid table storage.",
+      "BENCH.json": {
+        "path": "out/perky/hybrid/optimization/native-shared-rate/BENCH.json",
+        "sha256": "7b33b687896864a0743bc60a08fa4645a0f65395af084e7d6c38bfabd4147b97",
+        "result": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "RENDER_EDGES.json": {
+        "path": "out/perky/hybrid/optimization/native-shared-rate-edges/RENDER_EDGES.json",
+        "sha256": "f2a2127073b5e5e434239621092eb0f4fb6ff8666931a4001c08e93eb8ff1b86",
+        "result": {
+          "status": "PASS_EXACT_TARGET_REFERENCE",
+          "render_calls": 22270,
+          "matched_failure_calls": 192,
+          "block_lengths": 41,
+          "max_block_samples": 257,
+          "all_state_PCM_RNG_and_guards_equal": true,
+          "EMAC_product_checks": 221184,
+          "EMAC_raw_register_mode_cases": 6,
+          "native_division_checks": 327680,
+          "native_division_mean_cycles_before": 334.427,
+          "native_division_mean_cycles_after": 54.7029,
+          "native_division_max_cycles_before": 373,
+          "native_division_max_cycles_after": 58,
+          "native_prepare_cases": 16384,
+          "native_prepare_mean_before": 876,
+          "native_prepare_mean_hw_div": 450.125,
+          "native_prepare_mean_after": 312.963,
+          "native_prepare_max_before": 1681,
+          "native_prepare_max_hw_div": 1311,
+          "native_prepare_max_after": 1276,
+          "control_transition_cases": 1080,
+          "control_math_checks": 438516
+        }
+      }
     }
   ],
   "native_producer_codegen_trial": {
@@ -2157,11 +2340,77 @@
     "callback_source_RAM_state_RNG_cases": 1496
   },
   "remaining_work": [
-    "Confirm final combined source full-ISR measurements",
-    "Full sustained15-row60-second matrix plus10-minute worst row",
-    "Current-image DSP/FX, lifecycle, stack/IPL3, readiness and package regression gates",
-    "Committed-source reproducibility and one final unique card/MIDI package",
-    "Physical MKII A/B and new PRFs remain required after local qualification"
+    "Commit selected source; uniquely named no-wrap reproducible MAIN; full actual-image qualification,15x60s+10min worst sustainedmatrix; final card/MIDI wrapping only after gates; hardware A/B remains pending."
   ],
-  "hardware_qualified": false
+  "hardware_qualified": false,
+  "native_selected": {
+    "exact_receipt": "out/perky/hybrid/optimization/native-selected-current-edges/EDGE_RECEIPT.json",
+    "native_prepare": {
+      "status": "PASS_EXACT_TARGET_REFERENCE",
+      "render_calls": 22270,
+      "matched_failure_calls": 192,
+      "block_lengths": 41,
+      "max_block_samples": 257,
+      "all_state_PCM_RNG_and_guards_equal": true,
+      "EMAC_product_checks": 221184,
+      "EMAC_raw_register_mode_cases": 6,
+      "native_division_checks": 331776,
+      "native_division_mean_cycles_before": 341.425,
+      "native_division_mean_cycles_after": 54.7029,
+      "native_division_max_cycles_before": 380,
+      "native_division_max_cycles_after": 58,
+      "native_prepare_cases": 16384,
+      "native_prepare_mean_before": 878.975,
+      "native_prepare_mean_hw_div": 451.37,
+      "native_prepare_mean_after": 312.565,
+      "native_prepare_max_before": 1684,
+      "native_prepare_max_hw_div": 1315,
+      "native_prepare_max_after": 1269,
+      "control_transition_cases": 1080,
+      "control_math_checks": 438516
+    },
+    "default_PERKY4S_preprocessed_identical_sha256": "6963bd5904e3e857952333765193d97725e2e7a68780c31111560a6081c4f9db",
+    "full_ISR_checkpoint": {
+      "image_sha256": "4d28167445f30fd3b795e4d91567c4871e3655da072511d93b117f6cd350ed3f",
+      "frames": 4096,
+      "maximum_cycles": 73916,
+      "CPU_hz": 264000000,
+      "maximum_us": 279.9848484848485,
+      "reference_cycles": 85562,
+      "improvement_percent": 13.61118253430261,
+      "deadline_misses": 0,
+      "native_DSP_records": 192,
+      "CF_split_cases": 288,
+      "UI_cases": 320,
+      "card_MIDI_wrappers_built": false
+    }
+  },
+  "implementation_plateau": {
+    "status": "SELECTED_FOR_SUSTAINED_QUALIFICATION",
+    "basis": [
+      "Measured WT/RES/NT register and block restructuring, envelope advancement, exact EMAC products, control quotient/tables/settling, redundant derives, direct record writes and cursor stores.",
+      "Compiler unrolling, unswitching, peeling, helper boundaries, branch/clamp variants, small-block alternatives and broader NT passes measured; regressions rejected.",
+      "Last native combined checkpoint reduces 324.098485us to279.984848us. Original arithmetic/state/PCM/RNG remain exact in targeted gates.",
+      "Remaining RES recursive filter/mix/RNG operations determine subsequent samples; cannot skip or decimate them while retaining exact synthesis.",
+      "Native-endian alternate wave storage and voice/cache realignment have no measured silicon stall benefit. They expand storage or alter ABI for a small instruction saving; obtain fresh hardware PRFs before cache-specific architecture changes.",
+      "Unattributed hardware time plus DSP callback averages169.64us of317.35us latest interval; its causes cannot be assigned to CF synthesis from aggregate PRFs. No hardware architectural-limit claim."
+    ],
+    "reopen_if": "Sustained qualification exposes a regression or a new substantial measured synthesis bottleneck."
+  },
+  "part_handoff_test_correction": {
+    "original_result": "FAIL expected3 generations, observed2; preserved final-PKH3O2/workload-check.log",
+    "measured_cause": "At frame999 and1001 both CF inst_calls are0: step4 delayedfirsttrigger occurs~1378frames; first Part switch at1000 preceded voiceactivation.",
+    "correction": "Retain generation>=3, switch at2000 and3000; require snapshots1,2,3 and increasingcalls onboth voices.",
+    "corrected_diagnostic_generations": [
+      1,
+      2,
+      3
+    ],
+    "frames": [
+      1999,
+      2500,
+      3500
+    ],
+    "receipt": "out/perky/hybrid/optimization/part-poke-corrected/ROW.json"
+  }
 }

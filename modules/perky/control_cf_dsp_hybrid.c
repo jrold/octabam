@@ -36,7 +36,17 @@ extern uint32_t pk_machine_glyph(unsigned track, uint32_t original)
 extern unsigned pk_ui_playing(unsigned track, unsigned original)
     __asm__("pk_dsp_ui_playing_orig");
 
+/* Exact 20-bit division semantics on this ColdFire's hardware divider;
+ * the frozen PERKY4S producer keeps its original default implementation. */
+#define PK_HYBRID_NATIVE_HW_DIV 1
+#define PK_HYBRID_NATIVE_FAST_SMOOTH 1
+#define PK_HYBRID_NATIVE_SKIP_DERIVE 1
+#define PK_HYBRID_NATIVE_SHARED_RATE 1
 #include "control_four_candidate.c"
+#undef PK_HYBRID_NATIVE_HW_DIV
+#undef PK_HYBRID_NATIVE_FAST_SMOOTH
+#undef PK_HYBRID_NATIVE_SKIP_DERIVE
+#undef PK_HYBRID_NATIVE_SHARED_RATE
 
 /* Include cf_perky4.c with narrow static linkage so its internal wt_init,
  * res_init_snare, res_init_bass, res_init_nt, prepare_wt, prepare_res_family
