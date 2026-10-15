@@ -2454,5 +2454,112 @@
   "qualification_binding_repairs": [
     "Final scene test stops new test-frame release after STOP and drains the current exception, then requires balanced entries/returns and no in-flight scene capture. Existing bounded-frame gates retain their calibrated executed-RTE counters.",
     "External fixture4096frames/4056MIDI clocks. Original1024-frame ticks987literal invalid. Rtos::ticks() is a100kIRQ-capped prefix; require positive prefix, uncapped observer total and all MIDI bytes consumed. Shipping sources unchanged."
-  ]
+  ],
+  "real_sequencer_transition_checkpoint": {
+    "status": "PASS_REAL_SEQUENCER_MODE_FAMILY_AND_PART_TRANSITIONS",
+    "frames": 24000,
+    "full_ISR_max_cycles": 72042,
+    "full_ISR_max_us": 272.8863636363636,
+    "modeled_deadline_misses": 0,
+    "generation_observations": [
+      1,
+      2,
+      3
+    ],
+    "mode_family_observations": {
+      "1999": [
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "2500": [
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "3500": [
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "15500": [
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "15900": [
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "16300": [
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "19800": [
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ]
+      ],
+      "20030": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "20380": [
+        [
+          2,
+          0
+        ],
+        [
+          2,
+          1
+        ]
+      ]
+    },
+    "receipt": "out/perky/hybrid/optimization/final-PKH3O3/TRANSITIONS.json",
+    "receipt_sha256": "854ff00753bb12d3106b0c44ad8f1f6e7e58ba3c35f69413a8fdf99216ead17f",
+    "scope_correction": "The4000-frame handoff row does not reach step46/58. Separate24000-frame actualsequencer test proves bothmode/familylocks and reversions. Firstdriver reusedobserverfilenames forsecondaryaudio; primary24k reports savedbeforeoverwrite and hashvalidated. Originalbindingfailure retained; nofirmwarechange."
+  }
 }
