@@ -1,7 +1,30 @@
 # Bounded hybrid safety observer
 
-These tools inspect the existing hybrid; they do not build or qualify firmware.
+These tools inspect the existing hybrid; they do not build firmware or authorize
+installation. The final bounded decision is **B: structural safety change
+required**, with lifecycle and dense-accounting completion still UNVERIFIED.
 Read `modules/perky/hybrid/SAFETY_QUALIFICATION.md` for the verdict and limits.
+
+Run only the new, bounded actual-image stack check and its decision selftests:
+
+```sh
+.venv/bin/python3 tools/verify/verify_perky_hybrid_safety_stop.py --selftest
+.venv/bin/python3 tools/verify/verify_perky_hybrid_safety_stop.py
+```
+
+The C++ test process must exit 0. The assessment exits 1 deliberately for the
+structural safety stop. It checks existing receipt hashes, boots the unchanged
+image, reaches the real keyrepeat task, and forces nine sequencer arrivals through
+the modeled controller. It stops before a tenth would overflow. Arrivals are
+adversarial, not a natural-playback overflow reproduction. A second disposable
+machine changes the existing IPL operand to 3 and checks local request deferral;
+the input image is never changed. That counterfactual is not an approved or
+fully qualified firmware fix. No long workload or lifecycle rerun is performed.
+`FINAL_SAFETY_STOP.json` records commands, inputs, linked libraries and outputs.
+
+The older consolidation tool now labels missing evidence UNVERIFIED rather than
+calling it a demonstrated defect. Historical receipt bytes retain their old label
+and are explicitly superseded by the final report.
 
 The observer stages two emulator translation units under the selected `--work`
 directory and links their replacement objects before the existing libraries.
@@ -53,4 +76,4 @@ extents follow the existing model's contiguous host-port snapshot behavior,
 not every physical eDMA stride/modulo/cache mode. Stack bottom watches start
 on first task execution and do not establish untouched-stack capacity. UI queue
 peaks are observations, not lost-event or saturation guarantees. The current
-assessment intentionally remains BLOCKED.
+assessment does not establish a software safety pass.

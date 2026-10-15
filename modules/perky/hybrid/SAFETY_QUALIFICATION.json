@@ -1,7 +1,7 @@
 {
   "schema": "octabam.perky.hybrid.post-closeout-safety.v1",
-  "status": "BLOCKED_UNESTABLISHED_SOFTWARE_STACK_LIFECYCLE_AND_EVENT_DELIVERY_GUARANTEES",
-  "recommendation": "BLOCKED \u2014 SPECIFIC SOFTWARE SAFETY DEFECTS",
+  "status": "STOP_STRUCTURAL_SAFETY_CHANGE_APPROVAL_REQUIRED",
+  "recommendation": "B. STRUCTURAL SAFETY CHANGE REQUIRED",
   "branch": "perky-cf-dsp-hybrid",
   "goal2_closed_commit": "bee3830134b2061151a3628f6622347de2916f38",
   "verified_code_commit": "854f2aacad0f73e6654b27ed92a8be6d10666817",
@@ -617,7 +617,7 @@
     "bytes": 15100,
     "sha256": "285b0b0dbf5cf90bb65da481e97cf740858148c9c4e0377d4ebbe8320263766a"
   },
-  "next_action": "STOP this bounded task. No physical probe, flash, optimization, push or Goal3. Three explicit software safety obligations remain unestablished; a future separately requested investigation would need to close them before a restricted diagnostic proposal is offered for user review. Physical timing is not a circular prerequisite.",
+  "next_action": "STOP for user approval of the proposed sequencer IPL2-to-3 guard. Firmware remains unchanged. Lifecycle and dense-accounting completion UNVERIFIED under the structural-stop instruction. No probe recommendation, flash, push, optimization or Goal3.",
   "commands": [
     {
       "command": "cmake --build out/emu -j 4",
@@ -1273,5 +1273,152 @@
     "existing_artifact_hashes_rechecked": true,
     "final_review_date": "2026-10-15",
     "main_stack_extent_confidence": "Top observed in boot stores; lower boundary and4096B extent inferred structurally from adjacent TCBs, not a captured create argument; no exclusive-capacity ceiling asserted"
+  },
+  "prior_bounded_followup_verdict": {
+    "decision": "BLOCKED \u2014 SPECIFIC SOFTWARE SAFETY DEFECTS",
+    "classification_correction": "Missing evidence was not a demonstrated firmware defect; superseded by final_safety_stop. Historical evidence bytes retained."
+  },
+  "final_safety_stop": {
+    "schema": "octabam.perky.hybrid.final-safety-stop.v1",
+    "decision": "B. STRUCTURAL SAFETY CHANGE REQUIRED",
+    "start_commit": "689860d71b1b7447223885481c209cc4df5adaf6",
+    "areas": {
+      "stack": "FAIL_STRUCTURAL_BOUND: actual sequencer self-nesting; no proved arrival/service bound",
+      "lifecycle": "UNVERIFIED_COMPLETE_CHOOSER_AND_PLAYING_BANK; prior scoped passes retained",
+      "parameter_lock_trigger_accounting": "UNVERIFIED_END_TO_END; prior ownership passes retained"
+    },
+    "stop_reason": "Precise unbounded nesting path identified; stop for structural-change approval under execution limit",
+    "demonstrated_playback_corruption_race_overflow_or_deadline_failure": false,
+    "test_arrivals": "Adversarial host writes to actual modeled INTC0 force register, not natural playback or a silicon timing claim",
+    "stack": {
+      "task": "keyrepeat",
+      "capacity_bytes": 2048,
+      "interrupted_task_bytes": 16,
+      "tested_nested_depth": 9,
+      "bytes_per_sequencer_entry": 216,
+      "established_observed_combined_bytes": 1960,
+      "remaining_bytes": 88,
+      "tenth_entry_required_bytes": 2176,
+      "tenth_entry_excess_bytes": 128,
+      "tenth_request_issued": false,
+      "maximum_all_path_requirement_bytes": null,
+      "self_cycle": [
+        "vector 0x60 level 3",
+        "0x400a1e0c mask 7",
+        "0x400a1e10 reserve 208",
+        "0x400a1e1a clear source 32 force bit",
+        "0x400a1e64 mask 2",
+        "another source 32 request"
+      ],
+      "prior_audio_peak_including_observed_level6_bytes": 1316,
+      "prior_audio_peak_is_a_bound": false
+    },
+    "proposed_minimum_remedy": {
+      "change": "SR immediate at 0x400a1e64 from 0x2200 to 0x2300 (operand address 0x400a1e66)",
+      "implemented_in_firmware": false,
+      "disposable_test_memory_only": true,
+      "image_bytes_changed_if_approved": 2,
+      "extra_DRAM_bytes": 0,
+      "extra_stack_bytes": 0,
+      "added_instructions": 0,
+      "direct_modeled_instruction_cost_delta": 0,
+      "effect": "Prevent same-level sequencer/ATA-DMA14 preemption while IPL remains >=3; retain audio5 and DMA6 eligibility",
+      "behavioral_risk": "Defers level3 work; force bit can coalesce arrivals. Pending-tick delivery/counts and ATA latency must be qualified before acceptance.",
+      "tested": "One forced request remains pending through the first actual body call; no second sequencer entry",
+      "not_proven": "Whole-body mask/callee behavior, all-task combined bound and arrival-loss semantics; this counterfactual is not an approved fix",
+      "acceptance_tests_if_authorized": [
+        "Audit all sequencer callees and SR restores; repeated force requests must not grow the chain; pending delivery/counts must match defined tick semantics",
+        "Close finite task + sequencer + actual CF-engine + level6 frame bounds against each task capacity, including indirect paths and level7 policy",
+        "Check ATA-DMA14 service latency with audio5/DMA6 preemption; complete the remaining chooser/playing-bank and dense lock/trigger counts",
+        "Recheck unchanged DSP/guard/FX/PCM/state/RNG identities and full corrected-clock ISR timing after any approved firmware edit"
+      ]
+    },
+    "firmware_sha256_unchanged": "a2d6915bc71a97d63f44e223e558cc4941d52113708f7ba92a57bdd669339b40",
+    "firmware_changes": false,
+    "firmware_correction_iterations": 0,
+    "timing": {
+      "CPU_Hz": 264000000,
+      "PIT_Hz": 132000000,
+      "retained_worst_full_ISR_cycles": 85474,
+      "retained_worst_full_ISR_us": 323.7651515151515,
+      "frame_deadline_us": 362.81179138321994,
+      "modeled_headroom_us": 39.04663986806844,
+      "engineering_margin_passed": false,
+      "margin_waived": false,
+      "engineering_ceiling_us": 290.24943310657596,
+      "margin_shortfall_us": 33.51571840857554,
+      "this_panel_peak_us": 320.9469696969697,
+      "hardware_WCET_established": false,
+      "timing_is_not_the_software_blocking_criterion": true
+    },
+    "hardware_only_unknowns": [
+      "Cache/SDRAM/FlexBus/eDMA contention and coherence on MKII",
+      "Physical interrupt release-to-entry latency and release-to-completion deadlines",
+      "Per-core DSP completion times under shared physical bus traffic",
+      "Physical DTIM3 read/instrumentation cost and card export behavior"
+    ],
+    "flash_authorized": false,
+    "probe_recommended": false,
+    "Goal2_restarted": false,
+    "Goal3_started": false,
+    "commands": [
+      [
+        "/usr/bin/c++",
+        "-DDSP56300_DEBUGGER=0",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor/dsp56300/source",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kEmu/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kBase/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/asmjit/src",
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu++17",
+        "-flto",
+        "-arch",
+        "arm64",
+        "-DASMJIT_STATIC",
+        "-UNDEBUG",
+        "/Users/jrold/Downloads/octabam/tools/harness/perky_hybrid_safety/stack_reentry.cpp",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-close/stack_reentry",
+        "/Users/jrold/Downloads/octabam/out/emu/libot_machine.a",
+        "/Users/jrold/Downloads/octabam/out/emu/mc68k/lib68kEmu.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kBase/libdsp56kBase.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/asmjit/libasmjit.a",
+        "-lpthread"
+      ],
+      [
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-close/stack_reentry",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/mainos_PKHYB2P.bin"
+      ]
+    ],
+    "test_process_exit_status": 0,
+    "inputs_sha256": {
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/mainos_PKHYB2P.bin": "a2d6915bc71a97d63f44e223e558cc4941d52113708f7ba92a57bdd669339b40",
+      "/Users/jrold/Downloads/octabam/tools/harness/perky_hybrid_safety/stack_reentry.cpp": "ef1681e680098c34c898305dec600a7c7fd1f9086b606fec299bb371ecbe413a",
+      "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_safety_stop.py": "ae15631e612a76e1a0569009661a50f5a35c1419a04d76c81859048cae88b5a9",
+      "/Users/jrold/Downloads/octabam/out/emu/CMakeFiles/ot_machine.dir/flags.make": "6281915a2ac22601f9dc0a963e53722777c709208d0c14a08fff1fdeb85f8f32",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-final/ASSESSMENT.json": "0c008edb9097c65c9cd1793932169413fff040938f3be64f2ee7374a723bbcde",
+      "/Users/jrold/Downloads/octabam/out/emu/libot_machine.a": "13753d0643258b936241d9fda96dc9393314e57373647c9c091860891b9601bc",
+      "/Users/jrold/Downloads/octabam/out/emu/mc68k/lib68kEmu.a": "89a7794d7d22434b853d0684a2f9e8ad1ba76d39a5d1bb141f287788220880d5",
+      "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a": "f2f104dfc7de7f93018f80f4d1af12756da4aeb9c09c5b7eff0da1725c1475e5",
+      "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kBase/libdsp56kBase.a": "4e33f574194b36102e516d8c85a8c23ab33a4f3cc81843307452d5a15f44b34c",
+      "/Users/jrold/Downloads/octabam/out/emu/dsp56300/asmjit/libasmjit.a": "508ef4b41b98cdbdd87f2bbe343dd0fe9f63660a02538efb516bbe040fc970b5"
+    },
+    "outputs_sha256": {
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-close/stack-reentry.log": "927915c5c8ab9f8257d4cf2e239a2127eb9c74a87b2897903c605774851f37e7",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-close/stack_reentry": "626d76a06c65f7adf9ac3a21bf159e9b135fc0918865c2015392fcde94b4dafc"
+    },
+    "reused_evidence_sha256": {
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-final/PANEL_RUN.json": "1bd6f69bd5d8da70c959aa3c8b82b90ee859aba60d2bc9a99e3c6ddf4d094d9c",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-final/panel-stack.json": "5241c4e528a38a2d140ac825a52b9db6ad72d41d17b381070358caa9db46b0ec",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-final/panel-events.txt": "885157ee50190101d878bb6c936a8102c08f93570a5e21d1a20e184c40a282a2",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-final/LIFECYCLE_COMPONENT.json": "c659668aa82216e09719512c8b56e1253c8a637403578fa8f9738a06932de555",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-final/saved-project/SAVED_PROJECT.json": "96fb85181f4e8db32cbb736af74eb15c1a61601f53d5830723bde31385c101d0",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-final/final-observer/OBSERVER_BUILD.json": "62ea39812e1ada4d7217c44845dea5078266fa1feb26a8bcee6616c2e3396048",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-final/final-observer-build.log": "102051488fb49e1271ba6059c9d2423d9c796edd783f2650fd79420a4606a4c6"
+    }
   }
 }

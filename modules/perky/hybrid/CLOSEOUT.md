@@ -2,9 +2,14 @@
 
 > Historical Goal 2 closeout. The later bounded software safety investigation is
 > [SAFETY_QUALIFICATION.md](SAFETY_QUALIFICATION.md). Its current decision is
-> **BLOCKED — SPECIFIC SOFTWARE SAFETY DEFECTS**: no established combined stack
-> ceiling; complete real machine/playing-bank transitions and dense event/trigger
-> accounting remain unqualified. Real panel Part/STOP/START, working-bank queue
+> **B. STRUCTURAL SAFETY CHANGE REQUIRED**: an actual-image adversarial test
+> demonstrates sequencer self-nesting on a 2,048-byte task stack, without an
+> established arrival/service bound. An IPL2→3 guard is proposed, not applied.
+> Normal-playback corruption/overflow/races were not reproduced. Complete real
+> machine/playing-bank transitions and dense event/trigger accounting remain
+> UNVERIFIED under the explicit structural-change stop condition. The prior
+> phrase “software safety defects” misclassified missing evidence and is retracted.
+> Real panel Part/STOP/START, working-bank queue
 > changes, saved controls/cold reload, and observed stack/DMA ownership now have
 > additional executable evidence. The corrected modeled worst is 323.765 µs at
 > CPU 264/PIT 132 MHz, with 39.047 µs headroom. Physical timing and the unwaived

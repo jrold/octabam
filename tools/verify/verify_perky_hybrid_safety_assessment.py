@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Consolidate bounded hybrid safety evidence; never infer a ceiling from a peak.
 
-Exit 1 means the software qualification remains blocked. Hardware timing and the
+Exit 1 means the software qualification remains unverified. Hardware timing and the
 unwaived 20% margin are reported separately and do not enter the software verdict.
 Run --selftest to exercise the fail-closed decision and noncircular timing policy.
 """
@@ -28,7 +28,9 @@ REQUIRED_GATES=(
 
 def decision(gates):
     missing=[name for name in REQUIRED_GATES if gates.get(name) is not True]
-    return ('BLOCKED — SPECIFIC SOFTWARE SAFETY DEFECTS' if missing else
+    failed=[name for name in REQUIRED_GATES if gates.get(name) is False]
+    return ('FAILED — SOFTWARE SAFETY GATE' if failed else
+            'UNVERIFIED — SOFTWARE SAFETY EVIDENCE INCOMPLETE' if missing else
             'READY FOR USER REVIEW OF RESTRICTED MKII PROBE'), missing
 
 
@@ -135,10 +137,10 @@ class DecisionTests(unittest.TestCase):
     def complete(self):return dict.fromkeys(REQUIRED_GATES,True)
     def test_missing_stack_is_blocked(self):
         g=self.complete();g['combined_stock_task_and_nested_ISR_upper_bound']=None
-        self.assertTrue(decision(g)[0].startswith('BLOCKED'))
+        self.assertTrue(decision(g)[0].startswith('UNVERIFIED'))
     def test_failed_ownership_is_blocked(self):
         g=self.complete();g['modeled_source_DMA_ownership_for_observed_shapes']=False
-        self.assertTrue(decision(g)[0].startswith('BLOCKED'))
+        self.assertTrue(decision(g)[0].startswith('FAILED'))
     def test_physical_timing_not_prerequisite(self):
         # Software review can be offered while physical timing is unknown and
         # the engineering margin remains unwaived; this never authorizes a flash.
