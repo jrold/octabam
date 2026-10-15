@@ -231,6 +231,9 @@ uint32_t pk_hybrid_rt_cookie = PK_HYB_RT_COLD;
 uint32_t pk_hybrid_prof_cookie = PK_HYB_PROF_COLD;
 uint32_t pk_hybrid_profiler_enable = 1u;
 uint32_t pk_hybrid_cf_arm = 1u;
+/* Explicit debugger/test opt-in. STOP exports do not require live copies.
+ * Boot initializes this explicitly: the platform does not clear BSS. */
+volatile uint32_t pk_hybrid_live_snapshot = 0u;
 
 pk_hybrid_cf_voice pk_hybrid_voices[PK_HYB_CF_INSTANCE_COUNT];
 /* Audio ISR owns active state and generation; UI never resets it. */
@@ -535,6 +538,7 @@ int pk_hybrid_boot_init(void)
     pk_hybrid_bank = 0xffffffffu;
     pk_hybrid_part = 0xffu;
     pk_hybrid_seen_running = 0u;
+    pk_hybrid_live_snapshot = 0u;
     pk_hybrid_export_status = 0;
     pk_hybrid_export_index = 0u;
     pk_hybrid_rt_cookie = PK_HYB_RT_READY; /* publish last, loaded cookie */
@@ -800,6 +804,18 @@ static int pk_hybrid_write_profile(void)
 
 static void pk_hybrid_snapshot_and_export(void)
 {
+    /* The ISR continues collecting every frame. Copying all 1,780 bytes on
+     * every UI tick is unnecessary for STOP-to-card export and competes with
+     * actual panel work. Latch RUN before a possibly failing snapshot, then
+     * attempt one copy per UI tick only while a STOP export is pending.
+     * A debugger/test can opt in to the original continuous export buffer.
+     * No timer/ISR counters, ring contents or .PRF layout are changed. */
+    unsigned running = U32(0x800065b8u) == 1u;
+    if (running)
+        pk_hybrid_seen_running = 1u;
+    if (!pk_hybrid_live_snapshot && (running || !pk_hybrid_seen_running))
+        return;
+
     uint32_t before = pk_hybrid_prof_seq;
     if (before & 1u) return;
     pk_hybrid_copy_u32(&pk_hybrid_snapshot, &pk_hybrid_prof, sizeof(pk_hybrid_profiler));
@@ -850,12 +866,18 @@ int pk_hybrid_render(unsigned track, unsigned ping, unsigned start, unsigned end
     __asm__("pk_render");
 int pk_hybrid_render(unsigned track, unsigned ping, unsigned start, unsigned end)
 {
+    /* No timing sample is ever consumed for an unsupported stock track.
+     * Keep its original delegation before the peripheral timer read. This
+     * removes unused MMIO reads, not any full-ISR measurement. */
+    if (track >= 8u || !pk_hybrid_supported_track(track)) {
+        return ((int (*)(unsigned, unsigned, unsigned, unsigned))0x40004008u)
+            (track, ping, start, end);
+    }
     unsigned prof_on = pk_hybrid_profiler_enable != 0u;
     uint32_t t_entry = prof_on ? pk_hybrid_timer_now() : 0u;
 
-    /* Unsupported track or unsigned / non-PERKY track: untouched stock continuation. */
-    if (track >= 8u || !pk_hybrid_supported_track(track)
-        || !signed_track(part_base(), track)) {
+    /* Unsigned / non-PERKY supported track: untouched stock continuation. */
+    if (!signed_track(part_base(), track)) {
         return ((int (*)(unsigned, unsigned, unsigned, unsigned))0x40004008u)
             (track, ping, start, end);
     }

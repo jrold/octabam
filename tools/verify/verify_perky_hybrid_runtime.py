@@ -140,6 +140,8 @@ def main():
     result['cold_cookie_fault_delegates_without_decode'] = 'PASS'
 
     # Snapshot collision must be detected without spinning or publishing torn data.
+    # Continuous debug snapshots are now an explicit opt-in; keep this test.
+    w32(u, syms['pk_hybrid_live_snapshot'], 1)
     w32(u, syms['pk_hybrid_profiler_enable'], 1)
     w32(u, syms['pk_hybrid_prof_seq'], 0)
     before = word(u, syms['pk_hybrid_export_seq']); collision = []
@@ -152,6 +154,7 @@ def main():
     g.emu._call(u, syms['pk_ui_tick'])
     assert word(u, syms['pk_hybrid_export_seq']) == before+2
     result['snapshot_collision_detected_without_spin'] = 'PASS'
+    w32(u, syms['pk_hybrid_live_snapshot'], 0)
 
     # One frame count for many split callbacks, with unsigned timer wrap.
     u.mem_unmap(0xfc000000, 0x100000)
