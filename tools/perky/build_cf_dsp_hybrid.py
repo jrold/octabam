@@ -55,7 +55,7 @@ import perky_image  # noqa:E402
 import perky_machine_module  # noqa:E402
 import repack_machine_loader  # noqa:E402
 from remix import arena, pack, platform_build, registry  # noqa:E402
-from remix.schema import Detour, DspRange, Linked, Poke  # noqa:E402
+from remix.schema import Detour, DramRegion, DspRange, Linked, Poke  # noqa:E402
 from verify_perky_table_image import exact_record, parse_upload  # noqa:E402
 
 HYBRID_CF_UNITS = (
@@ -70,7 +70,14 @@ FROZEN_PERKY4S_MAIN_SHA256 = (
 )
 FROZEN_DSP_SOURCE_COMMIT = "16a8de19a17ee4cba765cbdb30ca051f85af4e23"
 PROBE_VERSION = "PKHYB2P"
-PROBE_BUILD_NUMBER = 11
+PROBE_BUILD_NUMBER = 12
+
+# Approved private audio-IRQ envelope, placed at the top of the EXISTING
+# runtime reservation. The linker owns the address; no BSS/loader clear needed.
+IRQ_REGION_SYMBOL = 'pk_hybrid_irq_region'
+IRQ_REGION_BYTES = 4192
+IRQ_REGION_ALIGN = 32
+IRQ_STACK_BYTES = 4096
 
 
 def hybrid_source_id() -> str:
@@ -171,6 +178,9 @@ def build_hybrid_module(original, *, generated_dir: Path, dsp_source: str):
     return dataclasses.replace(
         full,
         linked=linked,
+        dram_regions=full.dram_regions + (
+            DramRegion(IRQ_REGION_SYMBOL, IRQ_REGION_BYTES, IRQ_REGION_ALIGN),
+        ),
         pokes=full.pokes + (
             Poke(0x400a1e66, bytes.fromhex('2200'), bytes.fromhex('2300'),
                  note='authorized sequencer IPL3 guard: defer same-level reentry'),
@@ -492,6 +502,18 @@ def emit_memory_report(probe_dir: Path, card_path: Path | None, elek_path: Path 
         },
     ]
 
+    # The approved IRQ stack is a linker-placed DramRegion, not a BSS object
+    # or an informal reserve. Include it in every physical overlap check.
+    irq_base, irq_bytes = plat_layout.get('regions', {}).get(IRQ_REGION_SYMBOL, (0, 0))
+    if (irq_bytes != IRQ_REGION_BYTES or irq_base != plat_layout['ceiling'] - IRQ_REGION_BYTES
+            or irq_base % IRQ_REGION_ALIGN):
+        raise RuntimeError('private audio IRQ region does not match the approved 4192-byte envelope')
+    if int(key_symbols[IRQ_REGION_SYMBOL]['address'], 16) != irq_base:
+        raise RuntimeError('private audio IRQ linker symbol / placement mismatch')
+    key_symbols[IRQ_REGION_SYMBOL]['bytes'] = irq_bytes
+    runtime_extents.append(dict(name='private_audio_IRQ_stack_envelope', start=irq_base,
+        end=irq_base+irq_bytes, bytes=irq_bytes, uncached_start=irq_base+platform_build.UNCACHED))
+
     all_extents = preboot_extents + runtime_extents
     overlaps = []
     for idx, a in enumerate(all_extents):
@@ -584,6 +606,15 @@ def emit_memory_report(probe_dir: Path, card_path: Path | None, elek_path: Path 
                 + key_symbols.get("pk_hybrid_prof_export", {}).get("bytes", 0)
             ),
             "stack_reserve_bytes": 4096,
+            "private_audio_irq_stack": {
+                'region_base': hex(irq_base), 'region_bytes': irq_bytes,
+                'bottom_guard': [hex(irq_base), hex(irq_base+32)],
+                'stack_base': hex(irq_base+32), 'stack_top': hex(irq_base+4128),
+                'stack_bytes': IRQ_STACK_BYTES,
+                'top_guard': [hex(irq_base+4128), hex(irq_base+4160)],
+                'saved_A7': hex(irq_base+4160), 'padding_bytes': 28,
+                'initialization': 'saved A7 is written on every IRQ before read; guards/stack have no initial-value dependency',
+            },
             "normalized_physical_extents": all_extents,
             "physical_overlaps": overlaps,
             "key_symbols": key_symbols,
@@ -650,6 +681,9 @@ def repack_hybrid_loader(
             f"disjoint runtime stage {disjoint_stage:#x}..{disjoint_stage_end:#x} "
             f"exceeds ceiling {layout['ceiling']:#x}"
         )
+    for region, (start, length) in layout.get('regions', {}).items():
+        if disjoint_stage < start+length and start < disjoint_stage_end:
+            raise RuntimeError(f'disjoint loader stage overlaps DRAM region {region}')
     layout["stage"] = disjoint_stage
     layout["stage_end"] = disjoint_stage_end
     layout["top"] = max(disjoint_stage_end, bss_end)

@@ -18,9 +18,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def sha(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
-def build(work):
+def build(work, source_header=None, test_source=None):
     work.mkdir(parents=True, exist_ok=True)
-    source_header = ROOT/'tools/harness/perky_hybrid_safety/observer.h'
+    source_header = source_header or ROOT/'tools/harness/perky_hybrid_safety/observer.h'
     hdr=work/'observer.h';hdr.write_bytes(source_header.read_bytes())
     machine = (ROOT/'tools/emu/ot_emu/machine.cpp').read_text()
     # Include after the CPU headers, outside namespace ot. Fail on source drift.
@@ -75,7 +75,7 @@ def build(work):
              'libot_machine.a','mc68k/lib68kEmu.a','dsp56300/dsp56kEmu/libdsp56kEmu.a',
              'dsp56300/dsp56kBase/libdsp56kBase.a','dsp56300/asmjit/libasmjit.a')],'-lpthread']
     subprocess.run(cmd,check=True);commands.append(cmd)
-    selftest=ROOT/'tools/harness/perky_hybrid_safety/observer_test.cpp'
+    selftest=test_source or ROOT/'tools/harness/perky_hybrid_safety/observer_test.cpp'
     testcmd=['/usr/bin/c++',*options,'-I',str(hdr.parent),str(selftest),str(work/'machine.o'),str(work/'periph.o'),
              '-o',str(work/'observer_test'),*cmd[cmd.index(str(libs/'libot_machine.a')):]]
     # Assertions are the negative controls; override the release build's NDEBUG.

@@ -113,7 +113,7 @@ class Audit:
                 if seen[pc] != (depth,fp): raise OpenBound(f'inconsistent stack join at {pc:#x}')
                 continue
             self.visited += 1
-            if self.visited > 10000: raise OpenBound('10,000 instruction-state limit')
+            if self.visited > getattr(self,'instruction_limit',10000): raise OpenBound('instruction-state limit')
             seen[pc] = (depth,fp)
             if pc not in self.code: raise OpenBound(f'no decoded instruction at {pc:#x}')
             size,op,args = self.code[pc]; nxt = pc+size
@@ -175,6 +175,7 @@ class Audit:
                     # zero-depth function would invent an underflow.
                     for at in targets: pending.append((at,depth,fp))
                     continue
+                if hasattr(self,'children'):self.children.setdefault(entry,set()).update(targets)
                 child = max(self.bound(at) for at in targets)
                 peak = max(peak,depth+4+child)
             elif re.fullmatch(r'b(?:ra|cc|cs|eq|ne|ge|gt|le|lt|hi|ls|pl|mi|vc|vs)[sw]?',op):
@@ -185,6 +186,7 @@ class Audit:
             elif op.startswith(('db','fb','jb')):
                 raise OpenBound(f'unsupported branch at {pc:#x}')
             pending.append((nxt,depth,fp))
+        if hasattr(self,'function_code'):self.function_code[entry]=set(seen)
         self.active.pop(); self.done[entry] = peak
         return peak
 

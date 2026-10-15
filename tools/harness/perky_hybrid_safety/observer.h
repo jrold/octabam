@@ -56,7 +56,7 @@ struct Observer {
             }
         }
     }
-    void step(ot::Machine& m, uint32_t pc) {
+    void step(ot::Machine& m, uint32_t pc, bool execute=true) {
         ++instructions;
         queue_max=std::max(queue_max,m.peek32(0x460d17b2));
         ring_max=std::max(ring_max,m.peek32(0x460ffda0));
@@ -96,7 +96,7 @@ struct Observer {
             if(sp<s.lo || sp>s.hi) {++s.below; if(events.is_open() && s.below<5) events<<"STACK_OUTSIDE "<<tcb<<' '<<pc<<' '<<sp<<'\n';}
             if(!chain.empty()) s.irq_min=std::min(s.irq_min,sp);
         }
-        if(m.read16(pc)==0x4e73 && !chain.empty() && sp==chain.back().sp) {
+        if(execute && m.read16(pc)==0x4e73 && !chain.empty() && sp==chain.back().sp) {
             if(chain.back().vector==65) {
                 ++returns;
                 auto cost=m.getCycles()-chain.back().cycles+chain.back().entry_cycles+10;

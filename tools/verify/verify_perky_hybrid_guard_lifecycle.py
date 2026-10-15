@@ -10,13 +10,13 @@ ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools/verify'))
 import stems_panel as panel
 
-def run(image,card,work,emu):
+def run(image,card,work,emu,render_pc='0x40c4c5fa',prepare_pc='0x40c4656c'):
     work.mkdir(parents=True,exist_ok=True)
     owned=work/'card.img';shutil.copyfile(card,owned)
     panel.PORT_BIN=emu
     os.environ.update(HYBRID_SAFETY_REPORT=str(work/'stack.json'),
-        HYBRID_GUARD_AUDIT=str(work/'events.txt'),HYBRID_RENDER_PC='0x40c4c5fa',
-        HYBRID_PREPARE_PC='0x40c4656c')
+        HYBRID_GUARD_AUDIT=str(work/'events.txt'),HYBRID_RENDER_PC=render_pc,
+        HYBRID_PREPARE_PC=prepare_pc)
     rows=[]
     def snapshot(p,name):
         bank=p.long(0x46c82456);part=p.peek(0x100b14cf,1)[0]

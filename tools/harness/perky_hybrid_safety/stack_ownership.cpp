@@ -117,4 +117,5 @@ int main(int argc, char** argv) {
     assert(bottomWrites==0);
     std::puts("BOTTOM_WATCH tasks=10 bytes_each=32 writes_after_initialization=0");
     std::puts("PASS: actual task initialization and PIO storage-worker driver dispatch; not an all-path stack qualification");
+    return 0;
 }

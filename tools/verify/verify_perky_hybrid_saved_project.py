@@ -13,12 +13,12 @@ import emu_card
 import ot_project as otp
 
 
-def run(work,card,reuse_save=False):
+def run(work,card,reuse_save=False,image=None,emu=None,environment=None):
     work.mkdir(parents=True,exist_ok=True)
-    image=ROOT/'out/perky/hybrid/probe/mainos_PKHYB2P.bin'
+    image=image or ROOT/'out/perky/hybrid/probe/mainos_PKHYB2P.bin'
     script=ROOT/'tools/harness/perky_hybrid_safety/save.txt'
     elf=image.parent/'platform/runtime.elf'
-    emu=ROOT/'out/emu/ot_emu'
+    emu=emu or ROOT/'out/emu/ot_emu'
     base=[str(emu),'--image',str(image),'--set','OCTABAM','--project','RIG',
           '--load-ms','90000','--dsp','--dsp-dirty','123','--mkii',
           '--pit-clock-hz','132000000','--cf-cycles-clock','1.0']
@@ -28,7 +28,7 @@ def run(work,card,reuse_save=False):
     commands=[]
     def execute(cmd,name):
         with (work/(name+'.log')).open('w') as log:
-            rc=subprocess.run(cmd,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,timeout=600).returncode
+            rc=subprocess.run(cmd,cwd=ROOT,env=environment(name) if environment else None,stdout=log,stderr=subprocess.STDOUT,timeout=600).returncode
         commands.append({'command':cmd,'exit_status':rc,'log_sha256':safety.sha(work/(name+'.log'))})
         assert rc==0, (name,rc)
         return (work/(name+'.log')).read_text()
