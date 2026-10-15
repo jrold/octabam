@@ -45,12 +45,17 @@ See the [decoded hardware evidence](hybrid/CF_OPTIMIZATION_HARDWARE.json).
 
 The ongoing [ColdFire optimization campaign](hybrid/CF_OPTIMIZATION.json)
 preserves PKH3O1 as an intermediate build and uses bit-exact local benchmarks.
-Short checkpoints have reached 288.37 µs dense and 286.59 µs Snare/Bass worst
-ISR time, with zero modeled misses in 4,096 frames each. The original
-private-stack candidate missed the desired 20% timing margin; these short
-optimized checkpoints meet it, while final sustained qualification remains
-pending. No optimized candidate is hardware-qualified. PERKY4S remains the
-hardware-tested release.
+The selected PKH3O3 implementation reaches 279.98 µs dense, 277.34 µs
+Snare/Bass and 289.87 µs with enabled scenes and fader input, versus 324.10,
+321.75 and 334.07 µs on the original image. These are measured local full-ISR
+comparisons at CPU264/PIT132, with zero modeled deadline misses. All fifteen
+60-second workload rows have passed; a separate 24,000-frame sequencer run
+also verifies late MODE/ALGO locks and reversions. The continuous ten-minute
+stress and final package qualification remain pending. Exact PCM/state/RNG,
+original-author comparisons, retained FX, lifecycle and saved-project checks
+pass. The desired 20% margin is met by these observed local spans; silicon
+cache, bus arbitration and UI responsiveness remain unqualified. No final
+PKH3O3 updater has been emitted. PERKY4S remains the hardware-tested release.
 
 ### Current DSP memory limit
 

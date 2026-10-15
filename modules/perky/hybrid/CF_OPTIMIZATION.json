@@ -2347,7 +2347,7 @@
     "callback_source_RAM_state_RNG_cases": 1496
   },
   "remaining_work": [
-    "Complete remaining full-duration15-row matrix and1,653,750-frame stress; wrap immutableMAIN once; package rejection tests, finalqualification and reports."
+    "Complete continuous1,653,750-frame stress and profiler/armed comparisons; guarded wrap of immutable MAIN; actual package roundtrip/rejection gates and final report binding; release bundle and final audit."
   ],
   "hardware_qualified": false,
   "native_selected": {
@@ -2561,5 +2561,133 @@
     "receipt": "out/perky/hybrid/optimization/final-PKH3O3/TRANSITIONS.json",
     "receipt_sha256": "854ff00753bb12d3106b0c44ad8f1f6e7e58ba3c35f69413a8fdf99216ead17f",
     "scope_correction": "The4000-frame handoff row does not reach step46/58. Separate24000-frame actualsequencer test proves bothmode/familylocks and reversions. Firstdriver reusedobserverfilenames forsecondaryaudio; primary24k reports savedbeforeoverwrite and hashvalidated. Originalbindingfailure retained; nofirmwarechange."
+  },
+  "sustained_matrix_checkpoint": {
+    "status": "PASS_FIFTEEN_60_SECOND_ROWS_CONTINUOUS_STRESS_PENDING",
+    "CPU_hz": 264000000,
+    "PIT_hz": 132000000,
+    "rows": [
+      {
+        "row": "snare/V2",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 266.962,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/extra_snare_V2/ROW.json",
+        "receipt_sha256": "c355c79282b803e94b46c97297c38ccc7a7b01a196e30b5cec8bc1c96c66b1cb"
+      },
+      {
+        "row": "third/third",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 268.455,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/mandatory_third_third/ROW.json",
+        "receipt_sha256": "94b500290451d813f66ce911aa434ab5aa32010b1d590c1eae4241ba1624ab40"
+      },
+      {
+        "row": "snare/snare",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 279.477,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/mandatory_snare_snare/ROW.json",
+        "receipt_sha256": "9b8e742716044e7f3a88a03baacb4f3d59f7e7bfad491c2c2aee690e5edf9757"
+      },
+      {
+        "row": "snare/bass",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 276.992,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/extra_snare_bass/ROW.json",
+        "receipt_sha256": "b54cbcb9f106f7287968325b0153ff156d481ad518939ed69107e559518013f4"
+      },
+      {
+        "row": "V1/bass",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 264.477,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/mandatory_V1_bass/ROW.json",
+        "receipt_sha256": "1f118aae576130f528a2e0433ecc1c3fa6a1abfc0b92b74a8ebe1c27b477cb9a"
+      },
+      {
+        "row": "third/snare",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 274.174,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/extra_third_snare/ROW.json",
+        "receipt_sha256": "da2ed295ab7abb2f88fbadfcbd2a869a376c36b9fd50fe8f5a2d9721e4b22969"
+      },
+      {
+        "row": "V1/V1",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 253.924,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/mandatory_V1_V1/ROW.json",
+        "receipt_sha256": "7cfc3b831a2fccbc3a5eeff7537756251db117843c2ed111ff18571fa7adec8f"
+      },
+      {
+        "row": "V2/V2",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 253.924,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/extra_V2_V2/ROW.json",
+        "receipt_sha256": "ef315d5b74c5c5a826eba86d252d39856a9098642b2423481db54135cf25053c"
+      },
+      {
+        "row": "snare/third",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 274.205,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/extra_snare_third/ROW.json",
+        "receipt_sha256": "49b167825cc880d8615da3903bfb210f2c4cd4c933c745400a120e950e3750eb"
+      },
+      {
+        "row": "V1M3/third",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 261.636,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/extra_V1M3_third/ROW.json",
+        "receipt_sha256": "d8a6fd8633d96770cf0726819474033977f1e3670db591fa2e5aee17796ab99e"
+      },
+      {
+        "row": "bass/snare",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 277.386,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/mandatory_bass_snare/ROW.json",
+        "receipt_sha256": "184bc0d2301026945de95a047ae00ed84c4b707045436874c8a826105aecb721"
+      },
+      {
+        "row": "V2/V1",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 253.924,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/extra_V2_V1/ROW.json",
+        "receipt_sha256": "f1adf005201fb47f9151f7bff73b8a7f4849e488b1ac0b0a5a4d32bed32ca13d"
+      },
+      {
+        "row": "V1/V2",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 253.924,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/mandatory_V1_V2/ROW.json",
+        "receipt_sha256": "80b451b3ac6319ed6133ac60d4863b3b25c77714fecea6312ee772f92f15a9cb"
+      },
+      {
+        "row": "bass/V1",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 265.091,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/extra_bass_V1/ROW.json",
+        "receipt_sha256": "a48c0fc6e091913c9cedd8fb753f57b2be88ec65832e80eb71acc16bf7d3df3b"
+      },
+      {
+        "row": "V2/snare",
+        "frames": 165376,
+        "deadline_misses": 0,
+        "max_DTIM3_span_us": 267.068,
+        "receipt": "out/perky/hybrid/optimization/final-PKH3O3/probe/workload/mandatory_V2_snare/ROW.json",
+        "receipt_sha256": "45ce153edb296cf98f59806e31afcc1ef7cccdbb44c7b260d0ea87f3261d3843"
+      }
+    ],
+    "scope": "DTIM3 instrumented ISR spans omit entry-save and post-stamp footer. Strict executed full-ISR comparisons are reported separately. Continuous1,653,750-frame stress still running."
   }
 }
