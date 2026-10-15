@@ -72,7 +72,17 @@ first KB, `[0x400b9668]`).
 | 1 | `0x460ddde4` | `0x4008445c` | `0x460d9de4` +0x4000 | main | engine (46-opcode dispatcher, queue `0x460d17ce`; RELOAD BANK types `0x14`, `6`) |
 | 1 | `0x46105508` | `0x40098a5c` | `0x4610555c` +0x2000 | main | ❓ waits on `0x4610755c`, walks eight per-track records with the EMAC fractional: per-voice work (`STEM_REC.md` 20.6) |
 | 1 | `0x46c7bed8` | `0x40061a94` | `0x460d6de4` +0x2000 | main | sys: serial + SPI start-up, then creates storage, UI, p3 |
-| 0 | `0x46c7ae84` | `0x4001f834` | top `0x46c7becc` | boot | main: runs the init list, then `bras .` at `0x4001fc9c` (= idle) |
+| 0 | `0x46c7ae84` | `0x4001f834` | inferred `0x46c7aed8` +0x1000; observed top `0x46c7bed8` | boot | main: runs the init list, then `bras .` at `0x4001fc9c` (= idle) |
+
+Main-stack correction (14 Oct 2026, hybrid stack audit): `0x46c7becc` is the
+initial **saved exception-frame pointer**, not the allocation top. Boot stores
+format/SR there, entry PC at `0x46c7bed0` and task exit at `0x46c7bed4`;
+`STEM_REC.md` section 3.3 records these as top−12, top−8 and top−4. The lower extent
+`0x46c7aed8` is a structural inference from main's 84-byte TCB and the next TCB
+at the observed stack top; main is constructed directly, without a captured
+create-size argument. Do not treat that inferred 4,096-byte extent as independent
+proof of exclusive stack capacity. In particular, the saved exception pointer
+must not be used as the allocation top when reporting A7 observations.
 
 At the handoff (`trap #0` at PC `0x40000e46`) only main is ready; the
 current TCB `0x46c7ae30` is the pre-multitasking context, saved once and
@@ -112,7 +122,7 @@ Levels, from the ICR byte writes (✅ objdump, 5 Oct 2026):
 | 6 | `0x48`/`0x49`/`0x4f` eDMA frame transfer; `0x5a` UART0 MIDI IN; `0x5b` UART1 serial link |
 | 5 | `0x41` DSP frame; `0xb1`; `0xb6` ATA |
 | 4 | `0x5c` serial block; `0xaf` USB |
-| 3 | `0x56` eDMA 14 (ATA sector DMA) |
+| 3 | `0x60` forced sequencer tick; `0x56` eDMA 14 (ATA sector DMA) |
 | 2 | `0xac` PIT1 |
 | 1 | `0xab` PIT0 time-slice |
 
@@ -126,7 +136,19 @@ checked). The frame ISR is measured from entry to the epilogue at
 that span and ATA and USB cannot (`ARCHITECTURE.md` section 6, the CF METER
 takes).
 
+The 14 Oct 2026 hybrid audit confirms the sequencer handler first writes SR
+`0x2700` at `0x400a1e0c`, reserves 208 bytes and writes SR `0x2200` at
+`0x400a1e64`. Thus audio can interrupt a live sequencer handler. The actual hybrid
+run observed vector `0x60` → `0x41` → `0x4f`, nesting three handlers on the same
+task stack. This is an observed chain, not an all-path stack ceiling; see
+[the bounded safety report](../../modules/perky/hybrid/SAFETY_QUALIFICATION.md).
+
 Time-slice: PIT0 `0xfc080000`, prescaler 2¹¹ (PCSR `0x0b36` at init,
-`0x0b3f` on every switch), PMR `264,000,000 / 409,600 − 1 = 643` → 5.0 ms
-per tick = 220.5 samples = 13.8 audio frames. PIT1 `0xfc084000` (PCSR
+`0x0b3f` on every switch), PMR is 643. Correction (14 Oct 2026): stock
+computes that modulus using its configured CPU rate, but PIT counts the **132 MHz
+internal bus** divided by the prescaler. The configured period is therefore
+`644 * 2048 / 132,000,000` = **9.991758 ms**, about 440.64 samples or 27.54 audio
+frames. The former 5.0 ms/220.5-sample claim used the legacy 264 MHz emulator PIT
+clock; it is retracted for the physical configuration. Hybrid qualification runs
+select `--pit-clock-hz 132000000` explicitly. PIT1 `0xfc084000` (PCSR
 `0x0b3a`, PMR 2014) is the storage layer's delay timer (`0x40020c7c`).

@@ -1,5 +1,16 @@
 # Goal 2 engineering closeout — 14 October 2026
 
+> Historical Goal 2 closeout. The later bounded software safety investigation is
+> [SAFETY_QUALIFICATION.md](SAFETY_QUALIFICATION.md). Its current decision is
+> **BLOCKED — SPECIFIC SOFTWARE SAFETY DEFECTS**: no established combined stack
+> ceiling; complete real machine/playing-bank transitions and dense event/trigger
+> accounting remain unqualified. Real panel Part/STOP/START, working-bank queue
+> changes, saved controls/cold reload, and observed stack/DMA ownership now have
+> additional executable evidence. The corrected modeled worst is 323.765 µs at
+> CPU 264/PIT 132 MHz, with 39.047 µs headroom. Physical timing and the unwaived
+> missed 20% margin are separate from that software verdict. Goal 2 stays closed;
+> the historical timings and missing-test descriptions below are preserved as history.
+
 **CLOSED — UNQUALIFIED. Assessment complete; implementation qualification incomplete.**
 All further Goal 2 performance experiments are stopped. The proposed 20% margin
 is not waived. No Goal 3 work, hardware run, packaging, flashing or push occurs.

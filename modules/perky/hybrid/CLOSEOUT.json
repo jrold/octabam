@@ -700,5 +700,18 @@
     "no_source_or_runtime_change": true,
     "no_branch_worktree_flash_push_goal3": true
   },
-  "limits": "Existing bounded measurements audited only; no new performance candidate, timing workload, package or hardware experiment executed for closeout."
+  "limits": "Existing bounded measurements audited only; no new performance candidate, timing workload, package or hardware experiment executed for closeout.",
+  "later_bounded_software_safety_followup": {
+    "report": "modules/perky/hybrid/SAFETY_QUALIFICATION.md",
+    "evidence": "modules/perky/hybrid/SAFETY_QUALIFICATION.json",
+    "decision": "BLOCKED \u2014 SPECIFIC SOFTWARE SAFETY DEFECTS",
+    "goal2_reopened": false,
+    "historical_closeout_fields_below_unchanged": true,
+    "software_blockers": [
+      "combined_stock_task_and_nested_ISR_upper_bound",
+      "complete_real_machine_and_playing_bank_transition_paths",
+      "end_to_end_dense_locks_reversion_and_trigger_delivery_accounting"
+    ],
+    "physical_timing_is_not_a_probe_prerequisite": true
+  }
 }

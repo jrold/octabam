@@ -1,0 +1,17 @@
+# Real MKII panel SAVE PROJECT; no parameter or transport flag pokes.
+0 key 0x32 down
+40 key 0x32 up
+120 key 0x11 down
+160 key 0x11 up
+240 enc 0 7
+500 key 0x1c down
+540 key 0x1c up
+800 key 0x21 down
+840 key 0x21 up
+1100 key 0x20 down
+1140 key 0x20 up
+1400 key 0x31 down
+1440 key 0x31 up
+1700 key 0x31 down
+1740 key 0x31 up
+6000 quit

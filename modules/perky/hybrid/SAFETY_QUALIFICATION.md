@@ -1,150 +1,242 @@
-# Post-closeout hybrid safety qualification — 14 October 2026
+# Bounded pre-hardware safety qualification — 15 October 2026
 
-**BLOCKED. No physical probe is recommended or authorized.** This is the bounded
-safety task after Goal 2 closed at `bee3830134b2061151a3628f6622347de2916f38`.
-Goal 2 remains closed; Goal 3 has not begun. No synthesis optimization, DSP/FX
-change, flash, push, branch or worktree was performed. The rejected empty-render
-optimization remains rejected; the complete `pk_hybrid_render` source body is
-unchanged from closeout, including the unconditional engine call for zero samples.
+**BLOCKED — SPECIFIC SOFTWARE SAFETY DEFECTS**
 
-Verified code/tests commit: **`854f2aacad0f73e6654b27ed92a8be6d10666817`** on
-`perky-cf-dsp-hybrid`. This assessment is committed separately. Exact evidence,
-source/artifact hashes and limitations are in [SAFETY_QUALIFICATION.json](SAFETY_QUALIFICATION.json).
-Local execution evidence lives in `out/perky/hybrid/safety-qualification/`.
+The unresolved defects are in the software safety case: there is no established
+combined stock-task/nested-interrupt stack ceiling, and complete machine/playing-bank
+transition and dense lock/trigger delivery guarantees remain unproved. **No firmware
+memory corruption, stack overflow, DMA ownership race or current deadline failure
+was demonstrated.** An unestablished ceiling is not a measured overflow, but it
+cannot be certified safe for a physical probe. No flashing is recommended or
+requested. Physical timing is not being made a prerequisite for its own experiment.
 
-## Newly closed gates and correctness changes
+This completes the bounded investigation from checkpoint
+`ece602d083f7b999b00df4dee109814738eb1579` on the existing
+`perky-cf-dsp-hybrid` branch/check-out. Goal 2 stays closed; Goal 3 has not begun.
+No firmware, engine, FX, DSP payload, six-word guard, build system, shared emulator,
+branch, worktree or upstream state changed. There were **zero firmware correction
+iterations and zero synthesis optimization iterations**. Only host verification
+tools and reports changed. The commit containing this report records those changes;
+its exact ID is given in the final handoff.
 
-| Gate | Exact local result | Limit |
+[SAFETY_QUALIFICATION.json](SAFETY_QUALIFICATION.json) retains the earlier
+clock/initialization/package evidence and embeds the new assessment. The local measurement logs are dated 14 October; this report was finalized on
+15 October. Fresh local receipts are in `out/perky/hybrid/safety-final/`. The previous report remains at
+`git show ece602d:modules/perky/hybrid/SAFETY_QUALIFICATION.md`.
+
+## 1. Stack and interrupt nesting
+
+The disassembly confirms that the ISR uses the interrupted task's A7; it does
+not switch to the proposed 4,096-byte runtime arena allowance. ColdFire's modeled
+exception frame is eight bytes plus zero to three alignment bytes. The stock
+handler at `0x4000aad0` reserves 252 bytes. The hybrid entry temporarily saves
+16 bytes and returns to that stock handler; its tail restores the stock register
+save, releases 252 bytes and executes RTE. The entry and stock frame allocations
+are sequential, not simultaneous.
+
+The existing exact-source compiler audit covers 47 functions: hybrid render
+680 bytes, CF render adapter 80 bytes and snare 348 bytes are individual frames.
+They are not a complete stack bound; outgoing argument space and call paths must
+also be accounted for. The linked snare prologue actually reserves 348 bytes.
+
+Priorities and mask changes matter:
+
+- Audio is INTC0 source 1, vector `0x41`, level 5. Its observed minimum IPL is 5.
+- eDMA vectors `0x48/0x49/0x4f` and MIDI/panel UART interrupts run at level 6;
+  same-level requests cannot preempt each other under the normal IPL rule.
+- The sequencer vector `0x60` is level 3 in this image. Its handler at
+  `0x400a1e0c` masks to 7, reserves 208 bytes, then lowers IPL to **2** at
+  `0x400a1e64`. Consequently, the observed chain is **sequencer → audio → eDMA**,
+  not just audio → eDMA. UART RX entries mask to 7 before their own saves.
+- Level 7 includes a terminal halt path. Fault/halt paths and unexamined indirect
+  stock callees are not certified returning-stack or completion bounds.
+
+A separate host observer was compiled from staged copies of `machine.cpp` and
+`periph.cpp`, linked to the existing libraries. The shared emulator remains exact.
+It observes every host instruction boundary in boot, `step` and `stepFast`, tracks
+TCB stack extents, decodes exception frames and RTEs, and watches the bottom 32
+bytes of each task stack after that task first executes. These are **passive write
+watches**, not painted target canaries or a physical memory-integrity test.
+
+Musashi can execute the first handler instruction before the next observation.
+The observer handles the leading LEA and immediate SR-write forms used here.
+Four executable calibration cases cover both step paths and both entry forms,
+real level-5/6 exception nesting, exact 284-byte synthetic stack use and balanced
+RTEs. Deliberate source-DMA overlap, stack underflow and bottom-guard writes are
+required to be detected; the non-overlap controls must remain clean.
+
+Fresh actual-image panel run: **1,256,423,292 instruction observations; 9,370 audio
+entries and 9,370 returns; maximum observed nesting 3; maximum observed audio-ISR
+requirement 1,316 bytes including its exception frame and observed nested work**.
+There were zero out-of-extent observations and zero stack-bottom writes.
+
+| Task | Actual capacity B | Maximum observed combined use B | Remaining at observed peak B |
+|---|---:|---:|---:|
+| storage |2,048|76|1,972|
+| keyrepeat |2,048|1,352|696|
+| UI |2,048|148|1,900|
+| engine |16,384|3,016|13,368|
+| p2c |8,192|184|8,008|
+| p2a |8,192|116|8,076|
+| p2b |8,192|180|8,012|
+| p1b |8,192|2,124|6,068|
+| main (inferred allocation extent) |4,096|1,888|2,208|
+| sys |8,192|2,104|6,088|
+| voice |4,096|40|4,056|
+
+Main's observed allocation top is `0x46c7bed8`. Its 4,096-byte extent down to
+`0x46c7aed8` is a structural inference from the adjacent 84-byte TCB and the next
+TCB at `0x46c7bed8`, rather than a captured create-size argument: boot constructs
+main directly. The observer uses that inferred extent; it is not an independent
+proof that every byte is reserved exclusively for stack use. The ten created
+tasks' extents instead match actual create arguments under the stock RTOS gate.
+The older documented `0x46c7becc` is main's initial saved exception-frame pointer,
+not its top: boot writes the initial PC at `0x46c7bed0` and exit address at
+`0x46c7bed4`. The first observer draft used that saved pointer as the top and
+falsely flagged main's initial entry. The corrected top and a new run show no
+violation of the inferred extent.
+
+**Maximum established all-path requirement: UNKNOWN.** 1,316 and 3,016 bytes are
+observations, not ceilings. No closed call-graph/inductive bound covers every
+preemptible stock task path, lower-priority nested handler or indirect callback.
+In particular the small task stacks cannot be qualified by subtracting an observed
+ISR peak from an observed task peak taken at a different preemption point. This
+is the first essential software blocker. More free DRAM does not close it.
+
+Falsification: any stack extent/guard violation fails the executable gate.
+Closing this blocker requires a justified upper bound for the actual permitted
+stock paths and nesting, compared with each task's capacity; another clean short
+run alone would not close it. No multi-hour stress was attempted.
+
+## 2. Lifecycle transitions
+
+The new component gate executes the **linked signature writer and dispatcher**
+from the actual hybrid image; it does not substitute a host renderer.
+
+| Investigation | Established result | Limit |
 |---|---|---|
-| Configured CPU clock | Stock PCR `0x16777731`; PFDR 22, CPU divider 2, bus divider 4; boot stores **264,000,000 Hz** at `0x400b9654`. CPU cycle model corrected from 266 to 264 MHz. | Nominal configured rate, not a physical oscillator measurement. VR266 is the rating. |
-| PIT basis | [NXP MCF54455RM](https://www.nxp.com/docs/en/reference-manual/MCF54455RM.pdf), table 29-3, selects internal bus/PRE. Stock PCSR `0x0b36`, PMR 643 gives **9.991758 ms** at 132 MHz. Hybrid runs explicitly use `--pit-clock-hz 132000000`. | Emulator legacy PIT 264 MHz default retained for old oracle comparisons; every qualification run now records the explicit choice. |
-| Cold initialization | **218,564 B** BSS poisoned at the real loader-to-initializer call, with matching stale Bank/Part and valid same-family native smoother. Clean native split records, initialized CF/native state and all **200,704 decoded PCM bytes** match. | Targeted emulated boot, not physical lifecycle certification. |
-| Native BSS bug | Pre-fix same-family stale state changed the first native split record. Explicit native control/prefix/trigger/UI history initialization before RTOS now passes that regression. | Native arithmetic/producer semantics and all DSP sources remain unchanged. No large reset was added to audio/UI callbacks. |
-| Timer startup bug | Read pair moved from pre-timer boot to one bounded UI operation after DTMR3/DTRR3 match. Disabled timer and wrong modulus skip calibration; one pair only; unsigned wrap fixture **64 ticks**, PASS. | Read-pair interval is not a bound on all probe overhead. Physical MMIO latency remains unmeasured. |
-| Exact runtime comparison | **1,024 frames /2,048 source records**, all 16 split offsets, complete two-voice state/RNG, eight out-of-range smoother cases, PASS. | Against archived retained image `46bd31…`; original 19-section synthesis oracle reused because its engine/asset/control sources did not change. |
-| Dispatch/native/UI | **192** native record comparisons, **288** CF transport cases, independent T2/T6, untouched 176-byte tails/cursor reservation, **320** glyph draws and formatter checks, PASS. | Direct component calls; not a complete real panel lifecycle/queue test. |
-| DSP/FX identity | **166** frozen dependencies unchanged; **28** generated payload/upload/table/placement/guard checks, PASS. Full MAIN boot and both A/B upload readbacks, PASS. | Identity does not measure physical per-core completion or prove every retained effect actively processed in this new run. |
-| Packaging | Actual MAIN→MIDI→MAIN and card→ELEK exact; cap accounting PASS. **Nine** targeted malformed/corruption/cap/overlap rejections plus existing hybrid DSP/card/odd-address negatives, PASS. | No exhaustive malformed compressed-token or runtime loader-table execution matrix. |
-| Instrument regression | Final **9/9 CTest** PASS; **24/24 refhash** configurations bit-identical, using existing baseline and `REFHASH_LOCAL=1 REFHASH_JOBS=1`. | No new checkout or baseline was created. |
-| Automatic export | Actual stock filesystem wrote one **1,864 B** source-matched PRF after STOP flag; **3,526** frames in snapshot, zero readiness faults; PASS. | STOP flag injected at 3500; not a real panel STOP latency/lost-event test. Physical card export unexecuted. No CF METER reading required. |
+| Cold boot/first trigger | Existing poisoned-BSS/decoded-asset proof reused unchanged; new four generation handoffs match eight fresh-reference first-trigger records and all 3,948 live CF state/RNG bytes per comparison | Fresh reference is another boot of the same qualified implementation; original engine oracle remains prior evidence |
+| Selection/deselection | 32 two-bank/four-Part/T1/T2/T5/T6 cases pass: actual PK signature creation/removal, donor assignment, SRAM mirror, reselection preserves sound, fresh selection restores defaults | Assembly writer/component execution, not complete stock chooser workflows |
+| CF/DSP-to-stock dispatch | Eight stock delegations over four tracks pass; no CF-state/source-slot write during the intercepted stock continuation; reselection publishes again | Stock continuation intercepted in this component test |
+| Bank change | Actual stock queue post executes in sys; working bank pointer A → B → A, 2,048 frames, both calls return | This tests the working-bank path. The sequencer's playing bank stays A; full panel bank/pattern transition remains unqualified |
+| Part change | Real MKII Part chooser changes Part to 2 while audio runs; component gate covers all four Parts | First-trigger races during every loader/chooser phase are not exhaustively exercised |
+| Stop/start | Actual panel PLAY → STOP → PLAY → STOP observed in firmware transport state | No stop-latency ceiling or automatic stall-abort claim |
+| Saved project | Actual MKII SAVE PROJECT writes stock FAT/ATA files; 256 previously staged working-Part signatures survive; newly saved bank01 `.work` and `.strd` retain all six controls `[71,112,2,72,56,0]` | Other untouched stored banks are not required to contain signatures never staged into them; no power-loss atomicity claim |
+| Cold reload | Fresh current-image boot loads that saved card; six controls match exactly; 512 frames have 8,192 post-FX samples each on T1/T2/T5/T6, respectively 8,176/8,175/8,171/8,182 samples above magnitude 64; both CF source streams active | Bounded saved-project fixture, not every project/loader variant |
+| Simultaneous DSP + CF | Both actual DSP payloads run; T1/T5 native and T2/T6 CF chains are independently active on reload | No independent physical per-core completion bound |
 
-The immutable baseline validator explicitly refused the changed emulator binary
-hash, as expected. Its sole reported drift was `out/emu/ot_emu`; no old pin was
-rewritten. Frozen sources/inputs were checked, and the corrected emulator was
-rebuilt and separately tested. **No fresh baseline 18/18 or aggregate probe PASS
-is claimed.** A clean-commit rebuild was not repeated: every build-time source
-hash was instead checked against both current files and committed blobs at
-`854f2aac`. BUILD.json honestly retains its earlier build-time HEAD and dirty flag.
+DSP versus CF routing is fixed by track: T1/T5 use DSP, T2/T6 use CF. Track
+selection changes the UI target; there is no same-track DSP↔CF engine switch.
+Source-machine removal/reselection and stock delegation are the relevant actual
+source transitions. No new routing capability was added.
 
-## Corrected full-ISR timing
+The earlier exact split/cursor/native-record/PCM/state/RNG gates remain evidence
+for the unchanged implementation and unchanged image hash. They were not rerun
+as Goal 2. **Complete real chooser/playing-bank transitions, stale-record exclusion
+through all transition phases and first-trigger-during-load cases remain a second
+software qualification blocker.** Component passes are not promoted to those paths.
 
-Current build 11, unchanged engines/FX; CPU 264 MHz, DTIM3/bus 132 MHz, PIT 132 MHz,
-44,100 samples/s, 16 samples/frame; existing snare/snare integrated fixture.
-Each run is **4,000 frames /1.451247 simulated seconds**, not a sustained matrix.
+## 3. UI and DMA concurrency
 
-| Current case | Mean us | p99 us | Maximum cycles | Maximum us | Duration misses |
-|---|---:|---:|---:|---:|---:|
-| Profiler on, CF armed |197.185584|214.708333|85,474|**323.765152**|**0**|
-| Profiler off, CF armed |194.665096|212.064394|84,943|321.753788|0|
-| Profiler on, CF disarmed |141.970034|150.863636|59,210|224.280303|0|
+The 3.4-second real panel script exercises six encoders at five-millisecond
+spacing, T2/T6 selection, Part selection and STOP/START while both DSPs and CF
+voices run. Every track enters the actual source dispatcher 17,635 times.
+The panel input queue drains to zero (sampled peak 2 bytes); the firmware's
+32-byte panel RX ring peaks at 10 and sys queue count peaks at 8. Those are
+observations, not arbitrary-traffic backlog bounds. Encoder events can legitimately
+coalesce in the stock parser; detents are not assumed to map one-for-one to events.
+The separate save/reload test proves an actual T2 knob edit persisted.
 
-Deadline **362.811791 us**; modeled headroom **39.046640 us**, 10.762% of the
-frame. Proposed 80% ceiling **290.249433 us**; **shortfall 33.515718 us**.
-That criterion has **not** been waived. A future exception requires the user's
-explicit decision after independent safety gates pass.
+The source observer records **18,740 source DMA starts**, 4,685 for each of four
+source addresses: `0x80001c90`, `0x800021d0`, `0x80002710`, `0x80002c50`.
+These are the two core halves of both ping buffers. All observed source TCDs use
+NBYTES 336, CITER 4, SOFF 16; the existing host-port model snapshots a contiguous
+1,344-byte source extent. The observer follows that model from start to completion.
+Across **5,190,502 source-buffer CPU writes**, it finds **zero writes overlapping an
+active modeled source-DMA extent** and zero active-channel restarts. A deliberate
+overlap in calibration is detected. This is useful ownership evidence for these
+exact TCD shapes, not a generic hardware eDMA/cache proof.
 
-Conditional mean profiler delta is **2.520489 us**; armed/disarmed mean delta
-**55.215550 us**. Common hooks remain in the off path. Differences of maxima
-are not worst-case overhead bounds. The new model records one DTIM3 tick between
-calibration reads (7.576 ns nominal); that is a modeled read-to-read interval,
-not measured silicon latency or total instrumentation cost. DTMR3 `0x000b` selects
-bus/1, no reference IRQ, restart at DTRR `0xffffffff`; nominal wrap 32.537631 s.
+The moving cursor at `0x80001c80` remains separate from fixed per-track publication
+at `0x80001c90 + ping*0xa80 + track*336`. Existing exact transport tests prove cursor
+reservation, fixed-slot publication and preservation of the trailing 176 bytes;
+new deselection and generation tests exercise those same linked paths. UI ticks
+interleaved between lifecycle events never reset live CF state. Both-core exchanges
+report zero words not in time. All 9,370 measured ISR service windows fit the model
+period; this script's peak is 84,730 cycles / 264 MHz = **320.946970 µs**.
 
-Full spans pair entry+4 with RTE on every frame, adding model LEA 1/RTE 10 cycles.
-They include stock ISR work, callbacks, waits and probe bookkeeping, but exclude
-pending interrupt/vector-entry latency and do not bound release-to-completion
-under arbitrary nesting/backlog. No DSP execution time is added serially to CF.
-Both DSPs ran; short exchanges reported zero words not in time. Separate HC
-poll sites are still not independently calibrated per-core completion maxima.
+**Still unqualified locally:** a full event→trigger→record accounting under dense
+real parameter locks/reversion and competing UI/lifecycle events, complete queue
+saturation/refusal behavior, and every allowed sampler/recorder/streaming state.
+No dropped trigger or buffer corruption was observed, but their universal absence
+is not proven by drained queues and completed frames. This is the third software
+qualification blocker. Existing direct p-lock/reversion component evidence does
+not substitute for this end-to-end condition.
 
-Historical 319.860902 us was the retained image at CPU 266/PIT 264 MHz. Re-executing
-that image at CPU 264/PIT 264 gave 322.284091 us; this was an actual rerun, not just
-rescaling. The safety-fixed image at CPU 264/PIT 264 gave 323.840909 us. The table
-above uses the corrected PIT basis. These observations stay separate; the older
-number is not a current-hardware bound. No observed duration miss occurred in
-these current bounded runs; unseen workloads and physical deadlines remain open.
+Physical SDRAM/FlexBus/cache coherence and arbitration, eDMA/DSP bus contention,
+release-to-entry latency and independent per-core completion remain hardware-only
+uncertainties. They are reported separately from the missing software guarantees.
 
-The cycle pricer still assumes cache hits/zero-wait operands and combines older
-core timings with V4e repairs and inherited estimates. Physical SDRAM/cache/DMA,
-pipeline effects and interrupt masking/nesting can consume the 39 us. Earlier CF
-model/hardware discrepancies prevent treating this estimate as conservative.
+## Timing policy and disposition
 
-## Memory and packaging
+The authoritative corrected bounded modeled worst remains **323.765152 µs** at
+CPU **264 MHz**, PIT **132 MHz**, versus the **362.811791 µs** frame deadline:
+**39.046640 µs** modeled headroom. The proposed 80% ceiling is **290.249433 µs**;
+it is missed by **33.515719 µs**. The **20% margin remains UNWAIVED**.
+The new panel peak is a different, shorter workload and does not replace that worst.
+No physical WCET claim is made. Cache misses, SDRAM waits, pipelines, bus contention,
+physical timer/probe cost and release-to-completion behavior remain unmeasured.
 
-Current linked text 350,608 B; rodata 348 B; data 548 B; BSS 218,564 B. Loaded raw
-span 359,696 B includes link alignment. Runtime reserve
-`0x40c005e0..0x41600de0`; BSS ends `0x40c8d8b4`; packed stage
-`0x40c8e000..0x40cc47f6`; gap 1,868 B and 9,684,458 B after stage.
-Static physical alias-normalized runtime/preboot ranges do not overlap and fit
-their reservations. The main stock heap/buffer reserve geometry is unchanged.
-This does not establish physical cache coherence, all recorder/DMA ownership or
-interrupt stack bounds.
+The missed engineering margin and missing physical timing do **not** cause this
+software BLOCKED decision. Four decision-gate selftests verify missing/failed
+software evidence refuses review and that complete software gates can permit
+**user review** while physical timing and the margin decision remain outstanding.
+No decision path authorizes a flash.
 
-Current card file 809,148 B = 12 B outer overhead + **809,136 B encrypted payload**;
-payload cap 1,048,576 B leaves **239,440 B**. ELEK 809,129 B; MIDI 1,130,245 B.
-Uncompressed MAIN size 1,483,190 B is a different quantity from that payload cap.
+A restricted diagnostic protocol is not offered while those three software gates
+remain open. The known rollback baseline is PERKY4S, source
+`16a8de19a17ee4cba765cbdb30ca051f85af4e23`, MAIN SHA256
+`be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0`.
+Any later proposal must bind the exact diagnostic package, restricted activation,
+a stall/deadline containment and capture procedure, and verified rollback files,
+then obtain explicit user authorization. Existing unqualified build-11 files are
+not newly approved by these tests.
 
-All files below are in `out/perky/hybrid/probe/`, version PKHYB2P, build 11,
-source identity `ee5607e1d4e87dc5eefb15f9c1fda5d2a8040b2f8d7ed33dd1b25dfc4af3d50d`.
-**They are unqualified local artifacts, not an approved diagnostic install set.**
+## Executable receipts and stopping point
 
-| Artifact | SHA256 |
-|---|---|
-| `mainos_PKHYB2P.bin` | `a2d6915bc71a97d63f44e223e558cc4941d52113708f7ba92a57bdd669339b40` |
-| `platform/runtime.elf` | `f35c87b393ecc798eb103fcf9672f7b44ca64bf1f3df684d644d63b96e512a9e` |
-| `platform/runtime.raw` | `9662d5b36d9546f8dac0e624a666eb0d5455696ecf48b278dd414ff22ed43478` |
-| `elek_PKHYB2P.bin` | `7decf768dfd36b9d78bc7a0e6b43452f94597b1318bc472a91c29f2785718aae` |
-| `OCTATRACK_PKHYB2P.bin` | `10c92102780d8795d5944488b78830f2f35fca51a9f234c67bf23cf74f898a69` |
-| `OCTATRACK_OS1.40C_PKHYB2P.syx` | `468acc6e44f1b99fcbcbf09f00c87a363496c4c11eee1181cb643624f7cbf1b5` |
+Commands below use the existing tools, checkout, project fixture and build:
 
-## Essential gates still blocked and bounded stopping point
+```sh
+.venv/bin/python3 tools/verify/verify_perky_hybrid_safety.py --work out/perky/hybrid/safety-final/final-observer
+# PASS: isolated observer build and four calibrated positive/negative cases
+.venv/bin/python3 tools/verify/verify_perky_hybrid_safety.py --work out/perky/hybrid/safety-final/final-observer --panel
+# PASS: real 3.4-second MKII panel run, stack/guard/DMA assertions
+.venv/bin/python3 tools/verify/verify_perky_hybrid_lifecycle_safety.py
+# PASS_COMPONENT_SCOPES: 32 selection cases, four-track delegation, four generation handoffs
+.venv/bin/python3 tools/verify/verify_perky_hybrid_saved_project.py
+# SAVE itself passed; first analysis wrongly expected PK in untouched stored banks
+.venv/bin/python3 tools/verify/verify_perky_hybrid_saved_project.py --reuse-save
+# PASS_SCOPED_SAVE_RELOAD: exact hash-verified SAVE reused, fresh reload executed
+.venv/bin/python3 tools/verify/verify_perky_hybrid_safety_assessment.py --selftest
+# PASS: 4/4 decision/refusal tests
+.venv/bin/python3 tools/verify/verify_perky_hybrid_safety_assessment.py
+# EXPECTED EXIT 1: the three software safety obligations above remain unestablished
+```
 
-- **Stack/nesting:** compiler audit covers 47 functions, largest hybrid render 680 B,
-  snare 348 B. Sampled engine-entry depth 960 B and 4,000 balanced ISR returns are
-  lower-bound observations, not a maximum call-chain proof. Stock UI, storage
-  and keyrepeat task stacks are 2,048 B. The report's 4,096 B arena allowance is
-  not their interrupt stack. Interrupted task use plus nested handlers/canaries
-  remains unbounded. No overflow was demonstrated; absence of evidence is not PASS.
-- **Lifecycle/UI:** complete real Bank/Part/project loads, repeated machine
-  replacement/reselection, first trigger during these operations, real panel
-  STOP, queue backlog/lost events and dense end-to-end scene/LFO/lock traffic
-  remain unexecuted. Direct generation/ownership tests do not substitute for them.
-- **DMA/concurrency:** ABI publication/cursor preservation and static disjointness
-  pass; physical recorder/eDMA ownership, cache visibility, nested exchanges and
-  independent completion timing for each DSP remain unqualified. No additional
-  long stress matrix was run while those essential gates were missing.
-- **Timing/containment:** all-workload/silicon timing, physical read/probe overhead
-  and physical card export remain unmeasured. CF still defaults armed; no validated
-  probe-specific auto-abort exists. Short duration alone cannot contain a stall
-  or guarantee responsive UI STOP/export. The unwaived margin fails separately.
+The explicit working-bank command and its successful stock sys pointer writes
+are recorded in the embedded bank receipt and `safety-final/banks/port.log`.
+Earlier live-path borrowed calls were refused because the CPU was inside the
+ISR; their nonzero-free process exit is **not a bank PASS**. The final panel run
+contains no borrowed calls and now rejects such refused-action logs. The bad
+watch-range attempt was terminated and replaced before accepting bank evidence.
+These are harness failures/corrections, not demonstrated firmware defects.
 
-The next bounded action is a **stack/nesting census**, before any hardware request:
-map actual interrupted TCB stack extents; record minimum A7 and nesting depth at
-every instruction/IRQ in a short scripted real Bank/Part/machine/STOP workload;
-derive call-chain plus highest-priority nested-handler allowance and verify stack
-canaries. Stop on overflow or a missing stock-frame bound. Lifecycle/DMA ownership
-must then pass before presenting any margin exception and activation/abort protocol
-for explicit review. This report does not authorize that further work or installation.
+Fresh CTest/refhash/engine-oracle/full-remix builds were not repeated: no firmware,
+build or shared emulator source changed. Prior 9/9 CTest, 24/24 refhash, original
+engine oracle, poisoned initialization, DSP/FX identity, packaging and corrected
+clock receipts are reused at their established scopes and exact artifact hashes.
+No full stress matrix, physical probe, flash, upstream operation or push occurred.
 
-The pre-fix image and 26 metadata/loader/runtime files are preserved with hashes
-under `safety-qualification/before/`. Old image-bound TIMING/PROBE_GATES/VERIFY_PROBE
-receipts were removed from the current probe directory only after verifying exact
-archive copies; Goal 1/2 manifests and closeout remain historical records. The
-original rejected iteration 3 result/source patch is untouched. `perky-machines`
-remains `4ff6aa4456502424bff5bea62e7b55aa36d7b4a4`. The unrelated untracked
-`PERKY_Hybrid_Goal2_Gemini_Argon4.txt` remains unchanged and unstaged, SHA256
-`285b0b0dbf5cf90bb65da481e97cf740858148c9c4e0377d4ebbe8320263766a`.
-
-Recommendation: **BLOCKED BY UNRESOLVED TIMING**. Essential memory/lifecycle
-qualification is also incomplete. Stop; no physical probe, further optimization
-or Goal 3.
+**Stop here. BLOCKED — SPECIFIC SOFTWARE SAFETY DEFECTS.** No further optimization
+or Goal 3. The unrelated Argon4 note remains untouched and unstaged; the preserved
+`perky-machines` ref remains `4ff6aa4456502424bff5bea62e7b55aa36d7b4a4`.
