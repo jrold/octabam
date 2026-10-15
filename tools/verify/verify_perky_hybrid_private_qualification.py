@@ -8,6 +8,7 @@ correction; they are never relabeled as complete stock-OS proofs.
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -133,8 +134,24 @@ def assess(work,out):
     for file,digest in emac['inputs'].items():assert p.sha(file)==digest,file
     for name in ('mixed','dense','external'):
         assert 'run ended REACHED' in (work/(name+'.log')).read_text()
-    assert 'ticks 143,' in (work/'mixed.log').read_text()
-    assert 'ticks 987,' in (work/'external.log').read_text()
+    # Rtos::ticks() counts a diagnostic history capped at 100,000 total IRQs
+    # (rtos.cpp's m_acks). Long captures therefore print only a prefix. Use
+    # the independent observer's uncapped vector-0x60 counter for totals.
+    for name in ('mixed','external'):
+        text=(work/(name+'.log')).read_text()
+        match=re.search(r'\bticks (\d+), eDMA transfers',text)
+        assert match is not None
+        ticks=int(match.group(1));chains=dict(p.read(work/(name+'-stack.json'))['interrupt_chains'])
+        observed=chains.get(96,0)
+        assert observed>=ticks>0,('stock tick/IRQ count mismatch',name,ticks,observed)
+        runs[name]['stock_sequencer_tick_IRQs_observed']=observed
+        runs[name]['printed_prefix_ticks']=ticks
+    external=(work/'external.log').read_text()
+    midi=(work/'external-midi.txt').read_text().splitlines()
+    assert midi==[f'{i} F8' for i in range(40,runs['external']['private']['switched'])]
+    assert runs['external']['stock_sequencer_tick_IRQs_observed']>=len(midi)
+    assert f'{len(midi)} event(s)' in external and f'{len(midi)} byte(s) onto UART0' in external
+    assert 'receive interrupt ENABLED' in external and '0 byte(s) still queued at the end' in external
     saved_report=p.read(work/'saved-project-final/SAVED_PROJECT.json')
     assert saved_report['status']=='PASS_SCOPED_SAVE_RELOAD' and saved_report['input_hashes_unchanged']
     for file,digest in saved_report['inputs'].items():assert p.sha(file)==digest,file
@@ -143,6 +160,7 @@ def assess(work,out):
     assert scenes['status']=='PASS_ACTUAL_SCENE_FADER_DELIVERY' and len(scenes['events'])==9
     assert scenes['inputs'][str(image)]==p.sha(image)
     assert scenes['inputs'][str(elf)]==p.sha(elf)
+    for file,digest in scenes['inputs'].items():assert p.sha(file)==digest,file
     report_files=['probe/BUILD.json','probe/MEMORY.json','probe/DSP_IDENTITY.json','probe/PROBE_GATES.json',
         'static/BOUNDS.json','observer/OBSERVER_BUILD.json','unit/ALL_UNITS.json','COLD.json','BLOCK_IDENTITY.json','EMAC_IRQ.json',
         'resume-fixes/RUNTIME.json','package-check/PACKAGES.json','lifecycle-final/SNAPSHOTS.json',

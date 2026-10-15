@@ -440,6 +440,16 @@ post-PLAY comparison. It never discards arbitrary frames after PLAY or changes
 the shipping firmware. Compare initialized pipeline states before attributing
 startup readback differences to synthesis; hardware startup remains unqualified.
 
+The same campaign found that `Rtos::ticks()` counts vector 0x60 only in
+`m_acks`, whose capture stops after 100,000 total interrupts. In the 4,096-frame
+external-clock run the printed prefix was 1,862 ticks; the uncapped observer
+counted 4,059, and all 4,056 supplied MIDI clock bytes were consumed. Do not
+reuse a literal tick total from a shorter run as an acceptance condition.
+Bind clock delivery and the uncapped observer to the actual run. Interactive
+`run <ms>` can also stop inside an ISR: after the final STOP, stop releasing
+test frames and drain the current exception before asserting balanced
+switch/return counts. Never relabel a partial capture as a completed return.
+
 <a name="trap-hybrid-receipts"></a>
 
 ### A probe builder's success label is not qualification
