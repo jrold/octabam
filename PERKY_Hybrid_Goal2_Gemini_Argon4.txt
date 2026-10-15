@@ -1,0 +1,193 @@
+/goal Build one integrated PERKY DSP+ColdFire hybrid profiling probe in jrold/octabam, prove its local source transport and DSP preservation, and stop for physical Octatrack MKII timing validation. This is a diagnostic milestone, not production release approval.
+
+MODEL CONFIGURATION AND FRESH-THREAD HANDOFF
+User-selected model: Gemini Argon 4. Use its highest available reasoning/thinking-effort setting, if the Codex client exposes one; otherwise use the model's default. Standard/default speed is fine. Do not assume Astra-specific Max/Ultra or parallel-agent modes are available, and do not substitute a model without asking. Record the actual model/settings you used if available to you.
+
+THIS IS GOAL 2, NOT A RESTART OF GOAL 1. You are in a fresh conversation with no reliable prior thread context. Treat the existing checkout, Goal 1's committed files, exact Git history, and local receipts as the only sources of truth. Before implementing anything, inspect the branch, Goal 1 artifact paths, foundation commit, Phase 1 status and actual passing test results. Never assume Goal 1 passed solely because it was requested, and never recreate its branch or repeat its implementation. If Goal 1 prerequisites are missing, stale or failed, report BLOCKED with exact evidence and stop. Do not attempt to recover by branching, cloning or guessing.
+
+Work sequentially and verify cross-layer behavior. Avoid parallel writers and speculative code changes; this is a latency-sensitive firmware integration. Keep each action bounded and report concrete inspection/test milestones. Complete only the diagnostic Goal 2 and pause for physical MKII testing; do not start Goals 3 or 4.
+
+WORKSPACE SAFETY
+Use the existing jrold/octabam checkout on existing perky-cf-dsp-hybrid.
+Do not create, recreate, reset or switch to another development branch. Do not create worktrees, clone, duplicate the repository, merge, rebase, pull upstream, run GitHub Actions/CI or push.
+Read AGENTS.md. The user authorized this sole hybrid branch; all other restrictions remain.
+Inspect Git status and fingerprint unrelated tracked/untracked work. Never stash, discard, clean, overwrite or accidentally commit it.
+Reuse existing toolchains, caches and build directories. Work and verify locally.
+Preserve perky-machines unchanged. Stage only explicit related paths.
+
+PREREQUISITES
+Read and validate:
+modules/perky/hybrid/BASELINE.json
+modules/perky/hybrid/CONTRACT.md
+modules/perky/hybrid/PHASE1.json
+modules/perky/hybrid/PHASE1.md
+out/perky/hybrid/baseline
+out/perky/hybrid/cf-contract
+
+Require PASS_FOR_PROBE_BUILD and matching source/input/tool hashes. Verify ancestry of the recorded foundation commit. Missing or stale prerequisite evidence is BLOCKED, not permission to repeat branch creation or assume success.
+Run:
+.venv/bin/python3 tools/verify/verify_perky_hybrid.py --stage baseline --work out/perky/hybrid
+
+NONNEGOTIABLE CONTRACT
+T1/T5 retain native DSP Fold1/Fold2/Simple/Complex and original ALGO indices.
+T2/T6 each provide CF ALGO 0 Wavetable V1, 1 Wavetable V2, 2 Resonant with authentic snare/bass/original Noise-Tone third mode.
+Exactly two CF voices render, independently. T3/T4/T7/T8 remain stock.
+Six controls: TUNE, DECAY, ALGO, PAR1, PAR2, MODE, all p-lockable with stock AMP, LFOs, scenes, crossfader and sequencer.
+Keep FILTER, SPATIALIZER, EQUALIZER, DJ EQ, PHASER, FLANGER, CHORUS, COMB, DELAY, SPRING, DARK and LO-FI. Plate/Compressor stay unavailable. No extra FX removal, engine browser, DSP wave cache or approximated synthesis.
+
+FROZEN DSP
+Original source 16a8de19a17ee4cba765cbdb30ca051f85af4e23.
+Original MAIN SHA256:
+be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0
+
+Freeze the manifest's DSP code/helpers/tables/placement/PXY ownership/uploads, native timing/conversion, admission, controls and startup.
+Private P 770/774 each; shared P 2398 code + 6 guard =2404. Do not allocate the remaining private words.
+Hybrid MAIN may differ. Both DSP payloads/uploads and immutable tables must not.
+Any unavoidable DSP change: stop, quantify and request explicit approval without implementing it.
+
+EXISTING IMPLEMENTATION TO REUSE
+modules/perky/control_four_candidate.c and control_three_candidate.c:
+existing DSP-native pk_render and control producer, including Complex preparation.
+modules/perky/control_cf_final.c:
+pk_render, pk_final_fixed_slot, pk_final_commit_longs, trigger latch, frame cache and fixed-slot commit.
+modules/perky/control.c, machine.s, machine_four_ui.s:
+signature, admission, donor-buffer scheduling, parameter descriptors and UI hooks.
+modules/perky/cf_perky4.c/.h:
+pk4_prepare_event, pk4_process_segment, pk4_render, pk4_encode_stock_segment.
+modules/perky/cf_wavetable.c/.h, cf_resonant.c/.h, cf_noise_tone.c/.h,
+cf_math.h and cf_pcm_rice.h.
+tools/perky/build_four_machine.py, build_four_payload.py,
+build_three_machine.py, build_multi_machine_canary.py,
+build_cf_final.py, perky_cf_machine_module.py and perky_cf_assets.py.
+
+Do not import two complete copies of control.c or install both historical detour sets.
+Do not assume the historical hardware-render diagnostic measures frame timing: inspect it before borrowing anything.
+
+IMPLEMENT ONE COMPOSITION
+Create modules/perky/control_cf_dsp_hybrid.c and the minimal necessary CF-profile/runtime support.
+Create tools/perky/build_cf_dsp_hybrid.py with:
+--profile probe
+--work out/perky/hybrid
+
+Use the PERKY4S production composition as the authority for DSP generation and placement. Add one CF runtime and one machine-hook set.
+Do not inherit CF-only build_cf_final.py's suppression of DSP mailbox/bootstrap patches or its stock-DSP-pristine comparator. Replace that release invariant with exact PERKY4S DSP identity, not a disabled check.
+Reuse lossless CF asset packing and existing local packaging tools.
+
+Provide one exported source dispatcher:
+- signature absent or non-PERKY stock machine: untouched stock continuation;
+- signed T1/T5: original DSP-native producer;
+- signed T2/T6: corresponding independent CF instance;
+- unsupported tracks: stock behavior; do not emit native PERKY records there.
+
+Use narrow symbol/build adapters to preserve the original native producer source and semantics. Prove exactly one registration, detour and runtime symbol owner. Do not blindly combine preprocessor includes with conflicting macro remaps.
+
+Keep Octatrack panel track numbers distinct from *zero-based firmware track indices* and compact CF instance indices:
+T2 = panel track 2 = zero-based firmware track index 1 -> CF instance 0;
+T6 = panel track 6 = zero-based firmware track index 5 -> CF instance 1.
+Verify the actual indexing convention at every producer/dispatcher call site against the existing source; never treat 1/5 as one-based T1/T5. Do not pass zero-based track index 5 into a historical four-element array.
+Do not use pk4_voice_engine's historical voice silo to choose the new CF family.
+Preserve the six-control UI order and the recovered internal engine argument order through an explicit tested adapter.
+
+TRANSPORT AND EVENT CORRECTNESS
+Retain stock FLEX-compatible record encoding and normal DSP AMP/FX continuation.
+The current source slot is 336 bytes; the established two-segment unity-rate record occupies 40 longs/160 bytes. Preserve untouched slot bytes.
+Retain moving-cursor reservation independently of fixed-slot publication.
+Do not emit a native DSP PERKY tag for CF audio.
+
+The stock ping argument can flip between the pre-event and post-event halves of one 16-sample frame. Do not use ping equality as logical frame identity or erase an already-rendered prefix.
+Use the correct physical destination at publication according to the proven ABI.
+Apply new p-locks/ALGO/MODE and retrigger exactly at the event split, never to the pre-event prefix.
+Latch real trigger observations across the two callbacks and consume them exactly once.
+Test zero-length segments, every split offset 0..15, delayed first trigger, consecutive frames, family transitions and source handoff.
+Only use an explicitly silent prefix when the cold-handoff contract proves it should be silent; never erase valid pre-event stock or synth audio.
+
+INITIALIZATION AND LIFECYCLE
+Assets must decode and engines must initialize before real-time use.
+No asset decode, large memset, all-engine preinitialization, allocation, blocking lock, file I/O or logging inside pk_render or the frame-critical path.
+The loader does not clear BSS; use deterministic loaded cookies and explicit initialization.
+Do not let a UI callback reset live audio state concurrently.
+Implement a measured, generation-safe readiness/Bank/Part handoff. Preserve sample-accurate event behavior without dropping required triggers.
+Preinitialize only required families/instances. Retain exact reset/state/RNG semantics proven by Phase 1.
+If a correct bounded lifecycle cannot be established, stop rather than silently muting transitions to make a timing test pass.
+
+MEMORY/FIRMWARE
+Preserve all frozen DSP P/X/Y claims and the six-word guard.
+Decoded waveform storage is 200704 CF RAM bytes. No DSP bank or cache.
+Emit actual linked text/rodata/data/BSS/stack/state/asset maps and loader/preboot reservations with physical alias normalization.
+Prove nonoverlap with DSP shared program backing, stock buffers, sampler memory and staging.
+Respect the recorded card ELUP payload cap of 1 MiB and verify actual wrapper/header size separately.
+Never assume halving active CF voices halves allocated state or firmware size.
+Keep generated artifacts in out/perky/hybrid; preserve existing frozen release directories.
+
+MEASUREMENT DESIGN
+Use the corrected emulator including c2d99dad and its passing instruction tests.
+Measure the whole CF frame service plus separate synthesis/control/packing/DSP-wait components; do not time only pk_cf_wt_render.
+Record maxima, high percentiles, misses, frame/sample counts, active-voice counts and UI/event backlog.
+Record both DSP cores' exchange/completion timing separately; do not add concurrent processor execution times as serial costs.
+Use fixed-size counters/rings, not per-sample logs. Quantify instrumentation overhead.
+
+Implement a minimal hardware-readable profiler using a verified hardware timer or an existing qualified measurement facility. Verify frequency, wrap behavior, read overhead and export path. Do not assume an emulator-only register exists on silicon.
+Keep timer reads/counters bounded. Export results outside the audio callback.
+Provide profiler-on/off comparison and an armed/disarmed CF comparison without changing frozen DSP bytes.
+If no trustworthy hardware measurement path is established, mark timing UNVERIFIED and stop before production.
+
+REQUIRED INTEGRATED WORKLOAD
+Measure:
+T2/T6 = V1/V1, V1/V2, V2/snare, V1/bass,
+snare/snare, bass/snare, third/third.
+Also test V2/V2, reversed assignments and any heavier mode/control combination found in Phase 1.
+
+For each mandatory row:
+- T1 and T5 DSP synths both active;
+- T3/T4/T7/T8 stock sampler playback;
+- busy retained FX including Dark on both cores;
+- dense sequencer activity, retriggers, six-control locks, LFOs and scenes;
+- family/mode transitions and long-decay/sustain stress.
+Confirm actual active rendering and audio, not merely signed or muted tracks.
+
+Run each mandatory integrated emulator row for at least 60 simulated seconds and the worst discovered row for 10 simulated minutes. Exercise cold start, first delayed trigger, Bank/Part changes and p-lock reversion. Bound storage using hashes/statistics and short failure captures.
+
+TEST EXECUTION ORDER AND RESOURCE DISCIPLINE
+First run the smallest targeted correctness checks for new dispatcher/link/transport changes, then actual-image integration and short full-machine smoke tests. If those fail, stop and diagnose before starting the mandatory 60-second-per-combination and 10-minute worst-case runs. Once fast gates pass, execute the complete required stress matrix exactly as specified below. Reuse validated Phase 1 evidence only when its source/input/tool hashes match; do not silently treat skipped or stale tests as PASS. Keep logs bounded; no additional worktree, clone or duplicate build tree.
+
+TESTS TO EXECUTE
+- Corrected emulator CTest.
+- Original PERKY4S DSP generation/upload/guard comparison.
+- Phase 1 CF PCM/state/control contract.
+- Existing CF stock-record ABI and split/p-lock regression tests, including verify_perky_cf_seq_drift.py where applicable.
+- New mixed-dispatch tests for all eight tracks and all split offsets.
+- Actual-image both-core upload readback and immutable-table checks before/after FX initialization.
+- All twelve effects' availability and representative active processing.
+- Whole-machine boot and real project/sequencer replay.
+- Runtime/linker/loader and packaging corruption negative tests.
+
+Extend tools/verify/verify_perky_hybrid.py:
+.venv/bin/python3 tools/verify/verify_perky_hybrid.py --stage probe --work out/perky/hybrid
+It must validate actual generated hybrid artifacts, not substitute a historical CF-only or PERKY4S image.
+
+ARTIFACTS AND HARDWARE HANDOFF
+Create:
+modules/perky/hybrid/PHASE2.md
+modules/perky/hybrid/PHASE2.json
+modules/perky/hybrid/HW_PROBE_REQUEST.md
+out/perky/hybrid/probe/BUILD.json
+out/perky/hybrid/probe/MEMORY.json
+out/perky/hybrid/probe/TIMING.json
+out/perky/hybrid/probe/DSP_IDENTITY.json
+
+After local safety/correctness gates pass, emit a uniquely identified diagnostic MAIN/card/MIDI set under out/perky/hybrid/probe. Record exact paths and hashes in BUILD.json. Do not overwrite or relabel PERKY4S.
+Hardware instructions must identify rollback images, the exact flash hash, profiler extraction procedure, workload settings and failure actions.
+
+Request physical MKII testing of all seven mandatory combinations for at least two minutes each, plus the worst combination for at least 30 minutes, with four simultaneous synth voices and the other four sampler tracks.
+Require zero stalls/dropouts/deadline misses and measured frame headroom.
+Proposed advancement margin: worst measured full CF frame service, including probe overhead, <=80% of 362.811791 us, approximately 290.25 us.
+This is an engineering gate, not a claim about existing performance. Missing the margin requires review, not automatic FX removal.
+
+STOPPING AND COMMITS
+If source/PCM/DSP identity fails, do not emit a flashable artifact.
+If corrected modeled timing exceeds the frame period, quantify the shortfall and do not present a fully armed probe as safe without user review.
+For performance failures, permit at most two targeted, measured, bit-exact improvement iterations in CF/control/packing code. Preserve before/after cases and stop with the remaining shortfall; no endless optimization or DSP changes.
+
+Commit verified related probe code/tests/reports locally to perky-cf-dsp-hybrid. Rebuild from the recorded clean source commit and verify reproducibility. Do not push.
+Successful local status is LOCAL_PROBE_QUALIFIED_HARDWARE_PENDING, never production PASS.
+Pause after delivering the probe and instructions. Goal 3 is blocked until actual MKII results for this exact probe are validated.
