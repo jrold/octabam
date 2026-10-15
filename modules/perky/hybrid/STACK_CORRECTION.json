@@ -1,0 +1,330 @@
+{
+  "schema": "octabam.perky.hybrid.stack-structure.v1",
+  "decision": "STOP_FOR_ARCHITECTURAL_APPROVAL; no firmware change",
+  "image_sha256": "055cced1bb5319c35ee7d4708359a60a3e207a69d73711d2d536beadca060fbe",
+  "source_checkpoint": "821cc49c05728b6e3730ce3c934dfef7f04b7b90",
+  "probe": {
+    "status": "PASS_SCOPED_HOST_PROBE; NOT_FIRMWARE_QUALIFICATION",
+    "commands": [
+      [
+        "m68k-elf-as",
+        "-mcpu=5475",
+        "/Users/jrold/Downloads/octabam/tools/harness/perky_hybrid_safety/stack_instruction_cost.s",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/stack-correction/cost.o"
+      ],
+      [
+        "m68k-elf-objcopy",
+        "-O",
+        "binary",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/stack-correction/cost.o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/stack-correction/cost.bin"
+      ],
+      [
+        "/usr/bin/c++",
+        "-DDSP56300_DEBUGGER=0",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor/dsp56300/source",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kEmu/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kBase/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/asmjit/src",
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu++17",
+        "-flto",
+        "-arch",
+        "arm64",
+        "-DASMJIT_STATIC",
+        "-UNDEBUG",
+        "/Users/jrold/Downloads/octabam/tools/harness/perky_hybrid_safety/stack_ownership.cpp",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/stack-correction/stack_ownership",
+        "/Users/jrold/Downloads/octabam/out/emu/libot_machine.a",
+        "/Users/jrold/Downloads/octabam/out/emu/mc68k/lib68kEmu.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kBase/libdsp56kBase.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/asmjit/libasmjit.a",
+        "-lpthread"
+      ],
+      [
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/stack-correction/stack_ownership",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/trial-mainos.bin",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-final/fixture/card.img",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/stack-correction/cost.bin"
+      ]
+    ],
+    "process_exits": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "inputs": {
+      "/Users/jrold/Downloads/octabam/tools/harness/perky_hybrid_safety/stack_ownership.cpp": "dccb8ab4499434e4cfc6a2658962df98db804b8b38f7975677501e262a99900d",
+      "/Users/jrold/Downloads/octabam/tools/harness/perky_hybrid_safety/stack_instruction_cost.s": "59f11c9c2e70e6f87c8b9b4c223f711c7d1940c40288bdf2e9d7fce33d8a9946",
+      "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_stack_structure.py": "edeb3bfc315b6a1715f6a8e5275a11330d932b30513786bfc898a45a33b8cd02",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/ipl3/trial-mainos.bin": "055cced1bb5319c35ee7d4708359a60a3e207a69d73711d2d536beadca060fbe",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/safety-final/fixture/card.img": "a7a907bc6c841236f4ba133952150eac0a79d76c12d8e0c5f49b0227c69340d7",
+      "/Users/jrold/Downloads/octabam/out/emu/libot_machine.a": "13753d0643258b936241d9fda96dc9393314e57373647c9c091860891b9601bc",
+      "/Users/jrold/Downloads/octabam/out/emu/mc68k/lib68kEmu.a": "89a7794d7d22434b853d0684a2f9e8ad1ba76d39a5d1bb141f287788220880d5",
+      "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a": "f2f104dfc7de7f93018f80f4d1af12756da4aeb9c09c5b7eff0da1725c1475e5",
+      "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kBase/libdsp56kBase.a": "4e33f574194b36102e516d8c85a8c23ab33a4f3cc81843307452d5a15f44b34c",
+      "/Users/jrold/Downloads/octabam/out/emu/dsp56300/asmjit/libasmjit.a": "508ef4b41b98cdbdd87f2bbe343dd0fe9f63660a02538efb516bbe040fc970b5"
+    },
+    "outputs": {
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/stack-correction/stack_ownership": "5607687ca74dc9a621e1448427f1ac1d82eec06cacd5da27f822996faf55c203",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/stack-correction/cost.o": "ac87f84459e6ef2459f69fdb9db3938d8c29c490cfcd6e605e20615e272b2a6f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/stack-correction/cost.bin": "e76bc40debb5454a132ae04c34d0eef3c3a7de10363d2fc5d0ca0ef592b515f8",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/stack-correction/ownership.log": "c1ad372f437ae5072888462d96aad0c4e1395ba37fe6bb72e9f5ddab4a95cb40"
+    },
+    "task_create_and_initialization_records": 10,
+    "bottom_watch_bytes_each": 32,
+    "bottom_writes": 0,
+    "actual_storage_interrupted_by_sequencer_and_UART6": true,
+    "observed_storage_nested_peak_bytes": 624,
+    "closed_static_combined_bound": null,
+    "instruction_model_cycles": {
+      "0": 3,
+      "1": 1,
+      "2": 1,
+      "3": 2
+    },
+    "proposed_three_instruction_delta_cycles": 4,
+    "proposed_three_instruction_delta_us_at_264MHz": 0.015151515151515152,
+    "limits": "No actual stack switch or changed firmware. Memory-only PIO card; no live DSP/audio in this focused probe. IRQ arrival stimulus is adversarial; IPS sample clock. Individual instruction calibration is not an integrated ISR or silicon timing measurement."
+  },
+  "unchanged_checkpoint_artifacts": {
+    "mainos": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/mainos_PKHYB2P.bin",
+      "bytes": 1483190,
+      "sha256": "a2d6915bc71a97d63f44e223e558cc4941d52113708f7ba92a57bdd669339b40"
+    },
+    "fragmented_normal": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/fragmented-normal.bin",
+      "bytes": 1336014,
+      "sha256": "fdf62ee4096942d232639d310ffce986511b13d5387df8eb6943be11556cda21"
+    },
+    "runtime_elf": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/platform/runtime.elf",
+      "bytes": 360804,
+      "sha256": "f35c87b393ecc798eb103fcf9672f7b44ca64bf1f3df684d644d63b96e512a9e"
+    },
+    "runtime_raw": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/platform/runtime.raw",
+      "bytes": 359696,
+      "sha256": "9662d5b36d9546f8dac0e624a666eb0d5455696ecf48b278dd414ff22ed43478"
+    },
+    "dsp_identity_report": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/DSP_IDENTITY.json",
+      "bytes": 15204,
+      "sha256": "aa8e66d3359640dc705e26c99c24027bbd975e912d34971bc5f7f464b1a243df"
+    },
+    "memory_report": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/MEMORY.json",
+      "bytes": 77834,
+      "sha256": "45eef71091721f71407320f7f0da965a2436a56caaa27c9729e6fce4a0144095"
+    },
+    "elek": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/elek_PKHYB2P.bin",
+      "bytes": 809129,
+      "sha256": "7decf768dfd36b9d78bc7a0e6b43452f94597b1318bc472a91c29f2785718aae"
+    },
+    "card": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/OCTATRACK_PKHYB2P.bin",
+      "bytes": 809148,
+      "sha256": "10c92102780d8795d5944488b78830f2f35fca51a9f234c67bf23cf74f898a69"
+    },
+    "midi": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/OCTATRACK_OS1.40C_PKHYB2P.syx",
+      "bytes": 1130245,
+      "sha256": "468acc6e44f1b99fcbcbf09f00c87a363496c4c11eee1181cb643624f7cbf1b5"
+    },
+    "notes": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/PKHYB2P_PROBE_NOTES.txt",
+      "bytes": 1213,
+      "sha256": "bf798ba54cc0d039a0c7797f513c282e9c00119d39c39818fac11515e425ebfd"
+    }
+  },
+  "static_attempts": {
+    "PIO_read": {
+      "status": "CLOSED_SCOPED",
+      "entry": "0x400157b4",
+      "bytes_below_entry_SP": 92,
+      "instruction_states": 675,
+      "functions": {
+        "0x40000818": 8,
+        "0x40014b44": 0,
+        "0x40014b94": 8,
+        "0x40014c48": 8,
+        "0x40014d60": 8,
+        "0x40014e4c": 8,
+        "0x40014f38": 8,
+        "0x40014ff4": 8,
+        "0x40015098": 36,
+        "0x4001568c": 64,
+        "0x400157b4": 92,
+        "0x40020898": 4
+      }
+    },
+    "DMA_read": {
+      "status": "CLOSED_SCOPED",
+      "entry": "0x400157dc",
+      "bytes_below_entry_SP": 92,
+      "instruction_states": 675,
+      "functions": {
+        "0x40000818": 8,
+        "0x40014b44": 0,
+        "0x40014b94": 8,
+        "0x40014c48": 8,
+        "0x40014d60": 8,
+        "0x40014e4c": 8,
+        "0x40014f38": 8,
+        "0x40014ff4": 8,
+        "0x40015098": 36,
+        "0x4001568c": 64,
+        "0x400157dc": 92,
+        "0x40020898": 4
+      }
+    },
+    "storage_task": {
+      "status": "OPEN_STOP",
+      "entry": "0x4001ee30",
+      "reason": "indirect jsr at 0x4001c7c0; chain 0x4001ee30 -> 0x4001e9cc -> 0x4001c7f8 -> 0x4001c6e0",
+      "instruction_states": 251
+    },
+    "keyrepeat_task": {
+      "status": "CLOSED_SCOPED",
+      "entry": "0x4005593c",
+      "bytes_below_entry_SP": 104,
+      "instruction_states": 283,
+      "functions": {
+        "0x40000794": 0,
+        "0x400007a4": 8,
+        "0x400009f4": 20,
+        "0x40000ab4": 16,
+        "0x40010aa4": 4,
+        "0x40010d90": 24,
+        "0x40010db0": 28,
+        "0x40013634": 40,
+        "0x400136a8": 68,
+        "0x4001387c": 88,
+        "0x4005593c": 104
+      }
+    },
+    "UI_task": {
+      "status": "OPEN_STOP",
+      "entry": "0x40056c40",
+      "reason": "indirect jmp at 0x40056aa2; chain 0x40056c40 -> 0x40056ab8 -> 0x40056a70",
+      "instruction_states": 871
+    },
+    "sequencer": {
+      "status": "OPEN_STOP",
+      "entry": "0x400a1e0c",
+      "reason": "indirect jsr at 0x4009ee14; chain 0x400a1e0c -> 0x400a1608 -> 0x4009ec70",
+      "instruction_states": 336
+    },
+    "audio": {
+      "status": "OPEN_STOP",
+      "entry": "0x4000aad0",
+      "reason": "indirect jsr at 0x4000a150; chain 0x4000aad0 -> 0x40009e00",
+      "instruction_states": 1218
+    }
+  },
+  "runtime_elf_sha256": "f35c87b393ecc798eb103fcf9672f7b44ca64bf1f3df684d644d63b96e512a9e",
+  "keyrepeat_task_including_exit_word_bytes": 108,
+  "storage_0x4001eef2": {
+    "table_pointer": "0x460d16cc",
+    "table": "0x46c85c76",
+    "PIO_entry": "0x400157b4",
+    "DMA_entry": "0x400157dc",
+    "common_dispatch": "0x4001568c",
+    "task_exit_bytes": 4,
+    "task_frame_bytes": 44,
+    "retained_arguments_bytes": 28,
+    "indirect_JSR_bytes": 4,
+    "callee_bound_bytes": 92,
+    "scoped_task_bound_bytes": 172,
+    "scope": "This call only. Not the other worker cases, tasks or interrupts."
+  },
+  "allocation": {
+    "runtime_floor_after_live_BSS_and_loader_stage": "0x40cc4800",
+    "runtime_ceiling_and_sampler_base": "0x41600de0",
+    "available_bytes": 9684448,
+    "cached_uncached_alias_delta": "0x8000000",
+    "sampler_pages": 12653,
+    "sampler_bytes": 77740032,
+    "extra_sampler_pages_required": 0,
+    "ownership": "Already excluded by all stock arena base/count/clear/cap operands; not yet an allocated stack.",
+    "inputs": {
+      "out/perky/hybrid/probe/platform/layout.json": "104f055b715f383fd10a499cf39d885b0499c0428cd0f2e0dc031df97c4221fe",
+      "out/perky/hybrid/probe/MEMORY.json": "45eef71091721f71407320f7f0da965a2436a56caaa27c9729e6fce4a0144095"
+    }
+  },
+  "proposed_audio_stack_envelope": {
+    "status": "DESIGN_FOR_APPROVAL_ONLY; capacity is a qualification cap, not a derived safety bound",
+    "base": "0x415ffd80",
+    "bottom_guard": [
+      "0x415ffd80",
+      "0x415ffda0"
+    ],
+    "usable_stack": [
+      "0x415ffda0",
+      "0x41600da0"
+    ],
+    "usable_bytes": 4096,
+    "top_guard": [
+      "0x41600da0",
+      "0x41600dc0"
+    ],
+    "saved_A7": "0x41600dc0",
+    "alignment_padding_bytes": 28,
+    "total_bytes": 4192,
+    "remaining_unallocated_bytes": 9680256,
+    "extra_sampler_bytes": 0,
+    "extra_runtime_instruction_bytes": 18,
+    "extra_instructions_per_audio_IRQ": 3,
+    "required_before_implementation_acceptance": "Prove complete private-stack bound <=4096 and residual per-task/other-IRQ bounds; otherwise reject the envelope, never declare it safe from peaks."
+  },
+  "timing": {
+    "existing_max_observed_ISR_cycles": 85537,
+    "CPU_MHz": 264,
+    "existing_max_observed_ISR_us": 324.0037878787879,
+    "isolated_calibrated_instruction_delta_cycles": 4,
+    "arithmetic_projection_us_not_an_integrated_measurement": 324.0189393939394,
+    "deadline_us": 362.81179138321994,
+    "eighty_percent_ceiling_us": 290.24943310657596,
+    "projected_shortfall_to_unwaived_margin_us": 33.76950628736341,
+    "production_20_percent_margin_waived": false,
+    "changed_firmware_deadline_test": null
+  },
+  "combined_static_budget_bytes": null,
+  "reason": "Available DRAM proves placement feasibility, not a required size. Task/ISR dispatch closures remain open after the single bounded pass.",
+  "qualification": "NOT_QUALIFIED; no changed firmware, wrappers or silicon timing claims",
+  "preserved_IPL3_receipt": {
+    "path": "out/perky/hybrid/ipl3/IPL3_QUALIFICATION.json",
+    "sha256": "dd50354629fc662833f661514329f4310cf848dbf55eafb846fa46bbdc676a4b",
+    "all_recorded_sources_and_evidence_rechecked": true
+  },
+  "focused_guard_rerun": {
+    "status": "PASS",
+    "receipt_sha256": "fd5b64f37bdd15d8c37774905bdfa752d0048f0abddd2f14876292cd57dfd518",
+    "inputs_and_outputs_rechecked": true
+  },
+  "checks": {
+    "new_static_analyzer_controls": "4 PASS",
+    "existing_guard_controls": "5 PASS",
+    "ownership_nesting_bottom_watch_and_instruction_calibration": "PASS_SCOPED",
+    "new_combined_static_bound": "UNVERIFIED_STOP_EXIT_1",
+    "changed_firmware_rebuild_qualification_and_packaging": "NOT_STARTED_APPROVAL_REQUIRED",
+    "physical_test": "NOT_STARTED",
+    "Goal3": "NOT_STARTED"
+  },
+  "limitations": [
+    "This is deliverable B, not a qualified diagnostic candidate.",
+    "The 4096-byte private-stack envelope has no proven all-path upper bound.",
+    "The proposed audio-only switch still requires residual task/non-audio-IRQ bounds.",
+    "Isolated model instruction cost is not integrated or physical timing.",
+    "Existing wrappers contain the historical unguarded MAIN."
+  ]
+}

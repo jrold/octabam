@@ -2,6 +2,12 @@
 
 **BLOCKED — COMBINED STACK BOUND NOT ESTABLISHED.**
 
+The subsequent bounded stack-correction task returns **deliverable B**, with
+resolved storage-read bounds, verified task initialization and available DRAM,
+and a concrete private-audio-stack proposal awaiting approval. See
+[STACK_CORRECTION.md](STACK_CORRECTION.md). The guarded firmware remains unchanged
+and unqualified; the IPL3 evidence below is preserved.
+
 The authorized minimal guard is implemented and its **bounded local checks pass**.
 Real chooser/Part/playing-bank transitions, saved-card reload and dense
 trigger/lock/UI/DMA accounting now have additional executable passes. No guard
