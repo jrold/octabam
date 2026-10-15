@@ -814,7 +814,15 @@ def main() -> int:
     # still consume every completed result in the original order.
     assert args.jobs >= 1
     from concurrent.futures import ThreadPoolExecutor
-    pool = ThreadPoolExecutor(max_workers=args.jobs)
+    pool = ThreadPoolExecutor(max_workers=args.jobs + 1)
+    # Prior measured matrices identify Snare/Snare as worst. Start its full
+    # 10-minute run concurrently; selection below still uses this image's
+    # measured matrix. A different winner gets its own complete stress run.
+    stress_prior = next(row for row in MANDATORY_ROWS if row[0] == 'snare/snare')
+    stress_future = pool.submit(run_integrated_row, stress_prior[0]+'_10min_stress',
+        stress_prior[1], stress_prior[2], image_path=image_path, syms=syms,
+        project_src=project_src, work_dir=workload_dir/'ten_min_worst',
+        tone_path=tone_path, frames=args.worst_frames, verify_block_audio=False)
     matrix = {}
     for group, rows in (('mandatory', MANDATORY_ROWS), ('extra', EXTRA_ROWS)):
         for index, (label, left, right) in enumerate(rows):
@@ -851,7 +859,6 @@ def main() -> int:
             f"MAX={cf_isr['max_us_exact']:.2f} us; PERKY DTIM3 max={prof_us['max_perky_service_us']:.2f} us"
         )
 
-    pool.shutdown()
     # Full ISR timer, not ACK interval, determines the worst service window.
     all_rows = mandatory_results + extra_results
     worst_row = max(
@@ -963,18 +970,26 @@ def main() -> int:
     print(
         f"[5/5] Running 10-minute worst-case stress run on {w_label} ({args.worst_frames} frames = {args.worst_frames*16/SR:.1f} s)..."
     )
-    ten_min_run = run_integrated_row(
+    if w_label == stress_prior[0]:
+        ten_min_run = stress_future.result()
+    else:
+        # Preserve the completed prior-worst evidence; never relabel it as
+        # the newly discovered worst row or shorten either run.
+        prior_stress = stress_future.result()
+        (workload_dir/'PRIOR_WORST_STRESS.json').write_text(json.dumps(prior_stress,indent=2)+'\n')
+        ten_min_run = run_integrated_row(
         f"{w_label}_10min_stress",
         w_t2,
         w_t6,
         image_path=image_path,
         syms=syms,
         project_src=project_src,
-        work_dir=workload_dir / "ten_min_worst",
+        work_dir=workload_dir / "ten_min_discovered_worst",
         tone_path=tone_path,
         frames=args.worst_frames,
         verify_block_audio=False,
-    )
+        )
+    pool.shutdown()
     cf_10m = ten_min_run["ot_emu"]["cf_ack_interval"]
     prof_10m = ten_min_run["dtim3_profiler"]["dtim3_us"]
     print(
