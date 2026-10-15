@@ -1,10 +1,10 @@
 # Goal 2 handoff — INCOMPLETE / BLOCKED
 
 Branch `perky-cf-dsp-hybrid`. Build-source HEAD at report generation:
-`28701a6d84b3ebaf679eb5ae774d8f28d5646c2d`. This report is committed separately afterward; the build source
+`19d1810429765d4a1c4e18bd24d92b9fa2c6f1f3`. This report is committed separately afterward; the build source
 is immutable in BUILD.json. Runtime/optimizations: `ce882def`; measurement
 switch/scope repair: `28701a6d`. Model: GPT-6.1 Sol / High, one agent; speed not
-exposed, no override. **Do not flash, push, start Goal 3 or attempt a third
+exposed, no override. **Do not flash, push, start Goal 3 or attempt a fourth
 optimization under the current authorization.**
 
 ## Reconstructed prior state and new work
@@ -23,7 +23,7 @@ bounded counters/rings, coherent UI snapshots, separate HC polling counters
 and automatic STOP-to-card `.PRF` export replace callback grouping. The user
 needs **no CF METER reading**. No DSP insert or frozen DSP change was made.
 
-Both performance iterations are used: same short case 368.167 -> 349.598 ->
+The original two retained performance iterations were: same short case 368.167 -> 349.598 ->
 315.871 us runtime timer peak. Original-reference 19 sections and packaged
 PCM/state/RNG comparisons pass. Iteration 2 batches exact smoother recurrence
 and retains first/last and finite-decay-boundary side effects; corrupt state
@@ -70,7 +70,7 @@ Exact argv, result/log hashes and every major contract status are in PHASE2.json
 - EXPECTED BLOCKED: `tools/verify/verify_perky_hybrid.py --stage probe --work out/perky/hybrid`;
   wrappers absent, timing margin failed, sustained/lifecycle/silicon evidence missing.
 
-NOT RUN at the two-iteration stopping gate: full >=60 s matrix and >=600 s
+NOT RUN at the initial two-iteration stopping gate, still incomplete after iteration 3: full >=60 s matrix and >=600 s
 worst row; complete stock Bank/Part and backlog stress; independently active
 nonzero processing for every retained effect; current wrapper/corruption/cap
 qualification; physical MKII validation. Therefore no qualified probe exists.
@@ -100,6 +100,20 @@ without inspecting its worker/baseline behavior.
 
 The smallest next step is review of the remaining 29.611 us modeled margin
 shortfall and unrun qualification scope before any additional optimization
-or package/hardware authorization. Stop here under the current two-iteration
-limit. Future qualified hardware extraction can use automatic card files;
+or package/hardware authorization. Stop here after all three authorized attempts. Future qualified hardware extraction can use automatic card files;
 it need not impose CF METER readings on the user.
+
+## Additional authorized iteration 3
+
+See ITERATION3.md and out/perky/hybrid/iteration3/RESULT.json. Measured
+empty renders first: 1.655 us/call, 0.284 us/frame mean, zero in peak frame.
+The one skip candidate passed 4,096 callback comparisons, including 242 empty
+callbacks, all 17 splits, exact PCM/slots/state/RNG/cursor/counters and the
+existing runtime suite. DSP identity and both-core FX readback passed.
+Mean full ISR improved 0.605 us, p99 regressed 0.335 us, peak regressed
+319.860902 -> 320.011278 us. Candidate rejected; source and all four runtime
+binaries restored bit-identical. Retained peak is 319.860902 us and remaining
+margin is 29.611469 us. The extra authorization is consumed; no fourth attempt,
+flash or push. Build-source HEAD and exact restoration are recorded in
+iteration3/RESTORED.json and current BUILD.json. Only measurement/tests/reports
+were committed for this experiment; no candidate runtime change is retained.

@@ -1,13 +1,13 @@
 # PERKY hybrid continuation — 14 October 2026
 
-**INCOMPLETE / BLOCKED. DO NOT FLASH. Both optimization iterations used.**
+**INCOMPLETE / BLOCKED. DO NOT FLASH. Original two plus one additional iteration used.**
 Cold-start initialization and full-ISR instrumentation are implemented and
 locally tested. The final short-run modeled ISR peak is **319.861 us**,
 including the small entry/return correction: zero observed period misses,
 **29.611 us above** the proposed 290.249433 us advancement margin. The full
 sustained workload and silicon qualification remain incomplete.
 
-Branch `perky-cf-dsp-hybrid`; committed build source `28701a6d84b3ebaf679eb5ae774d8f28d5646c2d`.
+Branch `perky-cf-dsp-hybrid`; committed build source `19d1810429765d4a1c4e18bd24d92b9fa2c6f1f3`.
 Runtime/optimization commit `ce882def`; measurement-harness correction
 `28701a6d`. GPT-6.1 Sol / High, one agent, no model or speed override.
 The preserved `perky-machines` ref remains `4ff6aa4456502424bff5bea62e7b55aa36d7b4a4`.
@@ -35,7 +35,7 @@ identity and coherent counters; `tools/perky/read_hybrid_profile.py` validates
 it against the exact BUILD.json. Actual stock filesystem export passed under
 the port. Physical card export and silicon timer read cost remain unverified.
 
-## Two measured, bit-exact iterations
+## Two retained measured, bit-exact iterations
 
 Same 4,000-frame delayed-trigger / Part-index-poke short case, corrected
 `--cf-cycles-clock 1.0`; these are runtime late-stamp spans, not hardware bounds:
@@ -49,7 +49,7 @@ Same 4,000-frame delayed-trigger / Part-index-poke short case, corrected
 Both iterations passed all 19 original-reference sections. The final packaged
 adapter passed 1,024 frames / 2,048 exact source records and complete two-voice
 state/RNG snapshots, every split offset, plus eight out-of-range fallback cases.
-No third performance iteration was attempted.
+A subsequently authorized third iteration was measured and rejected; see ITERATION3.md.
 
 A separate final 4,000-frame snare/snare comparison measured **319.861 us**
 for the complete corrected ISR model span, leaving 42.951 us to the period.
@@ -91,7 +91,7 @@ bytes and asserts the effective switch and counter activity.
 - BLOCKED as expected: aggregate probe gate. Current card/MIDI/ELUP wrappers
   are deliberately absent. Archived old wrappers were hash-checked against
   their preserved copies before removal from the current probe directory.
-- NOT RUN after the two-iteration stopping gate: all mandatory/additional
+- NOT RUN at the initial two-iteration stopping gate, still incomplete after iteration 3: all mandatory/additional
   >=60-second rows, worst >=600-second run, complete lifecycle/backlog stress,
   current wrapper corruption/cap roundtrip and physical MKII tests.
 
@@ -109,7 +109,15 @@ Evidence is in `out/perky/hybrid/resume-fixes/`; complete commands, hashes and
 status-by-contract are in PHASE2.json. No flash, push, upstream integration,
 CI or Goal 3 work occurred.
 
-The stopping gate is the remaining margin after two iterations. Review that
+The stopping gate is the remaining margin after the original two iterations
+and one explicitly authorized, rejected third attempt. Review that
 shortfall and the unrun qualification scope before authorizing further work.
 Hardware handoff remains withheld; automatic STOP-to-card export avoids any
 CF METER reading in a future qualified run.
+
+## Authorized additional iteration
+
+[Iteration 3](ITERATION3.md) measured empty renders first and tested one
+bit-exact skip. It saved 0.605 us mean ISR time but worsened peak by 0.150 us
+and p99 by 0.335 us, so the runtime was restored exactly. Retained peak and
+remaining shortfall are unchanged. All three authorized attempts are consumed.

@@ -25,6 +25,7 @@ checkpoints, not the current MKII firmware or free DSP memory.
 | [../modules/perky/PERKY4S_RELEASE.md](../modules/perky/PERKY4S_RELEASE.md) | Current working MKII DSP release; guarded P placement, final P ledger, qualification and physical test scope |
 | [../modules/perky/PERKY4_MEMORY.md](../modules/perky/PERKY4_MEMORY.md) | Historical PERKY4 DSP ledger and timing; **not** the PERKY4S occupancy (see PERKY4S_RELEASE.md) |
 | [../modules/perky/hybrid/PHASE2.md](../modules/perky/hybrid/PHASE2.md) | Hybrid Goal 2 recovery: modeled deadline failure, verified local evidence and remaining integration gates; **not qualified** |
+| [../modules/perky/hybrid/ITERATION3.md](../modules/perky/hybrid/ITERATION3.md) | Additional authorized CF empty-render experiment: exact but rejected for worse peak timing; prior runtime restored |
 | [../modules/perky/hybrid/HW_PROBE_REQUEST.md](../modules/perky/hybrid/HW_PROBE_REQUEST.md) | Withheld hybrid hardware request, unqualified artifact hashes and preserved rollback references |
 | [../modules/perky/hybrid/GOAL2_RESUME_HANDOFF.md](../modules/perky/hybrid/GOAL2_RESUME_HANDOFF.md) | Resume audit, preserved dirty work, executed commands and timing-review stopping gate |
 | [../modules/perky/PICKUP_FEASIBILITY.md](../modules/perky/PICKUP_FEASIBILITY.md) | Conditional ColdFire census only; Pickup and shared recorders preserved |

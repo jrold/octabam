@@ -1,7 +1,9 @@
 # Hardware request withheld
 
 **INCOMPLETE / BLOCKED. No physical update or test is requested. DO NOT FLASH.**
-Two allowed bit-exact optimization iterations are exhausted. A short corrected
+The original two iterations and one explicitly authorized additional iteration
+are exhausted. The third empty-render candidate was bit-exact but worsened
+peak timing and was rejected/restored; see ITERATION3.md. A short corrected
 model run reached 319.861 us for the complete ISR, 29.611 us above the proposed
 80% margin. Zero misses in this short run is not sustained or silicon proof.
 The old 370.797 us ISR interpretation is retracted: it was ACK-to-ACK work.

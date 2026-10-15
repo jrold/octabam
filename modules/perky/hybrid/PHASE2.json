@@ -1,8 +1,8 @@
 {
   "schema": "octabam.perky.hybrid.phase2.v2",
-  "status": "INCOMPLETE_BLOCKED_TWO_ITERATIONS_EXHAUSTED",
+  "status": "INCOMPLETE_BLOCKED_THREE_ITERATIONS_EXHAUSTED",
   "branch": "perky-cf-dsp-hybrid",
-  "source_HEAD": "28701a6d84b3ebaf679eb5ae774d8f28d5646c2d",
+  "source_HEAD": "19d1810429765d4a1c4e18bd24d92b9fa2c6f1f3",
   "runtime_implementation_commit": "ce882def",
   "measurement_harness_commit": "28701a6d",
   "report_HEAD_note": "HEAD at report generation equals source_HEAD; this report is committed separately afterward.",
@@ -67,11 +67,11 @@
     },
     "timing": {
       "status": "FAILED_80_PERCENT_MARGIN",
-      "evidence_or_limit": "Both measured bit-exact optimization iterations used. Final short-run corrected full ISR model max 319.860902 us; zero observed misses; 29.611469 us over proposed margin. Not a sustained bound."
+      "evidence_or_limit": "Three total iterations used, including explicitly authorized iteration 3. Empty-render candidate bit-exact but peak +0.150376 us and p99 +0.334586 us; rejected/restored. Retained peak 319.860902 us, remaining 29.611469 us."
     },
     "integrated_matrix": {
       "status": "NOT_RUN_STOPPING_GATE",
-      "evidence_or_limit": "Seven >=60 s rows, additional/reversed rows, worst >=600 s and full lifecycle/backlog stress withheld after two-iteration margin failure."
+      "evidence_or_limit": "Long matrix withheld at initial two-iteration margin failure, remains NOT_RUN after the explicitly authorized third candidate was rejected."
     },
     "negative_gates": {
       "status": "PARTIAL",
@@ -176,6 +176,15 @@
         "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/VERIFY_PROBE.json",
         "bytes": 16406,
         "sha256": "6512d388fe723438c4cd1ba5884347f9493a7ead93feea267d0bd9cf7d4d9431"
+      }
+    },
+    {
+      "command": "See iteration3/RESULT.json commands",
+      "result": "MEASURED BIT-EXACT, REJECTED PEAK REGRESSION, EXACT RESTORATION PASS",
+      "receipt": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/iteration3/RESULT.json",
+        "bytes": 7410,
+        "sha256": "716f533564fc6344f3ed232b8fca40259370a542fe449aca4975192423267c31"
       }
     }
   ],
@@ -796,7 +805,7 @@
     {
       "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/BUILD.json",
       "bytes": 7436,
-      "sha256": "782890a6beab2c59033a3a130143a6e98966b62be53ce6e3e964019e5b3c51a5"
+      "sha256": "b92aceef00831d01999853810ae74fef47ed4cb325bae60e9d63e668550146ba"
     },
     {
       "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/MEMORY.json",
@@ -810,8 +819,8 @@
     },
     {
       "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/TIMING.json",
-      "bytes": 24448,
-      "sha256": "d8577a44eada5caf55917c5f39c912ed5685d399cb3cab84432f30fa83f87c11"
+      "bytes": 25675,
+      "sha256": "add28f8ce9ef783e3e6d2ac72e8d3304c1b8d265d7749043614892d35560f51d"
     },
     {
       "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/PROBE_GATES.json",
@@ -842,10 +851,15 @@
       "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-fixes/PKH20000.PRF",
       "bytes": 1864,
       "sha256": "87f3c9c2bb8aa32127a975f42a8c296e1f51b53c6172419f89ba9e2aab03a847"
+    },
+    {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/iteration3/RESULT.json",
+      "bytes": 7410,
+      "sha256": "716f533564fc6344f3ed232b8fca40259370a542fe449aca4975192423267c31"
     }
   ],
   "performance_iterations": {
-    "limit": 2,
+    "limit": 3,
     "iterations": [
       {
         "number": 1,
@@ -873,8 +887,26 @@
         "after_ISR_max_us": 315.871,
         "deadline_misses": 0,
         "remaining_to_80pct_us": 25.621566893424017
+      },
+      {
+        "number": 3,
+        "status": "MEASURED_BIT_EXACT_REJECTED_PEAK_REGRESSION",
+        "target": "Skip zero-length synthesis while retaining callback event/control/transport work",
+        "before_ISR_max_us": 319.8609022556391,
+        "candidate_ISR_max_us": 320.0112781954887,
+        "full_ISR_mean_savings_us": 0.6052086466165463,
+        "full_ISR_peak_savings_us": -0.1503759398496527,
+        "bit_exact": "PASS 1024 prepared no-ops; 4096 callback boundaries, 242 zero callbacks, 17 splits; full state/RNG/source records/cursor/counters exact",
+        "retained": false,
+        "retained_ISR_max_us": 319.8609022556391,
+        "receipt": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/iteration3/RESULT.json",
+          "bytes": 7410,
+          "sha256": "716f533564fc6344f3ed232b8fca40259370a542fe449aca4975192423267c31"
+        }
       }
-    ]
+    ],
+    "authorization_extension": "One additional local CF-only empty-render iteration explicitly authorized by user."
   },
   "timing": {
     "scope": "short snare/snare local-model runs only; not sustained matrix or hardware bound",
@@ -891,6 +923,11 @@
     "note": "Differences of maxima are not a per-frame worst overhead bound; common hooks remain installed with profiling off."
   },
   "retraction": "The earlier 98632 cycles / 370.797 us and one miss measure ACK-to-ACK work including tasks, not ISR duration. New entry/tail instrumentation reproduced a real ISR overrun (368.167 us) before optimization. Current docs retract original ISR interpretation.",
-  "stopping_gate": "Two iterations used; final short model peak exceeds 80% target by 29.611469 us. No further optimization or DSP changes authorized in this bounded task.",
-  "smallest_next_step": "Review remaining margin and incomplete qualification scope before authorizing any additional performance work or hardware package. Existing STOP-to-card export removes CF METER reading requirement."
+  "stopping_gate": "Original two iterations plus one explicitly authorized additional iteration consumed. Candidate rejected for peak regression; retained runtime unchanged and 80% margin still failed. No fourth iteration.",
+  "smallest_next_step": "Review a separately scoped CF event/control investigation before any further optimization; no hardware package or physical test requested.",
+  "additional_iteration": {
+    "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/iteration3/RESULT.json",
+    "bytes": 7410,
+    "sha256": "716f533564fc6344f3ed232b8fca40259370a542fe449aca4975192423267c31"
+  }
 }
