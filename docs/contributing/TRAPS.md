@@ -430,9 +430,24 @@ its contents, skipped the retained-FX gate, and did not bind reports to the
 generated image or recorded source commit. The existing DTIM3 counter used
 88 MHz instead of the qualified 132 MHz, summed only PERKY callbacks, and
 counted 60,630 groups during 27,563 real frames. Its zero misses could not
-qualify whole-frame timing. A bounded delayed-trigger/Part-index test of
-the same image measured 98,632 modeled CF cycles (370.797 us at 266 MHz),
-one deadline miss in 4,000 frames. This is model evidence, not hardware timing.
+qualify whole-frame timing. The recovery initially called an ACK-to-ACK
+measurement (98,632 modeled CF cycles, 370.797 us) an ISR duration. That
+interpretation is **retracted**: `rtos.frameCycles()` also includes intervening
+task work. New independent ISR entry/tail instrumentation, using the corrected
+cycle clock and 132 MHz DTIM3, did reproduce a true overrun before optimization
+(368.167 us). Two bit-exact CF control iterations reduced that same short case
+to 315.871 us; the proposed 80% margin still fails. These are model observations,
+not MKII timing or a complete workload bound.
+
+The on/off comparison also exposed two instrument limitations. The port's
+`--poke-before-play` takes **one byte and C integer syntax**, whereas a step's
+`poke` takes a hex byte string. A four-byte switch needs four explicit byte
+writes; verify the effective switch and resulting counter activity. Clearing
+only the high byte leaves the loaded low-byte one enabled. Also, a PC watch
+before the CPU step misses most first instructions entered by an interrupt in
+that step. Watch the next instruction, establish one matched pair per frame,
+and account for the omitted instructions. Never accept a zero overhead result
+until both controls and coverage are observed.
 
 Gate report contents, durations, active audio, source commit, image/tool
 hashes, lifecycle and timer/export qualification before issuing a success

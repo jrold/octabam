@@ -470,10 +470,14 @@ def run_integrated_row(
     prof_dump = work_dir / "prof.bin"
     log_path = work_dir / "port.log"
 
-    pokes = [
-        f"{syms['pk_hybrid_profiler_enable']:#x}={profiler_enable:08x}",
-        f"{syms['pk_hybrid_cf_arm']:#x}={cf_arm:08x}",
-    ]
+    # --poke-before-play accepts one byte per address (C integer syntax),
+    # unlike --step poke's hex byte strings. Write all four big-endian bytes
+    # and verify the effective switches below; a high-byte zero cannot turn
+    # off a loaded uint32_t whose low byte is still one.
+    pokes = [f"{syms[name] + i:#x}={value:#x}"
+             for name, flag in (("pk_hybrid_profiler_enable", profiler_enable),
+                                ("pk_hybrid_cf_arm", cf_arm))
+             for i, value in enumerate(flag.to_bytes(4, 'big'))]
 
     cmd = [
         str(EMU),
@@ -530,6 +534,13 @@ def run_integrated_row(
 
     emu_metrics = parse_ot_emu_log(log_text)
     prof_metrics = decode_profiler_dump(prof_dump.read_bytes())
+    if profiler_enable:
+        assert prof_metrics['profiler_enabled'] is True
+        assert prof_metrics['cf_armed'] == bool(cf_arm)
+        if not cf_arm:
+            assert prof_metrics['dtim3_ticks']['inst_calls'] == [0, 0]
+    else:
+        assert prof_metrics['frame_count'] == 0, 'profiler-disable poke did not take effect'
 
     # Optional short block-dump verification on the same card to confirm all 8 tracks
     # (T1/T5 DSP, T2/T6 CF, T3/T4/T7/T8 stock sampler) emit active audio & post-FX2 chain output
