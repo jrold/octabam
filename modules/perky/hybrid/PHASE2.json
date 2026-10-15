@@ -1,0 +1,260 @@
+{
+  "schema": "octabam.perky.hybrid.phase2.recovery.v1",
+  "status": "INCOMPLETE_BLOCKED_TIMING_REVIEW_REQUIRED",
+  "hardware_feasibility": "UNVERIFIED",
+  "branch": "perky-cf-dsp-hybrid",
+  "recovered_head": "82947daee3bf7d02efe947774f3c157620cd50a4",
+  "verification_commit": "8a01675efb6fbccff306ad5f9d49cca0b23179f4",
+  "model": {
+    "id": "gpt-6.1-sol",
+    "reasoning": "high",
+    "speed": "not exposed; no override made",
+    "agents": 1
+  },
+  "initial_inventory": {
+    "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/initial-inventory.json",
+    "bytes": 35632,
+    "sha256": "3a44c50765a9c0209cd63a9d9bfd437efe61210522ef3a1983eaff19734a8c1a"
+  },
+  "execution_source_provenance": {
+    "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/execution-source-identities.json",
+    "bytes": 959,
+    "sha256": "0da3889543c96a269943488cd695ab03bafd4e919d96f19317c98a35b510bb13"
+  },
+  "commands": [
+    {
+      "command": ".venv/bin/python3 tools/verify/verify_perky_hybrid.py --stage baseline --work out/perky/hybrid",
+      "result": "PASS_FOR_PROBE_BUILD (18/18; before recovery verifier edits)",
+      "exit_status": 0,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/baseline.log",
+        "bytes": 2345,
+        "sha256": "def2ba1b04d24d5f5951d5bfba9affc972b03aa2d5089c79df0b591782fbe1db"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 tools/verify/verify_perky_hybrid_workload.py --work out/perky/hybrid --smoke",
+      "result": "PASS; seq drift 22450 frames and integrated 1000 frames plus all-eight-track audio assertions in 2400-frame capture",
+      "exit_status": 0,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/smoke.log",
+        "bytes": 3877,
+        "sha256": "ab03538bc33d6e915d05acbbfb921b1fc42bb12bafef96faeaf5b50187b7dee1"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 out/perky/hybrid/resume-goal2/diagnose_row.py",
+      "result": "PASS execution; FAIL 80% timing margin; 27563 frames, no period misses",
+      "exit_status": 0,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/snare-10s.log",
+        "bytes": 2844,
+        "sha256": "9726e99ad3fdf3b0484ec46d89eb462807082ec731b966ca7642d6f6bf9b9a29"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 out/perky/hybrid/resume-goal2/diagnose_transition.py",
+      "result": "FAIL deadline gate; 4000 frames, 1 miss; final script uses documented poke actions",
+      "exit_status": 0,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/transitions-index.log",
+        "bytes": 2843,
+        "sha256": "f5f3a4a4d69be74b88e067920c3231a2873b922e9e08c8517f2efa86861bc953"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 out/perky/hybrid/resume-goal2/diagnose_cold_callback.py",
+      "result": "FAIL lifecycle contract (decoded-asset writes in callback); diagnostic execution succeeded",
+      "exit_status": 0,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/cold-callback.log",
+        "bytes": 645,
+        "sha256": "d5f2435f015ea9376ec66e3d830ea689f14d6209966f5e6f4f3dce46996df94b"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 tools/verify/verify_perky_hybrid.py --stage probe --work out/perky/hybrid",
+      "result": "BLOCKED; all 8 executable commands PASS, missing evidence refused. Subsequent image/tool receipt binding additions tested separately.",
+      "exit_status": 1,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/probe-repaired.log",
+        "bytes": 984,
+        "sha256": "bd3ed76ce4636df6596e5d1a12f63271f772cbf334c198b0e18ccda8eb59139f"
+      }
+    },
+    {
+      "command": ".venv/bin/python3 tools/verify/verify_perky_hybrid_evidence_selftest.py",
+      "result": "PASS 9/9 negative/structural tests",
+      "exit_status": 0,
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/evidence-selftest.log",
+        "bytes": 107,
+        "sha256": "5d7a03ba8edf9bfa1d13102e407e2fb284bf7b3d2631233c7a9d8c787450df62"
+      }
+    },
+    {
+      "command": "git diff --check",
+      "result": "PASS",
+      "exit_status": 0
+    },
+    {
+      "command": "clean-source rebuild/reproducibility, long matrix, physical update",
+      "result": "NOT-RUN; review gate reached"
+    },
+    {
+      "command": ".venv/bin/python3 out/perky/hybrid/resume-goal2/final_audit.py",
+      "exit_status": 0,
+      "result": "PASS refusal/preservation audit: 13 reasons reject qualification, 8 unchanged binary/runtime files, 166 frozen DSP sources",
+      "log": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/final-audit.log",
+        "sha256": "64e4a71f6fd0c3cbefb2591ce436b11d3ba945ba565face07b533696d51aab6e",
+        "bytes": 105
+      }
+    }
+  ],
+  "deliverables": [
+    {
+      "deliverable": "foundation",
+      "status": "COMPLETE+VALIDATED",
+      "evidence_or_limit": "18/18 baseline checks and all 9 corrected CTest tests; original CF/reference paths unchanged."
+    },
+    {
+      "deliverable": "composition",
+      "status": "IMPLEMENTED+UNVERIFIED",
+      "evidence_or_limit": "Existing runtime/builder image/source hashes match, but code is untracked and absent from recorded source commit."
+    },
+    {
+      "deliverable": "frozen_DSP",
+      "status": "COMPLETE+VALIDATED",
+      "evidence_or_limit": "Generation/upload/guard identity, startup and P/X/Y readback gates pass on actual hybrid; no DSP changes."
+    },
+    {
+      "deliverable": "dispatch_transport_UI",
+      "status": "PARTIAL",
+      "evidence_or_limit": "192 native record comparisons, 288 CF split cases, independence, slot/cursor and UI stub gates pass. Full cold source-handoff and original-state comparison not established."
+    },
+    {
+      "deliverable": "integrated_original_PCM_state",
+      "status": "IMPLEMENTED+UNVERIFIED",
+      "evidence_or_limit": "Phase 1 helpers are qualified; the new hybrid adapter has not had an independent full PCM/state/RNG differential."
+    },
+    {
+      "deliverable": "initialization_lifecycle",
+      "status": "FAILED",
+      "evidence_or_limit": "Observed decoded-wave writes in pk_render. Bank/Part reset initializes both instances in callback. No qualified generation-safe ownership handoff."
+    },
+    {
+      "deliverable": "hardware_profiler",
+      "status": "FAILED",
+      "evidence_or_limit": "Wrong declared frequency, wrong frame grouping, callbacks only, no silicon export path or qualified overhead/wrap tests."
+    },
+    {
+      "deliverable": "memory_and_packaging",
+      "status": "PARTIAL",
+      "evidence_or_limit": "Actual link/map, 200704 decoded bytes and wrapper cap/round-trip evidence exist; stack reserve is not a measured hybrid ceiling; clean-source reproduction absent."
+    },
+    {
+      "deliverable": "retained_FX",
+      "status": "PARTIAL",
+      "evidence_or_limit": "All 12 assigned in 4 actual-image both-core readback configurations; immutable bytes/tables preserved. Gate does not independently prove nonzero active processing by each effect."
+    },
+    {
+      "deliverable": "integrated_workload",
+      "status": "FAILED",
+      "evidence_or_limit": "Smoke passes. 27563-frame row exceeds 80% margin; 4000-frame delayed-trigger/Part-index test misses deadline once. Long matrix NOT-RUN."
+    },
+    {
+      "deliverable": "negative_tests",
+      "status": "PARTIAL",
+      "evidence_or_limit": "Wrapper/card/DSP-span/release guards and 9 receipt tests pass; full lifecycle/loader fault coverage remains unqualified."
+    },
+    {
+      "deliverable": "Phase2_and_hardware_handoff",
+      "status": "PARTIAL",
+      "evidence_or_limit": "This recovery creates blocked reports and withheld hardware request, not a qualified flash handoff."
+    },
+    {
+      "deliverable": "clean_source_commit_reproducibility",
+      "status": "MISSING",
+      "evidence_or_limit": "Verified verifier/tests committed; inherited incomplete runtime/builder remain untracked. No new flashable build or reproducibility claim."
+    }
+  ],
+  "artifacts": {
+    "BUILD.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/BUILD.json",
+      "bytes": 6881,
+      "sha256": "0b2dd565891c2bf91d423f3757e106d567e350d75b9b9f1c49e6a71afbf085a3"
+    },
+    "MEMORY.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/MEMORY.json",
+      "bytes": 75203,
+      "sha256": "9b0117eac34594bbe86d3881eab08d3591bc0fd3a4a1152547b8cb94dce747ac"
+    },
+    "TIMING.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/TIMING.json",
+      "bytes": 3577,
+      "sha256": "b7f14ecf75b6c8513f1bc73a68180accba015623976622b572ad60e2a568f281"
+    },
+    "DSP_IDENTITY.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/DSP_IDENTITY.json",
+      "bytes": 15204,
+      "sha256": "a450a6c7e6a43a147ed7ffc421d13abe30958f1106df4e1459d436cd311579fd"
+    },
+    "VERIFY_PROBE.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/VERIFY_PROBE.json",
+      "bytes": 15413,
+      "sha256": "c74805131b4c735f77ac76a81fe4da70097676029d4e5f0c1404877a064dbc5f"
+    },
+    "PROBE_GATES.json": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/PROBE_GATES.json",
+      "bytes": 1921,
+      "sha256": "aa3e25dd6534bed34cfa9bdca34b24d5ff5da3cb3a9ea20ff3be98d3a77c5378"
+    },
+    "mainos_PKHYB2P.bin": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/mainos_PKHYB2P.bin",
+      "bytes": 1477746,
+      "sha256": "df77a52a56941f1fbb6a97f3cfdc118cf03596b87c22b6389717ee1fe8e6c582"
+    },
+    "elek_PKHYB2P.bin": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/elek_PKHYB2P.bin",
+      "bytes": 803276,
+      "sha256": "be4a58f9ec35c7686c7f2bc04a9701503afe6193b6fbfc90d0feffc48643e9d7"
+    },
+    "OCTATRACK_PKHYB2P.bin": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/OCTATRACK_PKHYB2P.bin",
+      "bytes": 803292,
+      "sha256": "fa222e0bdb3a54dba617e03902300bda93cece2368a9cc55495d00af60db5f40"
+    },
+    "OCTATRACK_OS1.40C_PKHYB2P.syx": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/probe/OCTATRACK_OS1.40C_PKHYB2P.syx",
+      "bytes": 1122068,
+      "sha256": "7beb8da5069a77d85c6a6d10a882ac111bb85fc995014a5c64a9ad1f3bc085f3"
+    }
+  },
+  "rollback": {
+    "perky4s_main_sha256": "be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0",
+    "perky4s_card": {
+      "path": "/Users/jrold/Downloads/octabam/out/OCTATRACK_PERKY4S.bin",
+      "bytes": 570824,
+      "sha256": "bc9367ec56b2f310f733d0808a88e74e44da32b63f9483468af09760f7ac8fa9"
+    },
+    "stock_midi": {
+      "path": "/Users/jrold/Downloads/octabam/downloads/extracted/OCTATRACK_OS1.40C.syx",
+      "bytes": 656304,
+      "sha256": "0a8d2d2b35c2cc78fa338576adc1af0cbc094cef973255103165c73edd87f2b6"
+    }
+  },
+  "stopping_gate": "Corrected modeled timing exceeds the frame period. User review is required before treating any fully armed probe as safe. Hardware request withheld.",
+  "limits": [
+    "No new firmware binaries emitted, flashed or pushed.",
+    "No optimization iterations attempted; no DSP source or frozen dependency changed.",
+    "A first local transition driver used unsupported part actions and was terminated; its log remains transitions.log. It is not accepted evidence.",
+    "Prior TIMING claim that long runs were skipped by user permission is not accepted for this goal.",
+    "Aggregate source hash inventory predates verifier-only recovery edits; unchanged synthesis/reference hashes support its stated foundation scope, not clean final-tree qualification."
+  ],
+  "final_audit": {
+    "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resume-goal2/FINAL_AUDIT.json",
+    "sha256": "b0163caf77e7f7a1211b4fdcbb4ff232333750016d8aed5878641de7116626aa",
+    "status": "PASS preservation/frozen checks; qualification remains BLOCKED"
+  }
+}
