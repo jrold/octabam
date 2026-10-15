@@ -25,6 +25,7 @@ checkpoints, not the current MKII firmware or free DSP memory.
 | [../modules/perky/PERKY4S_RELEASE.md](../modules/perky/PERKY4S_RELEASE.md) | Current working MKII DSP release; guarded P placement, final P ledger, qualification and physical test scope |
 | [../modules/perky/PERKY4_MEMORY.md](../modules/perky/PERKY4_MEMORY.md) | Historical PERKY4 DSP ledger and timing; **not** the PERKY4S occupancy (see PERKY4S_RELEASE.md) |
 | [../modules/perky/hybrid/CLOSEOUT.md](../modules/perky/hybrid/CLOSEOUT.md) | Final Goal 2 engineering assessment: closed unqualified; exact gate matrix, timing scope, hardware risks and probe decision |
+| [../modules/perky/hybrid/SAFETY_QUALIFICATION.md](../modules/perky/hybrid/SAFETY_QUALIFICATION.md) | Current post-closeout safety task: corrected CPU/PIT timing, cold-init fix, package identities and remaining probe blockers |
 | [../modules/perky/hybrid/PHASE2.md](../modules/perky/hybrid/PHASE2.md) | Hybrid Goal 2 implementation/measurement history; final status in CLOSEOUT.md, **not qualified** |
 | [../modules/perky/hybrid/ITERATION3.md](../modules/perky/hybrid/ITERATION3.md) | Additional authorized CF empty-render experiment: exact but rejected for worse peak timing; prior runtime restored |
 | [../modules/perky/hybrid/HW_PROBE_REQUEST.md](../modules/perky/hybrid/HW_PROBE_REQUEST.md) | Withheld hybrid hardware request, unqualified artifact hashes and preserved rollback references |
