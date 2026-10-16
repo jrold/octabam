@@ -22,19 +22,25 @@ snare/bass                     319.932         276.898       13.45%
 bass/bass                      314.133         275.436       12.32%
 V1/V1                          306.795         255.977       16.56%
 V2/V2                          306.795         255.977       16.56%
-V1/V2                          306.795    PENDING
-V1/snare                       316.542    PENDING
+V1/V2                          306.795         255.977       16.56%
+V1/snare                       316.542         267.288       15.56%
 V2/bass                        310.769         265.958       14.42%
 third/snare                    297.231         273.830        7.87%
 third/third                    269.008         268.848        0.06%
 bass/snare                     319.905         276.898       13.44%
 snare/V1                       316.489         267.288       15.55%
-bass/V2                        310.822    PENDING
-snare/third                    297.576    PENDING
-V2/V1                          306.795    PENDING
+bass/V2                        310.822         266.197       14.36%
+snare/third                    297.576         273.777        8.00%
+V2/V1                          306.795         255.977       16.56%
 
 Scene/fader selected full ISR max: 289.220 us (76,354 cycles), zero modeled duration misses.
 Hard period 362.811791 us; desired 80% ceiling 290.249433 us. Neither emulator result bounds silicon timing.
+Separate ACK-to-ACK CPU-work windows over one frame: 162 before -> 0 after across the matched short matrix.
+ACK windows include intervening stock tasks, not ISR duration or interrupt latency. The full 60-second Snare row reaches 358.920 us ACK work.
+Thus the observed ISR ceiling does not establish 20% headroom for the complete CPU workload.
+CF-disarmed diagnostic: full ISR max 213.811 us; ACK CPU-work max 343.155 us. Production CF remains armed.
+The disarm result identifies remaining stock/background work, without proving a new safe optimization or a silicon limit.
+Noise/Tone synthesis instructions are unchanged; its sub-microsecond timing differences are not claimed as an algorithm speedup.
 
 Experiments:
 uniform-options: superseded checkpoint — Uniform scope restores primitive inlining; 4096-frame matched full ISR improves.
@@ -63,12 +69,12 @@ twelve_FX: PASS
 component_gates: SEE_COMPONENT_RESULTS
 baseline_pairs_a: PASS_MEASURED_MATRIX (7 completed rows)
 baseline_pairs_b: PASS_MEASURED_MATRIX (8 completed rows)
-candidate_pairs_a: RUNNING (5 completed rows)
-candidate_pairs_b: RUNNING (5 completed rows)
+candidate_pairs_a: PASS_MEASURED_MATRIX (7 completed rows)
+candidate_pairs_b: PASS_MEASURED_MATRIX (8 completed rows)
 sustained: RUNNING (1 completed rows)
 continuous_stress: RUNNING (0 completed rows)
-sustained_a: RUNNING (0 completed rows)
-sustained_b: RUNNING (0 completed rows)
+sustained_a: RUNNING (2 completed rows)
+sustained_b: RUNNING (2 completed rows)
 primed_and_cold_records: PASS_EXACT_INITIALIZED_PCM_AND_ALL_SOURCE_RECORDS
 EMAC_IRQ: PASS_HIGHER_IRQ_EMAC_USE_FULLY_CONTEXT_PRESERVING
 save_reload: PASS_SCOPED_SAVE_RELOAD

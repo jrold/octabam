@@ -43,7 +43,7 @@ increased processing load; the latest interval averages 317.35 µs per ISR.
 The user reports mostly RES Snare on T2 and RES Bass on T6, including p-locks.
 See the [decoded hardware evidence](hybrid/CF_OPTIMIZATION_HARDWARE.json).
 
-The [ColdFire optimization campaign](hybrid/CF_OPTIMIZATION.json) has reached a
+The earlier [ColdFire optimization campaign](hybrid/CF_OPTIMIZATION.json) reached a
 measured practical plateau, with PKH3O1 preserved as an intermediate build.
 The locally qualified **PKH3O3** diagnostic and its exact artifact hashes are
 recorded in [the final qualification report](hybrid/CF_OPTIMIZATION_QUALIFICATION.json).
@@ -64,7 +64,37 @@ clears that target by only 0.38 µs. Silicon cache, bus arbitration, startup aud
 and UI responsiveness remain unqualified. Six initial DSP readback/mix differences
 in the zero-pre-roll port capture remain explicitly recorded; all cold source
 records and all initialized post-PLAY records are exact. Use fresh MKII PRFs for
-the hardware A/B decision. Nothing was flashed or pushed. PERKY4S remains the
+the hardware A/B decision. Nothing was flashed or pushed during that qualification. PERKY4S remains the
+hardware-tested release.
+
+### Current hybrid campaign: PKH4O2 (16 October 2026)
+
+The new MKII capture `PKH20000(2).PRF` reports a 300.372 µs mean ISR,
+421.030 µs observed maximum and 479 deadline misses. Its source fingerprint
+matches the locally preserved build whose 26 manifest sources match `02fa20ff`;
+the current baseline rebuild reproduces that MAIN image exactly. The raw new
+PRF was not found locally; those decoded hardware facts were supplied by the user.
+Its workload is not a matched A/B comparison with the older captures above.
+
+The [new optimization ledger](hybrid/CF_OPTIMIZATION_20261016.json) and
+[readable report](hybrid/CF_OPTIMIZATION_20261016.txt) record the actual ColdFire
+experiments and their accepted or rejected results. The retained implementation
+restores GCC helper inlining across option scopes, uses ordered resonator clamps,
+removes the wavetable frequency-cache branch and reuses exact fixed-point decay
+steps. A readiness repair also restores decoded PCM after repeated boot
+initialization. Original-author, target PCM/state/RNG and initialization checks
+pass at their recorded scopes. DSP synthesis, track assignments and the twelve
+retained stock effects are unchanged.
+
+All fifteen matched 4,096-frame paired ISR/audio rows pass. Snare/Snare's
+executed maximum is 325.386 µs before and 278.015 µs after; the selected
+scene/fader test reaches 289.220 µs. These are emulator observations at 264 MHz,
+not silicon timing bounds. The current raw cold and primed comparisons match
+completely; the six initial pipeline differences above belong to PKH3O3's
+historical capture. Full-duration qualification of PKH4O2 is still running,
+and card/MIDI wrapping is deferred until those gates finish. Verified source
+and tests are pushed to `perky-cf-dsp-hybrid` with `[skip ci]`; no firmware has
+been flashed and no new physical speedup is established. PERKY4S remains the
 hardware-tested release.
 
 ### Current DSP memory limit
