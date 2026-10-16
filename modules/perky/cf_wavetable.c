@@ -50,17 +50,18 @@ const uint8_t *pk_cf_wt_wave(const pk_cf_wt_tables *t, uint32_t address)
 
 /* --- shared common envelope, identical to cf_fold's, block-cached --------- */
 typedef struct { uint8_t st; int32_t v; } wt_env;
-typedef struct { uint8_t curve,f4,f6,f7,f10; uint16_t rate_up,rate_dn; const uint8_t*e1,*e2; } wt_env_cfg;
+typedef struct { uint8_t curve,f4,f6,f7,f10; uint16_t rate_up,rate_dn; const uint8_t*e1,*e2;
+                 uint32_t cached_index,cached_pair; } wt_env_cfg;
 static void wt_env_load(wt_env_cfg*c,wt_env*e,const uint8_t*s,size_t b,const pk_cf_wt_tables*t){
     e->st=s[b];
     e->v=s32(r32(s,b+0xc));
     c->f4=s[b+4];c->f6=s[b+6];c->f7=s[b+7];c->f10=s[b+0x10];
     c->curve=s[b+1];
     c->rate_up=r16(s,b+0x20);c->rate_dn=r16(s,b+0x22);
-    c->e1=t->envelope1;c->e2=t->envelope2;
+    c->e1=t->envelope1;c->e2=t->envelope2;c->cached_index=UINT32_MAX;c->cached_pair=0;
 }
 static void wt_env_store(uint8_t*s,size_t b,const wt_env*e){s[b]=e->st;w32(s,b+0xc,u32(e->v));}
-static uint16_t wt_env_step(const wt_env_cfg*c,wt_env*e){
+static uint16_t wt_env_step(wt_env_cfg*c,wt_env*e){
     switch(e->st){
     case 0:if(c->f7||c->f4)e->st=1;break;
     case 1:e->v=s32(u32(e->v)+(uint32_t)c->rate_up);if(c->f4){if(e->v>0xffffe){e->st=4;if(e->v>=0x100000)e->v=0xfffff;}}else if(e->v>0xffffe){e->st=c->f6?4:3;if(e->v>=0x100000)e->v=0xfffff;}break;
@@ -72,7 +73,14 @@ static uint16_t wt_env_step(const wt_env_cfg*c,wt_env*e){
     {const uint8_t*ct=c->curve==1?c->e1:c->e2;uint32_t raw,idx,nx;int32_t f,a,z;
      if(!ct)return 0;
      raw=u32(e->v);idx=(raw>>10)&0x7ffu;nx=(idx+1)&0x7ffu;f=(int32_t)(raw&0x3ffu);
-     a=(int32_t)tab16(ct,idx);z=(int32_t)tab16(ct,nx);
+     /* Adjacent samples commonly reuse the same interpolation interval.
+      * Cache only its immutable table pair, not the evolving envelope value. */
+     if(c->cached_index!=idx){
+         c->cached_pair=nx?pk_cf_ld32(ct,2u*idx):
+             (uint32_t)tab16(ct,idx)|((uint32_t)tab16(ct,nx)<<16);
+         c->cached_index=idx;
+     }
+     a=(int32_t)(c->cached_pair&0xffffu);z=(int32_t)(c->cached_pair>>16);
      return (uint16_t)(a+asr(mullo(z-a,f),10));}
 }
 
@@ -100,6 +108,40 @@ static uint32_t wt_frequency_step(uint32_t f){
     return u32(result);
 }
 
+/* Pitch conversion is independent of oscillator phase and wave selection.
+ * Keep its temporaries out of the oscillator's live register set. The buffer
+ * starts as u16 envelope values widened to u32 and is overwritten in place. */
+static void __attribute__((noinline))
+wt_frequency_block(uint32_t *steps,uint32_t n,uint32_t base,
+                   uint32_t pe_amount,uint32_t half_rate){
+    uint32_t i;
+    if(!pe_amount){
+        const uint32_t increment=wt_frequency_step(base>>half_rate);
+        for(i=0;i<n;i++)steps[i]=increment;
+        return;
+    }
+    /* The original conversion discards all but the low twelve frequency
+     * bits. Quantized pitch envelopes often repeat that key for many samples;
+     * reuse only an exactly equal key, never approximate the envelope. */
+    uint32_t previous=UINT32_MAX,increment=0;
+    for(i=0;i<n;i++){
+        const uint32_t pe=steps[i];
+        const uint32_t lo=pe&0x1fffu,sh=13u-(pe>>13);
+        const uint32_t factor=((lo+0x2000u)>>sh)-1u;
+        const uint32_t frequency=base+((pe_amount*factor)>>9);
+        const uint32_t key=(frequency>>half_rate)&0xfffu;
+        if(key!=previous){increment=wt_frequency_step(key);previous=key;}
+        steps[i]=increment;
+    }
+}
+
+/* Avoid duplicating the oscillator for combinations of mute, envelope and
+ * wave-boundary tests. Keep one compact loop instead of trading instruction
+ * cache for unswitched copies. Clang does not support GCC optimize pragmas. */
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC push_options
+#pragma GCC optimize ("no-unswitch-loops")
+#endif
 static int wt_render_chunk(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
     uint32_t i;
     uint32_t base;
@@ -113,7 +155,7 @@ static int wt_render_chunk(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*
     uint8_t velocity,mute;
     wt_env_cfg ea_cfg,ep_cfg;
     wt_env ea,ep,initial_ea,initial_ep;
-    uint16_t amplitudes[16],pitch_envelopes[16];
+    uint16_t amplitudes[16];uint32_t steps[16];
     if(!s||!d||!t||!t->pitch||!t->base_wave||!t->bank)return 0;
     pe_amount=r16(s,0xec);half_rate=(s[0x128]==1u)?1u:0u;
     phase=r32(s,0xf4);step=r32(s,0xf8);
@@ -126,18 +168,14 @@ static int wt_render_chunk(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*
     base=(uint32_t)mullo(pitch(r16(s,0xba),t->pitch),0xbb80u)>>20;
     initial_ea=ea;initial_ep=ep;
     for(i=0;i<n;i++)amplitudes[i]=wt_env_step(&ea_cfg,&ea);
-    for(i=0;i<n;i++)pitch_envelopes[i]=wt_env_step(&ep_cfg,&ep);
+    for(i=0;i<n;i++)steps[i]=wt_env_step(&ep_cfg,&ep);
+    wt_frequency_block(steps,n,base,pe_amount,half_rate);
     wc=pk_cf_wt_wave(t,cur);sc=pk_cf_wt_wave(t,sec);
     for(i=0;i<n;i++){
         const uint8_t *wn,*sn;
         const uint16_t amp=amplitudes[i];
-        const uint16_t pe=pitch_envelopes[i];
-        const uint32_t lo=(uint32_t)pe&0x1fffu,sh=13u-(uint32_t)(pe>>13);
-        const int32_t factor=(int32_t)(((lo+0x2000u)>>sh)-1u);
-        uint32_t frequency=base+((pe_amount*(uint32_t)factor)>>9);
         uint32_t index,following,fraction;
-        if(half_rate)frequency>>=1;
-        step=wt_frequency_step(frequency);
+        step=steps[i];
         phase+=step;
         if(s32(phase)>0x100000){
             phase-=0x100000u;
@@ -163,17 +201,30 @@ static int wt_render_chunk(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*
             wt_env_store(s,0x74,&ea);wt_env_store(s,0xc4,&ep);
             return 0;
         }
+        /* Silence changes no oscillator/envelope state. Validate addresses
+         * first so even a muted malformed object retains its failure point. */
+        if(mute||!velocity||!amp){d[i]=0;continue;}
         {
-            const int32_t a1=(int32_t)tabs16(wc,index),a2=(int32_t)tabs16(wn,following);
-            const int32_t b1=(int32_t)tabs16(sc,index),b2=(int32_t)tabs16(sn,following);
+            int32_t a1,a2,b1,b2;
+            if(following){
+                const uint32_t a=pk_cf_ld32(wc,2u*index);
+                const uint32_t b=pk_cf_ld32(sc,2u*index);
+                a1=s16((uint16_t)a);a2=s16((uint16_t)(a>>16));
+                b1=s16((uint16_t)b);b2=s16((uint16_t)(b>>16));
+            }else{
+                a1=tabs16(wc,index);a2=tabs16(wn,following);
+                b1=tabs16(sc,index);b2=tabs16(sn,following);
+            }
             const int32_t first=s16((uint16_t)(a1+asr(mullo(a2-a1,(int32_t)fraction),9)));
             const int32_t second=s16((uint16_t)(b1+asr(mullo(b2-b1,(int32_t)fraction),9)));
             /* 32-bit two's-complement blend, exactly the host model's
              * (first*(255-MIX) + second*MIX) & 0xFFFFFFFF; uint32 multiply
              * wraps so a MIX word past 255 stays bit-exact without a 64-bit
              * helper the freestanding ColdFire runtime does not link. */
-            const uint32_t mixed=(uint32_t)first*(uint32_t)(255-(int32_t)mix)
-                                 +(uint32_t)second*mix;
+            /* Distribute the blend modulo 2^32. This needs only one
+             * variable multiply, including for malformed MIX > 255. */
+            const uint32_t mixed=((uint32_t)first<<8)-(uint32_t)first
+                                 +(uint32_t)(second-first)*(uint32_t)mix;
             const int32_t osc=s16((uint16_t)(mixed>>8));
             int32_t sample=asr(mullo(osc,(int32_t)amp),16);
             sample=asr(mullo(sample,(int32_t)(velocity&0xffu)),8);
@@ -188,6 +239,9 @@ static int wt_render_chunk(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*
     wt_env_store(s,0x74,&ea);wt_env_store(s,0xc4,&ep);
     return 1;
 }
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC pop_options
+#endif
 /* Short independent envelope passes reduce register pressure in the oscillator
  * loop. All samples are still generated in this call, without added latency.
  * Chunks preserve the public renderer's arbitrary block-length contract. */

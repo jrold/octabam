@@ -28,6 +28,13 @@
 #include "cf_render_math.h"
 #include <limits.h>
 
+/* Keep branch variants in the small recurrence loops rather than cloning
+ * whole loops for every invariant sign/min/count combination. */
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC push_options
+#pragma GCC optimize ("no-unswitch-loops")
+#endif
+
 static uint16_t r16(const uint8_t*p,size_t o){return pk_cf_ld16(p,o);}
 static uint32_t r32(const uint8_t*p,size_t o){return pk_cf_ld32(p,o);}
 static void w16(uint8_t*p,size_t o,uint16_t v){pk_cf_st16(p,o,v);}
@@ -41,8 +48,18 @@ static int32_t add(int32_t a,int32_t b){return s32(u32(a)+u32(b));}
 static int32_t sub(int32_t a,int32_t b){return s32(u32(a)-u32(b));}
 static int32_t neg(int32_t v){return s32(0u-u32(v));}
 static int32_t abs_arm(int32_t v){return v<0?neg(v):v;}
-static int32_t clamp32767(int32_t v){if(v<-32767)return -32767;if(v>=32767)return 32767;return v;}
+static int32_t clamp32767(int32_t v){
+    /* One range check for the unsaturated recurrence; addition is unsigned
+     * so even an adversarial INT_MIN/INT_MAX state cannot overflow in C. */
+    if((uint32_t)v+32767u<=65534u)return v;
+    return v<0?-32767:32767;
+}
 static uint16_t tab16(const uint8_t*t,size_t i){return r16(t,i*2u);}
+
+/* Map-specific loads/stores must inline: otherwise the target sees a dynamic
+ * map pointer and pays both the call and map-offset loads on every block.
+ * Inlining exposes the fixed even displacements to the ColdFire access helpers
+ * and lets pitch loads remain inside the dirty-coefficient path. */
 
 /* --- block working state -------------------------------------------------- */
 typedef struct { int32_t v; uint16_t rate_up,rate_dn; uint8_t st,curve,f4,f6,f7,f10;
@@ -96,29 +113,27 @@ static uint32_t res_rnd(pk_cf_res_rng*r){
     acc+=pk_cf_mul_lo_u32(oh,b);nl=pl+1u;carry=nl<pl;nh=acc+ph+carry;
     r->low=nl;r->high=nh;return nh&0x7fffffffu;
 }
-static void res_noise_load(res_noise_l*m,const uint8_t*s){
+static inline void __attribute__((always_inline)) res_noise_load(res_noise_l*m,const uint8_t*s){
     m->counter=r16(s,0x60u);m->reload=r16(s,0x62u);m->held=s16(r16(s,0x70u));
 }
-static void res_noise_store(uint8_t*s,const res_noise_l*m){
+static inline void __attribute__((always_inline)) res_noise_store(uint8_t*s,const res_noise_l*m){
     w16(s,0x60u,m->counter);w16(s,0x70u,(uint16_t)m->held);
-}
-static int32_t res_noise_step(res_noise_l*m,pk_cf_res_rng*r){
-    if(m->counter){m->counter=(uint16_t)(m->counter-1u);return m->held;}
-    m->counter=m->reload;m->held=s16((uint16_t)res_rnd(r));return m->held;
 }
 
 /* --- 257-entry interpolation -------------------------------------------- */
 static uint16_t res_interp(const uint8_t*tab,uint32_t phase){
     uint32_t idx=(phase>>24)&0xffu,fraction=(phase>>8)&0xffffu;
-    uint32_t a=tab16(tab,idx),d;
-    d=(uint32_t)((int32_t)tab16(tab,idx+1u)-(int32_t)a);
+    /* idx <= 255: the pair ends inside the 257-entry table, even at
+     * its last interval. One load/byte-reverse supplies both u16 values. */
+    uint32_t pair=r32(tab,idx*2u),a=pair&0xffffu,d;
+    d=(uint32_t)((int32_t)(pair>>16)-(int32_t)a);
     return (uint16_t)(a+((fraction*d)>>16));
 }
 
 /* --- resonator ---------------------------------------------------------- */
 typedef struct { size_t dirty,pitch_a,pitch_b,coeff_b,coeff_a,mod,bypass,position,velocity; } res_map;
 
-static void res_core_load(res_core_l*m,const uint8_t*s,const res_map*rm){
+static inline void __attribute__((always_inline)) res_core_load(res_core_l*m,const uint8_t*s,const res_map*rm){
     m->dirty=s[rm->dirty];
     m->pitch_a=s16(r16(s,rm->pitch_a));
     m->pitch_b=s16(r16(s,rm->pitch_b));
@@ -129,7 +144,7 @@ static void res_core_load(res_core_l*m,const uint8_t*s,const res_map*rm){
     m->position=r32(s,rm->position);
     m->velocity=r32(s,rm->velocity);
 }
-static void res_core_store(uint8_t*s,const res_map*rm,const res_core_l*m){
+static inline void __attribute__((always_inline)) res_core_store(uint8_t*s,const res_map*rm,const res_core_l*m){
     /* The bass renderer re-latches the resonator's pitch when the pitch offset
      * moves, so the field has to go back with the rest of the working state.
      * The snare never writes it, and storing the value it loaded is a
@@ -142,13 +157,8 @@ static void res_core_store(uint8_t*s,const res_map*rm,const res_core_l*m){
     w32(s,rm->velocity,m->velocity);
     s[rm->dirty]=m->dirty;
 }
-static int32_t res_core_step(res_core_l*m,int32_t input,
-                             const uint8_t*ia,const uint8_t*ib,int32_t*out_velocity){
-    if(m->dirty){
-        m->coeff_b=(uint32_t)res_interp(ia,(uint32_t)m->pitch_a<<17);
-        m->coeff_a=(uint32_t)res_interp(ib,(uint32_t)m->pitch_b<<17);
-        m->dirty=0;
-    }
+/* Coefficients are refreshed at a pitch-run boundary by bass_tone_block. */
+static int32_t res_core_step(res_core_l*m,int32_t input,int32_t*out_velocity){
     {int32_t coeff_a=s32(m->coeff_a),position=s32(m->position),
             modulation=s32(m->modulation),coeff_b=s32(m->coeff_b),scale,velocity,filtered;
      if(modulation){
@@ -175,7 +185,7 @@ static int32_t res_core_step(res_core_l*m,int32_t input,
  * fits in 16-bit halves.  Packing halves the register footprint of the three
  * resonators (the snare's biggest spill source). */
 typedef struct { uint16_t coeff_a,coeff_b; int16_t position,velocity; int32_t pitch_a,pitch_b; uint8_t dirty,bypass; } res_core_fast_l;
-static void res_core_fast_load(res_core_fast_l*m,const uint8_t*s,const res_map*rm){
+static inline void __attribute__((always_inline)) res_core_fast_load(res_core_fast_l*m,const uint8_t*s,const res_map*rm){
     m->bypass=s[rm->bypass];
     m->dirty=s[rm->dirty];
     m->pitch_a=s16(r16(s,rm->pitch_a));
@@ -185,7 +195,7 @@ static void res_core_fast_load(res_core_fast_l*m,const uint8_t*s,const res_map*r
     m->position=(int16_t)r32(s,rm->position);
     m->velocity=(int16_t)r32(s,rm->velocity);
 }
-static void res_core_fast_store(uint8_t*s,const res_map*rm,const res_core_fast_l*m){
+static inline void __attribute__((always_inline)) res_core_fast_store(uint8_t*s,const res_map*rm,const res_core_fast_l*m){
     w32(s,rm->coeff_a,(uint32_t)m->coeff_a);
     w32(s,rm->coeff_b,(uint32_t)m->coeff_b);
     w32(s,rm->position,(uint32_t)(int32_t)m->position);
@@ -195,14 +205,14 @@ static void res_core_fast_store(uint8_t*s,const res_map*rm,const res_core_fast_l
 /* --- multiplicative decay ramp ------------------------------------------ */
 typedef struct { size_t mul,count,value,sign,min; } dec_map;
 
-static void res_dec_load(res_dec_l*m,const uint8_t*s,const dec_map*d){
+static inline void __attribute__((always_inline)) res_dec_load(res_dec_l*m,const uint8_t*s,const dec_map*d){
     m->mul=r32(s,d->mul);
     m->value=r32(s,d->value);
     m->min=s32(r32(s,d->min));
     m->count=s32(r32(s,d->count));
     m->sign=s32(r32(s,d->sign));
 }
-static void res_dec_store(uint8_t*s,const dec_map*d,const res_dec_l*m){
+static inline void __attribute__((always_inline)) res_dec_store(uint8_t*s,const dec_map*d,const res_dec_l*m){
     w32(s,d->value,m->value);
     w32(s,d->count,u32(m->count));
 }
@@ -267,9 +277,25 @@ res_decay_block(uint8_t *s,const dec_map *map,int32_t *buffer,uint32_t n,
     res_dec_l decay;
     uint32_t i;
     res_dec_load(&decay,s,map);
-    for(i=0;i<n;i++){
-        int32_t value=s32(res_dec_step(&decay,add_constant,constant));
-        buffer[i]=accumulate?add(buffer[i],value):value;
+    /* Until the positive countdown reaches zero, its only effects are a
+     * fixed output bias/sign and one final decrement. Split at the block
+     * boundary, retaining the original sample step for crossing blocks. */
+    if(decay.count<=0||u32(decay.count)>n){
+        const uint32_t mask=u32(decay.sign>>31);
+        const uint32_t bias=(add_constant&&decay.count!=0)?constant:0u;
+        for(i=0;i<n;i++){
+            uint32_t value=pk_cf_mul_lo_u32(decay.mul,decay.value)>>12;
+            if(s32(value)<decay.min)value=u32(decay.min);
+            decay.value=value;
+            const int32_t out=s32(((value^mask)-mask)+bias);
+            buffer[i]=accumulate?add(buffer[i],out):out;
+        }
+        if(decay.count>0)decay.count-=n;
+    }else{
+        for(i=0;i<n;i++){
+            int32_t value=s32(res_dec_step(&decay,add_constant,constant));
+            buffer[i]=accumulate?add(buffer[i],value):value;
+        }
     }
     res_dec_store(s,map,&decay);
 }
@@ -277,9 +303,33 @@ res_decay_block(uint8_t *s,const dec_map *map,int32_t *buffer,uint32_t n,
 static void __attribute__((noinline))
 res_noise_block(uint8_t *s,pk_cf_res_rng *rng,int32_t *buffer,uint32_t n){
     res_noise_l noise;
-    uint32_t i;
+    uint32_t i,run;
     res_noise_load(&noise,s);
-    for(i=0;i<n;i++)buffer[i]=res_noise_step(&noise,rng);
+    /* Emit the already-held prefix without touching RNG state. Counter is
+     * the number of OLD-value samples left, not the time to the new sample. */
+    run=noise.counter<n?noise.counter:n;
+    for(i=0;i<run;i++)buffer[i]=noise.held;
+    noise.counter=(uint16_t)(noise.counter-run);buffer+=run;n-=run;
+    if(n){
+        pk_cf_res_rng local=*rng;
+        if(!noise.reload){
+            /* White noise: every remaining sample consumes one RNG value. */
+            for(i=0;i<n;i++){
+                noise.held=s16((uint16_t)res_rnd(&local));buffer[i]=noise.held;
+            }
+        }else{
+            /* Each new value covers its own sample plus reload held samples.
+             * Use u32 for reload+1 so 65535 cannot wrap the run to zero. */
+            do{
+                noise.held=s16((uint16_t)res_rnd(&local));
+                run=(uint32_t)noise.reload+1u;if(run>n)run=n;
+                for(i=0;i<run;i++)buffer[i]=noise.held;
+                noise.counter=(uint16_t)((uint32_t)noise.reload-(run-1u));
+                buffer+=run;n-=run;
+            }while(n);
+        }
+        *rng=local;
+    }
     res_noise_store(s,&noise);
 }
 
@@ -320,33 +370,51 @@ bass_drive_block(uint8_t*s,int32_t*drive,uint32_t n){
      }
      res_dec_store(s,&BASS_B,&decay);}
 }
-static void __attribute__((noinline))
-bass_pitch_block(uint8_t*s,uint16_t*pitches,uint32_t n){
-    res_dec_l decay;uint32_t i,raw=r16(s,0xf0u);
+/* Pitch modulation has only one possible transition in a render block:
+ * countdown 1 -> 0. Return the number of samples before that transition;
+ * the decay value still advances exactly even though pitch does not use it. */
+static uint32_t __attribute__((noinline))
+bass_pitch_block(uint8_t*s,uint32_t n){
+    res_dec_l decay;uint32_t i,split;
     res_dec_load(&decay,s,&BASS_C);
-    for(i=0;i<n;i++){
-        uint32_t value=pk_cf_mul_lo_u32(decay.mul,decay.value)>>12;
-        int32_t count=decay.count;int skip=count==0;
-        if(s32(value)<decay.min)value=u32(decay.min);
-        decay.value=value;
-        if(count>0){count=sub(count,1);decay.count=count;
-            if(count==0){value=u32(add(s32(value),abs_arm(decay.sign)));decay.value=value;skip=1;}}
-        pitches[i]=(uint16_t)(skip?raw:raw+0x880u);
+    if(decay.count<=0)split=decay.count==0?0u:n;
+    else{split=u32(decay.count)-1u;if(split>n)split=n;}
+    if(decay.count<=0||u32(decay.count)>n){
+        for(i=0;i<n;i++){
+            uint32_t value=pk_cf_mul_lo_u32(decay.mul,decay.value)>>12;
+            if(s32(value)<decay.min)value=u32(decay.min);
+            decay.value=value;
+        }
+        if(decay.count>0)decay.count-=n;
+    }else{
+        for(i=0;i<n;i++)(void)res_dec_step(&decay,0,0u);
     }
     res_dec_store(s,&BASS_C,&decay);
+    return split;
 }
 static void __attribute__((noinline))
-bass_tone_block(uint8_t*s,const int32_t*drive,const uint16_t*pitches,
+bass_tone_block(uint8_t*s,const int32_t*drive,uint32_t split,
                 int32_t*acc,uint32_t n,const pk_cf_res_tables*t){
-    res_core_l tone;uint32_t i;int32_t state=s32(r32(s,0xe8u)),mix=s32(r32(s,0xecu));
+    res_core_l tone;uint32_t i=0,part;
+    const uint16_t raw=r16(s,0xf0u);
+    int32_t state=s32(r32(s,0xe8u)),mix=s32(r32(s,0xecu));
     res_core_load(&tone,s,&TONE_MAP);
-    for(i=0;i<n;i++){
-        int32_t velocity,input,delta;
-        if(tone.dirty||s16((uint16_t)tone.pitch_a)!=s16(pitches[i])){
-            tone.pitch_a=(int32_t)pitches[i];tone.dirty=1;}
-        (void)res_core_step(&tone,drive[i],t->interp_a,t->interp_b,&velocity);
-        input=add(velocity,asr(drive[i],4));delta=sub(input,state);
-        state=add(state,asr(mullo(mix,delta),15));acc[i]=state;
+    for(part=0;part<2;part++){
+        const uint32_t end=part?n:split;
+        const uint16_t pitch=(uint16_t)(raw+(part?0u:0x880u));
+        if(i==end)continue;
+        if(tone.dirty||s16((uint16_t)tone.pitch_a)!=s16(pitch)){
+            tone.pitch_a=(int32_t)pitch;
+            tone.coeff_b=res_interp(t->interp_a,(uint32_t)tone.pitch_a<<17);
+            tone.coeff_a=res_interp(t->interp_b,(uint32_t)tone.pitch_b<<17);
+            tone.dirty=0;
+        }
+        do{
+            int32_t velocity,input,delta;
+            (void)res_core_step(&tone,drive[i],&velocity);
+            input=add(velocity,asr(drive[i],4));delta=sub(input,state);
+            state=add(state,asr(mullo(mix,delta),15));acc[i]=state;
+        }while(++i<end);
     }
     res_core_store(s,&TONE_MAP,&tone);w32(s,0xe8u,u32(state));
 }
@@ -376,10 +444,10 @@ bass_level(uint8_t*s,int32_t*buffer,uint32_t n){
     res_decay_block(s,&BASS_L,buffer,n,0,0,0u);
 }
 static void bass_chunk(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables*t,pk_cf_res_rng*rng){
-    int32_t drive[16],acc[16],level[16];uint16_t pitches[16];
+    int32_t drive[16],acc[16],level[16];uint32_t split;
     res_advance_envelope(s,n,t);
-    bass_drive_block(s,drive,n);bass_pitch_block(s,pitches,n);
-    bass_tone_block(s,drive,pitches,acc,n,t);
+    bass_drive_block(s,drive,n);split=bass_pitch_block(s,n);
+    bass_tone_block(s,drive,split,acc,n,t);
     bass_level(s,level,n);
     res_noise_block(s,rng,drive,n);
     bass_noise_mix(s,drive,level,acc,d,n,t);
@@ -507,3 +575,7 @@ int pk_cf_res_snare_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables
     pk_cf_render_math_end(context);
     return 1;
 }
+
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC pop_options
+#endif
