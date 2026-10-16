@@ -1060,3 +1060,23 @@ their totals must agree independently, rather than use an assumed offset.
 The opt-in `--cf-cycles-clock-before-transport` enables cycle time before audio
 starts. Default behavior remains exact against the saved pre-change binary.
 Earlier startup-inclusive timing maxima retain this clock-transition caveat.
+
+<a name="trap-shared-predictor"></a>
+
+### Two target instances can share branch-predictor history
+
+The retained MCF5445x model's BHT/BTB arrays and counters are globals outside
+`m68ki_cpu_core`. The first two-image PERKY callback comparator alternated
+machines without switching that history. A same-image control disagreed on
+cycles in 24,717 of 25,600 callbacks. Profiler-off instruction counts matched;
+248 profiler-on callbacks also differed because diagnostic maximum-update
+branches respond to the timing. Exact synthesis/state/RNG remained equal.
+Those paired timing claims were withdrawn. Single-target synthesis benchmarks
+and single-Machine full-OS processes were unaffected.
+
+Keep independent predictor arrays and counters per compared target, restoring
+them before execution and saving them afterwards. Calibrate cold and trained
+states, require every same-image cost/resource/branch row to agree, and require
+an image's cost rows to remain identical with a different comparison partner.
+This repairs host measurement state; it neither changes firmware nor models
+physical cache or SDRAM latency.

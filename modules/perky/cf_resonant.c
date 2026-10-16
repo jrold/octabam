@@ -555,15 +555,27 @@ static void snare_chunk(uint8_t *s,int16_t *d,uint32_t n,
     snare_noise(s,drive,acc,level,d,n,t);
 }
 
+/* Empty packed rendering only normalizes the upper halves of four LE
+ * words per core. Preserve malformed-state behavior without round-tripping
+ * unchanged lower halves, pitches, bypass and dirty bytes. */
+static inline __attribute__((always_inline)) void
+res_core_empty_normalize(uint8_t*s,const res_map*rm){
+    uint8_t position=(s[rm->position+1u]&0x80u)?0xffu:0u;
+    uint8_t velocity=(s[rm->velocity+1u]&0x80u)?0xffu:0u;
+    s[rm->coeff_a+2u]=0;s[rm->coeff_a+3u]=0;
+    s[rm->coeff_b+2u]=0;s[rm->coeff_b+3u]=0;
+    s[rm->position+2u]=position;s[rm->position+3u]=position;
+    s[rm->velocity+2u]=velocity;s[rm->velocity+3u]=velocity;
+}
+
 int pk_cf_res_snare_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables*t,pk_cf_res_rng*rng){
     if(!s||!d||!t||!rng||!t->envelope1||!t->envelope2||!t->interp_a||!t->interp_b)return 0;
     if(!n){
         /* The original empty packed renderer narrows these twelve words even
          * for malformed state. Preserve that behavior without all block passes. */
-        res_core_fast_l core;
-        res_core_fast_load(&core,s,&RES1_MAP);res_core_fast_store(s,&RES1_MAP,&core);
-        res_core_fast_load(&core,s,&RES2_MAP);res_core_fast_store(s,&RES2_MAP,&core);
-        res_core_fast_load(&core,s,&RES3_MAP);res_core_fast_store(s,&RES3_MAP,&core);
+        res_core_empty_normalize(s,&RES1_MAP);
+        res_core_empty_normalize(s,&RES2_MAP);
+        res_core_empty_normalize(s,&RES3_MAP);
         return 1;
     }
     volatile pk_cf_render_math_context context=pk_cf_render_math_begin();

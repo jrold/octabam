@@ -27,16 +27,17 @@ def digest(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
 def canonical_state(u, syms, sz):
     extent=sz['pk_hybrid_voices']
-    return voice_layout.canonical(bytes(u.mem_read(syms['pk_hybrid_voices'],extent)),extent//2)
+    return voice_layout.canonical(bytes(u.mem_read(syms['pk_hybrid_voices'],extent)),extent//2,u._perky_voice_layout['kind'])
 
 
 def machine(image, elf, require_boot_ready=False):
     # A padded representation must have a compiler/image-bound certificate.
     # This preserves every original byte and checks all new padding at each
     # canonical comparison; no algorithm state is excluded from the oracle.
-    voice_layout.layout(Path(elf).parent.parent)
+    layout=voice_layout.layout(Path(elf).parent.parent)
     r = g.emu.boot(str(image)); assert r.clean, (r.stopped, r.error)
     g.emu._prime_part(r); syms = g.load_elf_symbols(elf); u = r.uc
+    u._perky_voice_layout=layout
     if require_boot_ready:
         assert word(u, syms['pk_hybrid_pcm_cookie']) == 0x504b5052
         assert word(u, syms['pk_hybrid_rt_cookie']) == 0x504b4852

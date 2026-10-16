@@ -202,6 +202,7 @@ moment it costs real work, and add its line here.
 - [A STATIC fixture can play a tiny region without streaming](docs/contributing/TRAPS.md#trap-static-fixture-markers) — use the STATIC marker records; check sustained source audio and card reads after PLAY.
 - [Auto-grown emulator pages bypass read watches](docs/contributing/TRAPS.md#trap-automap-read-watch) — map benchmark assets explicitly and separate instruction-stream reads from data traffic.
 - [A host timer observation can change emulator scheduling](docs/contributing/TRAPS.md#trap-observer-timer-read) — bypass peripheral-touch bookkeeping; require exact paired target dumps and a uniform startup/playback clock.
+- [Two target instances can share branch-predictor history](docs/contributing/TRAPS.md#trap-shared-predictor) — isolate model state per image and prove same-image and comparison-partner invariance before using paired cycle counts.
 
 ## How claims are written here
 

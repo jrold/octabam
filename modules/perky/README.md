@@ -106,11 +106,40 @@ runtime ELF tested throughout this campaign; its production sources match
 `69ecb4dd`. Card and MIDI diagnostic packages pass their local gates.
 
 Verified source and tests are pushed to `perky-cf-dsp-hybrid` with `[skip ci]`.
-PKH4O2 is a locally qualified diagnostic for review, with physical MKII A/B
-acceptance pending. No firmware has been flashed and no new physical speedup
-or flash-safe certification is established. PERKY4S remains the hardware-tested
+PKH4O2 completed that local diagnostic qualification; it had not been flashed
+at that checkpoint. Subsequent MKII tests below report overload and lockup, so
+dual-CF hardware acceptance remains open. PERKY4S remains the hardware-tested
 release; the larger unchanged stock-task call graphs remain outside the scoped
 private-stack proof.
+
+### Footprint and second-CF-voice campaign (in progress)
+
+The user reports that **two DSP voices + one CF voice + five stock FLEX or
+STATIC sequences works**, whereas **two DSP voices + two CF voices + three
+stock sequences causes sluggish UI and eventual lockup**. This shifts the
+investigation toward the incremental second CF voice; it does not establish
+STATIC playback, a particular algorithm or cache contention as the root cause.
+The newer PKH4O2 PRFs include a roughly 504 µs maximum and 723 deadline misses
+in one capture, and a later 9,901-frame interval averaging roughly 331 µs.
+These supplied observations and their limits are kept separately in the
+[footprint hardware evidence](hybrid/CF_FOOTPRINT_20261016_HARDWARE.json).
+
+The [footprint ledger](hybrid/CF_FOOTPRINT_20261016.json) and
+[readable report](hybrid/CF_FOOTPRINT_20261016.txt) distinguish target CPU
+cycles, architectural requests and executed code footprint from unmodeled
+physical cache/SDRAM/card/DMA costs. All 25 ordered CF pairs have completed
+short seven-track STATIC rows, including active stock source audio and actual
+card reads. PKH4O2 also passes a 60-second streaming run in the model, which
+does **not** reproduce its physical overload. Local passes cannot establish
+a reliable silicon voice limit.
+
+Measured baseline second-voice mean IRQ increments range from about 20.2 µs
+(Wavetable) to 25.1 µs (Snare), slightly below the first-voice increments in
+the same model. The campaign retains two unrestricted CF voices. It changes
+PERKY code and local instruments; stock machines/playback and the frozen DSP
+implementation remain unchanged. Exactness and qualification of the final
+diagnostic/performance configurations are still in progress; no new hardware
+acceptance or algorithm restriction is asserted.
 
 ### Current DSP memory limit
 

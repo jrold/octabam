@@ -149,13 +149,16 @@ static const pk_cf_nt_shared_tables pk_hybrid_nt_tables = {
  *   - ALGO 1: Wavetable V2 (`wt[1]`, `control[1]`)
  *   - ALGO 2: Resonant Drums (`snare`, `bass`, `nt`, `control[2]`)
  */
+/* Native RNG longs use four-byte alignment; renderer objects retain LE bytes. */
+typedef struct __attribute__((aligned(4))) { pk4_control value; } pk_hybrid_aligned_control;
+
 typedef struct __attribute__((aligned(16))) {
     uint8_t wt[2][PK_CF_WT_STATE_BYTES];
     uint8_t snare[PK_CF_RES_SNARE_STATE_BYTES];
     uint8_t bass[PK_CF_RES_SNARE_STATE_BYTES];
     uint8_t nt[PK_CF_NT_STATE_BYTES];
-    pk4_control control[3];
-    uint32_t rng_low;
+    pk_hybrid_aligned_control control[3];
+    uint32_t __attribute__((aligned(4))) rng_low;
     uint32_t rng_high;
     uint8_t active_algo;
     uint8_t active_mode;
@@ -242,50 +245,58 @@ typedef struct {
 #define PK_HYB_PROF_COLD 0x504b5443u
 #define PK_HYB_PROF_READY 0x504b5452u
 
-uint32_t pk_hybrid_pcm_cookie = PK_HYB_PCM_COLD;
-uint32_t pk_hybrid_rt_cookie = PK_HYB_RT_COLD;
-uint32_t pk_hybrid_prof_cookie = PK_HYB_PROF_COLD;
-uint32_t pk_hybrid_profiler_enable = 1u;
-uint32_t pk_hybrid_cf_arm = 1u;
+uint32_t __attribute__((aligned(4))) pk_hybrid_pcm_cookie = PK_HYB_PCM_COLD;
+uint32_t __attribute__((aligned(4))) pk_hybrid_rt_cookie = PK_HYB_RT_COLD;
+uint32_t __attribute__((aligned(4))) pk_hybrid_prof_cookie = PK_HYB_PROF_COLD;
+/* Both configurations retain the complete diagnostic implementation. The
+ * performance image changes only its loaded initial enable word. */
+#ifndef PK_HYBRID_PROFILER_DEFAULT
+#define PK_HYBRID_PROFILER_DEFAULT 1
+#endif
+#if PK_HYBRID_PROFILER_DEFAULT != 0 && PK_HYBRID_PROFILER_DEFAULT != 1
+#error "PK_HYBRID_PROFILER_DEFAULT must be zero or one"
+#endif
+uint32_t __attribute__((aligned(4))) pk_hybrid_profiler_enable = PK_HYBRID_PROFILER_DEFAULT;
+uint32_t __attribute__((aligned(4))) pk_hybrid_cf_arm = 1u;
 /* Explicit debugger/test opt-in. STOP exports do not require live copies.
  * Boot initializes this explicitly: the platform does not clear BSS. */
-volatile uint32_t pk_hybrid_live_snapshot = 0u;
+volatile uint32_t __attribute__((aligned(4))) pk_hybrid_live_snapshot = 0u;
 
 pk_hybrid_cf_voice pk_hybrid_voices[PK_HYB_CF_INSTANCE_COUNT];
 /* Audio ISR owns active state and generation; UI never resets it. */
 static pk_hybrid_cf_voice pk_hybrid_pristine;
-static uint32_t pk_hybrid_voice_generation[PK_HYB_CF_INSTANCE_COUNT];
-static uint32_t pk_hybrid_generation;
-static uint32_t pk_hybrid_bank = 0xffffffffu;
+static uint32_t __attribute__((aligned(4))) pk_hybrid_voice_generation[PK_HYB_CF_INSTANCE_COUNT];
+static uint32_t __attribute__((aligned(4))) pk_hybrid_generation;
+static uint32_t __attribute__((aligned(4))) pk_hybrid_bank = 0xffffffffu;
 static uint8_t pk_hybrid_part = 0xffu;
 static uint8_t pk_hybrid_trigger_latch[PK_HYB_CF_INSTANCE_COUNT];
 static int16_t pk_hybrid_frame_pcm[PK_HYB_CF_INSTANCE_COUNT][PK_HYB_BLOCK_SAMPLES];
 static uint8_t pk_hybrid_frame_started[PK_HYB_CF_INSTANCE_COUNT];
 static uint8_t pk_hybrid_frame_ping[PK_HYB_CF_INSTANCE_COUNT];
 static uint8_t pk_hybrid_cf_ui_pending[PK_HYB_CF_INSTANCE_COUNT];
-static uint32_t pk_hybrid_cf_ui_bank[PK_HYB_CF_INSTANCE_COUNT];
+static uint32_t __attribute__((aligned(4))) pk_hybrid_cf_ui_bank[PK_HYB_CF_INSTANCE_COUNT];
 static uint8_t pk_hybrid_cf_ui_part[PK_HYB_CF_INSTANCE_COUNT];
 
 /* Per-frame accumulators flushed once per 16-sample audio frame. */
-static uint32_t pk_hybrid_cur_cf_ticks = 0u;
-static uint32_t pk_hybrid_cur_ctrl_ticks = 0u;
-static uint32_t pk_hybrid_cur_rend_ticks = 0u;
-static uint32_t pk_hybrid_cur_pack_ticks = 0u;
-static uint32_t pk_hybrid_cur_dsp_ticks = 0u;
-static uint32_t pk_hybrid_cur_voice_mask = 0u;
-static uint32_t pk_hybrid_cur_has_data = 0u;
+static uint32_t __attribute__((aligned(4))) pk_hybrid_cur_cf_ticks = 0u;
+static uint32_t __attribute__((aligned(4))) pk_hybrid_cur_ctrl_ticks = 0u;
+static uint32_t __attribute__((aligned(4))) pk_hybrid_cur_rend_ticks = 0u;
+static uint32_t __attribute__((aligned(4))) pk_hybrid_cur_pack_ticks = 0u;
+static uint32_t __attribute__((aligned(4))) pk_hybrid_cur_dsp_ticks = 0u;
+static uint32_t __attribute__((aligned(4))) pk_hybrid_cur_voice_mask = 0u;
+static uint32_t __attribute__((aligned(4))) pk_hybrid_cur_has_data = 0u;
 
 pk_hybrid_profiler pk_hybrid_prof;
 pk_hybrid_profiler pk_hybrid_prof_export;
 static pk_hybrid_profiler pk_hybrid_snapshot;
-volatile uint32_t pk_hybrid_prof_seq = 0u;
-volatile uint32_t pk_hybrid_export_seq = 0u;
-uint32_t pk_hybrid_isr_enter_ticks = 0u;
-uint32_t pk_hybrid_wait_ticks[2] = {0u, 0u};
-static uint32_t pk_hybrid_previous_enter;
-static uint32_t pk_hybrid_previous_enter_valid;
-static uint32_t pk_hybrid_timer_calibrated;
-static uint32_t pk_hybrid_seen_running;
+volatile uint32_t __attribute__((aligned(4))) pk_hybrid_prof_seq = 0u;
+volatile uint32_t __attribute__((aligned(4))) pk_hybrid_export_seq = 0u;
+uint32_t __attribute__((aligned(4))) pk_hybrid_isr_enter_ticks = 0u;
+uint32_t __attribute__((aligned(4))) pk_hybrid_wait_ticks[2] = {0u, 0u};
+static uint32_t __attribute__((aligned(4))) pk_hybrid_previous_enter;
+static uint32_t __attribute__((aligned(4))) pk_hybrid_previous_enter_valid;
+static uint32_t __attribute__((aligned(4))) pk_hybrid_timer_calibrated;
+static uint32_t __attribute__((aligned(4))) pk_hybrid_seen_running;
 static unsigned pk_hybrid_export_index;
 int32_t pk_hybrid_export_status = 0;
 extern const char pk_hybrid_source_id[65];
@@ -628,9 +639,9 @@ int __attribute__((noinline)) pk_hybrid_cf_prepare_event(unsigned inst,
     pk_hybrid_cf_voice *v = &pk_hybrid_voices[inst];
     uint8_t raw[4] = { tune, decay, p1, p2 };
     if (algo < 2u) {
-        prepare_wt(&v->control[algo], v->wt[algo], raw, mode, vel, note, trig, &pk_hybrid_assets);
+        prepare_wt(&v->control[algo].value, v->wt[algo], raw, mode, vel, note, trig, &pk_hybrid_assets);
     } else {
-        prepare_res_family(&v->control[2], v->snare, v->bass, v->nt, raw, mode, vel, note, trig, &pk_hybrid_assets);
+        prepare_res_family(&v->control[2].value, v->snare, v->bass, v->nt, raw, mode, vel, note, trig, &pk_hybrid_assets);
     }
     v->active_algo = algo;
     v->active_mode = mode;
@@ -684,24 +695,85 @@ pk_hybrid_commit_longs(volatile uint32_t *dst, const uint32_t *src, uint32_t cou
         dst[i] = src[i];
 }
 
-/* Same stock FLEX record as pk4_encode_stock_segment, published directly to
- * the owned fixed slot. Keep volatile long stores and a separate call: GCC
- * otherwise duplicates the variable-length encoder throughout pk_render. */
-static uint32_t __attribute__((noinline, optimize("no-unroll-loops")))
-pk_hybrid_encode_slot(volatile uint32_t *dst, const int16_t *pcm, uint32_t count)
-{
-    if (!dst || !pcm || count > PK_HYB_BLOCK_SAMPLES) return 0u;
-    dst[0] = (count << 8) | count;
-    dst[1] = 0u;
-    dst[2] = 0x04000000u;
-    dst[3] = 0u;
-    for (uint32_t i = 0; i < count; ++i) {
-        uint32_t sample = (uint32_t)(int32_t)pcm[i] << 16;
-        dst[4u + 2u*i] = sample;
-        dst[5u + 2u*i] = sample;
-    }
-    return 4u + 2u*count;
-}
+/* Publish both stock-format segments in the owned 40-long slot. The
+ * bounded assembly loops avoid GCC's complete peeling of the variable-count
+ * C encoder. Preserve d2/a2 and the ColdFire C ABI; count zero still emits
+ * its four-word header. PCM words retain their exact original high halves. */
+uint32_t pk_hybrid_encode_frame(volatile uint32_t *,const int16_t *,uint32_t);
+__asm__(
+    "\n"
+    ".section .text.pk_hybrid_encode_frame,\"ax\",@progbits\n"
+    ".balign 2\n"
+    ".globl pk_hybrid_encode_frame\n"
+    ".type pk_hybrid_encode_frame,@function\n"
+    "pk_hybrid_encode_frame:\n"
+    "    lea -8(%sp),%sp\n"
+    "    movem.l %d2/%a2,(%sp)\n"
+    "    move.l 12(%sp),%a0\n"
+    "    move.l 16(%sp),%a1\n"
+    "    move.l 20(%sp),%d1\n"
+    "    tst.l %a0\n"
+    "    beq .Lpkenc_invalid\n"
+    "    tst.l %a1\n"
+    "    beq .Lpkenc_invalid\n"
+    "    cmp.l #16,%d1\n"
+    "    bhi .Lpkenc_invalid\n"
+    "    move.l #16,%d2\n"
+    "    sub.l %d1,%d2\n"
+    "    move.l %d1,%d0\n"
+    "    lsl.l #3,%d0\n"
+    "    lea 16(%a0,%d0.l),%a2\n"
+    "    move.l %d1,%d0\n"
+    "    lsl.l #8,%d0\n"
+    "    or.l %d1,%d0\n"
+    "    move.l %d0,(%a0)\n"
+    "    clr.l 4(%a0)\n"
+    "    move.l #0x04000000,%d0\n"
+    "    move.l %d0,8(%a0)\n"
+    "    clr.l 12(%a0)\n"
+    "    move.l %d2,%d0\n"
+    "    lsl.l #8,%d0\n"
+    "    or.l %d2,%d0\n"
+    "    move.l %d0,(%a2)\n"
+    "    clr.l 4(%a2)\n"
+    "    move.l #0x04000000,%d0\n"
+    "    move.l %d0,8(%a2)\n"
+    "    clr.l 12(%a2)\n"
+    "    lea 16(%a0),%a0\n"
+    "    lea 16(%a2),%a2\n"
+    "    tst.l %d1\n"
+    "    beq .Lpkenc_tail\n"
+    ".Lpkenc_prefix:\n"
+    "    move.w (%a1)+,%d0\n"
+    "    swap %d0\n"
+    "    clr.w %d0\n"
+    "    move.l %d0,(%a0)+\n"
+    "    move.l %d0,(%a0)+\n"
+    "    subq.l #1,%d1\n"
+    "    bne .Lpkenc_prefix\n"
+    ".Lpkenc_tail:\n"
+    "    tst.l %d2\n"
+    "    beq .Lpkenc_done\n"
+    ".Lpkenc_suffix:\n"
+    "    move.w (%a1)+,%d0\n"
+    "    swap %d0\n"
+    "    clr.w %d0\n"
+    "    move.l %d0,(%a2)+\n"
+    "    move.l %d0,(%a2)+\n"
+    "    subq.l #1,%d2\n"
+    "    bne .Lpkenc_suffix\n"
+    ".Lpkenc_done:\n"
+    "    moveq #40,%d0\n"
+    "    bra .Lpkenc_return\n"
+    ".Lpkenc_invalid:\n"
+    "    moveq #0,%d0\n"
+    ".Lpkenc_return:\n"
+    "    movem.l (%sp),%d2/%a2\n"
+    "    lea 8(%sp),%sp\n"
+    "    rts\n"
+    ".size pk_hybrid_encode_frame,.-pk_hybrid_encode_frame\n"
+    ".text\n"
+);
 
 /* Dynamic SRC page builder for hybrid tracks:
  *   T1/T5 (DSP): ALGO max = 4 (Fold1, Fold2, Simple, Complex)
@@ -773,8 +845,8 @@ unsigned pk_hybrid_ui_playing(unsigned track, unsigned original)
 /* The UI task is the sole snapshot/file writer. No interrupt masking or
  * filesystem call is permitted in the audio callback. A failed seqlock read
  * is retried on a later UI tick, never in a spin loop. */
-static uint32_t pk_hybrid_file_object[6];
-static uint32_t pk_hybrid_file_buffer[1024];
+static uint32_t __attribute__((aligned(4))) pk_hybrid_file_object[6];
+static uint32_t __attribute__((aligned(4))) pk_hybrid_file_buffer[1024];
 static struct {
     uint32_t magic, version, bytes, sequence;
     char source_id[68];
@@ -1013,9 +1085,13 @@ int pk_hybrid_render(unsigned track, unsigned ping, unsigned start, unsigned end
      * own disjoint sample ranges; their concatenation is encoded only at the
      * event boundary. This removes the temporary PCM and its copy. */
     int16_t *pcm = pk_hybrid_frame_pcm[inst] + start;
-    if (!pk_hybrid_cf_render_segment(inst, pcm, count)) {
-        for (unsigned i = 0; i < count; ++i)
-            pcm[i] = 0;
+    /* Keep Snare's exact empty-state normalization; other empty renders
+     * have no state effects. Event/control work above always executes. */
+    if (count || (pk_hybrid_voices[inst].active_algo == 2u &&
+                  pk_hybrid_voices[inst].active_mode == 0u)) {
+        if (!pk_hybrid_cf_render_segment(inst, pcm, count)) {
+            for (unsigned i = 0; i < count; ++i) pcm[i] = 0;
+        }
     }
     uint32_t t_rend1 = prof_on ? pk_hybrid_timer_now() : 0u;
 
@@ -1041,18 +1117,7 @@ int pk_hybrid_render(unsigned track, unsigned ping, unsigned start, unsigned end
     if (event_boundary) {
         volatile uint32_t *record = pk_hybrid_fixed_slot(track, ping);
         const unsigned split = start;
-        uint32_t pre_longs = pk_hybrid_encode_slot(
-            record, pk_hybrid_frame_pcm[inst], split
-        );
-        if (!pre_longs)
-            return 0;
-        uint32_t post_longs = pk_hybrid_encode_slot(
-            record + pre_longs, pk_hybrid_frame_pcm[inst] + split,
-            PK_HYB_BLOCK_SAMPLES - split
-        );
-        if (!post_longs)
-            return 0;
-        if (pre_longs + post_longs != 40u)
+        if (pk_hybrid_encode_frame(record, pk_hybrid_frame_pcm[inst], split) != 40u)
             return 0;
 
         pk_hybrid_trigger_latch[inst] = 0u;

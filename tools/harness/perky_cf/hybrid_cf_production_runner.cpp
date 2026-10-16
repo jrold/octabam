@@ -1,5 +1,6 @@
 #include "machine.h"
 #include "hybrid_cf_alignment.hpp"
+#include "hybrid_cf_predictor.hpp"
 #include "mc68k/Musashi/m68k.h"
 #include "mc68k/cpuState.h"
 #include <algorithm>
@@ -17,10 +18,12 @@ static std::vector<uint8_t> read(const std::string &p){
 }
 struct Symbol{uint32_t address,size;char type;std::string name;};
 struct Cost{uint64_t cycles,instructions;uint32_t stack;std::map<std::string,uint64_t> symbols;
-    std::array<uint64_t,7> reads{},writes{},cross_reads{},cross_writes{};};
+    std::array<uint64_t,7> reads{},writes{},cross_reads{},cross_writes{};
+    std::array<uint64_t,4> branches{};};
 struct Target{
     ot::Machine m;
     HybridAlignment alignment;
+    HybridPredictor predictor;
     std::map<std::string,Symbol> symbols;
     std::vector<Symbol> text;
     bool observing=false;
@@ -83,6 +86,7 @@ struct Target{
         m.write32(0x800062a8,0x80008000);
     }
     Cost call(const std::string &name,const std::vector<uint32_t>&args){
+        predictor.load();const auto branch_before=predictor.counts;
         const uint32_t sp=0x47100000,end=0x47200000;
         m68k_set_reg(m.getCpuState(),M68K_REG_SR,0x2700);
         m68k_set_reg(m.getCpuState(),M68K_REG_SP,sp);
@@ -101,14 +105,18 @@ struct Target{
         observing=false;alignment.enabled=false;
         if(m68k_get_reg(m.getCpuState(),M68K_REG_SP)!=sp+4)throw std::runtime_error("production stack ABI");
         cost.cycles=m.getCycles()-start;cost.instructions=instructions;cost.stack=sp-low;
+        predictor.save();for(unsigned i=0;i<4;++i)cost.branches[i]=predictor.counts[i]-branch_before[i];
         cost.reads=reads;cost.writes=writes;cost.cross_reads=cross_reads;cost.cross_writes=cross_writes;return cost;
     }
     std::vector<uint8_t> bytes(uint32_t a,uint32_t n){std::vector<uint8_t> v;for(unsigned i=0;i<n;++i)v.push_back(m.read8(a+i));return v;}
 };
 
 int main(int argc,char **argv){
+    HybridPredictor::selftest();
     if(argc!=4&&argc!=5)return 2;
-    const bool aligned=argc==5&&std::string(argv[4])=="align16";
+    const bool control4=argc==5&&std::string(argv[4])=="control4";
+    const bool rng4=argc==5&&std::string(argv[4])=="rng4";
+    const bool aligned=argc==5&&(std::string(argv[4])=="align16"||rng4||control4);
     if(argc==5&&!aligned)throw std::runtime_error("unknown layout experiment");
     const std::string left=argv[1],right=argv[2],work=argv[3];
     Target a(left,work+"/reference.nm"),b(right,work+"/candidate.nm");
@@ -116,10 +124,15 @@ int main(int argc,char **argv){
     if(aligned){
         auto layout=[&](const std::string &label){std::ifstream f(work+"/"+label+"-layout.txt");
             std::vector<uint32_t> words;uint32_t n;while(f>>n)words.push_back(n);
-            if(words.size()!=25)throw std::runtime_error("incomplete compiler layout witness");return words;};
+            if(words.size()!=(control4?29u:25u))throw std::runtime_error("incomplete compiler layout witness");return words;};
         auto x=layout("reference"),y=layout("candidate");
-        if(x[0]!=1974||y[0]!=1984||x[1]!=1974||y[1]!=1974||x[2]!=2||y[2]!=16||
-           !std::equal(x.begin()+3,x.end(),y.begin()+3)||
+        auto expected=x;
+        if(control4){expected[1]=1980;expected[12]=72;for(unsigned i=13;i<25;i+=2)expected[i]+=4;
+            expected[25]=24;expected[26]=22;expected[27]=0;expected[28]=4;}
+        else if(rng4){expected[1]=1976;for(unsigned i=13;i<25;i+=2)expected[i]+=2;}
+        const bool fields_ok=control4 ? (x[0]==1984&&x[1]==1976&&x[2]==16&&x[25]==22&&x[26]==22&&x[27]==0&&x[28]==2&&y==expected) : rng4 ? (x[0]==1984&&x[1]==1974&&x[2]==16&&y==expected) :
+            (x[0]==1974&&y[0]==1984&&x[1]==1974&&y[1]==1974&&x[2]==2&&y[2]==16&&std::equal(x.begin()+3,x.end(),y.begin()+3));
+        if(!fields_ok||
            a.symbols.at("pk_hybrid_voices").size!=2*x[0]||b.symbols.at("pk_hybrid_voices").size!=2*y[0]||
            (b.symbols.at("pk_hybrid_voices").address&15))
             throw std::runtime_error("alignment changed logical state layout");
@@ -130,6 +143,7 @@ int main(int argc,char **argv){
     for(auto image:{"baseline","candidate"})for(auto group:{"stack","state","PCM","source_RAM","instruction_stream","module_other","external_control_and_reservation"})
         costs<<','<<image<<'_'<<group<<"_read_bytes,"<<image<<'_'<<group<<"_write_bytes,"
              <<image<<'_'<<group<<"_cross16_reads,"<<image<<'_'<<group<<"_cross16_writes";
+    for(auto image:{"baseline","candidate"})for(auto kind:{"bcc_branches","btb_hits","bht_hits","bcc_mispredicts"})costs<<','<<image<<'_'<<kind;
     costs<<'\n';
     exclusive<<"profiler,left,right,phase,image,symbol,cycles\n";
     const std::string names[]={"V1","V2","snare","bass","third"};
@@ -161,8 +175,26 @@ int main(int argc,char **argv){
                         auto x=a.symbols.at(name),y=b.symbols.at(name);
                         if(aligned&&std::string(name)=="pk_hybrid_voices"){
                             for(unsigned voice=0;voice<2;++voice){
-                                compare(x.address+voice*reference_stride,y.address+voice*candidate_stride,logical_end);
-                                auto padding=b.bytes(y.address+voice*candidate_stride+logical_end,candidate_stride-logical_end);
+                                auto aa=x.address+voice*reference_stride,bb=y.address+voice*candidate_stride;
+                                std::vector<uint8_t> padding;
+                                if(control4){
+                                    compare(aa,bb,1896);
+                                    for(unsigned j=0;j<3;++j)compare(aa+1896+22*j,bb+1896+24*j,22);
+                                    compare(aa+1964,bb+1968,12);
+                                    padding=a.bytes(aa+1962,2);
+                                    auto add=[&](Target&t,uint32_t at,uint32_t n){
+                                        auto part=t.bytes(at,n);padding.insert(padding.end(),part.begin(),part.end());};
+                                    add(a,aa+1976,8);
+                                    for(unsigned j=0;j<3;++j)add(b,bb+1896+24*j+22,2);
+                                    add(b,bb+1980,4);
+                                }else if(rng4){
+                                    compare(aa,bb,1962);compare(aa+1962,bb+1964,12);
+                                    padding=a.bytes(aa+1974,10);
+                                    auto gap=b.bytes(bb+1962,2),tail=b.bytes(bb+1976,8);
+                                    padding.insert(padding.end(),gap.begin(),gap.end());padding.insert(padding.end(),tail.begin(),tail.end());
+                                }else{
+                                    compare(aa,bb,logical_end);padding=b.bytes(bb+logical_end,candidate_stride-logical_end);
+                                }
                                 if(std::any_of(padding.begin(),padding.end(),[](uint8_t n){return n!=0;}))
                                     throw std::runtime_error("new voice padding changed");
                             }
@@ -172,6 +204,7 @@ int main(int argc,char **argv){
                     costs<<prof<<','<<names[l]<<','<<names[r]<<','<<f<<','<<inst<<','<<phase<<','<<ac.cycles<<','<<bc.cycles<<','<<ac.instructions<<','<<bc.instructions<<','<<ac.stack<<','<<bc.stack;
                     for(auto c:{&ac,&bc})for(unsigned i=0;i<7;++i)
                         costs<<','<<c->reads[i]<<','<<c->writes[i]<<','<<c->cross_reads[i]<<','<<c->cross_writes[i];
+                    for(auto c:{&ac,&bc})for(auto n:c->branches)costs<<','<<n;
                     costs<<'\n';
                     for(auto item:{std::make_pair("baseline",&ac),std::make_pair("candidate",&bc)})
                         for(const auto&v:item.second->symbols){std::string key=std::to_string(prof)+","+names[l]+","+names[r]+","+phase+","+item.first+","+v.first;totals[key]+=v.second;}
@@ -187,4 +220,5 @@ int main(int argc,char **argv){
     std::ofstream report(work+"/CALLBACK_EXACT.json");
     report<<"{\"status\":\"PASS_EXACT_PRODUCTION_CALLBACKS\",\"callbacks\":"<<callbacks<<",\"compared_bytes\":"<<compared<<",\"pairs\":25,\"profiler_modes\":2,\"split_offsets\":17}\n";
     std::cout<<"exact production callbacks="<<callbacks<<" compared bytes="<<compared<<'\n';
+    return 0;
 }
