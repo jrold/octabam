@@ -76,6 +76,8 @@ def run() -> None:
     with tempfile.TemporaryDirectory(prefix='perky-coldboot-bss-') as d:
         path = Path(d) / 'test.c'; path.write_text(c)
         for compiler in tools:
+            print(f'host compiler driver {compiler}: {shutil.which(compiler)}', flush=True)
+            subprocess.run([compiler, '--version'], check=True)
             exe = Path(d) / ('bss-' + compiler)
             subprocess.run([compiler, '-std=c99', '-O2', '-Wall', '-Wextra', '-Werror', str(path), '-o', str(exe)], check=True)
             subprocess.run([str(exe)], check=True)
@@ -85,7 +87,7 @@ def run() -> None:
                                 '-fsanitize=address,undefined', '-fno-omit-frame-pointer',
                                 str(path), '-o', str(san)], check=True)
                 subprocess.run([str(san)], check=True)
-    print('PASS: production boot init order and GCC/Clang scrub tests')
+    print('PASS: production boot init order and available host compiler-driver scrub tests')
 
 if __name__ == '__main__':
     run()
