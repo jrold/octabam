@@ -1653,15 +1653,15 @@
     },
     "sustained_a": {
       "path": "out/perky/hybrid/campaign-20261016/final-sustained-a/MATRIX.json",
-      "sha256": "9daa43f521ac2d83bf3cc7e0eaa3740f517143c5fd70ca768c3ac33c79c2f027",
+      "sha256": "e7c60d84739b0746d5e5bc9614297914a6b83e21f541a67f932ef12d6a9436d5",
       "status": "RUNNING",
-      "completed_rows": 2
+      "completed_rows": 3
     },
     "sustained_b": {
       "path": "out/perky/hybrid/campaign-20261016/final-sustained-b/MATRIX.json",
-      "sha256": "4058c3b6d12e745f23486ae7731280c5410373d76d4bae1526699ae7209afa68",
+      "sha256": "6c9daa397f7f7858281c91fb1eea9e0d911fe302d93a0748f35b2caa83190614",
       "status": "RUNNING",
-      "completed_rows": 2
+      "completed_rows": 3
     },
     "primed_and_cold_records": {
       "path": "out/perky/hybrid/campaign-20261016/final/BLOCK_IDENTITY.json",
@@ -4199,5 +4199,107 @@
       "headroom_to_290_25us_gate_us": -52.906
     },
     "limits": "Diagnostic comparison only; production CF remains armed. Silent CF input changes DSP/stock execution as well, so differences are not an invariant cost partition or a hardware bound."
+  },
+  "baseline_recovery": {
+    "path": "out/perky/hybrid/campaign-20261016/BASELINE_RECOVERY.json",
+    "sha256": "b79abff8685d077a7fdfaf84be0cfe92516477c9bc605ea029b4f0e1ce28c8f0",
+    "status": "PASS_REPRODUCED_BASELINE_SOURCE_MAIN_DSP_AND_MEMORY",
+    "initial_build_return": "Failed after generating MAIN because the per-work baseline/reproduction fixture directory was absent. No invalid image was substituted.",
+    "repair": "Ran the original DSP identity and memory verifiers against the existing pinned baseline/reproduction; source/image output files were not changed.",
+    "baseline_source_commit": "02fa20ff9503bb08c7d1e23307222dcb3ef41e4b",
+    "physical_build_manifest_sha256": "e4611cd529b6b3b4a022f361917834df7ba0234295c53731f659314a62cd3c4c",
+    "all_26_manifest_sources_match_baseline_commit": {
+      "modules/perky/control_cf_dsp_hybrid.c": true,
+      "modules/perky/hybrid_hooks.s": true,
+      "modules/perky/control_four_candidate.c": true,
+      "modules/perky/control_three_candidate.c": true,
+      "modules/perky/control.c": true,
+      "modules/perky/machine.s": true,
+      "modules/perky/machine_four_ui.s": true,
+      "modules/perky/cf_assets.s": true,
+      "modules/perky/cf_perky4.c": true,
+      "modules/perky/cf_perky4.h": true,
+      "modules/perky/cf_wavetable.c": true,
+      "modules/perky/cf_wavetable.h": true,
+      "modules/perky/cf_resonant.c": true,
+      "modules/perky/cf_resonant.h": true,
+      "modules/perky/cf_noise_tone.c": true,
+      "modules/perky/cf_noise_tone.h": true,
+      "modules/perky/cf_math.h": true,
+      "modules/perky/cf_pcm_rice.h": true,
+      "tools/perky/build_cf_dsp_hybrid.py": true,
+      "tools/perky/build_four_payload.py": true,
+      "tools/perky/perky_fragmented_image.py": true,
+      "tools/perky/repack_machine_loader.py": true,
+      "tools/perky/perky_cf_assets.py": true,
+      "modules/perky/generate_cf_final.py": true,
+      "tools/perky/perky_machine_module.py": true,
+      "tools/remix/loader.S": true
+    },
+    "artifacts": {
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/probe/mainos_PKH4B0.bin": "7cdbe20f7a8911624babbd05c0997f79338f9883aab206236ddb904687161faf",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/probe/platform/runtime.elf": "dcb1a4fdef2ead28ef7783c4a17e0ce14102b95fcd1c4b81f1825c8061f4d423",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/probe/platform/runtime.raw": "9040f07ef3461d90836ecd3c74e5a7aac68403a6bcc6aa38947754bf064657df"
+    },
+    "DSP_identity_status": "PASS",
+    "memory_status": "PASS",
+    "memory_report_sha256": "64c46a50781ac40b0845cdf728b1d57f6898198e96904483b97e2180c173ebd2",
+    "DSP_report_sha256": "daba65090fd0feea1853c6a288c99a896724d0148bd4b42d80a52d14b5b86d2a",
+    "scope": "Frozen pre-campaign binary and its actual placement; not a fresh hardware timing claim."
+  },
+  "private_prewrap_audit": {
+    "path": "out/perky/hybrid/campaign-20261016/final/PRIVATE_PREWRAP_AUDIT.json",
+    "sha256": "b85e2b26bf82933ebb34a420717c3e7e5bdcdcbd361e818164579988db9a5508",
+    "status": "PASS_PRIVATE_PREWRAP_PREREQUISITES",
+    "runs": {
+      "mixed": {
+        "frames": 2048,
+        "full_ISR_max_cycles": 73396,
+        "private_peak_bytes": 984
+      },
+      "dense": {
+        "frames": 4096,
+        "full_ISR_max_cycles": 73397,
+        "private_peak_bytes": 992
+      },
+      "external": {
+        "frames": 4096,
+        "full_ISR_max_cycles": 73420,
+        "private_peak_bytes": 1028
+      },
+      "lifecycle-final": {
+        "frames": 28395,
+        "full_ISR_max_cycles": 72485,
+        "private_peak_bytes": 1024
+      },
+      "saved-final-save": {
+        "frames": 16536,
+        "full_ISR_max_cycles": 21334,
+        "private_peak_bytes": 460
+      },
+      "saved-final-reload": {
+        "frames": 512,
+        "full_ISR_max_cycles": 73393,
+        "private_peak_bytes": 984
+      },
+      "snare-bass": {
+        "frames": 4096,
+        "full_ISR_max_cycles": 73101,
+        "private_peak_bytes": 1028
+      },
+      "scene-panel": {
+        "frames": 5051,
+        "full_ISR_max_cycles": 76354,
+        "private_peak_bytes": 1028
+      },
+      "transitions": {
+        "frames": 24000,
+        "full_ISR_max_cycles": 72124,
+        "private_peak_bytes": 1028
+      }
+    },
+    "external_MIDI_bytes_consumed": 4056,
+    "external_observed_sequencer_IRQs": 4059,
+    "remaining": "Actual package roundtrip/corruption and full PROBE_GATES.json, then run unchanged complete private qualification aggregator. No gate is waived."
   }
 }

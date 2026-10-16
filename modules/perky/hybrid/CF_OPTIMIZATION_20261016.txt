@@ -73,8 +73,8 @@ candidate_pairs_a: PASS_MEASURED_MATRIX (7 completed rows)
 candidate_pairs_b: PASS_MEASURED_MATRIX (8 completed rows)
 sustained: RUNNING (1 completed rows)
 continuous_stress: RUNNING (0 completed rows)
-sustained_a: RUNNING (2 completed rows)
-sustained_b: RUNNING (2 completed rows)
+sustained_a: RUNNING (3 completed rows)
+sustained_b: RUNNING (3 completed rows)
 primed_and_cold_records: PASS_EXACT_INITIALIZED_PCM_AND_ALL_SOURCE_RECORDS
 EMAC_IRQ: PASS_HIGHER_IRQ_EMAC_USE_FULLY_CONTEXT_PRESERVING
 save_reload: PASS_SCOPED_SAVE_RELOAD
