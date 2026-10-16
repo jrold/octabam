@@ -200,7 +200,9 @@ def assess(work,out):
             ROOT/'tools/verify/verify_perky_hybrid_sequencer_transitions.py',
             *[a for a in HARNESS.glob('*') if a.suffix in ('.cpp','.h','.s')]]},
         'physical_risks':['No silicon cache/SDRAM/FlexBus arbitration or coherence measurement.',
-            'The zero-pre-roll raw DSP capture has six initial pipeline-record differences; all cold source/control and every primed post-PLAY record are exact. Hardware startup audio remains unqualified.',
+            ('Zero-pre-roll raw captures match completely; every primed post-PLAY record is exact. Hardware startup audio remains unqualified.'
+             if all(not row['differences'] for row in identical['cold_raw_comparisons'].values()) else
+             'The zero-pre-roll raw DSP captures retain their enumerated initial pipeline differences; all cold source/control and every primed post-PLAY record are exact. Hardware startup audio remains unqualified.'),
             'No silicon interrupt release-to-entry or worst-case instruction latency bound.',
             'Normal valid stock dispatch tables, indices, C ABI and seven-stage DMA protocol are qualification preconditions.',
             'Unchanged larger stock-task base graphs remain outside this bounded correction; their audio-related task-stack demand cannot increase.',

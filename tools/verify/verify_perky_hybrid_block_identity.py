@@ -3,9 +3,10 @@
 
 The port starts frame exchange at PLAY unless --pre-roll is supplied; hardware
 exchanges frames since boot (main.cpp O14). Never silently discard a post-PLAY
-record. Keep the cold raw failure visible, restrict it to six initial pipeline
-records, and require every primed post-PLAY record and all cold source records
-identical. Consumes hash-pinned RUN receipts, rather than replacing captures.
+record. Keep any cold raw failure visible, restrict it to the six historically
+observed initial pipeline records, and require every primed post-PLAY record
+and all cold source records identical. Report zero differences when measured.
+Consumes hash-pinned RUN receipts, rather than replacing captures.
 """
 import argparse
 import hashlib
@@ -84,11 +85,13 @@ def run(work):
         pcm=recloop.readback_audio(classes,track);significant=sum(abs(v)>64 for v in pcm)
         assert significant>64,('silent primed comparison',track)
         active[str(track)]={'samples':len(pcm),'significant':significant}
+    cold_differences=sum(len(row['differences']) for row in raw.values())
     report={'status':'PASS_EXACT_INITIALIZED_PCM_AND_ALL_SOURCE_RECORDS',
         'cold_raw_comparisons':raw,'primed_before_PLAY_frames':40,
         'post_PLAY_frames_requested':2048,'identical_post_priming_records':len(a),
         'active_synthesis_readbacks':active,'no_firmware_edits_or_added_shipping_audio_latency':True,
-        'limits':['The original zero-pre-roll raw byte comparison fails on six initial DSP readback/mix records; it is retained explicitly.',
+        'limits':[('Zero-pre-roll raw comparisons match every captured byte.' if not cold_differences else
+                   'The zero-pre-roll raw comparison differs on the explicitly enumerated initial DSP pipeline records; no source/control record differs.'),
                   'The port starts exchange at PLAY; hardware runs exchange from boot. These are different pipeline initial conditions.',
                   'Every cold source/control record and every primed post-PLAY record must match exactly. No arbitrary warm-up exclusion after PLAY.'],
         'inputs':{str(p):sha(p) for p in [*pins,Path(__file__),ROOT/'tools/emu/ot_emu/main.cpp',

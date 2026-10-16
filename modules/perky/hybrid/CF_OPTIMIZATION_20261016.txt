@@ -18,17 +18,17 @@ New selected artifact: PKH4O2; hardware timing unqualified. Physical 20% margin 
 Paired full executed ISR maxima, 4,096 frames, 264 MHz model:
 T2/T6                       baseline us    candidate us    max reduction
 snare/snare                    325.386         278.015       14.56%
-snare/bass                     319.932    PENDING
-bass/bass                      314.133    PENDING
-V1/V1                          306.795    PENDING
-V2/V2                          306.795    PENDING
+snare/bass                     319.932         276.898       13.45%
+bass/bass                      314.133         275.436       12.32%
+V1/V1                          306.795         255.977       16.56%
+V2/V2                          306.795         255.977       16.56%
 V1/V2                          306.795    PENDING
 V1/snare                       316.542    PENDING
 V2/bass                        310.769         265.958       14.42%
-third/snare                    297.231    PENDING
-third/third                    269.008    PENDING
-bass/snare                     319.905    PENDING
-snare/V1                       316.489    PENDING
+third/snare                    297.231         273.830        7.87%
+third/third                    269.008         268.848        0.06%
+bass/snare                     319.905         276.898       13.44%
+snare/V1                       316.489         267.288       15.55%
 bass/V2                        310.822    PENDING
 snare/third                    297.576    PENDING
 V2/V1                          306.795    PENDING
@@ -58,15 +58,22 @@ timer: PASS
 static_stack: PASS_SCOPED_PRIVATE_AND_THREE_VULNERABLE_TASK_BUDGETS
 private_units: PASS
 scene_fader: PASS_ACTUAL_SCENE_FADER_DELIVERY
-sequencer_transitions: PENDING
-twelve_FX: PENDING
+sequencer_transitions: PASS_REAL_SEQUENCER_MODE_FAMILY_AND_PART_TRANSITIONS
+twelve_FX: PASS
 component_gates: SEE_COMPONENT_RESULTS
 baseline_pairs_a: PASS_MEASURED_MATRIX (7 completed rows)
 baseline_pairs_b: PASS_MEASURED_MATRIX (8 completed rows)
-candidate_pairs_a: RUNNING (1 completed rows)
-candidate_pairs_b: RUNNING (1 completed rows)
-sustained: RUNNING (0 completed rows)
+candidate_pairs_a: RUNNING (5 completed rows)
+candidate_pairs_b: RUNNING (5 completed rows)
+sustained: RUNNING (1 completed rows)
 continuous_stress: RUNNING (0 completed rows)
+sustained_a: RUNNING (0 completed rows)
+sustained_b: RUNNING (0 completed rows)
+primed_and_cold_records: PASS_EXACT_INITIALIZED_PCM_AND_ALL_SOURCE_RECORDS
+EMAC_IRQ: PASS_HIGHER_IRQ_EMAC_USE_FULLY_CONTEXT_PRESERVING
+save_reload: PASS_SCOPED_SAVE_RELOAD
+card_export: PASS_ACTUAL_FIRMWARE_CARD_EXPORT
+profiler_off: PASS_MEASURED_MATRIX (1 completed rows)
 
 Known failure and repair: the initial runtime gate failed because repeated boot init scrubbed PCM while its loaded cookie stayed READY.
 Both baseline and initial candidate reproduced the loss; PKH4O2 restores PCM and passes the actual runtime comparison.

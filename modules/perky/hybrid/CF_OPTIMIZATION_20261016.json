@@ -24,7 +24,29 @@
     "max_full_ISR_us": 421.03,
     "deadline_misses": 479,
     "mean_CF_render_us": 122.031,
-    "paired_hardware_AB_available": false
+    "paired_hardware_AB_available": false,
+    "approximate_duration_seconds": 91.3,
+    "frame_period_us": 362.812,
+    "preferred_80_percent_us": 290.249,
+    "frames_exceeding_80_percent": 220470,
+    "recent_64_frame_mean_ISR_us": 327.795,
+    "mean_CF_callback_us": 154.449,
+    "mean_CF_control_us": 17.507,
+    "mean_CF_pack_us": 8.987,
+    "mean_DSP_callback_us": 17.164,
+    "mean_other_ISR_us": 128.759,
+    "active_track_mask": "0x33",
+    "independent_instance_maxima_us": {
+      "CF_callback": [
+        176.439,
+        88.955
+      ],
+      "render": [
+        108.568,
+        48.106
+      ]
+    },
+    "instance_maxima_scope": "Independent maxima from unmatched algorithms/control histories, not an intrinsic T2/T6 comparison."
   },
   "baseline_bench": {
     "path": "out/perky/hybrid/campaign-20261016/baseline/BENCH.json",
@@ -1579,10 +1601,14 @@
       "status": "PASS_ACTUAL_SCENE_FADER_DELIVERY"
     },
     "sequencer_transitions": {
-      "status": "PENDING"
+      "path": "out/perky/hybrid/campaign-20261016/final/TRANSITIONS.json",
+      "sha256": "132cccd10181c58f1c1d5591f804be9367d2df3c2ab8fe40d4cba6d40be83d76",
+      "status": "PASS_REAL_SEQUENCER_MODE_FAMILY_AND_PART_TRANSITIONS"
     },
     "twelve_FX": {
-      "status": "PENDING"
+      "path": "out/perky/hybrid/campaign-20261016/final/FX.json",
+      "sha256": "4d72f02d821d38b4efa5570b6a31234c51ef1d8a7dfa1d5884264176ca11b424",
+      "status": "PASS"
     },
     "component_gates": {
       "path": "out/perky/hybrid/campaign-20261016/final/COMPONENT_GATES.json",
@@ -1603,27 +1629,65 @@
     },
     "candidate_pairs_a": {
       "path": "out/perky/hybrid/campaign-20261016/final-matrix-a/MATRIX.json",
-      "sha256": "755ee35fa04bdc19ac28d3fecae903625659e2c63b6c3a762b78bae7b4a01030",
+      "sha256": "d6783eb32cd25b3aeed2e23912ed4e6dab36daa7984440cea8d8e4e42dc4cb99",
       "status": "RUNNING",
-      "completed_rows": 1
+      "completed_rows": 5
     },
     "candidate_pairs_b": {
       "path": "out/perky/hybrid/campaign-20261016/final-matrix-b/MATRIX.json",
-      "sha256": "21799d22950c7c29fb62ff5a634dc7afb2dbf337d6a792c8054e40a7d0a07d0c",
+      "sha256": "c24f594614367ed58b896e6b48bbe5061772fb0b2d0c31b324ac145c4b3ff7cd",
       "status": "RUNNING",
-      "completed_rows": 1
+      "completed_rows": 5
     },
     "sustained": {
       "path": "out/perky/hybrid/campaign-20261016/final-sustained/MATRIX.json",
-      "sha256": "ce271414ac7f6d78c78d8d7685b9eddec2478de95b71af3cab3b041de8c24639",
+      "sha256": "20fc72557466de74109edcf52a7111bbca0c068b3b76702b96804d12d62d19ea",
       "status": "RUNNING",
-      "completed_rows": 0
+      "completed_rows": 1
     },
     "continuous_stress": {
       "path": "out/perky/hybrid/campaign-20261016/final-stress/MATRIX.json",
       "sha256": "4070402762ec1b766d3c0e9aacde6ef02e0f6122119db36b249eeb3695c66cbd",
       "status": "RUNNING",
       "completed_rows": 0
+    },
+    "sustained_a": {
+      "path": "out/perky/hybrid/campaign-20261016/final-sustained-a/MATRIX.json",
+      "sha256": "11fae38ac2a10469f3472ce27c13c0a128dc2c83539cf7363af54d1ef516732c",
+      "status": "RUNNING",
+      "completed_rows": 0
+    },
+    "sustained_b": {
+      "path": "out/perky/hybrid/campaign-20261016/final-sustained-b/MATRIX.json",
+      "sha256": "11fae38ac2a10469f3472ce27c13c0a128dc2c83539cf7363af54d1ef516732c",
+      "status": "RUNNING",
+      "completed_rows": 0
+    },
+    "primed_and_cold_records": {
+      "path": "out/perky/hybrid/campaign-20261016/final/BLOCK_IDENTITY.json",
+      "sha256": "c7f0a8aacf68ed5f29dc6a6b2081bf2de5107eea23b9371e98714ebfbec81c76",
+      "status": "PASS_EXACT_INITIALIZED_PCM_AND_ALL_SOURCE_RECORDS"
+    },
+    "EMAC_IRQ": {
+      "path": "out/perky/hybrid/campaign-20261016/final/EMAC_IRQ.json",
+      "sha256": "3248e3d3597f1564ba893062a8e8b874350f52df72d3328812739e1c89e5b083",
+      "status": "PASS_HIGHER_IRQ_EMAC_USE_FULLY_CONTEXT_PRESERVING"
+    },
+    "save_reload": {
+      "path": "out/perky/hybrid/campaign-20261016/final/saved-project-final/SAVED_PROJECT.json",
+      "sha256": "1a4b54e9be28e18c676e41f698367a07344a1cca8b02ca4dccbfe5cca29f936a",
+      "status": "PASS_SCOPED_SAVE_RELOAD"
+    },
+    "card_export": {
+      "path": "out/perky/hybrid/campaign-20261016/final/card-export/CARD_EXPORT.json",
+      "sha256": "646e8577db7f6bb9dc5e619642eb01daaa83238da7c3505d42a3779098183ea3",
+      "status": "PASS_ACTUAL_FIRMWARE_CARD_EXPORT"
+    },
+    "profiler_off": {
+      "path": "out/perky/hybrid/campaign-20261016/profiler-off-matrix/MATRIX.json",
+      "sha256": "e6315fcae175bcc1156a912db3fbb912487ff3ebf3c95cadb07d1418a50b44dc",
+      "status": "PASS_MEASURED_MATRIX",
+      "completed_rows": 1
     }
   },
   "paired_full_ISR": [
@@ -1781,7 +1845,133 @@
           "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_bass-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62"
         }
       },
-      "candidate": null
+      "candidate": {
+        "maximum_cycles": 73101,
+        "maximum_us": 276.89772727272725,
+        "duration_misses": 0,
+        "private_peak_bytes": 1028,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_bass-stack.json": "cfc4fa157516b68c68bed4e09abb423a43ba9a802d5f7256c861d35267365582",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_bass-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a"
+        }
+      },
+      "max_reduction_percent": 13.451019393336649,
+      "baseline_component_us": {
+        "max_full_frame_us": 319.545,
+        "max_perky_service_us": 319.545,
+        "max_cf_callback_us": 122.106,
+        "max_cf_control_us": 28.735,
+        "max_cf_render_us": 96.038,
+        "max_cf_pack_us": 4.773,
+        "max_dsp_callback_us": 14.667,
+        "mean_perky_service_us": 221.323,
+        "mean_cf_callback_us": 101.677,
+        "mean_cf_control_us": 3.809,
+        "mean_cf_render_us": 91.807,
+        "mean_cf_pack_us": 4.311,
+        "mean_dsp_callback_us": 10.799,
+        "inst_max_us": [
+          58.083,
+          52.417
+        ],
+        "inst_max_control_us": [
+          14.826,
+          13.909
+        ],
+        "inst_max_render_us": [
+          42.061,
+          36.5
+        ],
+        "inst_max_pack_us": [
+          1.583,
+          1.667
+        ]
+      },
+      "candidate_component_us": {
+        "max_full_frame_us": 276.5,
+        "max_perky_service_us": 276.5,
+        "max_cf_callback_us": 68.227,
+        "max_cf_control_us": 28.72,
+        "max_cf_render_us": 42.583,
+        "max_cf_pack_us": 4.788,
+        "max_dsp_callback_us": 15.379,
+        "mean_perky_service_us": 168.257,
+        "mean_cf_callback_us": 48.506,
+        "mean_cf_control_us": 3.957,
+        "mean_cf_render_us": 38.674,
+        "mean_cf_pack_us": 4.182,
+        "mean_dsp_callback_us": 11.209,
+        "inst_max_us": [
+          34.409,
+          32.886
+        ],
+        "inst_max_control_us": [
+          14.833,
+          13.886
+        ],
+        "inst_max_render_us": [
+          17.523,
+          17.159
+        ],
+        "inst_max_pack_us": [
+          1.644,
+          1.591
+        ]
+      },
+      "all_eight_track_audio": {
+        "T1": {
+          "chain_samples": 38400,
+          "chain_significant": 38382,
+          "chain_peak": 8388608
+        },
+        "T2": {
+          "chain_samples": 38400,
+          "chain_significant": 38380,
+          "chain_peak": 8323072,
+          "source_significant": 38380,
+          "source_peak": 8388608
+        },
+        "T3": {
+          "chain_samples": 38400,
+          "chain_significant": 38379,
+          "chain_peak": 3727798,
+          "source_significant": 42567,
+          "source_peak": 2560000
+        },
+        "T4": {
+          "chain_samples": 38400,
+          "chain_significant": 38344,
+          "chain_peak": 1090278,
+          "source_significant": 42336,
+          "source_peak": 2560000
+        },
+        "T5": {
+          "chain_samples": 38400,
+          "chain_significant": 38363,
+          "chain_peak": 3572830
+        },
+        "T6": {
+          "chain_samples": 38400,
+          "chain_significant": 38389,
+          "chain_peak": 8388607,
+          "source_significant": 38383,
+          "source_peak": 8388608
+        },
+        "T7": {
+          "chain_samples": 38400,
+          "chain_significant": 38381,
+          "chain_peak": 3505906,
+          "source_significant": 41435,
+          "source_peak": 2560000
+        },
+        "T8": {
+          "chain_samples": 38400,
+          "chain_significant": 7867,
+          "chain_peak": 4917928,
+          "source_significant": 8316,
+          "source_peak": 2560000
+        }
+      }
     },
     {
       "pair": "bass/bass",
@@ -1796,7 +1986,133 @@
           "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_bass-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62"
         }
       },
-      "candidate": null
+      "candidate": {
+        "maximum_cycles": 72715,
+        "maximum_us": 275.43560606060606,
+        "duration_misses": 0,
+        "private_peak_bytes": 1028,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_bass-stack.json": "c1f61b18251ea69eff7df9aecd818df2934bb7f425a1807172d62e7ef1ee2361",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_bass-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a"
+        }
+      },
+      "max_reduction_percent": 12.318674560779442,
+      "baseline_component_us": {
+        "max_full_frame_us": 313.75,
+        "max_perky_service_us": 313.75,
+        "max_cf_callback_us": 115.25,
+        "max_cf_control_us": 27.818,
+        "max_cf_render_us": 89.765,
+        "max_cf_pack_us": 4.955,
+        "max_dsp_callback_us": 14.742,
+        "mean_perky_service_us": 214.853,
+        "mean_cf_callback_us": 95.13,
+        "mean_cf_control_us": 3.696,
+        "mean_cf_render_us": 85.277,
+        "mean_cf_pack_us": 4.394,
+        "mean_dsp_callback_us": 10.817,
+        "inst_max_us": [
+          52.5,
+          52.28
+        ],
+        "inst_max_control_us": [
+          13.939,
+          13.879
+        ],
+        "inst_max_render_us": [
+          36.508,
+          36.402
+        ],
+        "inst_max_pack_us": [
+          1.667,
+          1.667
+        ]
+      },
+      "candidate_component_us": {
+        "max_full_frame_us": 275.038,
+        "max_perky_service_us": 275.038,
+        "max_cf_callback_us": 66.621,
+        "max_cf_control_us": 27.879,
+        "max_cf_render_us": 41.553,
+        "max_cf_pack_us": 4.773,
+        "max_dsp_callback_us": 15.333,
+        "mean_perky_service_us": 167.246,
+        "mean_cf_callback_us": 47.203,
+        "mean_cf_control_us": 3.925,
+        "mean_cf_render_us": 37.516,
+        "mean_cf_pack_us": 4.057,
+        "mean_dsp_callback_us": 11.108,
+        "inst_max_us": [
+          33.083,
+          32.598
+        ],
+        "inst_max_control_us": [
+          14.076,
+          13.803
+        ],
+        "inst_max_render_us": [
+          17.083,
+          16.977
+        ],
+        "inst_max_pack_us": [
+          1.591,
+          1.591
+        ]
+      },
+      "all_eight_track_audio": {
+        "T1": {
+          "chain_samples": 38400,
+          "chain_significant": 38382,
+          "chain_peak": 8388608
+        },
+        "T2": {
+          "chain_samples": 38400,
+          "chain_significant": 38381,
+          "chain_peak": 8323072,
+          "source_significant": 38381,
+          "source_peak": 8388608
+        },
+        "T3": {
+          "chain_samples": 38400,
+          "chain_significant": 38379,
+          "chain_peak": 3727798,
+          "source_significant": 42567,
+          "source_peak": 2560000
+        },
+        "T4": {
+          "chain_samples": 38400,
+          "chain_significant": 38344,
+          "chain_peak": 1090278,
+          "source_significant": 42336,
+          "source_peak": 2560000
+        },
+        "T5": {
+          "chain_samples": 38400,
+          "chain_significant": 38363,
+          "chain_peak": 3572830
+        },
+        "T6": {
+          "chain_samples": 38400,
+          "chain_significant": 38389,
+          "chain_peak": 8388607,
+          "source_significant": 38383,
+          "source_peak": 8388608
+        },
+        "T7": {
+          "chain_samples": 38400,
+          "chain_significant": 38381,
+          "chain_peak": 3505906,
+          "source_significant": 41435,
+          "source_peak": 2560000
+        },
+        "T8": {
+          "chain_samples": 38400,
+          "chain_significant": 7867,
+          "chain_peak": 4917928,
+          "source_significant": 8316,
+          "source_peak": 2560000
+        }
+      }
     },
     {
       "pair": "V1/V1",
@@ -1811,7 +2127,133 @@
           "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_V1-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719"
         }
       },
-      "candidate": null
+      "candidate": {
+        "maximum_cycles": 67578,
+        "maximum_us": 255.97727272727272,
+        "duration_misses": 0,
+        "private_peak_bytes": 992,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_V1-stack.json": "e2e47cf2dd82bc11e7bb6c6b6e86df8064596e159e8d503de34f612df256972f",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_V1-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3"
+        }
+      },
+      "max_reduction_percent": 16.564189939995554,
+      "baseline_component_us": {
+        "max_full_frame_us": 306.386,
+        "max_perky_service_us": 306.386,
+        "max_cf_callback_us": 100.22,
+        "max_cf_control_us": 16.47,
+        "max_cf_render_us": 87.576,
+        "max_cf_pack_us": 4.788,
+        "max_dsp_callback_us": 14.795,
+        "mean_perky_service_us": 213.252,
+        "mean_cf_callback_us": 94.173,
+        "mean_cf_control_us": 3.26,
+        "mean_cf_render_us": 84.924,
+        "mean_cf_pack_us": 4.166,
+        "mean_dsp_callback_us": 10.877,
+        "inst_max_us": [
+          48.765,
+          48.735
+        ],
+        "inst_max_control_us": [
+          8.182,
+          8.288
+        ],
+        "inst_max_render_us": [
+          39.03,
+          38.879
+        ],
+        "inst_max_pack_us": [
+          1.614,
+          1.644
+        ]
+      },
+      "candidate_component_us": {
+        "max_full_frame_us": 255.636,
+        "max_perky_service_us": 255.636,
+        "max_cf_callback_us": 47.068,
+        "max_cf_control_us": 16.583,
+        "max_cf_render_us": 32.758,
+        "max_cf_pack_us": 4.568,
+        "max_dsp_callback_us": 15.348,
+        "mean_perky_service_us": 159.269,
+        "mean_cf_callback_us": 39.133,
+        "mean_cf_control_us": 3.254,
+        "mean_cf_render_us": 30.054,
+        "mean_cf_pack_us": 4.044,
+        "mean_dsp_callback_us": 11.014,
+        "inst_max_us": [
+          23.682,
+          23.386
+        ],
+        "inst_max_control_us": [
+          8.348,
+          8.235
+        ],
+        "inst_max_render_us": [
+          13.629,
+          13.394
+        ],
+        "inst_max_pack_us": [
+          1.508,
+          1.462
+        ]
+      },
+      "all_eight_track_audio": {
+        "T1": {
+          "chain_samples": 38400,
+          "chain_significant": 38382,
+          "chain_peak": 8388608
+        },
+        "T2": {
+          "chain_samples": 38400,
+          "chain_significant": 38384,
+          "chain_peak": 8227852,
+          "source_significant": 38384,
+          "source_peak": 8203264
+        },
+        "T3": {
+          "chain_samples": 38400,
+          "chain_significant": 38379,
+          "chain_peak": 3727798,
+          "source_significant": 42567,
+          "source_peak": 2560000
+        },
+        "T4": {
+          "chain_samples": 38400,
+          "chain_significant": 38344,
+          "chain_peak": 1090278,
+          "source_significant": 42336,
+          "source_peak": 2560000
+        },
+        "T5": {
+          "chain_samples": 38400,
+          "chain_significant": 38363,
+          "chain_peak": 3572830
+        },
+        "T6": {
+          "chain_samples": 38400,
+          "chain_significant": 38389,
+          "chain_peak": 8335006,
+          "source_significant": 38383,
+          "source_peak": 8227328
+        },
+        "T7": {
+          "chain_samples": 38400,
+          "chain_significant": 38381,
+          "chain_peak": 3505906,
+          "source_significant": 41435,
+          "source_peak": 2560000
+        },
+        "T8": {
+          "chain_samples": 38400,
+          "chain_significant": 7867,
+          "chain_peak": 4917928,
+          "source_significant": 8316,
+          "source_peak": 2560000
+        }
+      }
     },
     {
       "pair": "V2/V2",
@@ -1826,7 +2268,133 @@
           "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_V2-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719"
         }
       },
-      "candidate": null
+      "candidate": {
+        "maximum_cycles": 67578,
+        "maximum_us": 255.97727272727272,
+        "duration_misses": 0,
+        "private_peak_bytes": 992,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_V2-stack.json": "e2e47cf2dd82bc11e7bb6c6b6e86df8064596e159e8d503de34f612df256972f",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_V2-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3"
+        }
+      },
+      "max_reduction_percent": 16.564189939995554,
+      "baseline_component_us": {
+        "max_full_frame_us": 306.386,
+        "max_perky_service_us": 306.386,
+        "max_cf_callback_us": 100.22,
+        "max_cf_control_us": 16.47,
+        "max_cf_render_us": 87.576,
+        "max_cf_pack_us": 4.788,
+        "max_dsp_callback_us": 14.795,
+        "mean_perky_service_us": 213.252,
+        "mean_cf_callback_us": 94.173,
+        "mean_cf_control_us": 3.26,
+        "mean_cf_render_us": 84.924,
+        "mean_cf_pack_us": 4.166,
+        "mean_dsp_callback_us": 10.877,
+        "inst_max_us": [
+          48.765,
+          48.735
+        ],
+        "inst_max_control_us": [
+          8.182,
+          8.288
+        ],
+        "inst_max_render_us": [
+          39.03,
+          38.879
+        ],
+        "inst_max_pack_us": [
+          1.614,
+          1.644
+        ]
+      },
+      "candidate_component_us": {
+        "max_full_frame_us": 255.636,
+        "max_perky_service_us": 255.636,
+        "max_cf_callback_us": 47.068,
+        "max_cf_control_us": 16.583,
+        "max_cf_render_us": 32.758,
+        "max_cf_pack_us": 4.568,
+        "max_dsp_callback_us": 15.348,
+        "mean_perky_service_us": 159.269,
+        "mean_cf_callback_us": 39.133,
+        "mean_cf_control_us": 3.254,
+        "mean_cf_render_us": 30.054,
+        "mean_cf_pack_us": 4.044,
+        "mean_dsp_callback_us": 11.014,
+        "inst_max_us": [
+          23.682,
+          23.386
+        ],
+        "inst_max_control_us": [
+          8.348,
+          8.235
+        ],
+        "inst_max_render_us": [
+          13.629,
+          13.394
+        ],
+        "inst_max_pack_us": [
+          1.508,
+          1.462
+        ]
+      },
+      "all_eight_track_audio": {
+        "T1": {
+          "chain_samples": 38400,
+          "chain_significant": 38382,
+          "chain_peak": 8388608
+        },
+        "T2": {
+          "chain_samples": 38400,
+          "chain_significant": 38384,
+          "chain_peak": 8227852,
+          "source_significant": 38384,
+          "source_peak": 8203264
+        },
+        "T3": {
+          "chain_samples": 38400,
+          "chain_significant": 38379,
+          "chain_peak": 3727798,
+          "source_significant": 42567,
+          "source_peak": 2560000
+        },
+        "T4": {
+          "chain_samples": 38400,
+          "chain_significant": 38344,
+          "chain_peak": 1090278,
+          "source_significant": 42336,
+          "source_peak": 2560000
+        },
+        "T5": {
+          "chain_samples": 38400,
+          "chain_significant": 38363,
+          "chain_peak": 3572830
+        },
+        "T6": {
+          "chain_samples": 38400,
+          "chain_significant": 38389,
+          "chain_peak": 8335006,
+          "source_significant": 38383,
+          "source_peak": 8227328
+        },
+        "T7": {
+          "chain_samples": 38400,
+          "chain_significant": 38381,
+          "chain_peak": 3505906,
+          "source_significant": 41435,
+          "source_peak": 2560000
+        },
+        "T8": {
+          "chain_samples": 38400,
+          "chain_significant": 7867,
+          "chain_peak": 4917928,
+          "source_significant": 8316,
+          "source_peak": 2560000
+        }
+      }
     },
     {
       "pair": "V1/V2",
@@ -2012,7 +2580,133 @@
           "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_snare-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643"
         }
       },
-      "candidate": null
+      "candidate": {
+        "maximum_cycles": 72291,
+        "maximum_us": 273.82954545454544,
+        "duration_misses": 0,
+        "private_peak_bytes": 984,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-third_snare-stack.json": "3104c8a7cf5a7324d1a097cd8071e2e8038d47059fd44e3967e02d488f6ce182",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-third_snare-private.json": "fce67c8cccbb3c735f827ebfce3ff46eacbf1ae5064a1415562e3ce176745767"
+        }
+      },
+      "max_reduction_percent": 7.873172845327458,
+      "baseline_component_us": {
+        "max_full_frame_us": 296.848,
+        "max_perky_service_us": 296.848,
+        "max_cf_callback_us": 93.939,
+        "max_cf_control_us": 26.811,
+        "max_cf_render_us": 69.909,
+        "max_cf_pack_us": 4.659,
+        "max_dsp_callback_us": 14.697,
+        "mean_perky_service_us": 196.32,
+        "mean_cf_callback_us": 76.739,
+        "mean_cf_control_us": 3.898,
+        "mean_cf_render_us": 66.853,
+        "mean_cf_pack_us": 4.226,
+        "mean_dsp_callback_us": 10.878,
+        "inst_max_us": [
+          29.667,
+          57.947
+        ],
+        "inst_max_control_us": [
+          12.098,
+          14.712
+        ],
+        "inst_max_render_us": [
+          16.152,
+          42.076
+        ],
+        "inst_max_pack_us": [
+          1.561,
+          1.614
+        ]
+      },
+      "candidate_component_us": {
+        "max_full_frame_us": 273.432,
+        "max_perky_service_us": 273.432,
+        "max_cf_callback_us": 64.356,
+        "max_cf_control_us": 26.841,
+        "max_cf_render_us": 40.72,
+        "max_cf_pack_us": 4.72,
+        "max_dsp_callback_us": 15.28,
+        "mean_perky_service_us": 167.537,
+        "mean_cf_callback_us": 47.653,
+        "mean_cf_control_us": 3.815,
+        "mean_cf_render_us": 38.036,
+        "mean_cf_pack_us": 4.143,
+        "mean_dsp_callback_us": 11.252,
+        "inst_max_us": [
+          29.826,
+          34.477
+        ],
+        "inst_max_control_us": [
+          12.098,
+          14.742
+        ],
+        "inst_max_render_us": [
+          16.144,
+          17.818
+        ],
+        "inst_max_pack_us": [
+          1.568,
+          1.621
+        ]
+      },
+      "all_eight_track_audio": {
+        "T1": {
+          "chain_samples": 38400,
+          "chain_significant": 38382,
+          "chain_peak": 8388608
+        },
+        "T2": {
+          "chain_samples": 38400,
+          "chain_significant": 38378,
+          "chain_peak": 7301945,
+          "source_significant": 38378,
+          "source_peak": 7114240
+        },
+        "T3": {
+          "chain_samples": 38400,
+          "chain_significant": 38379,
+          "chain_peak": 3727798,
+          "source_significant": 42567,
+          "source_peak": 2560000
+        },
+        "T4": {
+          "chain_samples": 38400,
+          "chain_significant": 38344,
+          "chain_peak": 1090278,
+          "source_significant": 42336,
+          "source_peak": 2560000
+        },
+        "T5": {
+          "chain_samples": 38400,
+          "chain_significant": 38363,
+          "chain_peak": 3572830
+        },
+        "T6": {
+          "chain_samples": 38400,
+          "chain_significant": 38389,
+          "chain_peak": 8388607,
+          "source_significant": 38383,
+          "source_peak": 8388608
+        },
+        "T7": {
+          "chain_samples": 38400,
+          "chain_significant": 38381,
+          "chain_peak": 3505906,
+          "source_significant": 41435,
+          "source_peak": 2560000
+        },
+        "T8": {
+          "chain_samples": 38400,
+          "chain_significant": 7867,
+          "chain_peak": 4917928,
+          "source_significant": 8316,
+          "source_peak": 2560000
+        }
+      }
     },
     {
       "pair": "third/third",
@@ -2027,7 +2721,133 @@
           "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_third-private.json": "fe15cc2676223d091b76dbd10ad1effda2f903418ec8b2ecd0978623cf263c69"
         }
       },
-      "candidate": null
+      "candidate": {
+        "maximum_cycles": 70976,
+        "maximum_us": 268.8484848484849,
+        "duration_misses": 0,
+        "private_peak_bytes": 944,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-third_third-stack.json": "27df1d0827bfcb36b63368c5b21dd6043172d669c2d0777fd5007e2f96f010be",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-third_third-private.json": "fe15cc2676223d091b76dbd10ad1effda2f903418ec8b2ecd0978623cf263c69"
+        }
+      },
+      "max_reduction_percent": 0.05913993635416892,
+      "baseline_component_us": {
+        "max_full_frame_us": 268.636,
+        "max_perky_service_us": 268.636,
+        "max_cf_callback_us": 59.273,
+        "max_cf_control_us": 24.189,
+        "max_cf_render_us": 38.03,
+        "max_cf_pack_us": 4.667,
+        "max_dsp_callback_us": 14.667,
+        "mean_perky_service_us": 165.521,
+        "mean_cf_callback_us": 46.134,
+        "mean_cf_control_us": 3.73,
+        "mean_cf_render_us": 36.469,
+        "mean_cf_pack_us": 4.161,
+        "mean_dsp_callback_us": 10.838,
+        "inst_max_us": [
+          29.667,
+          29.606
+        ],
+        "inst_max_control_us": [
+          12.098,
+          12.091
+        ],
+        "inst_max_render_us": [
+          16.038,
+          16.129
+        ],
+        "inst_max_pack_us": [
+          1.538,
+          1.591
+        ]
+      },
+      "candidate_component_us": {
+        "max_full_frame_us": 268.508,
+        "max_perky_service_us": 268.508,
+        "max_cf_callback_us": 59.114,
+        "max_cf_control_us": 24.0,
+        "max_cf_render_us": 37.765,
+        "max_cf_pack_us": 4.561,
+        "max_dsp_callback_us": 15.197,
+        "mean_perky_service_us": 165.297,
+        "mean_cf_callback_us": 45.365,
+        "mean_cf_control_us": 3.589,
+        "mean_cf_render_us": 36.112,
+        "mean_cf_pack_us": 3.995,
+        "mean_dsp_callback_us": 11.027,
+        "inst_max_us": [
+          29.826,
+          29.288
+        ],
+        "inst_max_control_us": [
+          12.098,
+          11.902
+        ],
+        "inst_max_render_us": [
+          16.038,
+          15.894
+        ],
+        "inst_max_pack_us": [
+          1.568,
+          1.538
+        ]
+      },
+      "all_eight_track_audio": {
+        "T1": {
+          "chain_samples": 38400,
+          "chain_significant": 38382,
+          "chain_peak": 8388608
+        },
+        "T2": {
+          "chain_samples": 38400,
+          "chain_significant": 38378,
+          "chain_peak": 7301945,
+          "source_significant": 38378,
+          "source_peak": 7114240
+        },
+        "T3": {
+          "chain_samples": 38400,
+          "chain_significant": 38379,
+          "chain_peak": 3727798,
+          "source_significant": 42567,
+          "source_peak": 2560000
+        },
+        "T4": {
+          "chain_samples": 38400,
+          "chain_significant": 38344,
+          "chain_peak": 1090278,
+          "source_significant": 42336,
+          "source_peak": 2560000
+        },
+        "T5": {
+          "chain_samples": 38400,
+          "chain_significant": 38363,
+          "chain_peak": 3572830
+        },
+        "T6": {
+          "chain_samples": 38400,
+          "chain_significant": 38388,
+          "chain_peak": 8335006,
+          "source_significant": 38382,
+          "source_peak": 7223552
+        },
+        "T7": {
+          "chain_samples": 38400,
+          "chain_significant": 38381,
+          "chain_peak": 3505906,
+          "source_significant": 41435,
+          "source_peak": 2560000
+        },
+        "T8": {
+          "chain_samples": 38400,
+          "chain_significant": 7867,
+          "chain_peak": 4917928,
+          "source_significant": 8316,
+          "source_peak": 2560000
+        }
+      }
     },
     {
       "pair": "bass/snare",
@@ -2042,7 +2862,133 @@
           "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_snare-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62"
         }
       },
-      "candidate": null
+      "candidate": {
+        "maximum_cycles": 73101,
+        "maximum_us": 276.89772727272725,
+        "duration_misses": 0,
+        "private_peak_bytes": 1028,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_snare-stack.json": "616b1088af96e3bd87ee39fc0d3e0dfaca0801d0168e78372a2f0438b703a5d6",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_snare-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a"
+        }
+      },
+      "max_reduction_percent": 13.443845835060086,
+      "baseline_component_us": {
+        "max_full_frame_us": 319.545,
+        "max_perky_service_us": 319.545,
+        "max_cf_callback_us": 122.136,
+        "max_cf_control_us": 28.598,
+        "max_cf_render_us": 95.735,
+        "max_cf_pack_us": 4.803,
+        "max_dsp_callback_us": 14.697,
+        "mean_perky_service_us": 220.993,
+        "mean_cf_callback_us": 101.289,
+        "mean_cf_control_us": 3.748,
+        "mean_cf_render_us": 91.488,
+        "mean_cf_pack_us": 4.297,
+        "mean_dsp_callback_us": 10.789,
+        "inst_max_us": [
+          52.5,
+          57.894
+        ],
+        "inst_max_control_us": [
+          13.939,
+          14.659
+        ],
+        "inst_max_render_us": [
+          36.508,
+          42.076
+        ],
+        "inst_max_pack_us": [
+          1.667,
+          1.614
+        ]
+      },
+      "candidate_component_us": {
+        "max_full_frame_us": 276.5,
+        "max_perky_service_us": 276.5,
+        "max_cf_callback_us": 68.379,
+        "max_cf_control_us": 28.795,
+        "max_cf_render_us": 42.697,
+        "max_cf_pack_us": 4.735,
+        "max_dsp_callback_us": 15.439,
+        "mean_perky_service_us": 168.306,
+        "mean_cf_callback_us": 48.396,
+        "mean_cf_control_us": 3.942,
+        "mean_cf_render_us": 38.63,
+        "mean_cf_pack_us": 4.15,
+        "mean_dsp_callback_us": 11.291,
+        "inst_max_us": [
+          33.083,
+          34.273
+        ],
+        "inst_max_control_us": [
+          14.076,
+          14.72
+        ],
+        "inst_max_render_us": [
+          17.083,
+          17.629
+        ],
+        "inst_max_pack_us": [
+          1.591,
+          1.591
+        ]
+      },
+      "all_eight_track_audio": {
+        "T1": {
+          "chain_samples": 38400,
+          "chain_significant": 38382,
+          "chain_peak": 8388608
+        },
+        "T2": {
+          "chain_samples": 38400,
+          "chain_significant": 38381,
+          "chain_peak": 8323072,
+          "source_significant": 38381,
+          "source_peak": 8388608
+        },
+        "T3": {
+          "chain_samples": 38400,
+          "chain_significant": 38379,
+          "chain_peak": 3727798,
+          "source_significant": 42567,
+          "source_peak": 2560000
+        },
+        "T4": {
+          "chain_samples": 38400,
+          "chain_significant": 38344,
+          "chain_peak": 1090278,
+          "source_significant": 42336,
+          "source_peak": 2560000
+        },
+        "T5": {
+          "chain_samples": 38400,
+          "chain_significant": 38363,
+          "chain_peak": 3572830
+        },
+        "T6": {
+          "chain_samples": 38400,
+          "chain_significant": 38389,
+          "chain_peak": 8388607,
+          "source_significant": 38383,
+          "source_peak": 8388608
+        },
+        "T7": {
+          "chain_samples": 38400,
+          "chain_significant": 38381,
+          "chain_peak": 3505906,
+          "source_significant": 41435,
+          "source_peak": 2560000
+        },
+        "T8": {
+          "chain_samples": 38400,
+          "chain_significant": 7867,
+          "chain_peak": 4917928,
+          "source_significant": 8316,
+          "source_peak": 2560000
+        }
+      }
     },
     {
       "pair": "snare/V1",
@@ -2057,7 +3003,133 @@
           "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_V1-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643"
         }
       },
-      "candidate": null
+      "candidate": {
+        "maximum_cycles": 70564,
+        "maximum_us": 267.2878787878788,
+        "duration_misses": 0,
+        "private_peak_bytes": 992,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_V1-stack.json": "183d2fef0bbc1b68138c61ebe2252eb505349a9ee970b9f0c5e7f40c2f05fd08",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_V1-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3"
+        }
+      },
+      "max_reduction_percent": 15.545821215276534,
+      "baseline_component_us": {
+        "max_full_frame_us": 316.106,
+        "max_perky_service_us": 316.106,
+        "max_cf_callback_us": 114.477,
+        "max_cf_control_us": 23.189,
+        "max_cf_render_us": 94.068,
+        "max_cf_pack_us": 4.674,
+        "max_dsp_callback_us": 14.644,
+        "mean_perky_service_us": 220.604,
+        "mean_cf_callback_us": 101.199,
+        "mean_cf_control_us": 3.673,
+        "mean_cf_render_us": 91.514,
+        "mean_cf_pack_us": 4.209,
+        "mean_dsp_callback_us": 10.831,
+        "inst_max_us": [
+          58.083,
+          49.023
+        ],
+        "inst_max_control_us": [
+          14.826,
+          8.364
+        ],
+        "inst_max_render_us": [
+          42.273,
+          39.045
+        ],
+        "inst_max_pack_us": [
+          1.583,
+          1.621
+        ]
+      },
+      "candidate_component_us": {
+        "max_full_frame_us": 266.917,
+        "max_perky_service_us": 266.917,
+        "max_cf_callback_us": 58.0,
+        "max_cf_control_us": 23.144,
+        "max_cf_render_us": 38.189,
+        "max_cf_pack_us": 4.614,
+        "max_dsp_callback_us": 15.5,
+        "mean_perky_service_us": 164.536,
+        "mean_cf_callback_us": 44.461,
+        "mean_cf_control_us": 3.663,
+        "mean_cf_render_us": 34.983,
+        "mean_cf_pack_us": 4.127,
+        "mean_dsp_callback_us": 11.171,
+        "inst_max_us": [
+          34.409,
+          23.591
+        ],
+        "inst_max_control_us": [
+          14.833,
+          8.311
+        ],
+        "inst_max_render_us": [
+          17.523,
+          13.576
+        ],
+        "inst_max_pack_us": [
+          1.644,
+          1.462
+        ]
+      },
+      "all_eight_track_audio": {
+        "T1": {
+          "chain_samples": 38400,
+          "chain_significant": 38382,
+          "chain_peak": 8388608
+        },
+        "T2": {
+          "chain_samples": 38400,
+          "chain_significant": 38380,
+          "chain_peak": 8323072,
+          "source_significant": 38380,
+          "source_peak": 8388608
+        },
+        "T3": {
+          "chain_samples": 38400,
+          "chain_significant": 38379,
+          "chain_peak": 3727798,
+          "source_significant": 42567,
+          "source_peak": 2560000
+        },
+        "T4": {
+          "chain_samples": 38400,
+          "chain_significant": 38344,
+          "chain_peak": 1090278,
+          "source_significant": 42336,
+          "source_peak": 2560000
+        },
+        "T5": {
+          "chain_samples": 38400,
+          "chain_significant": 38363,
+          "chain_peak": 3572830
+        },
+        "T6": {
+          "chain_samples": 38400,
+          "chain_significant": 38389,
+          "chain_peak": 8335006,
+          "source_significant": 38383,
+          "source_peak": 8227328
+        },
+        "T7": {
+          "chain_samples": 38400,
+          "chain_significant": 38381,
+          "chain_peak": 3505906,
+          "source_significant": 41435,
+          "source_peak": 2560000
+        },
+        "T8": {
+          "chain_samples": 38400,
+          "chain_significant": 7867,
+          "chain_peak": 4917928,
+          "source_significant": 8316,
+          "source_peak": 2560000
+        }
+      }
     },
     {
       "pair": "bass/V2",
@@ -2143,6 +3215,45 @@
       "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/probe/platform/runtime.elf",
       "bytes": 320444,
       "sha256": "45b220aeecc46a1f01e6339298ac5e0a2f91e2bd84fb34465ec745687b1d43a1"
+    },
+    "committed_source_binding": {
+      "path": "out/perky/hybrid/campaign-20261016/final/SOURCE_COMMIT_BINDING.json",
+      "sha256": "5a1dc37f94058e8fcee6fda1065975b9ebde9e835e88515ba22cebf754262866",
+      "status": "PASS_EXACT_COMMITTED_SOURCE_BINDING",
+      "source_commit": "69ecb4ddc7407c3058382ed9ef285aff862ec7e2",
+      "all_build_manifest_sources_match_commit": {
+        "modules/perky/control_cf_dsp_hybrid.c": true,
+        "modules/perky/hybrid_hooks.s": true,
+        "modules/perky/control_four_candidate.c": true,
+        "modules/perky/control_three_candidate.c": true,
+        "modules/perky/control.c": true,
+        "modules/perky/machine.s": true,
+        "modules/perky/machine_four_ui.s": true,
+        "modules/perky/cf_assets.s": true,
+        "modules/perky/cf_perky4.c": true,
+        "modules/perky/cf_perky4.h": true,
+        "modules/perky/cf_wavetable.c": true,
+        "modules/perky/cf_wavetable.h": true,
+        "modules/perky/cf_resonant.c": true,
+        "modules/perky/cf_resonant.h": true,
+        "modules/perky/cf_noise_tone.c": true,
+        "modules/perky/cf_noise_tone.h": true,
+        "modules/perky/cf_math.h": true,
+        "modules/perky/cf_pcm_rice.h": true,
+        "tools/perky/build_cf_dsp_hybrid.py": true,
+        "tools/perky/build_four_payload.py": true,
+        "tools/perky/perky_fragmented_image.py": true,
+        "tools/perky/repack_machine_loader.py": true,
+        "tools/perky/perky_cf_assets.py": true,
+        "modules/perky/generate_cf_final.py": true,
+        "tools/perky/perky_machine_module.py": true,
+        "tools/remix/loader.S": true
+      },
+      "hybrid_source_id": "47ba6166b8c2ba148920164455730a6baf9dc567cb76f25d45cbb71aa902b757",
+      "MAIN_sha256": "f7f04e26969522d2024b1bba5be85f620857d636dbe0b284aa38c0fb087a21db",
+      "ELF_sha256": "45b220aeecc46a1f01e6339298ac5e0a2f91e2bd84fb34465ec745687b1d43a1",
+      "build_report_recorded_parent": "02fa20ff9503bb08c7d1e23307222dcb3ef41e4b",
+      "scope": "The image was built before the implementation commit; all 26 compiled-manifest source files are byte-identical to that commit."
     }
   },
   "implementation_plateau": {
@@ -2154,5 +3265,117 @@
       "Remaining resonator/oscillator/RNG recurrence steps determine following samples; no measured exact replacement is outstanding."
     ],
     "reopen_if": "New matched physical per-algorithm profiles or a reproducible regression identify a substantial untested bottleneck."
+  },
+  "code_generation": {
+    "path": "out/perky/hybrid/campaign-20261016/CODEGEN.json",
+    "sha256": "03dc7e3c404b082e57540d6a792315170241b3e03e7d054ac5ef4e7838bcc3ca",
+    "baseline": {
+      "profile_instructions_and_stack": {
+        "V1M1": {
+          "mean_instructions": 12113.691666666668,
+          "max_instructions": 12493,
+          "max_stack_bytes": 464
+        },
+        "V2M1": {
+          "mean_instructions": 12113.691666666668,
+          "max_instructions": 12493,
+          "max_stack_bytes": 464
+        },
+        "snare": {
+          "mean_instructions": 11930.658333333333,
+          "max_instructions": 12481,
+          "max_stack_bytes": 492
+        },
+        "bass": {
+          "mean_instructions": 10313.941666666668,
+          "max_instructions": 10875,
+          "max_stack_bytes": 544
+        },
+        "third": {
+          "mean_instructions": 6173.9,
+          "max_instructions": 6557,
+          "max_stack_bytes": 420
+        }
+      },
+      "section_sizes": "out/perky/hybrid/campaign-20261016/baseline/target.elf  :\nsection     size         addr\n.text     103832   1073742848\n.rodata    49276   1073846680\n.data          4   1073895956\n.bss        4316   1073895960\nTotal     157428\n\n\n",
+      "compiler_stack_usage": {
+        "cf_noise_tone.su": "/Users/jrold/Downloads/octabam/modules/perky/cf_noise_tone.c:21:1:nt_envelope_block\t60\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_noise_tone.c:18:5:pk_cf_nt_m1_render\t104\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_noise_tone.c:54:5:pk_cf_nt_shared_render\t244\tdynamic,bounded\n",
+        "cf_resonant.su": "/Users/jrold/Downloads/octabam/modules/perky/cf_math.h:30:24:pk_cf_ld32\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_math.h:37:20:pk_cf_st32\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_math.h:45:24:pk_cf_ld16\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_math.h:52:20:pk_cf_st16\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_math.h:98:24:pk_cf_mul_lo_u32\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_render_math.h:13:41:pk_cf_render_math_begin\t4\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_render_math.h:25:20:pk_cf_render_math_end\t4\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_render_math.h:39:24:pk_cf_render_rng_hi\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:345:1:bass_drive_block\t92\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:377:1:bass_pitch_block\t64\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_math.h:98:24:pk_cf_mul_lo_u32.constprop\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_math.h:98:24:pk_cf_mul_lo_u32.constprop\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:244:1:res_advance_envelope.isra\t52\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:485:1:snare_decay_c\t56\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:481:1:snare_decay_b\t56\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:304:1:res_noise_block\t68\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:443:1:bass_level\t52\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:477:1:snare_decay_a\t52\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:489:1:snare_decay_d\t52\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:396:1:bass_tone_block\t144\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:532:1:snare_first\t92\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:536:1:snare_second\t92\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:422:1:bass_noise_mix\t100\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:540:1:snare_noise\t92\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:455:5:pk_cf_res_bass_render\t284\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:558:5:pk_cf_res_snare_render\t280\tdynamic,bounded\n",
+        "cf_wavetable.su": "/Users/jrold/Downloads/octabam/modules/perky/cf_math.h:30:24:pk_cf_ld32\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:20:17:r16\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:23:13:w32\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:24:16:s16\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:25:16:s32\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:27:16:asr\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:28:16:mullo\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:35:16:tabs16\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:55:13:wt_env_load\t8\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:63:13:wt_env_store\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:64:17:wt_env_step\t12\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:87:16:pitch\t4\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:115:1:wt_frequency_block\t28\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:22:13:w16.constprop\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:27:16:asr.constprop\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:37:16:pk_cf_wt_wave\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:145:12:wt_render_chunk\t292\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:248:5:pk_cf_wt_render\t48\tdynamic,bounded\n"
+      }
+    },
+    "final-target": {
+      "profile_instructions_and_stack": {
+        "V1M1": {
+          "mean_instructions": 5433.391666666666,
+          "max_instructions": 5743,
+          "max_stack_bytes": 468
+        },
+        "V2M1": {
+          "mean_instructions": 5433.391666666666,
+          "max_instructions": 5743,
+          "max_stack_bytes": 468
+        },
+        "snare": {
+          "mean_instructions": 5924.891666666666,
+          "max_instructions": 6479,
+          "max_stack_bytes": 460
+        },
+        "bass": {
+          "mean_instructions": 5840.208333333333,
+          "max_instructions": 6316,
+          "max_stack_bytes": 504
+        },
+        "third": {
+          "mean_instructions": 6173.9,
+          "max_instructions": 6557,
+          "max_stack_bytes": 420
+        }
+      },
+      "section_sizes": "out/perky/hybrid/campaign-20261016/final-target/target.elf  :\nsection     size         addr\n.text     113426   1073742848\n.rodata    49276   1073856274\n.data          4   1073905550\n.bss        4316   1073905556\nTotal     167022\n\n\n",
+      "compiler_stack_usage": {
+        "cf_noise_tone.su": "/Users/jrold/Downloads/octabam/modules/perky/cf_noise_tone.c:21:1:nt_envelope_block\t60\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_noise_tone.c:18:5:pk_cf_nt_m1_render\t104\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_noise_tone.c:54:5:pk_cf_nt_shared_render\t244\tdynamic,bounded\n",
+        "cf_resonant.su": "/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:301:1:res_noise_block\t36\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:342:1:bass_drive_block\t44\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:419:1:bass_noise_mix\t68\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:529:1:snare_first\t48\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:533:1:snare_second\t48\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:537:1:snare_noise\t52\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:486:1:snare_decay_d\t40\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:235:1:res_advance_envelope.isra\t36\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:393:1:bass_tone_block\t100\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:482:1:snare_decay_c\t36\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:478:1:snare_decay_b\t32\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:374:1:bass_pitch_block\t36\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:440:1:bass_level\t40\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:474:1:snare_decay_a\t40\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:452:5:pk_cf_res_bass_render\t292\tdynamic,bounded\n/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c:555:5:pk_cf_res_snare_render\t292\tdynamic,bounded\n",
+        "cf_wavetable.su": "/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:115:1:wt_frequency_block\t20\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:37:16:pk_cf_wt_wave\t0\tstatic\n/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c:236:5:pk_cf_wt_render\t336\tdynamic,bounded\n"
+      }
+    }
+  },
+  "repository_check": {
+    "command": "make check REMIX=perky-probe",
+    "status": "PASS_ALL_RUNNABLE_CHECKS",
+    "shared_isolated": {
+      "run": 84,
+      "failed": 0
+    },
+    "image": {
+      "run": 4,
+      "failed": 0
+    },
+    "log": {
+      "path": "out/perky/hybrid/campaign-20261016/repository-check.log",
+      "sha256": "75cfe4e2e1696a98af9541d682b33f687fd116c41f69896049317f64e988e39c"
+    },
+    "limits": "Generic missing canary/CF-final outputs and OT_PROJECT cases are explicitly skipped; candidate codegen, original/reference, runtime, FX, audio and lifecycle checks run independently."
+  },
+  "sustained_cutover": {
+    "path": "out/perky/hybrid/campaign-20261016/SUSTAINED_CUTOVER.json",
+    "sha256": "0d8eec4d975145b9298379430df1e2843447852ef2a8d1f10558d53309d6543b",
+    "status": "FULL_SNARE_ROW_COMPLETED_REMAINING_ROWS_RESHARDED",
+    "row_sha256": "803f6f7874d214241304cd40dbbe3d79322fdb904fccd15bcfa86470c10fca59",
+    "frames": 165376,
+    "original_driver_pid": 88209,
+    "reason": "Preserve the completed full-duration row and cover the other fourteen full-duration rows in two independent local processes; no shortened tests.",
+    "remaining_shards": [
+      "final-sustained-a",
+      "final-sustained-b"
+    ]
+  },
+  "instrumentation_comparison": {
+    "frames": 4096,
+    "same_MAIN_sha256": "f7f04e26969522d2024b1bba5be85f620857d636dbe0b284aa38c0fb087a21db",
+    "profiler_on_max_us": 278.0151515151515,
+    "profiler_off_max_us": 275.7651515151515,
+    "difference_of_observed_maxima_us": 2.25,
+    "limits": "Matched fixture and image, independent whole-ISR observer. Maxima may occur on different frames; this difference is not a constant per-frame timer overhead bound."
   }
 }

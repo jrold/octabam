@@ -1,0 +1,12 @@
+{
+  "image_sha256": "f7f04e26969522d2024b1bba5be85f620857d636dbe0b284aa38c0fb087a21db",
+  "elf_sha256": "45b220aeecc46a1f01e6339298ac5e0a2f91e2bd84fb34465ec745687b1d43a1",
+  "runtime_calls": {
+    "0x40c44022": [
+      "pk_hybrid_commit_longs"
+    ],
+    "0x40c443ee": [
+      "pk_hybrid_commit_longs"
+    ]
+  }
+}
