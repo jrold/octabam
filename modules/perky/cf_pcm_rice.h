@@ -31,6 +31,10 @@
 #define PK_CF_RICE_MAGIC2 'R'
 #define PK_CF_RICE_MAGIC3 '1'
 #define PK_CF_RICE_BLOCK  4096u
+/* For 16-bit samples, delta = sample - (2*prev - prev2) has magnitude
+ * at most 131070. Its unsigned zigzag code is therefore <= 262140.
+ * Reject larger values before shifting, especially corrupt unary streams. */
+#define PK_CF_RICE_MAX_RESIDUAL 262140u
 
 typedef struct {
     const uint8_t *data;
@@ -38,6 +42,7 @@ typedef struct {
     uint32_t pos;      /* next byte to pull into the cache */
     uint32_t acc;      /* MSB-first cache, `bits` valid bits in the low end */
     uint32_t bits;
+    uint32_t failed;    /* sticky: never synthesize bytes past end-of-stream */
 } pk_cf_rice_bits;
 
 typedef struct {
@@ -51,13 +56,23 @@ static inline uint32_t pk_cf_rice_u32le(const uint8_t *p)
            ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
 }
 
+/* The original reader fabricated zero bytes after EOF. A truncated Rice
+ * unary code then entered an unbounded loop during pk_hybrid_boot_init,
+ * preventing RTOS handoff. Keep a sticky error; no caller may consume a
+ * fabricated value or wrap pos past the input. */
 static inline uint32_t pk_cf_rice_get(pk_cf_rice_bits *b, unsigned n)
 {
     uint32_t v;
+    if (b->failed || n == 0u || n > 16u) {
+        b->failed = 1u;
+        return 0u;
+    }
     while (b->bits < n) {
-        const uint32_t byte = b->pos < b->bytes ? b->data[b->pos] : 0u;
-        b->acc = (b->acc << 8) | byte;
-        ++b->pos;
+        if (b->pos >= b->bytes) {
+            b->failed = 1u;
+            return 0u;
+        }
+        b->acc = (b->acc << 8) | b->data[b->pos++];
         b->bits += 8u;
     }
     b->bits -= n;
@@ -68,9 +83,16 @@ static inline uint32_t pk_cf_rice_get(pk_cf_rice_bits *b, unsigned n)
 static inline uint32_t pk_cf_rice_unary(pk_cf_rice_bits *b)
 {
     uint32_t q = 0;
-    while (pk_cf_rice_get(b, 1u) == 0u)
+    for (;;) {
+        uint32_t bit = pk_cf_rice_get(b, 1u);
+        if (b->failed || bit)
+            return q;
+        if (q == PK_CF_RICE_MAX_RESIDUAL) {
+            b->failed = 1u;
+            return 0u;
+        }
         ++q;
-    return q;
+    }
 }
 
 static inline int16_t pk_cf_rice_s16(uint32_t u)
@@ -86,37 +108,50 @@ static inline uint32_t pk_cf_rice_asset(const uint8_t *d, uint32_t bytes,
 {
     pk_cf_rice_bits b;
     uint32_t i = 0;
-    if (count == 0 || off > bytes)
+    if (!d || !out || count == 0u || off > bytes)
         return 0u;
     b.data = d;
     b.bytes = bytes;
     b.pos = off;
     b.acc = 0u;
     b.bits = 0u;
-    if (count >= 1u)
-        out[i++] = pk_cf_rice_s16(pk_cf_rice_get(&b, 16u));
-    if (count >= 2u)
-        out[i++] = pk_cf_rice_s16(pk_cf_rice_get(&b, 16u));
+    b.failed = 0u;
+    if (count >= 1u) {
+        uint32_t sample = pk_cf_rice_get(&b, 16u);
+        if (b.failed) return 0u;
+        out[i++] = pk_cf_rice_s16(sample);
+    }
+    if (count >= 2u) {
+        uint32_t sample = pk_cf_rice_get(&b, 16u);
+        if (b.failed) return 0u;
+        out[i++] = pk_cf_rice_s16(sample);
+    }
     while (i < count) {
         const uint32_t k = pk_cf_rice_get(&b, 8u);
         uint32_t blk = count - i;
+        if (b.failed || k > 16u)
+            return 0u;
         if (blk > PK_CF_RICE_BLOCK)
             blk = PK_CF_RICE_BLOCK;
-        if (k > 16u)
-            return 0u;                          /* corrupt parameter */
         while (blk--) {
-            uint32_t r = pk_cf_rice_unary(&b) << k;
+            uint32_t q = pk_cf_rice_unary(&b), r;
             int32_t pred, delta;
+            if (b.failed || q > (PK_CF_RICE_MAX_RESIDUAL >> k))
+                return 0u;
+            r = q << k;
             if (k)
                 r |= pk_cf_rice_get(&b, k);
+            if (b.failed || r > PK_CF_RICE_MAX_RESIDUAL)
+                return 0u;
             delta = (int32_t)(r >> 1) ^ -(int32_t)(r & 1u);
             pred = 2 * (int32_t)out[i - 1u] - (int32_t)out[i - 2u];
             out[i] = pk_cf_rice_s16((uint32_t)(pred + delta));
             ++i;
         }
     }
-    /* consumed bits = pos*8 - bits; round up to the next byte */
-    return ((b.pos * 8u - b.bits) + 7u) / 8u;
+    /* Every get consumes at least one bit, with <8 buffered bits remaining.
+     * pos is already the rounded-up byte offset (no pos*8 overflow). */
+    return b.pos;
 }
 
 /* Decode every asset in `packed` into the matching target.  A target whose
@@ -128,7 +163,7 @@ static inline int pk_cf_rice_unpack(const uint8_t *packed, uint32_t bytes,
 {
     uint32_t count, off = 8u;
     unsigned i;
-    if (!packed || bytes < 8u)
+    if (!packed || !targets || bytes < 8u)
         return 0;
     if (packed[0] != PK_CF_RICE_MAGIC0 || packed[1] != PK_CF_RICE_MAGIC1
         || packed[2] != PK_CF_RICE_MAGIC2 || packed[3] != PK_CF_RICE_MAGIC3)
@@ -136,7 +171,7 @@ static inline int pk_cf_rice_unpack(const uint8_t *packed, uint32_t bytes,
     count = pk_cf_rice_u32le(packed + 4);
     for (i = 0; i < count; ++i) {
         uint32_t n;
-        if (off + 4u > bytes)
+        if (off > bytes || bytes - off < 4u)
             return 0;
         n = pk_cf_rice_u32le(packed + off);
         off += 4u;

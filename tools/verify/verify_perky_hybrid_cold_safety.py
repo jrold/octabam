@@ -35,6 +35,8 @@ def run(probe, output):
                       for name in initialized}
     expected_pcm = bytes(r.uc.mem_read(syms['pk_pcm_wt_base'], 4096)) + bytes(
         r.uc.mem_read(syms['pk_pcm_wt_bank'], 196608))
+    bss_lo, bss_hi = syms['__bss_start'], syms['_end']
+    expected_bss = bytes(r.uc.mem_read(bss_lo, bss_hi - bss_lo))
     original = rt.g.emu.Uc
     calls = []
 
@@ -67,16 +69,19 @@ def run(probe, output):
                           for name, value in expected_state.items())
         pcm_equal = expected_pcm == bytes(dirty.uc.mem_read(symbols['pk_pcm_wt_base'], 4096)) + bytes(
             dirty.uc.mem_read(symbols['pk_pcm_wt_bank'], 196608))
+        full_bss_equal = expected_bss == bytes(dirty.uc.mem_read(
+            symbols['__bss_start'], symbols['_end'] - symbols['__bss_start']))
     finally:
         rt.g.emu.Uc = original
     assert len(calls) == 1, 'poison not injected exactly at loader initialization'
     result = {
         'schema': 'octabam.perky.hybrid.cold-safety.v1',
-        'status': 'PASS' if clean == actual and state_equal and pcm_equal else 'FAIL_INITIALIZATION',
+        'status': 'PASS' if clean == actual and state_equal and pcm_equal and full_bss_equal else 'FAIL_INITIALIZATION',
         'image_sha256': rt.digest(image), 'elf_sha256': rt.digest(elf),
         'poison_bytes': syms['_end']-syms['__bss_start'],
         'stale_bank': hex(bank), 'first_native_record_equal': clean == actual,
         'initialized_state_equal': state_equal, 'decoded_PCM_equal': pcm_equal,
+        'whole_BSS_equal_after_poison': full_bss_equal,
         'initialized_symbols': list(initialized),
         'differing_record_offsets': [i for i, (a, b) in enumerate(zip(clean, actual)) if a != b],
         'scope': 'First T1/T5 native producer after poisoned loader init; no physical timing claim',
@@ -84,7 +89,7 @@ def run(probe, output):
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2)+'\n')
     print(json.dumps(result, indent=2))
-    return clean == actual and state_equal and pcm_equal
+    return clean == actual and state_equal and pcm_equal and full_bss_equal
 
 
 if __name__ == '__main__':

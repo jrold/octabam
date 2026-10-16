@@ -298,6 +298,24 @@ static void pk_hybrid_zero_u32(void *dst, uint32_t bytes)
     for (uint32_t i = n * 4u; i < bytes; ++i) ((uint8_t *)dst)[i] = 0u;
 }
 
+/* The platform depacks .text/.data into DRAM but does not clear .bss.
+ * A cold power-on may leave arbitrary old bytes in the uninitialized range.
+ * The hybrid loader places its packed stage ABOVE _end, so it is safe to clear
+ * the complete linker-defined .bss here, before decoding any PCM or reading
+ * control/profiler state. Loaded .data cookies and knobs are not touched. */
+extern uint8_t __bss_start[];
+extern uint8_t _end[];
+static int pk_hybrid_clear_boot_bss_range(uint8_t *start, uint8_t *end)
+{
+    uintptr_t lo = (uintptr_t)start, hi = (uintptr_t)end;
+    /* Expected .bss ~219 KB (including 200704 decoded-PCM bytes).
+     * Refuse bogus linker bounds; never zero an unbounded DRAM range. */
+    if (hi <= lo || (lo & 3u) || hi - lo > 0x40000u)
+        return 0;
+    pk_hybrid_zero_u32(start, (uint32_t)(hi - lo));
+    return 1;
+}
+
 static void pk_hybrid_copy_u32(void *dst, const void *src, uint32_t bytes)
 {
     typedef uint32_t __attribute__((may_alias)) u32a;
@@ -516,11 +534,11 @@ static void pk_hybrid_init_all_cf_voices(void)
  * handoff and before any machine callback. Failure sends the loader to fatal. */
 int pk_hybrid_boot_init(void)
 {
+    if (!pk_hybrid_clear_boot_bss_range(__bss_start, _end)) return 0;
     if (!pk_hybrid_ensure_pcm()) return 0;
     pk_hybrid_reset_profiler();
-    /* The loader does not clear BSS. Native control history can survive with
-     * the same Bank/Part and family, bypassing its lazy invalidation. Clear
-     * it here, before audio/UI; preserve the native producer's arithmetic. */
+    /* Retain the explicit native-control resets as initialization contract
+     * guards; the complete BSS scrub above makes them idempotent. */
     pk_hybrid_zero_u32(simple_controls, sizeof(simple_controls));
     pk_hybrid_zero_u32(pk_prefix_controls, sizeof(pk_prefix_controls));
     pk_hybrid_zero_u32(pk_prefix_valid, sizeof(pk_prefix_valid));

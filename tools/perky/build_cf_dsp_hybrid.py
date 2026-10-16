@@ -48,6 +48,7 @@ import build_four_payload as payload  # noqa:E402
 import build_machine_canary as base  # noqa:E402
 import dsp_modmap  # noqa:E402
 import generate_cf_final  # noqa:E402
+import hybrid_boot_trace  # noqa:E402
 import perky_cf_assets  # noqa:E402
 import perky_four_memory  # noqa:E402
 import perky_fragmented_image as fragments  # noqa:E402
@@ -751,11 +752,7 @@ def repack_hybrid_loader(
     loader_src = (ROOT / "tools/remix/loader.S").read_text()
     symbols = platform_build._nm(platform_dir / 'runtime/runtime.elf', work)
     boot_init = symbols['pk_hybrid_boot_init']
-    anchor = 'done:\n        movem.l (%sp),%d0-%d7/%a0-%a2'
-    assert loader_src.count(anchor) == 1
-    loader_src = loader_src.replace(anchor,
-        f'done:\n        jsr (0x{boot_init:08x}).l\n        tst.l %d0\n'
-        '        beq.w fatal\n        movem.l (%sp),%d0-%d7/%a0-%a2')
+    loader_src = hybrid_boot_trace.instrument_loader(loader_src, boot_init)
     loader_src = loader_src.replace(
         '.ifdef PREBOOT\n        .align  4\npretable:\n        .include "pretable.inc"\n.endif\n',
         "",
