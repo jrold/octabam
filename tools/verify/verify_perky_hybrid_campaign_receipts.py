@@ -56,6 +56,7 @@ def audit(work, output, snapshot=False):
         assert decode_profiler_dump((directory/'prof.bin').read_bytes()) == prof
         assert prof['profiler_enabled'] and prof['cf_armed']
         assert prof['frame_count'] == frames
+        assert sum(prof['extension']['histogram_ticks_1024']) == frames
         assert prof['active_voice_mask'] == '0x33'
         assert prof['extension']['full_frame_window']
         assert prof['extension']['readiness_faults'] == 0
@@ -63,15 +64,23 @@ def audit(work, output, snapshot=False):
             assert prof['cf_active_frames'] == prof['dsp_active_frames'] == frames
             assert prof['cf_sample_count'] == 32*frames
             assert prof['dtim3_ticks']['inst_calls'] == [2*frames-1]*2
+            # The 120 BPM fixture has 45 trigs per 64-step / eight-second
+            # pattern. Require at least five per second on BOTH voices,
+            # allowing startup/edge phase without accepting a stuck pattern
+            # that merely continues calling the renderer through its tail.
+            minimum_triggers = int(frames*16/44100*5)
+            assert all(n >= minimum_triggers for n in prof['dtim3_ticks']['inst_trigs'])
         dsp = data['ot_emu']['dsp_exchange_and_cores']
         assert dsp['words_not_in_time'] == 0
         assert dsp['nonzero_words_to_dsps'] > 0 and dsp['nonzero_words_from_dsps'] > 0
+        assert data['ot_emu']['cf_ack_interval']['frames_sampled'] == frames
         return {
             'pair': data['row'], 'frames': frames,
             'timer_window_mean_us': prof['dtim3_us']['mean_perky_service_us'],
             'timer_window_max_us': prof['dtim3_us']['max_full_frame_us'],
             'timer_window_deadline_misses': prof['deadline_misses_100pct'],
             'timer_window_above_80_percent': prof['margin_exceeded_80pct'],
+            'trigger_count_per_instance': prof['dtim3_ticks']['inst_trigs'],
             'ACK_work': data['ot_emu']['cf_ack_interval'],
         }
 
