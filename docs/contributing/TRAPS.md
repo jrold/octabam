@@ -928,6 +928,28 @@ retention and long release tails against the original executable, preserving
 its capture hashes. A renderer-only snapshot test cannot detect preparation
 or wrapper-history defects.
 
+<a name="trap-cf-inline-options"></a>
+
+### GCC option scopes can outline every sample-loop primitive
+
+On 16 Oct 2026, the current hybrid's target disassembly contained calls to
+endian loads, multiply-low, shifts and sign casts inside each sample loop.
+GCC 16.2.0's `-fopt-info-inline-missed` identified `optimization level attribute
+mismatch`: local `no-unswitch-loops` scopes gave callers different options from
+their helpers. Native host speedups had not established ColdFire improvement.
+Moving or removing the conflicting scopes restored inlining without changing
+the arithmetic. In a matched 4,096-frame snare/snare fixture, the first corrected
+candidate reduced executed full-ISR maximum from 85,902 to 73,599 modeled cycles
+at 264 MHz (325.386 to 278.784 us). Those are emulator observations, not silicon
+bounds. The frozen PCM/state/RNG stream and 22,270 target edge calls stayed exact.
+
+`tools/verify/verify_perky_hybrid_inline.py` now compiles the actual WT/Resonant
+translation units and rejects option-mismatch diagnostics, with a deliberately
+conflicting scope as a negative control. The campaign's raw target disassembly,
+compiler diagnostics, matrix and edge receipts are under
+`out/perky/hybrid/campaign-20261016/`. Removing the mismatch does not prove every
+remaining out-of-line function is undesirable; retain measured function splits.
+
 <a name="trap-cf-pcm-endian"></a>
 
 ### Native-endian decoded PCM is not an ARM table
@@ -962,6 +984,14 @@ arithmetic and DSP bytes stay frozen. `verify_perky_hybrid_cold_safety.py` injec
 poison at the real loader-to-initializer call, including a matching stale tuple,
 then compares native records, initialized state and all decoded PCM to clean boot.
 The failing pre-fix receipt remains in the post-closeout safety evidence.
+
+On 16 Oct 2026, the complete BSS scrub exposed the inverse problem on repeated
+boot initialization: decoded PCM was zeroed while its loaded `.data` cookie
+remained READY. The baseline and optimized image both lost all 199,191 nonzero
+PCM bytes on a second call. Invalidate the loaded PCM/runtime cookies before
+scrubbing BSS, then decode and publish readiness again. The runtime gate now
+compares all 200,704 PCM bytes across repeated initialization. This was measured
+under Unicorn; it is not evidence for the cause of a physical first-boot hang.
 
 <a name="trap-cf-odd-base"></a>
 

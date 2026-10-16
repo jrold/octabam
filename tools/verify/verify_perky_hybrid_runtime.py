@@ -69,12 +69,19 @@ def main():
 
     # Compiler inserts aggregate tail bytes on m68k: require a complete,
     # deterministic initializer even with dirty destinations.
+    initial_pcm = bytes(u.mem_read(syms['pk_pcm_wt_base'], 4096)) + bytes(
+        u.mem_read(syms['pk_pcm_wt_bank'], 196608))
     for name in ('pk_hybrid_voices', 'pk_hybrid_pristine'):
         u.mem_write(syms[name], b'\xa5' * sz[name])
     g.emu._call(u, syms['pk_hybrid_boot_init'])
     assert u.reg_read(g.emu.UC_M68K_REG_D0) == 1
     n = sz['pk_hybrid_pristine']; virgin = bytes(u.mem_read(syms['pk_hybrid_pristine'], n))
     assert bytes(u.mem_read(syms['pk_hybrid_voices'], 2*n)) == virgin*2
+    reinitialized_pcm = bytes(u.mem_read(syms['pk_pcm_wt_base'], 4096)) + bytes(
+        u.mem_read(syms['pk_pcm_wt_bank'], 196608))
+    assert reinitialized_pcm == initial_pcm, 'BSS scrub invalidated PCM behind a READY cookie'
+    result['reinitialized_PCM_equal'] = {'bytes': len(initial_pcm),
+        'sha256': hashlib.sha256(reinitialized_pcm).hexdigest()}
     result['poisoned_voice_initialization'] = {'bytes': 3*n, 'template_bytes': n}
 
     # Neither callbacks nor UI may decode or mutate waveform assets.

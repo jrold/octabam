@@ -1,0 +1,77 @@
+PERKY ColdFire campaign — 16 Oct 2026
+Status: IMPLEMENTED_TARGET_VERIFIED_INTEGRATION_QUALIFICATION_RUNNING
+
+All numbers below are measured emulator/target-code observations unless explicitly called physical.
+The new supplied physical MKII capture remains the hardware baseline: mean 300.372 us, max 421.030 us, 479 deadline misses.
+Its source fingerprint matches a local BUILD.json; all 26 source files match 02fa20ff and every recorded artifact hash verifies.
+Rebuilding the current baseline reproduces its MAIN image exactly. The raw new PRF was not found; the physical decoded facts came from the user.
+
+Production changes: align GCC helper/caller options, restore ordered resonator clamps,
+remove the WT frequency-key branch, and reuse exact fixed-point decay recurrences only away from countdown transitions.
+Invalidate loaded readiness cookies before BSS scrubbing, then decode PCM and publish readiness again.
+
+Exact target stream: 90,612,864 bytes compared, zero mismatches.
+Original-author/ARM: 19 sections, 22,098 cases, 3,046,272 PCM samples, zero failures.
+Extended edges: 22,270 render calls plus 10,584 fixed-point/countdown cases; complete state/PCM/RNG/guards match.
+New selected artifact: PKH4O2; hardware timing unqualified. Physical 20% margin is not established.
+
+Paired full executed ISR maxima, 4,096 frames, 264 MHz model:
+T2/T6                       baseline us    candidate us    max reduction
+snare/snare                    325.386         278.015       14.56%
+snare/bass                     319.932    PENDING
+bass/bass                      314.133    PENDING
+V1/V1                          306.795    PENDING
+V2/V2                          306.795    PENDING
+V1/V2                          306.795    PENDING
+V1/snare                       316.542    PENDING
+V2/bass                        310.769         265.958       14.42%
+third/snare                    297.231    PENDING
+third/third                    269.008    PENDING
+bass/snare                     319.905    PENDING
+snare/V1                       316.489    PENDING
+bass/V2                        310.822    PENDING
+snare/third                    297.576    PENDING
+V2/V1                          306.795    PENDING
+
+Scene/fader selected full ISR max: 289.220 us (76,354 cycles), zero modeled duration misses.
+Hard period 362.811791 us; desired 80% ceiling 290.249433 us. Neither emulator result bounds silicon timing.
+
+Experiments:
+uniform-options: superseded checkpoint — Uniform scope restores primitive inlining; 4096-frame matched full ISR improves.
+uniform-unswitch: retained — Remove conflicting scopes; default loop unswitching improves WT and Bass.
+wt-direct-envelope: rejected — Removing table-pair cache regresses WT mean/max.
+res-ordered-clamp: retained — Ordered clamping improves Snare target mean/max.
+wt-direct-frequency: retained — Exact EMAC conversion is cheaper than cache-key testing on target.
+res-fixed-decay: retained — Fixed-point recurrence reuse improves Snare mean/max; countdown crossing remains original path.
+nt-no-unroll: rejected — NT mean 7965 -> 8814 cycles; maximum 8646 -> 9236.
+wt-unused-envelope: rejected — Extracted helper is outlined; WT mean increases to 10299 cycles.
+wt-unused-envelope-inline: rejected — Forcing inlining restores throughput but mean/max still regress versus selected path.
+bass-fixed-pitch: rejected — Bass mean increases despite a smaller maximum; no sustained overall win.
+wt-frequency-lut: rejected — 16 KiB table increases WT mean and maximum versus EMAC.
+wt-frequency-exact32: rejected — Exact 32-bit algebra passes stream but extra sign/shift/multiply work regresses target throughput.
+
+Qualification:
+runtime: PASS
+cold_boot: PASS
+lifecycle_components: PASS_COMPONENT_SCOPES
+timer: PASS
+static_stack: PASS_SCOPED_PRIVATE_AND_THREE_VULNERABLE_TASK_BUDGETS
+private_units: PASS
+scene_fader: PASS_ACTUAL_SCENE_FADER_DELIVERY
+sequencer_transitions: PENDING
+twelve_FX: PENDING
+component_gates: SEE_COMPONENT_RESULTS
+baseline_pairs_a: PASS_MEASURED_MATRIX (7 completed rows)
+baseline_pairs_b: PASS_MEASURED_MATRIX (8 completed rows)
+candidate_pairs_a: RUNNING (1 completed rows)
+candidate_pairs_b: RUNNING (1 completed rows)
+sustained: RUNNING (0 completed rows)
+continuous_stress: RUNNING (0 completed rows)
+
+Known failure and repair: the initial runtime gate failed because repeated boot init scrubbed PCM while its loaded cookie stayed READY.
+Both baseline and initial candidate reproduced the loss; PKH4O2 restores PCM and passes the actual runtime comparison.
+Superseded PKH4O1 sustained runs were intentionally stopped and retained as cancelled evidence.
+
+Remaining: complete active sustained, paired, lifecycle/save, instrumentation and packaging checks.
+Machine-readable evidence, hashes, inputs and result scopes: CF_OPTIMIZATION_20261016.json.
+Raw traces and exact commands: out/perky/hybrid/campaign-20261016/.

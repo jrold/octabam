@@ -41,8 +41,10 @@ def run(reference,candidate,out):
         result=json.loads((out/'RENDER_EDGES.json').read_text())
         assert result['status']=='PASS_EXACT_TARGET_REFERENCE' and result['render_calls']==22270
         assert result['control_transition_cases']==1080
+        decay=json.loads((out/'DECAY_FIXEDPOINT.json').read_text())
+        assert decay['status']=='PASS_EXACT_TARGET_REFERENCE' and decay['cases']==10584
         assert hashes=={str(p):sha(p) for p in files},'input drift'
-        report.update(status='PASS',result=result,
+        report.update(status='PASS',result=result,decay_fixedpoint=decay,
             outputs={p.name:sha(p) for p in out.iterdir() if p.is_file() and p.name!='EDGE_RECEIPT.json'})
         print(json.dumps(result,indent=2))
     except Exception as error:

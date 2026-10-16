@@ -1,0 +1,2158 @@
+{
+  "schema": "octabam.perky.cf-campaign.v1",
+  "status": "IMPLEMENTED_TARGET_VERIFIED_INTEGRATION_QUALIFICATION_RUNNING",
+  "baseline_commit": "02fa20ff9503bb08c7d1e23307222dcb3ef41e4b",
+  "hardware_qualified": false,
+  "physical_profile": {
+    "filename": "PKH20000(2).PRF",
+    "sha256": "20eab22ac50903ac778b41be7764e1540043360ace80256e22f8e5347abba065",
+    "raw_locally_found": false,
+    "facts_source": "user-provided decoded physical MKII capture",
+    "source_id": "5a5e1e804dd3808fb849fa34a6f981ade6491b0d08b96648493fc096cb392e8a",
+    "matching_BUILD": {
+      "path": "out/perky/hybrid/coldboot-test/probe/BUILD.json",
+      "sha256": "e4611cd529b6b3b4a022f361917834df7ba0234295c53731f659314a62cd3c4c",
+      "recorded_parent_commit": "31ea38c7de3e3ae76cf7be689c67ee32fb71e550",
+      "recorded_tree_clean": false,
+      "all_26_manifest_source_hashes_match_commit": "02fa20ff9503bb08c7d1e23307222dcb3ef41e4b",
+      "all_artifact_hashes_verified": true
+    },
+    "current_baseline_rebuild_MAIN_sha256": "7cdbe20f7a8911624babbd05c0997f79338f9883aab206236ddb904687161faf",
+    "original_MAIN_sha256": "7cdbe20f7a8911624babbd05c0997f79338f9883aab206236ddb904687161faf",
+    "frames": 251670,
+    "mean_full_ISR_us": 300.372,
+    "max_full_ISR_us": 421.03,
+    "deadline_misses": 479,
+    "mean_CF_render_us": 122.031,
+    "paired_hardware_AB_available": false
+  },
+  "baseline_bench": {
+    "path": "out/perky/hybrid/campaign-20261016/baseline/BENCH.json",
+    "sha256": "36376e63bfdc42074b81a1f0b8d012fb0270c876e2e908c80cd30875c357d9e5"
+  },
+  "experiments": [
+    {
+      "name": "uniform-options",
+      "decision": "superseded checkpoint",
+      "reason": "Uniform scope restores primitive inlining; 4096-frame matched full ISR improves.",
+      "measurement": "emulated ColdFire target cycles",
+      "bench": {
+        "path": "out/perky/hybrid/campaign-20261016/uniform-options/BENCH.json",
+        "sha256": "ce407896c4801bbfd40127a779dfa905b850a79ccf2140bcf80b41ff8c09a903",
+        "status": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "pair_render": {
+        "V1M1": {
+          "mean_cycles": 7925.725,
+          "max_cycles": 8375
+        },
+        "V1M2": {
+          "mean_cycles": 7943.758333333333,
+          "max_cycles": 8455
+        },
+        "V1M3": {
+          "mean_cycles": 7929.516666666666,
+          "max_cycles": 8375
+        },
+        "V2M1": {
+          "mean_cycles": 7929.166666666667,
+          "max_cycles": 8375
+        },
+        "V2M2": {
+          "mean_cycles": 7943.816666666667,
+          "max_cycles": 8455
+        },
+        "V2M3": {
+          "mean_cycles": 7928.7,
+          "max_cycles": 8375
+        },
+        "snare": {
+          "mean_cycles": 8993.883333333333,
+          "max_cycles": 9493
+        },
+        "bass": {
+          "mean_cycles": 8205.8,
+          "max_cycles": 9020
+        },
+        "third": {
+          "mean_cycles": 7954.491666666667,
+          "max_cycles": 8632
+        }
+      },
+      "phases": {
+        "clean-render": {
+          "count": 243,
+          "mean_cycles": 8163.172839506173,
+          "max_cycles": 9124
+        },
+        "init": {
+          "count": 243,
+          "mean_cycles": 5850.382716049383,
+          "max_cycles": 5989
+        },
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 335.5473251028807,
+          "max_cycles": 421
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2079.932098765432,
+          "max_cycles": 4006
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2366.0041152263375,
+          "max_cycles": 4743
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2105.954732510288,
+          "max_cycles": 4712
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2458.1728395061727,
+          "max_cycles": 6408
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2110.082304526749,
+          "max_cycles": 4162
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2136.411522633745,
+          "max_cycles": 4162
+        },
+        "render": {
+          "count": 15552,
+          "mean_cycles": 8162.341756687243,
+          "max_cycles": 9565
+        },
+        "tail-render": {
+          "count": 4608,
+          "mean_cycles": 8048.304470486111,
+          "max_cycles": 9471
+        }
+      },
+      "target_binary_bytes": 151540,
+      "linked_sections": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/uniform-options/target.elf  :\nsection     size         addr\n.text     102260   1073742848\n.rodata    49276   1073845108\n.data          4   1073894384\n.bss        4316   1073894388\nTotal     155856\n\n\n",
+      "edge": {
+        "path": "out/perky/hybrid/campaign-20261016/uniform-options-edges/EDGE_RECEIPT.json",
+        "sha256": "c12e7cc8a7f404fb9e59460bba4f61b31ec7c3dd2fb5b846f9727cabb8ecc2fa",
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "uniform-unswitch",
+      "decision": "retained",
+      "reason": "Remove conflicting scopes; default loop unswitching improves WT and Bass.",
+      "measurement": "emulated ColdFire target cycles",
+      "bench": {
+        "path": "out/perky/hybrid/campaign-20261016/uniform-unswitch/BENCH.json",
+        "sha256": "5f2f80761c6c403c7d3a37abcbb146055c20fa6f3a50737e6f1d2661883e4078",
+        "status": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "pair_render": {
+        "V1M1": {
+          "mean_cycles": 6313.841666666666,
+          "max_cycles": 6945
+        },
+        "V1M2": {
+          "mean_cycles": 6324.766666666666,
+          "max_cycles": 6913
+        },
+        "V1M3": {
+          "mean_cycles": 6315.883333333333,
+          "max_cycles": 6945
+        },
+        "V2M1": {
+          "mean_cycles": 6314.95,
+          "max_cycles": 6938
+        },
+        "V2M2": {
+          "mean_cycles": 6324.825,
+          "max_cycles": 6913
+        },
+        "V2M3": {
+          "mean_cycles": 6314.6,
+          "max_cycles": 6924
+        },
+        "snare": {
+          "mean_cycles": 8816.341666666667,
+          "max_cycles": 9597
+        },
+        "bass": {
+          "mean_cycles": 7590.158333333334,
+          "max_cycles": 8737
+        },
+        "third": {
+          "mean_cycles": 7958.983333333334,
+          "max_cycles": 8653
+        }
+      },
+      "phases": {
+        "clean-render": {
+          "count": 243,
+          "mean_cycles": 6948.526748971193,
+          "max_cycles": 8982
+        },
+        "init": {
+          "count": 243,
+          "mean_cycles": 5894.831275720165,
+          "max_cycles": 5961
+        },
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 321.0576131687243,
+          "max_cycles": 408
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2090.6913580246915,
+          "max_cycles": 4033
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2402.991769547325,
+          "max_cycles": 4756
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2127.127572016461,
+          "max_cycles": 4705
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2479.0864197530864,
+          "max_cycles": 6450
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2088.6213991769546,
+          "max_cycles": 4176
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2114.80658436214,
+          "max_cycles": 4151
+        },
+        "render": {
+          "count": 15552,
+          "mean_cycles": 7001.963991769548,
+          "max_cycles": 9597
+        },
+        "tail-render": {
+          "count": 4608,
+          "mean_cycles": 6842.486762152777,
+          "max_cycles": 9674
+        }
+      },
+      "target_binary_bytes": 161922,
+      "linked_sections": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/uniform-unswitch/target.elf  :\nsection     size         addr\n.text     112642   1073742848\n.rodata    49276   1073855490\n.data          4   1073904766\n.bss        4316   1073904772\nTotal     166238\n\n\n",
+      "edge": {
+        "path": "out/perky/hybrid/campaign-20261016/uniform-unswitch-edges/EDGE_RECEIPT.json",
+        "sha256": "7abf9b9595de2a0f375b9130257affa04213f5573168751e606eca6ead379cd0",
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "wt-direct-envelope",
+      "decision": "rejected",
+      "reason": "Removing table-pair cache regresses WT mean/max.",
+      "measurement": "emulated ColdFire target cycles",
+      "bench": {
+        "path": "out/perky/hybrid/campaign-20261016/wt-direct-envelope/BENCH.json",
+        "sha256": "6f8001d8e03b524c87f3f9ede1816ec3fea3b43bf7b7a705581cde14c06341fc",
+        "status": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "pair_render": {
+        "V1M1": {
+          "mean_cycles": 6518.441666666667,
+          "max_cycles": 7056
+        },
+        "V1M2": {
+          "mean_cycles": 6536.133333333333,
+          "max_cycles": 7049
+        },
+        "V1M3": {
+          "mean_cycles": 6525.266666666666,
+          "max_cycles": 7042
+        },
+        "V2M1": {
+          "mean_cycles": 6521.416666666667,
+          "max_cycles": 7049
+        },
+        "V2M2": {
+          "mean_cycles": 6536.308333333333,
+          "max_cycles": 7049
+        },
+        "V2M3": {
+          "mean_cycles": 6521.066666666667,
+          "max_cycles": 7035
+        },
+        "snare": {
+          "mean_cycles": 8820.016666666666,
+          "max_cycles": 9492
+        },
+        "bass": {
+          "mean_cycles": 7605.266666666666,
+          "max_cycles": 8751
+        },
+        "third": {
+          "mean_cycles": 7958.808333333333,
+          "max_cycles": 8632
+        }
+      },
+      "phases": {
+        "clean-render": {
+          "count": 243,
+          "mean_cycles": 7119.679012345679,
+          "max_cycles": 8989
+        },
+        "init": {
+          "count": 243,
+          "mean_cycles": 5862.481481481482,
+          "max_cycles": 5926
+        },
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 329.440329218107,
+          "max_cycles": 456
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2064.275720164609,
+          "max_cycles": 3991
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2342.814814814815,
+          "max_cycles": 4725
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2093.798353909465,
+          "max_cycles": 4719
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2454.8312757201647,
+          "max_cycles": 6450
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2082.312757201646,
+          "max_cycles": 4127
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2086.9218106995886,
+          "max_cycles": 4135
+        },
+        "render": {
+          "count": 15552,
+          "mean_cycles": 7140.917695473251,
+          "max_cycles": 9492
+        },
+        "tail-render": {
+          "count": 4608,
+          "mean_cycles": 7010.673611111111,
+          "max_cycles": 9632
+        }
+      },
+      "target_binary_bytes": 162206,
+      "linked_sections": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/wt-direct-envelope/target.elf  :\nsection     size         addr\n.text     112926   1073742848\n.rodata    49276   1073855774\n.data          4   1073905050\n.bss        4316   1073905056\nTotal     166522\n\n\n"
+    },
+    {
+      "name": "res-ordered-clamp",
+      "decision": "retained",
+      "reason": "Ordered clamping improves Snare target mean/max.",
+      "measurement": "emulated ColdFire target cycles",
+      "bench": {
+        "path": "out/perky/hybrid/campaign-20261016/res-ordered-clamp/BENCH.json",
+        "sha256": "18b808120f687eb6f728bb4e79d846fb6f0ca16bee62c11b959519f433619cd6",
+        "status": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "pair_render": {
+        "V1M1": {
+          "mean_cycles": 6314.016666666666,
+          "max_cycles": 6959
+        },
+        "V1M2": {
+          "mean_cycles": 6324.416666666667,
+          "max_cycles": 6913
+        },
+        "V1M3": {
+          "mean_cycles": 6317.516666666666,
+          "max_cycles": 6980
+        },
+        "V2M1": {
+          "mean_cycles": 6314.775,
+          "max_cycles": 6924
+        },
+        "V2M2": {
+          "mean_cycles": 6324.358333333334,
+          "max_cycles": 6913
+        },
+        "V2M3": {
+          "mean_cycles": 6314.6,
+          "max_cycles": 6924
+        },
+        "snare": {
+          "mean_cycles": 8560.416666666666,
+          "max_cycles": 9256
+        },
+        "bass": {
+          "mean_cycles": 7608.216666666666,
+          "max_cycles": 8785
+        },
+        "third": {
+          "mean_cycles": 7952.041666666667,
+          "max_cycles": 8632
+        }
+      },
+      "phases": {
+        "clean-render": {
+          "count": 243,
+          "mean_cycles": 6940.786008230452,
+          "max_cycles": 8750
+        },
+        "init": {
+          "count": 243,
+          "mean_cycles": 5896.415637860082,
+          "max_cycles": 5954
+        },
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 325.69547325102883,
+          "max_cycles": 464
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2072.269547325103,
+          "max_cycles": 4019
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2378.5925925925926,
+          "max_cycles": 4736
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2121.251028806584,
+          "max_cycles": 4726
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2466.670781893004,
+          "max_cycles": 6380
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2096.687242798354,
+          "max_cycles": 4153
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2114.7201646090534,
+          "max_cycles": 4141
+        },
+        "render": {
+          "count": 15552,
+          "mean_cycles": 6987.907407407408,
+          "max_cycles": 9296
+        },
+        "tail-render": {
+          "count": 4608,
+          "mean_cycles": 6811.955295138889,
+          "max_cycles": 9389
+        }
+      },
+      "target_binary_bytes": 161796,
+      "linked_sections": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/res-ordered-clamp/target.elf  :\nsection     size         addr\n.text     112516   1073742848\n.rodata    49276   1073855364\n.data          4   1073904640\n.bss        4316   1073904644\nTotal     166112\n\n\n"
+    },
+    {
+      "name": "wt-direct-frequency",
+      "decision": "retained",
+      "reason": "Exact EMAC conversion is cheaper than cache-key testing on target.",
+      "measurement": "emulated ColdFire target cycles",
+      "bench": {
+        "path": "out/perky/hybrid/campaign-20261016/wt-direct-frequency/BENCH.json",
+        "sha256": "729d3cb032895df3be0670de287a212217c97a46a9e592ba815d1340ea718a63",
+        "status": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "pair_render": {
+        "V1M1": {
+          "mean_cycles": 6206.666666666667,
+          "max_cycles": 6831
+        },
+        "V1M2": {
+          "mean_cycles": 6217.125,
+          "max_cycles": 6785
+        },
+        "V1M3": {
+          "mean_cycles": 6206.958333333333,
+          "max_cycles": 6845
+        },
+        "V2M1": {
+          "mean_cycles": 6206.666666666667,
+          "max_cycles": 6796
+        },
+        "V2M2": {
+          "mean_cycles": 6216.891666666666,
+          "max_cycles": 6785
+        },
+        "V2M3": {
+          "mean_cycles": 6206.083333333333,
+          "max_cycles": 6803
+        },
+        "snare": {
+          "mean_cycles": 8603.175,
+          "max_cycles": 9375
+        },
+        "bass": {
+          "mean_cycles": 7628.166666666667,
+          "max_cycles": 8743
+        },
+        "third": {
+          "mean_cycles": 7959.741666666667,
+          "max_cycles": 8625
+        }
+      },
+      "phases": {
+        "clean-render": {
+          "count": 243,
+          "mean_cycles": 6859.62962962963,
+          "max_cycles": 8736
+        },
+        "init": {
+          "count": 243,
+          "mean_cycles": 5870.432098765432,
+          "max_cycles": 5947
+        },
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 311.2633744855967,
+          "max_cycles": 394
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2073.551440329218,
+          "max_cycles": 4005
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2365.1399176954733,
+          "max_cycles": 4795
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2108.80658436214,
+          "max_cycles": 4740
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2472.1152263374483,
+          "max_cycles": 6380
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2085.798353909465,
+          "max_cycles": 4134
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2120.769547325103,
+          "max_cycles": 4183
+        },
+        "render": {
+          "count": 15552,
+          "mean_cycles": 6916.60178755144,
+          "max_cycles": 9375
+        },
+        "tail-render": {
+          "count": 4608,
+          "mean_cycles": 6778.594835069444,
+          "max_cycles": 9494
+        }
+      },
+      "target_binary_bytes": 161714,
+      "linked_sections": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/wt-direct-frequency/target.elf  :\nsection     size         addr\n.text     112434   1073742848\n.rodata    49276   1073855282\n.data          4   1073904558\n.bss        4316   1073904564\nTotal     166030\n\n\n",
+      "edge": {
+        "path": "out/perky/hybrid/campaign-20261016/wt-direct-frequency-edges/EDGE_RECEIPT.json",
+        "sha256": "0d0d3566ed8a75d5e16e3ab929b5baa92c8dbd4202274f892a91aa9bfebfa2f8",
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "res-fixed-decay",
+      "decision": "retained",
+      "reason": "Fixed-point recurrence reuse improves Snare mean/max; countdown crossing remains original path.",
+      "measurement": "emulated ColdFire target cycles",
+      "bench": {
+        "path": "out/perky/hybrid/campaign-20261016/res-fixed-decay/BENCH.json",
+        "sha256": "f418c13c8c1094a5c1817d804317f6d8fa34c75692a80fd1e7db288115408aa9",
+        "status": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "pair_render": {
+        "V1M1": {
+          "mean_cycles": 6206.725,
+          "max_cycles": 6838
+        },
+        "V1M2": {
+          "mean_cycles": 6216.833333333333,
+          "max_cycles": 6785
+        },
+        "V1M3": {
+          "mean_cycles": 6206.958333333333,
+          "max_cycles": 6817
+        },
+        "V2M1": {
+          "mean_cycles": 6206.55,
+          "max_cycles": 6831
+        },
+        "V2M2": {
+          "mean_cycles": 6216.95,
+          "max_cycles": 6785
+        },
+        "V2M3": {
+          "mean_cycles": 6206.083333333333,
+          "max_cycles": 6803
+        },
+        "snare": {
+          "mean_cycles": 7736.741666666667,
+          "max_cycles": 8925
+        },
+        "bass": {
+          "mean_cycles": 7565.191666666667,
+          "max_cycles": 8738
+        },
+        "third": {
+          "mean_cycles": 7965.166666666667,
+          "max_cycles": 8646
+        }
+      },
+      "phases": {
+        "clean-render": {
+          "count": 243,
+          "mean_cycles": 6768.925925925926,
+          "max_cycles": 8178
+        },
+        "init": {
+          "count": 243,
+          "mean_cycles": 5887.111111111111,
+          "max_cycles": 5961
+        },
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 316.275720164609,
+          "max_cycles": 408
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2062.3312757201647,
+          "max_cycles": 3998
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2352.465020576132,
+          "max_cycles": 4739
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2122.259259259259,
+          "max_cycles": 4726
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2452.296296296296,
+          "max_cycles": 6387
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2095.707818930041,
+          "max_cycles": 4169
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2115.9876543209875,
+          "max_cycles": 4113
+        },
+        "render": {
+          "count": 15552,
+          "mean_cycles": 6810.313143004115,
+          "max_cycles": 8995
+        },
+        "tail-render": {
+          "count": 4608,
+          "mean_cycles": 6658.194444444444,
+          "max_cycles": 9023
+        }
+      },
+      "target_binary_bytes": 162706,
+      "linked_sections": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/res-fixed-decay/target.elf  :\nsection     size         addr\n.text     113426   1073742848\n.rodata    49276   1073856274\n.data          4   1073905550\n.bss        4316   1073905556\nTotal     167022\n\n\n",
+      "edge": {
+        "path": "out/perky/hybrid/campaign-20261016/res-fixed-decay-edges/EDGE_RECEIPT.json",
+        "sha256": "9dba50c1dd9745c3c8b2ea82c4a270ff24338d930d82eee967364c61ed2c4c11",
+        "status": "PASS"
+      }
+    },
+    {
+      "name": "nt-no-unroll",
+      "decision": "rejected",
+      "reason": "NT mean 7965 -> 8814 cycles; maximum 8646 -> 9236.",
+      "measurement": "emulated ColdFire target cycles",
+      "bench": {
+        "path": "out/perky/hybrid/campaign-20261016/nt-no-unroll/BENCH.json",
+        "sha256": "b13d78668941efd82701e7caa6d53e1d1ba4f1013c57d37ce43596104c8f7542",
+        "status": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "pair_render": {
+        "V1M1": {
+          "mean_cycles": 6206.725,
+          "max_cycles": 6838
+        },
+        "V1M2": {
+          "mean_cycles": 6216.775,
+          "max_cycles": 6785
+        },
+        "V1M3": {
+          "mean_cycles": 6206.841666666666,
+          "max_cycles": 6810
+        },
+        "V2M1": {
+          "mean_cycles": 6206.55,
+          "max_cycles": 6831
+        },
+        "V2M2": {
+          "mean_cycles": 6216.891666666666,
+          "max_cycles": 6785
+        },
+        "V2M3": {
+          "mean_cycles": 6206.083333333333,
+          "max_cycles": 6803
+        },
+        "snare": {
+          "mean_cycles": 7736.741666666667,
+          "max_cycles": 8925
+        },
+        "bass": {
+          "mean_cycles": 7564.9,
+          "max_cycles": 8738
+        },
+        "third": {
+          "mean_cycles": 8813.7,
+          "max_cycles": 9236
+        }
+      },
+      "phases": {
+        "clean-render": {
+          "count": 243,
+          "mean_cycles": 6864.604938271605,
+          "max_cycles": 8984
+        },
+        "init": {
+          "count": 243,
+          "mean_cycles": 5874.753086419753,
+          "max_cycles": 5947
+        },
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 318.9259259259259,
+          "max_cycles": 417
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2075.783950617284,
+          "max_cycles": 3998
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2370.3251028806585,
+          "max_cycles": 4739
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2129.3456790123455,
+          "max_cycles": 4719
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2460.7654320987654,
+          "max_cycles": 6387
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2099.0493827160494,
+          "max_cycles": 4183
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2120.0781893004114,
+          "max_cycles": 4148
+        },
+        "render": {
+          "count": 15552,
+          "mean_cycles": 6897.242476851852,
+          "max_cycles": 9280
+        },
+        "tail-render": {
+          "count": 4608,
+          "mean_cycles": 6735.075086805556,
+          "max_cycles": 9027
+        }
+      },
+      "target_binary_bytes": 157912,
+      "linked_sections": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/nt-no-unroll/target.elf  :\nsection     size         addr\n.text     108632   1073742848\n.rodata    49276   1073851480\n.data          4   1073900756\n.bss        4316   1073900760\nTotal     162228\n\n\n"
+    },
+    {
+      "name": "wt-unused-envelope",
+      "decision": "rejected",
+      "reason": "Extracted helper is outlined; WT mean increases to 10299 cycles.",
+      "measurement": "emulated ColdFire target cycles",
+      "bench": {
+        "path": "out/perky/hybrid/campaign-20261016/wt-unused-envelope/BENCH.json",
+        "sha256": "7d86a099985029b7f07050587663c5070ea8790e1f5a8c8f62b5b210cbd279e7",
+        "status": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "pair_render": {
+        "V1M1": {
+          "mean_cycles": 10299.383333333333,
+          "max_cycles": 11175
+        },
+        "V1M2": {
+          "mean_cycles": 10314.175,
+          "max_cycles": 11173
+        },
+        "V1M3": {
+          "mean_cycles": 10297.225,
+          "max_cycles": 11161
+        },
+        "V2M1": {
+          "mean_cycles": 10299.266666666666,
+          "max_cycles": 11175
+        },
+        "V2M2": {
+          "mean_cycles": 10314.0,
+          "max_cycles": 11173
+        },
+        "V2M3": {
+          "mean_cycles": 10296.583333333334,
+          "max_cycles": 11147
+        },
+        "snare": {
+          "mean_cycles": 7725.6,
+          "max_cycles": 9009
+        },
+        "bass": {
+          "mean_cycles": 7561.458333333333,
+          "max_cycles": 8745
+        },
+        "third": {
+          "mean_cycles": 7954.666666666667,
+          "max_cycles": 8632
+        }
+      },
+      "phases": {
+        "clean-render": {
+          "count": 243,
+          "mean_cycles": 9671.160493827161,
+          "max_cycles": 10563
+        },
+        "init": {
+          "count": 243,
+          "mean_cycles": 5825.263374485597,
+          "max_cycles": 5905
+        },
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 330.880658436214,
+          "max_cycles": 417
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2104.5329218106995,
+          "max_cycles": 4082
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2404.028806584362,
+          "max_cycles": 4802
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2128.5102880658437,
+          "max_cycles": 4754
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2475.543209876543,
+          "max_cycles": 6443
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2110.917695473251,
+          "max_cycles": 4155
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2131.572016460905,
+          "max_cycles": 4191
+        },
+        "render": {
+          "count": 15552,
+          "mean_cycles": 9590.120949074075,
+          "max_cycles": 11175
+        },
+        "tail-render": {
+          "count": 4608,
+          "mean_cycles": 9567.360243055555,
+          "max_cycles": 10921
+        }
+      },
+      "target_binary_bytes": 161848,
+      "linked_sections": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/wt-unused-envelope/target.elf  :\nsection     size         addr\n.text     112568   1073742848\n.rodata    49276   1073855416\n.data          4   1073904692\n.bss        4316   1073904696\nTotal     166164\n\n\n"
+    },
+    {
+      "name": "wt-unused-envelope-inline",
+      "decision": "rejected",
+      "reason": "Forcing inlining restores throughput but mean/max still regress versus selected path.",
+      "measurement": "emulated ColdFire target cycles",
+      "bench": {
+        "path": "out/perky/hybrid/campaign-20261016/wt-unused-envelope-inline/BENCH.json",
+        "sha256": "eb17fc0b22f20a344306a061d0c2001aaf1346545eb734ebceb4ddc98209b541",
+        "status": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "pair_render": {
+        "V1M1": {
+          "mean_cycles": 6316.625,
+          "max_cycles": 7174
+        },
+        "V1M2": {
+          "mean_cycles": 6331.516666666666,
+          "max_cycles": 7174
+        },
+        "V1M3": {
+          "mean_cycles": 6316.216666666666,
+          "max_cycles": 7174
+        },
+        "V2M1": {
+          "mean_cycles": 6316.333333333333,
+          "max_cycles": 7174
+        },
+        "V2M2": {
+          "mean_cycles": 6331.283333333334,
+          "max_cycles": 7174
+        },
+        "V2M3": {
+          "mean_cycles": 6316.1,
+          "max_cycles": 7174
+        },
+        "snare": {
+          "mean_cycles": 7712.475,
+          "max_cycles": 8904
+        },
+        "bass": {
+          "mean_cycles": 7553.758333333333,
+          "max_cycles": 8745
+        },
+        "third": {
+          "mean_cycles": 7961.783333333334,
+          "max_cycles": 8632
+        }
+      },
+      "phases": {
+        "clean-render": {
+          "count": 243,
+          "mean_cycles": 6977.872427983539,
+          "max_cycles": 8143
+        },
+        "init": {
+          "count": 243,
+          "mean_cycles": 5846.349794238683,
+          "max_cycles": 5940
+        },
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 309.0164609053498,
+          "max_cycles": 410
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2078.3909465020574,
+          "max_cycles": 4027
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2381.329218106996,
+          "max_cycles": 4732
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2120.0699588477364,
+          "max_cycles": 4684
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2466.61316872428,
+          "max_cycles": 6359
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2095.909465020576,
+          "max_cycles": 4162
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2118.1481481481483,
+          "max_cycles": 4151
+        },
+        "render": {
+          "count": 15552,
+          "mean_cycles": 6942.667566872428,
+          "max_cycles": 9009
+        },
+        "tail-render": {
+          "count": 4608,
+          "mean_cycles": 6858.411892361111,
+          "max_cycles": 8988
+        }
+      },
+      "target_binary_bytes": 164700,
+      "linked_sections": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/wt-unused-envelope-inline/target.elf  :\nsection     size         addr\n.text     115420   1073742848\n.rodata    49276   1073858268\n.data          4   1073907544\n.bss        4316   1073907548\nTotal     169016\n\n\n"
+    },
+    {
+      "name": "bass-fixed-pitch",
+      "decision": "rejected",
+      "reason": "Bass mean increases despite a smaller maximum; no sustained overall win.",
+      "measurement": "emulated ColdFire target cycles",
+      "bench": {
+        "path": "out/perky/hybrid/campaign-20261016/bass-fixed-pitch/BENCH.json",
+        "sha256": "0b8e4f13b1a5c8f55cd41375718cd0bb9663a4272a04bcc021f12989eda9a56e",
+        "status": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "pair_render": {
+        "V1M1": {
+          "mean_cycles": 6206.958333333333,
+          "max_cycles": 6852
+        },
+        "V1M2": {
+          "mean_cycles": 6216.833333333333,
+          "max_cycles": 6785
+        },
+        "V1M3": {
+          "mean_cycles": 6206.783333333334,
+          "max_cycles": 6817
+        },
+        "V2M1": {
+          "mean_cycles": 6206.958333333333,
+          "max_cycles": 6852
+        },
+        "V2M2": {
+          "mean_cycles": 6216.716666666666,
+          "max_cycles": 6785
+        },
+        "V2M3": {
+          "mean_cycles": 6206.083333333333,
+          "max_cycles": 6803
+        },
+        "snare": {
+          "mean_cycles": 7697.075,
+          "max_cycles": 8953
+        },
+        "bass": {
+          "mean_cycles": 7651.108333333334,
+          "max_cycles": 8590
+        },
+        "third": {
+          "mean_cycles": 7953.733333333334,
+          "max_cycles": 8632
+        }
+      },
+      "phases": {
+        "clean-render": {
+          "count": 243,
+          "mean_cycles": 6779.14403292181,
+          "max_cycles": 8096
+        },
+        "init": {
+          "count": 243,
+          "mean_cycles": 5863.720164609053,
+          "max_cycles": 5926
+        },
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 320.2798353909465,
+          "max_cycles": 407
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2067.1563786008232,
+          "max_cycles": 4005
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2354.337448559671,
+          "max_cycles": 4718
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2119.061728395062,
+          "max_cycles": 4733
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2454.7736625514403,
+          "max_cycles": 6387
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2097.695473251029,
+          "max_cycles": 4197
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2118.7818930041153,
+          "max_cycles": 4120
+        },
+        "render": {
+          "count": 15552,
+          "mean_cycles": 6790.563978909465,
+          "max_cycles": 8953
+        },
+        "tail-render": {
+          "count": 4608,
+          "mean_cycles": 6658.647569444444,
+          "max_cycles": 9030
+        }
+      },
+      "target_binary_bytes": 162676,
+      "linked_sections": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/bass-fixed-pitch/target.elf  :\nsection     size         addr\n.text     113396   1073742848\n.rodata    49276   1073856244\n.data          4   1073905520\n.bss        4316   1073905524\nTotal     166992\n\n\n"
+    },
+    {
+      "name": "wt-frequency-lut",
+      "decision": "rejected",
+      "reason": "16 KiB table increases WT mean and maximum versus EMAC.",
+      "measurement": "emulated ColdFire target cycles",
+      "bench": {
+        "path": "out/perky/hybrid/campaign-20261016/wt-frequency-lut/BENCH.json",
+        "sha256": "fec175e35429c544ae9882f53f2c41ee08c5889051cf613c7f7488b29af518f6",
+        "status": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "pair_render": {
+        "V1M1": {
+          "mean_cycles": 6359.208333333333,
+          "max_cycles": 6957
+        },
+        "V1M2": {
+          "mean_cycles": 6363.966666666666,
+          "max_cycles": 6895
+        },
+        "V1M3": {
+          "mean_cycles": 6360.258333333333,
+          "max_cycles": 6943
+        },
+        "V2M1": {
+          "mean_cycles": 6359.966666666666,
+          "max_cycles": 6943
+        },
+        "V2M2": {
+          "mean_cycles": 6363.908333333334,
+          "max_cycles": 6895
+        },
+        "V2M3": {
+          "mean_cycles": 6359.966666666666,
+          "max_cycles": 6943
+        },
+        "snare": {
+          "mean_cycles": 7706.991666666667,
+          "max_cycles": 8869
+        },
+        "bass": {
+          "mean_cycles": 7577.033333333334,
+          "max_cycles": 8752
+        },
+        "third": {
+          "mean_cycles": 7953.616666666667,
+          "max_cycles": 8632
+        }
+      },
+      "phases": {
+        "clean-render": {
+          "count": 243,
+          "mean_cycles": 6896.59670781893,
+          "max_cycles": 8164
+        },
+        "init": {
+          "count": 243,
+          "mean_cycles": 5879.765432098766,
+          "max_cycles": 5940
+        },
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 325.8971193415638,
+          "max_cycles": 401
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2074.6604938271603,
+          "max_cycles": 3992
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2372.341563786008,
+          "max_cycles": 4767
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2137.2098765432097,
+          "max_cycles": 4712
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2473.1522633744858,
+          "max_cycles": 6408
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2102.5925925925926,
+          "max_cycles": 4162
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2116.909465020576,
+          "max_cycles": 4163
+        },
+        "render": {
+          "count": 15552,
+          "mean_cycles": 6906.779835390947,
+          "max_cycles": 8939
+        },
+        "tail-render": {
+          "count": 4608,
+          "mean_cycles": 6778.490017361111,
+          "max_cycles": 8960
+        }
+      },
+      "target_binary_bytes": 179856,
+      "linked_sections": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/wt-frequency-lut/target.elf  :\nsection     size         addr\n.text     114192   1073742848\n.rodata    65660   1073857040\n.data          4   1073922700\n.bss        4316   1073922704\nTotal     184172\n\n\n"
+    },
+    {
+      "name": "wt-frequency-exact32",
+      "decision": "rejected",
+      "reason": "Exact 32-bit algebra passes stream but extra sign/shift/multiply work regresses target throughput.",
+      "measurement": "emulated ColdFire target cycles",
+      "bench": {
+        "path": "out/perky/hybrid/campaign-20261016/wt-frequency-exact32/BENCH.json",
+        "sha256": "19ec64efdd8510c5c1a6dc5e24657cebe2536809a70b5661c8f9cc6fdea81e90",
+        "status": "PASS_EXACT_FROZEN_REFERENCE"
+      },
+      "pair_render": {
+        "V1M1": {
+          "mean_cycles": 6631.733333333334,
+          "max_cycles": 7276
+        },
+        "V1M2": {
+          "mean_cycles": 6630.416666666667,
+          "max_cycles": 7200
+        },
+        "V1M3": {
+          "mean_cycles": 6626.833333333333,
+          "max_cycles": 7241
+        },
+        "V2M1": {
+          "mean_cycles": 6626.541666666667,
+          "max_cycles": 7262
+        },
+        "V2M2": {
+          "mean_cycles": 6630.475,
+          "max_cycles": 7200
+        },
+        "V2M3": {
+          "mean_cycles": 6626.25,
+          "max_cycles": 7241
+        },
+        "snare": {
+          "mean_cycles": 7716.325,
+          "max_cycles": 9009
+        },
+        "bass": {
+          "mean_cycles": 7560.583333333333,
+          "max_cycles": 8703
+        },
+        "third": {
+          "mean_cycles": 7964.116666666667,
+          "max_cycles": 8639
+        }
+      },
+      "phases": {
+        "clean-render": {
+          "count": 243,
+          "mean_cycles": 7099.872427983539,
+          "max_cycles": 8185
+        },
+        "init": {
+          "count": 243,
+          "mean_cycles": 5888.551440329218,
+          "max_cycles": 5954
+        },
+        "prepare-clean": {
+          "count": 243,
+          "mean_cycles": 341.22222222222223,
+          "max_cycles": 427
+        },
+        "prepare-dirty-no-trigger": {
+          "count": 486,
+          "mean_cycles": 2076.80658436214,
+          "max_cycles": 4041
+        },
+        "prepare-dirty-trigger": {
+          "count": 243,
+          "mean_cycles": 2369.0,
+          "max_cycles": 4743
+        },
+        "prepare-family-change": {
+          "count": 243,
+          "mean_cycles": 2117.5637860082306,
+          "max_cycles": 4683
+        },
+        "prepare-fresh": {
+          "count": 243,
+          "mean_cycles": 2451.633744855967,
+          "max_cycles": 6366
+        },
+        "prepare-mode-change": {
+          "count": 243,
+          "mean_cycles": 2083.4938271604938,
+          "max_cycles": 4155
+        },
+        "prepare-return-without-trigger": {
+          "count": 243,
+          "mean_cycles": 2118.1769547325102,
+          "max_cycles": 4149
+        },
+        "render": {
+          "count": 15552,
+          "mean_cycles": 7087.739261831276,
+          "max_cycles": 9009
+        },
+        "tail-render": {
+          "count": 4608,
+          "mean_cycles": 6983.202039930556,
+          "max_cycles": 9128
+        }
+      },
+      "target_binary_bytes": 162630,
+      "linked_sections": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/wt-frequency-exact32/target.elf  :\nsection     size         addr\n.text     113350   1073742848\n.rodata    49276   1073856198\n.data          4   1073905474\n.bss        4316   1073905480\nTotal     166946\n\n\n"
+    }
+  ],
+  "initial_full_ISR_comparison": {
+    "frames": 4096,
+    "pair": "snare/snare",
+    "measurement": "executed ISR observer, emulated ColdFire at 264 MHz",
+    "baseline": {
+      "cycles": 85902,
+      "us": 325.3863636363636
+    },
+    "uniform_options": {
+      "cycles": 73599,
+      "us": 278.78409090909093
+    },
+    "improvement_percent": 14.322134525389396,
+    "limits": "Not silicon timing; no comparison against the unmatched physical capture."
+  },
+  "remaining": [
+    "Finish all active final qualification runs; do not replace sustained frames with shorter screening runs.",
+    "Measure profiler on/off, external-clock and save/reload/lifecycle evidence.",
+    "Commit/push verified source/tests; package only after all applicable safety gates pass."
+  ],
+  "raw_root": "out/perky/hybrid/campaign-20261016",
+  "selected_target": {
+    "path": "out/perky/hybrid/campaign-20261016/final-target/BENCH.json",
+    "sha256": "29f4ae3095c631a4b7e239af7d3503b15fe0d367d66aedac5844102bc12a8d37",
+    "status": "PASS_EXACT_FROZEN_REFERENCE",
+    "exact": {
+      "status": "PASS_EXACT_TARGET_NATIVE",
+      "init_checks": 252,
+      "prepare_checks": 1953,
+      "render_checks": 20403,
+      "compared_bytes": 90612864,
+      "byte_mismatches": 0,
+      "target_stream_sha256": "93d24a575197579b341ea5a7ac9ea5978b808635d96b6b50e8652e5820014b4c",
+      "native_stream_sha256": "93d24a575197579b341ea5a7ac9ea5978b808635d96b6b50e8652e5820014b4c",
+      "stream_encoding": "action u8 then all five state byte arrays, each control field, RNG, PCM and status; numeric fields LE; ABI padding excluded"
+    },
+    "phases": {
+      "clean-render": {
+        "count": 243,
+        "mean_cycles": 6768.925925925926,
+        "max_cycles": 8178
+      },
+      "init": {
+        "count": 243,
+        "mean_cycles": 5887.111111111111,
+        "max_cycles": 5961
+      },
+      "prepare-clean": {
+        "count": 243,
+        "mean_cycles": 316.275720164609,
+        "max_cycles": 408
+      },
+      "prepare-dirty-no-trigger": {
+        "count": 486,
+        "mean_cycles": 2062.3312757201647,
+        "max_cycles": 3998
+      },
+      "prepare-dirty-trigger": {
+        "count": 243,
+        "mean_cycles": 2352.465020576132,
+        "max_cycles": 4739
+      },
+      "prepare-family-change": {
+        "count": 243,
+        "mean_cycles": 2122.259259259259,
+        "max_cycles": 4726
+      },
+      "prepare-fresh": {
+        "count": 243,
+        "mean_cycles": 2452.296296296296,
+        "max_cycles": 6387
+      },
+      "prepare-mode-change": {
+        "count": 243,
+        "mean_cycles": 2095.707818930041,
+        "max_cycles": 4169
+      },
+      "prepare-return-without-trigger": {
+        "count": 243,
+        "mean_cycles": 2115.9876543209875,
+        "max_cycles": 4113
+      },
+      "render": {
+        "count": 15552,
+        "mean_cycles": 6810.313143004115,
+        "max_cycles": 8995
+      },
+      "tail-render": {
+        "count": 4608,
+        "mean_cycles": 6658.194444444444,
+        "max_cycles": 9023
+      }
+    },
+    "unchanged_profile_pair_render": {
+      "V1M1": {
+        "mean_cycles": 6206.725,
+        "max_cycles": 6838
+      },
+      "V1M2": {
+        "mean_cycles": 6216.833333333333,
+        "max_cycles": 6785
+      },
+      "V1M3": {
+        "mean_cycles": 6206.958333333333,
+        "max_cycles": 6817
+      },
+      "V2M1": {
+        "mean_cycles": 6206.55,
+        "max_cycles": 6831
+      },
+      "V2M2": {
+        "mean_cycles": 6216.95,
+        "max_cycles": 6785
+      },
+      "V2M3": {
+        "mean_cycles": 6206.083333333333,
+        "max_cycles": 6803
+      },
+      "snare": {
+        "mean_cycles": 7736.741666666667,
+        "max_cycles": 8925
+      },
+      "bass": {
+        "mean_cycles": 7565.191666666667,
+        "max_cycles": 8738
+      },
+      "third": {
+        "mean_cycles": 7965.166666666667,
+        "max_cycles": 8646
+      }
+    }
+  },
+  "extended_edges": {
+    "path": "out/perky/hybrid/campaign-20261016/selected-edges/EDGE_RECEIPT.json",
+    "sha256": "d21133e6b79aed03bee33f438f407a045bea52dedb9b2e816c89dbab19350e0b",
+    "status": "PASS",
+    "result": {
+      "status": "PASS_EXACT_TARGET_REFERENCE",
+      "render_calls": 22270,
+      "matched_failure_calls": 192,
+      "block_lengths": 41,
+      "max_block_samples": 257,
+      "all_state_PCM_RNG_and_guards_equal": true,
+      "EMAC_product_checks": 221184,
+      "EMAC_raw_register_mode_cases": 6,
+      "native_division_checks": 331776,
+      "native_division_mean_cycles_before": 341.426,
+      "native_division_mean_cycles_after": 54.7029,
+      "native_division_max_cycles_before": 380,
+      "native_division_max_cycles_after": 58,
+      "native_prepare_cases": 16384,
+      "native_prepare_mean_before": 877.223,
+      "native_prepare_mean_hw_div": 451.373,
+      "native_prepare_mean_after": 312.562,
+      "native_prepare_max_before": 1684,
+      "native_prepare_max_hw_div": 1315,
+      "native_prepare_max_after": 1269,
+      "control_transition_cases": 1080,
+      "control_math_checks": 438516
+    },
+    "decay_fixedpoint": {
+      "status": "PASS_EXACT_TARGET_REFERENCE",
+      "cases": 10584,
+      "complete_state_PCM_RNG_and_guards_equal": true
+    }
+  },
+  "edge_binding": {
+    "basis": "Final target.bin is byte-identical to the selected target on which extended edges executed.",
+    "selected_target_sha256": "93e8fff1e26e19f23a645e84511fd1c51fad7438571fcd9bcaf48d2331be1f12",
+    "final_target_sha256": "93e8fff1e26e19f23a645e84511fd1c51fad7438571fcd9bcaf48d2331be1f12"
+  },
+  "original_author_ARM": {
+    "path": "out/perky/hybrid/campaign-20261016/selected-original/receipt.json",
+    "sha256": "d2a55fae4bcd1bcee9162ee1e50adf5000b8fd55e0cf983f2375b281e169eef7",
+    "status": "PASS",
+    "sections": 19,
+    "cases": 22098,
+    "PCM_samples": 3046272,
+    "failures": 0,
+    "release_calls": 138
+  },
+  "readiness_repair": {
+    "baseline_and_candidate_failure": {
+      "path": "out/perky/hybrid/campaign-20261016/BOOT_REINIT_DIAGNOSIS.json",
+      "sha256": "efca7654ac2adb9941b2673791f06bea6bc19edc1e916d0a7cc02685b572c6a0"
+    },
+    "observed": "Repeated boot init erased 199191 nonzero PCM bytes but left loaded .data cookie READY.",
+    "repair": "Invalidate PCM and runtime cookies before the complete BSS scrub; decode and publish readiness afterward.",
+    "scope": "Repeated pre-RTOS initializer; no physical first-boot hang attribution.",
+    "superseded_runs": {
+      "path": "out/perky/hybrid/campaign-20261016/SUPERSEDED.json",
+      "sha256": "6cb1532fba4c7b3c30092e52abedb0b688376316a4e1bf925f26f70eaa04303a"
+    }
+  },
+  "qualification": {
+    "runtime": {
+      "path": "out/perky/hybrid/campaign-20261016/final/resume-fixes/RUNTIME.json",
+      "sha256": "d9c1b478600e4276833da2164199c063834a12f7f323d88c5e4df4bff817b1b1",
+      "status": "PASS"
+    },
+    "cold_boot": {
+      "path": "out/perky/hybrid/campaign-20261016/final/COLD_SAFETY.json",
+      "sha256": "28e4d879c642c25228bb38b6b9f0bdb2617fb00607b5898192e57916042cb91c",
+      "status": "PASS"
+    },
+    "lifecycle_components": {
+      "path": "out/perky/hybrid/campaign-20261016/final/LIFECYCLE_COMPONENT.json",
+      "sha256": "64742711323827e9193897c5a2659f2d8bae6e9f6eb5b486ffb70c32ff78a218",
+      "status": "PASS_COMPONENT_SCOPES"
+    },
+    "timer": {
+      "path": "out/perky/hybrid/campaign-20261016/final/TIMER.json",
+      "sha256": "4521dfcb276ef83c602728d13b001c62c7235379f5115f0e1b36cdcb3cf70648",
+      "status": "PASS"
+    },
+    "static_stack": {
+      "path": "out/perky/hybrid/campaign-20261016/final/static/BOUNDS.json",
+      "sha256": "b3bd92bc8cc191345fd9979413ee1d67a7a28fb94c5646e18700d634c65022b8",
+      "status": "PASS_SCOPED_PRIVATE_AND_THREE_VULNERABLE_TASK_BUDGETS"
+    },
+    "private_units": {
+      "path": "out/perky/hybrid/campaign-20261016/final/unit/ALL_UNITS.json",
+      "sha256": "9f982840e96ec0e78b06bcb9b5886fc8880b408dee36e80fd2f1eb17d3df4f74",
+      "status": "PASS"
+    },
+    "scene_fader": {
+      "path": "out/perky/hybrid/campaign-20261016/final/SCENE_PANEL.json",
+      "sha256": "bdcb1ba9bb29c3e1929f0f922f0b41575d91e0c49642a29059030fcbf45a6514",
+      "status": "PASS_ACTUAL_SCENE_FADER_DELIVERY"
+    },
+    "sequencer_transitions": {
+      "status": "PENDING"
+    },
+    "twelve_FX": {
+      "status": "PENDING"
+    },
+    "component_gates": {
+      "path": "out/perky/hybrid/campaign-20261016/final/COMPONENT_GATES.json",
+      "sha256": "991948154ea5c4f7ba7c3eee6f2f3cc88d7cf46ddfb78602a4cb638c75864828",
+      "status": "SEE_COMPONENT_RESULTS"
+    },
+    "baseline_pairs_a": {
+      "path": "out/perky/hybrid/campaign-20261016/baseline-matrix-a/MATRIX.json",
+      "sha256": "7605cacffd676742510e7cab7baefc275509f4cbd27585bcfa6a4a6c184c092d",
+      "status": "PASS_MEASURED_MATRIX",
+      "completed_rows": 7
+    },
+    "baseline_pairs_b": {
+      "path": "out/perky/hybrid/campaign-20261016/baseline-matrix-b/MATRIX.json",
+      "sha256": "351a285867faeca695b046052b58f19d43cdd17b960a43d56fcff840b5e38400",
+      "status": "PASS_MEASURED_MATRIX",
+      "completed_rows": 8
+    },
+    "candidate_pairs_a": {
+      "path": "out/perky/hybrid/campaign-20261016/final-matrix-a/MATRIX.json",
+      "sha256": "755ee35fa04bdc19ac28d3fecae903625659e2c63b6c3a762b78bae7b4a01030",
+      "status": "RUNNING",
+      "completed_rows": 1
+    },
+    "candidate_pairs_b": {
+      "path": "out/perky/hybrid/campaign-20261016/final-matrix-b/MATRIX.json",
+      "sha256": "21799d22950c7c29fb62ff5a634dc7afb2dbf337d6a792c8054e40a7d0a07d0c",
+      "status": "RUNNING",
+      "completed_rows": 1
+    },
+    "sustained": {
+      "path": "out/perky/hybrid/campaign-20261016/final-sustained/MATRIX.json",
+      "sha256": "ce271414ac7f6d78c78d8d7685b9eddec2478de95b71af3cab3b041de8c24639",
+      "status": "RUNNING",
+      "completed_rows": 0
+    },
+    "continuous_stress": {
+      "path": "out/perky/hybrid/campaign-20261016/final-stress/MATRIX.json",
+      "sha256": "4070402762ec1b766d3c0e9aacde6ef02e0f6122119db36b249eeb3695c66cbd",
+      "status": "RUNNING",
+      "completed_rows": 0
+    }
+  },
+  "paired_full_ISR": [
+    {
+      "pair": "snare/snare",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 85902,
+        "maximum_us": 325.3863636363636,
+        "duration_misses": 0,
+        "private_peak_bytes": 1016,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_snare-stack.json": "f341097ca871b7097fe5b5d1127563687de5e7e57bef256cd1e68d08a2b0c0e7",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_snare-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643"
+        }
+      },
+      "candidate": {
+        "maximum_cycles": 73396,
+        "maximum_us": 278.0151515151515,
+        "duration_misses": 0,
+        "private_peak_bytes": 984,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_snare-stack.json": "8cdea54ffed81e2f653768d15c1565eb8ad8827d0b7e730282f8894a9f5a7b10",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_snare-private.json": "fce67c8cccbb3c735f827ebfce3ff46eacbf1ae5064a1415562e3ce176745767"
+        }
+      },
+      "max_reduction_percent": 14.558450327116946,
+      "baseline_component_us": {
+        "max_full_frame_us": 325.0,
+        "max_perky_service_us": 325.0,
+        "max_cf_callback_us": 128.091,
+        "max_cf_control_us": 29.568,
+        "max_cf_render_us": 101.364,
+        "max_cf_pack_us": 4.591,
+        "max_dsp_callback_us": 14.621,
+        "mean_perky_service_us": 226.278,
+        "mean_cf_callback_us": 106.689,
+        "mean_cf_control_us": 3.897,
+        "mean_cf_render_us": 96.868,
+        "mean_cf_pack_us": 4.172,
+        "mean_dsp_callback_us": 10.788,
+        "inst_max_us": [
+          58.083,
+          57.871
+        ],
+        "inst_max_control_us": [
+          14.826,
+          14.742
+        ],
+        "inst_max_render_us": [
+          42.038,
+          41.864
+        ],
+        "inst_max_pack_us": [
+          1.591,
+          1.591
+        ]
+      },
+      "candidate_component_us": {
+        "max_full_frame_us": 277.621,
+        "max_perky_service_us": 277.621,
+        "max_cf_callback_us": 69.568,
+        "max_cf_control_us": 29.576,
+        "max_cf_render_us": 43.227,
+        "max_cf_pack_us": 4.78,
+        "max_dsp_callback_us": 15.439,
+        "mean_perky_service_us": 168.364,
+        "mean_cf_callback_us": 48.738,
+        "mean_cf_control_us": 3.931,
+        "mean_cf_render_us": 38.87,
+        "mean_cf_pack_us": 4.264,
+        "mean_dsp_callback_us": 11.293,
+        "inst_max_us": [
+          34.409,
+          34.318
+        ],
+        "inst_max_control_us": [
+          14.833,
+          14.742
+        ],
+        "inst_max_render_us": [
+          17.523,
+          17.606
+        ],
+        "inst_max_pack_us": [
+          1.644,
+          1.621
+        ]
+      },
+      "all_eight_track_audio": {
+        "T1": {
+          "chain_samples": 38400,
+          "chain_significant": 38382,
+          "chain_peak": 8388608
+        },
+        "T2": {
+          "chain_samples": 38400,
+          "chain_significant": 38380,
+          "chain_peak": 8323072,
+          "source_significant": 38380,
+          "source_peak": 8388608
+        },
+        "T3": {
+          "chain_samples": 38400,
+          "chain_significant": 38379,
+          "chain_peak": 3727798,
+          "source_significant": 42567,
+          "source_peak": 2560000
+        },
+        "T4": {
+          "chain_samples": 38400,
+          "chain_significant": 38344,
+          "chain_peak": 1090278,
+          "source_significant": 42336,
+          "source_peak": 2560000
+        },
+        "T5": {
+          "chain_samples": 38400,
+          "chain_significant": 38363,
+          "chain_peak": 3572830
+        },
+        "T6": {
+          "chain_samples": 38400,
+          "chain_significant": 38389,
+          "chain_peak": 8388607,
+          "source_significant": 38383,
+          "source_peak": 8388608
+        },
+        "T7": {
+          "chain_samples": 38400,
+          "chain_significant": 38381,
+          "chain_peak": 3505906,
+          "source_significant": 41435,
+          "source_peak": 2560000
+        },
+        "T8": {
+          "chain_samples": 38400,
+          "chain_significant": 7867,
+          "chain_peak": 4917928,
+          "source_significant": 8316,
+          "source_peak": 2560000
+        }
+      }
+    },
+    {
+      "pair": "snare/bass",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 84462,
+        "maximum_us": 319.9318181818182,
+        "duration_misses": 0,
+        "private_peak_bytes": 1068,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_bass-stack.json": "501f19bc70869191af8d84436a9d19c5ce6bfab04920535748cc235e37313bd1",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_bass-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62"
+        }
+      },
+      "candidate": null
+    },
+    {
+      "pair": "bass/bass",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 82931,
+        "maximum_us": 314.13257575757575,
+        "duration_misses": 0,
+        "private_peak_bytes": 1068,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_bass-stack.json": "13c85ef9d56361a4f8d76c6c51f9b0319078739c33cdc34989e6838b1492442b",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_bass-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62"
+        }
+      },
+      "candidate": null
+    },
+    {
+      "pair": "V1/V1",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 80994,
+        "maximum_us": 306.79545454545456,
+        "duration_misses": 0,
+        "private_peak_bytes": 988,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_V1-stack.json": "af5077ef716783ac48af78837121aa3ec34ee908694382c4302e9177ab113a28",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_V1-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719"
+        }
+      },
+      "candidate": null
+    },
+    {
+      "pair": "V2/V2",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 80994,
+        "maximum_us": 306.79545454545456,
+        "duration_misses": 0,
+        "private_peak_bytes": 988,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_V2-stack.json": "af5077ef716783ac48af78837121aa3ec34ee908694382c4302e9177ab113a28",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_V2-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719"
+        }
+      },
+      "candidate": null
+    },
+    {
+      "pair": "V1/V2",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 80994,
+        "maximum_us": 306.79545454545456,
+        "duration_misses": 0,
+        "private_peak_bytes": 988,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_V2-stack.json": "af5077ef716783ac48af78837121aa3ec34ee908694382c4302e9177ab113a28",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_V2-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719"
+        }
+      },
+      "candidate": null
+    },
+    {
+      "pair": "V1/snare",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 83567,
+        "maximum_us": 316.5416666666667,
+        "duration_misses": 0,
+        "private_peak_bytes": 1016,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_snare-stack.json": "369b08e6f399925f1d4c800b421231bd0913c6a4eccc4f39ff7fdd60854380c8",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_snare-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643"
+        }
+      },
+      "candidate": null
+    },
+    {
+      "pair": "V2/bass",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 82043,
+        "maximum_us": 310.7689393939394,
+        "duration_misses": 0,
+        "private_peak_bytes": 1068,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_bass-stack.json": "17db7c8ea5849b8adf947330917441bbb0f0dc9b7987491f7abda35d0cf9d456",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_bass-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62"
+        }
+      },
+      "candidate": {
+        "maximum_cycles": 70213,
+        "maximum_us": 265.9583333333333,
+        "duration_misses": 0,
+        "private_peak_bytes": 1028,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_bass-stack.json": "c338723a8b8e5ea9fc530e9da17ba6b6f7e5c1d16f5b082b412fb0296480dd9b",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_bass-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a"
+        }
+      },
+      "max_reduction_percent": 14.419267944858182,
+      "baseline_component_us": {
+        "max_full_frame_us": 310.386,
+        "max_perky_service_us": 310.386,
+        "max_cf_callback_us": 107.856,
+        "max_cf_control_us": 22.227,
+        "max_cf_render_us": 88.955,
+        "max_cf_pack_us": 4.909,
+        "max_dsp_callback_us": 14.803,
+        "mean_perky_service_us": 214.806,
+        "mean_cf_callback_us": 95.427,
+        "mean_cf_control_us": 3.569,
+        "mean_cf_render_us": 85.734,
+        "mean_cf_pack_us": 4.304,
+        "mean_dsp_callback_us": 10.883,
+        "inst_max_us": [
+          48.765,
+          52.576
+        ],
+        "inst_max_control_us": [
+          8.182,
+          14.045
+        ],
+        "inst_max_render_us": [
+          39.053,
+          36.53
+        ],
+        "inst_max_pack_us": [
+          1.614,
+          1.667
+        ]
+      },
+      "candidate_component_us": {
+        "max_full_frame_us": 265.591,
+        "max_perky_service_us": 265.591,
+        "max_cf_callback_us": 56.78,
+        "max_cf_control_us": 22.394,
+        "max_cf_render_us": 37.773,
+        "max_cf_pack_us": 4.629,
+        "max_dsp_callback_us": 15.242,
+        "mean_perky_service_us": 164.108,
+        "mean_cf_callback_us": 44.199,
+        "mean_cf_control_us": 3.631,
+        "mean_cf_render_us": 34.747,
+        "mean_cf_pack_us": 4.094,
+        "mean_dsp_callback_us": 11.017,
+        "inst_max_us": [
+          23.682,
+          33.023
+        ],
+        "inst_max_control_us": [
+          8.348,
+          14.045
+        ],
+        "inst_max_render_us": [
+          13.629,
+          17.136
+        ],
+        "inst_max_pack_us": [
+          1.538,
+          1.591
+        ]
+      },
+      "all_eight_track_audio": {
+        "T1": {
+          "chain_samples": 38400,
+          "chain_significant": 38382,
+          "chain_peak": 8388608
+        },
+        "T2": {
+          "chain_samples": 38400,
+          "chain_significant": 38384,
+          "chain_peak": 8227852,
+          "source_significant": 38384,
+          "source_peak": 8203264
+        },
+        "T3": {
+          "chain_samples": 38400,
+          "chain_significant": 38379,
+          "chain_peak": 3727798,
+          "source_significant": 42567,
+          "source_peak": 2560000
+        },
+        "T4": {
+          "chain_samples": 38400,
+          "chain_significant": 38344,
+          "chain_peak": 1090278,
+          "source_significant": 42336,
+          "source_peak": 2560000
+        },
+        "T5": {
+          "chain_samples": 38400,
+          "chain_significant": 38363,
+          "chain_peak": 3572830
+        },
+        "T6": {
+          "chain_samples": 38400,
+          "chain_significant": 38389,
+          "chain_peak": 8388607,
+          "source_significant": 38383,
+          "source_peak": 8388608
+        },
+        "T7": {
+          "chain_samples": 38400,
+          "chain_significant": 38381,
+          "chain_peak": 3505906,
+          "source_significant": 41435,
+          "source_peak": 2560000
+        },
+        "T8": {
+          "chain_samples": 38400,
+          "chain_significant": 7867,
+          "chain_peak": 4917928,
+          "source_significant": 8316,
+          "source_peak": 2560000
+        }
+      }
+    },
+    {
+      "pair": "third/snare",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 78469,
+        "maximum_us": 297.2310606060606,
+        "duration_misses": 0,
+        "private_peak_bytes": 1016,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_snare-stack.json": "8b14116bbfd84ac43aa31c7ecc674b2f0c9d8f71af8aac0ac033ec5e966e2429",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_snare-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643"
+        }
+      },
+      "candidate": null
+    },
+    {
+      "pair": "third/third",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 71018,
+        "maximum_us": 269.00757575757575,
+        "duration_misses": 0,
+        "private_peak_bytes": 944,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_third-stack.json": "d4edce3ba62898ebfd033b4fe1cff2fbb01143825a854a0b1861b2d8a43195ad",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_third-private.json": "fe15cc2676223d091b76dbd10ad1effda2f903418ec8b2ecd0978623cf263c69"
+        }
+      },
+      "candidate": null
+    },
+    {
+      "pair": "bass/snare",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 84455,
+        "maximum_us": 319.905303030303,
+        "duration_misses": 0,
+        "private_peak_bytes": 1068,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_snare-stack.json": "f03a6dfc1362d1061bf3a9c09633fcf98c523e6f2c5bc7b3da8b9720336fe8b1",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_snare-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62"
+        }
+      },
+      "candidate": null
+    },
+    {
+      "pair": "snare/V1",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 83553,
+        "maximum_us": 316.4886363636364,
+        "duration_misses": 0,
+        "private_peak_bytes": 1016,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_V1-stack.json": "eb99f449a60afa3694d67a93c9a0201741ba5afc58fca9891da62d0092622d2b",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_V1-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643"
+        }
+      },
+      "candidate": null
+    },
+    {
+      "pair": "bass/V2",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 82057,
+        "maximum_us": 310.8219696969697,
+        "duration_misses": 0,
+        "private_peak_bytes": 1068,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_V2-stack.json": "1713b979c2c907bf5d5f9313f1dc49c85c5251016565fee1e5f7152045ffa3e3",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_V2-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62"
+        }
+      },
+      "candidate": null
+    },
+    {
+      "pair": "snare/third",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 78560,
+        "maximum_us": 297.57575757575756,
+        "duration_misses": 0,
+        "private_peak_bytes": 1016,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_third-stack.json": "da0ac4dc65c600d6b782dc985e21dff58ea15a15dbf9857fa7bd52252cc8f6d7",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_third-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643"
+        }
+      },
+      "candidate": null
+    },
+    {
+      "pair": "V2/V1",
+      "frames": 4096,
+      "baseline": {
+        "maximum_cycles": 80994,
+        "maximum_us": 306.79545454545456,
+        "duration_misses": 0,
+        "private_peak_bytes": 988,
+        "reports": {
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_V1-stack.json": "af5077ef716783ac48af78837121aa3ec34ee908694382c4302e9177ab113a28",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_V1-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719"
+        }
+      },
+      "candidate": null
+    }
+  ],
+  "selected_image": {
+    "version": "PKH4O2",
+    "git_commit": "02fa20ff9503bb08c7d1e23307222dcb3ef41e4b",
+    "git_tree_clean": false,
+    "source_tree_clean": false,
+    "hybrid_source_id": "47ba6166b8c2ba148920164455730a6baf9dc567cb76f25d45cbb71aa902b757",
+    "compiler_flags": [
+      "-mcpu=54455",
+      "-msoft-float",
+      "-O3",
+      "-finline-functions",
+      "-finline-limit=3000",
+      "-funroll-loops",
+      "-fsched-pressure",
+      "-ffreestanding",
+      "-fno-builtin",
+      "-fno-common",
+      "-fno-jump-tables",
+      "-fno-store-merging",
+      "-fno-asynchronous-unwind-tables",
+      "-fno-ident",
+      "-fomit-frame-pointer",
+      "-fno-zero-initialized-in-bss",
+      "-Wall",
+      "-Wextra",
+      "-Werror"
+    ],
+    "dsp_identity_status": "PASS",
+    "memory_status": "PASS",
+    "MAIN": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/probe/mainos_PKH4O2.bin",
+      "bytes": 1467019,
+      "sha256": "f7f04e26969522d2024b1bba5be85f620857d636dbe0b284aa38c0fb087a21db"
+    },
+    "runtime_ELF": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/probe/platform/runtime.elf",
+      "bytes": 320444,
+      "sha256": "45b220aeecc46a1f01e6339298ac5e0a2f91e2bd84fb34465ec745687b1d43a1"
+    }
+  },
+  "implementation_plateau": {
+    "assessment": "Measured practical plateau after the recorded target experiments; integration qualification remains pending.",
+    "basis": [
+      "Primitive-call regression dominates and is removed.",
+      "Independent recurrence fixed points improve decay work without skipping transitions.",
+      "Further cache removal, unused-envelope splitting, NT compiler, pitch-tail, lookup-table and integer formula experiments regress target mean or maxima.",
+      "Remaining resonator/oscillator/RNG recurrence steps determine following samples; no measured exact replacement is outstanding."
+    ],
+    "reopen_if": "New matched physical per-algorithm profiles or a reproducible regression identify a substantial untested bottleneck."
+  }
+}

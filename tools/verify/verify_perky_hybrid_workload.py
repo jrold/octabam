@@ -582,8 +582,16 @@ def run_integrated_row(
             "--block-dump",
             str(b_dump),
         ]
+        # A second port process must not overwrite the primary timing/stack
+        # capture when a caller supplies the executed-ISR safety observer.
+        audio_env = dict(os.environ)
+        for key, filename in (('HYBRID_SAFETY_REPORT', 'audio-stack.json'),
+                              ('HYBRID_PRIVATE_REPORT', 'audio-private.json')):
+            if key in audio_env:
+                audio_env[key] = str(work_dir / filename)
         with b_log.open("w") as f:
-            subprocess.run(b_cmd, cwd=ROOT, stdout=f, stderr=subprocess.STDOUT, check=True, timeout=600)
+            subprocess.run(b_cmd, cwd=ROOT, env=audio_env, stdout=f,
+                           stderr=subprocess.STDOUT, check=True, timeout=600)
         classes = bd.classes(bd.read(b_dump))
         track_stats = {}
         for tr in range(1, 9):

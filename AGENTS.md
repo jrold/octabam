@@ -196,6 +196,7 @@ moment it costs real work, and add its line here.
 - [The report is API and prints paths](docs/contributing/TRAPS.md#trap-report-api) — re-save refhash only after the artifacts are shown identical.
 - [An odd displacement can have an even effective address](docs/contributing/TRAPS.md#trap-cf-odd-base) — establish base parity; calibrate actual target read/write watches.
 - [A CF optimization assumed initialization values never change](docs/contributing/TRAPS.md#trap-cf-engine-invariants) — trace every writer and compare fresh triggers, controls, PCM, state and RNG.
+- [GCC option scopes can outline every sample-loop primitive](docs/contributing/TRAPS.md#trap-cf-inline-options) — compile with inline-missed diagnostics; match helper/caller options and measure actual ColdFire code.
 - [Native-endian decoded PCM is not an ARM table](docs/contributing/TRAPS.md#trap-cf-pcm-endian) — compare decoded bytes on ColdFire; a host round-trip is blind to the byte order.
 - [A BSS readiness flag can skip initialization](docs/contributing/TRAPS.md#trap-cf-ready-bss) — use a loaded nonzero cookie and poison BSS in the target probe.
 

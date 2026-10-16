@@ -534,6 +534,11 @@ static void pk_hybrid_init_all_cf_voices(void)
  * handoff and before any machine callback. Failure sends the loader to fatal. */
 int pk_hybrid_boot_init(void)
 {
+    /* The complete BSS scrub also invalidates decoded PCM. Loaded .data
+     * cookies can still be READY on a repeated initializer call; publish
+     * readiness again only after rebuilding the cleared buffers. */
+    pk_hybrid_rt_cookie = PK_HYB_RT_COLD;
+    pk_hybrid_pcm_cookie = PK_HYB_PCM_COLD;
     if (!pk_hybrid_clear_boot_bss_range(__bss_start, _end)) return 0;
     if (!pk_hybrid_ensure_pcm()) return 0;
     pk_hybrid_reset_profiler();

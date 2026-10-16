@@ -32,6 +32,8 @@ def extract(src: str, signature: str) -> str:
 def run() -> None:
     src = SOURCE.read_text()
     init = extract(src, 'int pk_hybrid_boot_init(void)')
+    assert init.index('pk_hybrid_pcm_cookie = PK_HYB_PCM_COLD') < init.index('pk_hybrid_clear_boot_bss_range(__bss_start, _end)'), 'BSS scrub must invalidate the loaded PCM readiness cookie'
+    assert init.index('pk_hybrid_rt_cookie = PK_HYB_RT_COLD') < init.index('pk_hybrid_clear_boot_bss_range(__bss_start, _end)'), 'BSS scrub must invalidate runtime readiness'
     assert init.index('pk_hybrid_clear_boot_bss_range(__bss_start, _end)') < init.index('pk_hybrid_ensure_pcm()'), 'BSS scrub must precede any BSS reads/decode'
     assert 'extern uint8_t __bss_start[];' in src
     assert 'extern uint8_t _end[];' in src

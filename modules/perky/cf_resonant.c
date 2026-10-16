@@ -28,12 +28,8 @@
 #include "cf_render_math.h"
 #include <limits.h>
 
-/* Keep branch variants in the small recurrence loops rather than cloning
- * whole loops for every invariant sign/min/count combination. */
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC push_options
-#pragma GCC optimize ("no-unswitch-loops")
-#endif
+/* Helpers and loops share the top-level GCC options; local optimize scopes
+ * can outline primitive operations (see trap-cf-inline-options). */
 
 static uint16_t r16(const uint8_t*p,size_t o){return pk_cf_ld16(p,o);}
 static uint32_t r32(const uint8_t*p,size_t o){return pk_cf_ld32(p,o);}
@@ -49,10 +45,9 @@ static int32_t sub(int32_t a,int32_t b){return s32(u32(a)-u32(b));}
 static int32_t neg(int32_t v){return s32(0u-u32(v));}
 static int32_t abs_arm(int32_t v){return v<0?neg(v):v;}
 static int32_t clamp32767(int32_t v){
-    /* One range check for the unsaturated recurrence; addition is unsigned
-     * so even an adversarial INT_MIN/INT_MAX state cannot overflow in C. */
-    if((uint32_t)v+32767u<=65534u)return v;
-    return v<0?-32767:32767;
+    if(v<-32767)return -32767;
+    if(v>=32767)return 32767;
+    return v;
 }
 static uint16_t tab16(const uint8_t*t,size_t i){return r16(t,i*2u);}
 
@@ -236,10 +231,6 @@ static int16_t res_velocity_scale(uint8_t velocity,int32_t value){
     return (int16_t)o;
 }
 
-#if defined(__mcoldfire__)
-#pragma GCC push_options
-#pragma GCC optimize ("no-unswitch-loops")
-#endif
 static void __attribute__((noinline))
 res_advance_envelope(uint8_t*s,uint32_t n,const pk_cf_res_tables*t){
     res_env_l env;res_env_load(&env,s,0x74u,t);
@@ -267,9 +258,6 @@ res_advance_envelope(uint8_t*s,uint32_t n,const pk_cf_res_tables*t){
     }
     res_env_store(s,0x74u,&env);
 }
-#if defined(__mcoldfire__)
-#pragma GCC pop_options
-#endif
 
 static inline void __attribute__((always_inline))
 res_decay_block(uint8_t *s,const dec_map *map,int32_t *buffer,uint32_t n,
@@ -283,12 +271,21 @@ res_decay_block(uint8_t *s,const dec_map *map,int32_t *buffer,uint32_t n,
     if(decay.count<=0||u32(decay.count)>n){
         const uint32_t mask=u32(decay.sign>>31);
         const uint32_t bias=(add_constant&&decay.count!=0)?constant:0u;
-        for(i=0;i<n;i++){
-            uint32_t value=pk_cf_mul_lo_u32(decay.mul,decay.value)>>12;
-            if(s32(value)<decay.min)value=u32(decay.min);
-            decay.value=value;
-            const int32_t out=s32(((value^mask)-mask)+bias);
-            buffer[i]=accumulate?add(buffer[i],out):out;
+        uint32_t next_value=pk_cf_mul_lo_u32(decay.mul,decay.value)>>12;
+        if(s32(next_value)<decay.min)next_value=u32(decay.min);
+        /* Equality proves every remaining recurrence step is identical. The
+         * outer guard excludes the count-zero sign bump from this block. */
+        if(next_value==decay.value){
+            const int32_t out=s32(((next_value^mask)-mask)+bias);
+            for(i=0;i<n;i++)buffer[i]=accumulate?add(buffer[i],out):out;
+        }else{
+            for(i=0;i<n;i++){
+                uint32_t value=pk_cf_mul_lo_u32(decay.mul,decay.value)>>12;
+                if(s32(value)<decay.min)value=u32(decay.min);
+                decay.value=value;
+                const int32_t out=s32(((value^mask)-mask)+bias);
+                buffer[i]=accumulate?add(buffer[i],out):out;
+            }
         }
         if(decay.count>0)decay.count-=n;
     }else{
@@ -575,7 +572,3 @@ int pk_cf_res_snare_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables
     pk_cf_render_math_end(context);
     return 1;
 }
-
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC pop_options
-#endif

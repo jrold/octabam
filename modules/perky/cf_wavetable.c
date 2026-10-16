@@ -120,28 +120,19 @@ wt_frequency_block(uint32_t *steps,uint32_t n,uint32_t base,
         for(i=0;i<n;i++)steps[i]=increment;
         return;
     }
-    /* The original conversion discards all but the low twelve frequency
-     * bits. Quantized pitch envelopes often repeat that key for many samples;
-     * reuse only an exactly equal key, never approximate the envelope. */
-    uint32_t previous=UINT32_MAX,increment=0;
+    /* A cache-key branch cost more than this exact EMAC conversion on the
+     * target, even with repeated keys. Preserve every frequency calculation. */
     for(i=0;i<n;i++){
         const uint32_t pe=steps[i];
         const uint32_t lo=pe&0x1fffu,sh=13u-(pe>>13);
         const uint32_t factor=((lo+0x2000u)>>sh)-1u;
         const uint32_t frequency=base+((pe_amount*factor)>>9);
-        const uint32_t key=(frequency>>half_rate)&0xfffu;
-        if(key!=previous){increment=wt_frequency_step(key);previous=key;}
-        steps[i]=increment;
+        steps[i]=wt_frequency_step(frequency>>half_rate);
     }
 }
 
-/* Avoid duplicating the oscillator for combinations of mute, envelope and
- * wave-boundary tests. Keep one compact loop instead of trading instruction
- * cache for unswitched copies. Clang does not support GCC optimize pragmas. */
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC push_options
-#pragma GCC optimize ("no-unswitch-loops")
-#endif
+/* Keep one option scope for helpers and callers. A local GCC optimize pragma
+ * here prevents primitive inlining in the sample loop (see trap-cf-inline-options). */
 static int wt_render_chunk(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*t){
     uint32_t i;
     uint32_t base;
@@ -239,9 +230,6 @@ static int wt_render_chunk(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_wt_tables*
     wt_env_store(s,0x74,&ea);wt_env_store(s,0xc4,&ep);
     return 1;
 }
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC pop_options
-#endif
 /* Short independent envelope passes reduce register pressure in the oscillator
  * loop. All samples are still generated in this call, without added latency.
  * Chunks preserve the public renderer's arbitrary block-length contract. */

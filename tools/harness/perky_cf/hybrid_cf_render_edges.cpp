@@ -279,6 +279,39 @@ int main(int argc,char **argv) {
             ++control_transition_cases;
         }
     }
+    // Independent frozen-target comparisons around decay fixed points and
+    // countdown crossings. The sign bump at count 1 -> 0 must break a fixed
+    // point; n==0, multi-chunk and INT_MIN sign/count remain part of the ABI.
+    uint64_t decay_fixedpoint_cases=0;
+    const std::vector<std::array<uint32_t,3>> fixed_seeds={
+        {0,0,0},{4096,1,0},{4096,0xfffff,0},{0,32767,32767},
+        {4095,32767,32767},{0,0x7fffffff,0x7fffffff},{0xffffffff,0,0x80000000}};
+    for(unsigned mode:{0u,1u}) {
+        reference.call("bench_init");candidate.call("bench_init");
+        reference.prepare(2,mode,0);candidate.prepare(2,mode,0);
+        auto pristine=reference.state();
+        const std::vector<unsigned> maps=mode==0?
+            std::vector<unsigned>{0x174,0x18c,0x1a4,0x1bc}:
+            std::vector<unsigned>{0xf8,0x110,0x128,0x144};
+        for(unsigned map:maps)for(auto seed:fixed_seeds)
+        for(unsigned sign:{0u,1u,0x80000000u})
+        for(unsigned countdown:{0x80000000u,0xffffffffu,0u,1u,2u,15u,16u,17u,32u})
+        for(unsigned count:{0u,1u,7u,15u,16u,17u,33u}) {
+            reference.restore(pristine);candidate.restore(pristine);
+            for(auto target:{&reference,&candidate}) {
+                auto base=target->voice(0)+target->layout[mode==0?HYB_SNARE_OFFSET:HYB_BASS_OFFSET];
+                target->le32(base+map,seed[0]);target->le32(base+map+4,countdown);
+                target->le32(base+map+8,seed[1]);target->le32(base+map+12,sign);
+                target->le32(base+map+16,seed[2]);
+            }
+            auto a=reference.render(0,2,mode,count),b=candidate.render(0,2,mode,count);
+            if(a!=b||reference.state()!=candidate.state())throw std::runtime_error("decay fixed-point PCM/state/RNG differential");
+            ++decay_fixedpoint_cases;
+        }
+    }
+    std::ofstream decay_report(std::string(argv[3])+"/DECAY_FIXEDPOINT.json");
+    decay_report<<"{\"status\":\"PASS_EXACT_TARGET_REFERENCE\",\"cases\":"<<decay_fixedpoint_cases
+                <<",\"complete_state_PCM_RNG_and_guards_equal\":true}\n";
     reference.alignment.finish(std::string(argv[3])+"/reference-edge-alignment.json");
     candidate.alignment.finish(std::string(argv[3])+"/candidate-edge-alignment.json");
     std::ofstream report(std::string(argv[3])+"/RENDER_EDGES.json");

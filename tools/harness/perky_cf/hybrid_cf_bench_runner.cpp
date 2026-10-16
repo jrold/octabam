@@ -10,11 +10,44 @@
 #include <vector>
 #include <algorithm>
 #include <stdexcept>
+#include <cstdlib>
+#include <tuple>
 static std::vector<uint8_t> read(const std::string&p){std::ifstream f(p,std::ios::binary);if(!f)throw std::runtime_error("read "+p);return {std::istreambuf_iterator<char>(f),{}};}
 static void load(ot::Machine&m,const std::vector<uint8_t>&b,uint32_t a){for(unsigned i=0;i<b.size();i++)m.write8(a+i,b[i]);}
 struct Cost {uint64_t cycles,instructions;uint32_t stack;};
 const uint32_t SP=0x47100000, END=0x47200000;
-static Cost call(ot::Machine&m,uint32_t pc){HybridAlignmentScope alignment_scope;m68k_set_reg(m.getCpuState(),M68K_REG_SR,0x2700);m68k_set_reg(m.getCpuState(),M68K_REG_SP,SP);m68k_set_reg(m.getCpuState(),M68K_REG_PC,pc);m.write32(SP,END);uint64_t before=m.getCycles(),n=0;uint32_t lo=SP;while(m.pcFast()!=END){if(++n>10000000||!m.stepFast())throw std::runtime_error("target call stopped: "+m.why()+" PC="+std::to_string(m.pcFast()));lo=std::min(lo,m68k_get_reg(m.getCpuState(),M68K_REG_SP));}if(m.getCycles()<before)throw std::runtime_error("cycles underflow");if(m68k_get_reg(m.getCpuState(),M68K_REG_SP)!=SP+4)throw std::runtime_error("stack ABI");return {m.getCycles()-before,n,SP-lo};}
+struct SymbolRange { uint32_t begin,end; std::string name; };
+static std::vector<SymbolRange> symbol_ranges;
+static std::map<uint32_t,std::string> entry_names;
+static std::string pair_name="startup";
+static const char *symbol_output=nullptr;
+struct SymbolCost { uint64_t cycles=0,instructions=0; };
+static std::map<std::tuple<std::string,std::string,std::string>,SymbolCost> symbol_costs;
+static Cost call(ot::Machine&m,uint32_t pc){
+    HybridAlignmentScope alignment_scope;
+    m68k_set_reg(m.getCpuState(),M68K_REG_SR,0x2700);
+    m68k_set_reg(m.getCpuState(),M68K_REG_SP,SP);
+    m68k_set_reg(m.getCpuState(),M68K_REG_PC,pc);m.write32(SP,END);
+    uint64_t before=m.getCycles(),n=0,attributed=0;uint32_t lo=SP;
+    while(m.pcFast()!=END){
+        uint32_t current=m.pcFast();uint64_t step_before=m.getCycles();
+        if(++n>10000000||!m.stepFast())throw std::runtime_error("target call stopped: "+m.why()+" PC="+std::to_string(m.pcFast()));
+        if(symbol_output){
+            auto it=std::upper_bound(symbol_ranges.begin(),symbol_ranges.end(),current,
+                [](uint32_t a,const SymbolRange&b){return a<b.begin;});
+            std::string name="unmapped";
+            if(it!=symbol_ranges.begin()){--it;if(current<it->end)name=it->name;}
+            auto &cost=symbol_costs[{pair_name,entry_names.at(pc),name}];
+            auto delta=m.getCycles()-step_before;
+            cost.cycles+=delta;++cost.instructions;attributed+=delta;
+        }
+        lo=std::min(lo,m68k_get_reg(m.getCpuState(),M68K_REG_SP));
+    }
+    if(m.getCycles()<before)throw std::runtime_error("cycles underflow");
+    if(symbol_output&&attributed!=m.getCycles()-before)throw std::runtime_error("symbol cost accounting");
+    if(m68k_get_reg(m.getCpuState(),M68K_REG_SP)!=SP+4)throw std::runtime_error("stack ABI");
+    return {m.getCycles()-before,n,SP-lo};
+}
 
 // Standalone lower-level benchmark. No OS image or DSP is loaded.
 int main(int argc,char**argv) {
@@ -24,10 +57,14 @@ int main(int argc,char**argv) {
     std::ifstream nm(out+"/target.nm");std::string line;
     while(getline(nm,line)) {
         std::istringstream f(line);uint32_t a,z;char t;std::string n;
-        if(f>>std::hex>>a>>z>>t>>n){s[n]=a;sizes[n]=z;}
+        if(f>>std::hex>>a>>z>>t>>n){s[n]=a;sizes[n]=z;
+            if(t=='t'||t=='T')symbol_ranges.push_back({a,a+z,n});}
     }
     for(auto n:{"bench_init","bench_prepare","bench_render","assets","voices","status","output","profile","modes","knobs","triggers","ready_cookie"})
         if(!s[n])throw std::runtime_error(n);
+    std::sort(symbol_ranges.begin(),symbol_ranges.end(),[](const auto&a,const auto&b){return a.begin<b.begin;});
+    for(auto name:{"bench_init","bench_prepare","bench_render"})entry_names[s.at(name)]=name;
+    symbol_output=std::getenv("PK_CF_SYMBOL_PROFILE");
     ot::Machine m(read(out+"/target.bin"));HybridAlignment alignment(m);hybrid_alignment=&alignment;
     uint32_t a=0x44000000;
     std::map<std::string,uint32_t> assets;
@@ -56,6 +93,7 @@ int main(int argc,char**argv) {
     const Profile ps[]={{"V1M1",0,0},{"V1M2",0,1},{"V1M3",0,2},{"V2M1",1,0},{"V2M2",1,1},{"V2M3",1,2},{"snare",2,0},{"bass",3,1},{"third",4,2}};
     unsigned bad=0;
     auto configure=[&](Profile l,Profile r,unsigned corner){
+        pair_name=std::string(l.name)+"/"+r.name;
         m.write32(s["profile"],l.p);m.write32(s["profile"]+4,r.p);
         m.write32(s["modes"],l.mode);m.write32(s["modes"]+4,r.mode);
         for(unsigned i=0;i<2;i++){m.write32(s["triggers"]+i*4,1);for(unsigned k=0;k<4;k++)m.write32(s["knobs"]+i*16+k*4,corner);}
@@ -99,6 +137,14 @@ int main(int argc,char**argv) {
         for(unsigned f=0;f<512;f++) {auto c=call(m,s["bench_render"]);shadow.check("tail-render");csv<<l.name<<','<<l.name<<",64,tail-render,"<<f<<','<<c.cycles<<','<<c.instructions<<','<<c.stack<<','<<m.read32(s["status"])<<'\n';if(!m.read32(s["status"]))bad++;}
     }
     shadow.finish(252,1953,20403);
+    if(symbol_output){
+        std::ofstream costs(symbol_output);
+        if(!costs)throw std::runtime_error("symbol profile output");
+        costs<<"pair,entry,symbol,exclusive_cycles,instructions\n";
+        for(const auto &row:symbol_costs)
+            costs<<std::get<0>(row.first)<<','<<std::get<1>(row.first)<<','<<std::get<2>(row.first)
+                 <<','<<row.second.cycles<<','<<row.second.instructions<<'\n';
+    }
     std::ofstream init(out+"/readiness.json");
     init<<"{\"dirty_bss_equal_clean\":true,\"cold_cookie_loaded\":true,\"ready_after_init\":true,\"instance_bytes\":"<<sizes["voices"]/2<<",\"two_instance_bytes\":"<<sizes["voices"]<<",\"mapped_assets_bytes_with_alignment\":"<<a-0x44000000<<",\"render_failures\":"<<bad<<"}\n";
     std::cout<<"two-instance target matrix cases=243 render_frames=15552 tail_frames=4608 failures="<<bad<<"\n";
