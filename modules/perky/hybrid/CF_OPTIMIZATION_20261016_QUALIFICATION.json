@@ -1,0 +1,988 @@
+{
+  "schema": "octabam.perky.cf-campaign-final-qualification.v1",
+  "status": "COMPLETE_AVAILABLE_LOCAL_CAMPAIGN; LOCALLY_QUALIFIED_DIAGNOSTIC; PHYSICAL_AB_PENDING",
+  "implementation_commit": "69ecb4ddc7407c3058382ed9ef285aff862ec7e2",
+  "build_source_commit": "bb14be08ec2dc1229503d0a6703d6ca808c5b074",
+  "hybrid_source_id": "47ba6166b8c2ba148920164455730a6baf9dc567cb76f25d45cbb71aa902b757",
+  "all_26_manifest_sources_match_implementation_commit": true,
+  "artifacts": {
+    "mainos": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/probe/mainos_PKH4O2.bin",
+      "bytes": 1467019,
+      "sha256": "f7f04e26969522d2024b1bba5be85f620857d636dbe0b284aa38c0fb087a21db"
+    },
+    "fragmented_normal": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/probe/fragmented-normal.bin",
+      "bytes": 1319695,
+      "sha256": "c58586aeed1d0c80c0c2f1ebc95c78d9ef77173468ca424576b141a00360803c"
+    },
+    "runtime_elf": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/probe/platform/runtime.elf",
+      "bytes": 320444,
+      "sha256": "45b220aeecc46a1f01e6339298ac5e0a2f91e2bd84fb34465ec745687b1d43a1"
+    },
+    "runtime_raw": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/probe/platform/runtime.raw",
+      "bytes": 310344,
+      "sha256": "2569b908ee713d30e9bce9e53be86f38b21eab06726e444bd40183d8cdb8227c"
+    },
+    "dsp_identity_report": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/probe/DSP_IDENTITY.json",
+      "bytes": 15204,
+      "sha256": "184d96aef69c551b95fb63b3f44c47b2739df779ec1168cc9f791811b85d7d1c"
+    },
+    "memory_report": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/probe/MEMORY.json",
+      "bytes": 79379,
+      "sha256": "dfcf00d3c7e12e2e1b191c7d9ca1ae424d20c8c9484deb9f001ba6279f30f953"
+    },
+    "elek": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/probe/elek_PKH4O2.bin",
+      "bytes": 791041,
+      "sha256": "3f06f6f6ad3929cfca8cc1bae4cf06cb232a270a492048017fc7b634d248b20b"
+    },
+    "card": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/probe/OCTATRACK_PKH4O2.bin",
+      "bytes": 791060,
+      "sha256": "68f24b1e0387b7c0cfb18386ccbb3df075b3ce67749e3dc5c64c46fe945f94a0"
+    },
+    "midi": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/probe/OCTATRACK_OS1.40C_PKH4O2.syx",
+      "bytes": 1104981,
+      "sha256": "5e49be57160fee631c4d05a0728f76455ab655dc2a44c502e1d169d3856ef5ec"
+    },
+    "notes": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/probe/PKH4O2_PROBE_NOTES.txt",
+      "bytes": 1304,
+      "sha256": "acc56a909a043d1285b94c77c398b6614119b7b002a599ec6de9c5e3fd8df2c8"
+    }
+  },
+  "requirements": {
+    "workspace": {
+      "scope": "Existing checkout/perky-cf-dsp-hybrid; all campaign work local, no branch/worktree/upstream integration or CI invoked.",
+      "evidence": [
+        "build",
+        "source_binding"
+      ]
+    },
+    "hardware_baseline_provenance": {
+      "scope": "Raw new PRF unavailable; supplied decoded facts used as authorized. Source fingerprint independently matched and MAIN reproduced. No unmatched hardware A/B gain.",
+      "evidence": [
+        "baseline"
+      ]
+    },
+    "target_baseline_and_components": {
+      "scope": "Actual MCF54455 code, per-phase cycles/instructions/stack, control and PCM callback breakdown, silent tails and switching. Host oracle supplies correctness only.",
+      "evidence": [
+        "target",
+        "codegen",
+        "symbols",
+        "paired"
+      ]
+    },
+    "algorithm_profiling": {
+      "scope": "Canonical first/steady/tail/retrigger/control/mode/family workloads and independent per-algorithm pair rows. Host observation leaves target costs/state unchanged.",
+      "evidence": [
+        "target",
+        "symbols",
+        "timing"
+      ]
+    },
+    "instrumentation_cost": {
+      "scope": "Matched profiler-on/off images and fixtures with independent full-ISR observation; difference of maxima is not a per-frame overhead bound.",
+      "evidence": [
+        "profiler_off",
+        "paired"
+      ]
+    },
+    "iterative_optimization": {
+      "scope": "Accepted and rejected actual-target experiments in optimization ledger; final hotspot measurement supports a practical plateau assessment, not a universal architectural limit.",
+      "evidence": [
+        "plateau_assessment",
+        "symbols",
+        "target"
+      ]
+    },
+    "paired_full_ISR": {
+      "scope": "All fifteen matched baseline/candidate 4096-frame rows, complete ISR execution observer and separate all-eight-track audio.",
+      "evidence": [
+        "paired",
+        "timing"
+      ]
+    },
+    "sustained_and_continuous": {
+      "scope": "Fifteen 165376-frame rows and one continuous 1653750-frame worst paired row. Full CF/DSP duty, zero readiness faults/late DSP words. Long timing is the firmware window excluding entry-save/footer; ACK work is separate.",
+      "evidence": [
+        "timing"
+      ]
+    },
+    "sequencer_controls_scenes": {
+      "scope": "Dense patterns/all six p-lock lanes, rapid trigs, real ALGO/MODE reversion and Part transitions, nine scene/fader events. Bank/Part/STOP and saved-project lifecycle exercised.",
+      "evidence": [
+        "sequencer_transitions",
+        "scene_fader",
+        "lifecycle",
+        "save_reload",
+        "probe_gates"
+      ]
+    },
+    "exact_synthesis": {
+      "scope": "Frozen target PCM/object/RNG streams, split/control edges and original-author/ARM checks; unchanged state transitions and invalid-input behavior at recorded scopes.",
+      "evidence": [
+        "target",
+        "edges",
+        "original_ARM",
+        "runtime",
+        "block_identity",
+        "probe_gates"
+      ]
+    },
+    "architecture_DSP_FX": {
+      "scope": "Track assignments and DSP synthesis/uploads/placement/guards unchanged; all twelve retained FX present and active on both cores; no quality/polyphony/latency tradeoff.",
+      "evidence": [
+        "build",
+        "DSP_identity",
+        "FX",
+        "memory"
+      ]
+    },
+    "boot_and_memory": {
+      "scope": "Whole poisoned BSS and decoded PCM reinitialization, bounded Rice decoder/startup diagnostics preserved; actual observed readiness failure retained and repaired. Host BSS sanitizer/decoder negatives and actual assembler diagnostic anchors pass; host gcc/clang drivers both use Apple Clang21. Scoped private stack/three vulnerable tasks plus negative controls. Larger unchanged stock task graphs remain outside that proof.",
+      "evidence": [
+        "cold",
+        "runtime",
+        "boot_support",
+        "readiness_failure",
+        "stack",
+        "negative_units",
+        "private",
+        "packages"
+      ]
+    },
+    "packaging": {
+      "scope": "Single final committed-source rebuild reproduces prequalified MAIN/ELF/raw/fragmented bytes, native EFT roundtrip and actual corrupt package/memory negatives pass. No installation performed.",
+      "evidence": [
+        "rebuild",
+        "packages",
+        "probe_gates",
+        "build"
+      ]
+    },
+    "profile_export": {
+      "scope": "Actual STOP-to-card PRFv2 writer, source identity and timer calibration verified; format compatibility retained.",
+      "evidence": [
+        "PRF_export",
+        "timer"
+      ]
+    },
+    "physical_acceptance": {
+      "scope": "Physical startup/timing/SDRAM/FlexBus/cache/IRQ latency remain unknown. User explicitly permits local result and diagnostic artifact handoff for matched physical A/B. No hardware success or flash-safe claim.",
+      "evidence": [
+        "private",
+        "timing"
+      ],
+      "hardware_pending": true
+    }
+  },
+  "correctness": {
+    "target": {
+      "status": "PASS_EXACT_TARGET_NATIVE",
+      "init_checks": 252,
+      "prepare_checks": 1953,
+      "render_checks": 20403,
+      "compared_bytes": 90612864,
+      "byte_mismatches": 0,
+      "target_stream_sha256": "93d24a575197579b341ea5a7ac9ea5978b808635d96b6b50e8652e5820014b4c",
+      "native_stream_sha256": "93d24a575197579b341ea5a7ac9ea5978b808635d96b6b50e8652e5820014b4c",
+      "stream_encoding": "action u8 then all five state byte arrays, each control field, RNG, PCM and status; numeric fields LE; ABI padding excluded"
+    },
+    "extended_edges": {
+      "status": "PASS_EXACT_TARGET_REFERENCE",
+      "render_calls": 22270,
+      "matched_failure_calls": 192,
+      "block_lengths": 41,
+      "max_block_samples": 257,
+      "all_state_PCM_RNG_and_guards_equal": true,
+      "EMAC_product_checks": 221184,
+      "EMAC_raw_register_mode_cases": 6,
+      "native_division_checks": 331776,
+      "native_division_mean_cycles_before": 341.426,
+      "native_division_mean_cycles_after": 54.7029,
+      "native_division_max_cycles_before": 380,
+      "native_division_max_cycles_after": 58,
+      "native_prepare_cases": 16384,
+      "native_prepare_mean_before": 877.223,
+      "native_prepare_mean_hw_div": 451.373,
+      "native_prepare_mean_after": 312.562,
+      "native_prepare_max_before": 1684,
+      "native_prepare_max_hw_div": 1315,
+      "native_prepare_max_after": 1269,
+      "control_transition_cases": 1080,
+      "control_math_checks": 438516
+    },
+    "fixed_point_decay_edges": {
+      "status": "PASS_EXACT_TARGET_REFERENCE",
+      "cases": 10584,
+      "complete_state_PCM_RNG_and_guards_equal": true
+    },
+    "original_author_ARM": {
+      "sections": 19,
+      "cases": 22098,
+      "PCM_samples": 3046272,
+      "failures": 0,
+      "release_calls": 138
+    },
+    "cold_raw_records": {
+      "mixed": {
+        "raw_byte_identity": "PASS",
+        "records": 20480,
+        "differences": [],
+        "all_cold_source_control_records_identical": true,
+        "all_cold_records_from_frame3_identical": true
+      },
+      "dense": {
+        "raw_byte_identity": "PASS",
+        "records": 40960,
+        "differences": [],
+        "all_cold_source_control_records_identical": true,
+        "all_cold_records_from_frame3_identical": true
+      }
+    }
+  },
+  "timing": {
+    "measurement": "emulated ColdFire at264MHz; not silicon",
+    "paired_rows": 15,
+    "paired_complete_ISR_max_us": 278.0151515151515,
+    "scene_fader_complete_ISR_max_us": 289.219696969697,
+    "sustained_60_second_rows": [
+      {
+        "pair": "V1_V1",
+        "frames": 165376,
+        "timer_window_mean_us": 159.612,
+        "timer_window_max_us": 255.636,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 177.1,
+          "p50_us": 161.0,
+          "p90_us": 250.0,
+          "p99_us": 319.0,
+          "p99_9_us": 342.0,
+          "max_us_rounded": 356.0,
+          "max_cycles": 94078,
+          "max_us_exact": 356.356,
+          "worst_frame_index": 12002,
+          "worst_after_frame_50_index": 12002,
+          "worst_after_frame_50_us": 356.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7731759732,
+          "mean_cf_cycles_per_frame": 46753,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 6.456,
+          "headroom_to_290_25us_gate_us": -66.107
+        }
+      },
+      {
+        "pair": "V1_V2",
+        "frames": 165376,
+        "timer_window_mean_us": 159.612,
+        "timer_window_max_us": 255.636,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 177.1,
+          "p50_us": 161.0,
+          "p90_us": 250.0,
+          "p99_us": 319.0,
+          "p99_9_us": 342.0,
+          "max_us_rounded": 356.0,
+          "max_cycles": 94078,
+          "max_us_exact": 356.356,
+          "worst_frame_index": 12002,
+          "worst_after_frame_50_index": 12002,
+          "worst_after_frame_50_us": 356.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7731759732,
+          "mean_cf_cycles_per_frame": 46753,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 6.456,
+          "headroom_to_290_25us_gate_us": -66.107
+        }
+      },
+      {
+        "pair": "V1_snare",
+        "frames": 165376,
+        "timer_window_mean_us": 164.942,
+        "timer_window_max_us": 266.917,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 182.4,
+          "p50_us": 166.0,
+          "p90_us": 255.0,
+          "p99_us": 324.0,
+          "p99_9_us": 345.0,
+          "max_us_rounded": 359.0,
+          "max_cycles": 94683,
+          "max_us_exact": 358.648,
+          "worst_frame_index": 4179,
+          "worst_after_frame_50_index": 4179,
+          "worst_after_frame_50_us": 359.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7965106930,
+          "mean_cf_cycles_per_frame": 48164,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 4.164,
+          "headroom_to_290_25us_gate_us": -68.398
+        }
+      },
+      {
+        "pair": "V2_V1",
+        "frames": 165376,
+        "timer_window_mean_us": 159.612,
+        "timer_window_max_us": 255.636,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 177.1,
+          "p50_us": 161.0,
+          "p90_us": 250.0,
+          "p99_us": 319.0,
+          "p99_9_us": 342.0,
+          "max_us_rounded": 356.0,
+          "max_cycles": 94078,
+          "max_us_exact": 356.356,
+          "worst_frame_index": 12002,
+          "worst_after_frame_50_index": 12002,
+          "worst_after_frame_50_us": 356.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7731759732,
+          "mean_cf_cycles_per_frame": 46753,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 6.456,
+          "headroom_to_290_25us_gate_us": -66.107
+        }
+      },
+      {
+        "pair": "V2_V2",
+        "frames": 165376,
+        "timer_window_mean_us": 159.612,
+        "timer_window_max_us": 255.636,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 177.1,
+          "p50_us": 161.0,
+          "p90_us": 250.0,
+          "p99_us": 319.0,
+          "p99_9_us": 342.0,
+          "max_us_rounded": 356.0,
+          "max_cycles": 94078,
+          "max_us_exact": 356.356,
+          "worst_frame_index": 12002,
+          "worst_after_frame_50_index": 12002,
+          "worst_after_frame_50_us": 356.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7731759732,
+          "mean_cf_cycles_per_frame": 46753,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 6.456,
+          "headroom_to_290_25us_gate_us": -66.107
+        }
+      },
+      {
+        "pair": "V2_bass",
+        "frames": 165376,
+        "timer_window_mean_us": 164.371,
+        "timer_window_max_us": 265.591,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 181.9,
+          "p50_us": 165.0,
+          "p90_us": 254.0,
+          "p99_us": 323.0,
+          "p99_9_us": 344.0,
+          "max_us_rounded": 358.0,
+          "max_cycles": 94570,
+          "max_us_exact": 358.22,
+          "worst_frame_index": 4179,
+          "worst_after_frame_50_index": 4179,
+          "worst_after_frame_50_us": 358.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7940595940,
+          "mean_cf_cycles_per_frame": 48015,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 4.592,
+          "headroom_to_290_25us_gate_us": -67.97
+        }
+      },
+      {
+        "pair": "bass_V2",
+        "frames": 165376,
+        "timer_window_mean_us": 164.44,
+        "timer_window_max_us": 265.826,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 182.0,
+          "p50_us": 165.0,
+          "p90_us": 254.0,
+          "p99_us": 323.0,
+          "p99_9_us": 345.0,
+          "max_us_rounded": 358.0,
+          "max_cycles": 94443,
+          "max_us_exact": 357.739,
+          "worst_frame_index": 92018,
+          "worst_after_frame_50_index": 92018,
+          "worst_after_frame_50_us": 358.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7944271672,
+          "mean_cf_cycles_per_frame": 48038,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 5.073,
+          "headroom_to_290_25us_gate_us": -67.489
+        }
+      },
+      {
+        "pair": "bass_bass",
+        "frames": 165376,
+        "timer_window_mean_us": 167.429,
+        "timer_window_max_us": 275.038,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 184.9,
+          "p50_us": 168.0,
+          "p90_us": 257.0,
+          "p99_us": 325.0,
+          "p99_9_us": 347.0,
+          "max_us_rounded": 360.0,
+          "max_cycles": 94981,
+          "max_us_exact": 359.777,
+          "worst_frame_index": 70291,
+          "worst_after_frame_50_index": 70291,
+          "worst_after_frame_50_us": 360.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 8074514290,
+          "mean_cf_cycles_per_frame": 48825,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 3.035,
+          "headroom_to_290_25us_gate_us": -69.527
+        }
+      },
+      {
+        "pair": "bass_snare",
+        "frames": 165376,
+        "timer_window_mean_us": 168.547,
+        "timer_window_max_us": 276.5,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 186.1,
+          "p50_us": 169.0,
+          "p90_us": 258.0,
+          "p99_us": 326.0,
+          "p99_9_us": 348.0,
+          "max_us_rounded": 360.0,
+          "max_cycles": 95056,
+          "max_us_exact": 360.061,
+          "worst_frame_index": 17960,
+          "worst_after_frame_50_index": 17960,
+          "worst_after_frame_50_us": 360.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 8123406172,
+          "mean_cf_cycles_per_frame": 49121,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 2.751,
+          "headroom_to_290_25us_gate_us": -69.811
+        }
+      },
+      {
+        "pair": "snare_V1",
+        "frames": 165376,
+        "timer_window_mean_us": 164.846,
+        "timer_window_max_us": 266.917,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 182.4,
+          "p50_us": 166.0,
+          "p90_us": 255.0,
+          "p99_us": 323.0,
+          "p99_9_us": 345.0,
+          "max_us_rounded": 357.0,
+          "max_cycles": 94344,
+          "max_us_exact": 357.364,
+          "worst_frame_index": 62757,
+          "worst_after_frame_50_index": 62757,
+          "worst_after_frame_50_us": 357.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7961529431,
+          "mean_cf_cycles_per_frame": 48142,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 5.448,
+          "headroom_to_290_25us_gate_us": -67.114
+        }
+      },
+      {
+        "pair": "snare_bass",
+        "frames": 165376,
+        "timer_window_mean_us": 168.499,
+        "timer_window_max_us": 276.5,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 186.0,
+          "p50_us": 169.0,
+          "p90_us": 258.0,
+          "p99_us": 326.0,
+          "p99_9_us": 347.0,
+          "max_us_rounded": 360.0,
+          "max_cycles": 95021,
+          "max_us_exact": 359.928,
+          "worst_frame_index": 108560,
+          "worst_after_frame_50_index": 108560,
+          "worst_after_frame_50_us": 360.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 8121254971,
+          "mean_cf_cycles_per_frame": 49108,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 2.884,
+          "headroom_to_290_25us_gate_us": -69.679
+        }
+      },
+      {
+        "pair": "snare_snare",
+        "frames": 165376,
+        "timer_window_mean_us": 168.643,
+        "timer_window_max_us": 277.621,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 186.1,
+          "p50_us": 169.0,
+          "p90_us": 258.0,
+          "p99_us": 326.0,
+          "p99_9_us": 347.0,
+          "max_us_rounded": 359.0,
+          "max_cycles": 94755,
+          "max_us_exact": 358.92,
+          "worst_frame_index": 64109,
+          "worst_after_frame_50_index": 64109,
+          "worst_after_frame_50_us": 359.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 8126214619,
+          "mean_cf_cycles_per_frame": 49138,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 3.891,
+          "headroom_to_290_25us_gate_us": -68.671
+        }
+      },
+      {
+        "pair": "snare_third",
+        "frames": 165376,
+        "timer_window_mean_us": 167.767,
+        "timer_window_max_us": 273.409,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 185.3,
+          "p50_us": 169.0,
+          "p90_us": 257.0,
+          "p99_us": 325.0,
+          "p99_9_us": 347.0,
+          "max_us_rounded": 360.0,
+          "max_cycles": 94984,
+          "max_us_exact": 359.788,
+          "worst_frame_index": 4163,
+          "worst_after_frame_50_index": 4163,
+          "worst_after_frame_50_us": 360.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 8089789728,
+          "mean_cf_cycles_per_frame": 48918,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 3.024,
+          "headroom_to_290_25us_gate_us": -69.538
+        }
+      },
+      {
+        "pair": "third_snare",
+        "frames": 165376,
+        "timer_window_mean_us": 167.823,
+        "timer_window_max_us": 273.432,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 185.3,
+          "p50_us": 169.0,
+          "p90_us": 257.0,
+          "p99_us": 325.0,
+          "p99_9_us": 347.0,
+          "max_us_rounded": 360.0,
+          "max_cycles": 94913,
+          "max_us_exact": 359.519,
+          "worst_frame_index": 150216,
+          "worst_after_frame_50_index": 150216,
+          "worst_after_frame_50_us": 360.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 8091893727,
+          "mean_cf_cycles_per_frame": 48930,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 3.293,
+          "headroom_to_290_25us_gate_us": -69.27
+        }
+      },
+      {
+        "pair": "third_third",
+        "frames": 165376,
+        "timer_window_mean_us": 165.584,
+        "timer_window_max_us": 268.508,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 183.1,
+          "p50_us": 166.0,
+          "p90_us": 255.0,
+          "p99_us": 324.0,
+          "p99_9_us": 345.0,
+          "max_us_rounded": 358.0,
+          "max_cycles": 94482,
+          "max_us_exact": 357.886,
+          "worst_frame_index": 119964,
+          "worst_after_frame_50_index": 119964,
+          "worst_after_frame_50_us": 358.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7994266653,
+          "mean_cf_cycles_per_frame": 48340,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 4.925,
+          "headroom_to_290_25us_gate_us": -67.637
+        }
+      }
+    ],
+    "continuous_600_second_rows": [
+      {
+        "pair": "snare_snare",
+        "frames": 1653750,
+        "timer_window_mean_us": 168.584,
+        "timer_window_max_us": 277.621,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          3375,
+          3375
+        ],
+        "ACK_work": {
+          "frames_sampled": 1653750,
+          "mean_us": 186.0,
+          "p50_us": 169.0,
+          "p90_us": 258.0,
+          "p99_us": 326.0,
+          "p99_9_us": 347.0,
+          "max_us_rounded": 360.0,
+          "max_cycles": 95056,
+          "max_us_exact": 360.061,
+          "worst_frame_index": 267127,
+          "worst_after_frame_50_index": 267127,
+          "worst_after_frame_50_us": 360.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 81214586855,
+          "mean_cf_cycles_per_frame": 49109,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 2.751,
+          "headroom_to_290_25us_gate_us": -69.811
+        }
+      }
+    ],
+    "long_window_scope": "Firmware timer window excludes entry-save/footer; ACK CPU work is separate.",
+    "desired_20_percent_whole_CPU_or_silicon_margin_proven": false
+  },
+  "receipts": {
+    "target": {
+      "path": "out/perky/hybrid/campaign-20261016/final-target/BENCH.json",
+      "sha256": "29f4ae3095c631a4b7e239af7d3503b15fe0d367d66aedac5844102bc12a8d37",
+      "status": "PASS_EXACT_FROZEN_REFERENCE"
+    },
+    "edges": {
+      "path": "out/perky/hybrid/campaign-20261016/selected-edges/EDGE_RECEIPT.json",
+      "sha256": "d21133e6b79aed03bee33f438f407a045bea52dedb9b2e816c89dbab19350e0b",
+      "status": "PASS"
+    },
+    "boot_support": {
+      "path": "out/perky/hybrid/campaign-20261016/BOOT_SUPPORT.json",
+      "sha256": "2658f1358b259e6442c1e55e4719c343242c11465696edac6c17e444d78d21d9",
+      "status": "PASS_HOST_DECODER_BSS_AND_ASSEMBLED_DIAGNOSTIC_ANCHORS"
+    },
+    "original_ARM": {
+      "path": "out/perky/hybrid/campaign-20261016/selected-original/report.json",
+      "sha256": "9257bf860966eb11b9b96edec7f783e24bf529bb8bae427034bc5736a387f5f1",
+      "status": "PASS"
+    },
+    "runtime": {
+      "path": "out/perky/hybrid/campaign-20261016/final/resume-fixes/RUNTIME.json",
+      "sha256": "d9c1b478600e4276833da2164199c063834a12f7f323d88c5e4df4bff817b1b1",
+      "status": "PASS"
+    },
+    "baseline": {
+      "path": "out/perky/hybrid/campaign-20261016/BASELINE_RECOVERY.json",
+      "sha256": "b79abff8685d077a7fdfaf84be0cfe92516477c9bc605ea029b4f0e1ce28c8f0",
+      "status": "PASS_REPRODUCED_BASELINE_SOURCE_MAIN_DSP_AND_MEMORY"
+    },
+    "readiness_failure": {
+      "path": "out/perky/hybrid/campaign-20261016/BOOT_REINIT_DIAGNOSIS.json",
+      "sha256": "efca7654ac2adb9941b2673791f06bea6bc19edc1e916d0a7cc02685b572c6a0",
+      "status": "SEE_RECORDED_COMPONENTS"
+    },
+    "source_binding": {
+      "path": "out/perky/hybrid/campaign-20261016/final/SOURCE_COMMIT_BINDING.json",
+      "sha256": "5a1dc37f94058e8fcee6fda1065975b9ebde9e835e88515ba22cebf754262866",
+      "status": "PASS_EXACT_COMMITTED_SOURCE_BINDING"
+    },
+    "codegen": {
+      "path": "out/perky/hybrid/campaign-20261016/CODEGEN.json",
+      "sha256": "03dc7e3c404b082e57540d6a792315170241b3e03e7d054ac5ef4e7838bcc3ca",
+      "status": "SEE_RECORDED_COMPONENTS"
+    },
+    "symbols": {
+      "path": "out/perky/hybrid/campaign-20261016/final-symbols/PROFILE.json",
+      "sha256": "1e66d6ded5bed66355e5436e803cc66242fc8f03f17964607318c310a12f4804",
+      "status": "PASS_EXACT_UNPERTURBED_SYMBOL_PROFILE"
+    },
+    "plateau_assessment": {
+      "path": "out/perky/hybrid/campaign-20261016/FINAL_HOTSPOTS.json",
+      "sha256": "ae24afbb080fd90a5a93b0b72ec6ced96e5addd5b41620e599236db4814ef37e",
+      "status": "MEASURED_FINAL_HOTSPOTS_WITH_PRACTICAL_PLATEAU_ASSESSMENT"
+    },
+    "paired": {
+      "path": "out/perky/hybrid/campaign-20261016/PAIRED_AND_SAFETY_AUDIT.json",
+      "sha256": "d89f0d0db1763f94ce04ed99a9a60cf4f0ccc69ea4461338c53c0419984d96ba",
+      "status": "PASS_COMPLETED_PAIRED_AND_PREWRAP_SCOPED_SAFETY_CHECKS"
+    },
+    "timing": {
+      "path": "out/perky/hybrid/campaign-20261016/TIMING_AUDIT.json",
+      "sha256": "e8f21a71c133837abff87092c4e1fea03d45d3925cf178344aed11c4e745cf1d",
+      "status": "PASS_COMPLETE_LOCAL_TIMING_COVERAGE"
+    },
+    "rebuild": {
+      "path": "out/perky/hybrid/campaign-20261016/REBUILD_IDENTITY.json",
+      "sha256": "7d5d241959e3f7392db67aa8237fb559cac93f74778eda0fbd355a52d541e5c9",
+      "status": "PASS_IDENTICAL_COMMITTED_SOURCE_REBUILD_AND_WRAPPER_ROUNDTRIP"
+    },
+    "cold": {
+      "path": "out/perky/hybrid/campaign-20261016/final/COLD_SAFETY.json",
+      "sha256": "28e4d879c642c25228bb38b6b9f0bdb2617fb00607b5898192e57916042cb91c",
+      "status": "PASS"
+    },
+    "timer": {
+      "path": "out/perky/hybrid/campaign-20261016/final/TIMER.json",
+      "sha256": "4521dfcb276ef83c602728d13b001c62c7235379f5115f0e1b36cdcb3cf70648",
+      "status": "PASS"
+    },
+    "stack": {
+      "path": "out/perky/hybrid/campaign-20261016/final/static/BOUNDS.json",
+      "sha256": "b3bd92bc8cc191345fd9979413ee1d67a7a28fb94c5646e18700d634c65022b8",
+      "status": "PASS_SCOPED_PRIVATE_AND_THREE_VULNERABLE_TASK_BUDGETS"
+    },
+    "negative_units": {
+      "path": "out/perky/hybrid/campaign-20261016/final/unit/ALL_UNITS.json",
+      "sha256": "9f982840e96ec0e78b06bcb9b5886fc8880b408dee36e80fd2f1eb17d3df4f74",
+      "status": "PASS"
+    },
+    "scene_fader": {
+      "path": "out/perky/hybrid/campaign-20261016/final/SCENE_PANEL.json",
+      "sha256": "bdcb1ba9bb29c3e1929f0f922f0b41575d91e0c49642a29059030fcbf45a6514",
+      "status": "PASS_ACTUAL_SCENE_FADER_DELIVERY"
+    },
+    "sequencer_transitions": {
+      "path": "out/perky/hybrid/campaign-20261016/final/TRANSITIONS.json",
+      "sha256": "132cccd10181c58f1c1d5591f804be9367d2df3c2ab8fe40d4cba6d40be83d76",
+      "status": "PASS_REAL_SEQUENCER_MODE_FAMILY_AND_PART_TRANSITIONS"
+    },
+    "FX": {
+      "path": "out/perky/hybrid/campaign-20261016/final/FX.json",
+      "sha256": "4d72f02d821d38b4efa5570b6a31234c51ef1d8a7dfa1d5884264176ca11b424",
+      "status": "PASS"
+    },
+    "lifecycle": {
+      "path": "out/perky/hybrid/campaign-20261016/final/lifecycle-final/SNAPSHOTS.json",
+      "sha256": "b3c6da7c907631e434431b4a4573d573d96584e372fe0b96e2685438969e3157",
+      "status": "SEE_RECORDED_SNAPSHOTS"
+    },
+    "save_reload": {
+      "path": "out/perky/hybrid/campaign-20261016/final/saved-project-final/SAVED_PROJECT.json",
+      "sha256": "1a4b54e9be28e18c676e41f698367a07344a1cca8b02ca4dccbfe5cca29f936a",
+      "status": "PASS_SCOPED_SAVE_RELOAD"
+    },
+    "EMAC_IRQ": {
+      "path": "out/perky/hybrid/campaign-20261016/final/EMAC_IRQ.json",
+      "sha256": "3248e3d3597f1564ba893062a8e8b874350f52df72d3328812739e1c89e5b083",
+      "status": "PASS_HIGHER_IRQ_EMAC_USE_FULLY_CONTEXT_PRESERVING"
+    },
+    "block_identity": {
+      "path": "out/perky/hybrid/campaign-20261016/final/BLOCK_IDENTITY.json",
+      "sha256": "54cff7934bbd4f19b399b4d902b21ab7144f31baa70f16eaeb5f113f4e1e9fc6",
+      "status": "PASS_EXACT_INITIALIZED_PCM_AND_ALL_SOURCE_RECORDS"
+    },
+    "PRF_export": {
+      "path": "out/perky/hybrid/campaign-20261016/final/card-export/CARD_EXPORT.json",
+      "sha256": "646e8577db7f6bb9dc5e619642eb01daaa83238da7c3505d42a3779098183ea3",
+      "status": "PASS_ACTUAL_FIRMWARE_CARD_EXPORT"
+    },
+    "ACK_work": {
+      "path": "out/perky/hybrid/campaign-20261016/ACK_WORK_COMPARISON.json",
+      "sha256": "a67fe72989010b3e272287286f853821f8c6a25e75123b5e6b540ac243a07f96",
+      "status": "SEE_RECORDED_COMPONENTS"
+    },
+    "profiler_off": {
+      "path": "out/perky/hybrid/campaign-20261016/profiler-off-matrix/MATRIX.json",
+      "sha256": "e6315fcae175bcc1156a912db3fbb912487ff3ebf3c95cadb07d1418a50b44dc",
+      "status": "PASS_MEASURED_MATRIX"
+    },
+    "CF_disarmed": {
+      "path": "out/perky/hybrid/campaign-20261016/final/CF_DISARMED.json",
+      "sha256": "4deea718b4a8332c95fc536ceb50fd95754934b21d0f92d6169ea25c79bc7a1c",
+      "status": "SEE_RECORDED_COMPONENTS"
+    },
+    "packages": {
+      "path": "out/perky/hybrid/campaign-20261016/final/package-check/PACKAGES.json",
+      "sha256": "f0f33b2de80fc1a7735aba8080943e44e7133d78f88ce612e6da3db07ca9094f",
+      "status": "PASS"
+    },
+    "probe_gates": {
+      "path": "out/perky/hybrid/campaign-20261016/final/probe/PROBE_GATES.json",
+      "sha256": "aa3e25dd6534bed34cfa9bdca34b24d5ff5da3cb3a9ea20ff3be98d3a77c5378",
+      "status": "PASS"
+    },
+    "private": {
+      "path": "out/perky/hybrid/campaign-20261016/final/QUALIFICATION.json",
+      "sha256": "80635ec793e2aafdddea56ad451bda2eabfd046df413334c45e241c34ee8bd83",
+      "status": "LOCALLY_QUALIFIED_DIAGNOSTIC_SCOPED_TO_APPROVED_STACK_CORRECTION; REVIEW_BEFORE_HARDWARE"
+    },
+    "build": {
+      "path": "out/perky/hybrid/campaign-20261016/final/probe/BUILD.json",
+      "sha256": "8ddf6345e42d919c93ad2008370d936b2ca0d973dc8c85a134660f6308207b8c",
+      "status": "LOCAL_PROBE_BUILT"
+    },
+    "DSP_identity": {
+      "path": "out/perky/hybrid/campaign-20261016/final/probe/DSP_IDENTITY.json",
+      "sha256": "184d96aef69c551b95fb63b3f44c47b2739df779ec1168cc9f791811b85d7d1c",
+      "status": "PASS"
+    },
+    "memory": {
+      "path": "out/perky/hybrid/campaign-20261016/final/probe/MEMORY.json",
+      "sha256": "dfcf00d3c7e12e2e1b191c7d9ca1ae424d20c8c9484deb9f001ba6279f30f953",
+      "status": "PASS"
+    }
+  },
+  "repository_checks": {
+    "make_check": {
+      "command": "make check REMIX=perky-probe",
+      "shared_isolated_passed": 84,
+      "image_passed": 4,
+      "failed": 0,
+      "log_sha256": "75cfe4e2e1696a98af9541d682b33f687fd116c41f69896049317f64e988e39c",
+      "limits": "Explicit optional missing generic canary/CF-final/OT_PROJECT checks skipped; candidate-specific gates run independently."
+    },
+    "instrument_ctest": {
+      "passed": 9,
+      "failed": 0,
+      "log_sha256": "a712be40153316fad8b70f06fc0b51621f8e769772e236553d65ae87975bf60a"
+    }
+  },
+  "physical_risks": [
+    "No silicon cache/SDRAM/FlexBus arbitration or coherence measurement.",
+    "Zero-pre-roll raw captures match completely; every primed post-PLAY record is exact. Hardware startup audio remains unqualified.",
+    "No silicon interrupt release-to-entry or worst-case instruction latency bound.",
+    "Normal valid stock dispatch tables, indices, C ABI and seven-stage DMA protocol are qualification preconditions.",
+    "Unchanged larger stock-task base graphs remain outside this bounded correction; their audio-related task-stack demand cannot increase.",
+    "Desired 20% timing margin is met in these modeled runs; silicon timing remains unqualified."
+  ],
+  "timing_scope_limits": [
+    "All timing is emulated ColdFire at 264 MHz, not physical MKII timing.",
+    "Full executed ISR observer is present in the paired 4096-frame rows.",
+    "Sustained/continuous runs use the firmware timer window; entry-save and post-stamp footer are excluded.",
+    "ACK-to-ACK CPU work includes intervening stock tasks; it is not ISR duration or interrupt latency.",
+    "All-eight-track audio is verified in separate short captures for every paired row.",
+    "Does not replace cold-boot, memory, package, lifecycle or private-stack qualification."
+  ],
+  "hardware_qualified": false,
+  "hardware_flashed": false,
+  "plateau_falsifier": "A new exact implementation that improves the matched target runs, or matched physical per-algorithm measurements identifying another high-value cost.",
+  "retired_experiment_scope": "Each experiment retains generated GNU assembly, objects, target ELF/binary/disassembly and exactness/cost receipts. C input hashes describe that measurement; reverted experimental source paths now contain selected production code. Selected production source is committed and reproduced exactly."
+}

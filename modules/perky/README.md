@@ -88,14 +88,29 @@ retained stock effects are unchanged.
 
 All fifteen matched 4,096-frame paired ISR/audio rows pass. Snare/Snare's
 executed maximum is 325.386 µs before and 278.015 µs after; the selected
-scene/fader test reaches 289.220 µs. These are emulator observations at 264 MHz,
-not silicon timing bounds. The current raw cold and primed comparisons match
-completely; the six initial pipeline differences above belong to PKH3O3's
-historical capture. Full-duration qualification of PKH4O2 is still running,
-and card/MIDI wrapping is deferred until those gates finish. Verified source
-and tests are pushed to `perky-cf-dsp-hybrid` with `[skip ci]`; no firmware has
-been flashed and no new physical speedup is established. PERKY4S remains the
-hardware-tested release.
+scene/fader test reaches 289.220 µs. All fifteen 60-second rows and the
+continuous ten-minute Snare/Snare row also pass, with full CF/DSP activity,
+continuing sequencer triggers and no timer-window misses or late DSP words.
+The longer runs measure the firmware timer window, excluding entry-save and
+footer work. Their largest ACK-to-ACK CPU-work window reaches 360.061 µs,
+leaving only 2.751 µs below the frame period; it includes intervening stock
+tasks and does not establish 20% whole-CPU headroom. All timing here is an
+emulator observation at 264 MHz, with physical cache/bus/IRQ latency unbounded.
+
+The [final local qualification](hybrid/CF_OPTIMIZATION_20261016_QUALIFICATION.json)
+binds the exactness, cold boot, lifecycle, DSP/FX, package-corruption and scoped
+private-stack gates to the actual PKH4O2 image. Raw cold and primed comparisons
+match completely; the six pipeline differences above belong to PKH3O3's
+historical capture. The clean rebuild at `bb14be08` reproduces the MAIN and
+runtime ELF tested throughout this campaign; its production sources match
+`69ecb4dd`. Card and MIDI diagnostic packages pass their local gates.
+
+Verified source and tests are pushed to `perky-cf-dsp-hybrid` with `[skip ci]`.
+PKH4O2 is a locally qualified diagnostic for review, with physical MKII A/B
+acceptance pending. No firmware has been flashed and no new physical speedup
+or flash-safe certification is established. PERKY4S remains the hardware-tested
+release; the larger unchanged stock-task call graphs remain outside the scoped
+private-stack proof.
 
 ### Current DSP memory limit
 

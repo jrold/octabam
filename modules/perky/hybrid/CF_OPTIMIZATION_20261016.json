@@ -1,6 +1,6 @@
 {
   "schema": "octabam.perky.cf-campaign.v1",
-  "status": "IMPLEMENTED_TARGET_VERIFIED_INTEGRATION_QUALIFICATION_RUNNING",
+  "status": "LOCALLY_QUALIFIED_DIAGNOSTIC_HARDWARE_AB_PENDING",
   "baseline_commit": "02fa20ff9503bb08c7d1e23307222dcb3ef41e4b",
   "hardware_qualified": false,
   "physical_profile": {
@@ -1386,9 +1386,7 @@
     "limits": "Not silicon timing; no comparison against the unmatched physical capture."
   },
   "remaining": [
-    "Finish all active final qualification runs; do not replace sustained frames with shorter screening runs.",
-    "Measure profiler on/off, external-clock and save/reload/lifecycle evidence.",
-    "Commit/push verified source/tests; package only after all applicable safety gates pass."
+    "Physical MKII matched A/B timing, startup and sustained workload acceptance remain unmeasured; follow delivered procedure."
   ],
   "raw_root": "out/perky/hybrid/campaign-20261016",
   "selected_target": {
@@ -1642,26 +1640,26 @@
     "sustained": {
       "path": "out/perky/hybrid/campaign-20261016/final-sustained/MATRIX.json",
       "sha256": "20fc72557466de74109edcf52a7111bbca0c068b3b76702b96804d12d62d19ea",
-      "status": "RUNNING",
+      "status": "SUPERSEDED_SERIAL_DRIVER; COMPLETED_FIRST_ROW_REUSED",
       "completed_rows": 1
     },
     "continuous_stress": {
       "path": "out/perky/hybrid/campaign-20261016/final-stress/MATRIX.json",
-      "sha256": "4070402762ec1b766d3c0e9aacde6ef02e0f6122119db36b249eeb3695c66cbd",
-      "status": "RUNNING",
-      "completed_rows": 0
+      "sha256": "8dcbc02d4b8fa59ae2ee09485312ac120d22356142da10822e255917f7e2c7a0",
+      "status": "PASS_MEASURED_MATRIX",
+      "completed_rows": 1
     },
     "sustained_a": {
       "path": "out/perky/hybrid/campaign-20261016/final-sustained-a/MATRIX.json",
-      "sha256": "e7c60d84739b0746d5e5bc9614297914a6b83e21f541a67f932ef12d6a9436d5",
-      "status": "RUNNING",
-      "completed_rows": 3
+      "sha256": "4f913217e2cdb57106c6ed4dea379a22f1902cbf0b25469891547fe5f440509a",
+      "status": "PASS_MEASURED_MATRIX",
+      "completed_rows": 7
     },
     "sustained_b": {
       "path": "out/perky/hybrid/campaign-20261016/final-sustained-b/MATRIX.json",
-      "sha256": "6c9daa397f7f7858281c91fb1eea9e0d911fe302d93a0748f35b2caa83190614",
-      "status": "RUNNING",
-      "completed_rows": 3
+      "sha256": "28b32291d4bfaee7cc53f84e9aa6cfef6127936a3a9ae2a0e80e1a7a0ed99e15",
+      "status": "PASS_MEASURED_MATRIX",
+      "completed_rows": 7
     },
     "primed_and_cold_records": {
       "path": "out/perky/hybrid/campaign-20261016/final/BLOCK_IDENTITY.json",
@@ -1688,6 +1686,31 @@
       "sha256": "e6315fcae175bcc1156a912db3fbb912487ff3ebf3c95cadb07d1418a50b44dc",
       "status": "PASS_MEASURED_MATRIX",
       "completed_rows": 1
+    },
+    "actual_packages": {
+      "path": "out/perky/hybrid/campaign-20261016/final/package-check/PACKAGES.json",
+      "sha256": "f0f33b2de80fc1a7735aba8080943e44e7133d78f88ce612e6da3db07ca9094f",
+      "status": "PASS"
+    },
+    "complete_probe_gates": {
+      "path": "out/perky/hybrid/campaign-20261016/final/probe/PROBE_GATES.json",
+      "sha256": "aa3e25dd6534bed34cfa9bdca34b24d5ff5da3cb3a9ea20ff3be98d3a77c5378",
+      "status": "PASS"
+    },
+    "private_qualification": {
+      "path": "out/perky/hybrid/campaign-20261016/final/QUALIFICATION.json",
+      "sha256": "80635ec793e2aafdddea56ad451bda2eabfd046df413334c45e241c34ee8bd83",
+      "status": "LOCALLY_QUALIFIED_DIAGNOSTIC_SCOPED_TO_APPROVED_STACK_CORRECTION; REVIEW_BEFORE_HARDWARE"
+    },
+    "complete_timing_audit": {
+      "path": "out/perky/hybrid/campaign-20261016/TIMING_AUDIT.json",
+      "sha256": "e8f21a71c133837abff87092c4e1fea03d45d3925cf178344aed11c4e745cf1d",
+      "status": "PASS_COMPLETE_LOCAL_TIMING_COVERAGE"
+    },
+    "boot_support": {
+      "path": "out/perky/hybrid/campaign-20261016/BOOT_SUPPORT.json",
+      "sha256": "2658f1358b259e6442c1e55e4719c343242c11465696edac6c17e444d78d21d9",
+      "status": "PASS_HOST_DECODER_BSS_AND_ASSEMBLED_DIAGNOSTIC_ANCHORS"
     }
   },
   "paired_full_ISR": [
@@ -3809,9 +3832,9 @@
   ],
   "selected_image": {
     "version": "PKH4O2",
-    "git_commit": "02fa20ff9503bb08c7d1e23307222dcb3ef41e4b",
-    "git_tree_clean": false,
-    "source_tree_clean": false,
+    "git_commit": "bb14be08ec2dc1229503d0a6703d6ca808c5b074",
+    "git_tree_clean": true,
+    "source_tree_clean": true,
     "hybrid_source_id": "47ba6166b8c2ba148920164455730a6baf9dc567cb76f25d45cbb71aa902b757",
     "compiler_flags": [
       "-mcpu=54455",
@@ -3887,7 +3910,7 @@
     }
   },
   "implementation_plateau": {
-    "assessment": "Measured practical plateau after the recorded target experiments; integration qualification remains pending.",
+    "assessment": "Measured practical plateau after the recorded target experiments; complete available local qualification passed.",
     "basis": [
       "Primitive-call regression dominates and is removed.",
       "Independent recurrence fixed points improve decay work without skipping transitions.",
@@ -4301,5 +4324,1402 @@
     "external_MIDI_bytes_consumed": 4056,
     "external_observed_sequencer_IRQs": 4059,
     "remaining": "Actual package roundtrip/corruption and full PROBE_GATES.json, then run unchanged complete private qualification aggregator. No gate is waived."
+  },
+  "experiment_artifact_scope": {
+    "retained": "Per-experiment compiler-generated GNU assembly, object files, target ELF/binary/disassembly, cost rows and exactness receipts remain under the raw campaign directory.",
+    "source_hashes": "Experimental input hashes describe the source at that measurement. Rejected C variants were reverted; those input paths now name selected production sources and are not claims that every historical C hash matches current HEAD.",
+    "selected_source_proof": "The retained production implementation is committed, and the final build checks all 26 manifest files against it."
+  },
+  "final_timing_coverage": {
+    "path": "out/perky/hybrid/campaign-20261016/TIMING_AUDIT.json",
+    "sha256": "e8f21a71c133837abff87092c4e1fea03d45d3925cf178344aed11c4e745cf1d",
+    "schema": "octabam.perky.campaign-receipt-audit.v1",
+    "status": "PASS_COMPLETE_LOCAL_TIMING_COVERAGE",
+    "MAIN_sha256": "f7f04e26969522d2024b1bba5be85f620857d636dbe0b284aa38c0fb087a21db",
+    "runtime_ELF_sha256": "45b220aeecc46a1f01e6339298ac5e0a2f91e2bd84fb34465ec745687b1d43a1",
+    "paired_full_ISR": [
+      {
+        "pair": "V1_V1",
+        "baseline": {
+          "maximum_cycles": 80994,
+          "maximum_us": 306.79545454545456,
+          "duration_misses": 0,
+          "private_peak_bytes": 988,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_V1-stack.json": "af5077ef716783ac48af78837121aa3ec34ee908694382c4302e9177ab113a28",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_V1-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 67578,
+          "maximum_us": 255.97727272727272,
+          "duration_misses": 0,
+          "private_peak_bytes": 992,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_V1-stack.json": "e2e47cf2dd82bc11e7bb6c6b6e86df8064596e159e8d503de34f612df256972f",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_V1-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3"
+          }
+        }
+      },
+      {
+        "pair": "V1_V2",
+        "baseline": {
+          "maximum_cycles": 80994,
+          "maximum_us": 306.79545454545456,
+          "duration_misses": 0,
+          "private_peak_bytes": 988,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_V2-stack.json": "af5077ef716783ac48af78837121aa3ec34ee908694382c4302e9177ab113a28",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_V2-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 67578,
+          "maximum_us": 255.97727272727272,
+          "duration_misses": 0,
+          "private_peak_bytes": 992,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_V2-stack.json": "e2e47cf2dd82bc11e7bb6c6b6e86df8064596e159e8d503de34f612df256972f",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_V2-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3"
+          }
+        }
+      },
+      {
+        "pair": "V1_snare",
+        "baseline": {
+          "maximum_cycles": 83567,
+          "maximum_us": 316.5416666666667,
+          "duration_misses": 0,
+          "private_peak_bytes": 1016,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_snare-stack.json": "369b08e6f399925f1d4c800b421231bd0913c6a4eccc4f39ff7fdd60854380c8",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_snare-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 70564,
+          "maximum_us": 267.2878787878788,
+          "duration_misses": 0,
+          "private_peak_bytes": 992,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_snare-stack.json": "90f8d1215192989dc3179720264fb61f145dfafb9f7e81c7d6724212ca6fde0b",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_snare-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3"
+          }
+        }
+      },
+      {
+        "pair": "V2_V1",
+        "baseline": {
+          "maximum_cycles": 80994,
+          "maximum_us": 306.79545454545456,
+          "duration_misses": 0,
+          "private_peak_bytes": 988,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_V1-stack.json": "af5077ef716783ac48af78837121aa3ec34ee908694382c4302e9177ab113a28",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_V1-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 67578,
+          "maximum_us": 255.97727272727272,
+          "duration_misses": 0,
+          "private_peak_bytes": 992,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_V1-stack.json": "e2e47cf2dd82bc11e7bb6c6b6e86df8064596e159e8d503de34f612df256972f",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_V1-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3"
+          }
+        }
+      },
+      {
+        "pair": "V2_V2",
+        "baseline": {
+          "maximum_cycles": 80994,
+          "maximum_us": 306.79545454545456,
+          "duration_misses": 0,
+          "private_peak_bytes": 988,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_V2-stack.json": "af5077ef716783ac48af78837121aa3ec34ee908694382c4302e9177ab113a28",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_V2-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 67578,
+          "maximum_us": 255.97727272727272,
+          "duration_misses": 0,
+          "private_peak_bytes": 992,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_V2-stack.json": "e2e47cf2dd82bc11e7bb6c6b6e86df8064596e159e8d503de34f612df256972f",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_V2-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3"
+          }
+        }
+      },
+      {
+        "pair": "V2_bass",
+        "baseline": {
+          "maximum_cycles": 82043,
+          "maximum_us": 310.7689393939394,
+          "duration_misses": 0,
+          "private_peak_bytes": 1068,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_bass-stack.json": "17db7c8ea5849b8adf947330917441bbb0f0dc9b7987491f7abda35d0cf9d456",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_bass-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 70213,
+          "maximum_us": 265.9583333333333,
+          "duration_misses": 0,
+          "private_peak_bytes": 1028,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_bass-stack.json": "c338723a8b8e5ea9fc530e9da17ba6b6f7e5c1d16f5b082b412fb0296480dd9b",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_bass-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a"
+          }
+        }
+      },
+      {
+        "pair": "bass_V2",
+        "baseline": {
+          "maximum_cycles": 82057,
+          "maximum_us": 310.8219696969697,
+          "duration_misses": 0,
+          "private_peak_bytes": 1068,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_V2-stack.json": "1713b979c2c907bf5d5f9313f1dc49c85c5251016565fee1e5f7152045ffa3e3",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_V2-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 70276,
+          "maximum_us": 266.1969696969697,
+          "duration_misses": 0,
+          "private_peak_bytes": 1028,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_V2-stack.json": "e4721dc166a1cacd3e82d238726b5811605710e84b2b3c6a17b60a910eba1f66",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_V2-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a"
+          }
+        }
+      },
+      {
+        "pair": "bass_bass",
+        "baseline": {
+          "maximum_cycles": 82931,
+          "maximum_us": 314.13257575757575,
+          "duration_misses": 0,
+          "private_peak_bytes": 1068,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_bass-stack.json": "13c85ef9d56361a4f8d76c6c51f9b0319078739c33cdc34989e6838b1492442b",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_bass-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 72715,
+          "maximum_us": 275.43560606060606,
+          "duration_misses": 0,
+          "private_peak_bytes": 1028,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_bass-stack.json": "c1f61b18251ea69eff7df9aecd818df2934bb7f425a1807172d62e7ef1ee2361",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_bass-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a"
+          }
+        }
+      },
+      {
+        "pair": "bass_snare",
+        "baseline": {
+          "maximum_cycles": 84455,
+          "maximum_us": 319.905303030303,
+          "duration_misses": 0,
+          "private_peak_bytes": 1068,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_snare-stack.json": "f03a6dfc1362d1061bf3a9c09633fcf98c523e6f2c5bc7b3da8b9720336fe8b1",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_snare-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 73101,
+          "maximum_us": 276.89772727272725,
+          "duration_misses": 0,
+          "private_peak_bytes": 1028,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_snare-stack.json": "616b1088af96e3bd87ee39fc0d3e0dfaca0801d0168e78372a2f0438b703a5d6",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_snare-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a"
+          }
+        }
+      },
+      {
+        "pair": "snare_V1",
+        "baseline": {
+          "maximum_cycles": 83553,
+          "maximum_us": 316.4886363636364,
+          "duration_misses": 0,
+          "private_peak_bytes": 1016,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_V1-stack.json": "eb99f449a60afa3694d67a93c9a0201741ba5afc58fca9891da62d0092622d2b",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_V1-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 70564,
+          "maximum_us": 267.2878787878788,
+          "duration_misses": 0,
+          "private_peak_bytes": 992,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_V1-stack.json": "183d2fef0bbc1b68138c61ebe2252eb505349a9ee970b9f0c5e7f40c2f05fd08",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_V1-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3"
+          }
+        }
+      },
+      {
+        "pair": "snare_bass",
+        "baseline": {
+          "maximum_cycles": 84462,
+          "maximum_us": 319.9318181818182,
+          "duration_misses": 0,
+          "private_peak_bytes": 1068,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_bass-stack.json": "501f19bc70869191af8d84436a9d19c5ce6bfab04920535748cc235e37313bd1",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_bass-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 73101,
+          "maximum_us": 276.89772727272725,
+          "duration_misses": 0,
+          "private_peak_bytes": 1028,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_bass-stack.json": "cfc4fa157516b68c68bed4e09abb423a43ba9a802d5f7256c861d35267365582",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_bass-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a"
+          }
+        }
+      },
+      {
+        "pair": "snare_snare",
+        "baseline": {
+          "maximum_cycles": 85902,
+          "maximum_us": 325.3863636363636,
+          "duration_misses": 0,
+          "private_peak_bytes": 1016,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_snare-stack.json": "f341097ca871b7097fe5b5d1127563687de5e7e57bef256cd1e68d08a2b0c0e7",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_snare-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 73396,
+          "maximum_us": 278.0151515151515,
+          "duration_misses": 0,
+          "private_peak_bytes": 984,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_snare-stack.json": "8cdea54ffed81e2f653768d15c1565eb8ad8827d0b7e730282f8894a9f5a7b10",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_snare-private.json": "fce67c8cccbb3c735f827ebfce3ff46eacbf1ae5064a1415562e3ce176745767"
+          }
+        }
+      },
+      {
+        "pair": "snare_third",
+        "baseline": {
+          "maximum_cycles": 78560,
+          "maximum_us": 297.57575757575756,
+          "duration_misses": 0,
+          "private_peak_bytes": 1016,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_third-stack.json": "da0ac4dc65c600d6b782dc985e21dff58ea15a15dbf9857fa7bd52252cc8f6d7",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_third-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 72277,
+          "maximum_us": 273.7765151515151,
+          "duration_misses": 0,
+          "private_peak_bytes": 984,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_third-stack.json": "2d13a9cca05ec97b63fbd7b0e5ccdfd506d0921d2f7fc90def979877a3433663",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_third-private.json": "fce67c8cccbb3c735f827ebfce3ff46eacbf1ae5064a1415562e3ce176745767"
+          }
+        }
+      },
+      {
+        "pair": "third_snare",
+        "baseline": {
+          "maximum_cycles": 78469,
+          "maximum_us": 297.2310606060606,
+          "duration_misses": 0,
+          "private_peak_bytes": 1016,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_snare-stack.json": "8b14116bbfd84ac43aa31c7ecc674b2f0c9d8f71af8aac0ac033ec5e966e2429",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_snare-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 72291,
+          "maximum_us": 273.82954545454544,
+          "duration_misses": 0,
+          "private_peak_bytes": 984,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-third_snare-stack.json": "3104c8a7cf5a7324d1a097cd8071e2e8038d47059fd44e3967e02d488f6ce182",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-third_snare-private.json": "fce67c8cccbb3c735f827ebfce3ff46eacbf1ae5064a1415562e3ce176745767"
+          }
+        }
+      },
+      {
+        "pair": "third_third",
+        "baseline": {
+          "maximum_cycles": 71018,
+          "maximum_us": 269.00757575757575,
+          "duration_misses": 0,
+          "private_peak_bytes": 944,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_third-stack.json": "d4edce3ba62898ebfd033b4fe1cff2fbb01143825a854a0b1861b2d8a43195ad",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_third-private.json": "fe15cc2676223d091b76dbd10ad1effda2f903418ec8b2ecd0978623cf263c69"
+          }
+        },
+        "candidate": {
+          "maximum_cycles": 70976,
+          "maximum_us": 268.8484848484849,
+          "duration_misses": 0,
+          "private_peak_bytes": 944,
+          "reports": {
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-third_third-stack.json": "27df1d0827bfcb36b63368c5b21dd6043172d669c2d0777fd5007e2f96f010be",
+            "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-third_third-private.json": "fe15cc2676223d091b76dbd10ad1effda2f903418ec8b2ecd0978623cf263c69"
+          }
+        }
+      }
+    ],
+    "sustained_60_second_rows": [
+      {
+        "pair": "V1_V1",
+        "frames": 165376,
+        "timer_window_mean_us": 159.612,
+        "timer_window_max_us": 255.636,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 177.1,
+          "p50_us": 161.0,
+          "p90_us": 250.0,
+          "p99_us": 319.0,
+          "p99_9_us": 342.0,
+          "max_us_rounded": 356.0,
+          "max_cycles": 94078,
+          "max_us_exact": 356.356,
+          "worst_frame_index": 12002,
+          "worst_after_frame_50_index": 12002,
+          "worst_after_frame_50_us": 356.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7731759732,
+          "mean_cf_cycles_per_frame": 46753,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 6.456,
+          "headroom_to_290_25us_gate_us": -66.107
+        }
+      },
+      {
+        "pair": "V1_V2",
+        "frames": 165376,
+        "timer_window_mean_us": 159.612,
+        "timer_window_max_us": 255.636,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 177.1,
+          "p50_us": 161.0,
+          "p90_us": 250.0,
+          "p99_us": 319.0,
+          "p99_9_us": 342.0,
+          "max_us_rounded": 356.0,
+          "max_cycles": 94078,
+          "max_us_exact": 356.356,
+          "worst_frame_index": 12002,
+          "worst_after_frame_50_index": 12002,
+          "worst_after_frame_50_us": 356.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7731759732,
+          "mean_cf_cycles_per_frame": 46753,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 6.456,
+          "headroom_to_290_25us_gate_us": -66.107
+        }
+      },
+      {
+        "pair": "V1_snare",
+        "frames": 165376,
+        "timer_window_mean_us": 164.942,
+        "timer_window_max_us": 266.917,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 182.4,
+          "p50_us": 166.0,
+          "p90_us": 255.0,
+          "p99_us": 324.0,
+          "p99_9_us": 345.0,
+          "max_us_rounded": 359.0,
+          "max_cycles": 94683,
+          "max_us_exact": 358.648,
+          "worst_frame_index": 4179,
+          "worst_after_frame_50_index": 4179,
+          "worst_after_frame_50_us": 359.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7965106930,
+          "mean_cf_cycles_per_frame": 48164,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 4.164,
+          "headroom_to_290_25us_gate_us": -68.398
+        }
+      },
+      {
+        "pair": "V2_V1",
+        "frames": 165376,
+        "timer_window_mean_us": 159.612,
+        "timer_window_max_us": 255.636,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 177.1,
+          "p50_us": 161.0,
+          "p90_us": 250.0,
+          "p99_us": 319.0,
+          "p99_9_us": 342.0,
+          "max_us_rounded": 356.0,
+          "max_cycles": 94078,
+          "max_us_exact": 356.356,
+          "worst_frame_index": 12002,
+          "worst_after_frame_50_index": 12002,
+          "worst_after_frame_50_us": 356.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7731759732,
+          "mean_cf_cycles_per_frame": 46753,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 6.456,
+          "headroom_to_290_25us_gate_us": -66.107
+        }
+      },
+      {
+        "pair": "V2_V2",
+        "frames": 165376,
+        "timer_window_mean_us": 159.612,
+        "timer_window_max_us": 255.636,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 177.1,
+          "p50_us": 161.0,
+          "p90_us": 250.0,
+          "p99_us": 319.0,
+          "p99_9_us": 342.0,
+          "max_us_rounded": 356.0,
+          "max_cycles": 94078,
+          "max_us_exact": 356.356,
+          "worst_frame_index": 12002,
+          "worst_after_frame_50_index": 12002,
+          "worst_after_frame_50_us": 356.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7731759732,
+          "mean_cf_cycles_per_frame": 46753,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 6.456,
+          "headroom_to_290_25us_gate_us": -66.107
+        }
+      },
+      {
+        "pair": "V2_bass",
+        "frames": 165376,
+        "timer_window_mean_us": 164.371,
+        "timer_window_max_us": 265.591,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 181.9,
+          "p50_us": 165.0,
+          "p90_us": 254.0,
+          "p99_us": 323.0,
+          "p99_9_us": 344.0,
+          "max_us_rounded": 358.0,
+          "max_cycles": 94570,
+          "max_us_exact": 358.22,
+          "worst_frame_index": 4179,
+          "worst_after_frame_50_index": 4179,
+          "worst_after_frame_50_us": 358.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7940595940,
+          "mean_cf_cycles_per_frame": 48015,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 4.592,
+          "headroom_to_290_25us_gate_us": -67.97
+        }
+      },
+      {
+        "pair": "bass_V2",
+        "frames": 165376,
+        "timer_window_mean_us": 164.44,
+        "timer_window_max_us": 265.826,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 182.0,
+          "p50_us": 165.0,
+          "p90_us": 254.0,
+          "p99_us": 323.0,
+          "p99_9_us": 345.0,
+          "max_us_rounded": 358.0,
+          "max_cycles": 94443,
+          "max_us_exact": 357.739,
+          "worst_frame_index": 92018,
+          "worst_after_frame_50_index": 92018,
+          "worst_after_frame_50_us": 358.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7944271672,
+          "mean_cf_cycles_per_frame": 48038,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 5.073,
+          "headroom_to_290_25us_gate_us": -67.489
+        }
+      },
+      {
+        "pair": "bass_bass",
+        "frames": 165376,
+        "timer_window_mean_us": 167.429,
+        "timer_window_max_us": 275.038,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 184.9,
+          "p50_us": 168.0,
+          "p90_us": 257.0,
+          "p99_us": 325.0,
+          "p99_9_us": 347.0,
+          "max_us_rounded": 360.0,
+          "max_cycles": 94981,
+          "max_us_exact": 359.777,
+          "worst_frame_index": 70291,
+          "worst_after_frame_50_index": 70291,
+          "worst_after_frame_50_us": 360.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 8074514290,
+          "mean_cf_cycles_per_frame": 48825,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 3.035,
+          "headroom_to_290_25us_gate_us": -69.527
+        }
+      },
+      {
+        "pair": "bass_snare",
+        "frames": 165376,
+        "timer_window_mean_us": 168.547,
+        "timer_window_max_us": 276.5,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 186.1,
+          "p50_us": 169.0,
+          "p90_us": 258.0,
+          "p99_us": 326.0,
+          "p99_9_us": 348.0,
+          "max_us_rounded": 360.0,
+          "max_cycles": 95056,
+          "max_us_exact": 360.061,
+          "worst_frame_index": 17960,
+          "worst_after_frame_50_index": 17960,
+          "worst_after_frame_50_us": 360.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 8123406172,
+          "mean_cf_cycles_per_frame": 49121,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 2.751,
+          "headroom_to_290_25us_gate_us": -69.811
+        }
+      },
+      {
+        "pair": "snare_V1",
+        "frames": 165376,
+        "timer_window_mean_us": 164.846,
+        "timer_window_max_us": 266.917,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 182.4,
+          "p50_us": 166.0,
+          "p90_us": 255.0,
+          "p99_us": 323.0,
+          "p99_9_us": 345.0,
+          "max_us_rounded": 357.0,
+          "max_cycles": 94344,
+          "max_us_exact": 357.364,
+          "worst_frame_index": 62757,
+          "worst_after_frame_50_index": 62757,
+          "worst_after_frame_50_us": 357.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7961529431,
+          "mean_cf_cycles_per_frame": 48142,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 5.448,
+          "headroom_to_290_25us_gate_us": -67.114
+        }
+      },
+      {
+        "pair": "snare_bass",
+        "frames": 165376,
+        "timer_window_mean_us": 168.499,
+        "timer_window_max_us": 276.5,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 186.0,
+          "p50_us": 169.0,
+          "p90_us": 258.0,
+          "p99_us": 326.0,
+          "p99_9_us": 347.0,
+          "max_us_rounded": 360.0,
+          "max_cycles": 95021,
+          "max_us_exact": 359.928,
+          "worst_frame_index": 108560,
+          "worst_after_frame_50_index": 108560,
+          "worst_after_frame_50_us": 360.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 8121254971,
+          "mean_cf_cycles_per_frame": 49108,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 2.884,
+          "headroom_to_290_25us_gate_us": -69.679
+        }
+      },
+      {
+        "pair": "snare_snare",
+        "frames": 165376,
+        "timer_window_mean_us": 168.643,
+        "timer_window_max_us": 277.621,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 186.1,
+          "p50_us": 169.0,
+          "p90_us": 258.0,
+          "p99_us": 326.0,
+          "p99_9_us": 347.0,
+          "max_us_rounded": 359.0,
+          "max_cycles": 94755,
+          "max_us_exact": 358.92,
+          "worst_frame_index": 64109,
+          "worst_after_frame_50_index": 64109,
+          "worst_after_frame_50_us": 359.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 8126214619,
+          "mean_cf_cycles_per_frame": 49138,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 3.891,
+          "headroom_to_290_25us_gate_us": -68.671
+        }
+      },
+      {
+        "pair": "snare_third",
+        "frames": 165376,
+        "timer_window_mean_us": 167.767,
+        "timer_window_max_us": 273.409,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 185.3,
+          "p50_us": 169.0,
+          "p90_us": 257.0,
+          "p99_us": 325.0,
+          "p99_9_us": 347.0,
+          "max_us_rounded": 360.0,
+          "max_cycles": 94984,
+          "max_us_exact": 359.788,
+          "worst_frame_index": 4163,
+          "worst_after_frame_50_index": 4163,
+          "worst_after_frame_50_us": 360.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 8089789728,
+          "mean_cf_cycles_per_frame": 48918,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 3.024,
+          "headroom_to_290_25us_gate_us": -69.538
+        }
+      },
+      {
+        "pair": "third_snare",
+        "frames": 165376,
+        "timer_window_mean_us": 167.823,
+        "timer_window_max_us": 273.432,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 185.3,
+          "p50_us": 169.0,
+          "p90_us": 257.0,
+          "p99_us": 325.0,
+          "p99_9_us": 347.0,
+          "max_us_rounded": 360.0,
+          "max_cycles": 94913,
+          "max_us_exact": 359.519,
+          "worst_frame_index": 150216,
+          "worst_after_frame_50_index": 150216,
+          "worst_after_frame_50_us": 360.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 8091893727,
+          "mean_cf_cycles_per_frame": 48930,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 3.293,
+          "headroom_to_290_25us_gate_us": -69.27
+        }
+      },
+      {
+        "pair": "third_third",
+        "frames": 165376,
+        "timer_window_mean_us": 165.584,
+        "timer_window_max_us": 268.508,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          340,
+          340
+        ],
+        "ACK_work": {
+          "frames_sampled": 165376,
+          "mean_us": 183.1,
+          "p50_us": 166.0,
+          "p90_us": 255.0,
+          "p99_us": 324.0,
+          "p99_9_us": 345.0,
+          "max_us_rounded": 358.0,
+          "max_cycles": 94482,
+          "max_us_exact": 357.886,
+          "worst_frame_index": 119964,
+          "worst_after_frame_50_index": 119964,
+          "worst_after_frame_50_us": 358.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 7994266653,
+          "mean_cf_cycles_per_frame": 48340,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 4.925,
+          "headroom_to_290_25us_gate_us": -67.637
+        }
+      }
+    ],
+    "continuous_600_second_rows": [
+      {
+        "pair": "snare_snare",
+        "frames": 1653750,
+        "timer_window_mean_us": 168.584,
+        "timer_window_max_us": 277.621,
+        "timer_window_deadline_misses": 0,
+        "timer_window_above_80_percent": 0,
+        "trigger_count_per_instance": [
+          3375,
+          3375
+        ],
+        "ACK_work": {
+          "frames_sampled": 1653750,
+          "mean_us": 186.0,
+          "p50_us": 169.0,
+          "p90_us": 258.0,
+          "p99_us": 326.0,
+          "p99_9_us": 347.0,
+          "max_us_rounded": 360.0,
+          "max_cycles": 95056,
+          "max_us_exact": 360.061,
+          "worst_frame_index": 267127,
+          "worst_after_frame_50_index": 267127,
+          "worst_after_frame_50_us": 360.0,
+          "frames_over_362_8us_period": 0,
+          "total_cf_cycles": 81214586855,
+          "mean_cf_cycles_per_frame": 49109,
+          "scope": "ACK-to-ACK CPU work including intervening tasks; not ISR latency",
+          "headroom_to_362_81us_period_us": 2.751,
+          "headroom_to_290_25us_gate_us": -69.811
+        }
+      }
+    ],
+    "missing_sustained_pairs": [],
+    "receipt_hashes": {
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/MATRIX.json": "7605cacffd676742510e7cab7baefc275509f4cbd27585bcfa6a4a6c184c092d",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/snare_snare/ROW.json": "02918a6dda9047afddf777b64775fcc3532db93a4a349839c6147b18e2385f68",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/snare_snare/port.log": "26821b5649db1c1cc19bb14c88c9e5941fc57a386b0d1d368fdf9fec544ade13",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/snare_snare/prof.bin": "af62dfff624830d232d989ad2bf793287063e5a4b1af89a583caeed27fa30c80",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/snare_bass/ROW.json": "ed62f8185a916fcb8f39e160bb8484479125108f0407bdda09e1547076f87f3d",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/snare_bass/port.log": "897800c2728e0bb848cb438e461fbb662becefcb0cccc478e0849d8802a5ca32",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/snare_bass/prof.bin": "217fdd90c807a4e1d65e4eef76dd7db23c812f8a743f005669c62a2002e701e9",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/bass_bass/ROW.json": "a1d0c10e063d7351d9f00ff225e2629d16c7ab7e6a287b7fa0d73ee6f075debe",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/bass_bass/port.log": "56c8f40983facd6c7d6c7e15717bbf8e60e664013100c62bd11081ac1a843cf6",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/bass_bass/prof.bin": "294b7999e9a7dbf0719185fd19b8c77d217950f8f25b136e45b27c11dab0d756",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/V1_V1/ROW.json": "2d719cb225bbc2021260ba35043133083036a6aa253d63c7795594d8eaf5ccb1",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/V1_V1/port.log": "707c0aea323d74aca1f2f108dcf9e8677e58bad5d38830f05c3e76f81a1b67a9",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/V1_V1/prof.bin": "29d309a9de39dc1b96ecba2460f995b7293e6fe992aff3590dbfbaeaf98dc4b4",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/V2_V2/ROW.json": "b4c70c75c5db4b8348d4fcc5da8d8bcf996e583c2791409dc3c2b4698ccbdc08",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/V2_V2/port.log": "2a46ca725fc3ab11ec308ba2ac04a8034b93f7c950a90bebdf702f1fc8a92fe0",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/V2_V2/prof.bin": "29d309a9de39dc1b96ecba2460f995b7293e6fe992aff3590dbfbaeaf98dc4b4",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/V1_V2/ROW.json": "246832de8370f01932441ee92bc1f4d5240bfadc4bd5720cb52d64178ca09764",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/V1_V2/port.log": "dea38c15745faa4f8fb792c67dbccbe426371d3580e3744d32efd415b5d2e141",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/V1_V2/prof.bin": "29d309a9de39dc1b96ecba2460f995b7293e6fe992aff3590dbfbaeaf98dc4b4",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/V1_snare/ROW.json": "e16ef20b26569b69e1d5b314091fb28d0d62250499ccbd335b5558e2f7b8138d",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/V1_snare/port.log": "4d5360ff30b3112fba4c1a8e2cea0f03ee3dc47e7d5beeb9adfe5cc158777dfe",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-a/V1_snare/prof.bin": "84ea6750c09b14ed1ea0e7b294e1f2af7030f18bc0a226a1e5333be0c7c328d6",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/MATRIX.json": "351a285867faeca695b046052b58f19d43cdd17b960a43d56fcff840b5e38400",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/V2_bass/ROW.json": "19b512a6ab6a84c3dc7607d83745ef5216df68eda3a6ee131c073e4617eae473",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/V2_bass/port.log": "ff76f790e26c6887a0eaf6de89b4916caee3c6e498bca43361476d39ae7b13cb",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/V2_bass/prof.bin": "52713a72dca7e6f850ba422271fb96b90f011ceed414bb64fb354bafd24b019c",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/third_snare/ROW.json": "d4d2adf07742619b8f3ddb2f320c332b0b5815c2519f95581fc7df6b6c3a7f0a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/third_snare/port.log": "78a90b4c69e30f0d2cdef65ca717013b90efbd556c72e8d8e5ae7f7c56df80df",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/third_snare/prof.bin": "4386c7b9bce46e1486ef1db93b75a256a9992e8f23810e45137bad3059f4ca19",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/third_third/ROW.json": "d5e7b251fb013df5c85916ddbdd3534bd6ddd181c0c939722c6430a01e3b7b4f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/third_third/port.log": "caec89c2b1483e671d4bc7d0bf2208f36900691dcc01e60df1dbe3223f6ae08b",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/third_third/prof.bin": "bb39a8692134b037e248181e2527282cdf6d03ce1769f897280bdcdf01c680f2",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/bass_snare/ROW.json": "c8bffd7d48cff12ea903ccddaea4deec25b6d6a786b044ef10cbd67b27f9d2a1",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/bass_snare/port.log": "64abd483e7ce93b433920f13f43c781195db58051c6653c031563ff66c3b3d07",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/bass_snare/prof.bin": "137e5e922642a87d682c1ddea025cb5ca47418f8374657237e9e16077d519d3e",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/snare_V1/ROW.json": "1f2439df619e6c5244f4df152d12f567ca2a117edafc2eba01987655beffb76b",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/snare_V1/port.log": "04400c0de4ff883c3159ede8e2841116bdafcd0702c955ccddd08a3a170fe2f1",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/snare_V1/prof.bin": "6cd042b8ecb1950c28cdc97a3f6f8e17c4f9221bfabda70f266cf7c2067684ba",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/bass_V2/ROW.json": "85081c687f98860e1de92b6158b41719e8fa5d21dabc767cd19fdb160cefa212",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/bass_V2/port.log": "81851b3f3bec2cefd73c79685cae0f3d2c5b6056044ff95bf9de6997b43eecb5",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/bass_V2/prof.bin": "bd8f6f5a029a514b0e867051b826f4fb1c13619e381736fe4992b13aff547bdf",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/snare_third/ROW.json": "50586534e5f4f83031eecc24132e66cf6dd8fb27ee10ea4dfd240a73865c9d51",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/snare_third/port.log": "ddbb4df4ca7858b702efb1df87ca22fe59b27bf4e472395f271fc2990d388da0",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/snare_third/prof.bin": "b562073013f9fb20ec62203cca981ab77c4807fda293169890a4c51f9f2696c9",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/V2_V1/ROW.json": "cf80d3eec4b43ff9b83414c7a7a2f12a5e93ba21628c7725954e02390c6862ab",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/V2_V1/port.log": "4bf6f7a62cebc2050c5e81c82779027d300c0527d3c76ac853da656bf858f8c2",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-matrix-b/V2_V1/prof.bin": "29d309a9de39dc1b96ecba2460f995b7293e6fe992aff3590dbfbaeaf98dc4b4",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/MATRIX.json": "9c960e243a17768c51aff3819f47cfb07ed1c555d8f125e04fd77f8e2d4d67f7",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/snare_snare/ROW.json": "267ace2bbf42666453518446a74c11e83c2934a3357c97af6b4888568615728b",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/snare_snare/port.log": "f4971e6810eafdde57c9deb331d5af89f48029a7ce05fba1a5b5d8abe285a005",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/snare_snare/prof.bin": "3b7aed2e0e0c6300cf562c9a270510369026957d7676175d663abac27a61976f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/snare_bass/ROW.json": "50f1a4dbaee3d469bdeef159282adcdc0a34526c8e1bc260264ea6a5b9c8315a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/snare_bass/port.log": "18ea1d906641bb0ce32195632aad506bf383bfb7908af514942ce6a02fa1e697",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/snare_bass/prof.bin": "8764cf26815b29edd6ef91dc9aac2bec5039c0731e7e1e6b4010bd41b596cebe",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/bass_bass/ROW.json": "eca8409f676344e1bd3fc26cf48be4775e8e875202d94d92b4d0b04dd5f2f210",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/bass_bass/port.log": "f9def3f2932b6d1c25e76f6207fd3639bb924067b56de80ae64907fee9debece",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/bass_bass/prof.bin": "008868386c5ad76809c474c14aa88d04f908c486952b7fc2bf00d6d7faf4359f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/V1_V1/ROW.json": "caa1d30afd8aa54917e67301ebb418a54609848de94f523a107bb780d2c460a5",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/V1_V1/port.log": "209113116fdc09131e9178ee052e5f7c0372c9f262aa62c36199a8834cfbf929",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/V1_V1/prof.bin": "9f67e5fd0747586d94a36199e3929c3f2180460eb9e3ab3be6bda938703a78b8",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/V2_V2/ROW.json": "8a2f579a4d11b6063742d55a95c16e65b9cc65e59f4334fb4abb4dee6d4d2dfc",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/V2_V2/port.log": "31bbd0334f66ab1291e6f5ff0826d080f72b2a9ab0c186123748fd7ffcce32d0",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/V2_V2/prof.bin": "9f67e5fd0747586d94a36199e3929c3f2180460eb9e3ab3be6bda938703a78b8",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/V1_V2/ROW.json": "28a645bd4fb28a4966c2ed615d3b4d45d9c4c5387afce447e68c16446ab16339",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/V1_V2/port.log": "2db3fde1375f7e93af8331c145d4fd147323670b6eb99aeb66ed5f16c4dbedf2",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/V1_V2/prof.bin": "9f67e5fd0747586d94a36199e3929c3f2180460eb9e3ab3be6bda938703a78b8",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/V1_snare/ROW.json": "97cb84b1890d6fe4fd75c8dcd3447141b0fe5fe521429815b5afdbe2746b81b2",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/V1_snare/port.log": "f734dd7f66a8632ecdd858d9098c8ca9d927b0877cacd077c47616c73d4f1927",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-a/V1_snare/prof.bin": "2eee67864c80a5fd1cfb43c08556eb855ba6443b6f89199d40721175f286c00a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/MATRIX.json": "adc9774e160694be90bc09bb5e549808a9225b54cebf5cbcf49f19dfb39fae60",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/V2_bass/ROW.json": "5fe034695c78598a5fc151ee57a8ba0be71bbf92d422e1964b52b9e488570346",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/V2_bass/port.log": "a9c31b4e03e8162bade4a6bb8aff970431fc9ba719942739efc82405b159e06a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/V2_bass/prof.bin": "0293960d697148403dc8de96c6ea06ed506db6665b0aa185bc5ff8655f4810a4",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/third_snare/ROW.json": "61da33bdad555d300a8ce22f7e01771856aec9d106f5007275adae48efb06c05",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/third_snare/port.log": "ccfaa846d1af02b18271c4e565780d50dfd86b795cff0bac5f79ae171a8c360b",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/third_snare/prof.bin": "0cf5be114683e6d003124013c4583dff42850fdf878562888548816631af1b82",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/third_third/ROW.json": "4ce018196e4b31836b61d3372cc435f500ddd958725eae2ac9fad33d08e1233d",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/third_third/port.log": "972fa6921cbcbb1f50d2f286aff13ceec43efecde26d0315d4e6b730305121cb",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/third_third/prof.bin": "4afc5bad3271c59406c3c686697423f76557028b89c7e1358e35cd0a16a718c3",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/bass_snare/ROW.json": "45789ea9674a5785422cb59d0931f8e8b2c35ac20d529664026d7c40f28f8fd4",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/bass_snare/port.log": "e2eb57b9c3ba21156e2badf448c95d82d757b8740f5114fd850198dc2c83b368",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/bass_snare/prof.bin": "26351a5ca7b56c1e758089a86ef73a13b7e873bdcd59a9477d64efba796d2f38",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/snare_V1/ROW.json": "a022ca08f8b54668a6944b77a03402c1e7d83f1b972348ffd711f6f2f60002d8",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/snare_V1/port.log": "1aa3d8eb5fff7a4ac336cd0f3a3823031e69f2a28d782cc0fbac74a854b3800d",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/snare_V1/prof.bin": "f2dc4ac0ad5eee6a7963ecf030e9e2e73c1209f7b67844e6c8193b402d992cbc",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/bass_V2/ROW.json": "8119422088dea714d1fb1a0236e061124a3ae2327d5abc55b795f046ed753f5b",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/bass_V2/port.log": "ea9a13bff4e22d74d8b5f95a338a811b24794e2c7918cb16c02d6fa77f41b287",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/bass_V2/prof.bin": "e9a5c75dfebe9e9c5cff77a8d163693bc3cc94dace96e036dc6ae188d9ac37b1",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/snare_third/ROW.json": "22f8d54c8d2efa5ba9fb69d71101e429de813f68df89ae41b8902d48c00c493a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/snare_third/port.log": "ba6a19a665401852a7ebcfc10a085311742460d80050cf15be3f0a64122a3948",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/snare_third/prof.bin": "95ca0d64804a0e4cbbebb63021c05c111ebbfd27b7244986a37b8fb25c2543cf",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/V2_V1/ROW.json": "ad7250a3aea50461f361705db8a415afbdca214199f6d8132dcfd3fac54aeeab",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/V2_V1/port.log": "4a59cf264b6c9663ad38306bbac3f03a55baf95f66c9f0dbf7049eabc53bb838",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-matrix-b/V2_V1/prof.bin": "9f67e5fd0747586d94a36199e3929c3f2180460eb9e3ab3be6bda938703a78b8",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_V1-stack.json": "af5077ef716783ac48af78837121aa3ec34ee908694382c4302e9177ab113a28",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_V1-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_V1-stack.json": "e2e47cf2dd82bc11e7bb6c6b6e86df8064596e159e8d503de34f612df256972f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_V1-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_V2-stack.json": "af5077ef716783ac48af78837121aa3ec34ee908694382c4302e9177ab113a28",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_V2-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_V2-stack.json": "e2e47cf2dd82bc11e7bb6c6b6e86df8064596e159e8d503de34f612df256972f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_V2-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_snare-stack.json": "369b08e6f399925f1d4c800b421231bd0913c6a4eccc4f39ff7fdd60854380c8",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V1_snare-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_snare-stack.json": "90f8d1215192989dc3179720264fb61f145dfafb9f7e81c7d6724212ca6fde0b",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V1_snare-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_V1-stack.json": "af5077ef716783ac48af78837121aa3ec34ee908694382c4302e9177ab113a28",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_V1-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_V1-stack.json": "e2e47cf2dd82bc11e7bb6c6b6e86df8064596e159e8d503de34f612df256972f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_V1-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_V2-stack.json": "af5077ef716783ac48af78837121aa3ec34ee908694382c4302e9177ab113a28",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_V2-private.json": "9e6e061c2ac42a65598eb5fd25cca5aa6c3ccdb6c43d79c74cdb3b0b5707a719",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_V2-stack.json": "e2e47cf2dd82bc11e7bb6c6b6e86df8064596e159e8d503de34f612df256972f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_V2-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_bass-stack.json": "17db7c8ea5849b8adf947330917441bbb0f0dc9b7987491f7abda35d0cf9d456",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-V2_bass-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_bass-stack.json": "c338723a8b8e5ea9fc530e9da17ba6b6f7e5c1d16f5b082b412fb0296480dd9b",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-V2_bass-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_V2-stack.json": "1713b979c2c907bf5d5f9313f1dc49c85c5251016565fee1e5f7152045ffa3e3",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_V2-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_V2-stack.json": "e4721dc166a1cacd3e82d238726b5811605710e84b2b3c6a17b60a910eba1f66",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_V2-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_bass-stack.json": "13c85ef9d56361a4f8d76c6c51f9b0319078739c33cdc34989e6838b1492442b",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_bass-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_bass-stack.json": "c1f61b18251ea69eff7df9aecd818df2934bb7f425a1807172d62e7ef1ee2361",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_bass-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_snare-stack.json": "f03a6dfc1362d1061bf3a9c09633fcf98c523e6f2c5bc7b3da8b9720336fe8b1",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-bass_snare-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_snare-stack.json": "616b1088af96e3bd87ee39fc0d3e0dfaca0801d0168e78372a2f0438b703a5d6",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-bass_snare-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_V1-stack.json": "eb99f449a60afa3694d67a93c9a0201741ba5afc58fca9891da62d0092622d2b",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_V1-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_V1-stack.json": "183d2fef0bbc1b68138c61ebe2252eb505349a9ee970b9f0c5e7f40c2f05fd08",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_V1-private.json": "6d36287c437511f26c64fce19b39d6eb84927d06ca67e2325e39d60bb08961b3",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_bass-stack.json": "501f19bc70869191af8d84436a9d19c5ce6bfab04920535748cc235e37313bd1",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_bass-private.json": "8004ef85ca997e3f2541ff1ecd81a4b8d1a9c517a2172464ebc359bde9257b62",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_bass-stack.json": "cfc4fa157516b68c68bed4e09abb423a43ba9a802d5f7256c861d35267365582",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_bass-private.json": "28c54bf1a2e46b025405efd0e69471980a3025b49c87149dc27ad72f2074695a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_snare-stack.json": "f341097ca871b7097fe5b5d1127563687de5e7e57bef256cd1e68d08a2b0c0e7",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_snare-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_snare-stack.json": "8cdea54ffed81e2f653768d15c1565eb8ad8827d0b7e730282f8894a9f5a7b10",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_snare-private.json": "fce67c8cccbb3c735f827ebfce3ff46eacbf1ae5064a1415562e3ce176745767",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_third-stack.json": "da0ac4dc65c600d6b782dc985e21dff58ea15a15dbf9857fa7bd52252cc8f6d7",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-snare_third-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_third-stack.json": "2d13a9cca05ec97b63fbd7b0e5ccdfd506d0921d2f7fc90def979877a3433663",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-snare_third-private.json": "fce67c8cccbb3c735f827ebfce3ff46eacbf1ae5064a1415562e3ce176745767",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_snare-stack.json": "8b14116bbfd84ac43aa31c7ecc674b2f0c9d8f71af8aac0ac033ec5e966e2429",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_snare-private.json": "26f6b3800f655cacf757d50a2f9f087a4edd27cbf675311194745b1f7331f643",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-third_snare-stack.json": "3104c8a7cf5a7324d1a097cd8071e2e8038d47059fd44e3967e02d488f6ce182",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-third_snare-private.json": "fce67c8cccbb3c735f827ebfce3ff46eacbf1ae5064a1415562e3ce176745767",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_third-stack.json": "d4edce3ba62898ebfd033b4fe1cff2fbb01143825a854a0b1861b2d8a43195ad",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/baseline-full/campaign-third_third-private.json": "fe15cc2676223d091b76dbd10ad1effda2f903418ec8b2ecd0978623cf263c69",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-third_third-stack.json": "27df1d0827bfcb36b63368c5b21dd6043172d669c2d0777fd5007e2f96f010be",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final/campaign-third_third-private.json": "fe15cc2676223d091b76dbd10ad1effda2f903418ec8b2ecd0978623cf263c69",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained/snare_snare/ROW.json": "803f6f7874d214241304cd40dbbe3d79322fdb904fccd15bcfa86470c10fca59",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained/snare_snare/port.log": "b376b049b2e9b9511a310c43b13a3a7e60c86f29e70273b02459f85f3a3d3c2f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained/snare_snare/prof.bin": "6fade1624e385775b978bc5388bde37a74564f94accb17c5f0a1a2b2a70ca907",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/MATRIX.json": "4f913217e2cdb57106c6ed4dea379a22f1902cbf0b25469891547fe5f440509a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/snare_bass/ROW.json": "219efc1c77f48ac3f05da332b50b4d9b5eeecf70ca43b7d77df0bff8d85c32af",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/snare_bass/port.log": "47ae22d0b07bec0d25df1581f994c1bd5a3dd94811f9377ffecae2473bc56a59",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/snare_bass/prof.bin": "c0c50eaadfa2520d0323fadb5a3b4ef15592205acfb81060fd688ddfe64c37b6",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/bass_bass/ROW.json": "0aec37d284b400a9d26917684ef05782ac18b850d8b8898de272a805f4f2ecb5",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/bass_bass/port.log": "3288f35b6ef115708db6cfb770b2b66dce6d9eb4565afa94519bcdd6f66214d8",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/bass_bass/prof.bin": "939175fce27410c6b7637654fef5a8aa827fca004aea8898a99bf0aac14a2034",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V1_V1/ROW.json": "1fdce46059ad0a2470939c782a378a65b2dd2c39701fc21db49fae030d029991",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V1_V1/port.log": "03279991fd3fad222807995360231c93d50fabcbb1b020189ff2d62504e2e501",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V1_V1/prof.bin": "e07b8b88ea42f0b47239cdbbe6db0dd1f5947b96addc73236e6b6fabe2e5e655",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V2_V2/ROW.json": "d9b5d2ab7a448daa7020308674f6f5b05d46d5e394066861f57d696c4a0b4090",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V2_V2/port.log": "b74f0d3c3b945b76bc7984da8ee01ef689eb196afdcf7087fca17512fc86e4e2",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V2_V2/prof.bin": "e07b8b88ea42f0b47239cdbbe6db0dd1f5947b96addc73236e6b6fabe2e5e655",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V1_V2/ROW.json": "3752ec775fe843185b8f476b54a236d804f2c421a2a51b7d2e07da5fa437a852",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V1_V2/port.log": "b5d4cb3ede7a78bb0f08dc9f709d70da946a9601bfe75cc3c7ef62e9c2df565d",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V1_V2/prof.bin": "e07b8b88ea42f0b47239cdbbe6db0dd1f5947b96addc73236e6b6fabe2e5e655",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V1_snare/ROW.json": "7e87115a40ff73a76d0af8c532286e6f6d5a66940a5c562fd235a2125a8a7dcc",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V1_snare/port.log": "d63f75f7f1ad8c4de6f246ebc248f9f021cc9188d8b82081a50cad72170bab4a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V1_snare/prof.bin": "1879c78f76c046a16c2b52b4b33001448d4c9957d1b0b51ef67d830696f738f5",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V2_bass/ROW.json": "dbd869e1611ea54862a864862136adaa90c151b886335d03eddd4bf80215fb92",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V2_bass/port.log": "f6ba619a1caed8f54c4e56a4b788c8112362318ae45c09ea535b875e63afe818",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-a/V2_bass/prof.bin": "c4735485cba74f28bac480859cf317042086cdd3e83119de0f758571c18df19f",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/MATRIX.json": "28b32291d4bfaee7cc53f84e9aa6cfef6127936a3a9ae2a0e80e1a7a0ed99e15",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/third_snare/ROW.json": "1c87fa3aac7e66804b8f75d0edffe2f2e07069ce58e28858c64dbafeac67a6d0",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/third_snare/port.log": "f7f82ea06b2aed0678676e31eb5aa860fc559360719d40b49dd4348b8cc6f439",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/third_snare/prof.bin": "67bb0c5eb94f607798f23d11b52163139bd865aebfd08d7b1a083cd982824f14",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/third_third/ROW.json": "39861102fe514b947ded88f7bf5c26fa1bc80693a139bc2e579e3a37fe1842a5",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/third_third/port.log": "1da6e8625963cfb6458b51b0c7d021bc837472977a686f1aa31c93e7e9dfb122",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/third_third/prof.bin": "fbf427654c40981929f8fa7ad7eec3bbed47704cb9de9184918c4a6cc4b13db9",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/bass_snare/ROW.json": "c9879708b65d3887dc3b631dfce6ceea0d8fada1c1bc9077895bdacc9da8e411",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/bass_snare/port.log": "9c2ed648ddb7ef3986a306a25ac2e53003656d8dc860967b71bb818e2865b1d8",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/bass_snare/prof.bin": "25cfab122c0d311c7b1b332bd59d6657639e16dd5e9dbb038d6e8a4cca2b92d9",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/snare_V1/ROW.json": "e806533f99e5c4dace26cc48035a843acb94ebed0b24993cf45c1281b357435a",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/snare_V1/port.log": "3968b8fac42c0e5e3376252a4f4352d575f2114bf177750104a874c6620bdd03",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/snare_V1/prof.bin": "1d9b72307b83702d34d0fa39f8a46a985d317b0a2508551e346b94d63cd64bf4",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/bass_V2/ROW.json": "ba27da7d84ff9d0551c8488c3df7633ca3dc7e35ed88c5ad51e892b0f2cf4201",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/bass_V2/port.log": "e25cdc1a8fecdae7564fb719005b06fc49fb6a4265b56b02c0844b39fb0a0503",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/bass_V2/prof.bin": "2e8c105d596a8c822198a160a2db434617ba4a850e8214fad27adf775f8ae762",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/snare_third/ROW.json": "bc7ac8e2a900a42c6568123f30a03fab26326fc83866576239cc9a178381735c",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/snare_third/port.log": "17f29e2b2b220b86635da61a447f41ecb043c81a906a3f64d54eee60a83de9e9",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/snare_third/prof.bin": "fed175246f68b82a49d48b3a67193364a43dd8d7e6f5453db64ccd5a7c0e168b",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/V2_V1/ROW.json": "5cc18d4cc5ddd7a377f6c0de89ace76b27b502d52c915e6822a6003ff35b5fcd",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/V2_V1/port.log": "e2161e210eb698dd207c6c5e375e0674f8e21f58ff7650421b032cdf38349102",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-sustained-b/V2_V1/prof.bin": "e07b8b88ea42f0b47239cdbbe6db0dd1f5947b96addc73236e6b6fabe2e5e655",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-stress/MATRIX.json": "8dcbc02d4b8fa59ae2ee09485312ac120d22356142da10822e255917f7e2c7a0",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-stress/snare_snare/ROW.json": "0f046e6cd1f9feaa56bd71418d8734bfe1a95a974818d4c2cf670c952ba0b4df",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-stress/snare_snare/port.log": "5ea507e00cdf7e9b2ee6a492e7e47bcac6f2b74f5439a7fe49f7fe6bf88160b2",
+      "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/final-stress/snare_snare/prof.bin": "68456f5d527f323f4e968d8e28a9276f45027cd0c37a10f08c6081c651062a85"
+    },
+    "limits": [
+      "All timing is emulated ColdFire at 264 MHz, not physical MKII timing.",
+      "Full executed ISR observer is present in the paired 4096-frame rows.",
+      "Sustained/continuous runs use the firmware timer window; entry-save and post-stamp footer are excluded.",
+      "ACK-to-ACK CPU work includes intervening stock tasks; it is not ISR duration or interrupt latency.",
+      "All-eight-track audio is verified in separate short captures for every paired row.",
+      "Does not replace cold-boot, memory, package, lifecycle or private-stack qualification."
+    ],
+    "hardware_qualified": false
+  },
+  "final_rebuild_identity": {
+    "path": "out/perky/hybrid/campaign-20261016/REBUILD_IDENTITY.json",
+    "sha256": "7d5d241959e3f7392db67aa8237fb559cac93f74778eda0fbd355a52d541e5c9",
+    "status": "PASS_IDENTICAL_COMMITTED_SOURCE_REBUILD_AND_WRAPPER_ROUNDTRIP",
+    "before": {
+      "mainos": "f7f04e26969522d2024b1bba5be85f620857d636dbe0b284aa38c0fb087a21db",
+      "runtime_elf": "45b220aeecc46a1f01e6339298ac5e0a2f91e2bd84fb34465ec745687b1d43a1",
+      "runtime_raw": "2569b908ee713d30e9bce9e53be86f38b21eab06726e444bd40183d8cdb8227c",
+      "fragmented_normal": "c58586aeed1d0c80c0c2f1ebc95c78d9ef77173468ca424576b141a00360803c"
+    },
+    "after": {
+      "mainos": "f7f04e26969522d2024b1bba5be85f620857d636dbe0b284aa38c0fb087a21db",
+      "runtime_elf": "45b220aeecc46a1f01e6339298ac5e0a2f91e2bd84fb34465ec745687b1d43a1",
+      "runtime_raw": "2569b908ee713d30e9bce9e53be86f38b21eab06726e444bd40183d8cdb8227c",
+      "fragmented_normal": "c58586aeed1d0c80c0c2f1ebc95c78d9ef77173468ca424576b141a00360803c"
+    },
+    "source_commit": "bb14be08ec2dc1229503d0a6703d6ca808c5b074",
+    "implementation_commit": "69ecb4ddc7407c3058382ed9ef285aff862ec7e2",
+    "hybrid_source_id": "47ba6166b8c2ba148920164455730a6baf9dc567cb76f25d45cbb71aa902b757",
+    "all_26_manifest_sources_identical": true,
+    "prewrap_BUILD_sha256": "9c229dba800be93276b1a12aee154b745c6c5359ed8014afdfa3a8fb9f926690",
+    "wrapped_BUILD_sha256": "8ddf6345e42d919c93ad2008370d936b2ca0d973dc8c85a134660f6308207b8c",
+    "scope": "Build/wrapper identity only; later package/probe/private qualification remains required."
+  },
+  "diagnostic_delivery": {
+    "path": "out/perky/hybrid/campaign-20261016/DELIVERY.json",
+    "sha256": "c3699111ed535f693e298951acadf7fefd0c7cbcf8be2c37e1eadb4761b744bd",
+    "status": "LOCALLY_QUALIFIED_DIAGNOSTIC; HARDWARE_AB_PENDING",
+    "directory": "/Users/jrold/Downloads/PERKY_PKH4O2_bb14be08",
+    "version": "PKH4O2",
+    "build_number": 44,
+    "build_source_commit": "bb14be08ec2dc1229503d0a6703d6ca808c5b074",
+    "implementation_commit": "69ecb4ddc7407c3058382ed9ef285aff862ec7e2",
+    "hybrid_source_id": "47ba6166b8c2ba148920164455730a6baf9dc567cb76f25d45cbb71aa902b757",
+    "files": {
+      "card": {
+        "path": "/Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/OCTATRACK_PKH4O2.bin",
+        "bytes": 791060,
+        "sha256": "68f24b1e0387b7c0cfb18386ccbb3df075b3ce67749e3dc5c64c46fe945f94a0"
+      },
+      "midi": {
+        "path": "/Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/OCTATRACK_OS1.40C_PKH4O2.syx",
+        "bytes": 1104981,
+        "sha256": "5e49be57160fee631c4d05a0728f76455ab655dc2a44c502e1d169d3856ef5ec"
+      },
+      "mainos": {
+        "path": "/Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/mainos_PKH4O2.bin",
+        "bytes": 1467019,
+        "sha256": "f7f04e26969522d2024b1bba5be85f620857d636dbe0b284aa38c0fb087a21db"
+      },
+      "BUILD.json": {
+        "path": "/Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/BUILD.json",
+        "bytes": 8554,
+        "sha256": "8ddf6345e42d919c93ad2008370d936b2ca0d973dc8c85a134660f6308207b8c"
+      },
+      "CAMPAIGN_QUALIFICATION.json": {
+        "path": "/Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/CAMPAIGN_QUALIFICATION.json",
+        "bytes": 38555,
+        "sha256": "a2a829c1221c936057369775532177c30ef7abe94be5c7304557d361ab4b24ea"
+      },
+      "PRIVATE_QUALIFICATION.json": {
+        "path": "/Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/PRIVATE_QUALIFICATION.json",
+        "bytes": 23366,
+        "sha256": "80635ec793e2aafdddea56ad451bda2eabfd046df413334c45e241c34ee8bd83"
+      },
+      "PACKAGE_SAFETY.json": {
+        "path": "/Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/PACKAGE_SAFETY.json",
+        "bytes": 3612,
+        "sha256": "f0f33b2de80fc1a7735aba8080943e44e7133d78f88ce612e6da3db07ca9094f"
+      },
+      "PROBE_GATES.json": {
+        "path": "/Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/PROBE_GATES.json",
+        "bytes": 1921,
+        "sha256": "aa3e25dd6534bed34cfa9bdca34b24d5ff5da3cb3a9ea20ff3be98d3a77c5378"
+      },
+      "TIMING_AUDIT.json": {
+        "path": "/Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/TIMING_AUDIT.json",
+        "bytes": 71334,
+        "sha256": "e8f21a71c133837abff87092c4e1fea03d45d3925cf178344aed11c4e745cf1d"
+      },
+      "REBUILD_IDENTITY.json": {
+        "path": "/Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/REBUILD_IDENTITY.json",
+        "bytes": 1373,
+        "sha256": "7d5d241959e3f7392db67aa8237fb559cac93f74778eda0fbd355a52d541e5c9"
+      }
+    },
+    "scope": "Local diagnostic handoff only. Hardware startup/timing/coherence remain unqualified; see CAMPAIGN_QUALIFICATION and MKII_AB_TEST.",
+    "historical_artifacts_overwritten": false,
+    "hardware_flashed": false
+  },
+  "boot_support_checks": {
+    "path": "out/perky/hybrid/campaign-20261016/BOOT_SUPPORT.json",
+    "sha256": "2658f1358b259e6442c1e55e4719c343242c11465696edac6c17e444d78d21d9",
+    "schema": "octabam.perky.campaign-boot-support.v1",
+    "status": "PASS_HOST_DECODER_BSS_AND_ASSEMBLED_DIAGNOSTIC_ANCHORS",
+    "scope": "Host decoder/BSS and real-assembler diagnostic anchors; actual target boot/poison/reinit checks are separate.",
+    "commands": [
+      {
+        "argv": [
+          "cc",
+          "-std=c99",
+          "-O2",
+          "-Wall",
+          "-Wextra",
+          "-Werror",
+          "tools/verify/test_perky_cf_rice_boot.c",
+          "-o",
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/boot-support-ddjtperm/rice-test"
+        ],
+        "exit_status": 0,
+        "log": "out/perky/hybrid/campaign-20261016/identified-rice-compile.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "argv": [
+          "/Users/jrold/Downloads/octabam/out/perky/hybrid/campaign-20261016/boot-support-ddjtperm/rice-test"
+        ],
+        "exit_status": 0,
+        "log": "out/perky/hybrid/campaign-20261016/identified-rice-test.log",
+        "log_sha256": "fe32392157723ca91b8677c17f1fd8bcc5c36d0ab456bfe8ddca96e26664fa6e"
+      },
+      {
+        "argv": [
+          "/Users/jrold/Downloads/octabam/.venv/bin/python",
+          "tools/verify/test_perky_hybrid_boot_trace.py"
+        ],
+        "exit_status": 0,
+        "log": "out/perky/hybrid/campaign-20261016/identified-boottrace-test.log",
+        "log_sha256": "5777590d185261a80f6512f083e220ba32a491fe18f66bb0797a8086526d18ef"
+      }
+    ],
+    "sources": {
+      "modules/perky/cf_pcm_rice.h": "c6a3bfd05ae825e8a190e9c4554e7ae39dcee820001a70d4a411282668ba1c0e",
+      "modules/perky/control_cf_dsp_hybrid.c": "b51a030601f6b6d48618668cfad3c0b4e8cbff9a8bc1e4c0c41fed0d21d8a417",
+      "tools/verify/test_perky_cf_rice_boot.c": "ece371a66f6872cf8267c556a5441e4ff821ee3797ee76fd4c314e23bf56acfa",
+      "tools/verify/test_perky_hybrid_boot_trace.py": "a2cd7c5759fc2ac22f8dd8d55e8849a01aae8b16eac4461b2903c5a83567a3a0",
+      "tools/verify/test_perky_hybrid_coldboot_bss.py": "126db9e0e653c8f7a420ee1d6a78d3684173114c45d6aeb291148fc514a5961e",
+      "tools/perky/hybrid_boot_trace.py": "afeda668e50f0a00d948eea1d2ed721635a5e95ff504becbaa899097739da373",
+      "tools/remix/loader.S": "fda27938fb368be03c3cdaa6a838fe7e6bece304649a33b1b8901d201cc3defb"
+    },
+    "tools": {
+      "cc": {
+        "path": "/usr/bin/cc",
+        "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin\n"
+      },
+      "gcc": {
+        "path": "/usr/bin/gcc",
+        "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin\n"
+      },
+      "clang": {
+        "path": "/usr/bin/clang",
+        "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin\n"
+      },
+      "m68k-elf-as": {
+        "path": "/opt/homebrew/bin/m68k-elf-as",
+        "version": "GNU assembler (GNU Binutils) 2.47.20260726\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis program is free software; you may redistribute it under the terms of\nthe GNU General Public License version 3 or later.\nThis program has absolutely no warranty.\nThis assembler was configured for a target of `m68k-elf'.\n"
+      },
+      "m68k-elf-ld": {
+        "path": "/opt/homebrew/bin/m68k-elf-ld",
+        "version": "GNU ld (GNU Binutils) 2.47.20260726\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis program is free software; you may redistribute it under the terms of\nthe GNU General Public License version 3 or (at your option) a later version.\nThis program has absolutely no warranty.\n"
+      }
+    },
+    "decoder_unit_executable_sha256": "2007ee381507cc50e0dd919f52e2e1b98891489e38cb90519b3a075ddff83a84",
+    "BSS_scrub": {
+      "command": [
+        "/Users/jrold/Downloads/octabam/.venv/bin/python",
+        "tools/verify/test_perky_hybrid_coldboot_bss.py"
+      ],
+      "exit_status": 0,
+      "log": "out/perky/hybrid/campaign-20261016/final-bss-identified-tests.log",
+      "log_sha256": "fc566cd3bb5d80e05d3525063e91482dec3d8924c9be27a79405b22fadb0180c",
+      "host_bytes": 218560,
+      "sanitizers": [
+        "ASan",
+        "UBSan"
+      ],
+      "compiler_identity": "Both gcc and clang driver names resolve to Apple Clang21 here, not two independent compiler implementations."
+    }
+  },
+  "final_exclusive_symbol_profile": {
+    "path": "out/perky/hybrid/campaign-20261016/final-symbols/PROFILE.json",
+    "sha256": "1e66d6ded5bed66355e5436e803cc66242fc8f03f17964607318c310a12f4804",
+    "status": "PASS_EXACT_UNPERTURBED_SYMBOL_PROFILE",
+    "top_symbols": [
+      [
+        "pk_cf_wt_render",
+        71874998
+      ],
+      [
+        "pk_cf_nt_shared_render",
+        16311284
+      ],
+      [
+        "wt_frequency_block",
+        11277626
+      ],
+      [
+        "bass_tone_block",
+        4748470
+      ],
+      [
+        "bass_noise_mix",
+        4187899
+      ],
+      [
+        "res_noise_block",
+        3722181
+      ],
+      [
+        "snare_noise",
+        3495105
+      ],
+      [
+        "snare_second",
+        3420130
+      ],
+      [
+        "bench_render",
+        3357281
+      ],
+      [
+        "snare_first",
+        3295947
+      ],
+      [
+        "bass_drive_block",
+        2590547
+      ],
+      [
+        "bench_init",
+        1494550
+      ],
+      [
+        "nt_envelope_block",
+        1395640
+      ],
+      [
+        "prepare_wt",
+        1374685
+      ],
+      [
+        "bass_level",
+        1304367
+      ],
+      [
+        "snare_decay_d",
+        1302428
+      ],
+      [
+        "prepare_res_family",
+        1263928
+      ],
+      [
+        "bass_pitch_block",
+        1113403
+      ],
+      [
+        "snare_decay_b",
+        973637
+      ],
+      [
+        "snare_decay_a",
+        826126
+      ],
+      [
+        "snare_decay_c",
+        817509
+      ],
+      [
+        "res_advance_envelope.isra.0",
+        777722
+      ],
+      [
+        "pk_cf_res_snare_render",
+        759717
+      ],
+      [
+        "pk_cf_res_bass_render",
+        687782
+      ],
+      [
+        "res_update_bass_impl",
+        419749
+      ],
+      [
+        "bench_prepare",
+        297794
+      ],
+      [
+        "res_update_snare_impl",
+        273201
+      ],
+      [
+        "nt_update",
+        177214
+      ]
+    ],
+    "scope": "Canonical target benchmark including switching/tails; exclusive emulated cycles. Observation leaves target PCM/state/RNG and every cost/stack row unchanged."
+  },
+  "final_requirement_audit": {
+    "path": "modules/perky/hybrid/CF_OPTIMIZATION_20261016_QUALIFICATION.json",
+    "sha256": "a2a829c1221c936057369775532177c30ef7abe94be5c7304557d361ab4b24ea",
+    "status": "COMPLETE_AVAILABLE_LOCAL_CAMPAIGN; LOCALLY_QUALIFIED_DIAGNOSTIC; PHYSICAL_AB_PENDING"
   }
 }

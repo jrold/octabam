@@ -1,5 +1,5 @@
 PERKY ColdFire campaign — 16 Oct 2026
-Status: IMPLEMENTED_TARGET_VERIFIED_INTEGRATION_QUALIFICATION_RUNNING
+Status: LOCALLY_QUALIFIED_DIAGNOSTIC_HARDWARE_AB_PENDING
 
 All numbers below are measured emulator/target-code observations unless explicitly called physical.
 The new supplied physical MKII capture remains the hardware baseline: mean 300.372 us, max 421.030 us, 479 deadline misses.
@@ -15,6 +15,17 @@ Original-author/ARM: 19 sections, 22,098 cases, 3,046,272 PCM samples, zero fail
 Extended edges: 22,270 render calls plus 10,584 fixed-point/countdown cases; complete state/PCM/RNG/guards match.
 New selected artifact: PKH4O2; hardware timing unqualified. Physical 20% margin is not established.
 
+Selected two-voice isolated render means (target cycles, identical unchanged controls):
+Algorithm                 baseline cycles    selected cycles    reduction
+V1M1                            19774.008           6206.725       68.61%
+V2M1                            19773.542           6206.550       68.61%
+snare                           20876.025           7736.742       62.94%
+bass                            18060.442           7565.192       58.11%
+NoiseTone                        7958.633           7965.167       -0.08%
+These are two CF voices rendering one 16-sample block; they are not whole-ISR or hardware gains.
+Runtime raw image: 302,600 -> 310,344 bytes (+7,744). MAIN: 1,462,596 -> 1,467,019 bytes.
+Actual instruction counts, bounded compiler stack usage and section sizes are in CODEGEN.json.
+
 Paired full executed ISR maxima, 4,096 frames, 264 MHz model:
 T2/T6                       baseline us    candidate us    max reduction
 snare/snare                    325.386         278.015       14.56%
@@ -25,17 +36,17 @@ V2/V2                          306.795         255.977       16.56%
 V1/V2                          306.795         255.977       16.56%
 V1/snare                       316.542         267.288       15.56%
 V2/bass                        310.769         265.958       14.42%
-third/snare                    297.231         273.830        7.87%
-third/third                    269.008         268.848        0.06%
+NoiseTone/snare                297.231         273.830        7.87%
+NoiseTone/NoiseTone            269.008         268.848        0.06%
 bass/snare                     319.905         276.898       13.44%
 snare/V1                       316.489         267.288       15.55%
 bass/V2                        310.822         266.197       14.36%
-snare/third                    297.576         273.777        8.00%
+snare/NoiseTone                297.576         273.777        8.00%
 V2/V1                          306.795         255.977       16.56%
 
 Scene/fader selected full ISR max: 289.220 us (76,354 cycles), zero modeled duration misses.
 Hard period 362.811791 us; desired 80% ceiling 290.249433 us. Neither emulator result bounds silicon timing.
-Separate ACK-to-ACK CPU-work windows over one frame: 162 before -> 0 after across the matched short matrix.
+Separate ACK-to-ACK CPU-work windows over 362.8 us: 162 before -> 0 after across the matched short matrix.
 ACK windows include intervening stock tasks, not ISR duration or interrupt latency. The full 60-second Snare row reaches 358.920 us ACK work.
 Thus the observed ISR ceiling does not establish 20% headroom for the complete CPU workload.
 CF-disarmed diagnostic: full ISR max 213.811 us; ACK CPU-work max 343.155 us. Production CF remains armed.
@@ -71,20 +82,68 @@ baseline_pairs_a: PASS_MEASURED_MATRIX (7 completed rows)
 baseline_pairs_b: PASS_MEASURED_MATRIX (8 completed rows)
 candidate_pairs_a: PASS_MEASURED_MATRIX (7 completed rows)
 candidate_pairs_b: PASS_MEASURED_MATRIX (8 completed rows)
-sustained: RUNNING (1 completed rows)
-continuous_stress: RUNNING (0 completed rows)
-sustained_a: RUNNING (3 completed rows)
-sustained_b: RUNNING (3 completed rows)
+sustained: SUPERSEDED_SERIAL_DRIVER; COMPLETED_FIRST_ROW_REUSED (1 completed rows)
+continuous_stress: PASS_MEASURED_MATRIX (1 completed rows)
+sustained_a: PASS_MEASURED_MATRIX (7 completed rows)
+sustained_b: PASS_MEASURED_MATRIX (7 completed rows)
 primed_and_cold_records: PASS_EXACT_INITIALIZED_PCM_AND_ALL_SOURCE_RECORDS
 EMAC_IRQ: PASS_HIGHER_IRQ_EMAC_USE_FULLY_CONTEXT_PRESERVING
 save_reload: PASS_SCOPED_SAVE_RELOAD
 card_export: PASS_ACTUAL_FIRMWARE_CARD_EXPORT
 profiler_off: PASS_MEASURED_MATRIX (1 completed rows)
+actual_packages: PASS
+complete_probe_gates: PASS
+private_qualification: LOCALLY_QUALIFIED_DIAGNOSTIC_SCOPED_TO_APPROVED_STACK_CORRECTION; REVIEW_BEFORE_HARDWARE
+complete_timing_audit: PASS_COMPLETE_LOCAL_TIMING_COVERAGE
+boot_support: PASS_HOST_DECODER_BSS_AND_ASSEMBLED_DIAGNOSTIC_ANCHORS
+
+Full-duration candidate coverage (firmware timer window; entry-save/footer excluded):
+T2/T6                    frames    timer mean us    timer max us    ACK CPU-work max us
+V1/V1                     165376          159.612         255.636                356.356
+V1/V2                     165376          159.612         255.636                356.356
+V1/snare                  165376          164.942         266.917                358.648
+V2/V1                     165376          159.612         255.636                356.356
+V2/V2                     165376          159.612         255.636                356.356
+V2/bass                   165376          164.371         265.591                358.220
+bass/V2                   165376          164.440         265.826                357.739
+bass/bass                 165376          167.429         275.038                359.777
+bass/snare                165376          168.547         276.500                360.061
+snare/V1                  165376          164.846         266.917                357.364
+snare/bass                165376          168.499         276.500                359.928
+snare/snare               165376          168.643         277.621                358.920
+snare/NoiseTone           165376          167.767         273.409                359.788
+NoiseTone/snare           165376          167.823         273.432                359.519
+NoiseTone/NoiseTone       165376          165.584         268.508                357.886
+snare/snare              1653750          168.584         277.621                360.061
+All sustained/continuous rows have two CF voices and two DSP voices active throughout,
+32 CF samples per frame, no readiness faults or late DSP words; actual profiler dumps and logs are hash-verified.
+No modeled timer-window misses or ACK-work windows above one period in these captures.
+ACK-work maxima are separate from ISR duration. No physical timing headroom is inferred.
 
 Known failure and repair: the initial runtime gate failed because repeated boot init scrubbed PCM while its loaded cookie stayed READY.
 Both baseline and initial candidate reproduced the loss; PKH4O2 restores PCM and passes the actual runtime comparison.
 Superseded PKH4O1 sustained runs were intentionally stopped and retained as cancelled evidence.
 
-Remaining: complete active sustained, paired, lifecycle/save, instrumentation and packaging checks.
+Remaining: Physical MKII matched A/B timing, startup and sustained workload acceptance remain unmeasured; follow delivered procedure.
 Machine-readable evidence, hashes, inputs and result scopes: CF_OPTIMIZATION_20261016.json.
 Raw traces and exact commands: out/perky/hybrid/campaign-20261016/.
+
+Local verdict: complete available correctness, boot, lifecycle, package, retained-FX and timing qualification passed.
+Private stack static demand including higher nesting: 1,246 / 4,096 bytes. The larger stock task graphs remain outside this bounded correction.
+Hardware startup, cache/SDRAM/FlexBus timing, interrupt latency and matched physical performance remain unqualified.
+The builder notes preserve the provisional UNQUALIFIED_BUILD status; the later qualification receipt supplies the scoped local verdict.
+No physical installation, sound or timing success is claimed. PERKY4S remains the hardware-tested rollback.
+Final requirement audit: CF_OPTIMIZATION_20261016_QUALIFICATION.json.
+
+Artifact identity:
+Production implementation commit: 69ecb4ddc7407c3058382ed9ef285aff862ec7e2
+Clean build source commit: bb14be08ec2dc1229503d0a6703d6ca808c5b074
+Embedded source fingerprint: 47ba6166b8c2ba148920164455730a6baf9dc567cb76f25d45cbb71aa902b757
+card: /Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/OCTATRACK_PKH4O2.bin
+  791060 bytes; SHA256 68f24b1e0387b7c0cfb18386ccbb3df075b3ce67749e3dc5c64c46fe945f94a0
+midi: /Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/OCTATRACK_OS1.40C_PKH4O2.syx
+  1104981 bytes; SHA256 5e49be57160fee631c4d05a0728f76455ab655dc2a44c502e1d169d3856ef5ec
+mainos: /Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/mainos_PKH4O2.bin
+  1467019 bytes; SHA256 f7f04e26969522d2024b1bba5be85f620857d636dbe0b284aa38c0fb087a21db
+Physical test procedure: /Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/MKII_AB_TEST.txt
+Full delivered-file checksums: /Users/jrold/Downloads/PERKY_PKH4O2_bb14be08/SHA256SUMS
