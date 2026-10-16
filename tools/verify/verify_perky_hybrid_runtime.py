@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/verify'))
 import verify_perky_hybrid_probe_gates as g
+import perky_hybrid_voice_layout as voice_layout
 from unicorn import UC_HOOK_CODE, UC_HOOK_MEM_WRITE
 
 
@@ -24,7 +25,16 @@ def word(u, a): return int.from_bytes(u.mem_read(a, 4), 'big')
 def digest(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
 
+def canonical_state(u, syms, sz):
+    extent=sz['pk_hybrid_voices']
+    return voice_layout.canonical(bytes(u.mem_read(syms['pk_hybrid_voices'],extent)),extent//2)
+
+
 def machine(image, elf, require_boot_ready=False):
+    # A padded representation must have a compiler/image-bound certificate.
+    # This preserves every original byte and checks all new padding at each
+    # canonical comparison; no algorithm state is excluded from the oracle.
+    voice_layout.layout(Path(elf).parent.parent)
     r = g.emu.boot(str(image)); assert r.clean, (r.stopped, r.error)
     g.emu._prime_part(r); syms = g.load_elf_symbols(elf); u = r.uc
     if require_boot_ready:
@@ -91,6 +101,7 @@ def main():
               begin=syms[name], end=syms[name]+sz_bytes-1)
              for name, sz_bytes in [('pk_pcm_wt_base', 4096), ('pk_pcm_wt_bank', 196608)]]
     old, old_syms = machine(a.reference/'mainos_PKHYB2P.bin', a.reference/'platform/runtime.elf')
+    old_sz = sizes(a.reference/'platform/runtime.elf')
     state_hash = hashlib.sha256(); audio_hash = hashlib.sha256()
     for f in range(a.frames):
         for t in (1, 5):
@@ -98,8 +109,8 @@ def main():
             reference = args_for(old.uc, t, f, f % 16, old_syms)
             assert now == reference, ('record PCM changed', f, t)
             audio_hash.update(now)
-        state = bytes(u.mem_read(syms['pk_hybrid_voices'], sz['pk_hybrid_voices']))
-        assert state == bytes(old.uc.mem_read(old_syms['pk_hybrid_voices'], sz['pk_hybrid_voices'])), ('state/RNG changed', f)
+        state = canonical_state(u,syms,sz)
+        assert state == canonical_state(old.uc,old_syms,old_sz), ('state/RNG changed', f)
         state_hash.update(state)
     result['bit_exact_reference'] = {'frames': a.frames, 'split_offsets': 16,
         'stereo_source_records': a.frames*2, 'PCM_sha256': audio_hash.hexdigest(),
@@ -108,6 +119,7 @@ def main():
     # Exact fallback for out-of-range state: public knobs remain 7-bit,
     # but deliberately corrupt old smoothers to exercise the guarded path.
     saved = bytes(u.mem_read(syms['pk_hybrid_voices'], sz['pk_hybrid_voices']))
+    old_saved = bytes(old.uc.mem_read(old_syms['pk_hybrid_voices'],old_sz['pk_hybrid_voices']))
     for case in range(8):
         for mu, symbols in ((u, syms), (old.uc, old_syms)):
             obj = symbols['pk_hybrid_voices'] + 2*0x150 + (0x1d4 if case & 1 else 0)
@@ -115,9 +127,9 @@ def main():
                 mu.mem_write(obj+0x1c+4*k, value.to_bytes(4,'little'))
             g.emu._call(mu, symbols['pk_hybrid_cf_prepare_event'],
                         (0,127,case*13,23,101,case & 1,2,255,45,case & 1))
-        assert bytes(u.mem_read(syms['pk_hybrid_voices'],len(saved))) == bytes(old.uc.mem_read(old_syms['pk_hybrid_voices'],len(saved)))
-    for mu, symbols in ((u,syms),(old.uc,old_syms)):
-        mu.mem_write(symbols['pk_hybrid_voices'],saved)
+        assert canonical_state(u,syms,sz) == canonical_state(old.uc,old_syms,old_sz)
+    for mu, symbols, raw in ((u,syms,saved),(old.uc,old_syms,old_saved)):
+        mu.mem_write(symbols['pk_hybrid_voices'],raw)
     result['out_of_range_smoother_reference_cases'] = 8
 
     # UI ticks never reset live audio state, even after a Part index changes.

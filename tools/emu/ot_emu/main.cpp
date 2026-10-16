@@ -1350,6 +1350,7 @@ int main(int _argc, char** _argv)
 	std::string cardOut;		// the card image as the firmware left it, to FILE at the very end (the load's WRITEs: emu_card.extract_image reads it back)
 	std::string pokeBeforePlay;	// --poke-before-play: "addr=byte;..." written after the --call-before-play calls and before the transport start, so a take's first frame sees it
 	std::string callBeforePlay;	// --call-before-play ADDR[:ARG][,...]: each called AS MAIN from main's spin, after --pre-roll, before the transport start (STEM REC arms a take here)
+	bool cfClockBeforeTransport = false; // opt-in: put startup/pre-roll audio under the same cycle clock as measured frames
 	std::string atFrames;		// --at FRAME:ADDR[:ARG][,...]: each called AS MAIN that many frames after the transport start (several, where --call-at makes one)
 	long long cardFailAfter = -1;	// --card-fail-after N: once N sectors are written, every WRITE SECTORS ends in ERR + ABRT, no DRQ
 	bool mainLevelGiven = false;	// 12 Sep 2026: --interactive defaults it to 64 (the panel wants sound); `--main-level off` keeps the -1. The batch default stays -1.
@@ -1447,6 +1448,7 @@ int main(int _argc, char** _argv)
 		else if(a == "--call-at" && i + 1 < _argc)	callAt = std::atoi(_argv[++i]);
 		else if(a == "--poke-before-play" && i + 1 < _argc)	pokeBeforePlay = _argv[++i];
 		else if(a == "--call-before-play" && i + 1 < _argc)	callBeforePlay = _argv[++i];
+		else if(a == "--cf-cycles-clock-before-transport") cfClockBeforeTransport = true;
 		else if(a == "--at" && i + 1 < _argc)			atFrames = _argv[++i];
 		else if(a == "--card-fail-after" && i + 1 < _argc)	cardFailAfter = std::atoll(_argv[++i]);
 		else if(a == "--step" && i + 1 < _argc)		steps.emplace_back(_argv[++i]);
@@ -2710,6 +2712,12 @@ int main(int _argc, char** _argv)
 				const auto seq = rtos.seqSelectLive(finalBank, pattern);
 				if(internalClock)
 					std::printf("midi byte  : %#04x -> clock receive cleared\n", rtos.internalClock());
+				if(cfClockBeforeTransport)
+				{
+					if(cfCycleClock <= 0.0) { std::fprintf(stderr,"--cf-cycles-clock-before-transport requires --cf-cycles-clock > 0\n"); return 2; }
+					rtos.setCycleClock(cfCycleClock);
+					std::printf("cycle clock: startup/pre-roll/transport use x%.2f (opt-in)\n",cfCycleClock);
+				}
 				// The frame clock and the exact instruction clock come on
 				// HERE, after the boot and the load, exactly as route A turns
 				// them on: on hardware the frame exchange runs from boot, and

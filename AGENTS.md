@@ -201,6 +201,7 @@ moment it costs real work, and add its line here.
 - [A BSS readiness flag can skip initialization](docs/contributing/TRAPS.md#trap-cf-ready-bss) — use a loaded nonzero cookie and poison BSS in the target probe.
 - [A STATIC fixture can play a tiny region without streaming](docs/contributing/TRAPS.md#trap-static-fixture-markers) — use the STATIC marker records; check sustained source audio and card reads after PLAY.
 - [Auto-grown emulator pages bypass read watches](docs/contributing/TRAPS.md#trap-automap-read-watch) — map benchmark assets explicitly and separate instruction-stream reads from data traffic.
+- [A host timer observation can change emulator scheduling](docs/contributing/TRAPS.md#trap-observer-timer-read) — bypass peripheral-touch bookkeeping; require exact paired target dumps and a uniform startup/playback clock.
 
 ## How claims are written here
 

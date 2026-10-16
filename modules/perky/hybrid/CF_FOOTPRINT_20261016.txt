@@ -1,0 +1,108 @@
+PERKY ColdFire footprint campaign — 16 Oct 2026
+Status: IN PROGRESS. No new hardware safety or voice restriction is asserted.
+
+Hardware evidence supplied by the user:
+PKH4O2 supports 2 DSP + 1 CF + 5 stock FLEX/STATIC tracks on their MKII.
+2 DSP + 2 CF + 3 stock tracks produces sluggish UI and eventual lockup.
+This prioritizes the marginal second CF voice. It does not prove a cache,
+algorithm, memory-bandwidth or interrupt root cause. The new PKH4O2 PRFs are
+recorded separately from the older CF_OPTIMIZATION_HARDWARE.json captures.
+
+Verified implementation checkpoint: 1ba3e0a0, committed and pushed [skip ci].
+Disable resonant loop splitting; restore spilled EMAC context by pointer.
+Standalone target text: 113426 -> 107166 bytes (-6260).
+Linked runtime raw image: 310344 -> 302152 bytes (-8192).
+Two-voice isolated render, target cycles (mean / maximum):
+                 PKH4O2             compact resonant
+WT V1       6206.725 / 6838       6206.783 / 6824
+Snare       7736.742 / 8925       7624.058 / 8436
+Bass        7565.192 / 8738       7441.833 / 8105
+NoiseTone   7965.167 / 8646       7966.858 / 8625
+WT/NoiseTone instructions and requested traffic are unchanged. Their tiny
+cycle differences follow linked code placement; no algorithm speedup claimed.
+
+Earlier clock-scope measurements (startup caveat below), PKH4O2,
+4096 frames, 2 DSP + 3 STATIC, Snare/Bass:
+                    0 CF         T2 only        T2 + T6
+Mean timer us      114.804        140.727         165.703
+Mean CPU cycles     36857          43713           50295
+CF callback us       0             24.771          48.526
+First CF CPU increment: about 6856 cycles / 25.970 us.
+Second CF CPU increment: about 6582 cycles / 24.932 us.
+These modeled execution increments show no disproportionate second cost.
+They do not model silicon cache, memory-bus, card-DMA or interrupt latency.
+A separate T6-only row gives 43605 mean CPU cycles (about 25.561 us above 0 CF).
+Stock code, effects, sample content and three stock sequences stay the same.
+
+Compact resonant three-STATIC integration: mean timer 165.703 -> 164.688 us;
+maximum 297.886 -> 298.303 us. The short-run maximum regresses 0.417 us;
+both exceed the desired 80% budget. Do not claim a maximum-ISR improvement.
+
+Instruction working sets (executed bytes, not cache misses), two CF renderers:
+Snare/Snare ~3409 B, Bass/Bass ~3552 B, Snare/Bass ~6322 B.
+The nested Snare and Bass renderers individually visit ~3156 / ~3273 B.
+Same-algorithm voices reuse instructions; mixed algorithms expand the union.
+All 81 initial mode/profile pairings have nested per-voice resource rows.
+This is a plausible silicon experiment target, not proof of cache thrashing.
+
+Architectural data requests, two-voice isolated render:
+Snare stack reads/writes: 2287/2250 -> 2255/2218 B per block.
+Bass stack reads/writes: 2245/1883 -> 2214/1855 B per block.
+Stack traffic includes local buffers and ABI saves, not only spills.
+Requested bytes do not establish external SDRAM transfers under caching.
+
+New integration experiments (uncommitted until further qualification):
+Immutable renderer table views: 25600 exact production callback comparisons,
+266752000 bytes compared, 40 fewer observed stack bytes; all 25 initial
+algorithm pairs, both profiler modes, every split offset and family changes.
+The calibrated RAM observer leaves all 25600 cost/instruction/stack rows
+unchanged. Peripheral MMIO is not counted by those RAM watches.
+Clearing only an unrendered suffix passes exactness but loses overall:
+variable-start code raises stack reads and WT/Bass/NoiseTone callback cost.
+Rejected; separately testing omission of only a full-render redundant clear.
+
+Fixture corrections:
+STATIC slot 1 uses marker record 136, after FLEX records, not record 0.
+The original mistaken probe played a 64-sample region with no playback reads;
+it is preserved as superseded evidence and is not streaming qualification.
+The corrected seven-track run issues 411 READ commands / 1236 sectors after
+PLAY, with sustained stock source output. The A-G/B6 baseline matrix passes
+short exercised rows. A later matched matrix normalizes STATIC/FLEX SRC and
+setup controls, and includes 1 CF + 5 stock tracks with all-eight-track audio.
+The modeled ATA card responds immediately and advertises PIO only; it does
+not reproduce physical CompactFlash latency, cache or DMA contention.
+
+Correctness already completed for the compact resonant checkpoint:
+Frozen canonical stream: 90612864 bytes, no PCM/state/RNG mismatches.
+Extended target edges: 22270 render calls plus 10584 decay edge cases.
+Actual-image runtime and source-cursor overlap comparisons pass.
+Compiler option-scope negative control passes.
+make check REMIX=perky-probe: 84 shared-isolated and 4 image gates pass;
+optional generic fixtures absent from that command are explicitly skipped.
+Full final hybrid-specific qualification, sustained/all-pair stock matrices,
+clean source-bound packaging and physical A/B remain outstanding.
+
+No stock machine, playback engine, streaming driver, scheduler, DSP algorithm,
+audio buffer contract, synthesis quality or public machine feature was changed.
+All experiments and receipts: CF_FOOTPRINT_20261016.json and
+out/perky/hybrid/footprint-20261016/.
+
+Further candidate checkpoint (not yet a qualified release):
+Independent Noise/Tone noise/filter block, compact loops, explicit oscillator
+initialization inline: target text 103660 B, versus PKH4O2 113426 B.
+Noise/Tone two-voice target mean/max 7965.167/8646 -> 7427.158/7799 cycles.
+The full filter recurrences, original state bytes and RNG progression remain.
+The canonical 90612864-byte reference comparison passes. Extended and linked
+production qualification are still being completed for this final variant.
+
+Timing instrument repair:
+The original port enables cycle timing after startTransportLive. Earlier
+startup-inclusive maxima can contain a clock-domain transition and require
+a matched uniform-clock rerun. An opt-in host flag enables cycle timing before
+audio starts; default emulator behavior remains unchanged. Requested transport
+frames and total IRQ/profiler/ACK counters have different start points.
+A new elapsed observer initially changed peripheral-touch bookkeeping despite
+not writing firmware memory. That comparison was rejected. The replacement
+whitelists three const DTIM3 observations without target flags or trace logs;
+calibration includes idle time, invalid clock modes and both stepping paths.
+Exact instrument-vs-uninstrumented integrated comparison is still pending.

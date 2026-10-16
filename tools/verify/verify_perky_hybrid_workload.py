@@ -136,11 +136,13 @@ def make_tone(path: Path) -> None:
         w.writeframes(frames)
 
 
-def install_sample_block(project: Path) -> None:
+def install_sample_block(project: Path, sampler_kind: str = 'flex') -> None:
+    if sampler_kind not in ('flex', 'static'):
+        raise ValueError('sampler_kind must be flex or static')
     crlf = "\r\n"
     block = (
         f"[SAMPLE]{crlf}"
-        f"TYPE=FLEX{crlf}"
+        f"TYPE={sampler_kind.upper()}{crlf}"
         f"SLOT=001{crlf}"
         f"PATH=../{SAMPLE_REL}{crlf}"
         f"TRIM_BARSx100=100{crlf}"
@@ -158,7 +160,7 @@ def install_sample_block(project: Path) -> None:
             continue
         raw = path.read_bytes()
         pat = re.compile(
-            b"\\[SAMPLE\\]\\r?\\nTYPE=FLEX\\r?\\nSLOT=001\\r?\\n.*?\\[/SAMPLE\\]\\r?\\n\\r?\\n",
+            rb"\[SAMPLE\]\r?\nTYPE=" + sampler_kind.upper().encode() + rb"\r?\nSLOT=001\r?\n.*?\[/SAMPLE\]\r?\n\r?\n",
             re.S,
         )
         raw = pat.sub(b"", raw)
@@ -172,7 +174,9 @@ def install_sample_block(project: Path) -> None:
         if not path.is_file():
             continue
         data = bytearray(path.read_bytes())
-        at = 0x16
+        # The file holds 136 FLEX records followed by 128 STATIC records.
+        # A zero STATIC trim record silently becomes a 64-sample region.
+        at = 0x16 + (136 * 784 if sampler_kind == 'static' else 0)
         data[at : at + 784] = (
             struct.pack(">III", 0, SAMPLE_FRAMES, 0) + bytes(768) + bytes(4)
         )
@@ -268,6 +272,9 @@ def stage_integrated_fixture(
     tone_path: Path,
     allow_family_transitions: bool = True,
     first_trig_delay: int = 0,
+    sampler_kind: str = 'flex',
+    cf_tracks: tuple[int, ...] = (1, 5),
+    sampler_tracks: tuple[int, ...] = (2, 3, 6, 7),
 ) -> Path:
     """Configure an 8-track integrated workload project:
     - T1 (track 0, DSP core B) and T5 (track 4, DSP core A): PERKY DSP synths
@@ -283,7 +290,12 @@ def stage_integrated_fixture(
     """
     fixture = prepare(project_src, work_dir / "project")
     make_tone(tone_path)
-    install_sample_block(fixture)
+    if (set(cf_tracks) - {1, 5} or set(sampler_tracks) - {1, 2, 3, 5, 6, 7}
+            or set(cf_tracks) & set(sampler_tracks)):
+        raise ValueError('invalid CF or stock sampler track selection')
+    perky_tracks = {0, 4, *cf_tracks}
+    active_tracks = perky_tracks | set(sampler_tracks)
+    install_sample_block(fixture, sampler_kind)
 
     t2_algo, t2_mode, t2_tune, t2_decay, t2_p1, t2_p2 = CF_SPEC[t2_key]
     t6_algo, t6_mode, t6_tune, t6_decay, t6_p1, t6_p2 = CF_SPEC[t6_key]
@@ -321,18 +333,18 @@ def stage_integrated_fixture(
                 file_base = otp.PART_BASE + part * otp.PART_STRIDE
                 live_base = file_base + 9
                 for track in range(8):
-                    data[live_base + 0x22 + track] = 1  # underlying FLEX
-                    if track in (0, 1, 4, 5):
+                    data[live_base + 0x22 + track] = 0 if track in sampler_tracks and sampler_kind == 'static' else 1
+                    if track in perky_tracks:
                         data[file_base + otp.SLOT_OFF + track * 5 + otp.SLOT_KIND["flex"]] = (
                             RECORDER_BASE + track
                         )
                         data[live_base + 60 + 30 * track : live_base + 63 + 30 * track] = b"PK\x01"
                     else:
                         # Stock sampler tracks T3/T4/T7/T8 use FLEX slot 1
-                        data[file_base + otp.SLOT_OFF + track * 5 + otp.SLOT_KIND["flex"]] = 0
+                        data[file_base + otp.SLOT_OFF + track * 5 + otp.SLOT_KIND[sampler_kind]] = 0
                         data[live_base + 60 + 30 * track : live_base + 63 + 30 * track] = bytes(3)
 
-                    if track in (0, 1, 4, 5):
+                    if track in perky_tracks:
                         if track == 0:
                             vals = (64, 108, 3, 72, 56, 0)  # T1 DSP Complex Drum
                         elif track == 4:
@@ -343,6 +355,14 @@ def stage_integrated_fixture(
                             vals = (t6_tune, t6_decay, t6_algo, t6_p1, t6_p2, t6_mode)
                         for s_idx, v in enumerate(vals):
                             data[live_base + 0x2A + 30 * track + 6 + s_idx] = v
+                    elif track in sampler_tracks:
+                        # Hold the actual stock SRC and setup settings equal
+                        # across STATIC/FLEX and single/dual-CF comparisons.
+                        machine = 0 if sampler_kind == 'static' else 1
+                        page = live_base + 0x2a + 30*track + 6*machine
+                        data[page:page+6] = bytes((64, 0, 0, 127, 0, 79))
+                        setup = live_base + 0x1da + 30*track + 6*machine
+                        data[setup:setup+6] = bytes((1, 0, 0, 0, 1, 64))
 
                     # Configure active LFO speeds/depths at the LFO page (`live_base + 0x11A + 24*track`)
                     # while preserving stock AMP (`page + 6 .. page + 12`: ATK=0, HOLD=127, REL=127, VOL=64, BAL=64).
@@ -357,6 +377,8 @@ def stage_integrated_fixture(
                     data[at + 0x59 : at + 0x59 + 64 * 32] = bytes([255]) * (64 * 32)
                     data[at + 0x899 : at + 0x919] = bytes(128)
                     data[at + 0x50 : at + 0x52] = bytes((64, 2))
+                    if track not in active_tracks:
+                        continue
                     for step in steps:
                         data[at + 7 - step // 8] |= 1 << (step % 8)
                         if track in (0, 4):
@@ -374,7 +396,7 @@ def stage_integrated_fixture(
                                 )
                                 for s_idx, v in enumerate(locks):
                                     data[at + 0x59 + step * 32 + s_idx] = v
-                        elif track in (1, 5):
+                        elif track in cf_tracks:
                             base_a = t2_algo if track == 1 else t6_algo
                             base_m = t2_mode if track == 1 else t6_mode
                             # Exercise six-control p-locks, long decay/sustain, and mode/family locks.
@@ -445,8 +467,13 @@ def run_integrated_row(
     first_trig_delay: int = 0,
     extra_steps: list[str] | None = None,
     cycle_clock: float = 1.0,
+    clock_before_transport: bool = False,
     card_out: Path | None = None,
     watch_pcs: list[int] | None = None,
+    sampler_kind: str = 'flex',
+    cf_tracks: tuple[int, ...] = (1, 5),
+    sampler_tracks: tuple[int, ...] = (2, 3, 6, 7),
+    audio_emu: Path | None = None,
 ) -> dict:
     """Run one integrated workload row in `ot_emu` and return bounded timing & audio stats."""
     if work_dir.exists():
@@ -461,6 +488,9 @@ def run_integrated_row(
         tone_path=tone_path,
         allow_family_transitions=allow_family_transitions,
         first_trig_delay=first_trig_delay,
+        sampler_kind=sampler_kind,
+        cf_tracks=cf_tracks,
+        sampler_tracks=sampler_tracks,
     )
 
     prof_addr = syms["pk_hybrid_prof"]
@@ -505,6 +535,10 @@ def run_integrated_row(
         "--cf-frame-hist",
         "--cf-frame-budget-us",
         "362.8",
+        "--cmd-log",
+        str(work_dir / 'card-load.log'),
+        "--cmd-log-end",
+        str(work_dir / 'card-end.log'),
         "--pit-clock-hz",
         str(int(PIT_CLOCK_HZ)),
         "--poke-before-play",
@@ -516,6 +550,9 @@ def run_integrated_row(
         cmd.extend(['--watch-pc', ','.join(hex(a) for a in watch_pcs)])
     if cycle_clock > 0:
         cmd.extend(['--cf-cycles-clock', str(cycle_clock)])
+    if clock_before_transport:
+        assert cycle_clock > 0, 'startup clock requires a cycle clock'
+        cmd.append('--cf-cycles-clock-before-transport')
     if card_out is not None:
         cmd.extend(['--card-out', str(card_out)])
     if extra_steps:
@@ -535,12 +572,26 @@ def run_integrated_row(
     log_text = log_path.read_text(errors="replace")
     assert "FAULT:" not in log_text and "ILLEGAL" not in log_text, f"Fault in {name}: see {log_path}"
     assert f"PIT clock  : {int(PIT_CLOCK_HZ)} Hz" in log_text, 'PIT clock option not applied'
+    if clock_before_transport:
+        assert 'cycle clock: startup/pre-roll/transport use' in log_text, 'startup clock option not applied'
     assert "step       : unknown kind" not in log_text, f"Unexecuted workload action in {name}: see {log_path}"
     assert re.search(rf"frames run\s*:\s*{frames}\s+since transport start.*REACHED", log_text), (
         f"Did not reach {frames} frames in {name}: see {log_path}"
     )
 
     emu_metrics = parse_ot_emu_log(log_text)
+    load_commands = (work_dir/'card-load.log').read_text().splitlines()
+    end_commands = (work_dir/'card-end.log').read_text().splitlines()
+    assert end_commands[:len(load_commands)] == load_commands, 'ATA log prefix changed'
+    playback_commands = end_commands[len(load_commands):]
+    emu_metrics['playback_card'] = dict(
+        commands=len(playback_commands),
+        read_commands=sum(s.startswith('READ ') for s in playback_commands),
+        read_sectors=sum(int(s.split()[2]) for s in playback_commands if s.startswith('READ ')),
+        commands_by_task={task: sum(s.endswith(task) for s in playback_commands)
+                          for task in sorted({s.rsplit(' ', 1)[-1] for s in playback_commands})},
+        logs={p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+              for p in (work_dir/'card-load.log', work_dir/'card-end.log')})
     prof_metrics = decode_profiler_dump(prof_dump.read_bytes())
     if profiler_enable:
         assert prof_metrics['profiler_enabled'] is True
@@ -557,7 +608,7 @@ def run_integrated_row(
         b_dump = work_dir / "blocks.bin"
         b_log = work_dir / "blocks.log"
         b_cmd = [
-            str(EMU),
+            str(audio_emu or EMU),
             "--image",
             str(image_path),
             "--card",
@@ -582,6 +633,8 @@ def run_integrated_row(
             "--block-dump",
             str(b_dump),
         ]
+        if clock_before_transport:
+            b_cmd += ['--cf-cycles-clock',str(cycle_clock),'--cf-cycles-clock-before-transport']
         # A second port process must not overwrite the primary timing/stack
         # capture when a caller supplies the executed-ISR safety observer.
         audio_env = dict(os.environ)
@@ -594,17 +647,21 @@ def run_integrated_row(
                            stderr=subprocess.STDOUT, check=True, timeout=600)
         classes = bd.classes(bd.read(b_dump))
         track_stats = {}
-        for tr in range(1, 9):
+        for tr in sorted({1, 5, *(t+1 for t in cf_tracks), *(t+1 for t in sampler_tracks)}):
             rb = rl.readback_audio(classes, tr)
             sig = [v for v in rb if abs(v) > 64]
             assert len(sig) > 64, f"Row {name} track T{tr} post-FX2 chain output is silent!"
             rec_info = {"chain_samples": len(rb), "chain_significant": len(sig), "chain_peak": max(map(abs, rb))}
-            if tr in (2, 3, 4, 6, 7, 8):
+            if tr in {t+1 for t in (*cf_tracks, *sampler_tracks)}:
                 src_a = rl.track_audio(classes, tr)
                 src_sig = [v for v in src_a if abs(v) > 64]
                 assert len(src_sig) > 64, f"Row {name} track T{tr} source record is silent!"
                 rec_info["source_significant"] = len(src_sig)
                 rec_info["source_peak"] = max(map(abs, src_a))
+                windows = [src_a[i:i+4096] for i in range(0, len(src_a), 4096)]
+                rec_info['source_significant_per_4096_samples'] = [sum(abs(v)>64 for v in w) for w in windows]
+                rec_info['source_active_blocks'] = sum(any(abs(v)>64 for v in src_a[i:i+16])
+                                                      for i in range(0, len(src_a), 16))
             track_stats[f"T{tr}"] = rec_info
         b_dump.unlink(missing_ok=True)
         audio_verification = track_stats
@@ -619,10 +676,16 @@ def run_integrated_row(
         "host_timeout_seconds": host_timeout_seconds,
         "simulated_seconds": round(frames * 16.0 / SR, 2),
         "cycle_clock_factor": cycle_clock,
+        "cycle_clock_before_transport": clock_before_transport,
         "coldfire_clock_hz": CF_CLOCK_HZ,
         "pit_clock_hz": PIT_CLOCK_HZ,
         "profiler_enabled": bool(profiler_enable),
         "cf_armed": bool(cf_arm),
+        "sampler_kind": sampler_kind,
+        "cf_tracks_zero_based": list(cf_tracks),
+        "sampler_tracks_zero_based": list(sampler_tracks),
+        "stock_source_raw": [64, 0, 0, 127, 0, 79],
+        "stock_setup_raw": [1, 0, 0, 0, 1, 64],
         "ot_emu": emu_metrics,
         "dtim3_profiler": prof_metrics,
         "audio_verification": audio_verification,

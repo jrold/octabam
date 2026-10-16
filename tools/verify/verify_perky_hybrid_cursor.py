@@ -18,6 +18,7 @@ def run(work, reference):
     machines=((current.uc,ns),(original.uc,os))
     memory_hash=hashlib.sha256();state_hash=hashlib.sha256();calls=0
     n=runtime.sizes(elf)['pk_hybrid_voices']
+    current_sizes, original_sizes = runtime.sizes(elf), runtime.sizes(oldelf)
     offsets=(-192,-128,-16,0,16,120,144,156,160,176,336)
     for split in range(17):
         for track in (1,5):
@@ -41,8 +42,8 @@ def run(work, reference):
                         now=bytes(current.uc.mem_read(0x80001c40,0x1900))
                         old=bytes(original.uc.mem_read(0x80001c40,0x1900))
                         assert now==old,('source RAM',split,track,ping,offset,start,end)
-                        state=bytes(current.uc.mem_read(ns['pk_hybrid_voices'],n))
-                        assert state==bytes(original.uc.mem_read(os['pk_hybrid_voices'],n)),('state/RNG',calls)
+                        state=runtime.canonical_state(current.uc,ns,current_sizes)
+                        assert state==runtime.canonical_state(original.uc,os,original_sizes),('state/RNG',calls)
                         assert current.uc.reg_read(runtime.g.emu.UC_M68K_REG_D0)==original.uc.reg_read(runtime.g.emu.UC_M68K_REG_D0)
                         memory_hash.update(now);state_hash.update(state);calls+=1
     assert inputs=={p:sha(Path(p)) for p in inputs},'input drift'

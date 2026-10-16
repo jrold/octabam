@@ -1,3 +1,8 @@
+#if defined(__mcoldfire__)
+#pragma GCC optimize ("no-unroll-loops", "no-split-loops")
+#endif
+/* Apply compact-loop options to both primitives and callers. The separate
+ * noise/filter pass reduces live state in the oscillator mixing loop. */
 #include "cf_noise_tone.h"
 #include "cf_render_math.h"
 #include <limits.h>
@@ -45,11 +50,26 @@ static void filt_fast_init(const uint8_t*s,size_t b,filt_fast*f){f->drive=r16(s+
 static void filt_fast_sample(filt_fast*f,int32_t input){int32_t p=mullo(f->velocity,(int32_t)f->coeff),second,fb;if(p<0)p=s32(u32(p)+0xffffu);f->first=s32(u32(f->first)+u32(asr(p,16)));if(f->first>32767)f->first=32767;else if(f->first<-32767)f->first=-32767;second=s32(u32(input)-u32(f->first));p=mullo(f->velocity,(int32_t)f->drive);second=s32(u32(second)-u32(asr(p,10)));if(second>32767)second=32767;else if(second<-32767)second=-32767;f->second=second;fb=mullo(second,(int32_t)f->coeff);if(fb<0)fb=s32(u32(fb)+0xffffu);f->velocity=s32(u32(f->velocity)+u32(asr(fb,16)));if(f->velocity>32767)f->velocity=32767;else if(f->velocity<-32767)f->velocity=-32767;}
 static void filt_fast_store(uint8_t*s,size_t b,const filt_fast*f){w32(s+b+0x10,u32(f->first));w32(s+b+0x14,u32(f->second));w32(s+b+0x18,u32(f->velocity));}
 
+/* Noise/filter state does not feed either oscillator. Advance it in its
+ * original sample order in a separate block pass, keeping its live registers
+ * out of the oscillator loop. The sole RNG consumer stays in this pass. */
+static void __attribute__((noinline))
+nt_noise_filter_block(uint8_t*s,int16_t*noise,uint32_t n,pk_cf_nt_rng*r){
+    noise_fast nzs;filt_fast flt;uint32_t i;
+    noise_fast_init(s,0x60,&nzs);filt_fast_init(s,0x9c,&flt);
+    for(i=0;i<n;i++){
+        int32_t value=(int32_t)noise_fast_sample(&nzs,r);
+        noise[i]=(int16_t)value;
+        filt_fast_sample(&flt,value);filt_fast_sample(&flt,value);
+    }
+    noise_fast_store(s,0x60,&nzs);filt_fast_store(s,0x9c,&flt);
+}
+
 typedef struct{uint32_t phase,inc,cur,next;const uint8_t*cur_table,*next_table;} osc_fast;
-static int osc_fast_init(const uint8_t*s,size_t b,const pk_cf_nt_shared_tables*t,osc_fast*o){o->phase=r32(s+b+4);o->inc=r32(s+b+8);o->cur=r32(s+b+0xc);o->next=r32(s+b+0x10);o->cur_table=findwave(t,o->cur);o->next_table=o->next==o->cur?o->cur_table:findwave(t,o->next);return o->cur_table&&o->next_table;}
+static inline __attribute__((always_inline)) int osc_fast_init(const uint8_t*s,size_t b,const pk_cf_nt_shared_tables*t,osc_fast*o){o->phase=r32(s+b+4);o->inc=r32(s+b+8);o->cur=r32(s+b+0xc);o->next=r32(s+b+0x10);o->cur_table=findwave(t,o->cur);o->next_table=o->next==o->cur?o->cur_table:findwave(t,o->next);return o->cur_table&&o->next_table;}
 static int osc_fast_sample(osc_fast*o,int16_t*out){uint32_t ph=o->phase+o->inc,i,j;const uint8_t*tb;int32_t f,a,z;if(s32(ph)>0x100000){ph-=0x100000;if(o->next!=o->cur){o->cur=o->next;o->cur_table=o->next_table;}}o->phase=ph;tb=o->cur_table;if(!tb)return 0;i=(ph>>12)&0xffu;j=(i+1)&0xffu;f=(int32_t)(ph&0xfffu);a=(int32_t)tabs16(tb,i);z=(int32_t)tabs16(tb,j);*out=s16((uint16_t)(a+asr(mullo(z-a,f),12)));return 1;}
 static void osc_fast_store(uint8_t*s,size_t b,const osc_fast*o){w32(s+b+4,o->phase);w32(s+b+0xc,o->cur);}
-static int nt_shared_chunk(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_nt_shared_tables*t,pk_cf_nt_rng*r){uint16_t amplitudes[16];uint32_t i,mixu;int32_t mix,tonal_mix;uint8_t velocity;osc_fast o1,o2;noise_fast nzs;filt_fast flt;if(!s||!d||!t||!r)return 0;if(!osc_fast_init(s,0x2c,t,&o1)||!osc_fast_init(s,0xc4,t,&o2))return 0;if(!n)return 1;nt_envelope_block(s,amplitudes,n,t);noise_fast_init(s,0x60,&nzs);filt_fast_init(s,0x9c,&flt);mixu=r32(s+0xf8);mix=s32(mixu);tonal_mix=s32(0x00000fffu-mixu);velocity=s[6];for(i=0;i<n;i++){uint16_t amp=amplitudes[i];int32_t nz=(int32_t)noise_fast_sample(&nzs,r),acc,sum,tonal,out;int16_t a=0,b=0;filt_fast_sample(&flt,nz);filt_fast_sample(&flt,nz);acc=asr(mullo(mix,nz),13);if(!osc_fast_sample(&o1,&a)||!osc_fast_sample(&o2,&b))return 0;sum=asr(s32((uint32_t)((int32_t)a+(int32_t)b)),4);tonal=mullo(tonal_mix,sum);acc=s32(u32(acc)+u32(asr(tonal,9)));out=asr(mullo(acc,(int32_t)amp),16);out=asr(mullo(out,(int32_t)velocity),8);d[i]=clamp16(out);}noise_fast_store(s,0x60,&nzs);filt_fast_store(s,0x9c,&flt);osc_fast_store(s,0x2c,&o1);osc_fast_store(s,0xc4,&o2);return 1;}
+static int nt_shared_chunk(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_nt_shared_tables*t,pk_cf_nt_rng*r){uint16_t amplitudes[16];int16_t noise[16];uint32_t i,mixu;int32_t mix,tonal_mix;uint8_t velocity;osc_fast o1,o2;if(!s||!d||!t||!r)return 0;if(!osc_fast_init(s,0x2c,t,&o1)||!osc_fast_init(s,0xc4,t,&o2))return 0;if(!n)return 1;nt_envelope_block(s,amplitudes,n,t);nt_noise_filter_block(s,noise,n,r);mixu=r32(s+0xf8);mix=s32(mixu);tonal_mix=s32(0x00000fffu-mixu);velocity=s[6];for(i=0;i<n;i++){uint16_t amp=amplitudes[i];int32_t nz=(int32_t)noise[i],acc,sum,tonal,out;int16_t a=0,b=0;acc=asr(mullo(mix,nz),13);if(!osc_fast_sample(&o1,&a)||!osc_fast_sample(&o2,&b))return 0;sum=asr(s32((uint32_t)((int32_t)a+(int32_t)b)),4);tonal=mullo(tonal_mix,sum);acc=s32(u32(acc)+u32(asr(tonal,9)));out=asr(mullo(acc,(int32_t)amp),16);out=asr(mullo(out,(int32_t)velocity),8);d[i]=clamp16(out);}osc_fast_store(s,0x2c,&o1);osc_fast_store(s,0xc4,&o2);return 1;}
 
 int pk_cf_nt_shared_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_nt_shared_tables*t,pk_cf_nt_rng*r){
     if(!s||!d||!t||!r)return 0;

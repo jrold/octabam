@@ -4571,5 +4571,458 @@
     "baseline_full_timer_max_us": 297.886,
     "compact_full_timer_max_us": 298.303,
     "interpretation": "Retain as a code-footprint improvement with faster isolated resonant rendering. Do not claim full-ISR maximum improved: this short row maximum regresses 0.417 us, and both exceed the preferred 80% budget. Further integration optimization and hardware confirmation remain required."
+  },
+  "implementation_checkpoint": "1ba3e0a0 pushed to origin/perky-cf-dsp-hybrid",
+  "integration_experiments": [
+    {
+      "id": "immutable-table-views",
+      "decision": "selected_pending_full_qualification",
+      "baseline": "compact-image PKH4F1",
+      "candidate": "table-views-image PKH4F2",
+      "exact_callbacks": 25600,
+      "compared_bytes": 266752000,
+      "observed_stack_reduction_bytes": 40,
+      "timing_receipt": "out/perky/hybrid/footprint-20261016/table-views-isolated-callbacks/CALLBACK_REPORT.json",
+      "traffic_receipt": "out/perky/hybrid/footprint-20261016/table-views-traffic-v2/CALLBACK_REPORT.json",
+      "note": "All 25 initial algorithm pairs; profiler on/off; each callback source RAM, complete synthesis state, frame PCM and latch history compared. Timer/CPU modeled, no stock ISR/DSP/cache stalls."
+    },
+    {
+      "id": "clear-only-unrendered-suffix",
+      "decision": "rejected",
+      "exact_callbacks": 25600,
+      "compared_bytes": 266752000,
+      "receipt": "out/perky/hybrid/footprint-20261016/suffix-clear-callbacks-v2/CALLBACK_REPORT.json",
+      "reason": "Fewer PCM writes, but generic variable-start loop increases stack reads and regresses WT/Bass/NoiseTone callback means. Preserve constant-size prefix clear and evaluate skipping only full renders separately."
+    },
+    {
+      "id": "skip-full-render-clear",
+      "decision": "measuring",
+      "reason": "A complete render or its failure path replaces every PCM sample. Avoid only that redundant clear, retaining the existing constant-size prefix clear."
+    },
+    {
+      "id": "encoder-Os",
+      "decision": "rejected",
+      "reason": "Encoder shrinks from 426 to 96 bytes but exclusive encoder cycles rise about 40%; WT and NoiseTone callback means regress. Resonant whole-call changes include code-placement effects.",
+      "receipt": "out/perky/hybrid/footprint-20261016/compact-encoder-callbacks/CALLBACK_REPORT.json"
+    },
+    {
+      "id": "encoder-no-unroll",
+      "decision": "selected_pending_full_qualification",
+      "reason": "Compact loop improves matched callback means and shrinks encoder; unlike Os, aggregate exclusive encoder cycles improve (1323857 -> 1279288 with profiling off in this matrix).",
+      "receipt": "out/perky/hybrid/footprint-20261016/encoder-no-unroll-callbacks/CALLBACK_REPORT.json"
+    },
+    {
+      "id": "aligned-voice-stride",
+      "decision": "measuring",
+      "reason": "Align each instance to 16-byte lines; preserve every original field offset and byte, validate added tail padding is zero, bind compiler-generated layout witnesses to actual build sources.",
+      "receipt": "out/perky/hybrid/footprint-20261016/aligned-voices-callbacks/CALLBACK_REPORT.json"
+    }
+  ],
+  "physical_priority_update": "The later user observation establishes one CF plus five stock sequences as working on their MKII, while two CF plus three stock locks up. Prioritize marginal T6 cost across every pairing; no restrictions authorized.",
+  "memory_alignment_hypothesis": {
+    "status": "PENDING_EXPERIMENT_NOT_ROOT_CAUSE",
+    "production_instance_stride_bytes": 1974,
+    "production_first_instance": "0x40c7c010 in table-views image",
+    "second_instance_offset_mod16": 6,
+    "hypothesis": "A 16-byte-aligned first instance does not align the second; count actual line-straddling state accesses and evaluate per-instance alignment with strict logical state and padding checks.",
+    "primary_reference": "https://www.nxp.com/docs/en/reference-manual/MCF54455RM.pdf",
+    "manual_section": "6.1.2",
+    "documented_cache_organization": "16 KiB instruction and 16 KiB data, each four-way set associative, 16-byte lines",
+    "limits": [
+      "Actual stock CACR/ACR configuration and silicon stall cost still need inspection/measurement.",
+      "Architectural straddling requests are not cache-miss or bus-transaction measurements.",
+      "A representation change must retain all original state bytes and explicitly validate any new padding; no weaker sound/state test is permitted."
+    ],
+    "measured_before_alignment": {
+      "scope": "production callback observer, Snare/Snare, identical initial controls and first 16 frames, sums across both split callbacks per voice/frame",
+      "T2_state_cross16_reads_mean": 9.6875,
+      "T2_state_cross16_writes_mean": 1.9375,
+      "T6_state_cross16_reads_mean": 53.5625,
+      "T6_state_cross16_writes_mean": 31.625,
+      "receipt": "out/perky/hybrid/footprint-20261016/encoder-no-unroll-callbacks/CALLBACK_REPORT.json",
+      "interpretation": "Disproportionate architectural line-straddling requests are measured. Actual additional physical latency or misses remain unmeasured."
+    }
+  },
+  "noise_filter_block_experiment": {
+    "status": "SUPERSEDED_BY_COMPACT_INLINE_INIT_CANDIDATE",
+    "hypothesis": "Split independent noise/filter recurrences from oscillator mixing to reduce simultaneously live state and register spills; preserve all filter work and sole RNG progression.",
+    "canonical": {
+      "path": "out/perky/hybrid/footprint-20261016/nt-split-filter/BENCH.json",
+      "sha256": "96479e15bf9d7debc41e5193b99b023e71c9018dd9448e1dec0017ee0f82eb3c"
+    },
+    "edges": {
+      "path": "out/perky/hybrid/footprint-20261016/nt-split-edges-stable/EDGE_RECEIPT.json",
+      "sha256": "2146818c615f9f9c64e65d26c872aa33851e57aab747bc8e07820dc1738bb8ad"
+    },
+    "costs": {
+      "mean_cycles": 7540.908333333334,
+      "max_cycles": 8242
+    },
+    "code_size": {
+      "baseline_accepted_text": 107166,
+      "candidate_text": 107032
+    },
+    "discarded_receipt": {
+      "path": "out/perky/hybrid/footprint-20261016/nt-split-edges/EDGE_RECEIPT.json",
+      "reason": "Exact execution passed but shared emulator libraries changed during execution; input drift correctly refused a valid receipt. Reran with stable inputs."
+    }
+  },
+  "interrupt_scope_repair": {
+    "status": "PASS_EXACT_PASSIVE_AND_DEFAULT_CALIBRATION",
+    "finding": "Requested transport frames begin after startTransportLive; completed IRQ, profiler, private-stack and ACK counters include startup frames. The old stock matrix driver wrongly asserted equality to the requested count.",
+    "invalidation": "Stopped all three new observer matrices. Retained raw rows and reports as STOPPED_FOR_INSTRUMENT_ACCOUNTING_REPAIR; do not treat these as source failures or qualified pairings.",
+    "clock_scope": "New opt-in emulator switch enables cycle clock before setFrame(true); stock firmware unchanged; default emulator path remains unchanged.",
+    "measurement": "Host-only observer separately counts CPU work including RTE estimate and read-only DTIM3 elapsed from first visible handler instruction to before executed RTE. Includes modeled idle; does not model physical bus/cache stalls.",
+    "calibration": {
+      "stepping_paths": 2,
+      "SR_prefix_cases": 2,
+      "idle_ticks": 100000,
+      "invalid_timer_refused": true,
+      "emulator_tests": "9/9 PASS"
+    },
+    "outstanding": [
+      "Validate observer does not change exact target results/timing",
+      "Compare default emulator path against frozen pre-change binary",
+      "Rerun matched first/second voice and all pair matrices under uniform clock scope"
+    ],
+    "passivity_failure": "The first DTIM observer used ordinary m.readXX calls. These set the emulator peripheral-touch flag and alter batching. Paired profiler dumps differ; discard clock-scope-observed as passive timing evidence. A whitelisted const host observation API now bypasses those flags and trace logs; paired exactness is pending.",
+    "passive_calibration": "Both stepping paths, both SR-prefix cases, independent 100000-tick idle, invalid timer refusal, unapproved peripheral refusal and peripheral-touch flag preservation pass.",
+    "receipt": {
+      "path": "out/perky/hybrid/footprint-20261016/INSTRUMENT_CALIBRATION.json",
+      "sha256": "2438e5234f5634e9b4a6bb6129edd84934174d3869b7bb4ee3124a357163b05d"
+    }
+  },
+  "earlier_integrated_timing_scope_caveat": "Earlier rows used cycle clock only after startTransportLive. Their image-bound counters are preserved but their startup-inclusive maxima may include a clock-domain transition; new uniform-clock measurements will supersede timing claims. No physical root cause is inferred.",
+  "noise_filter_block_variants": [
+    {
+      "id": "nt-split-filter",
+      "status": "PASS_EXACT_FROZEN_REFERENCE",
+      "reason": "Independent pass reduces live register pressure; exact full filter recurrences retained.",
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/nt-split-filter/BENCH.json",
+        "sha256": "96479e15bf9d7debc41e5193b99b023e71c9018dd9448e1dec0017ee0f82eb3c"
+      },
+      "noise_tone_two_voice_target_cycles": {
+        "mean_cycles": 7540.908333333334,
+        "max_cycles": 8242
+      }
+    },
+    {
+      "id": "nt-split-no-unroll",
+      "status": "PASS_EXACT_FROZEN_REFERENCE",
+      "reason": "Command-line compact-loop experiment; not assumed identical to source pragmas.",
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/nt-split-no-unroll/BENCH.json",
+        "sha256": "2e30508a0809e1693ecf5a2e94990c304bff59a93b2ba3c163d9fed1ad0abc5e"
+      },
+      "noise_tone_two_voice_target_cycles": {
+        "mean_cycles": 7465.125,
+        "max_cycles": 7874
+      }
+    },
+    {
+      "id": "nt-split-O2",
+      "status": "PASS_EXACT_FROZEN_REFERENCE",
+      "reason": "Rejected: Noise/Tone slower despite reduced text.",
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/nt-split-O2/BENCH.json",
+        "sha256": "46b3b91ddc053c392003726df4b925673e229f3ac25b16bc936e4dd921cefd36"
+      },
+      "noise_tone_two_voice_target_cycles": {
+        "mean_cycles": 8201.016666666666,
+        "max_cycles": 8591
+      }
+    },
+    {
+      "id": "nt-split-compact-source",
+      "status": "PASS_EXACT_FROZEN_REFERENCE",
+      "reason": "Source pragma alone outlines oscillator initialization; loses mean gain.",
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/nt-split-compact-source/BENCH.json",
+        "sha256": "653ca9bee17f82da8c22d8324dbbfc1f092650caadd1f058be5be529b6f6c2d4"
+      },
+      "noise_tone_two_voice_target_cycles": {
+        "mean_cycles": 7964.433333333333,
+        "max_cycles": 8391
+      }
+    },
+    {
+      "id": "nt-split-compact-inline-init",
+      "status": "PASS_EXACT_FROZEN_REFERENCE",
+      "reason": "Candidate: compact loops with explicitly inlined validated oscillator initialization.",
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/nt-split-compact-inline-init/BENCH.json",
+        "sha256": "1c70e386b3d14d61646b2987c3d96abf0247a60049c432b4476d66799349bc67"
+      },
+      "noise_tone_two_voice_target_cycles": {
+        "mean_cycles": 7427.158333333334,
+        "max_cycles": 7799
+      }
+    },
+    {
+      "id": "nt-split-Os",
+      "status": "REJECTED_FREESTANDING_LINK",
+      "reason": "Compiler emits an unresolved memcpy for saved EMAC context; no fabricated timing result.",
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/nt-split-Os/BENCH.json",
+        "sha256": "547d749486d97025a2b09d1335d92bbec2e3ff5e79c21569344db0e35d90f3e0"
+      },
+      "link_log": {
+        "path": "out/perky/hybrid/footprint-20261016/nt-split-Os/link.log",
+        "sha256": "e0e85f7607825e907164f87a0e9b4869740bd82f738d264704a8ab5f98e0aeba"
+      }
+    }
+  ],
+  "code_alignment_experiments": [
+    {
+      "id": "align-functions-16",
+      "status": "PASS_EXACT_FROZEN_REFERENCE",
+      "decision": "Do not retain: grows executable bytes with no robust target speed benefit; physical cache-set effects remain unmodeled.",
+      "pairs": {
+        "V1M1": {
+          "mean_cycles": 6214.833333333333,
+          "max_cycles": 6817
+        },
+        "V1M2": {
+          "mean_cycles": 6224.825,
+          "max_cycles": 6792
+        },
+        "V1M3": {
+          "mean_cycles": 6214.716666666666,
+          "max_cycles": 6817
+        },
+        "V2M1": {
+          "mean_cycles": 6214.308333333333,
+          "max_cycles": 6817
+        },
+        "V2M2": {
+          "mean_cycles": 6224.766666666666,
+          "max_cycles": 6792
+        },
+        "V2M3": {
+          "mean_cycles": 6213.958333333333,
+          "max_cycles": 6810
+        },
+        "snare": {
+          "mean_cycles": 7739.791666666667,
+          "max_cycles": 8499
+        },
+        "bass": {
+          "mean_cycles": 7442.183333333333,
+          "max_cycles": 8063
+        },
+        "third": {
+          "mean_cycles": 7427.683333333333,
+          "max_cycles": 7883
+        }
+      },
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/align-functions-16/BENCH.json",
+        "sha256": "b88a8466929c0161e03da0b172b40d7203e1f57907560249deef64d5d925cb38"
+      }
+    },
+    {
+      "id": "align-loops-16",
+      "status": "PASS_EXACT_FROZEN_REFERENCE",
+      "decision": "Do not retain: grows executable bytes with no robust target speed benefit; physical cache-set effects remain unmodeled.",
+      "pairs": {
+        "V1M1": {
+          "mean_cycles": 6201.858333333334,
+          "max_cycles": 6920
+        },
+        "V1M2": {
+          "mean_cycles": 6213.466666666666,
+          "max_cycles": 6932
+        },
+        "V1M3": {
+          "mean_cycles": 6199.291666666667,
+          "max_cycles": 6920
+        },
+        "V2M1": {
+          "mean_cycles": 6201.625,
+          "max_cycles": 6920
+        },
+        "V2M2": {
+          "mean_cycles": 6213.641666666666,
+          "max_cycles": 6932
+        },
+        "V2M3": {
+          "mean_cycles": 6201.275,
+          "max_cycles": 6920
+        },
+        "snare": {
+          "mean_cycles": 7686.158333333334,
+          "max_cycles": 8466
+        },
+        "bass": {
+          "mean_cycles": 7398.433333333333,
+          "max_cycles": 8152
+        },
+        "third": {
+          "mean_cycles": 7432.65,
+          "max_cycles": 7851
+        }
+      },
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/align-loops-16/BENCH.json",
+        "sha256": "bc29a2ec41d18356d34d1d974823d14040b799a17da24bcd65109b285a66c3c8"
+      }
+    },
+    {
+      "id": "align-functions-loops-16",
+      "status": "PASS_EXACT_FROZEN_REFERENCE",
+      "decision": "Do not retain: grows executable bytes with no robust target speed benefit; physical cache-set effects remain unmodeled.",
+      "pairs": {
+        "V1M1": {
+          "mean_cycles": 6201.858333333334,
+          "max_cycles": 6920
+        },
+        "V1M2": {
+          "mean_cycles": 6213.466666666666,
+          "max_cycles": 6932
+        },
+        "V1M3": {
+          "mean_cycles": 6199.291666666667,
+          "max_cycles": 6920
+        },
+        "V2M1": {
+          "mean_cycles": 6201.625,
+          "max_cycles": 6920
+        },
+        "V2M2": {
+          "mean_cycles": 6213.641666666666,
+          "max_cycles": 6932
+        },
+        "V2M3": {
+          "mean_cycles": 6201.275,
+          "max_cycles": 6920
+        },
+        "snare": {
+          "mean_cycles": 7686.158333333334,
+          "max_cycles": 8466
+        },
+        "bass": {
+          "mean_cycles": 7398.433333333333,
+          "max_cycles": 8152
+        },
+        "third": {
+          "mean_cycles": 7432.65,
+          "max_cycles": 7851
+        }
+      },
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/align-functions-loops-16/BENCH.json",
+        "sha256": "be70415287a80b02bd2e39c8ed346e18f78b05d681e0a1a0a9bd54df6530b260"
+      }
+    }
+  ],
+  "nt_compact_image_checkpoint": {
+    "status": "IN_PROGRESS_LOCAL_QUALIFICATION",
+    "version": "PKH4F9",
+    "MAIN_SHA256": "3dc8510cd0ff02389e92a1ba2ee827b149dd5ba87a89211096fab21851e4d105",
+    "runtime_raw_bytes": 293960,
+    "baseline_runtime_raw_bytes": 310344,
+    "standalone_text_bytes": 103660,
+    "baseline_standalone_text_bytes": 113426,
+    "production_callbacks": {
+      "path": "out/perky/hybrid/footprint-20261016/nt-compact-callbacks/CALLBACK_REPORT.json",
+      "sha256": "32587c6fd73bda19d7fdb5b985f6553df32176726d5330a7ce8abc7e65356fcd"
+    },
+    "edges": {
+      "path": "out/perky/hybrid/footprint-20261016/nt-compact-edges/EDGE_RECEIPT.json",
+      "sha256": "4afdb84d9aa4145787ee1f36ca303dd50bf2aa73e7c559ad65b475542c5d43ca"
+    },
+    "resources": {
+      "path": "out/perky/hybrid/footprint-20261016/NT_COMPACT_FOOTPRINT.json",
+      "sha256": "5d250ac3badcd0a6f900f4abaa12fd4c6879fbf15335d5722ece166ae38b3793"
+    },
+    "qualification": {
+      "probe/PROBE_GATES.json": {
+        "status": "PASS",
+        "receipt": {
+          "path": "out/perky/hybrid/footprint-20261016/nt-compact-image/probe/PROBE_GATES.json",
+          "sha256": "aa3e25dd6534bed34cfa9bdca34b24d5ff5da3cb3a9ea20ff3be98d3a77c5378"
+        }
+      },
+      "static/BOUNDS.json": {
+        "status": "PASS_SCOPED_PRIVATE_AND_THREE_VULNERABLE_TASK_BUDGETS",
+        "receipt": {
+          "path": "out/perky/hybrid/footprint-20261016/nt-compact-image/static/BOUNDS.json",
+          "sha256": "186bafb5ed337f0837820e143b070957eeaa29857a0219bd1bc9245562b4dcb7"
+        }
+      },
+      "unit/ALL_UNITS.json": {
+        "status": "PASS",
+        "receipt": {
+          "path": "out/perky/hybrid/footprint-20261016/nt-compact-image/unit/ALL_UNITS.json",
+          "sha256": "4a3a82b078c7e69ec3c9a07f3804df853c091adabdf88cf322e81fc730eab6c5"
+        }
+      },
+      "COLD_SAFETY.json": {
+        "status": "PASS",
+        "receipt": {
+          "path": "out/perky/hybrid/footprint-20261016/nt-compact-image/COLD_SAFETY.json",
+          "sha256": "3d319c38145258b9d12062f200e857daa6e06ec7893ef46d6eef484cda67451f"
+        }
+      },
+      "TIMER.json": {
+        "status": "PASS",
+        "receipt": {
+          "path": "out/perky/hybrid/footprint-20261016/nt-compact-image/TIMER.json",
+          "sha256": "10a9dbdfd55125682c3ef26f4cd6a702275f6077d2cca1f63f1021ea31e12610"
+        }
+      },
+      "EMAC_IRQ.json": {
+        "status": "PASS_HIGHER_IRQ_EMAC_USE_FULLY_CONTEXT_PRESERVING",
+        "receipt": {
+          "path": "out/perky/hybrid/footprint-20261016/nt-compact-image/EMAC_IRQ.json",
+          "sha256": "e6c575495308e771792ea7c5e98adf91642d7e3f8556cda8dbfdff15dd29fc09"
+        }
+      },
+      "SCENE_PANEL.json": {
+        "status": "PASS_ACTUAL_SCENE_FADER_DELIVERY",
+        "receipt": {
+          "path": "out/perky/hybrid/footprint-20261016/nt-compact-image/SCENE_PANEL.json",
+          "sha256": "7b8b79d9cca379b1f79e619d51dd3257eafb0bbe59e29ad1fa8a15957454524f"
+        }
+      },
+      "package-check/PACKAGES.json": {
+        "status": "PASS",
+        "receipt": {
+          "path": "out/perky/hybrid/footprint-20261016/nt-compact-image/package-check/PACKAGES.json",
+          "sha256": "d07000af1eff582b3ccedfb8bb03387a779acb902f7c767d0ebd46dd255e3950"
+        }
+      },
+      "resume-fixes/RUNTIME.json": {
+        "status": "PASS",
+        "receipt": {
+          "path": "out/perky/hybrid/footprint-20261016/nt-compact-image/resume-fixes/RUNTIME.json",
+          "sha256": "9e3b12f4eac8ceb0eb66b7fe0ad9944dddbdd810a6e07e81d3c9b54e448fb029"
+        }
+      },
+      "CURSOR_EXACT.json": {
+        "status": "PASS_EXACT_CALLBACK_MEMORY_STATE_RNG",
+        "receipt": {
+          "path": "out/perky/hybrid/footprint-20261016/nt-compact-image/CURSOR_EXACT.json",
+          "sha256": "d9db60c1655da2d61f992a9e1d8db59036d98943ab090aabcc6cf2249ff455d4"
+        }
+      }
+    },
+    "make_check": {
+      "exit_code": 0,
+      "shared_isolated_gates": 84,
+      "image_gates": 4,
+      "optional_fixture_skips": true,
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/nt-compact-make-check.log",
+        "sha256": "bf439afcfffe52262656a70712e942cbddf0e495f46e4a9d4b3067703a8b9a7a"
+      }
+    },
+    "remaining": [
+      "All-pair and single-voice uniform-clock STATIC matrices running",
+      "Sustained, lifecycle/save/reload/sequencer stress still outstanding",
+      "RNG member-alignment experiment in flight; source restored to this F9 checkpoint",
+      "Clean committed build and final source-bound packaging still outstanding"
+    ]
   }
 }

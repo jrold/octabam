@@ -84,7 +84,8 @@ def build(work, source_header=None, test_source=None):
     subprocess.run(testcmd,check=True);commands.append(testcmd)
     subprocess.run([str(work/'observer_test')],check=True);commands.append([str(work/'observer_test')])
     result={'commands':commands,'source_hashes':{str(p):sha(p) for p in [source_header,hdr,Path(__file__),
-        selftest,ROOT/'tools/emu/ot_emu/machine.cpp',ROOT/'tools/emu/ot_emu/periph.cpp']},
+        selftest,*[ROOT/'tools/emu/ot_emu'/name for name in
+            ('machine.cpp','machine.h','periph.cpp','periph.h','rtos.h','main.cpp')]]},
         'binary_sha256':sha(work/'ot_emu_safety'),
         'staged_sha256':{n:sha(work/n) for n in ('machine.cpp','periph.cpp')},
         'linked_inputs':{str(p):sha(p) for p in [libs/'CMakeFiles/ot_emu.dir/main.cpp.o',

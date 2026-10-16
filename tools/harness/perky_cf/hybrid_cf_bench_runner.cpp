@@ -1,6 +1,7 @@
 #include "machine.h"
 #include "hybrid_cf_shadow_runner.hpp"
 #include "hybrid_cf_alignment.hpp"
+#include "hybrid_cf_resources.hpp"
 #include "mc68k/Musashi/m68k.h"
 #include "mc68k/cpuState.h"
 #include <fstream>
@@ -23,14 +24,37 @@ static std::string pair_name="startup";
 static const char *symbol_output=nullptr;
 struct SymbolCost { uint64_t cycles=0,instructions=0; };
 static std::map<std::tuple<std::string,std::string,std::string>,SymbolCost> symbol_costs;
+static HybridResources *voice_resources=nullptr;
+static std::map<uint32_t,std::string> renderer_entries;
+static uint32_t voice_base=0,voice_size=0;
 static Cost call(ot::Machine&m,uint32_t pc){
     HybridAlignmentScope alignment_scope;
     m68k_set_reg(m.getCpuState(),M68K_REG_SR,0x2700);
     m68k_set_reg(m.getCpuState(),M68K_REG_SP,SP);
     m68k_set_reg(m.getCpuState(),M68K_REG_PC,pc);m.write32(SP,END);
     uint64_t before=m.getCycles(),n=0,attributed=0;uint32_t lo=SP;
+    uint32_t voice_return=0;uint64_t voice_cycles=0,voice_instructions=0;
+    std::string voice_label;
+    if(hybrid_resources)hybrid_resources->begin();
     while(m.pcFast()!=END){
         uint32_t current=m.pcFast();uint64_t step_before=m.getCycles();
+        if(voice_resources){
+            if(voice_resources->enabled&&current==voice_return)
+                voice_resources->end(pair_name,voice_label,step_before-voice_cycles,n-voice_instructions);
+            if(auto entry=renderer_entries.find(current);entry!=renderer_entries.end()){
+                if(voice_resources->enabled)throw std::runtime_error("unexpected nested renderer");
+                // peek32 never fires target data watches. Host inspection must
+                // not inflate the whole-call architectural traffic counters.
+                auto sp=m68k_get_reg(m.getCpuState(),M68K_REG_SP);
+                auto state=m.peek32(sp+4);
+                if(state<voice_base||state>=voice_base+2*voice_size)throw std::runtime_error("renderer instance attribution");
+                voice_return=m.peek32(sp);voice_cycles=step_before;voice_instructions=n;
+                voice_label=std::to_string((state-voice_base)/voice_size)+":"+entry->second;
+                voice_resources->begin();
+            }
+            if(voice_resources->enabled)voice_resources->instruction(current);
+        }
+        if(hybrid_resources)hybrid_resources->instruction(current);
         if(++n>10000000||!m.stepFast())throw std::runtime_error("target call stopped: "+m.why()+" PC="+std::to_string(m.pcFast()));
         if(symbol_output){
             auto it=std::upper_bound(symbol_ranges.begin(),symbol_ranges.end(),current,
@@ -43,6 +67,8 @@ static Cost call(ot::Machine&m,uint32_t pc){
         }
         lo=std::min(lo,m68k_get_reg(m.getCpuState(),M68K_REG_SP));
     }
+    if(voice_resources&&voice_resources->enabled)throw std::runtime_error("renderer did not return");
+    if(hybrid_resources)hybrid_resources->end(pair_name,entry_names.at(pc),m.getCycles()-before,n);
     if(m.getCycles()<before)throw std::runtime_error("cycles underflow");
     if(symbol_output&&attributed!=m.getCycles()-before)throw std::runtime_error("symbol cost accounting");
     if(m68k_get_reg(m.getCpuState(),M68K_REG_SP)!=SP+4)throw std::runtime_error("stack ABI");
@@ -66,6 +92,10 @@ int main(int argc,char**argv) {
     for(auto name:{"bench_init","bench_prepare","bench_render"})entry_names[s.at(name)]=name;
     symbol_output=std::getenv("PK_CF_SYMBOL_PROFILE");
     ot::Machine m(read(out+"/target.bin"));HybridAlignment alignment(m);hybrid_alignment=&alignment;
+    // Auto-grown pages bypass the Machine's read watches. Declare the asset
+    // mapping before loading it so traffic observation includes table reads.
+    // The observer gate checks every cycle/state row against the unmapped run.
+    m.mapRegion(0x44000000,0x00400000);
     uint32_t a=0x44000000;
     std::map<std::string,uint32_t> assets;
     for(auto n:{"pitch","chromatic","envelope1","envelope2","w0","w1","w2","w3","m1","interp_a","interp_b","wt_base","wt_bank"}) {
@@ -75,6 +105,21 @@ int main(int argc,char**argv) {
     putasset(0,"pitch");putasset(4,"chromatic");putasset(8,"envelope1");putasset(12,"envelope2");
     for(unsigned i=0;i<4;i++) {m.write32(s["assets"]+16+8*i,0x080222a0+512*i);putasset(20+8*i,"w"+std::to_string(i));}
     putasset(48,"m1");m.write32(s["assets"]+52,0x080310e0);putasset(56,"interp_a");putasset(60,"interp_b");putasset(64,"wt_base");putasset(68,"wt_bank");
+    std::unique_ptr<HybridResources> resources,voice_observer;
+    if(auto path=std::getenv("PK_CF_RESOURCE_PROFILE")){
+        resources=std::make_unique<HybridResources>(m,path,out+"/instruction-sizes.txt",
+            s.at("voices"),s.at("voices")+sizes.at("voices"),0x44000000,a,
+            s.at("output"),s.at("output")+sizes.at("output"));
+        hybrid_resources=resources.get();
+        if(std::getenv("PK_CF_VOICE_PROFILE")){
+            voice_base=s.at("voices");voice_size=sizes.at("voices")/2;
+            for(auto name:{"pk_cf_wt_render","pk_cf_res_snare_render","pk_cf_res_bass_render","pk_cf_nt_shared_render"})
+                renderer_entries[s.at(name)]=name;
+            voice_observer=std::make_unique<HybridResources>(m,std::string(path)+"-voices.csv",out+"/instruction-sizes.txt",
+                voice_base,voice_base+2*voice_size,0x44000000,a,s.at("output"),s.at("output")+sizes.at("output"));
+            voice_resources=voice_observer.get();
+        }
+    }
     HybridShadow shadow(m,s,ad,out);
     // BSS is deliberately dirty. The prospective small adapter must clear its
     // owned state explicitly and produce exactly the same bytes as clean RAM.

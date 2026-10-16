@@ -21,7 +21,7 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def run(work, reference):
+def run(work, reference, engine_options=None):
     work.mkdir(parents=True, exist_ok=True)
     hd = ROOT / 'tools/harness/perky_cf'
     sources = [hd/'hybrid_cf_bench.c', *[ROOT/'modules/perky'/f'{n}.c'
@@ -39,7 +39,14 @@ def run(work, reference):
               reference/'shadow-result.json', *sorted((reference/'assets').glob('*.bin')),
               Path(__file__), ROOT/'modules/perky/generate_cf_final.py']
     hashes = {str(p): sha(p) for p in inputs}
+    engine_options = engine_options or {}
+    allowed = {'cf_wavetable', 'cf_resonant', 'cf_noise_tone'}
+    if set(engine_options) - allowed or any(
+            not isinstance(v, list) or any(not isinstance(f, str) or not f.startswith(('-f', '-O', '--param=')) for f in v)
+            for v in engine_options.values()):
+        raise ValueError('engine options must map synthesis unit names to optimization flags')
     report = {'status': 'RUNNING', 'scope': 'Compiled isolated synthesis; no full ISR or silicon timing',
+              'experimental_engine_options': engine_options,
               'inputs': hashes, 'commands': []}
     def save():
         (work/'BENCH.json').write_text(json.dumps(report, indent=2)+'\n')
@@ -53,8 +60,9 @@ def run(work, reference):
         objects = []
         for source in sources:
             obj = work/(source.stem+'.o'); objects.append(obj)
-            command(['m68k-elf-gcc', *flags, '-c', source, '-o', obj], source.stem)
-            command(['m68k-elf-gcc', *flags, '-S', source, '-o', work/(source.stem+'.s')], source.stem+'-assembly')
+            unit_flags = [*flags, *engine_options.get(source.stem, [])]
+            command(['m68k-elf-gcc', *unit_flags, '-c', source, '-o', obj], source.stem)
+            command(['m68k-elf-gcc', *unit_flags, '-S', source, '-o', work/(source.stem+'.s')], source.stem+'-assembly')
         # The reference objects use the unchanged default producer, and a
         # hardware-divider-only intermediate, with every symbol namespaced.
         # This compares actual compiled prepare functions and complete states.
@@ -109,5 +117,7 @@ if __name__ == '__main__':
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--work', type=Path, required=True)
     ap.add_argument('--reference', type=Path, default=ROOT/'out/perky/hybrid/optimization/target-before')
+    ap.add_argument('--engine-options', type=Path, help='Experimental per-unit optimization flags as JSON; never changes production flags')
     args = ap.parse_args()
-    run(args.work.resolve(), args.reference.resolve())
+    run(args.work.resolve(), args.reference.resolve(),
+        json.loads(args.engine_options.read_text()) if args.engine_options else None)

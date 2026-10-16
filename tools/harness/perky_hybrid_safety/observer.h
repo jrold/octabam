@@ -15,7 +15,10 @@ struct Stack {
     uint32_t lo, hi, minimum, pc = 0, irq_min = 0xffffffffu;
     uint64_t instructions = 0, below = 0;
 };
-struct Irq { uint32_t sp, vector, minimum; uint64_t cycles; uint32_t entry_cycles; };
+struct Irq {
+    uint32_t sp, vector, minimum; uint64_t cycles; uint32_t entry_cycles;
+    uint32_t timer; bool timer_valid;
+};
 struct Dma { uint32_t lo, hi; bool active = false; };
 struct Observer {
     std::map<uint32_t, Stack> stacks;
@@ -30,6 +33,18 @@ struct Observer {
     uint32_t queue_max=0, ring_max=0;
     uint32_t render_pc=0;
     uint64_t guard_writes=0, source_dma_starts=0, dma_restarts=0, isr_max_cycles=0, isr_duration_misses=0;
+    uint64_t isr_sum_cycles=0, timer_samples=0, timer_invalid=0, timer_sum=0;
+    uint32_t timer_max=0, timer_last=0;
+    std::map<uint32_t,uint64_t> timer_histogram;
+    static bool timerValid(ot::Machine& m) {
+        // Read-only DTIM3 observations. No counter reset or target time charge.
+        uint32_t mode=0,reference=0;
+        return m.observeDtim3(0xfc07c000,2,mode) && mode==0x000b &&
+            m.observeDtim3(0xfc07c004,4,reference) && reference==0xffffffffu;
+    }
+    static uint32_t timerRead(ot::Machine& m) {
+        uint32_t value=0;m.observeDtim3(0xfc07c00c,4,value);return value;
+    }
     std::map<std::tuple<uint32_t,uint32_t,uint32_t,uint32_t,int16_t>,uint64_t> source_shapes;
     std::ofstream events;
     Observer() {
@@ -73,7 +88,9 @@ struct Observer {
             const auto entry_sp=sp+found->second.second;
             const auto f=m.peek32(entry_sp), v=(f>>18)&255;
             if((f>>28)>=4 && (f>>28)<=7 && v==found->second.first && (chain.empty() || chain.back().sp!=entry_sp)) {
-                chain.push_back({entry_sp,v,sp,m.getCycles(),found->second.second ? 1u:0u}); ++entries[v];
+                const bool valid=v==65 && timerValid(m);
+                chain.push_back({entry_sp,v,sp,m.getCycles(),found->second.second ? 1u:0u,
+                    valid ? timerRead(m):0u,valid}); ++entries[v];
                 if(v==65) ++frames;
                 depth=std::max(depth,static_cast<uint32_t>(chain.size()));
                 uint32_t key=0; for(auto& i:chain) key=(key<<8)|i.vector;
@@ -101,7 +118,13 @@ struct Observer {
                 ++returns;
                 auto cost=m.getCycles()-chain.back().cycles+chain.back().entry_cycles+10;
                 isr_max_cycles=std::max(isr_max_cycles,cost);
+                isr_sum_cycles+=cost;
                 if(cost*44100ull>16ull*264000000) ++isr_duration_misses;
+                if(chain.back().timer_valid && timerValid(m)) {
+                    timer_last=timerRead(m)-chain.back().timer;
+                    timer_max=std::max(timer_max,timer_last);timer_sum+=timer_last;
+                    ++timer_samples;++timer_histogram[timer_last];
+                } else ++timer_invalid;
             }
             chain.pop_back();
         }
@@ -155,7 +178,14 @@ struct Observer {
         }
         f<<"],\"guard_writes_after_dispatch\":"<<guard_writes
          <<",\"source_DMA_starts\":"<<source_dma_starts<<",\"DMA_active_restarts\":"<<dma_restarts
-         <<",\"full_ISR_max_cycles\":"<<isr_max_cycles<<",\"ISR_duration_misses\":"<<isr_duration_misses;
+         <<",\"full_ISR_max_cycles\":"<<isr_max_cycles<<",\"ISR_duration_misses\":"<<isr_duration_misses
+         <<",\"full_ISR_sum_cycles\":"<<isr_sum_cycles
+         <<",\"observed_ISR_elapsed_DTIM3\":{\"samples\":"<<timer_samples
+         <<",\"invalid_mode_samples\":"<<timer_invalid<<",\"sum_ticks\":"<<timer_sum
+         <<",\"max_ticks\":"<<timer_max
+         <<",\"scope\":\"Host observation at first visible handler instruction through before executed RTE; excludes unobserved entry instruction and final RTE; includes modeled idle\",\"histogram_ticks\":[";
+        comma=false;for(const auto& p:timer_histogram) {if(comma)f<<',';comma=true;f<<'['<<p.first<<','<<p.second<<']';}
+        f<<"]}";
         f<<",\"source_DMA_shapes\":[";comma=false;
         for(const auto& p:source_shapes) {
             if(comma) f<<',';comma=true;

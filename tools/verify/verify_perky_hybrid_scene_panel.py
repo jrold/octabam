@@ -15,6 +15,7 @@ import stems_panel as panel
 import emu_card
 import blockdump
 import recloop
+import perky_hybrid_voice_layout as voice_layout
 
 
 def run(work):
@@ -47,10 +48,9 @@ def run(work):
     image=work/'probe/mainos_PKHYB2P.bin';elf=work/'probe/platform/runtime.elf'
     syms=private.symbols(elf);sizes=subprocess.check_output(['m68k-elf-nm','-S',str(elf)],text=True)
     size=next(int(line.split()[1],16) for line in sizes.splitlines() if line.split()[-1]=='pk_hybrid_voices')//2
-    assert size==1974,'review the production voice/control layout before changing offsets'
-    # Last pk4_control occupies 22 bytes, followed by two RNG longs and four
-    # active/pad bytes. Offset is guarded against the actual target size.
-    raw_offset=size-12-22+16
+    layout=voice_layout.layout(work/'probe')
+    assert size==layout['stride']
+    raw_offset=layout['resonant_raw_offset']
     original_card=out/'card-input.img';shutil.copyfile(card,original_card)
     inputs={str(p):private.sha(p) for p in (image,elf,original_card,Path(__file__),work/'observer/ot_emu_safety')}
     import os

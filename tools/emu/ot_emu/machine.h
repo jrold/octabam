@@ -347,6 +347,16 @@ namespace ot
 			m_periphWriteFn = std::move(_w);
 		}
 
+		// Host observer only: these three DTIM3 registers have const reads in
+		// DmaTimer. Bypass peripheral-touch flags and target trace logs, which
+		// affect run-loop batching. Refuse every other peripheral/width.
+		bool observeDtim3(uint32_t addr, uint8_t size, uint32_t& value) const
+		{
+			if(!((addr==0xfc07c000 && size==2) ||
+			     ((addr==0xfc07c004 || addr==0xfc07c00c) && size==4))) return false;
+			return m_periphReadFn && m_periphReadFn(addr,size,value);
+		}
+
 		// Every write the run made into a peripheral window, in order: what
 		// `Rtos` replays to seed its models (route A logs 7,886 of them on the
 		// stock image).

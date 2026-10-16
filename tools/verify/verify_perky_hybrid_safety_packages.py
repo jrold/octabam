@@ -21,10 +21,25 @@ def run(probe, output):
     output.mkdir(parents=True, exist_ok=True)
     b = g.builder
     build = json.loads((probe/'BUILD.json').read_text())
-    files = {name: Path(build['artifacts'][name]['path'])
+    metadata=dict(build['artifacts'])
+    wrap_receipt=None
+    if not all(name in metadata for name in ('elek','card','midi')):
+        # Wrapping a frozen experimental MAIN must not rewrite BUILD/MEMORY
+        # already bound into exactness receipts. Require the separate wrapper
+        # receipt to bind all four immutable inputs before using its metadata.
+        wrap_receipt=probe/'WRAP.json'
+        wrap=json.loads(wrap_receipt.read_text())
+        assert wrap['status']=='PASS_WRAPPERS_ONLY_UNQUALIFIED_DIAGNOSTIC'
+        required=(probe/f"mainos_{build['version']}.bin",probe/'platform/runtime.elf',probe/'BUILD.json',probe/'MEMORY.json')
+        assert set(wrap['inputs'])=={str(p) for p in required}
+        for path in required:
+            assert b.item_meta(path)['sha256']==wrap['inputs'][str(path)], 'wrapper input drift'
+        assert set(wrap['artifacts'])=={'elek','card','midi'}
+        metadata.update(wrap['artifacts'])
+    files = {name: Path(metadata[name]['path'])
              for name in ('mainos', 'elek', 'card', 'midi')}
     for name, path in files.items():
-        assert b.item_meta(path) == build['artifacts'][name], ('build artifact drift', name)
+        assert b.item_meta(path) == metadata[name], ('build artifact drift', name)
     hashes = {k: b.item_meta(p) for k, p in files.items()}
     base = [sys.executable, str(Path(wrappers.__file__)),
             '--eft', str(b.base.EFT), '--version', build['version'],
@@ -87,6 +102,9 @@ def run(probe, output):
         else:
             raise AssertionError('accepted runtime overlap')
         layout_path.write_bytes(original)
+        positive_memory=b.emit_memory_report(fixture,files['card'],files['elek'],files['midi'])
+        assert positive_memory['coldfire_dram']['physical_overlaps']==[]
+        tests['actual_package_memory_and_size_caps']={'status':'PASS'}
         huge = temp/'oversized-card.bin'
         with huge.open('wb') as f:
             f.truncate(1048588+4)
@@ -100,7 +118,9 @@ def run(probe, output):
     assert hashes == {k: b.item_meta(p) for k, p in files.items()}, 'artifact drift'
     memory = json.loads((probe/'MEMORY.json').read_text())
     result = {'schema': 'octabam.perky.hybrid.safety-packages.v1', 'status': 'PASS',
-              'artifacts': hashes, 'tests': tests, 'wrappers': memory['wrappers'],
+              'artifacts': hashes, 'tests': tests, 'wrappers': positive_memory['wrappers'],
+              'build_sha256':b.item_meta(probe/'BUILD.json')['sha256'],
+              'separate_wrapper_receipt':b.item_meta(wrap_receipt) if wrap_receipt else None,
               'physical_overlaps': memory['coldfire_dram']['physical_overlaps'],
               'limitations': ['Not physical DMA/cache/stack/nesting qualification.',
                               'No exhaustive malformed compressed-token or loader table execution test.',

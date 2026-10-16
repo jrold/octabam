@@ -1038,3 +1038,25 @@ PCM/state/RNG and every modeled cycle/instruction/stack row against the frozen
 unobserved run. Also separate reads within executable text: this instrument
 observes instruction-stream words too. These are architectural requests and
 address working sets, not measured cache misses or SDRAM transactions.
+
+<a name="trap-observer-timer-read"></a>
+
+### A host timer observation can change emulator scheduling
+
+The 16 Oct 2026 full-IRQ observer first read DTIM3 through `Machine::read*`.
+These reads did not alter target RAM, but set the peripheral-touch flag used
+by the run loop's batching decisions. The raw firmware profiler dump differed
+from the unobserved run. Such an observer is not passive timing evidence.
+`observeDtim3` now whitelists only the three const DTIM3 registers and bypasses
+target touch flags and trace logs. Synthetic controls cover both stepping
+paths, nested IRQs, elapsed idle, invalid timer mode and unsupported addresses.
+The corrected seven-track 4096-frame comparison matches raw profiler bytes,
+all decoded profiler counters, ACK CPU/DSP metrics and playback card reads.
+
+The same audit found a separate scope error: the original port enabled cycle
+time after `startTransportLive`, while IRQ/profiler/ACK counters also counted
+startup audio. Requested transport frames therefore differ from total IRQs;
+their totals must agree independently, rather than use an assumed offset.
+The opt-in `--cf-cycles-clock-before-transport` enables cycle time before audio
+starts. Default behavior remains exact against the saved pre-change binary.
+Earlier startup-inclusive timing maxima retain this clock-transition caveat.

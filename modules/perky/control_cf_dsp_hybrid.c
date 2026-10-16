@@ -127,13 +127,29 @@ static const pk4_assets pk_hybrid_assets = {
     .wt_bank = pk_pcm_wt_bank,
 };
 
+/* Immutable renderer views need no per-callback stack construction. Keep the
+ * decoded PCM addresses, stock-object state and public renderer ABI identical. */
+static const pk_cf_wt_tables pk_hybrid_wt_tables = {
+    pk_asset_pitch, pk_asset_envelope1, pk_asset_envelope2,
+    pk_pcm_wt_base, pk_pcm_wt_bank,
+};
+static const pk_cf_res_tables pk_hybrid_res_tables = {
+    pk_asset_envelope1, pk_asset_envelope2,
+    pk_asset_res_interp_a, pk_asset_res_interp_b,
+};
+static const pk_cf_nt_shared_tables pk_hybrid_nt_tables = {
+    pk_asset_envelope1, pk_asset_envelope2,
+    {{0x080222a0u, pk_asset_wave0}, {0x080224a0u, pk_asset_wave1},
+     {0x080226a0u, pk_asset_wave2}, {0x080228a0u, pk_asset_wave3}},
+};
+
 /* Compact two-instance CF synthesis state for T2 (instance 0) and T6 (instance 1).
  * Only the required families are allocated and preinitialized:
  *   - ALGO 0: Wavetable V1 (`wt[0]`, `control[0]`)
  *   - ALGO 1: Wavetable V2 (`wt[1]`, `control[1]`)
  *   - ALGO 2: Resonant Drums (`snare`, `bass`, `nt`, `control[2]`)
  */
-typedef struct {
+typedef struct __attribute__((aligned(16))) {
     uint8_t wt[2][PK_CF_WT_STATE_BYTES];
     uint8_t snare[PK_CF_RES_SNARE_STATE_BYTES];
     uint8_t bass[PK_CF_RES_SNARE_STATE_BYTES];
@@ -627,27 +643,14 @@ int __attribute__((noinline)) pk_hybrid_cf_render_segment(unsigned inst, int16_t
         return 0;
     pk_hybrid_cf_voice *v = &pk_hybrid_voices[inst];
     if (v->active_algo < 2u) {
-        pk_cf_wt_tables t = {
-            pk_hybrid_assets.pitch,
-            pk_hybrid_assets.envelope1,
-            pk_hybrid_assets.envelope2,
-            pk_hybrid_assets.wt_base,
-            pk_hybrid_assets.wt_bank,
-        };
-        return pk_cf_wt_render(v->wt[v->active_algo], dst, count, &t);
+        return pk_cf_wt_render(v->wt[v->active_algo], dst, count, &pk_hybrid_wt_tables);
     }
     if (v->active_algo == 2u) {
         if (v->active_mode < 2u) {
-            pk_cf_res_tables rt = {
-                pk_hybrid_assets.envelope1,
-                pk_hybrid_assets.envelope2,
-                pk_hybrid_assets.res_interp_a,
-                pk_hybrid_assets.res_interp_b,
-            };
             pk_cf_res_rng rr = { v->rng_low, v->rng_high };
             int ok = (v->active_mode == 0u)
-                ? pk_cf_res_snare_render(v->snare, dst, count, &rt, &rr)
-                : pk_cf_res_bass_render(v->bass, dst, count, &rt, &rr);
+                ? pk_cf_res_snare_render(v->snare, dst, count, &pk_hybrid_res_tables, &rr)
+                : pk_cf_res_bass_render(v->bass, dst, count, &pk_hybrid_res_tables, &rr);
             if (!ok)
                 return 0;
             v->rng_low = rr.low;
@@ -655,15 +658,8 @@ int __attribute__((noinline)) pk_hybrid_cf_render_segment(unsigned inst, int16_t
             return 1;
         }
         if (v->active_mode == 2u) {
-            pk_cf_nt_shared_tables nt;
             pk_cf_nt_rng nr = { v->rng_low, v->rng_high };
-            nt.envelope1 = pk_hybrid_assets.envelope1;
-            nt.envelope2 = pk_hybrid_assets.envelope2;
-            for (unsigned i = 0; i < 4u; ++i) {
-                nt.waves[i].address = pk_hybrid_assets.waves[i].address;
-                nt.waves[i].table = pk_hybrid_assets.waves[i].table;
-            }
-            if (!pk_cf_nt_shared_render(v->nt, dst, count, &nt, &nr))
+            if (!pk_cf_nt_shared_render(v->nt, dst, count, &pk_hybrid_nt_tables, &nr))
                 return 0;
             v->rng_low = nr.low;
             v->rng_high = nr.high;
@@ -691,7 +687,7 @@ pk_hybrid_commit_longs(volatile uint32_t *dst, const uint32_t *src, uint32_t cou
 /* Same stock FLEX record as pk4_encode_stock_segment, published directly to
  * the owned fixed slot. Keep volatile long stores and a separate call: GCC
  * otherwise duplicates the variable-length encoder throughout pk_render. */
-static uint32_t __attribute__((noinline))
+static uint32_t __attribute__((noinline, optimize("no-unroll-loops")))
 pk_hybrid_encode_slot(volatile uint32_t *dst, const int16_t *pcm, uint32_t count)
 {
     if (!dst || !pcm || count > PK_HYB_BLOCK_SAMPLES) return 0u;
@@ -971,8 +967,11 @@ int pk_hybrid_render(unsigned track, unsigned ping, unsigned start, unsigned end
      * because the stock source packer flips `ping` between pre-event and
      * post-event callbacks of the same 16-sample frame. */
     if (start == 0u) {
-        for (unsigned i = 0; i < PK_HYB_BLOCK_SAMPLES; ++i)
-            pk_hybrid_frame_pcm[inst][i] = 0;
+        /* A full render overwrites all PCM, including its failure-to-silence
+         * path below. Retain the compact constant-size clear for prefixes. */
+        if (end != PK_HYB_BLOCK_SAMPLES)
+            for (unsigned i = 0; i < PK_HYB_BLOCK_SAMPLES; ++i)
+                pk_hybrid_frame_pcm[inst][i] = 0;
         pk_hybrid_frame_started[inst] = 1u;
         pk_hybrid_frame_ping[inst] = (uint8_t)(ping & 1u);
     } else if (event_boundary && !pk_hybrid_frame_started[inst]) {

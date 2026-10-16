@@ -23,18 +23,40 @@ int main() {
         for(unsigned i=0;i<sizeof inner;++i)m.write8(0x40001100+i,inner[i]);
         for(unsigned i=0;i<16;++i)m.write16(0x40002000+2*i,0x4e71);
         observer.nested.clear();observer.refresh(m);
-        auto step=[&] {assert(fast ? m.stepFast():m.step());};
+        uint32_t timer=0, timer_mode=0xb;
+        m.setPeripheralHandlers([&](uint32_t a,uint8_t,uint32_t& v) {
+            if(a==0xfc07c000)v=timer_mode;
+            else if(a==0xfc07c004)v=0xffffffffu;
+            else if(a==0xfc07c00c)v=timer;
+            else return false;
+            return true;
+        },[](uint32_t,uint8_t,uint32_t) {return false;});
+        m.takePeriphTouched();uint32_t observed_timer=0;
+        assert(m.observeDtim3(0xfc07c00c,4,observed_timer) && !m.takePeriphTouched());
+        assert(!m.observeDtim3(0x2000001c,4,observed_timer));
+        m.read32(0xfc07c00c);assert(m.takePeriphTouched());
+        auto step=[&] {timer+=7;assert(fast ? m.stepFast():m.step());};
         auto before=observer.frames, returns=observer.returns;
+        const auto timer_before=observer.timer_samples;
         m.injectInterrupt(65,5);
         for(unsigned i=0;i<8 && m.pc()!=(sr_prefix?0x40001008u:0x40001004u);++i)step();
         assert(m.pc()==(sr_prefix?0x40001008u:0x40001004u));
         // Observe the outer's state before taking its higher-priority IRQ.
-        step();m.injectInterrupt(72,6);
+        step();timer+=100000; // elapsed idle after the observed IRQ entry
+        m.injectInterrupt(72,6);
         for(unsigned i=0;i<24 && (m.pc()<0x40002000 || m.pc()>0x40002020);++i)step();
         assert(m.getA7()==top-64);
         assert(observer.frames==before+1 && observer.returns==returns+1);
         assert(observer.depth==2 && observer.frame_need==284);
         assert(observer.nested[task].empty());
+        assert(observer.timer_samples==timer_before+1 && observer.timer_last>=100000);
+        assert(observer.isr_max_cycles<100000);
+        // An invalid timer mode must not produce a timing sample.
+        const auto invalid_before=observer.timer_invalid;
+        timer_mode=0;m.injectInterrupt(65,5);
+        for(unsigned i=0;i<24 && observer.returns<returns+2;++i)step();
+        assert(observer.returns==returns+2 && observer.timer_invalid==invalid_before+1);
+        assert(observer.timer_samples==timer_before+1);
         // Positive/negative DMA overlap controls, and an explicit stack overrun.
         const auto overlaps=observer.overlaps;
         observer.start(1,0x80001c90,160,1,4);
@@ -48,6 +70,6 @@ int main() {
         const auto outside=observer.stacks[task].below;
         m.setA7(observer.stacks[task].lo-4);m.setPC(0x40002000);step();
         assert(observer.stacks[task].below==outside+1);
-        std::printf("PASS %s prefix=%d: real IRQ entry, 5->6 nesting, 284-byte frame depth, RTE balance, DMA overlap/refusal, stack overflow detection\n",fast?"stepFast":"step",sr_prefix);
+        std::printf("PASS %s prefix=%d: real IRQ entry, 5->6 nesting, 284-byte frame depth, RTE balance, independent elapsed/CPU clocks, invalid timer refusal, DMA overlap/refusal, stack overflow detection\n",fast?"stepFast":"step",sr_prefix);
     }
 }

@@ -15,6 +15,7 @@ ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'tools/verify'))
 import verify_perky_hybrid_private_stack as p
 import verify_perky_hybrid_workload as w
+import perky_hybrid_voice_layout as voice_layout
 
 FRAMES=(1999,2500,3500,15500,15900,16300,19800,20030,20380)
 EXPECTED={15500:[[2,0],[2,1]],15900:[[2,1],[2,2]],16300:[[2,0],[2,1]],
@@ -25,13 +26,14 @@ def run(work,reuse=False):
     s=w.load_elf_symbols(elf)
     sizes=subprocess.check_output(['m68k-elf-nm','-S',str(elf)],text=True)
     size=next(int(v[1],16)for line in sizes.splitlines()if len(v:=line.split())==4 and v[3]=='pk_hybrid_voices')//2
-    assert size==1974,'review actual target voice layout'
+    layout=voice_layout.layout(work/'probe')
+    assert size==layout['stride']
     if not reuse:
         assert not out.exists(),'preserve existing evidence; use --reuse-run to validate it'
         steps=['2000:poke:0x100b14cf=01;0x80000003=01','3000:poke:0x100b14cf=00;0x80000003=00']
         for frame in FRAMES:
             specs=[f'{s["pk_hybrid_prof"]:#x},1780={out}/prof-{frame}.bin']
-            specs += [f'{s["pk_hybrid_voices"]+i*size+size-4:#x},2={out}/voice-{i}-{frame}.bin'for i in(0,1)]
+            specs += [f'{s["pk_hybrid_voices"]+i*size+layout["active_algo_offset"]:#x},2={out}/voice-{i}-{frame}.bin'for i in(0,1)]
             steps.append(f'{frame}:dump:'+';'.join(specs))
         regular=w.EMU;w.EMU=work/'observer/ot_emu_safety';os.environ.update(p.environment(work,'transitions'))
         project=Path(json.loads((ROOT/'modules/perky/hybrid/BASELINE.json').read_text())['project']['root'])

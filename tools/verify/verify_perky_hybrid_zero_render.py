@@ -20,7 +20,7 @@ def start(probe):
 
 
 def state(u, syms, sizes):
-    return bytes(u.mem_read(syms['pk_hybrid_voices'], sizes['pk_hybrid_voices']))
+    return runtime.canonical_state(u,syms,sizes)
 
 
 def main():
