@@ -1007,3 +1007,34 @@ odd effective access during target calls. Readback outside target execution
 is excluded. This proves the exercised paths, not unseen compiler paths;
 never equate displacement parity with effective-address parity without
 establishing the base alignment.
+
+<a name="trap-static-fixture-markers"></a>
+
+### A STATIC fixture can play a tiny region without streaming
+
+The 16 Oct 2026 PERKY footprint probe initially reused the FLEX marker offset
+when staging STATIC slot 1. The file contains 136 FLEX records before the 128
+STATIC records; the untouched zero STATIC record became a 64-sample region.
+All three stock tracks emitted audio, so a nonzero-audio check passed, but no
+ATA reads occurred after PLAY. That run does not qualify STATIC streaming.
+`verify_repitch.py` already encoded the correct offset. The hybrid fixture now
+uses it, reports source activity in successive windows, and records ATA logs
+before and after playback. Its corrected seven-track 4096-frame probe issued
+411 playback READ commands / 1236 sectors and sustained stock source audio.
+This exercises unchanged stock code; the immediate-response PIO card model
+still cannot qualify silicon card/DMA/cache contention.
+
+<a name="trap-automap-read-watch"></a>
+
+### Auto-grown emulator pages bypass data read watches
+
+The standalone CF benchmark loaded assets at `0x44000000`, outside its initial
+declared mappings. Auto-growth supplied correct bytes, but `read*Slow` called
+the read watchers only for declared regions. An all-address watcher therefore
+reported zero asset reads while table synthesis worked. Explicitly map the
+benchmark asset region before loading it. The resource observer calibrates
+all three access widths and a line-crossing access, then requires unchanged
+PCM/state/RNG and every modeled cycle/instruction/stack row against the frozen
+unobserved run. Also separate reads within executable text: this instrument
+observes instruction-stream words too. These are architectural requests and
+address working sets, not measured cache misses or SDRAM transactions.

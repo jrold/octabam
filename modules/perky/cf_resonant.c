@@ -1,6 +1,9 @@
 #if defined(__mcoldfire__)
-#pragma GCC optimize ("no-unroll-loops")
+#pragma GCC optimize ("no-unroll-loops", "no-split-loops")
 #endif
+/* Loop splitting duplicates these short recurrence passes. The footprint
+ * campaign measures smaller code and lower snare/bass target cost with it
+ * disabled; keep the same options on primitives and callers. */
 /* ColdFire renderer for the PĒRKONS v1.2.1 Resonant Drums family.
  *
  * Operates directly on the original ARM object (0x178 bytes for the bassdrum
@@ -457,7 +460,7 @@ int pk_cf_res_bass_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables*
         uint32_t count=n>16u?16u:n;bass_chunk(s,d,count,t,rng);
         d+=count;n-=count;
     }while(n);
-    pk_cf_render_math_end(context);
+    pk_cf_render_math_end_saved(&context);
     return 1;
 }
 
@@ -569,6 +572,6 @@ int pk_cf_res_snare_render(uint8_t*s,int16_t*d,uint32_t n,const pk_cf_res_tables
         snare_chunk(s,d,count,t,rng);
         d+=count;n-=count;
     }while(n);
-    pk_cf_render_math_end(context);
+    pk_cf_render_math_end_saved(&context);
     return 1;
 }

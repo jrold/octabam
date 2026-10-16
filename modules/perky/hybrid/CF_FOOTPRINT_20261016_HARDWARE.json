@@ -1,0 +1,59 @@
+{
+  "schema": "octabam.perky.footprint.hardware-observations.v1",
+  "status": "USER_REPORTED_PHYSICAL_MKII_EVIDENCE",
+  "date": "2026-10-16",
+  "observations": [
+    {
+      "source": "goal objective, supplied physical PRF decoding",
+      "firmware": "PKH4O2",
+      "capture": "PKH20002(1).PRF",
+      "full_audio_ISR_mean_us_approx": 288.1,
+      "full_audio_ISR_max_us_approx": 504.0,
+      "recorded_hard_deadline_misses": 723,
+      "final_16_mean_us_approx": 368.1,
+      "final_16_all_over_deadline": true
+    },
+    {
+      "source": "goal objective, consecutive cumulative snapshot delta",
+      "firmware": "PKH4O2",
+      "captures": [
+        "PKH20003(1).PRF",
+        "PKH20004(1).PRF"
+      ],
+      "frames": 9901,
+      "full_audio_ISR_mean_us_approx": 331.0,
+      "additional_hard_deadline_misses": 20,
+      "all_frames_above_80pct_budget": true,
+      "CF_voices": 2,
+      "DSP_voices": 2
+    },
+    {
+      "source": "user additional physical hardware finding in this chat",
+      "firmware": "latest installed hybrid, reported as PKH4O2 in goal context",
+      "DSP_voices": 2,
+      "CF_voices": 1,
+      "stock_sequence_tracks": 5,
+      "stock_kinds": [
+        "FLEX",
+        "STATIC"
+      ],
+      "reported_result": "works fine",
+      "measured_duration_or_PRF_not_supplied": true
+    },
+    {
+      "source": "user additional physical hardware finding in this chat",
+      "DSP_voices": 2,
+      "CF_voices": 2,
+      "stock_sequence_tracks": 3,
+      "reported_result": "serious UI sluggishness, eventual lockup",
+      "CF_pair_not_specified": true
+    }
+  ],
+  "interpretation": "Prioritize marginal T6 activation with T2 already active. The evidence implicates incremental dual-CF resource demand, but does not identify a proven cache, memory, algorithm or interrupt root cause. STATIC is one stock workload, not the optimization target.",
+  "limits": [
+    "Original older CF_OPTIMIZATION_HARDWARE.json captures are distinct and retained, not relabeled as these PKH4O2 captures.",
+    "New raw physical files have not been independently decoded in this campaign. Values above are supplied observations, not newly reproduced measurements.",
+    "Works fine is a user hardware observation, not a measured worst-case timing bound.",
+    "Algorithm pair, control history and exact stock workload must be held constant in local comparisons and subsequent physical A/B."
+  ]
+}

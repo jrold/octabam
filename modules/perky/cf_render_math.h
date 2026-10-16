@@ -30,6 +30,17 @@ static inline void pk_cf_render_math_end(pk_cf_render_math_context c){
         "move.l %2,%%macsr"
         :: "d"(c.low),"d"(c.extension),"d"(c.status) : "cc","memory");
 }
+/* Read a spilled context directly. Passing a volatile struct by value makes
+ * GCC copy all twelve bytes before restoring it (and can emit memcpy at Os).
+ * Keep the value entry above for renderers whose allocation is better there. */
+static inline void pk_cf_render_math_end_saved(const volatile pk_cf_render_math_context *c){
+    __asm__ volatile(
+        "move.l #0,%%macsr\n\t"
+        "move.l %0,%%acc0\n\t"
+        "move.l %1,%%accext01\n\t"
+        "move.l %2,%%macsr"
+        :: "d"(c->low),"d"(c->extension),"d"(c->status) : "cc","memory");
+}
 static inline int32_t pk_cf_render_frequency_hi(int32_t a){
     int32_t out;const int32_t b=0x057619f1;
     __asm__ volatile("mac.l %1,%2,%%acc0\n\tmovclr.l %%acc0,%0"
@@ -46,6 +57,7 @@ static inline uint32_t pk_cf_render_rng_hi(uint32_t a){
 typedef struct { uint32_t unused; } pk_cf_render_math_context;
 static inline pk_cf_render_math_context pk_cf_render_math_begin(void){pk_cf_render_math_context c={0};return c;}
 static inline void pk_cf_render_math_end(pk_cf_render_math_context c){(void)c;}
+static inline void pk_cf_render_math_end_saved(const volatile pk_cf_render_math_context *c){(void)c;}
 static inline int32_t pk_cf_render_frequency_hi(int32_t a){return pk_cf_mul_hi_s32(a,0x057619f1);}
 static inline uint32_t pk_cf_render_rng_hi(uint32_t a){return pk_cf_mul_hi_u32(a,0x4c957f2du);}
 #endif

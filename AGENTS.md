@@ -199,6 +199,8 @@ moment it costs real work, and add its line here.
 - [GCC option scopes can outline every sample-loop primitive](docs/contributing/TRAPS.md#trap-cf-inline-options) — compile with inline-missed diagnostics; match helper/caller options and measure actual ColdFire code.
 - [Native-endian decoded PCM is not an ARM table](docs/contributing/TRAPS.md#trap-cf-pcm-endian) — compare decoded bytes on ColdFire; a host round-trip is blind to the byte order.
 - [A BSS readiness flag can skip initialization](docs/contributing/TRAPS.md#trap-cf-ready-bss) — use a loaded nonzero cookie and poison BSS in the target probe.
+- [A STATIC fixture can play a tiny region without streaming](docs/contributing/TRAPS.md#trap-static-fixture-markers) — use the STATIC marker records; check sustained source audio and card reads after PLAY.
+- [Auto-grown emulator pages bypass read watches](docs/contributing/TRAPS.md#trap-automap-read-watch) — map benchmark assets explicitly and separate instruction-stream reads from data traffic.
 
 ## How claims are written here
 
