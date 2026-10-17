@@ -1,6 +1,6 @@
 {
   "schema": "octabam.perky.cf-footprint-campaign.v1",
-  "status": "IN_PROGRESS_NOT_HARDWARE_QUALIFIED",
+  "status": "LOCAL_FOOTPRINT_CAMPAIGN_COMPLETE_PHYSICAL_MKII_PENDING",
   "baseline_commit": "dd5374f335ed582d8910897dd710dc08fd397872",
   "branch": "perky-cf-dsp-hybrid",
   "objective_file": "/Users/jrold/.codex/attachments/35a146ac-3d8d-4187-a8b0-09fab999c43b/goal-objective.md",
@@ -4515,10 +4515,7 @@
     }
   },
   "remaining": [
-    "Full source-bound final diagnostic/performance qualification and sustained final workloads",
-    "Final matrix on composed image, matched first/second CF and one-CF five-stock controls, STATIC/FLEX A-G coverage",
-    "Commit/push source; build unique clean diagnostic/performance artifacts; package only after applicable gates",
-    "Physical MKII A/B needed: baseline model does not reproduce observed hardware lockup"
+    "Physical MKII A/B: determine unrestricted dual-CF stability, actual cache/memory/card/DMA/UI effects and algorithm-pair feasibility. No restrictions authorized or implemented."
   ],
   "completed_image_checks": {
     "runtime": {
@@ -4571,7 +4568,7 @@
     "compact_full_timer_max_us": 298.303,
     "interpretation": "Retain as a code-footprint improvement with faster isolated resonant rendering. Do not claim full-ISR maximum improved: this short row maximum regresses 0.417 us, and both exceed the preferred 80% budget. Further integration optimization and hardware confirmation remain required."
   },
-  "implementation_checkpoint": "1ba3e0a0 pushed to origin/perky-cf-dsp-hybrid",
+  "implementation_checkpoint": "2ba5e761c5b673e0d361dbe5fc55e317fc1a504a pushed [skip ci]; PKH5D1/PKH5P1 clean source-bound candidates, hardware untested",
   "integration_experiments": [
     {
       "id": "immutable-table-views",
@@ -7875,7 +7872,7 @@
     },
     "corrected_interpretation": "State cross-line accesses improve. Isolated cycle means have mixed effects: WT/NT increase, Snare slightly improves and Bass slightly regresses; single-Machine seven-track rows improve means but slightly worsen some maxima. No cache/SDRAM latency claim."
   },
-  "last_pushed_verified_checkpoint": "f5a0acc7",
+  "last_pushed_verified_checkpoint": "2ba5e761c5b673e0d361dbe5fc55e317fc1a504a",
   "callback_predictor_instrument_repair": {
     "status": "PASS_SAME_IMAGE_AND_PARTNER_INVARIANCE",
     "finding": "RETRACTED CPU timing comparison: the old two-image production runner shared global branch predictor history between images. Exact synthesis/source-state comparisons remain valid. Profiler-off instruction/stack/RAM request observations remain valid; profiler-on diagnostic max-update paths can also change. Separate single-Machine OS rows and standalone single-target benchmarks are unaffected.",
@@ -11322,7 +11319,7 @@
     "limits": "Architectural request crossings are not cache misses or SDRAM bus transactions. No physical cache or stability improvement is asserted."
   },
   "optimization_plateau_review": {
-    "status": "SOURCE_CANDIDATE_COMPOSED; VERIFY_BEFORE_PACKAGING",
+    "status": "MODELED_PRACTICAL_PLATEAU; NONDOMINATED_CODE_CPU_TRAFFIC_FRONTIER_REQUIRES_PHYSICAL_ORACLE",
     "evaluated": [
       "Compiler inlining/outlining/loop splitting and per-unit O2/Os; function and loop alignment",
       "Compact resonant loops and direct EMAC saved-context restoration",
@@ -11357,5 +11354,678 @@
       }
     ],
     "reopen_on": "Physical final-candidate profiles/algorithm pairing or a new target-code mechanism showing additional exact owned work that can be removed."
-  }
+  },
+  "final_candidate_checks_completed": {
+    "image_qualification": {
+      "path": "out/perky/hybrid/footprint-20261016/final-diagnostic/QUALIFICATION.json",
+      "sha256": "53900a933d2a9622069c238e6528991aec0022229c45560a394c75340199f35d"
+    },
+    "configuration_pair": {
+      "path": "out/perky/hybrid/footprint-20261016/FINAL_CONFIGURATION_PAIR.json",
+      "sha256": "4a1b89cb5e18e66b34d0b150d8b24087853edab48629c4444e276981f4d3c92e"
+    },
+    "all_20_qualification_jobs": {
+      "path": "out/perky/hybrid/footprint-20261016/FINAL_QUALIFICATION_JOBS.json",
+      "sha256": "8a84ec9799e14473adca65b386fdeb3770debfdd589fa9ac36b676621a47c1d8"
+    },
+    "stock_64_rows": {
+      "path": "out/perky/hybrid/footprint-20261016/FINAL_STOCK_SUMMARY.json",
+      "sha256": "eeaaf3bfa7b4a1e4e722054281a298fcc62cc8ce0cb9ed3df133509dac16afc2"
+    },
+    "all_25_pair_feasibility": {
+      "path": "out/perky/hybrid/footprint-20261016/FINAL_FEASIBILITY_MATRIX.csv",
+      "sha256": "e2ae61b707088af047eedbc6c9e3308b033a48502a31e1483920f0ca142621fc"
+    },
+    "full_callback_resources": {
+      "path": "out/perky/hybrid/footprint-20261016/FINAL_CALLBACK_RESOURCES.json",
+      "sha256": "c1200ccef04f07114c79775f900d87d78fd373507f59708bf62e5b390dbc5f95"
+    },
+    "production_working_sets": {
+      "path": "out/perky/hybrid/footprint-20261016/FINAL_PRODUCTION_WORKING_SETS.json",
+      "sha256": "eb7597407cf6e72f41766fecf42e317fe1fde190c97a82bd0e0c16159c387662"
+    },
+    "remaining": [
+      "Physical MKII A/B: determine unrestricted dual-CF stability, actual cache/memory/card/DMA/UI effects and algorithm-pair feasibility. No restrictions authorized or implemented."
+    ],
+    "sustained_1653750_frames": {
+      "path": "out/perky/hybrid/footprint-20261016/final-sustained/STOCK_MATRIX.json",
+      "sha256": "fe7a1d00fc8c6830c45802afa5e70dfbc9610245ca26204991a314c4093fda6b"
+    }
+  },
+  "compact_control_frontier_experiments": [
+    {
+      "id": "compact-control-scope",
+      "decision": "Not selected: much smaller executed/control code, but greater measured instructions, stack traffic and CPU. Retained as an explicit cache-versus-traffic tradeoff for physical investigation, not a qualified firmware release.",
+      "base_source_commit": "2ba5e761c5b673e0d361dbe5fc55e317fc1a504a",
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/control-scope-no-unroll/callbacks-const-zero/CALLBACK_REPORT.json",
+        "sha256": "3b03f996f05245f7bd3b2cec6530da105a2b4f177986473226cbe7479214d0c3"
+      },
+      "section_sizes": "out/perky/hybrid/footprint-20261016/control-scope-no-unroll/image/probe/platform/runtime.elf  :\nsection     size         addr\n.text     244336   1086326240\n.rodata    25032   1086570576\n.data        552   1086603800\n.bss      218608   1086604352\nTotal     488528\n\n\n",
+      "raw_runtime_bytes": 278112,
+      "controlled_pairs": {
+        "V1/V1": {
+          "baseline": {
+            "mean_two_voice_cycles": 11688.46875,
+            "mean_stack_read_write_bytes": 5923.671875,
+            "mean_instructions": 8978.859375
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 11853.5625,
+            "mean_stack_read_write_bytes": 6352.234375,
+            "mean_instructions": 9087.734375
+          }
+        },
+        "V2/V2": {
+          "baseline": {
+            "mean_two_voice_cycles": 11689.5625,
+            "mean_stack_read_write_bytes": 5923.671875,
+            "mean_instructions": 8978.859375
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 11858.703125,
+            "mean_stack_read_write_bytes": 6352.234375,
+            "mean_instructions": 9087.734375
+          }
+        },
+        "snare/snare": {
+          "baseline": {
+            "mean_two_voice_cycles": 17491.171875,
+            "mean_stack_read_write_bytes": 9747.203125,
+            "mean_instructions": 12664.359375
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 18044.390625,
+            "mean_stack_read_write_bytes": 11182.796875,
+            "mean_instructions": 12869.140625
+          }
+        },
+        "snare/bass": {
+          "baseline": {
+            "mean_two_voice_cycles": 17223.0,
+            "mean_stack_read_write_bytes": 9601.640625,
+            "mean_instructions": 12388.96875
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 17705.640625,
+            "mean_stack_read_write_bytes": 10746.59375,
+            "mean_instructions": 12563.21875
+          }
+        },
+        "bass/bass": {
+          "baseline": {
+            "mean_two_voice_cycles": 16428.734375,
+            "mean_stack_read_write_bytes": 9456.078125,
+            "mean_instructions": 12113.578125
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 16930.265625,
+            "mean_stack_read_write_bytes": 10310.390625,
+            "mean_instructions": 12257.296875
+          }
+        },
+        "third/third": {
+          "baseline": {
+            "mean_two_voice_cycles": 14014.171875,
+            "mean_stack_read_write_bytes": 6736.515625,
+            "mean_instructions": 10657.640625
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 14401.484375,
+            "mean_stack_read_write_bytes": 7774.578125,
+            "mean_instructions": 10845.265625
+          }
+        }
+      },
+      "source_patches": {
+        "modules/perky/control_cf_dsp_hybrid.c": "--- reference/source.c\n+++ candidate/source.c\n@@ -65,7 +65,10 @@\n #define pk4_prepare_event pk4_unused_prepare_event_orig\n #define pk4_render pk4_unused_render_orig\n #define pk4_process_segment pk4_unused_process_segment_orig\n+#pragma GCC push_options\n+#pragma GCC optimize (\"no-unroll-loops\", \"no-split-loops\", \"no-tree-loop-distribute-patterns\")\n #include \"cf_perky4.c\"\n+#pragma GCC pop_options\n #undef pk4_process_segment\n #undef pk4_render\n #undef pk4_prepare_event\n@@ -1014,7 +1017,7 @@\n             cursor[i] = 0u;\n         U32(0x80001c80u) = (uint32_t)(uintptr_t)(cursor + cursor_longs);\n         if (event_boundary) {\n-            int16_t zeros[PK_HYB_BLOCK_SAMPLES] = { 0 };\n+            static const int16_t zeros[PK_HYB_BLOCK_SAMPLES] = { 0 };\n             uint32_t encoded[40];\n             uint32_t pre_longs = pk4_encode_stock_segment(encoded, zeros, start);\n             volatile uint32_t *record = pk_hybrid_fixed_slot(track, ping);\n"
+      },
+      "limits": "25600 callback exactness includes all original state bytes, both profiler modes and all split positions; these variants were not retained and did not receive full image qualification."
+    },
+    {
+      "id": "compact-control-inline-smoothing",
+      "decision": "Not selected: inlining reduces some traffic compared with compact scope, but still regresses important Snare/Bass CPU and traffic compared with the selected candidate.",
+      "base_source_commit": "2ba5e761c5b673e0d361dbe5fc55e317fc1a504a",
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/control-scope-inline-smoothing/callbacks/CALLBACK_REPORT.json",
+        "sha256": "00d24783d9d60e7155ed6e7f5be4a044b9d13780c29b79ab87fc026d831b0500"
+      },
+      "section_sizes": "out/perky/hybrid/footprint-20261016/control-scope-inline-smoothing/image/probe/platform/runtime.elf  :\nsection     size         addr\n.text     245956   1086326240\n.rodata    25032   1086572196\n.data        552   1086603264\n.bss      218608   1086603824\nTotal     490148\n\n\n",
+      "raw_runtime_bytes": 277576,
+      "controlled_pairs": {
+        "V1/V1": {
+          "baseline": {
+            "mean_two_voice_cycles": 11688.46875,
+            "mean_stack_read_write_bytes": 5923.671875,
+            "mean_instructions": 8978.859375
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 11872.734375,
+            "mean_stack_read_write_bytes": 6257.734375,
+            "mean_instructions": 9061.484375
+          }
+        },
+        "V2/V2": {
+          "baseline": {
+            "mean_two_voice_cycles": 11689.5625,
+            "mean_stack_read_write_bytes": 5923.671875,
+            "mean_instructions": 8978.859375
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 11875.6875,
+            "mean_stack_read_write_bytes": 6257.734375,
+            "mean_instructions": 9061.484375
+          }
+        },
+        "snare/snare": {
+          "baseline": {
+            "mean_two_voice_cycles": 17491.171875,
+            "mean_stack_read_write_bytes": 9747.203125,
+            "mean_instructions": 12664.359375
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 18124.875,
+            "mean_stack_read_write_bytes": 11036.921875,
+            "mean_instructions": 12851.890625
+          }
+        },
+        "snare/bass": {
+          "baseline": {
+            "mean_two_voice_cycles": 17223.0,
+            "mean_stack_read_write_bytes": 9601.640625,
+            "mean_instructions": 12388.96875
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 17816.0,
+            "mean_stack_read_write_bytes": 10612.84375,
+            "mean_instructions": 12546.640625
+          }
+        },
+        "bass/bass": {
+          "baseline": {
+            "mean_two_voice_cycles": 16428.734375,
+            "mean_stack_read_write_bytes": 9456.078125,
+            "mean_instructions": 12113.578125
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 16971.734375,
+            "mean_stack_read_write_bytes": 10188.765625,
+            "mean_instructions": 12241.390625
+          }
+        },
+        "third/third": {
+          "baseline": {
+            "mean_two_voice_cycles": 14014.171875,
+            "mean_stack_read_write_bytes": 6736.515625,
+            "mean_instructions": 10657.640625
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 14249.859375,
+            "mean_stack_read_write_bytes": 7679.453125,
+            "mean_instructions": 10821.109375
+          }
+        }
+      },
+      "source_patches": {
+        "modules/perky/control_cf_dsp_hybrid.c": "--- reference/source.c\n+++ candidate/source.c\n@@ -65,7 +65,11 @@\n #define pk4_prepare_event pk4_unused_prepare_event_orig\n #define pk4_render pk4_unused_render_orig\n #define pk4_process_segment pk4_unused_process_segment_orig\n+#pragma GCC push_options\n+#pragma GCC optimize (\"no-unroll-loops\", \"no-split-loops\", \"no-tree-loop-distribute-patterns\")\n+static inline void __attribute__((always_inline)) common_smooth_many(uint8_t*s,const uint32_t t[4],unsigned n);\n #include \"cf_perky4.c\"\n+#pragma GCC pop_options\n #undef pk4_process_segment\n #undef pk4_render\n #undef pk4_prepare_event\n@@ -1014,7 +1018,7 @@\n             cursor[i] = 0u;\n         U32(0x80001c80u) = (uint32_t)(uintptr_t)(cursor + cursor_longs);\n         if (event_boundary) {\n-            int16_t zeros[PK_HYB_BLOCK_SAMPLES] = { 0 };\n+            static const int16_t zeros[PK_HYB_BLOCK_SAMPLES] = { 0 };\n             uint32_t encoded[40];\n             uint32_t pre_longs = pk4_encode_stock_segment(encoded, zeros, start);\n             volatile uint32_t *record = pk_hybrid_fixed_slot(track, ping);\n"
+      },
+      "limits": "25600 callback exactness includes all original state bytes, both profiler modes and all split positions; these variants were not retained and did not receive full image qualification."
+    },
+    {
+      "id": "compact-control-flatten",
+      "decision": "Not selected: mixed CPU gains/losses; flatten expands resonant preparation to 24062 bytes from18014 and does not reduce loaded runtime size.",
+      "base_source_commit": "2ba5e761c5b673e0d361dbe5fc55e317fc1a504a",
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/control-scope-flatten/callbacks/CALLBACK_REPORT.json",
+        "sha256": "3b4649888da265738835268e3d8c0c774ce4b1a771a16c4f1e41052fff95a740"
+      },
+      "section_sizes": "out/perky/hybrid/footprint-20261016/control-scope-flatten/image/probe/platform/runtime.elf  :\nsection     size         addr\n.text     265028   1086326240\n.rodata    25032   1086591268\n.data        552   1086619648\n.bss      218608   1086620208\nTotal     509220\n\n\n",
+      "raw_runtime_bytes": 293960,
+      "controlled_pairs": {
+        "V1/V1": {
+          "baseline": {
+            "mean_two_voice_cycles": 11688.46875,
+            "mean_stack_read_write_bytes": 5923.671875,
+            "mean_instructions": 8978.859375
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 11708.640625,
+            "mean_stack_read_write_bytes": 5997.359375,
+            "mean_instructions": 8999.703125
+          }
+        },
+        "V2/V2": {
+          "baseline": {
+            "mean_two_voice_cycles": 11689.5625,
+            "mean_stack_read_write_bytes": 5923.671875,
+            "mean_instructions": 8978.859375
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 11710.28125,
+            "mean_stack_read_write_bytes": 5997.359375,
+            "mean_instructions": 8999.703125
+          }
+        },
+        "snare/snare": {
+          "baseline": {
+            "mean_two_voice_cycles": 17491.171875,
+            "mean_stack_read_write_bytes": 9747.203125,
+            "mean_instructions": 12664.359375
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 17714.40625,
+            "mean_stack_read_write_bytes": 9848.140625,
+            "mean_instructions": 12656.265625
+          }
+        },
+        "snare/bass": {
+          "baseline": {
+            "mean_two_voice_cycles": 17223.0,
+            "mean_stack_read_write_bytes": 9601.640625,
+            "mean_instructions": 12388.96875
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 17293.15625,
+            "mean_stack_read_write_bytes": 9475.0,
+            "mean_instructions": 12348.515625
+          }
+        },
+        "bass/bass": {
+          "baseline": {
+            "mean_two_voice_cycles": 16428.734375,
+            "mean_stack_read_write_bytes": 9456.078125,
+            "mean_instructions": 12113.578125
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 16315.84375,
+            "mean_stack_read_write_bytes": 9101.859375,
+            "mean_instructions": 12040.765625
+          }
+        },
+        "third/third": {
+          "baseline": {
+            "mean_two_voice_cycles": 14014.171875,
+            "mean_stack_read_write_bytes": 6736.515625,
+            "mean_instructions": 10657.640625
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 13935.109375,
+            "mean_stack_read_write_bytes": 6743.578125,
+            "mean_instructions": 10659.640625
+          }
+        }
+      },
+      "source_patches": {
+        "modules/perky/control_cf_dsp_hybrid.c": "--- reference/source.c\n+++ candidate/source.c\n@@ -65,7 +65,12 @@\n #define pk4_prepare_event pk4_unused_prepare_event_orig\n #define pk4_render pk4_unused_render_orig\n #define pk4_process_segment pk4_unused_process_segment_orig\n+#pragma GCC push_options\n+#pragma GCC optimize (\"no-unroll-loops\", \"no-split-loops\", \"no-tree-loop-distribute-patterns\")\n+static void __attribute__((noinline,flatten)) prepare_wt(pk4_control*c,uint8_t*s,const uint8_t raw[4],uint8_t mode,uint8_t vel,uint8_t note,int trig,const pk4_assets*a);\n+static void __attribute__((noinline,flatten)) prepare_res_family(pk4_control*c,uint8_t*snare,uint8_t*bass,uint8_t*nt,const uint8_t raw[4],uint8_t mode,uint8_t vel,uint8_t note,int trig,const pk4_assets*a);\n #include \"cf_perky4.c\"\n+#pragma GCC pop_options\n #undef pk4_process_segment\n #undef pk4_render\n #undef pk4_prepare_event\n@@ -1014,7 +1019,7 @@\n             cursor[i] = 0u;\n         U32(0x80001c80u) = (uint32_t)(uintptr_t)(cursor + cursor_longs);\n         if (event_boundary) {\n-            int16_t zeros[PK_HYB_BLOCK_SAMPLES] = { 0 };\n+            static const int16_t zeros[PK_HYB_BLOCK_SAMPLES] = { 0 };\n             uint32_t encoded[40];\n             uint32_t pre_longs = pk4_encode_stock_segment(encoded, zeros, start);\n             volatile uint32_t *record = pk_hybrid_fixed_slot(track, ping);\n"
+      },
+      "limits": "25600 callback exactness includes all original state bytes, both profiler modes and all split positions; these variants were not retained and did not receive full image qualification."
+    },
+    {
+      "id": "outline-large-smoothing-fallback",
+      "decision": "Not selected: only1188 bytes smaller .text, unchanged runtime extent, larger packed image and mixed timing including slower Snare. The hypothesis that fallback duplication accounts for most control size is not supported.",
+      "base_source_commit": "2ba5e761c5b673e0d361dbe5fc55e317fc1a504a",
+      "receipt": {
+        "path": "out/perky/hybrid/footprint-20261016/cold-smoothing-fallback/callbacks/CALLBACK_REPORT.json",
+        "sha256": "bcfaf18eb07c98d0956d34bc73ced6d21c5161f86edef6fc7647ece16453e4fa"
+      },
+      "section_sizes": "out/perky/hybrid/footprint-20261016/cold-smoothing-fallback/image/probe/platform/runtime.elf  :\nsection     size         addr\n.text     266564   1086326240\n.rodata    25000   1086592804\n.data        552   1086619648\n.bss      218608   1086620208\nTotal     510724\n\n\n",
+      "raw_runtime_bytes": 293960,
+      "controlled_pairs": {
+        "V1/V1": {
+          "baseline": {
+            "mean_two_voice_cycles": 11688.46875,
+            "mean_stack_read_write_bytes": 5923.671875,
+            "mean_instructions": 8978.859375
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 11683.953125,
+            "mean_stack_read_write_bytes": 5910.921875,
+            "mean_instructions": 8974.765625
+          }
+        },
+        "V2/V2": {
+          "baseline": {
+            "mean_two_voice_cycles": 11689.5625,
+            "mean_stack_read_write_bytes": 5923.671875,
+            "mean_instructions": 8978.859375
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 11684.171875,
+            "mean_stack_read_write_bytes": 5910.921875,
+            "mean_instructions": 8974.765625
+          }
+        },
+        "snare/snare": {
+          "baseline": {
+            "mean_two_voice_cycles": 17491.171875,
+            "mean_stack_read_write_bytes": 9747.203125,
+            "mean_instructions": 12664.359375
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 17632.046875,
+            "mean_stack_read_write_bytes": 9758.796875,
+            "mean_instructions": 12676.734375
+          }
+        },
+        "snare/bass": {
+          "baseline": {
+            "mean_two_voice_cycles": 17223.0,
+            "mean_stack_read_write_bytes": 9601.640625,
+            "mean_instructions": 12388.96875
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 17286.3125,
+            "mean_stack_read_write_bytes": 9501.75,
+            "mean_instructions": 12376.859375
+          }
+        },
+        "bass/bass": {
+          "baseline": {
+            "mean_two_voice_cycles": 16428.734375,
+            "mean_stack_read_write_bytes": 9456.078125,
+            "mean_instructions": 12113.578125
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 16402.453125,
+            "mean_stack_read_write_bytes": 9244.703125,
+            "mean_instructions": 12076.984375
+          }
+        },
+        "third/third": {
+          "baseline": {
+            "mean_two_voice_cycles": 14014.171875,
+            "mean_stack_read_write_bytes": 6736.515625,
+            "mean_instructions": 10657.640625
+          },
+          "candidate": {
+            "mean_two_voice_cycles": 13938.8125,
+            "mean_stack_read_write_bytes": 6696.390625,
+            "mean_instructions": 10686.234375
+          }
+        }
+      },
+      "source_patches": {
+        "modules/perky/control_cf_dsp_hybrid.c": "--- reference/source.c\n+++ candidate/source.c\n@@ -65,7 +65,9 @@\n #define pk4_prepare_event pk4_unused_prepare_event_orig\n #define pk4_render pk4_unused_render_orig\n #define pk4_process_segment pk4_unused_process_segment_orig\n+#define PK4_OUTLINE_LARGE_SMOOTH_FALLBACK 1\n #include \"cf_perky4.c\"\n+#undef PK4_OUTLINE_LARGE_SMOOTH_FALLBACK\n #undef pk4_process_segment\n #undef pk4_render\n #undef pk4_prepare_event\n",
+        "modules/perky/cf_perky4.c": "--- reference/cf_perky4.c\n+++ candidate/cf_perky4.c\n@@ -112,6 +112,15 @@\n static void common_smooth_only(uint8_t*s,const uint32_t t[4]){unsigned i;for(i=0;i<4u;i++)w32(s,0x1c+4u*i,smooth(r32(s,0x1c+4u*i),t[i]));}\n /* Apply the same integer recurrence n times; keep each value in a\n  * register between passes. This changes no rounding or final state word. */\n+#ifdef PK4_OUTLINE_LARGE_SMOOTH_FALLBACK\n+/* Keep the exact unsigned-overflow recurrence for unusual state out of the\n+ * normal control path. The bounded-control threshold path remains unchanged. */\n+static uint32_t __attribute__((noinline,optimize(\"Os\",\"no-unroll-loops\",\"no-split-loops\")))\n+pk4_common_smooth_cold(uint32_t value,uint32_t target,unsigned n){\n+    for(unsigned i=0;i<n;i++)value=(3u*target+5u*value)>>3;\n+    return value;\n+}\n+#endif\n static void common_smooth_many(uint8_t*s,const uint32_t t[4],unsigned n){\n     unsigned k,i;for(k=0;k<4u;k++){uint32_t value=r32(s,0x1c+4u*k),target=t[k];\n         if(n>=14u&&n<=16u&&value<=4095u&&target<=4095u){\n@@ -122,7 +131,13 @@\n             int32_t offset=n==14u?pk_cf_control_smooth_14(delta):\n                 n==15u?pk_cf_control_smooth_15(delta):pk_cf_control_smooth_16(delta);\n             value=target+(uint32_t)offset;\n-        }else for(i=0;i<n;i++)value=smooth(value,target);\n+        }else {\n+#ifdef PK4_OUTLINE_LARGE_SMOOTH_FALLBACK\n+            if(n>=14u&&n<=16u)value=pk4_common_smooth_cold(value,target,n);\n+            else\n+#endif\n+            for(i=0;i<n;i++)value=smooth(value,target);\n+        }\n         w32(s,0x1c+4u*k,value);\n     }\n }\n"
+      },
+      "limits": "25600 callback exactness includes all original state bytes, both profiler modes and all split positions; these variants were not retained and did not receive full image qualification."
+    }
+  ],
+  "compact_control_frontier_observation": {
+    "path": "out/perky/hybrid/footprint-20261016/production-working-sets/compact-controls/OBSERVATION.json",
+    "sha256": "7533ce075827271a1762c5724a0a441cb4cef5584173e6276c38b11ca9c33ced"
+  },
+  "final_callback_tradeoffs": {
+    "source": "FINAL_CALLBACK_RESOURCES.json",
+    "two_voice_profiler_off_dense_cycle_means": {
+      "0:V1/V1": [
+        11575.6875,
+        11688.46875
+      ],
+      "0:V1/V2": [
+        11575.890625,
+        11689.5625
+      ],
+      "0:V1/snare": [
+        14845.828125,
+        14837.71875
+      ],
+      "0:V1/bass": [
+        14433.453125,
+        14219.328125
+      ],
+      "0:V1/third": [
+        13240.21875,
+        13006.140625
+      ],
+      "0:V2/V1": [
+        11574.484375,
+        11688.90625
+      ],
+      "0:V2/V2": [
+        11575.5625,
+        11689.5625
+      ],
+      "0:V2/snare": [
+        14846.375,
+        14837.71875
+      ],
+      "0:V2/bass": [
+        14432.90625,
+        14218.671875
+      ],
+      "0:V2/third": [
+        13240.21875,
+        13004.171875
+      ],
+      "0:snare/V1": [
+        14854.046875,
+        14832.46875
+      ],
+      "0:snare/V2": [
+        14853.375,
+        14833.015625
+      ],
+      "0:snare/snare": [
+        17586.9375,
+        17491.171875
+      ],
+      "0:snare/bass": [
+        17453.140625,
+        17223
+      ],
+      "0:snare/third": [
+        16414.453125,
+        16012.65625
+      ],
+      "0:bass/V1": [
+        14430.28125,
+        14216.8125
+      ],
+      "0:bass/V2": [
+        14431.375,
+        14217.796875
+      ],
+      "0:bass/snare": [
+        17447.234375,
+        17219.71875
+      ],
+      "0:bass/bass": [
+        16810.96875,
+        16428.734375
+      ],
+      "0:bass/third": [
+        16005.234375,
+        15402.359375
+      ],
+      "0:third/V1": [
+        13238.796875,
+        12999.03125
+      ],
+      "0:third/V2": [
+        13240.546875,
+        13000.453125
+      ],
+      "0:third/snare": [
+        16425.0625,
+        16020.859375
+      ],
+      "0:third/bass": [
+        16016.1875,
+        15403.5625
+      ],
+      "0:third/third": [
+        14553.4375,
+        14014.171875
+      ]
+    },
+    "interpretation": "Wavetable dense callback means regress about113 cycles/two-voice frame; Snare, Bass and Noise/Tone improve. Steady full-stock matrix gains differ from the dense synthetic workload. No universal speedup claim.",
+    "cache_interpretation": "Mixed Snare/Bass executed-byte union across64 dense frames:21460->19388B; line union1458->1322. This is not an instantaneous cache footprint or a silicon miss count. Compact-control alternative reaches15340B/1043lines at higher CPU/stack traffic."
+  },
+  "true_second_voice_activation": {
+    "native_25_pairs": {
+      "path": "out/perky/hybrid/footprint-20261016/dynamic-CF-activation/RECEIPT.json",
+      "sha256": "2ae0b5bc7fb0cbf6820ceebf3c21ff8013b764b6381fb5905d77a30963b80849"
+    },
+    "data_observer_control": {
+      "path": "out/perky/hybrid/footprint-20261016/dynamic-CF-activation-footprint/DATA_OBSERVER_CONTROL.json",
+      "sha256": "f16802aa09e37d07f73d1be68cfb4461953460dac7577d835a594075ee67be2f"
+    },
+    "status": "PASS_NATIVE_ALL_25_PAIRS_17_SPLITS_AND_ACTUAL_STOCK_CHOOSER_THREE_PRIORITY_PAIRS",
+    "limits": "First-activation call cost depends on the source split. Native call tests exclude stock ISR/DSP/cache stalls; matched full-OS matrix reports total IRQ cost separately.",
+    "reusable_sweep": {
+      "path": "out/perky/hybrid/footprint-20261016/activation-tool-all-splits/RECEIPT.json",
+      "sha256": "59218b9401d23c2520545ba87e1cf5da20c93dedff29894e25ea05a8836dfc09"
+    },
+    "resource_summary": {
+      "path": "out/perky/hybrid/footprint-20261016/FINAL_ACTIVATION_RESOURCES.json",
+      "sha256": "5764f1c2b0ece53174be326e7383133b296058c5b966d7420b0db9df8bbf15de"
+    },
+    "actual_stock_chooser": {
+      "path": "out/perky/hybrid/footprint-20261016/panel-second-CF/PANEL_VALIDATION.json",
+      "sha256": "55ed4e02ff18e395e4db839511e65e12859185b5e4e26ed39bb6f55b530a103d"
+    },
+    "fresh_reusable_tool_control": {
+      "path": "out/perky/hybrid/footprint-20261016/panel-tool-fresh-control/PANEL_ACTIVATION.json",
+      "sha256": "18cc06f6a879e158e833836dc39e6fe231b544b64a0f52b87a70ff5bd3ae7f31"
+    },
+    "calls": 149600,
+    "T2_exact_checks": 81600
+  },
+  "selected_final_implementation": [
+    "Compact Resonant loops and pointer EMAC restore",
+    "Independent Noise/Tone noise-filter block and compact loops",
+    "Immutable table views and native voice/RNG/control/global alignment",
+    "Complete-render clear omission and exact empty callback handling",
+    "176-byte fused ColdFire source record encoder",
+    "Diagnostic-on / performance-off loaded profiler enable configuration"
+  ],
+  "historical_fields": "Earlier stage keys preserve experimental snapshots and pending/retracted claims; final_engineering_qualification and final_candidate_checks_completed give current local verdict. No hardware acceptance is inferred.",
+  "final_engineering_qualification": {
+    "path": "modules/perky/hybrid/CF_FOOTPRINT_20261016_QUALIFICATION.json",
+    "sha256": "9bf911ccaaa71404446b8838e0fb81a1cd949a5a3cb5b78941a65261010cf128"
+  },
+  "portable_resource_accounting": {
+    "path": "modules/perky/hybrid/CF_FOOTPRINT_20261016_RESOURCES.json",
+    "sha256": "c5205704c9a7268b390c0822f9ef3f4e50e2e3359da059874c9f5dca25c4c9fa"
+  },
+  "final_qualification_guard_negative_control": {
+    "path": "out/perky/hybrid/footprint-20261016/aggregation-final-running-control/CONTROL.json",
+    "sha256": "f9d4a8bc9be572d733beccb3149de3626c8e31cd769229ad3356719290c1acaa"
+  },
+  "release_configurations": {
+    "diagnostic": {
+      "version": "PKH5D1",
+      "artifacts": {
+        "mainos": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-diagnostic/probe/mainos_PKH5D1.bin",
+          "bytes": 1462179,
+          "sha256": "9ed62a8437ff53f20c528400cac94dfeae4d87cff8b843dc8a23d797b41d0a1a"
+        },
+        "fragmented_normal": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-diagnostic/probe/fragmented-normal.bin",
+          "bytes": 1314855,
+          "sha256": "dfb34b3a3797e0dc26edaaf7b8c75ff542a8df75656eb92d86f182d3d78d8f36"
+        },
+        "runtime_elf": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-diagnostic/probe/platform/runtime.elf",
+          "bytes": 304208,
+          "sha256": "9eea212590777cd154192c057b2658deaa78800c49ef94e6d0f94cf6b56036ad"
+        },
+        "runtime_raw": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-diagnostic/probe/platform/runtime.raw",
+          "bytes": 293960,
+          "sha256": "f71335ba5d7608ad8b2d19d7ca5790f1d8e5f4d4039ce609df2367dad40107f3"
+        },
+        "dsp_identity_report": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-diagnostic/probe/DSP_IDENTITY.json",
+          "bytes": 15204,
+          "sha256": "1b33e4ee331afeae5d34374d07819b542647aaff690252b792d62840d95ad5d3"
+        },
+        "memory_report": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-diagnostic/probe/MEMORY.json",
+          "bytes": 79723,
+          "sha256": "07920dc7f45a64555aad7370e8798a501cd46641d321223457d5fa1a44eee0b7"
+        },
+        "elek": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-diagnostic/probe/elek_PKH5D1.bin",
+          "bytes": 785765,
+          "sha256": "e3c10c4264b46a984608666f07d16cc86a2e0566ce95328331da6dda47dbd4eb"
+        },
+        "card": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-diagnostic/probe/OCTATRACK_PKH5D1.bin",
+          "bytes": 785784,
+          "sha256": "6bba358190c590062201c89c6dae57482bd5f2a0a6e034a4c9775ad4ffe46abd"
+        },
+        "midi": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-diagnostic/probe/OCTATRACK_OS1.40C_PKH5D1.syx",
+          "bytes": 1097608,
+          "sha256": "638140b06e24ebaf738f49140f36190d50dd08a5a4b2a8fa4beebe6da50aee56"
+        },
+        "notes": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-diagnostic/probe/PKH5D1_PROBE_NOTES.txt",
+          "bytes": 1512,
+          "sha256": "b062dacb2257c963495d1a3a15cdca0efd07df1a6ca4ede1d74f24f9b1bc5fc6"
+        }
+      }
+    },
+    "performance": {
+      "version": "PKH5P1",
+      "artifacts": {
+        "mainos": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-performance/probe/mainos_PKH5P1.bin",
+          "bytes": 1462178,
+          "sha256": "6e527ad14e4c8299baec03302fe04406821082b9e8f48553251e9c56c5e79d74"
+        },
+        "fragmented_normal": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-performance/probe/fragmented-normal.bin",
+          "bytes": 1314854,
+          "sha256": "8bfef008a615e0130883a8863b9618299e211c45eba5399796f2b19d0f1719b0"
+        },
+        "runtime_elf": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-performance/probe/platform/runtime.elf",
+          "bytes": 304208,
+          "sha256": "066ccbe469919006161349d0a27055c658ce00d9876503a01fbeefa733549491"
+        },
+        "runtime_raw": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-performance/probe/platform/runtime.raw",
+          "bytes": 293960,
+          "sha256": "cb6ba89cc0071bcf62becd2b19b13f017562a72205e5137fdc02d49e5c999138"
+        },
+        "dsp_identity_report": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-performance/probe/DSP_IDENTITY.json",
+          "bytes": 15204,
+          "sha256": "6c1acf378af67528b3f8c4dbc2378faef10cd2e1010ebd25be3eeff85f19dd05"
+        },
+        "memory_report": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-performance/probe/MEMORY.json",
+          "bytes": 79723,
+          "sha256": "965a9719c1e837e651801e239a7959504e1ccc4f2b572f9258642e852ce3376a"
+        },
+        "elek": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-performance/probe/elek_PKH5P1.bin",
+          "bytes": 785763,
+          "sha256": "e3018a88965e451e0aa88642180540538c25e49781f1b0c193e3f9f3a49e1a76"
+        },
+        "card": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-performance/probe/OCTATRACK_PKH5P1.bin",
+          "bytes": 785780,
+          "sha256": "1adcd737f14b89b2efaf51d59b4eb47dad671447c49a4ecab11c6e1e4f0a7eca"
+        },
+        "midi": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-performance/probe/OCTATRACK_OS1.40C_PKH5P1.syx",
+          "bytes": 1097605,
+          "sha256": "7206c04ba01b9de45b05021d18e58f0194832a38329e42f2642201b0ae41c72c"
+        },
+        "notes": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/footprint-20261016/final-performance/probe/PKH5P1_PROBE_NOTES.txt",
+          "bytes": 1518,
+          "sha256": "b63687eb9c429a699fd0a1a5e1af207373fcb3e49e578a994b3a1a3c6e097c06"
+        }
+      }
+    }
+  },
+  "package_destination": "/Users/jrold/Downloads/OCTABAM_PERKY_PKH5D1_PKH5P1_20261016",
+  "package_status": "ALL_LOCAL_ELIGIBILITY_GATES_PASS; ATOMIC_COPY_AND_HASH_VERIFICATION_RECORDED_IN_BUNDLE_MANIFEST",
+  "final_sustained_interpretation": "Long ACK-to-ACK CPU work peaks at 362.466 us including intervening stock tasks: 0.346 us below frame period, 72.216 us over preferred 80% budget. This is not IRQ latency and establishes no 20% whole-CPU headroom or physical UI responsiveness."
 }

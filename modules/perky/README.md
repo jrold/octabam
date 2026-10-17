@@ -112,7 +112,7 @@ dual-CF hardware acceptance remains open. PERKY4S remains the hardware-tested
 release; the larger unchanged stock-task call graphs remain outside the scoped
 private-stack proof.
 
-### Footprint and second-CF-voice campaign (in progress)
+### Footprint and second-CF-voice campaign (locally qualified; MKII pending)
 
 The user reports that **two DSP voices + one CF voice + five stock FLEX or
 STATIC sequences works**, whereas **two DSP voices + two CF voices + three
@@ -133,13 +133,27 @@ card reads. PKH4O2 also passes a 60-second streaming run in the model, which
 does **not** reproduce its physical overload. Local passes cannot establish
 a reliable silicon voice limit.
 
-Measured baseline second-voice mean IRQ increments range from about 20.2 µs
-(Wavetable) to 25.1 µs (Snare), slightly below the first-voice increments in
-the same model. The campaign retains two unrestricted CF voices. It changes
-PERKY code and local instruments; stock machines/playback and the frozen DSP
-implementation remain unchanged. Exactness and qualification of the final
-diagnostic/performance configurations are still in progress; no new hardware
-acceptance or algorithm restriction is asserted.
+Selected second-voice mean IRQ increments range from about 19.79 µs
+(Wavetable) to 24.80 µs (Snare), slightly below first-voice increments in
+the same matched model. Production function text shrinks 120096 → 108932 bytes;
+loaded runtime shrinks by 16384 bytes. Wavetable dense callback cycles rise
+slightly, while stack requests and executed code footprint fall. The report
+records that tradeoff and further compact-control alternatives.
+
+The clean PKH5D1 diagnostic and PKH5P1 performance builds share firmware source
+`2ba5e761`; every runtime byte except the initial profiler-enable word matches.
+The 20-job safety/exactness suite and 64 short composed workload rows pass.
+The 600-second simulated Snare/Snare plus three-STATIC run also passes.
+The [final qualification](hybrid/CF_FOOTPRINT_20261016_QUALIFICATION.json) binds
+all receipts to both actual builds and the complete 43-file source fingerprint.
+The long ACK-to-ACK work maximum is 362.466 µs, only 0.346 µs below the
+frame period; it includes stock tasks and establishes no 20% whole-CPU
+headroom or hardware UI acceptance. The campaign retains two
+unrestricted CF voices; stock machines/playback and the frozen DSP remain
+unchanged. The [25-pair matrix](hybrid/CF_FOOTPRINT_20261016_FEASIBILITY.csv)
+requires physical confirmation for every pairing. No new hardware acceptance
+or algorithm restriction is asserted. The [MKII A/B procedure](hybrid/CF_FOOTPRINT_20261016_HARDWARE_AB.txt)
+isolates T6 admission with T2 and the stock workload held fixed.
 
 ### Current DSP memory limit
 

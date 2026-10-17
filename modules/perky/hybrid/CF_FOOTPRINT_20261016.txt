@@ -1,180 +1,256 @@
-PERKY ColdFire footprint campaign — 16 Oct 2026
-Status: IN PROGRESS. No new hardware safety or voice restriction is asserted.
+PERKY footprint and second-CF-voice campaign — 16 October 2026
 
-Hardware evidence supplied by the user:
-PKH4O2 supports 2 DSP + 1 CF + 5 stock FLEX/STATIC tracks on their MKII.
-2 DSP + 2 CF + 3 stock tracks produces sluggish UI and eventual lockup.
-This prioritizes the marginal second CF voice. It does not prove a cache,
-algorithm, memory-bandwidth or interrupt root cause. The new PKH4O2 PRFs are
-recorded separately from the older CF_OPTIMIZATION_HARDWARE.json captures.
+Firmware source: 2ba5e761c5b673e0d361dbe5fc55e317fc1a504a.
+Branch: perky-cf-dsp-hybrid; one checkout; local testing only.
+Fingerprint: 003ca1d5d20902506bbaa761d7371b9ace448a5b1861e63afd8c19364b1e52e0.
+Status: final local qualification and 600-second simulated stress PASS.
+PKH5D1/PKH5P1 are locally qualified candidates; physical acceptance is pending.
+Requirement-by-requirement identity/receipt details: CF_FOOTPRINT_20261016_QUALIFICATION.json.
+Physical MKII acceptance remains open. No voice/algorithm restrictions exist.
+The JSON ledger is the complete experimental record; HISTORY.txt preserves
+superseded chronological claims and explicit retractions.
 
-Verified implementation checkpoint: 1ba3e0a0, committed and pushed [skip ci].
-Disable resonant loop splitting; restore spilled EMAC context by pointer.
-Standalone target text: 113426 -> 107166 bytes (-6260).
-Linked runtime raw image: 310344 -> 302152 bytes (-8192).
-Two-voice isolated render, target cycles (mean / maximum):
-                 PKH4O2             compact resonant
-WT V1       6206.725 / 6838       6206.783 / 6824
-Snare       7736.742 / 8925       7624.058 / 8436
-Bass        7565.192 / 8738       7441.833 / 8105
-NoiseTone   7965.167 / 8646       7966.858 / 8625
-WT/NoiseTone instructions and requested traffic are unchanged. Their tiny
-cycle differences follow linked code placement; no algorithm speedup claimed.
+HARDWARE FINDING AND CONCLUSION
 
-Earlier clock-scope measurements (startup caveat below), PKH4O2,
-4096 frames, 2 DSP + 3 STATIC, Snare/Bass:
-                    0 CF         T2 only        T2 + T6
-Mean timer us      114.804        140.727         165.703
-Mean CPU cycles     36857          43713           50295
-CF callback us       0             24.771          48.526
-First CF CPU increment: about 6856 cycles / 25.970 us.
-Second CF CPU increment: about 6582 cycles / 24.932 us.
-These modeled execution increments show no disproportionate second cost.
-They do not model silicon cache, memory-bus, card-DMA or interrupt latency.
-A separate T6-only row gives 43605 mean CPU cycles (about 25.561 us above 0 CF).
-Stock code, effects, sample content and three stock sequences stay the same.
+The user's MKII runs 2 DSP + 1 CF + 5 stock FLEX/STATIC tracks successfully,
+but 2 DSP + 2 CF + 3 stock tracks becomes sluggish and locks. Algorithms in
+this additional observation were unspecified. This prioritizes the second
+CF voice; it does not prove Resonant, STATIC or cache contention as the cause.
+Supplied PKH4O2 captures include 288.1 us average / 504 us max / 723 misses,
+and a same-boot 9901-frame delta averaging 331 us with 20 additional misses.
+The hardware JSON labels these supplied summaries; these new raw captures
+were not independently decoded here. Deadline: 362.812 us; 80%: 290.249 us.
 
-Compact resonant three-STATIC integration: mean timer 165.703 -> 164.688 us;
-maximum 297.886 -> 298.303 us. The short-run maximum regresses 0.417 us;
-both exceed the desired 80% budget. Do not claim a maximum-ISR improvement.
+The selected implementation reduces text, executed code footprint and stack
+requests while preserving two unrestricted CF voices. Wavetable dense-call
+cycles regress slightly. Further compact-control alternatives reduce footprint
+but increase CPU/stack work. Physical cache behavior could change the ranking.
+The model passes even the known-failing PKH4O2 60-second STATIC workload.
+It cannot establish hardware stability or a reliable unrestricted voice limit.
 
-Instruction working sets (executed bytes, not cache misses), two CF renderers:
-Snare/Snare ~3409 B, Bass/Bass ~3552 B, Snare/Bass ~6322 B.
-The nested Snare and Bass renderers individually visit ~3156 / ~3273 B.
-Same-algorithm voices reuse instructions; mixed algorithms expand the union.
-All 81 initial mode/profile pairings have nested per-voice resource rows.
-This is a plausible silicon experiment target, not proof of cache thrashing.
+IMPLEMENTED AND PUSHED
 
-Architectural data requests, two-voice isolated render:
-Snare stack reads/writes: 2287/2250 -> 2255/2218 B per block.
-Bass stack reads/writes: 2245/1883 -> 2214/1855 B per block.
-Stack traffic includes local buffers and ABI saves, not only spills.
-Requested bytes do not establish external SDRAM transfers under caching.
+Commits 1ba3e0a0, f5a0acc7 and 2ba5e761 retain compact Resonant loops and
+pointer EMAC restoration; independent Noise/Tone noise/filter passes and
+correct oscillator inlining; immutable table views; aligned voice/RNG/native
+state; omission of redundant clearing only for complete rendered blocks;
+a reviewed 176-byte fused ColdFire record encoder versus 426-byte C helper;
+exact empty-callback omission with Snare malformed-state normalization retained.
+Native control cells grow 22 -> 24 bytes INSIDE the same 1984-byte voice.
+All 1974 original logical bytes survive; ten added padding bytes must be zero.
 
-New integration experiments (uncommitted until further qualification):
-Immutable renderer table views: 25600 exact production callback comparisons,
-266752000 bytes compared, 40 fewer observed stack bytes; all 25 initial
-algorithm pairs, both profiler modes, every split offset and family changes.
-The calibrated RAM observer leaves the original instrumented rows unchanged.
-Those old two-image CPU comparisons shared branch predictor state and no
-longer support performance claims. Exactness and profiler-off request/stack
-evidence remain valid. Peripheral MMIO is not counted by those RAM watches.
-Clearing only an unrendered suffix passes exactness but loses overall:
-variable-start code raises stack reads and WT/Bass/NoiseTone callback cost.
-Rejected; separately testing omission of only a full-render redundant clear.
+PKH5D1 enables profiling at boot; PKH5P1 disables it. Both retain complete
+profile code. All 293960 runtime bytes except one initial four-byte enable
+word at 0x40c48040 are identical; all 132 symbols match names/types/addresses/
+sizes. Full source/PCM/state/RNG on/off comparisons pass. Matched seven-track
+Snare/Snare full-IRQ profiling overhead: 2.937 us mean in the model.
+Both CF voices, frozen DSP voices, all six lockable controls and twelve stock
+FX remain. Stock machine/playback/card/mixer/scheduler/UI implementations and
+buffer contracts were not modified. Subsequent evidence commits do not change
+the honest firmware source provenance above. No GitHub CI was used.
 
-Fixture corrections:
-STATIC slot 1 uses marker record 136, after FLEX records, not record 0.
-The original mistaken probe played a 64-sample region with no playback reads;
-it is preserved as superseded evidence and is not streaming qualification.
-The corrected seven-track run issues 411 READ commands / 1236 sectors after
-PLAY, with sustained stock source output. The A-G/B6 baseline matrix passes
-short exercised rows. A later matched matrix normalizes STATIC/FLEX SRC and
-setup controls, and includes 1 CF + 5 stock tracks with all-eight-track audio.
-The modeled ATA card responds immediately and advertises PIO only; it does
-not reproduce physical CompactFlash latency, cache or DMA contention.
+BASELINE -> SELECTED MEASUREMENTS
 
-Correctness already completed for the compact resonant checkpoint:
-Frozen canonical stream: 90612864 bytes, no PCM/state/RNG mismatches.
-Extended target edges: 22270 render calls plus 10584 decay edge cases.
-Actual-image runtime and source-cursor overlap comparisons pass.
-Compiler option-scope negative control passes.
-make check REMIX=perky-probe: 84 shared-isolated and 4 image gates pass;
-optional generic fixtures absent from that command are explicitly skipped.
-Full final hybrid-specific qualification, sustained/all-pair stock matrices,
-clean source-bound packaging and physical A/B remain outstanding.
+Baseline PKH4O2 MAIN SHA256:
+f7f04e26969522d2024b1bba5be85f620857d636dbe0b284aa38c0fb087a21db.
+Production sized-function text: 120096 -> 108932 bytes (-9.30%).
+Whole .text: 278916 -> 267752, including unchanged 158820 non-function/asset
+bytes. .rodata 24924 -> 25000; .data 552 unchanged; .bss 218564 -> 218608.
+Loaded raw runtime: 310344 -> 293960 bytes (-16384).
+These size measures are distinct; none is a measured cache occupancy.
 
-No stock machine, playback engine, streaming driver, scheduler, DSP algorithm,
-audio buffer contract, synthesis quality or public machine feature was changed.
-All experiments and receipts: CF_FOOTPRINT_20261016.json and
-out/perky/hybrid/footprint-20261016/.
+Dense two-voice callbacks, profiling off:
+Pair              mean cycles before -> after      max before -> after
+WT V1/V1             11575.69 -> 11688.47              12773 -> 12899
+WT V2/V2             11575.56 -> 11689.56              12744 -> 12913
+Snare/Snare          17586.94 -> 17491.17              20416 -> 20368
+Snare/Bass           17453.14 -> 17223.00              19982 -> 19847
+Bass/Bass            16810.97 -> 16428.73              18855 -> 18612
+Noise-Tone pair      14553.44 -> 14014.17              15985 -> 15609
 
-Further candidate checkpoint (not yet a qualified release):
-Independent Noise/Tone noise/filter block, compact loops, explicit oscillator
-initialization inline: target text 103660 B, versus PKH4O2 113426 B.
-Noise/Tone two-voice target mean/max 7965.167/8646 -> 7427.158/7799 cycles.
-The full filter recurrences, original state bytes and RNG progression remain.
-The canonical 90612864-byte reference comparison passes. Extended and linked
-production qualification are still being completed for this final variant.
+Architectural stack read+write bytes per two-voice dense frame:
+WT 6117.31 -> 5923.67; Snare 10026.97 -> 9747.20;
+Bass 9719.53 -> 9456.08; Noise/Tone 8372.50 -> 6736.52.
+State requests crossing a 16-byte boundary (read+write counts):
+WT 18.59 -> 2; Snare 91.05 -> 15.31; Bass 80.61 -> 21.13;
+Noise/Tone 45.64 -> 3.84. These are NOT SDRAM transactions/cache misses.
 
-Timing instrument repair:
-The original port enables cycle timing after startTransportLive. Earlier
-startup-inclusive maxima can contain a clock-domain transition and require
-a matched uniform-clock rerun. An opt-in host flag enables cycle timing before
-audio starts; default emulator behavior remains unchanged. Requested transport
-frames and total IRQ/profiler/ACK counters have different start points.
-A new elapsed observer initially changed peripheral-touch bookkeeping despite
-not writing firmware memory. That comparison was rejected. The replacement
-whitelists three const DTIM3 observations without target flags or trace logs;
-calibration includes idle time, invalid clock modes and both stepping paths.
-Exact instrument-vs-uninstrumented integrated comparison is still pending.
+Executed instruction bytes / 16-byte line union over 64 dense frames:
+WT 7266/503 -> 7026/491; Snare 15338/1051 -> 14180/982;
+Snare/Bass 21460/1458 -> 19388/1322; Bass 11286/777 -> 10130/702;
+Noise/Tone 10916/771 -> 9728/689. This is an executed union, not an
+instantaneous live set; stock code and physical cache stalls are excluded.
+The working-set observer reproduces all original costs/exactness unchanged.
 
-Retraction: shared predictor state in the production callback comparator.
-The old same-image control disagrees on cycles in 24717/25600 callbacks;
-248 profiler-on callbacks also differ in instruction count because their
-diagnostic maximum-update branches respond to contaminated timing. All
-profiler-off instruction counts match. Old two-image timing claims for table
-views, encoder variants, instance/RNG alignment and NT integration are
-withdrawn pending rerun. Their exact PCM/state/RNG comparisons remain valid.
-Standalone single-target benchmarks and single-Machine full-OS runs are
-unaffected. The new host harness keeps independent predictor histories and
-branch counters per target. Full same-image/partner invariance controls and
-corrected measurements are in progress.
+A useful unrestricted hardware control is dense Snare/Snare versus Snare/Bass:
+the mixed pair is ~1.5% cheaper in modeled native callback cycles (17223 vs
+17491) but has ~36.7% more executed code-address union (19388 vs 14180 bytes).
+Hold all non-algorithm controls, locks, stock samples and FX fixed. A physical
+reversal would expose an unmodeled cost; it would not uniquely prove I-cache
+misses because data/branch/audio behavior also changes. Both numbers here
+come from the SAME dense native workload, not mixed full-OS timing scopes.
 
-Completed uniform-clock comparisons:
-All 25 ordered CF pairs (including reversed assignments) run 4096 transport
-frames with two DSP voices and three actual STATIC sources. All source audio
-checks and ownership checks pass, with zero modeled hard deadline misses.
-PKH4F9 maximum full IRQ spans 238.402 us (WT/WT) to 259.152 us (Snare/Snare).
-These are short local rows, not silicon qualification. PKH4O2 itself also
-passes the 60-second model run (22584 post-PLAY sectors read), while hardware
-fails. The physical cache/SDRAM/card/DMA gap remains explicit.
 
-PKH4O2, identical three-STATIC workload, mean executed ISR increments (us):
-                       first CF T2     additional CF T6
-WT V1 / V2               21.181             20.239
-Snare                     25.923             25.136
-Bass                      25.342             24.520
-Noise/Tone                24.218             23.380
-T6-only controls also pass for all five algorithms. No superlinear second
-CPU cost is seen in this model; this cannot rule out silicon contention.
+Exclusive mean cycles over all 3200 two-voice frames, dense locks and family
+switches, profiling off (categories sum exactly):
+Intrinsic synthesis       8920.44 -> 8689.06
+Control preparation       2845.72 -> 2849.59
+Integration/publication   2382.75 -> 2356.71
+Record encoding            408.63 -> 460.22
+The smaller encoder uses fewer instructions/requests, but attributed cycles
+are not universally lower. Stock callback split/reservation stores remain.
 
-Corrected transport candidates:
-176-byte bounded CF assembly packer versus the original 426-byte C helper.
-It removes about 70 instructions, 64 stack-read bytes and 42 stack-write
-bytes per two-voice frame in the controlled matrix. Some branch-placement
-cycle effects remain mixed. Full 25600 source-RAM/PCM/state/RNG comparisons
-pass. Fused C O2/Os variants remain slower on important pairs.
-Empty callback omission preserves event/control work and Snare normalization;
-10240 poisoned-state cases pass. Snare's separate byte-normalization change
-also passes the frozen canonical stream and extended target edge suite.
-The combined PKH5F1 experiment passes 25600 complete callback comparisons
-and 10240 poisoned-empty-state comparisons; full image qualification runs.
+FIRST CF VS SECOND CF — SAME THREE STATIC TRACKS
 
-Profiler on/off controlled callbacks preserve PCM/full state/RNG/source RAM
-in all 25600 comparisons. Independent full-IRQ overhead for seven-track
-Snare/Snare is 3.136 us in the model. The performance configuration retains
-all diagnostic code but starts with its loaded enable word zero. The
-configuration wrapper checks the word is loaded data, never BSS. A smoke
-performance build has every target function byte-identical to the combined
-candidate. The final diagnostic/performance pair will require identical
-runtime bytes outside that single initial enable word.
-The build extension passes all 24 standard refhash cases bit-identically,
-using one existing checkout/job; previous local refhash evidence is archived.
+Mean incremental FULL executed IRQ cost, microseconds:
+                    PKH4O2 first / second     selected first / second
+WT V1 and V2           21.181 / 20.239           20.723 / 19.790
+Snare                  25.923 / 25.136           25.593 / 24.804
+Bass                   25.342 / 24.520           24.502 / 23.929
+Noise/Tone             24.218 / 23.380           22.411 / 22.089
+First = T2-only minus no-CF; second = T2+T6 minus T2-only. Two DSP voices
+and T3/T4/T7 fixture remain fixed. T6-only/reversed assignments also run.
+Fifty matched comparisons are retained. Differences of maxima are not
+marginal costs. There is no superlinear executed second cost IN THIS MODEL;
+physical cache/SDRAM/DMA/IRQ-release contention remains unresolved.
 
-Final native alignment trials (retained, final qualification pending):
-27 owned native words use four-byte alignment. The profiler-enable word moves
-from 0x40c4803e across a line to 0x40c48040. All 25600 modeled callback costs,
-instructions and request counts are identical. Three private native control
-cells grow 22 -> 24 bytes inside the existing 1984-byte voice extent. All
-1974 original bytes survive; the ten added padding bytes remain zero.
-Wavetable V2 two-voice frame crossings: reads 6 -> 2; writes 2 -> 0.
-All other measured costs remain identical. Cache misses remain unmeasured.
-The layout canonicalizer rejects 97 padding/offset/witness mutations.
+The true-admission probe starts T6 only after T2 warms, comparing T2 full
+state, PCM, both source pings, return value and six integration metadata
+fields against an independent one-CF reference. Seventeen first-split
+positions cover 0..16: 149600 calls and 81600 T2 exactness checks pass.
+WT admission in that sweep is at frame 32 (WT mode M2); the composed WT
+matrix uses M1. All three WT modes are covered separately by the longer
+native/family-switch exactness cases; these are distinct test scopes.
+First T6 frame (two callbacks), profiling off, cycle ranges by split:
+WT 4097–6200; Snare 6095–9303; Snare/Bass 5873–8930; Bass 5838–8895;
+Noise/Tone 4873–8334. Admission adds 124 state lines (1984 bytes) for T6.
+Extra executed instruction-byte union averages 1766 for Snare/Snare versus
+4160 for Snare/Bass. These address sets are not cache misses. Native calls
+exclude stock ISR/DSP and cache latency.
+In the next seven dense frames, a same-Snare second voice adds about 15
+executed instruction bytes to the per-frame union on average; Snare/Bass
+adds about 4281. Additional state lines per frame are 27 for Snare, 25 for
+Bass, 18 for WT and 17 for Noise/Tone. The shared branch model changes T2
+Snare cost by -13.35 cycles with Snare versus +131.29 with Bass (mean); this
+is branch-history execution evidence, not a physical cache-stall estimate.
+The separate actual stock chooser admits T6 during continuous T2 synthesis
+with three unchanged STATIC tracks. Snare/Snare, Snare/Bass and Bass/Bass
+pass coherent snapshots, one T6 reset, stable generation, all seven chains
+active and ownership/fence checks. Their roughly 15–16 us mean elapsed
+increase has different natural UI/pattern phase; use matched matrix above
+for isolated increments. Boot stdout proves the uniform clock is active.
 
-The source optimization loop has reached a documented practical plateau for
-this candidate: compiler, arithmetic/context, loop/live-state, transport,
-clear, empty-callback, profiler and native-layout hypotheses were evaluated.
-The JSON lists remaining hardware-model and exactness/ownership blockers.
-Final clean-image qualification and sustained composed-image runs remain;
-this is not a claim that the physical two-CF stability goal is achieved.
+COMPOSED WORKLOAD AND MATRIX
+
+64 short rows of 4096 requested transport frames: all 25 ordered CF pairs
+with 2 DSP + 2 CF + 3 STATIC; no-CF/both single-CF controls; one CF plus
+five stock tracks; A–G zero-through-four stock coverage; STATIC/FLEX using
+the same material/settings. Seven startup frames are independently observed.
+Five cached rows have exact final MAIN AND ELF identity. Marginal joining
+uses MAIN SHA with positive/negative collision controls, not version labels.
+
+All 25 are locally qualified for the short fixture; all require physical
+hardware confirmation. See CF_FOOTPRINT_20261016_FEASIBILITY.csv.
+CSV names: V1/V2 = Wavetable; snare/bass = Resonant; third = Noise/Tone.
+Three-STATIC mean / maximum FULL executed IRQ (us):
+WT/WT 155.517 / 238.947; Snare/Snare 165.401 / 257.958;
+Snare/Bass 165.217 / 256.837; Bass/Bass 163.435 / 254.867;
+Noise/Tone 159.505 / 248.576. All 64 have zero modeled hard IRQ misses.
+Largest executed IRQ among them: 274.769 us (four FLEX); largest ACK CPU-work
+window: 361.841 us (one Snare CF + five STATIC). ACK includes stock tasks;
+it is not IRQ latency or evidence of 20% whole-CPU headroom.
+
+
+Sustained final Snare/Snare + two DSP + three STATIC: 1653750 requested
+transport frames (600.00 simulated seconds), 1653757 completed
+IRQs including 7 observed startup frames; mean/max full executed IRQ
+165.670 / 257.958 us; zero modeled duration misses.
+Post-PLAY card reads: 217002 sectors. Private observed peak
+932 bytes. The long ACK-to-ACK CPU-work maximum is 362.466 us, only
+0.346 us below the frame period and 72.216 us over the preferred 80% budget.
+It includes intervening stock tasks, not just the IRQ. No 20% whole-CPU
+headroom or physical UI responsiveness is established. This is model
+evidence, not a ten-minute silicon pass.
+
+Real stock STATIC slots, source PCM and post-PLAY card read sectors are
+verified. The long stress records activity/timing/ownership counters, not a
+600-second PCM file; its source/chain audio check is a separate 2400-frame
+capture on the same fixture. ATA responds immediately and advertises PIO only. Physical card
+stalls, SDRAM/cache/DMA contention and UI input latency remain unmodeled.
+UI task instructions/publications/queue occupancy prove exercised work, not
+physical responsiveness. Snare costs more here, but all dual families pass;
+this cannot determine whether hardware failure is Resonant-only or universal.
+
+EXACTNESS AND SCOPED SAFETY
+
+The final 20-job suite passes: poisoned cold boot/decoded PCM; runtime and
+1496 cursor cases; 25600 full callback comparisons; strict compiler layout
+with 97 negative controls; 10240 poisoned empty cases; IRQ/EMAC/private-stack
+ownership and nested preemption; scenes, actual panel lifecycle and saved
+project reload; 24000-frame ALGO/MODE transition test; retained FX; package
+integrity/corruption negatives; profile-on/off source/PCM/RNG/state identity;
+performance-image seven-track audio. Cold and warmed full-OS source records
+match the frozen private-stack oracle. Detailed receipts retain each scope.
+
+Static private bound: 1206/4096, 2890 bytes remaining. Scoped stock storage/
+keyrepeat/UI residual bounds 1577/1361/1841 within 2016 usable bytes.
+Three commit-longs call sites have image-pinned reviewed spill contracts.
+Larger unchanged stock task graphs remain OPEN; scoped approval does not
+close them. Dynamic high-water marks are distinct from static bounds.
+All 24 normal refhash configurations are bit-identical for the build
+extension, jobs=1. Composition checks: 84 shared + four image gates pass.
+
+INSTRUMENT REPAIRS / RETRACTIONS
+
+Earlier claims remain in the ledger/history with explicit replacements:
+- STATIC marker slot 1, not FLEX slot 0; old mislabeled fixtures superseded.
+- Explicit grown-asset mapping; byte/word/long/boundary calibration; code
+  fetch kept distinct from data architectural requests.
+- Uniform cycle clock before transport; old mixed-startup timing not matched.
+- Passive const DTIM observer avoids the peripheral-touch scheduler effect.
+- Native BHT/BTB were GLOBAL outside each CPU. Contaminated two-target timing
+  was withdrawn; per-target snapshots now pass all 25600 same-image costs
+  and partner-invariance controls. Historical PCM/state/RNG identity remains
+  valid; single-target and separate-process full-OS evidence is unaffected.
+- Interactive-only mode accepts clock flags without activating them. New
+  panel runs execute one batch frame first and assert stdout activation;
+  a real negative control rejects the inactive case. Earlier panel/audio/
+  ownership results remain valid; their DTIM timing is not uniform-cycle
+  evidence. CPU work counts retain their exercised-cadence scope.
+- DSP source records are controls; DSP audio is checked post DSP/FX. CF and
+  stock sample source PCM is checked separately.
+- Quit acknowledges before observer reports close: wait for child exit,
+  preserve completed captures and reanalyze rather than rerun them.
+
+PRACTICAL PLATEAU / ARCHITECTURE
+
+The ledger covers compiler O2/Os, selective inlining/outlining, hot/cold
+smoothing, loop splitting/unrolling, alignment, EMAC, live-state, redundant
+clear/copy, split callbacks, transport and diagnostic alternatives.
+Four additional control-scope alternatives preserve exactness but lose the
+selected balance. Compact controls reduce Snare/Bass executed union
+19388/1322 -> 15340/1043, while adding ~483 cycles and ~1145 stack bytes per
+dense two-voice frame. This is a real footprint/CPU frontier; it is not a
+qualified installation image. All patches/receipts are preserved.
+Blind cache coloring/relocation lacks a calibrated silicon latency oracle;
+sharing independent RNG/control work or changing stock transport violates
+preserved semantics/ownership. These blockers are not a proof of optimality.
+Physical results can reopen the compact-control frontier.
+
+Preferred maximum remains 2 DSP + 2 unrestricted CF. No necessary restriction
+can be inferred from all-pass local results. If hardware still rejects it,
+first reopen the compact-control/cache frontier with a separately qualified
+unrestricted A/B candidate; the model cannot rank that silicon tradeoff.
+Only if unrestricted optimization remains insufficient should alternatives
+be evaluated: empirically successful lower-cost pairs, then one unrestricted
+plus one limited CF, then one CF only. WT's second voice saves ~5.01 us relative
+to Snare's mean modeled IRQ increment; removing Snare's second saves ~24.80 us
+in this fixture. Neither establishes sufficient silicon margin. The user
+must approve restrictions; none is implemented. Reported one-CF success does
+not establish every algorithm/control workload as hardware-qualified.
+
+The hardware procedure prioritizes Snare/Snare, Snare/Bass and Bass/Bass,
+then WT controls, all 25 ordered choices and increasing STATIC activity.
+STOP cannot export after a total lock; bounded same-boot snapshots preserve
+pre-failure deltas without filesystem writes in the audio path. Only MKII
+measurements can accept hardware stability or diagnose physical contention.

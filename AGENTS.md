@@ -203,6 +203,9 @@ moment it costs real work, and add its line here.
 - [Auto-grown emulator pages bypass read watches](docs/contributing/TRAPS.md#trap-automap-read-watch) — map benchmark assets explicitly and separate instruction-stream reads from data traffic.
 - [A host timer observation can change emulator scheduling](docs/contributing/TRAPS.md#trap-observer-timer-read) — bypass peripheral-touch bookkeeping; require exact paired target dumps and a uniform startup/playback clock.
 - [Two target instances can share branch-predictor history](docs/contributing/TRAPS.md#trap-shared-predictor) — isolate model state per image and prove same-image and comparison-partner invariance before using paired cycle counts.
+- [An interactive run can accept an inactive cycle-clock flag](docs/contributing/TRAPS.md#trap-panel-cycle-clock) — validate clock activation in stdout; the checked workaround runs one sequencer frame before panel control.
+- [DSP source records contain controls, not rendered PCM](docs/contributing/TRAPS.md#trap-source-control-record) — use post-FX read-back for DSP voices and source PCM for CF/sample tracks.
+- [A panel's quit reply precedes its final reports](docs/contributing/TRAPS.md#trap-panel-quit-reports) — wait for child exit before reading observer files.
 
 ## How claims are written here
 

@@ -1,0 +1,100 @@
+PERKY PKH5D1 / PKH5P1 — controlled Octatrack MKII A/B
+Local installation eligibility is recorded in the separate final qualification
+receipt. Physical MKII acceptance is pending. Use your established card OS
+UPGRADE or MIDI procedure; choose only the wrapper for the recorded version.
+These are local diagnostic/performance candidates, not a hardware-tested release.
+The repository card wrapper procedure is: copy the selected OCTATRACK_*.bin
+to the CF card root, then PROJECT -> OS UPGRADE -> YES. Select the intended
+tagged wrapper and follow the established upgrade/recovery procedure. The
+alternative .syx is for your established MIDI upgrade path.
+
+Source: 2ba5e761c5b673e0d361dbe5fc55e317fc1a504a
+Source fingerprint: 003ca1d5d20902506bbaa761d7371b9ace448a5b1861e63afd8c19364b1e52e0
+PKH5D1 starts with full profiling enabled. PKH5P1 retains the same code but
+starts with its loaded enable word zero. Both retain two unrestricted CF
+voices, both DSP voices, six lockable controls and all twelve stock FX.
+
+Preserve PKH4O2 and a copy of the test project/card. Record OS tag, image SHA,
+project copy, Octatrack MKII unit, card, sample checksums, tempo, pattern,
+Parts, FX, sample length/loop points, gain and scene/fader position. Use the
+same saved project and these settings for each firmware comparison. Use
+identical audio material for STATIC and FLEX rows.
+
+Critical matched comparison, with stock tracks unchanged:
+A: T1/T5 DSP PERKY; T3/T4/T7 stock sequences; T2/T6 inactive.
+B: A plus T2 CF PERKY; T6 stays inactive.
+F: B plus T6 CF PERKY. Do not change T2, DSP settings or stock sequences.
+Reverse T2/T6 assignments as a control. Separately repeat the confirmed
+one-CF/five-stock arrangement (T3/T4/T6/T7/T8 stock with T2 CF). Do not
+confound that eight-track control with the matched six/seven-track rows.
+
+Use these five CF choices on each voice:
+Wavetable V1, Wavetable V2, Resonant Snare, Resonant Bass, Noise/Tone.
+Test the 25 ordered T2/T6 combinations. Keep a table with row start/stop,
+voice algorithms/modes, audible output, UI reaction and export filename.
+Prioritize Snare/Snare, Snare/Bass, Bass/Snare, Bass/Bass, then the remaining
+pairs. A result for one pairing does not qualify another. A useful cache-
+sensitivity control is Snare/Snare versus Snare/Bass with identical non-
+algorithm controls and locks. The dense native model makes the mixed pair
+~1.5% cheaper in callback cycles but ~36.7% larger in executed code union.
+Worse mixed-pair hardware timing would indicate unmodeled cost, without
+uniquely attributing it to instruction cache.
+ Repeat each
+wavetable choice's three retained modes and dense per-step ALGO/MODE locks.
+
+Compare PKH4O2 with PKH5D1 on four-PERKY/no-stock and seven-track/three-stock
+rows. The user's existing PKH4O2 failure is valid evidence; a new baseline
+run need not be driven to another lockup. Establish short rows with bounded
+STOP exports first, then extend successful high-cost rows to two minutes
+and a representative worst row to ten minutes. Increase stock activity
+0/1/2/3/4 tracks with the same sample/effects/tempo, and repeat STATIC/FLEX.
+Exercise SRC controls, dense locks/retriggers, scene endpoints and fader
+movement, pattern changes, Part changes, STOP/restart and project reload.
+Use the same repeatable UI action during each row and record its response;
+local UI publication counts do not measure physical input latency.
+
+For diagnostic rows, STOP at each checkpoint and retain the original PRF
+file unmodified. Associate each file with the exact workload and build.
+Decode with tools/perky/read_hybrid_profile.py using --build for that
+configuration's BUILD.json. The PRF header checks the source fingerprint;
+PKH5D1 and PKH5P1 share it, so the export alone cannot distinguish their
+initial profile-enable word or authenticate the complete wrapper. Record
+the visible OS tag and installed wrapper SHA separately. Cumulative
+snapshot deltas require the same boot and monotonic counters; record any
+power cycle or reload. Keep mean, maximum, hard misses, preferred-budget
+counts, active voice mask, per-instance calls, control/render/packing costs,
+and final-16-frame evidence. A 16-sample period is 362.812 us; the 80% target
+is 290.249 us. Also require responsive UI and intact stock audio/tasks.
+
+STOP-triggered export cannot recover the final state after a total lockup.
+Capture before visible degradation; record time and last responsive action
+if export becomes impossible. No added periodic card writes, watchdog,
+voice restriction or algorithm restriction is part of this candidate.
+
+After diagnostic rows are successful, repeat unchanged workloads with
+PKH5P1. Its profiler defaults off, so judge audio/UI behavior separately;
+a quiet or empty profile is not a successful timing measurement. Only
+physical MKII results can establish unrestricted dual-CF acceptance.
+
+Decision record:
+- One CF + five stock tracks: confirmed working by the user on PKH4O2.
+- Two CF + three stock tracks: confirmed sluggish/lockup on PKH4O2; pair
+  not specified in the additional finding, so do not label it Snare-only.
+- PKH5D1/PKH5P1: physical acceptance pending.
+- No feature restriction is approved or implemented. If dual CF still
+  fails, retain the physical pairing evidence and revisit the measured
+  compact-control/code-versus-stack frontier with a separately qualified
+  unrestricted candidate before concluding that restrictions are necessary.
+  Collect a measured physical matrix before recommending a restricted
+  pairing, a restricted second voice or a one-CF fallback.
+
+Before installing, verify the bundle SHA256SUMS and selected card/MIDI image
+against MANIFEST.json. Preserve the existing PKH4O2 files and known-good
+PERKY4S recovery image. Do not install raw MAIN or ELF files as upgrade images.
+No automatic flashing is performed by this campaign.
+
+Exact install-wrapper identities:
+PKH5D1 card: 6bba358190c590062201c89c6dae57482bd5f2a0a6e034a4c9775ad4ffe46abd
+PKH5D1 MIDI: 638140b06e24ebaf738f49140f36190d50dd08a5a4b2a8fa4beebe6da50aee56
+PKH5P1 card: 1adcd737f14b89b2efaf51d59b4eb47dad671447c49a4ecab11c6e1e4f0a7eca
+PKH5P1 MIDI: 7206c04ba01b9de45b05021d18e58f0194832a38329e42f2642201b0ae41c72c

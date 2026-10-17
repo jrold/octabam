@@ -74,12 +74,12 @@ def summarize(paths):
     for dual in rows:
         if dual.get('scenario')!='F' or 'full_ISR_CPU_us' not in dual:continue
         for first_scenario,voice,other in [('B',0,1),('B6',1,0)]:
-            matches=[r for r in rows if r.get('version')==dual['version'] and r.get('kind')==dual['kind']
+            matches=[r for r in rows if r.get('image_sha256')==dual['image_sha256'] and r.get('kind')==dual['kind']
                      and r.get('scenario')==first_scenario and r['pair'][voice]==dual['pair'][voice]
                      and r['requested_transport_frames']==dual['requested_transport_frames'] and 'full_ISR_CPU_us' in r]
             if not matches:continue
             first=matches[0]
-            zeros=[r for r in rows if r.get('version')==dual['version'] and r.get('kind')==dual['kind']
+            zeros=[r for r in rows if r.get('image_sha256')==dual['image_sha256'] and r.get('kind')==dual['kind']
                    and r.get('scenario')=='A' and r['requested_transport_frames']==dual['requested_transport_frames']
                    and 'full_ISR_CPU_us' in r]
             inc=dict(version=dual['version'],kind=dual['kind'],pair=dual['pair'],first_voice_track=2 if voice==0 else 6,

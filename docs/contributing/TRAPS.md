@@ -1080,3 +1080,44 @@ states, require every same-image cost/resource/branch row to agree, and require
 an image's cost rows to remain identical with a different comparison partner.
 This repairs host measurement state; it neither changes firmware nor models
 physical cache or SDRAM latency.
+
+<a name="trap-panel-cycle-clock"></a>
+
+### An interactive run can accept an inactive cycle-clock flag
+
+The 16 Oct 2026 second-CF admission probe found that `--cf-cycles-clock`
+and `--cf-cycles-clock-before-transport` are applied in the sequencer batch
+branch. Merely passing them to an interactive panel session does not activate
+that clock. Earlier panel captures remain useful for state, audio and stack
+ownership; their firmware-timer values are not uniform-cycle timing evidence.
+Executed CPU work counts retain their stated input/cadence scope.
+
+The checked workaround is `--sequencer --frames 1` before interactive control,
+with the startup-clock flag. Require the actual activation line from stdout.
+`PortProc` retains stdout in its log deque; its `log_path` receives stderr.
+The positive first-admission captures and the interactive-only negative
+control are under `out/perky/hybrid/footprint-20261016/`. The reusable panel
+activation probe checks clock activation before accepting timing results.
+This changes local test setup, not stock firmware or default port behavior.
+
+<a name="trap-source-control-record"></a>
+
+### DSP source records contain controls, not rendered PCM
+
+The same campaign's first panel audio checker treated T1/T5 source records
+like CF PCM and reported silence. Their native DSP producer sends control
+records; the DSP generates the waveform. Check post-FX read-back for DSP
+voices. For CF and sampler voices check both source PCM and post-FX output.
+The retained panel probe validates all seven tracks with the appropriate
+instrument; no audio work was omitted to satisfy the check.
+
+<a name="trap-panel-quit-reports"></a>
+
+### A panel's quit reply precedes its final reports
+
+`MenuPort.__exit__` receives `ok` before the child closes observer streams.
+An immediate read can therefore report missing stack JSON even after a
+successful capture. This cost a second admission-probe analysis attempt.
+Wait for normal child exit, then require complete reports and matching
+frame/return/private-switch totals. Preserve and revalidate an already
+completed capture instead of executing the UI sequence again.
