@@ -110,12 +110,10 @@ def gate_single_owner_and_codegen(probe_dir: Path) -> dict:
         if owners.get(sym) != 1:
             raise RuntimeError(f"Expected exactly 1 global definition of {sym}, got {owners.get(sym)}")
 
-    # Ensure unused CF engines (Fold, Karplus, NoiseHat, Slap, SimpleDrum, ComplexDrum)
-    # are NOT linked into the ColdFire runtime.
+    # Karplus is required for T6; all other unused ColdFire engines stay excluded.
     all_nm = subprocess.check_output(["m68k-elf-nm", str(elf_path)], text=True)
     for forbidden_cf in (
         "pk_cf_fold_render",
-        "pk_cf_kp_render",
         "pk_cf_nh_render",
         "pk_cf_slap_render",
         "pk_cf_sd_render",
@@ -123,6 +121,9 @@ def gate_single_owner_and_codegen(probe_dir: Path) -> dict:
     ):
         if forbidden_cf in all_nm:
             raise RuntimeError(f"Unused CF renderer {forbidden_cf} leaked into hybrid ELF")
+
+    if "pk_cf_karplus_render" not in all_nm:
+        raise RuntimeError("T6 Karplus renderer missing from linked runtime")
 
     # Odd-address audit on all hybrid assembly units
     subprocess.run(
@@ -288,7 +289,7 @@ def gate_mixed_dispatch_and_transport(probe_dir: Path, baseline_dir: Path) -> di
     #    - Verify trigger latched during first half (`0..split`) fires at `split..16` and is consumed once
     cf_split_cases = 0
     for track, inst in ((1, 0), (5, 1)):
-        for algo in range(3):
+        for algo in range(3 if track == 1 else 1):
             for mode in range(3):
                 for split in range(16):
                     # Reset Bank/Part to get a clean deterministic cold start
@@ -338,7 +339,7 @@ def gate_mixed_dispatch_and_transport(probe_dir: Path, baseline_dir: Path) -> di
                     w32(u, 0x80001C80, 0x80010000)
 
                     # Stage new p-lock parameters BEFORE pre-half to prove pre-half ignores them!
-                    new_algo = (algo + 1) % 3
+                    new_algo = (algo + 1) % 3 if track == 1 else 0
                     new_mode = (mode + 1) % 3
                     for k, val in enumerate((48, 110, new_algo, 90, 30, new_mode)):
                         u.mem_write(fp + 2 * k, (val << 8).to_bytes(2, "big"))
@@ -399,7 +400,7 @@ def gate_mixed_dispatch_and_transport(probe_dir: Path, baseline_dir: Path) -> di
     emu._call(u, syms_hyb["pk_render"], (1, 0, 0, 16))
     _, t2_solo_1 = decode_stock_flex_slot(bytes(u.mem_read(0x80001C90 + 336 * 1, 336)))
 
-    # Reset via Part change, then interleave T2 (WT V1) and T6 (Resonant Snare) and T1/T5 (DSP)
+    # Reset via Part change, then interleave T2 (WT V1) and T6 (Karplus) and T1/T5 (DSP)
     w8(u, 0x100B14CF, 3)
     emu._call(u, syms_hyb["pk_render"], (1, 0, 0, 0))
     w8(u, 0x100B14CF, 0)
@@ -411,7 +412,7 @@ def gate_mixed_dispatch_and_transport(probe_dir: Path, baseline_dir: Path) -> di
     emu._call(u, syms_hyb["pk_render"], (1, 0, 0, 16))
     _, t2_inter_0 = decode_stock_flex_slot(bytes(u.mem_read(0x80001C90 + 336 * 1, 336)))
 
-    for k, val in enumerate((50, 100, 2, 80, 40, 0)):
+    for k, val in enumerate((50, 100, 0, 80, 40, 0)):
         u.mem_write(fp + 2 * k, (val << 8).to_bytes(2, "big"))
     w8(u, 0x46104D0C + 5, 16)
     w32(u, 0x80001C80, 0x80010000)
@@ -429,8 +430,20 @@ def gate_mixed_dispatch_and_transport(probe_dir: Path, baseline_dir: Path) -> di
     assert t2_inter_0 == t2_solo_0 and t2_inter_1 == t2_solo_1, "T6 activity perturbed T2 PCM"
     assert t6_inter_0 != t2_inter_0 and any(t6_inter_0), "T6 did not render independent audio"
 
+    # Karplus panel mapping: M1 -> internal 1, M2 -> 0, M3 -> 2.
+    # Stale T6 ALGO values from previous projects must also select Karplus.
+    karplus_cases = 0
+    for panel_mode, firmware_mode in enumerate((1, 0, 2)):
+        for saved_algo in (0, 1, 2):
+            emu._call(u, syms_hyb["pk_hybrid_cf_prepare_event"],
+                      (1, 100, 64, 75, 43, panel_mode, saved_algo, 255, 45, 1))
+            actual = bytes(u.mem_read(syms_hyb["pk_hybrid_karplus"] + 5, 1))[0]
+            assert actual == firmware_mode, (panel_mode, saved_algo, actual)
+            karplus_cases += 1
+
     u.hook_del(h_stock)
     return {
+        "karplus_mode_and_saved_algo_cases": karplus_cases,
         "status": "PASS",
         "admission_vector": admitted,
         "dsp_record_exact_comparisons": dsp_record_comparisons,
@@ -442,7 +455,7 @@ def gate_mixed_dispatch_and_transport(probe_dir: Path, baseline_dir: Path) -> di
 
 
 def gate_hybrid_ui_and_src(probe_dir: Path) -> dict:
-    """Verify P indicator, play glyph, SRC page ALGO bounds (4 on T1/T5, 3 on T2/T6), and PMTR formatter."""
+    """Verify glyph, PMTR and per-track SRC ALGO bounds (DSP 4, T2 3, T6 1)."""
     image = probe_dir / "fragmented-mainos.bin"
     syms = load_elf_symbols(probe_dir / "platform/runtime.elf")
     r = emu.boot(str(image))
@@ -493,7 +506,7 @@ def gate_hybrid_ui_and_src(probe_dir: Path) -> dict:
                 draw_count += 8
     u.hook_del(h)
 
-    # Verify SRC page ALGO max: 4 on T1/T5 (tracks 0,4) and 3 on T2/T6 (tracks 1,5)
+    # Verify SRC ALGO limits: 4 DSP, 3 T2, and one dedicated T6 Karplus.
     p = db + 0x8ED80
     algo_max_by_track = {}
     for track in range(8):
@@ -504,7 +517,7 @@ def gate_hybrid_ui_and_src(probe_dir: Path) -> dict:
         mode_max = int.from_bytes(u.mem_read(page_ptr + 0x9A + 5 * 4, 4), "big")
         assert mode_max == 3
         algo_max_by_track[f"T{track+1}"] = algo_max
-        expected_max = 3 if track in (1, 5) else 4
+        expected_max = 1 if track == 5 else (3 if track == 1 else 4)
         assert algo_max == expected_max, f"Track {track} ALGO max {algo_max} != {expected_max}"
 
     # Verify PMTR LFO formatter across all 8 tracks when T1/T2/T5/T6 are signed

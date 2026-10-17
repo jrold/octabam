@@ -14,7 +14,8 @@ import verify_perky_hybrid_runtime as rt
 
 
 def run(probe, output):
-    image, elf = probe/'mainos_PKHYB2P.bin', probe/'platform/runtime.elf'
+    version=json.loads((probe/'BUILD.json').read_text())['version']
+    image, elf = probe/f'mainos_{version}.bin', probe/'platform/runtime.elf'
     r, syms = rt.machine(image, elf, True)
     bank = rt.word(r.uc, rt.g.emu.PART_PTR)
 
@@ -28,6 +29,7 @@ def run(probe, output):
     clean = first_native(r, syms)
     sizes = rt.sizes(elf)
     initialized = ('pk_hybrid_voices', 'pk_hybrid_pristine',
+                   'pk_hybrid_karplus', 'pk_hybrid_karplus_pristine',
                    'pk_hybrid_generation', 'pk_hybrid_voice_generation',
                    'pk_hybrid_trigger_latch', 'pk_hybrid_frame_started',
                    'pk_hybrid_frame_pcm', 'simple_controls', 'pk_prefix_valid')

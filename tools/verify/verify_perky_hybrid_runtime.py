@@ -26,15 +26,22 @@ def digest(p): return hashlib.sha256(Path(p).read_bytes()).hexdigest()
 
 
 def canonical_state(u, syms, sz):
+    """Canonical T2 bytes only: T6 now has independent Karplus state."""
     extent=sz['pk_hybrid_voices']
-    return voice_layout.canonical(bytes(u.mem_read(syms['pk_hybrid_voices'],extent)),extent//2,u._perky_voice_layout['kind'])
+    raw=bytes(u.mem_read(syms['pk_hybrid_voices'],extent))
+    if extent == 1984:
+        # Existing reviewed control4 layout, now only one heavy-CF voice.
+        return voice_layout.canonical(raw+raw,1984,'control4')[:1974]
+    return voice_layout.canonical(raw,extent//2,u._perky_voice_layout['kind'])[:1974]
 
 
 def machine(image, elf, require_boot_ready=False):
     # A padded representation must have a compiler/image-bound certificate.
     # This preserves every original byte and checks all new padding at each
     # canonical comparison; no algorithm state is excluded from the oracle.
-    layout=voice_layout.layout(Path(elf).parent.parent)
+    sz=sizes(elf)
+    layout=(dict(kind='control4',stride=1984,extent=1984) if sz.get('pk_hybrid_voices')==1984
+            else voice_layout.layout(Path(elf).parent.parent))
     r = g.emu.boot(str(image)); assert r.clean, (r.stopped, r.error)
     g.emu._prime_part(r); syms = g.load_elf_symbols(elf); u = r.uc
     u._perky_voice_layout=layout
@@ -71,7 +78,8 @@ def main():
     ap.add_argument('--frames', type=int, default=256)
     a = ap.parse_args(); p = a.work.resolve()/'probe'; out = a.work.resolve()/'resume-fixes'
     out.mkdir(exist_ok=True)
-    r, syms = machine(p/'mainos_PKHYB2P.bin', p/'platform/runtime.elf', True); u = r.uc
+    version=json.loads((p/'BUILD.json').read_text())['version']
+    r, syms = machine(p/f'mainos_{version}.bin', p/'platform/runtime.elf', True); u = r.uc
     sz = sizes(p/'platform/runtime.elf')
     assert word(u, syms['pk_hybrid_pcm_cookie']) == 0x504b5052
     assert word(u, syms['pk_hybrid_rt_cookie']) == 0x504b4852
@@ -82,18 +90,23 @@ def main():
     # deterministic initializer even with dirty destinations.
     initial_pcm = bytes(u.mem_read(syms['pk_pcm_wt_base'], 4096)) + bytes(
         u.mem_read(syms['pk_pcm_wt_bank'], 196608))
-    for name in ('pk_hybrid_voices', 'pk_hybrid_pristine'):
+    for name in ('pk_hybrid_voices', 'pk_hybrid_pristine',
+                 'pk_hybrid_karplus', 'pk_hybrid_karplus_pristine'):
         u.mem_write(syms[name], b'\xa5' * sz[name])
     g.emu._call(u, syms['pk_hybrid_boot_init'])
     assert u.reg_read(g.emu.UC_M68K_REG_D0) == 1
     n = sz['pk_hybrid_pristine']; virgin = bytes(u.mem_read(syms['pk_hybrid_pristine'], n))
-    assert bytes(u.mem_read(syms['pk_hybrid_voices'], 2*n)) == virgin*2
+    assert bytes(u.mem_read(syms['pk_hybrid_voices'], n)) == virgin
+    karplus_bytes=sz['pk_hybrid_karplus']
+    assert bytes(u.mem_read(syms['pk_hybrid_karplus'],karplus_bytes)) == bytes(
+        u.mem_read(syms['pk_hybrid_karplus_pristine'],karplus_bytes))
     reinitialized_pcm = bytes(u.mem_read(syms['pk_pcm_wt_base'], 4096)) + bytes(
         u.mem_read(syms['pk_pcm_wt_bank'], 196608))
     assert reinitialized_pcm == initial_pcm, 'BSS scrub invalidated PCM behind a READY cookie'
     result['reinitialized_PCM_equal'] = {'bytes': len(initial_pcm),
         'sha256': hashlib.sha256(reinitialized_pcm).hexdigest()}
-    result['poisoned_voice_initialization'] = {'bytes': 3*n, 'template_bytes': n}
+    result['poisoned_voice_initialization'] = {'bytes': 2*n+2*karplus_bytes,
+        't2_template_bytes': n, 'karplus_template_bytes': karplus_bytes}
 
     # Neither callbacks nor UI may decode or mutate waveform assets.
     asset_writes = []
@@ -105,7 +118,7 @@ def main():
     old_sz = sizes(a.reference/'platform/runtime.elf')
     state_hash = hashlib.sha256(); audio_hash = hashlib.sha256()
     for f in range(a.frames):
-        for t in (1, 5):
+        for t in (1,):
             now = args_for(u, t, f, f % 16, syms)
             reference = args_for(old.uc, t, f, f % 16, old_syms)
             assert now == reference, ('record PCM changed', f, t)
@@ -114,7 +127,8 @@ def main():
         assert state == canonical_state(old.uc,old_syms,old_sz), ('state/RNG changed', f)
         state_hash.update(state)
     result['bit_exact_reference'] = {'frames': a.frames, 'split_offsets': 16,
-        'stereo_source_records': a.frames*2, 'PCM_sha256': audio_hash.hexdigest(),
+        'stereo_source_records': a.frames, 'scope': 'T2 unchanged; T6 is now Karplus',
+        'PCM_sha256': audio_hash.hexdigest(),
         'state_RNG_sha256': state_hash.hexdigest(), 'reference_image_sha256': digest(a.reference/'mainos_PKHYB2P.bin')}
 
     # Exact fallback for out-of-range state: public knobs remain 7-bit,
@@ -219,7 +233,7 @@ def main():
     decoded = read_export(export, json.loads((p/'BUILD.json').read_text()))
     result['UI_stop_file_ABI'] = {'calls': fs_calls, 'bytes': len(payloads[0]),
         'source_id': decoded['source_id'], 'one_export_per_stop': True}
-    result.update(status='PASS', image_sha256=digest(p/'mainos_PKHYB2P.bin'),
+    result.update(status='PASS', image_sha256=digest(p/f'mainos_{version}.bin'),
                   runtime_elf_sha256=digest(p/'platform/runtime.elf'))
     (out/'RUNTIME.json').write_text(json.dumps(result, indent=2)+'\n')
     print(json.dumps(result, indent=2))

@@ -85,27 +85,23 @@ CF_SPEC = {
     "bass": (2, 1, 56, 112, 68, 60),
     "third": (2, 2, 64, 112, 80, 48),
     "V1M3": (0, 2, 64, 112, 96, 32),
+    "karplus": (0, 0, 64, 108, 64, 64),
+    "karplus_m2": (0, 1, 64, 108, 64, 64),
+    "karplus_m3": (0, 2, 64, 108, 64, 64),
 }
 
 MANDATORY_ROWS = (
-    ("V1/V1", "V1", "V1"),
-    ("V1/V2", "V1", "V2"),
-    ("V2/snare", "V2", "snare"),
-    ("V1/bass", "V1", "bass"),
-    ("snare/snare", "snare", "snare"),
-    ("bass/snare", "bass", "snare"),
-    ("third/third", "third", "third"),
+    ("V1/karplus", "V1", "karplus"),
+    ("V2/karplus", "V2", "karplus"),
+    ("snare/karplus", "snare", "karplus"),
+    ("bass/karplus", "bass", "karplus"),
+    ("third/karplus", "third", "karplus"),
 )
 
 EXTRA_ROWS = (
-    ("V2/V2", "V2", "V2"),
-    ("V2/V1", "V2", "V1"),
-    ("snare/V2", "snare", "V2"),
-    ("bass/V1", "bass", "V1"),
-    ("snare/bass", "snare", "bass"),
-    ("third/snare", "third", "snare"),
-    ("snare/third", "snare", "third"),
-    ("V1M3/third", "V1M3", "third"),
+    ("snare/karplus_m2", "snare", "karplus_m2"),
+    ("snare/karplus_m3", "snare", "karplus_m3"),
+    ("V1M3/karplus_m3", "V1M3", "karplus_m3"),
 )
 
 
@@ -844,7 +840,7 @@ def main() -> int:
 
     work = args.work.resolve()
     probe_dir = work / "probe"
-    image_path = probe_dir / "mainos_PKHYB2P.bin"
+    image_path = probe_dir / "mainos_PKHK6A.bin"
     elf_path = probe_dir / "platform/runtime.elf"
     syms = load_elf_symbols(elf_path)
     baseline_json = json.loads((ROOT / "modules/perky/hybrid/BASELINE.json").read_text())
@@ -863,7 +859,7 @@ def main() -> int:
         r = run_integrated_row(
             "smoke_snare_snare",
             "snare",
-            "snare",
+            "karplus",
             image_path=image_path,
             syms=syms,
             project_src=project_src,
@@ -889,7 +885,7 @@ def main() -> int:
     # Prior measured matrices identify Snare/Snare as worst. Start its full
     # 10-minute run concurrently; selection below still uses this image's
     # measured matrix. A different winner gets its own complete stress run.
-    stress_prior = next(row for row in MANDATORY_ROWS if row[0] == 'snare/snare')
+    stress_prior = next(row for row in MANDATORY_ROWS if row[0] == 'snare/karplus')
     stress_future = pool.submit(run_integrated_row, stress_prior[0]+'_10min_stress',
         stress_prior[1], stress_prior[2], image_path=image_path, syms=syms,
         project_src=project_src, work_dir=workload_dir/'ten_min_worst',
