@@ -9,7 +9,7 @@ Architecture:
     `perky_fragmented_image.py`) as the authority for DSP generation, placement,
     and preboot uploads.
   - Adds one ColdFire runtime (`control_cf_dsp_hybrid.c`, `cf_wavetable.c`,
-    `cf_resonant.c`, `cf_noise_tone.c`, and lossless PKR1 `cf_assets.s`) and
+    `cf_resonant.c`, `cf_noise_tone.c`, `cf_karplus.c`, and lossless PKR1 `cf_assets.s`) and
     one machine-hook set (`machine.s`, `lfo-widget.s`, `machine_four_ui.s`).
   - Enforces exact PERKY4S DSP identity (bootstraps, static payloads, preboot
     extended uploads, P/X/Y layout, and 6-word prefetch guard) before wrapping
@@ -64,14 +64,15 @@ HYBRID_CF_UNITS = (
     ("pkwavetable", "cf_wavetable.c"),
     ("pkresonant", "cf_resonant.c"),
     ("pknoise", "cf_noise_tone.c"),
+    ("pkkarplus", "cf_karplus.c"),
 )
 
 FROZEN_PERKY4S_MAIN_SHA256 = (
     "be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0"
 )
 FROZEN_DSP_SOURCE_COMMIT = "16a8de19a17ee4cba765cbdb30ca051f85af4e23"
-PROBE_VERSION = "PKHYB2P"
-PROBE_BUILD_NUMBER = 12
+PROBE_VERSION = "PKHK6A"
+PROBE_BUILD_NUMBER = 13
 
 # Approved private audio-IRQ envelope, placed at the top of the EXISTING
 # runtime reservation. The linker owns the address; no BSS/loader clear needed.
@@ -169,6 +170,7 @@ def build_hybrid_module(original, *, generated_dir: Path, dsp_source: str):
         Linked("pkwavetable", base.repo_relative(generated_dir / "pkwavetable.s"), dram=True),
         Linked("pkresonant", base.repo_relative(generated_dir / "pkresonant.s"), dram=True),
         Linked("pknoise", base.repo_relative(generated_dir / "pknoise.s"), dram=True),
+        Linked("pkkarplus", base.repo_relative(generated_dir / "pkkarplus.s"), dram=True),
     )
     # Place CF asset/renderer units before pkcontrol so linker order is clean.
     linked = (
@@ -198,11 +200,11 @@ def build_hybrid_module(original, *, generated_dir: Path, dsp_source: str):
         ),
         proof_note=(
             "PERKY DSP+CF hybrid probe: T1/T5 frozen PERKY4S DSP, "
-            "T2/T6 ColdFire WT V1/V2/Resonant, DTIM3 profiler"
+            "T2 ColdFire WT V1/V2/Resonant, T6 ColdFire Karplus, DTIM3 profiler"
         ),
         doc=(
             "PERKY hybrid probe: T1/T5 native DSP Fold1/Fold2/Simple/Complex; "
-            "T2/T6 ColdFire Wavetable V1/V2 and Resonant Snare/Bass/Noise-Tone."
+            "T2 ColdFire Wavetable V1/V2 and Resonant; T6 Karplus (three modes)."
         ),
     )
 
@@ -1041,6 +1043,8 @@ def build_probe(work_root: Path, *, wrap: bool = True) -> dict:
         "modules/perky/cf_resonant.h",
         "modules/perky/cf_noise_tone.c",
         "modules/perky/cf_noise_tone.h",
+        "modules/perky/cf_karplus.c",
+        "modules/perky/cf_karplus.h",
         "modules/perky/cf_math.h",
         "modules/perky/cf_pcm_rice.h",
         "tools/perky/build_cf_dsp_hybrid.py",
@@ -1113,7 +1117,7 @@ def build_probe(work_root: Path, *, wrap: bool = True) -> dict:
             "T3": {"firmware_track_index": 2, "runtime": "stock"},
             "T4": {"firmware_track_index": 3, "runtime": "stock"},
             "T5": {"firmware_track_index": 4, "core": "A", "runtime": "DSP", "algorithms": ["Fold1", "Fold2", "Simple", "Complex"]},
-            "T6": {"firmware_track_index": 5, "cf_instance": 1, "runtime": "ColdFire", "algorithms": ["Wavetable V1", "Wavetable V2", "Resonant (Snare/Bass/Noise-Tone)"]},
+            "T6": {"firmware_track_index": 5, "cf_instance": 1, "runtime": "ColdFire", "algorithms": ["Karplus (M1/M2/M3)"]},
             "T7": {"firmware_track_index": 6, "runtime": "stock"},
             "T8": {"firmware_track_index": 7, "runtime": "stock"},
         },

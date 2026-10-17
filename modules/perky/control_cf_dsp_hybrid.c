@@ -4,11 +4,12 @@
  *   - T1 (zero-based firmware track 0, DSP core B) and
  *     T5 (zero-based firmware track 4, DSP core A):
  *     native DSP Fold1/Fold2/Simple/Complex and original ALGO indices (0..3).
- *   - T2 (zero-based firmware track 1, CF instance 0) and
- *     T6 (zero-based firmware track 5, CF instance 1):
+ *   - T2 (zero-based firmware track 1, CF instance 0):
  *     ColdFire ALGO 0 Wavetable V1, ALGO 1 Wavetable V2, ALGO 2 Resonant with
  *     authentic snare (MODE 0) / bass (MODE 1) / original Noise-Tone third
  *     mode (MODE 2).
+ *   - T6 (zero-based firmware track 5, CF instance 1):
+ *     Dedicated ColdFire Karplus algorithm, three original panel modes.
  *   - T3/T4/T7/T8 (zero-based firmware tracks 2,3,6,7): untouched stock sampler.
  *
  * One exported source dispatcher (`pk_render`), one machine-hook set, one
@@ -49,7 +50,8 @@ extern unsigned pk_ui_playing(unsigned track, unsigned original)
 #undef PK_HYBRID_NATIVE_SHARED_RATE
 
 /* Include cf_perky4.c with narrow static linkage so its internal wt_init,
- * res_init_snare, res_init_bass, res_init_nt, prepare_wt, prepare_res_family
+ * res_init_snare, res_init_bass, res_init_nt, karplus_init,
+ * prepare_wt, prepare_res_family, prepare_karp
  * and pk4_encode_stock_segment helpers are reused directly. Their optimized
  * behavior is checked against the frozen pre-optimization reference; unused
  * CF engines are discarded from the linked object.
@@ -75,7 +77,7 @@ static int __attribute__((unused)) pk4_unused_process_segment_orig(pk4_engine *e
 #include "cf_pcm_rice.h"
 
 #define PK_HYB_CF_INSTANCE_COUNT 2u
-#define PK_HYB_CF_ALGO_COUNT 3u
+#define PK_HYB_T2_ALGO_COUNT 3u
 #define PK_HYB_DSP_ALGO_COUNT 4u
 #define PK_HYB_NOTE 45u
 #define PK_HYB_VELOCITY 255u
@@ -142,8 +144,11 @@ static const pk_cf_nt_shared_tables pk_hybrid_nt_tables = {
     {{0x080222a0u, pk_asset_wave0}, {0x080224a0u, pk_asset_wave1},
      {0x080226a0u, pk_asset_wave2}, {0x080228a0u, pk_asset_wave3}},
 };
+static const pk_cf_karplus_tables pk_hybrid_karplus_tables = {
+    pk_asset_envelope1, pk_asset_envelope2,
+};
 
-/* Compact two-instance CF synthesis state for T2 (instance 0) and T6 (instance 1).
+/* Compact CF synthesis state for T2 (instance 0) only.
  * Only the required families are allocated and preinitialized:
  *   - ALGO 0: Wavetable V1 (`wt[0]`, `control[0]`)
  *   - ALGO 1: Wavetable V2 (`wt[1]`, `control[1]`)
@@ -165,6 +170,17 @@ typedef struct __attribute__((aligned(16))) {
     uint8_t pad0;
     uint8_t pad1;
 } pk_hybrid_cf_voice;
+
+/* Keep the dedicated T6 Karplus ring and controller separate from T2's
+ * Wavetable/Resonant state. No second heavy-voice allocation is needed. */
+typedef struct __attribute__((aligned(16))) {
+    uint8_t state[PK_CF_KARPLUS_STATE_BYTES];
+    pk_hybrid_aligned_control control;
+    uint32_t rng_low;
+    uint32_t rng_high;
+    uint8_t active_mode;
+    uint8_t reserved[3];
+} pk_hybrid_karplus_voice;
 
 /* Hardware-readable fixed-size profiler structure in DRAM.
  * Exported via symbol `pk_hybrid_prof` and copied out-of-band in `pk_ui_tick`
@@ -262,9 +278,11 @@ uint32_t __attribute__((aligned(4))) pk_hybrid_cf_arm = 1u;
  * Boot initializes this explicitly: the platform does not clear BSS. */
 volatile uint32_t __attribute__((aligned(4))) pk_hybrid_live_snapshot = 0u;
 
-pk_hybrid_cf_voice pk_hybrid_voices[PK_HYB_CF_INSTANCE_COUNT];
+pk_hybrid_cf_voice pk_hybrid_voices[1];
 /* Audio ISR owns active state and generation; UI never resets it. */
 static pk_hybrid_cf_voice pk_hybrid_pristine;
+pk_hybrid_karplus_voice pk_hybrid_karplus;
+static pk_hybrid_karplus_voice pk_hybrid_karplus_pristine;
 static uint32_t __attribute__((aligned(4))) pk_hybrid_voice_generation[PK_HYB_CF_INSTANCE_COUNT];
 static uint32_t __attribute__((aligned(4))) pk_hybrid_generation;
 static uint32_t __attribute__((aligned(4))) pk_hybrid_bank = 0xffffffffu;
@@ -542,10 +560,20 @@ static void pk_hybrid_init_voice(pk_hybrid_cf_voice *v)
     v->active_mode = 0xffu;
 }
 
+static void pk_hybrid_init_karplus_voice(pk_hybrid_karplus_voice *v)
+{
+    pk_hybrid_zero_u32(v, sizeof(*v));
+    karplus_init(v->state, 0u, PK_HYB_VELOCITY, PK_HYB_NOTE);
+    v->rng_low = 1u;
+    v->rng_high = 0u;
+    v->active_mode = 0xffu;
+}
+
 static void pk_hybrid_init_all_cf_voices(void)
 {
+    pk_hybrid_init_voice(&pk_hybrid_voices[0]);
+    pk_hybrid_init_karplus_voice(&pk_hybrid_karplus);
     for (unsigned inst = 0; inst < PK_HYB_CF_INSTANCE_COUNT; ++inst) {
-        pk_hybrid_init_voice(&pk_hybrid_voices[inst]);
         pk_hybrid_trigger_latch[inst] = 0u;
         pk_hybrid_frame_started[inst] = 0u;
         pk_hybrid_frame_ping[inst] = 0u;
@@ -582,6 +610,7 @@ int pk_hybrid_boot_init(void)
     simple_bank = 0u;
     simple_part = 0u;
     pk_hybrid_init_voice(&pk_hybrid_pristine);
+    pk_hybrid_init_karplus_voice(&pk_hybrid_karplus_pristine);
     pk_hybrid_init_all_cf_voices();
     pk_hybrid_generation = 0u;
     pk_hybrid_voice_generation[0] = pk_hybrid_voice_generation[1] = 0u;
@@ -613,7 +642,11 @@ static void pk_hybrid_reset_at_event(unsigned inst)
     uint32_t t0 = pk_hybrid_timer_now();
     /* Fixed-size state copy, not decoder/constructor work. Keep the already
      * rendered pre-event PCM and latched trigger; consume the trigger once. */
-    pk_hybrid_copy_u32(&pk_hybrid_voices[inst], &pk_hybrid_pristine, sizeof(pk_hybrid_cf_voice));
+    if (inst == 0u)
+        pk_hybrid_copy_u32(&pk_hybrid_voices[0], &pk_hybrid_pristine, sizeof(pk_hybrid_cf_voice));
+    else
+        pk_hybrid_copy_u32(&pk_hybrid_karplus, &pk_hybrid_karplus_pristine,
+                           sizeof(pk_hybrid_karplus_voice));
     pk_hybrid_voice_generation[inst] = pk_hybrid_generation;
     uint32_t dt = pk_hybrid_timer_now() - t0;
     if (dt > pk_hybrid_prof.reset_max_ticks) pk_hybrid_prof.reset_max_ticks = dt;
@@ -632,17 +665,27 @@ int __attribute__((noinline)) pk_hybrid_cf_prepare_event(unsigned inst,
 {
     if (inst >= PK_HYB_CF_INSTANCE_COUNT)
         return 0;
-    if (algo >= PK_HYB_CF_ALGO_COUNT)
-        algo = PK_HYB_CF_ALGO_COUNT - 1u;
     if (mode > 2u)
         mode = 2u;
-    pk_hybrid_cf_voice *v = &pk_hybrid_voices[inst];
     uint8_t raw[4] = { tune, decay, p1, p2 };
-    if (algo < 2u) {
-        prepare_wt(&v->control[algo].value, v->wt[algo], raw, mode, vel, note, trig, &pk_hybrid_assets);
-    } else {
-        prepare_res_family(&v->control[2].value, v->snare, v->bass, v->nt, raw, mode, vel, note, trig, &pk_hybrid_assets);
+    if (inst == 1u) {
+        /* T6 is dedicated Karplus. Saved ALGO values from the former hybrid
+         * can no longer activate WT or Resonant synthesis on this track. */
+        pk_hybrid_karplus_voice *v = &pk_hybrid_karplus;
+        prepare_karp(&v->control.value, v->state, raw, mode, vel, note, trig,
+                     &pk_hybrid_assets);
+        v->active_mode = mode;
+        return 1;
     }
+    if (algo >= PK_HYB_T2_ALGO_COUNT)
+        algo = PK_HYB_T2_ALGO_COUNT - 1u;
+    pk_hybrid_cf_voice *v = &pk_hybrid_voices[0];
+    if (algo < 2u)
+        prepare_wt(&v->control[algo].value, v->wt[algo], raw, mode, vel, note,
+                   trig, &pk_hybrid_assets);
+    else
+        prepare_res_family(&v->control[2].value, v->snare, v->bass, v->nt,
+                           raw, mode, vel, note, trig, &pk_hybrid_assets);
     v->active_algo = algo;
     v->active_mode = mode;
     return 1;
@@ -652,18 +695,26 @@ int __attribute__((noinline)) pk_hybrid_cf_render_segment(unsigned inst, int16_t
 {
     if (inst >= PK_HYB_CF_INSTANCE_COUNT || !dst || count > PK_HYB_BLOCK_SAMPLES)
         return 0;
-    pk_hybrid_cf_voice *v = &pk_hybrid_voices[inst];
-    if (v->active_algo < 2u) {
-        return pk_cf_wt_render(v->wt[v->active_algo], dst, count, &pk_hybrid_wt_tables);
+    if (inst == 1u) {
+        pk_hybrid_karplus_voice *v = &pk_hybrid_karplus;
+        pk_cf_karplus_rng rng = { v->rng_low, v->rng_high };
+        if (!pk_cf_karplus_render(v->state, dst, count, &pk_hybrid_karplus_tables, &rng))
+            return 0;
+        v->rng_low = rng.low;
+        v->rng_high = rng.high;
+        return 1;
     }
+    pk_hybrid_cf_voice *v = &pk_hybrid_voices[0];
+    if (v->active_algo < 2u)
+        return pk_cf_wt_render(v->wt[v->active_algo], dst, count,
+                               &pk_hybrid_wt_tables);
     if (v->active_algo == 2u) {
         if (v->active_mode < 2u) {
             pk_cf_res_rng rr = { v->rng_low, v->rng_high };
             int ok = (v->active_mode == 0u)
                 ? pk_cf_res_snare_render(v->snare, dst, count, &pk_hybrid_res_tables, &rr)
                 : pk_cf_res_bass_render(v->bass, dst, count, &pk_hybrid_res_tables, &rr);
-            if (!ok)
-                return 0;
+            if (!ok) return 0;
             v->rng_low = rr.low;
             v->rng_high = rr.high;
             return 1;
@@ -777,15 +828,15 @@ __asm__(
 
 /* Dynamic SRC page builder for hybrid tracks:
  *   T1/T5 (DSP): ALGO max = 4 (Fold1, Fold2, Simple, Complex)
- *   T2/T6 (CF):  ALGO max = 3 (WT V1, WT V2, Resonant)
+ *   T2 (CF): ALGO max = 3 (WT V1, WT V2, Resonant)
+ *   T6 (CF): ALGO max = 1 (Karplus)
  *   All six controls: TUNE, DECAY, ALGO, PAR1, PAR2, MODE.
  */
 static uint32_t pk_hybrid_page(unsigned track)
 {
     uint32_t page = pk_light2_page();
-    uint32_t algo_max = (pk_hybrid_cf_instance(track) >= 0)
-        ? PK_HYB_CF_ALGO_COUNT
-        : PK_HYB_DSP_ALGO_COUNT;
+    uint32_t algo_max = track == 5u ? 1u :
+        (track == 1u ? PK_HYB_T2_ALGO_COUNT : PK_HYB_DSP_ALGO_COUNT);
     put32(desc + 0xd2 + 4u * ALGO_SLOT, algo_max);
     return page;
 }
@@ -1067,9 +1118,9 @@ int pk_hybrid_render(unsigned track, unsigned ping, unsigned start, unsigned end
             src[i] = (uint8_t)(fp[i] >> 8);
         uint8_t tune = src[TUNE_SLOT];
         uint8_t decay = src[DECAY_SLOT];
-        uint8_t algo = src[ALGO_SLOT] < PK_HYB_CF_ALGO_COUNT
-            ? src[ALGO_SLOT]
-            : (PK_HYB_CF_ALGO_COUNT - 1u);
+        uint8_t algo = inst == 1u ? 0u :
+            (src[ALGO_SLOT] < PK_HYB_T2_ALGO_COUNT
+                ? src[ALGO_SLOT] : (PK_HYB_T2_ALGO_COUNT - 1u));
         uint8_t p1 = src[PARAM1_SLOT];
         uint8_t p2 = src[PARAM2_SLOT];
         uint8_t mode = src[MODE_SLOT_FINAL] > 2u ? 2u : src[MODE_SLOT_FINAL];
@@ -1087,8 +1138,8 @@ int pk_hybrid_render(unsigned track, unsigned ping, unsigned start, unsigned end
     int16_t *pcm = pk_hybrid_frame_pcm[inst] + start;
     /* Keep Snare's exact empty-state normalization; other empty renders
      * have no state effects. Event/control work above always executes. */
-    if (count || (pk_hybrid_voices[inst].active_algo == 2u &&
-                  pk_hybrid_voices[inst].active_mode == 0u)) {
+    if (count || (inst == 0u && pk_hybrid_voices[0].active_algo == 2u &&
+                  pk_hybrid_voices[0].active_mode == 0u)) {
         if (!pk_hybrid_cf_render_segment(inst, pcm, count)) {
             for (unsigned i = 0; i < count; ++i) pcm[i] = 0;
         }
