@@ -427,6 +427,17 @@ counting execution. The private observer calibrates five switch windows in both
 stepping modes, including IRQ arrival immediately before RTE; complete model
 ISR time must equal executed cycles excluding the interrupted task instruction.
 
+On 21 Oct 2026, PKFM18's smaller unchanged-control preparation path was
+inlined into some `pk_nhr_frame` branches. Direct source calls passed 5,355
+exact frames, but the frozen observer's public `placement_prepare` PC was
+bypassed during real playback; both full workloads aborted at its missing-event
+assertion before producing valid timing. Preserve an instrumented event boundary
+explicitly with `noinline` when optimizing its caller/body, inspect actual call
+sites, and retain full runtime selection/coverage checks. The aborted captures
+are development failures, not performance receipts; the measuring binary and
+budget stay unchanged. Source/archive evidence is retained under
+`out/perky/hybrid/full-map-remaining-cf-v1/DEVELOPMENT_REJECTION.json`.
+
 PERKY optimization, 15 Oct 2026, exposed a separate initial-condition trap:
 `ot_emu` starts frame exchange at PLAY by default; hardware exchanges frames
 since boot (`tools/emu/ot_emu/main.cpp`, O14). A raw old/new block comparison
@@ -449,6 +460,78 @@ Bind clock delivery and the uncapped observer to the actual run. Interactive
 `run <ms>` can also stop inside an ISR: after the final STOP, stop releasing
 test frames and drain the current exception before asserting balanced
 switch/return counts. Never relabel a partial capture as a completed return.
+
+<a id="trap-sustained-algorithm-coverage"></a>
+
+### Selector coverage does not establish sustained algorithm timing
+
+**21 Oct 2026, PKFM17 workload omission.** The sequence matrix exercised
+Resonant Snare and Bass, but the sustained four-voice rows fixed the third
+voice to Slap. Aggregate ALGO/MODE coverage and those sustained Slap timings
+did not establish a sustained Resonant performance envelope. Feasibility
+optimization had proceeded without measuring the algorithm the user had
+identified as the largest ColdFire burden on hardware.
+
+Require matched sustained Slap controls, Resonant Snare, Resonant Bass and
+sequenced Snare/Bass MODE-lock rows. Hold the image, observer, native clocks,
+duration, other voices, stock tracks and FX workload constant within each
+comparison, and apply the frozen calibrated budget without relaxing its limits.
+Run long enough to cover the complete pattern. Verify the final card's locks
+and the actual runtime algorithm/mode combinations, with active source and
+post-FX audio witnesses and independent exact-audio checks. A mode bitmask
+alone proves neither the sequence order nor sustained residence in each mode.
+
+`tools/verify/measure_perky_resonant_workload.py` supplies the focused rows;
+`tools/verify/qualify_perky_resonant_workload.py` binds their selection, audio,
+timing and input identities for admission. Preserve earlier hash-bound reports
+as historical evidence for the workloads they actually measured; do not
+relabel their Slap timings as Resonant qualification. Passing these local rows
+still does not establish physical Octatrack timing.
+
+<a name="trap-source-return"></a>
+### A DSP source harness can return before its second voice executes
+
+**Symptom (20 Oct 2026):** the first paired DSP-B experiment reported exactly
+the first solo voice's cycle count and PCM. The second context never advanced.
+The production source continuation reads `ssh` to discard the seam's JSR
+return before jumping to stock AMP/FX. A simple test `jsr seam` followed by
+a synthetic continuation `rts` therefore returns straight to the host sentinel.
+
+**Cost:** the first paired measurement attempt was invalid. Its separate
+second-channel PCM/state assertions caught the missing execution before any
+timing result was accepted.
+
+**Fix:** reproduce the real stack shape with a separate call thunk. The seam
+discards the inner call return; the synthetic stock continuation then returns
+to the paired dispatcher, which executes the second source and restores the
+first context.
+
+**Gate:** `tools/verify/verify_perky_dsp_b_pair.py` compares both PCM channels
+and all 142 words of each context against independent solo calls, including
+active interior transitions. A single aggregate meter is insufficient.
+
+<a name="trap-native-block-clock"></a>
+
+### A native sample block is not an OT audio block
+
+The 20 October 2026 PERKONS placement campaign measured the existing CF
+oscillator fallbacks at their original 48 kHz rate, including rational
+conversion to 44.1 kHz and source packing. Earlier costs for rendering
+16 native samples do not price a 16-sample OT block: native count, phase,
+carry and event splits must be included. Correctness is checked separately
+against the original renderers and the rational clock oracle. The integrated
+WT/WT + Slap + Noise Hat row reaches 406.26 modeled us against 362.812 us,
+despite small solo oscillator costs.
+
+An initial diagnostic version also stored every native sample on the timed
+target, charging unshipped observer work to the candidate. That version was
+discarded; final timing disables target sample tracing and validates the
+native shadow's trace independently. `verify_perky_cf_native_clock.py` covers
+all phases/segment lengths; `measure_perky_cf_placement.py` checks target
+PCM/state and native counts; `measure_perky_cf_placement_integrated.py`
+measures the combined stock ISR. See the
+[placement receipt](../../modules/perky/hybrid/CF_PLACEMENT_FEASIBILITY.md).
+None of these local gates qualifies physical cache/card contention.
 
 <a name="trap-hybrid-receipts"></a>
 
@@ -486,6 +569,15 @@ status. `verify_perky_hybrid_evidence_selftest.py` checks refusal of smoke,
 stale-image, missing-audio, skipped-FX, missing-lifecycle, wrong-clock,
 uncommitted-source and corrupted-artifact receipts. The hybrid remains
 unqualified; those negative tests do not replace its missing positive gates.
+
+The PKFM21 stock/CF pass also required binding what a standalone runner
+actually loads. An ELF hash alone did not pin the Slap runner's `target.bin`
+and `target.nm`. `verify_perky_slap_span_binding.py` reconstructs both from
+the pinned ELF, privately replays the 2,880-frame / 76,880-case proof, then
+checks the final helper relocation, caller and real boot readback. The packet
+and stock DELAY bindings follow the same executed-binary rule. Their final
+qualification refuses missing bindings; newly named profile buckets are summed
+with their original owner before a stock saving is reported.
 
 <a name="trap-bus-zero-client"></a>
 
@@ -830,6 +922,23 @@ assemble PC-relative (write `lea SYM:l`); small `move.l #imm` becomes
 `moveq`; a `-Ttext` that is 2 mod 4 gets a leading `nop`. All correct code,
 all oracle failures.
 
+<a name="trap-cf-live-alignment"></a>
+
+### ColdFire alignment padding can execute as zero halfwords
+
+**A live `.balign 4` broke an otherwise exact Slap delay loop (21 Oct 2026).**
+The current m68k GNU assembler inserted `0x0000` at a fallthrough between a
+conditional branch and the intended loop. Assembly and linking succeeded;
+the native/ColdFire PCM comparison failed. This occurred only in the rejected
+isolated `slap-fixed-v4` experiment, never in PKFM16/PKFM17.
+
+Use explicit instruction fill, `.balignw 4,0x4e71`, when execution can cross
+the padding, and inspect the final disassembly. The corrected v5 passes
+2,880 native PCM/full-state frames and 38,440 ring/ABI cases, but its measured
+cycle regression still excludes it from the candidate. The negative log and
+disassembly remain at `out/perky/hybrid/slap-fixed-v4/`; the actual execution
+gate is `tools/verify/verify_perky_slap_fixed.py`.
+
 <a name="trap-loader-regs"></a>
 
 ### A loader draft clobbered d0 across its copy loop and reused a0 after the hash
@@ -1121,3 +1230,441 @@ successful capture. This cost a second admission-probe analysis attempt.
 Wait for normal child exit, then require complete reports and matching
 frame/return/private-switch totals. Preserve and revalidate an already
 completed capture instead of executing the UI sequence again.
+
+<a name="trap-long-irq-peripherals"></a>
+
+### A long DSP interrupt can stop the emulator's peripheral clock
+
+The 20 October Noise Hat offload first stalled after one host reply word.
+The interpreter switches long-interrupt dispatch to `dspExecNop`, so the
+normal peripheral service does not run until RTI. A real peripheral keeps
+running while the core polls HTDE. The isolated observer explicitly invokes
+the existing timed peripheral callback during long interrupts; the default
+port and vendor sources remain unchanged. A negative control disables this
+callback and must stall on the same request that passes with it enabled.
+This repairs progress in the instrument; it does not qualify DSP wall time
+or physical transfer latency. See the [prototype receipt](../../modules/perky/hybrid/NOISE_HAT_OFFLOAD.md).
+
+<a name="trap-hi08-halfword"></a>
+
+### An HI08 halfword also writes the preceding byte lane
+
+The same prototype initially truncated packet high bytes. On the stock
+16-bit host bus, the halfword addressed to TXM covers TXH:TXM and the one
+addressed to TXL covers TXM:TXL. Write `value >> 8` followed by `value`, each
+as a halfword; a CVR write must also preserve its adjacent ICR byte. The
+stock level-6 transfer ISR shares GPIO selection and this host port: preserve
+the selector/ICR, mask competing transfers, and return an already pending
+stock HOTX word before releasing ownership. The executable IRQ-wire gate
+checks nonzero high bytes, both pending-word states and all saved registers;
+the combined stock audio gate remains necessary and catches the pulse-row
+regression despite exact Noise Hat output. Watching the IRQ's entry PC was
+also blind because interrupt dispatch consumes that instruction internally;
+the integrated gate watches the next instruction at entry + 2.
+
+<a name="trap-dsp-lazy-ccr"></a>
+
+### Raw DSP SR storage can contain unresolved condition flags
+
+The 20 October pulse investigation first reported N changing across an IRQ
+whose renderer/register wire checks passed. The interpreter defers condition
+code calculation: `regs().sr` can contain an old N bit. Compare `getSR()` at
+both architectural boundaries before accusing the firmware. The corrected
+live witness sees zero register changes; the old N-change claim is retracted.
+This resolves interpreter bookkeeping without adding target instructions.
+
+<a name="trap-amp-dropout"></a>
+
+### Stock source PCM can disappear before FX despite exact synthesis
+
+The blocking Noise Hat pulse row had active sampler source PCM, exact Noise
+Hat state/PCM and preserved loaded P, yet T4/T7/T8 failed post-FX audio.
+Live DSP taps place the loss between source and FX1, in stock AMP. Clearing
+all DSP RAM removes it; clearing the four AMP phase words or even their
+32-word blocks does not fully remove it. Dirty AMP history alone is therefore
+not a proven root cause. Keep the failed counterfactuals and the open startup
+question, and require all source/AMP/FX paths instead of weakening the audio
+gate. The [cooperative follow-up](../../modules/perky/hybrid/NOISE_HAT_ASYNC.md)
+passes its tested dirty-start rows but does not establish arbitrary startup
+or silicon acceptance.
+
+<a name="trap-host-dma-upper-byte"></a>
+
+### Stock host DMA words retain a nonzero upper byte
+
+The first resident Noise Hat parser rejected every live marker although its
+isolated clean-word gate passed: the target received `0x034e52`, not `0x004e52`.
+HI08's retained upper lane survives the stock DMA. Mask every 16-bit field,
+including markers, lengths, patch addresses and values. A high byte on an
+address can redirect an otherwise private write into the shared window.
+The persistent parser gate now poisons the upper byte of every packet word
+and executes a control patch before comparing original ARM PCM and state.
+The failed live run does not establish a bank-handshake defect; that initial
+attribution is retracted. See [resident evidence](../../modules/perky/hybrid/NOISE_HAT_RESIDENT.md).
+
+<a name="trap-delayed-source-split"></a>
+
+### Delayed PCM must still match the current source-packet split
+
+A pipelined source packed its delayed audio as one segment while the stock
+parameter record retained a changing split. The DSP unpacker consumes the
+current split's packet layout. Pack the delayed samples using that current
+split, and preserve the historical event boundary separately for synthesis
+and clock conversion. Delaying audio does not permit changing the stock
+source framing contract. The integrated resident workload retains actual
+locks and verifies source plus post-FX audio on every track.
+
+<a id="trap-dma-halfword-a2"></a>
+## A masked DMA halfword can keep a stale accumulator extension
+
+**20 Oct 2026, current-frame Noise Hat tap prototype.** Stock source DMA leaves
+upper eight bits in its DSP words. Masking a 16-bit patch count with `and`
+cleared B1 but retained a negative B2. A following `DO B` consumed the stale
+extension. A persistent test with upper-byte poison exposed it before timing
+qualification. Reload `move b1,b` after masking a count, and `move a1,a` before
+using a masked field as an accumulator operand or comparison. Moving only A1
+into an address does not repair later uses of the accumulator. This is the
+DMA-parser instance of [the logical-op extension trap](#trap-a2-stale).
+`verify_perky_noise_hat_taps.py` poisons every field, varying the upper byte
+across frames and both signs, and checks source PCM, state and feedback.
+
+<a id="trap-rational-approximation"></a>
+## A fractional interpolation table can differ from rational division
+
+**20 Oct 2026, current-frame Noise Hat tap prototype.** The existing DSP clock
+uses `floor(phase*2^23/147)` and a fractional multiply. Its original gate
+explicitly permits one source LSB; it is not an exact integer division by 147.
+A longer Noise Hat case produced 9023 where the independent rational oracle
+requires 9024. Do not promote the old tolerance into a bit-exact claim.
+
+The tap prototype retains the table as a quotient estimate, computes the exact
+integer residual `D*phase-147*q`, and corrects the quotient once. Since
+`D=32*(b-a)` and both samples are signed16, the estimate error is less than one.
+The complete current-source gate now requires equality, with no LSB tolerance.
+The shipping adapter and its declared tolerance are unchanged. See
+[the experiment](../../modules/perky/hybrid/NOISE_HAT_TAPS.md).
+
+<a id="trap-cf-host-abi"></a>
+## Host structure offsets do not describe a ColdFire object
+
+**20 Oct 2026, Noise Hat lifecycle witness.** A new fallback observer used
+host `sizeof(pk4_track)` to locate target V4. The host object was 29,548 bytes;
+the loaded ColdFire layout record says 29,522. Two-byte target alignment makes
+each of thirteen controls two bytes smaller. The observer's ABI guard aborted
+before producing a false audio result. This was an instrument defect, not a
+firmware failure. Describe target bytes with the target ABI and check against
+the loaded layout record. Pointer-width-dependent engine fields must use
+target offsets too. The isolated lifecycle offset helper uses two-byte packing
+only in its metadata TU; the original host oracle keeps its normal ABI.
+ColdFire-only calibration must pass before attributing fallback differences.
+
+<a id="trap-idle-return"></a>
+## A detoured idle loop can contain real work
+
+**20 Oct 2026, PKNHF1 handoff.** The background native shadow initially never
+ran after project loading. `callAsMain` returned every borrowed call to the
+stock `g_mainSpin`, abandoning the image's detoured main loop. Preserving the
+actual parked return PC fixes that. The idle detector also included the
+prologue's `jsr 0x40098a2c`, allowing main's final initialization to be skipped;
+strict boot readback caught descriptor changes. Exclude that known six-byte
+call from the idle range. The probe pads the loop's reserved range so following
+renderer functions cannot be mistaken for idle code.
+
+A worker loop must not be fast-forwarded while work is published. The isolated
+handoff port checks the actual CF producer/consumer words before idle skipping;
+it executes every worker instruction and supplies no target writes, virtual
+completion or timer charges. Gate boot readback and actual project loading,
+then require worker progress, zero queue overflow, bounded sustained backlog
+and completed ownership transitions. A timely audio ISR alone cannot prove
+that an idle worker keeps up: the first full-delay shadow fell behind in
+metallic mode even with zero audio deadline misses.
+
+<a id="trap-event-boundary"></a>
+## Frame-entry controls may not be the controls that render
+
+**20 Oct 2026, PKNHF1 continuity oracle.** A persistent original-author witness
+computed a complete frame from controls read at source entry. A diagnostic mode
+poke could arrive while that callback was in flight, before its real
+`prepare_nh` call. The target correctly rendered its suffix with the new mode;
+the oracle incorrectly used the old one, then carried the wrong state forward.
+This produced large false PCM/state/clock/ring differences at the first live
+mode change despite a passing stateless control witness.
+
+Render the oracle's prefix at source entry, sample actual event arguments at
+`prepare_nh`, then render its suffix. Never reseed dynamic state at a switch.
+Require continuous CF-only calibration through mode changes before interpreting
+backend continuity failures. The PKNHF1 campaign checks both CF and DSP output
+against this single stream, and models delayed ring commits separately from
+logical synthesis state.
+
+<a id="trap-playing-bank"></a>
+## The editor bank is not the playing bank latch
+
+**20 Oct 2026, PKNHF1 panel campaign.** An inherited test required
+`0x80000002` (editor/working bank) and `0x800065bd` (playing bank) to match after
+a live Bank selection. Playback had reached B while the editor still reported
+A; rejecting this did not demonstrate a firmware handoff failure. The stock
+switch copies the playing bank byte into `0x46c7ff40` at `0x400a465a`; the frame
+ISR applies that latch, as recorded in [PARTS.md](../firmware/PARTS.md#3-pattern-changes).
+Gate both the requested playing bank and that actual frame-ISR bank latch,
+allow the frame application to run, and retain editor and per-track bank bytes
+as observations. Do not infer the audio engine's bank from the editor context.
+The corrected PKNHF1 panel driver checks real playing A→B→A with both backends;
+production Part/generation semantics remain a separate qualification.
+
+<a id="trap-pio-retiming"></a>
+## Audio retiming can expose the stock PIO first-sector race
+
+**20 Oct 2026, Noise Hat headroom experiments.** The intermediate PKNHF3
+passed exact source/state/clock checks and its switching deadlines, then froze
+on the third STOP/START. A second run reproduced it. `cfstatus` stayed at
+`0x40015524`, the card handler's DRQ wait; the frame source stayed unmasked,
+asserting and pending, with no eDMA completion outstanding. Three further
+100 ms runs did not advance frames or the worker. This was not evidence of an
+audio mismatch or an unbounded audio callback.
+
+[STEM_REC.md section 11.7](../firmware/STEM_REC.md) already identifies this exact
+stock PIO wait and proves the first-sector pointer/count race. The new runs
+measured the stopped PC and IRQ state; the precise write-preemption window is
+inferred from that prior investigation, not newly traced. A changed audio
+cost can land a stock card interrupt in that window. The port advertises a
+PIO card, so STOP's normal project writes can expose it without STEM recording.
+
+Do not retry a shorter panel sequence and call it qualified. Retain the failed
+run and capture CPU, eDMA and card state. The qualification probe explicitly
+reuses Yves Rosius's existing `stems_ata_first`, built first as `REMIX=stems`
+against the shared stock image. Its 52 executable bytes must match that
+original build after relocation. A preceding author RTS preserves the
+standalone reference's four-byte link alignment; the full 54-byte unit is also
+pinned with `Linked.reference`. The source witness counts actual entries, and
+panel receipts retain PIO mode and card write errors. This fix is an explicit
+change to the qualification image; it is not an emulator repair or a hardware
+admission for the PERKY hybrid.
+
+<a id="trap-production-generation"></a>
+## Diagnostic Part tests bypassed production generation resets
+
+**20 Oct 2026, four-voice production integration.** F7's Part/Bank panel
+campaign passed with diagnostic selectors and continuing synthesis histories.
+Its dispatcher replaced the production source body, so it did not call the
+Bank/Part generation observer or read staged ALGO/MODE. That scoped pass did
+not establish production persistence or event-boundary resets.
+
+The opt-in PKNHG1 integration reuses the production observer, staged six-control
+ABI and family-local selector table. It resets CF objects from original
+pristine initializers at real events. Thirty-two linked selection/validation
+cases and an actual encoder-edit/SAVE PROJECT/cold-reload persistence test
+pass. The CF-only panel run keeps the original Hat stream exact but misses
+one deadline at 392.731 microseconds. The DSP-enabled panel run also reports
+363,906 source PCM mismatches. Both observe five generations per voice and
+zero stored/actual selector mismatches. The three sustained production rows
+also miss deadlines. F7's separate continuing-history campaign still passes.
+
+A CF reset does not reset resident DSP limbs, the interruptible inner shadow,
+its clock or the generations of pending feedback. The G1 protocol has
+no generation tag. Resetting producer/consumer counters would hide old work,
+not retire it correctly. G1 admission needed an event-coherent reset
+and old-job retirement contract, with an independent initializer-based audio
+witness, and the reset cost inside the full-ISR timing bound. V4's persisted
+Noise Tone choice also needs source dispatch beyond the current Hat protocol.
+
+**Fix and gate (PKNHG2):** reset resident limbs/side/native clock through an
+existing DMA header bit, reset CF state at the same event, and let the worker
+consume a queued half-frame reset in order. Keep monotonic sequence/counter
+history; check all returned feedback and commit only the current generation.
+The independent original-initializer witness records explicit epoch/index/value
+ring writes, including the old prefix. The mixed lifecycle checks and retires
+69 old-generation samples without new-ring writes. Both production lifecycle
+captures, all three 16,384-frame stock/FX rows and save/cold reload pass exact
+Hat/Slap audio and timing; worst 357.909 µs leaves 4.903 µs. Avoiding redundant
+startup copies reduces the first-frame reset bucket from 14,425 to 424 cycles;
+later restores use a byte/guard/ABI-tested CF copy. The campaign binder now
+requires passing current-image receipts, actual epoch retirement, memory fit,
+register/reset/import gates, repository checks and identity. G1 remains a
+failed historical record; F7 keeps its continuing-history scope. V4 alternative
+source dispatch and physical timing remain unqualified. See
+[PRODUCTION_LIFECYCLE.md](../../modules/perky/hybrid/PRODUCTION_LIFECYCLE.md).
+
+
+<a id="trap-reset-profile"></a>
+## A worst post-Part frame is not necessarily a reset frame
+
+**20 Oct 2026, PKNHG3 profiling.** G2's lifecycle worst frames occurred 400
+frames after a Bank reset. Treating their full cost as reset work would have
+misdirected optimization. Actual generations 2–5 spent 18,652–18,673 cycles
+in restoration, while the global peaks combined CF metallic synthesis with
+stock processing. The first-adoption 424-cycle event bucket did not measure
+later restoration and excluded callees.
+
+**Fix and gate:** record real generation entry frames and read-only instruction
+attribution separately from the top 64 full ISRs. Require equal frame/return
+counts, full cycle sums, maxima and misses against unprofiled captures of the
+same image; both G2 and G3 pass. Check that each attributed frame's buckets sum
+to its full ISR. G3 boot-derived sparse restores reduce later restoration to
+7,681–7,709 cycles; direct packet/clear and exact resampling assembly reduce
+non-reset overhead too. The worst later reset is 301.019 µs and the worst
+whole campaign frame is 349.439 µs, leaving 13.372 µs versus G2's 4.903 µs.
+Sparse/full-engine, packet, clock/EMAC/ABI and independent original-audio
+checks gate the changes. These are local instruction/cycle measurements,
+not physical timing qualification. See
+[PRODUCTION_LIFECYCLE.md](../../modules/perky/hybrid/PRODUCTION_LIFECYCLE.md).
+
+<a id="trap-full-map-clock"></a>
+## A backend's clock restoration can undo another algorithm's trigger
+
+**20 Oct 2026, full-map integration.** The resident-Hat adapter saved and restored
+the CF clock around prepare. Applying that restoration to Noise-Tone/Acoustic
+also undid their actual trigger/ALGO reset. Direct source PCM diverged despite
+correct individual renderers. Restore that snapshot only for an unchanged,
+non-reset Hat source; CF alternatives retain their own prepare result.
+`verify_perky_full_map_sources.py` gates all layouts, event splits and directed
+ALGO transitions against independently initialized original streams.
+
+<a id="trap-full-map-worker"></a>
+## A missing observer environment can skip a real worker
+
+**20 Oct 2026.** The first complete-map port ran exact source PCM but filled its
+1,024-frame shadow queue: the new driver omitted `NHB_PRODUCED/COMPLETED`, and
+the isolated port skipped main's detoured idle loop. This was a measurement
+configuration failure, not a measured physical worker deficit. Supply both
+addresses, execute worker instructions whenever work is pending, and require
+positive completion plus zero overflow/clock/transport errors. Failed rows and
+their driver remain under `full-map/worker-observer-failure`; final integrated,
+matrix and lifecycle drivers bind the worker environment in their receipts.
+
+<a id="trap-full-map-controls"></a>
+## A persisted Part edit need not publish to the live source lane
+
+**20 Oct 2026.** Poking the saved Part and its SRAM mirror left the actual
+source controls at WT/WT/Slap/Hat. An expected-tuples gate stopped that attempted
+matrix. Use real sequencer ALGO/MODE locks and verify the controls observed at
+`placement_prepare`; panel navigation must also verify the actual selected
+Part/Bank. Large encoder deltas can clamp past an intended enum, and a few small
+reports need not reach it. Backend MODE qualification therefore uses actual
+sequencer delivery, while encoder SAVE/cold reload has its own explicit gate.
+No selector value is repaired downstream to make a row pass.
+
+<a id="trap-full-map-first-hat"></a>
+## A first Hat use can occur after the generation event
+
+**20 Oct 2026.** A Part may begin on Noise-Tone, invalidate Hat, and first select
+Hat later while CF owns the source. Looking only at `pk_prod_last_reset` misses
+that lazy initialization; inactive DSP limbs can retain old state at cutover.
+Capture the pre-prepare initialized mask, reset the ordered shadow for a fresh
+Hat, and mark all three limbs dirty before backend ownership can change.
+The full-map lifecycle gate enters a Part on NT, selects its first Hat through
+the actual control publisher, and changes backend without changing generation.
+The independent oracle compares all defined resident limbs and clocks after
+that first use. Undefined inactive raw bytes are not substituted as expected
+initialized state.
+
+<a id="trap-buffered-eof"></a>
+## A successful extra buffered read does not prove a trailing file byte
+
+**20 Oct 2026, card asset packaging.** Stock `F_READ` at `0x40016564` fills a
+sector buffer and copies from it without a logical file-length test in the
+copy loop. Reading one extra byte after an exact Acoustic payload can return
+success on sector padding, so an EOF probe falsely rejected the correct file.
+Use an explicit version/declared payload length and pinned payload CRC; the
+bundle additionally pins the complete file SHA256. Do not infer logical EOF
+from that wrapper's successful buffered byte. The native malformed-input gate
+and whole-machine comparison of every loaded asset byte cover separate scopes.
+
+<a id="trap-interactive-dsp-peek"></a>
+## Batch DSP readback flags do not run after interactive quit
+
+**20 Oct 2026.** `--interactive` returns through `serveInteractive` before the
+batch `--dsp-peek` report. Accepting the option does not produce a post-play
+program census; a missing-word assertion correctly rejected that attempted
+qualification. Read P through live `dsp peek` commands before quitting, then
+wait for child exit before reading destructor reports. Fixed noninteractive
+rows keep the batch readback path. Both forms compare the actual final upload
+and allow only the four known stock packer-mask changes.
+
+<a id="trap-empirical-budget"></a>
+## Nominal emulator headroom can admit a historically overloaded design
+
+**21 Oct 2026.** PKFM6 reached exact audio and a 355.337 us modeled ISR peak,
+but older two-CF builds had already passed shorter local timing spans and
+overloaded the MKII. A nominal 362.812 us pass, or a nominal 20% reserve,
+therefore did not constitute a useful hardware admission criterion. Do not
+derive a physical multiplier by dividing unmatched hardware/emulator maxima.
+
+The common-observer replay now pins exact PERKY4S/PKH4O2/PKFM6 images,
+configuration labels, full ISR distributions and background-inclusive CPU
+work. Working/failing shapes overlap, so no tested scalar timing statistic
+separates every row. Use the explicit working-envelope engineering target in
+`modules/perky/hybrid/EMULATOR_BUDGET.json`, retain the overlap limitation, and
+run `tools/verify/qualify_perky_hybrid_budget.py --check`. It deliberately
+rejects PKFM6. Parent/new observer controls require identical raw target/audio
+dumps and cycle totals. Playback cycle sums divide by transport frames;
+startup-inclusive ACK histogram counts are a different denominator.
+## An epoch check is not atomic publication
+<a id="trap-epoch-publication"></a>
+
+**Source-audited defect, October 2026:** the first on-demand Hat handoff worker
+checked its epoch, then published a phase/completion a few instructions later.
+An IRQ could cancel between those operations. The IRQ's cancellation also
+assigned completion, so the old worker could resurrect the cancelled phase or
+increment completion beyond production. This was caught before qualification;
+it is not a claimed hardware failure or an instruction-window fault injection.
+
+The successful protocol gives ordinary phase/production updates to the IRQ
+and completion/import publication to main. Cancellation invalidates the epoch
+without assigning completion. Main retires cancelled jobs, and the IRQ cannot
+arm another request until production equals completion. Completion is the
+worker's last shared-state publication, following a compiler memory barrier;
+all raw synthesis-state accesses finish before it. A separate imported-epoch
+tag prevents an old import publication from making a new request ready.
+
+Initialize the epoch deterministically in the quiescent boot reset. Incrementing
+an uninitialized BSS epoch can wrap the first request onto the initial import
+tag. The direct gate poisons the epoch to `0xfffffffe`, calls the actual reset,
+and requires epoch 1 before any audio is produced.
+
+`verify_hat_state_handoff.py` checks actual CF/DSP PCM, full fallback state,
+RNG/hold and clocks across snapshot cancellation, wire-sequence wrap and backend
+changes. `qualify_hat_state_lifecycle.py` exercises real IRQ/main preemption and
+production generations with the fixed observer. These execution gates accompany
+the writer-ownership audit; they do not enumerate every possible preemption PC.
+
+**Instrument control:** a later read-only Unicorn `UC_HOOK_CODE` counter probe
+changed the first direct-harness CF/DSP audio comparison. The cause remains
+unresolved; its claim was withdrawn and the probe removed. The failing source
+and log are retained locally at
+`out/perky/hybrid/full-map-state-v1/handoff-gate/UC_CODE_HOOK_FAILURE.*`.
+The accepted direct gate uses the actual target counter adjacent to the sole
+catch-up renderer call and checks continuing PCM/state; the performance runs
+retain the unchanged calibration observer binary. The independent DSP Y-memory
+read watch has its own actual-DSP-load positive control and paired exact-audio
+control. Do not conflate those two instruments.
+
+## A wrapped sequence is not a startup flag
+<a id="trap-sequence-startup"></a>
+
+**Source audit, October 2026:** the on-demand Hat candidate allowed an immediate
+CF selection when the transport sequence was zero and DSP was disabled. This
+was intended for pre-audio startup, but a running 32-bit counter returns to zero
+after about 18 days at 16 samples/frame and 44.1 kHz. Requesting CF at that point
+could skip the coherent snapshot/catch-up guard and expose stale Hat state.
+The full workload passed because it never ran that long; a 16-bit wire-wrap
+test did not cover this separate condition.
+
+The inherited DMA extractor used the same sequence-zero guard and skipped a
+valid wrapped return. The consumer also treated last-consumed zero as invalid,
+so repeating an already consumed sequence-zero mailbox raised a failure. Direct
+mail injection alone could not detect the separate DMA extraction defect.
+
+Use an explicitly reset transport-started latch, published with real source
+packets, and a separate last-consumed-valid flag. The direct gate seeds counters
+before the first source call, crosses the full 32-bit wrap during snapshot
+collection, then requests CF at exact sequence zero. DSP must remain the owner
+while a fresh request arms. It also checks disabled startup and poisons the
+latch and consumer-valid flag before the actual reset. Repeat a valid zero
+return and require no second consumption, ring write or snapshot advance.
+`verify_hat_state_dma.py` separately executes the actual DMA helper against
+both ping banks, including sequence zero, checks all carrier clears and all
+surrounding bytes, and positively distinguishes startup from active transport.
+Ordinary PCM/state/RNG/clock checks continue through the source trajectory;
+no target synthesis state is repaired. Earlier images fail the directed
+ownership and repeated-zero controls at their intended boundaries.

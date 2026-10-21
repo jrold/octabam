@@ -8,8 +8,8 @@
 |
 | The ColdFire port reads the `jmp` this detour leaves at 0x4001fc96 and
 | counts PCs in the loop as main's park (rtos.cpp, Rtos::atSpin, since 28
-| Sep 2026); a borrowed call returns to the stock `bras .` behind it and
-| main parks there, so the accounting stops at the first --call.
+| Sep 2026). Since 20 Oct 2026 borrowed calls preserve the actual parked PC,
+| so this loop resumes after --call; the final stock-init JSR is not idle.
 
         .equ    DTCN3,      0xfc07c00c
 

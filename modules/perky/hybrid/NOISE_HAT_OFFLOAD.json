@@ -1,0 +1,734 @@
+{
+  "schema": "perky-noise-hat-offload-feasibility-v1",
+  "date": "2026-10-20",
+  "branch": "perky-cf-dsp-hybrid",
+  "source_checkpoint": "4eeae750caf8ba98144dd9ad8ac3b68299e21982",
+  "source_checkpoint_note": "Checkpoint plus uncommitted source fingerprints; existing unrelated changes preserved.",
+  "verdict": "REJECT_SYNCHRONOUS_RPC_FOR_FULL_LAYOUT",
+  "hardware_validated": false,
+  "firmware_bytes_in_receipt": false,
+  "main_sha256": "9f178e8686748fea053b12795467e8eaa1848582f9ec90cfbeadfbed594a7992",
+  "runtime_elf_sha256": "6183c47e5c4ca804be3d227e2d5eae5cbc321da3527d080ed8df19e7088eb145",
+  "final_rebuild_matches_all_six_measured_image_and_runtime_hashes": true,
+  "compiler_flags": [
+    "-mcpu=54455",
+    "-msoft-float",
+    "-O3",
+    "-finline-functions",
+    "-finline-limit=3000",
+    "-funroll-loops",
+    "-fsched-pressure",
+    "-ffreestanding",
+    "-fno-builtin",
+    "-fno-common",
+    "-fno-jump-tables",
+    "-fno-store-merging",
+    "-fno-asynchronous-unwind-tables",
+    "-fno-ident",
+    "-fomit-frame-pointer",
+    "-fno-zero-initialized-in-bss",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-ffunction-sections",
+    "-fdata-sections",
+    "-Wno-unused-function",
+    "-Wno-unused-variable",
+    "-I",
+    "/Users/jrold/Downloads/octabam/modules/perky",
+    "-I",
+    "/Users/jrold/Downloads/octabam/tools/harness/perky_cf",
+    "-I",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement"
+  ],
+  "source_sha256": {
+    "modules/perky/cf_acoustic_hats.c": "b097e7220708c930a5fe3efaf4513994756a97c8bad53410bf07b0a8026249e0",
+    "modules/perky/cf_acoustic_hats.h": "f75c74baf820c14c290574e52eebcb6949f96acc86df13aef4a04ccad19b6bfc",
+    "modules/perky/cf_complex_drum.c": "c57c9e5f89b534c165bd5e8b7e65ac666e2496de6bd773f1d7102f408090ab7e",
+    "modules/perky/cf_complex_drum.h": "98588a85c21c8e94e1b908de10a9b4086ef0830915aa3ecf3fd971b06c0165f2",
+    "modules/perky/cf_control_rates.h": "66a191cfdbe41037c2c0581ecb9963545eb3a6618f45aa0194d250e4556de7a2",
+    "modules/perky/cf_fold.c": "96ac7a5a7e4868670f0f159f935ad9f130582d1161088c5948f3eeccbaa7be0f",
+    "modules/perky/cf_fold.h": "e1e3d3c16065fbbfc77b3606782aef431d42ff745ae3c4105472e1444cc25996",
+    "modules/perky/cf_karplus.c": "9639a1f1292ddeaf95e46a5feb38a254e2b77497d997ea50fe3f42d676052170",
+    "modules/perky/cf_karplus.h": "8c311ecfa6e2eb9fe2b57c2af05a524419f44f61a002f0b94afe6ca404cd9d70",
+    "modules/perky/cf_math.h": "d621ce5f2738917e076cc74f8d3b6080b4d237e615e8f6f4fc42bc5dbdc83262",
+    "modules/perky/cf_native_clock.h": "c0003f005c50232614f90f779681cb377482e0672f86b00faf8e7d7ca85b1202",
+    "modules/perky/cf_noise_hat.c": "18aac652089aa04d7e6f751dd8bba3314f63aa1a8bf7dfb1016fd421f7df8776",
+    "modules/perky/cf_noise_hat.h": "bcdb9999fe511ede8ec4fc991d2a42fd84288e4b9512d22604d6acb5d7d9287b",
+    "modules/perky/cf_noise_hat_offload.c": "94332af8cc87ece3f6c482a1f557af6e7a02b514d49002d77025da47ed6e81f9",
+    "modules/perky/cf_noise_tone.c": "7fd94294d0e3e41f74633da93def530927fcd3f96312191397f080ba09c3dfd4",
+    "modules/perky/cf_noise_tone.h": "9cbf001ccbdedb4ee25cd6ec88d8d804ac442a070b1f3ac4c26470c113417d45",
+    "modules/perky/cf_pcm_rice.h": "c6a3bfd05ae825e8a190e9c4554e7ae39dcee820001a70d4a411282668ba1c0e",
+    "modules/perky/cf_perky4.c": "cb6603926391371e43e018ddb20f2cd4e15a5431247bfc7573300ac3a4d8dac3",
+    "modules/perky/cf_perky4.h": "d16b0d7c24fc759e5690694143c0af61b015e59bbf29957632231ecdc49b97d8",
+    "modules/perky/cf_render_math.h": "a6cf3ddcf0c5a09ebf5fba212333e3611cb07bd1c2486c6da38345c0fffdaf62",
+    "modules/perky/cf_resonant.c": "0eadc795873a362612be5fb25c3099d52cdc9b11b1453f95602d094634696170",
+    "modules/perky/cf_resonant.h": "a11636313ff7e8c2e9bf9d6ad6f40439056a46adbabc103ae843e7f69465834f",
+    "modules/perky/cf_simple_drum.c": "abc62704ce6a8b4a5580aa5fe75746e2c35442e0b84c8a49cc3cc11497512a8c",
+    "modules/perky/cf_simple_drum.h": "9a535090d2bd3f13cb5f360a74824658321a23330c48a7e92115a646b0631e53",
+    "modules/perky/cf_slap.c": "e0e0a62c8112ceb5b9fe8bb7108feb7e7e396f89f43099e2e55f4107d692ab2b",
+    "modules/perky/cf_slap.h": "4d10f0e328cff102aeaf1e4a720438fac504e78965488aeac2f6d2cec8b4ed22",
+    "modules/perky/cf_softfloat.h": "f47a9dd44caa443ddae471bd8abffe1bca7a5d98f93f0bd4047bef8743598222",
+    "modules/perky/cf_wavetable.c": "77dc049c995c8ca6fe00d64096ee8fdd736237ec3f1aa0d077d6b32431f988e8",
+    "modules/perky/cf_wavetable.h": "71845d1551c844e270a71456ba4f779aa4f698df9e9eb403b08105ddc1bcbffe",
+    "modules/perky/noise_hat_classic_delay.asm": "936082a5f8d21e6987aec751b8eb5f9e0318044f43010dc45256831f0aaef3ff",
+    "modules/perky/noise_hat_classic_mode0.asm": "80c17c2a1f5bb17b1848bffe4048a014383b105d1d897f91dfef98464d5b9734",
+    "modules/perky/noise_hat_classic_mode0_voice.asm": "6155cdb56cde7833b02ca0dade9a26e144078bbb7b1683656ac8d8e6eb1f6704",
+    "modules/perky/noise_hat_classic_mode1.asm": "901d6d71e02c08d0a0337d9e175c572e535976c4fee933b90e5dc8e7da4beb3d",
+    "modules/perky/noise_hat_classic_mode1_voice.asm": "06ec01d4ade512b88ed9af4cacf385481a343569b78bf2337b9c0af61cfbb138",
+    "modules/perky/noise_hat_envelope.asm": "42e6b51b4180e91ff8fe97413221f42d725b4da030edbad0f7210a02885e49dc",
+    "modules/perky/noise_hat_filter.asm": "e73111271661c30aa144001c448970cdb6fca253df9f8a30cddfc987313a0e5d",
+    "modules/perky/noise_hat_phase.asm": "55ec6791df05dbb90d722b387a972782874d79ab061db66ecd7e84329efef197",
+    "modules/perky/noise_hat_pulse_voice.asm": "76cb4f9e4e49556e4362dbce36c0317806a2be4fef6917348c923bc24f6aa2a9",
+    "modules/perky/noise_tone_math.asm": "fd46edad4ac398a498172961e0cf6497b7f9eb8092be1e5260f2991e0089bb61",
+    "tools/emu/ot_emu/dsp.cpp": "b3c65867ad51f2e2ee78cc8e977172fd4cf15c471e40755684ce3d645db269ec",
+    "tools/harness/perky_cf/noise_hat_observer.h": "966f828cb41e7529f12771bc0688daed2ee08219b75f45bd76a536039974a173",
+    "tools/harness/perky_cf/noise_hat_rpc_host.cpp": "4c9180e16b3ca9cdf9a6c94a2fd33f80d7173425d3286be7d8de2f1c62e48d0c",
+    "tools/harness/perky_cf/placement_cf_api.h": "d72cdd001db9c572a73c6bf3bed602959c009f02d7cd963d9a78d2ae3dc87fb7",
+    "tools/harness/perky_cf/placement_cf_engine.c": "6c56242cce486056b35414d13e7c1ff4bf0e8da3a0ca45d7401e517854053961",
+    "tools/perky/build_cf_placement_probe.py": "24f696914ac44400fae822027bca41ad185b5f03a78d9e6ffccb04ce3e976560",
+    "tools/perky/build_noise_hat_offload_probe.py": "b846b4ca001bd8671b297e4687f861f08fbf8298faf2d8ebe26f243eba602ca8",
+    "tools/perky/perky_dsp_b_specialization.py": "57de84e521363af1617e3d8075c6c9050f13c725b9be865c5eda42a13d3c22c3",
+    "tools/perky/perky_fragmented_image.py": "bbbcda0d46dafb9533242435fb065c41c871f2121b62fbd97d880d5a3f39043e",
+    "tools/perky/perky_noise_hat_offload.py": "9fcf9c953e563232c9d97dfde506dffddbdecc60a4e547c3d9e0916ea8ecc9f1",
+    "tools/verify/build_perky_noise_hat_observer.py": "c42a0627b70b66402da5f054db39bfb95483fb7d0934f0db4b06144da544aad0",
+    "tools/verify/measure_perky_cf_placement_integrated.py": "bc0c438528e832593469c61453759512279f235e8e677c21fd145431305412ac",
+    "tools/verify/measure_perky_noise_hat_offload.py": "081d69074b00a7a358b758917b98b03a344e5085a9e3f4ec7ccc826070a7ef37",
+    "tools/verify/verify_perky_noise_hat_offload.py": "bed5db78839b1665c01512905a03b1c018549760de95fbb54dfe81e2930472fa"
+  },
+  "memory": {
+    "schema": "perky-noise-hat-offload-memory-v1",
+    "A_program": [
+      {
+        "name": "irq",
+        "start": 212583,
+        "length": 167
+      },
+      {
+        "name": "wire",
+        "start": 229136,
+        "length": 114
+      },
+      {
+        "name": "render",
+        "start": 4563,
+        "length": 38
+      },
+      {
+        "name": "noise_hat_classic_mode0",
+        "start": 4359,
+        "length": 204
+      },
+      {
+        "name": "noise_hat_classic_mode1",
+        "start": 6820,
+        "length": 171
+      },
+      {
+        "name": "noise_hat_pulse_voice",
+        "start": 245155,
+        "length": 111
+      },
+      {
+        "name": "noise_hat_phase",
+        "start": 212387,
+        "length": 196
+      },
+      {
+        "name": "noise_hat_filter",
+        "start": 212750,
+        "length": 130
+      },
+      {
+        "name": "noise_hat_envelope",
+        "start": 4096,
+        "length": 263
+      },
+      {
+        "name": "add",
+        "start": 212880,
+        "length": 21
+      },
+      {
+        "name": "multiply",
+        "start": 4601,
+        "length": 38
+      }
+    ],
+    "B_program": [
+      {
+        "name": "synth_seam_glue.asm",
+        "start": 6244,
+        "length": 86
+      },
+      {
+        "name": "pk_three_finish",
+        "start": 6410,
+        "length": 12
+      },
+      {
+        "name": "noise_tone_math.asm",
+        "start": 245344,
+        "length": 132
+      },
+      {
+        "name": "simple_drum_voice.asm",
+        "start": 6330,
+        "length": 80
+      },
+      {
+        "name": "simple_drum_envelope.asm",
+        "start": 3520,
+        "length": 194
+      },
+      {
+        "name": "simple_drum_frequency.asm",
+        "start": 3919,
+        "length": 42
+      },
+      {
+        "name": "simple_drum_oscillator.asm",
+        "start": 3714,
+        "length": 205
+      },
+      {
+        "name": "simple_drum_delta.asm",
+        "start": 228771,
+        "length": 164
+      },
+      {
+        "name": "pk_multi_simple_init",
+        "start": 245712,
+        "length": 48
+      },
+      {
+        "name": "fold_drum_voice.asm",
+        "start": 7583,
+        "length": 189
+      },
+      {
+        "name": "fold_drum2_voice.asm",
+        "start": 7772,
+        "length": 262
+      },
+      {
+        "name": "pk_multi_fold_init",
+        "start": 262077,
+        "length": 61
+      },
+      {
+        "name": "pk_multi_fold2_init",
+        "start": 228935,
+        "length": 65
+      },
+      {
+        "name": "fold_rng_glue",
+        "start": 212944,
+        "length": 48
+      },
+      {
+        "name": "fold_drum2_seam.asm",
+        "start": 229287,
+        "length": 68
+      },
+      {
+        "name": "pk_three_fold2_trigger",
+        "start": 3961,
+        "length": 36
+      },
+      {
+        "name": "pk_three_common_controls",
+        "start": 261952,
+        "length": 125
+      },
+      {
+        "name": "pk_three_common_trigger",
+        "start": 229355,
+        "length": 21
+      },
+      {
+        "name": "pk_three_frame",
+        "start": 245654,
+        "length": 58
+      },
+      {
+        "name": "pk_three_segment",
+        "start": 261801,
+        "length": 151
+      },
+      {
+        "name": "pk_source_clock_prepare",
+        "start": 245582,
+        "length": 72
+      },
+      {
+        "name": "pk_source_clock_finish",
+        "start": 3997,
+        "length": 67
+      },
+      {
+        "name": "complex_drum_production_voice",
+        "start": 8034,
+        "length": 106
+      },
+      {
+        "name": "pk_multi_complex_init",
+        "start": 229000,
+        "length": 62
+      },
+      {
+        "name": "mapped prefetch guard NOPs",
+        "start": 262138,
+        "length": 6
+      },
+      {
+        "name": "experimental private upper guard NOPs",
+        "start": 8186,
+        "length": 6
+      },
+      {
+        "name": "stock startup clear preserving code tails",
+        "start": 4066,
+        "length": 48
+      }
+    ],
+    "A_program_words": 1453,
+    "shared_capacity": 2404,
+    "shared_words": 1820,
+    "shared_free": 584,
+    "private_P_used": {
+      "A": 762,
+      "B": 1333
+    },
+    "A_private_X": [
+      [
+        "active compact state",
+        14336,
+        14457
+      ],
+      [
+        "scratch and hold/RNG",
+        14592,
+        14711
+      ],
+      [
+        "native stereo PCM",
+        14720,
+        14760
+      ],
+      [
+        "request and pending host word",
+        14768,
+        14772
+      ],
+      [
+        "interrupted registers",
+        14784,
+        14820
+      ]
+    ],
+    "A_private_X_words": 320,
+    "A_private_X_capacity": 616,
+    "A_low_Y_words": 2093,
+    "A_low_Y_capacity": 2139,
+    "CF_ring_bytes": 9610,
+    "host_vector": [
+      44,
+      46
+    ],
+    "retained_FX": "all twelve code/dispatch bytes exact",
+    "notes": [
+      "A original oscillator source hook restored to stock; source PCM from CF passes normal AMP/FX.",
+      "B retains its single admitted oscillator portfolio; no paired context exchange.",
+      "Shared P/X/Y alias storage counted once. Ring and raw history remain in CF RAM.",
+      "Private-B tail boundary and new host vector remain hardware-unqualified."
+    ]
+  },
+  "wire_exact": {
+    "status": "PASS_IRQ_WIRE_CF_CODEC_RING_ARM_EXACT",
+    "cases": 9,
+    "native_samples": 2304,
+    "DSP_calls": 207,
+    "maximum_kernel_cycles": {
+      "0": 31385,
+      "1": 14263,
+      "2": 23764
+    },
+    "irq_entry": 212583,
+    "render_entry": 4563,
+    "A_program_words": 1453,
+    "A_program": [
+      {
+        "name": "irq",
+        "start": 212583,
+        "length": 167
+      },
+      {
+        "name": "wire",
+        "start": 229136,
+        "length": 114
+      },
+      {
+        "name": "render",
+        "start": 4563,
+        "length": 38
+      },
+      {
+        "name": "noise_hat_classic_mode0",
+        "start": 4359,
+        "length": 204
+      },
+      {
+        "name": "noise_hat_classic_mode1",
+        "start": 6820,
+        "length": 171
+      },
+      {
+        "name": "noise_hat_pulse_voice",
+        "start": 245155,
+        "length": 111
+      },
+      {
+        "name": "noise_hat_phase",
+        "start": 212387,
+        "length": 196
+      },
+      {
+        "name": "noise_hat_filter",
+        "start": 212750,
+        "length": 130
+      },
+      {
+        "name": "noise_hat_envelope",
+        "start": 4096,
+        "length": 263
+      },
+      {
+        "name": "add",
+        "start": 212880,
+        "length": 21
+      },
+      {
+        "name": "multiply",
+        "start": 4601,
+        "length": 38
+      }
+    ],
+    "source_sha256": {
+      "tools/verify/verify_perky_noise_hat_offload.py": "bed5db78839b1665c01512905a03b1c018549760de95fbb54dfe81e2930472fa",
+      "modules/perky/cf_noise_hat_offload.c": "94332af8cc87ece3f6c482a1f557af6e7a02b514d49002d77025da47ed6e81f9",
+      "tools/perky/perky_noise_hat_offload.py": "9fcf9c953e563232c9d97dfde506dffddbdecc60a4e547c3d9e0916ea8ecc9f1",
+      "tools/harness/perky_cf/noise_hat_rpc_host.cpp": "4c9180e16b3ca9cdf9a6c94a2fd33f80d7173425d3286be7d8de2f1c62e48d0c"
+    },
+    "limitations": [
+      "Host word pacing excludes ColdFire execution; integrated timing is a separate gate."
+    ]
+  },
+  "rows": [
+    {
+      "path": "out/perky/hybrid/noise-hat-offload/integrated-results/WTWT-SLAP-HAT-CF-CONTROL-M1-static/OFFLOAD_ROW.json",
+      "sha256": "ce25c7f6700372cc16facccc6dd31736850ee594ea8e1fc439a95fdabdb65236",
+      "scenario": "WTWT-SLAP-HAT-CF-CONTROL-M1",
+      "status": "FUNCTIONAL_MODEL_ROW",
+      "panel_mode": 1,
+      "firmware_mode": 1,
+      "reference": true,
+      "requested_frames": 4096,
+      "full_ISR": {
+        "frames": 4111,
+        "max_cycles": 102289,
+        "max_us": 387.4583333333333,
+        "mean_us": 255.52736744727747,
+        "deadline_misses": 10
+      },
+      "exact": {
+        "calls": 7878,
+        "checked": 7878,
+        "native_samples": 71597,
+        "mismatches": 0,
+        "pending": 0
+      },
+      "offload_counts": {
+        "pk_nha_calls": 0,
+        "pk_nha_samples": 0,
+        "pk_nha_failures": 0
+      },
+      "audio_failures": [],
+      "native_samples": [
+        71597,
+        71597,
+        71597,
+        71597
+      ],
+      "private_stack_peak_bytes": 1272,
+      "playback_card_reads": 568,
+      "program_ownership": "all loaded private/shared P exact except stock bank masks"
+    },
+    {
+      "path": "out/perky/hybrid/noise-hat-offload/integrated-results/WTWT-SLAP-HAT-CF-CONTROL-M2-static/OFFLOAD_ROW.json",
+      "sha256": "a62e85b411da8531537560867ba08e522b41b34d498023a115acf2b950c48e11",
+      "scenario": "WTWT-SLAP-HAT-CF-CONTROL-M2",
+      "status": "FUNCTIONAL_MODEL_ROW",
+      "panel_mode": 2,
+      "firmware_mode": 0,
+      "reference": true,
+      "requested_frames": 4096,
+      "full_ISR": {
+        "frames": 4115,
+        "max_cycles": 108133,
+        "max_us": 409.594696969697,
+        "mean_us": 272.7135001288707,
+        "deadline_misses": 10
+      },
+      "exact": {
+        "calls": 7886,
+        "checked": 7886,
+        "native_samples": 71667,
+        "mismatches": 0,
+        "pending": 0
+      },
+      "offload_counts": {
+        "pk_nha_calls": 0,
+        "pk_nha_samples": 0,
+        "pk_nha_failures": 0
+      },
+      "audio_failures": [],
+      "native_samples": [
+        71667,
+        71667,
+        71667,
+        71667
+      ],
+      "private_stack_peak_bytes": 1272,
+      "playback_card_reads": 568,
+      "program_ownership": "all loaded private/shared P exact except stock bank masks"
+    },
+    {
+      "path": "out/perky/hybrid/noise-hat-offload/integrated-results/WTWT-SLAP-HAT-CF-CONTROL-M3-static/OFFLOAD_ROW.json",
+      "sha256": "50f1f3343ddeecf2c7ab8dde0a5483787ba6fe19d696387b6ae8e760894c0760",
+      "scenario": "WTWT-SLAP-HAT-CF-CONTROL-M3",
+      "status": "FUNCTIONAL_MODEL_ROW",
+      "panel_mode": 3,
+      "firmware_mode": 2,
+      "reference": true,
+      "requested_frames": 4096,
+      "full_ISR": {
+        "frames": 4110,
+        "max_cycles": 99845,
+        "max_us": 378.20075757575756,
+        "mean_us": 245.35716286957162,
+        "deadline_misses": 10
+      },
+      "exact": {
+        "calls": 7876,
+        "checked": 7876,
+        "native_samples": 71579,
+        "mismatches": 0,
+        "pending": 0
+      },
+      "offload_counts": {
+        "pk_nha_calls": 0,
+        "pk_nha_samples": 0,
+        "pk_nha_failures": 0
+      },
+      "audio_failures": [],
+      "native_samples": [
+        71579,
+        71579,
+        71579,
+        71579
+      ],
+      "private_stack_peak_bytes": 1272,
+      "playback_card_reads": 568,
+      "program_ownership": "all loaded private/shared P exact except stock bank masks"
+    },
+    {
+      "path": "out/perky/hybrid/noise-hat-offload/integrated-results/WTWT-SLAP-HAT-OFFLOAD-M1-static/OFFLOAD_ROW.json",
+      "sha256": "c87e63780e87775927a0982610c6165be61f3f58eca65c819f673d2e0edcb280",
+      "scenario": "WTWT-SLAP-HAT-OFFLOAD-M1",
+      "status": "FUNCTIONAL_MODEL_ROW",
+      "panel_mode": 1,
+      "firmware_mode": 1,
+      "reference": false,
+      "requested_frames": 4096,
+      "full_ISR": {
+        "frames": 4111,
+        "max_cycles": 109097,
+        "max_us": 413.2462121212121,
+        "mean_us": 280.9099238554359,
+        "deadline_misses": 10
+      },
+      "exact": {
+        "calls": 7878,
+        "checked": 7878,
+        "native_samples": 71597,
+        "mismatches": 0,
+        "pending": 0
+      },
+      "offload_counts": {
+        "pk_nha_calls": 7878,
+        "pk_nha_samples": 71597,
+        "pk_nha_failures": 0
+      },
+      "audio_failures": [],
+      "native_samples": [
+        71597,
+        71597,
+        71597,
+        71597
+      ],
+      "private_stack_peak_bytes": 1340,
+      "playback_card_reads": 568,
+      "program_ownership": "all loaded private/shared P exact except stock bank masks"
+    },
+    {
+      "path": "out/perky/hybrid/noise-hat-offload/integrated-results/WTWT-SLAP-HAT-OFFLOAD-M2-static/OFFLOAD_ROW.json",
+      "sha256": "1563712892216efb3cc47adf10ae6b5da1ad28d4b9fed28cbd22d6ec10a30aeb",
+      "scenario": "WTWT-SLAP-HAT-OFFLOAD-M2",
+      "status": "FUNCTIONAL_MODEL_ROW",
+      "panel_mode": 2,
+      "firmware_mode": 0,
+      "reference": false,
+      "requested_frames": 4096,
+      "full_ISR": {
+        "frames": 4157,
+        "max_cycles": 123783,
+        "max_us": 468.875,
+        "mean_us": 328.8899674517608,
+        "deadline_misses": 98
+      },
+      "exact": {
+        "calls": 7970,
+        "checked": 7970,
+        "native_samples": 72398,
+        "mismatches": 0,
+        "pending": 0
+      },
+      "offload_counts": {
+        "pk_nha_calls": 7970,
+        "pk_nha_samples": 72398,
+        "pk_nha_failures": 0
+      },
+      "audio_failures": [],
+      "native_samples": [
+        72398,
+        72398,
+        72398,
+        72398
+      ],
+      "private_stack_peak_bytes": 1340,
+      "playback_card_reads": 267,
+      "program_ownership": "all loaded private/shared P exact except stock bank masks"
+    },
+    {
+      "path": "out/perky/hybrid/noise-hat-offload/integrated-results/WTWT-SLAP-HAT-OFFLOAD-M3-static/OFFLOAD_ROW.json",
+      "sha256": "87ccd68d5d67eb85c9c12353d64616d37d1857be08d32121aac28129bbe9e7bd",
+      "scenario": "WTWT-SLAP-HAT-OFFLOAD-M3",
+      "status": "AUDIO_GATE_FAILED",
+      "panel_mode": 3,
+      "firmware_mode": 2,
+      "reference": false,
+      "requested_frames": 4096,
+      "full_ISR": {
+        "frames": 4113,
+        "max_cycles": 111788,
+        "max_us": 423.43939393939394,
+        "mean_us": 290.9999576361721,
+        "deadline_misses": 10
+      },
+      "exact": {
+        "calls": 7882,
+        "checked": 7882,
+        "native_samples": 71632,
+        "mismatches": 0,
+        "pending": 0
+      },
+      "offload_counts": {
+        "pk_nha_calls": 7882,
+        "pk_nha_samples": 71632,
+        "pk_nha_failures": 0
+      },
+      "audio_failures": [
+        {
+          "track": 4,
+          "source_significant": 78093,
+          "post_FX_significant": 0
+        },
+        {
+          "track": 7,
+          "source_significant": 72992,
+          "post_FX_significant": 0
+        },
+        {
+          "track": 8,
+          "source_significant": 76502,
+          "post_FX_significant": 61
+        }
+      ],
+      "native_samples": [
+        71632,
+        71632,
+        71632,
+        71632
+      ],
+      "private_stack_peak_bytes": 1340,
+      "playback_card_reads": 550,
+      "program_ownership": "all loaded private/shared P exact except stock bank masks"
+    }
+  ],
+  "offload_exact_total": {
+    "calls": 23730,
+    "native_samples": 215627,
+    "mismatches": 0
+  },
+  "all_rows_exact_total": {
+    "calls": 47370,
+    "native_samples": 430470,
+    "mismatches": 0
+  },
+  "deadline_us": 362.81179138321994,
+  "gates": {
+    "boot": "PASS_EXACT_RUNTIME_AND_UPLOAD_READBACK_WITH_EXPLICIT_LOADED_COOKIE_TRANSITIONS",
+    "IRQ_wire": "PASS; disabled-peripheral-clock negative control stalls",
+    "combined_offload": "FAIL: deadline misses in all modes; pulse stock audio gate fails identically on repeat",
+    "combined_CF_control": "All functional/audio gates pass; deadline misses in every row",
+    "make_check": "PASS: 84 shared gates and 4 image gates; fixture-dependent skips apply",
+    "refhash": "PASS: 24 pre-edit local configurations artifact/report identical; no re-save",
+    "ordinary_bus_restored_sha256": "354bdac8f2fe79696b3156a034894b1bd0d5f757ce76657ca608851089268a58",
+    "python_compile": "PASS: seven new/generalized Python tools",
+    "documentation": "PASS: verify_docs, 62 modules / 78 remixes / 0 problems",
+    "diff_whitespace": "PASS: git diff --check"
+  },
+  "evidence_sha256": {
+    "out/perky/hybrid/noise-hat-offload/BUILD.json": "3701a514119e03b8af8c7662e2b3a91cb883506600831011e1532be8061f7fed",
+    "out/perky/hybrid/noise-hat-offload/CF_STAGE_BUILD.json": "2c96abcaa86fe77195b9cfa20324b2c9e049ef16d30ad4b1428d54caf341cb73",
+    "out/perky/hybrid/noise-hat-offload/MEMORY.json": "75119b7b667dfd1733318fc9947db872419a1b3ff739b691d88129689a0d5b32",
+    "out/perky/hybrid/noise-hat-offload/WIRE_EXACT.json": "79a022b754906add6f093e039945c4a7620d19e6f092b3282e5a756e1478b873",
+    "out/perky/hybrid/noise-hat-offload/wire-exact.log": "67276601b4bc23b2b0154526aafc3b4dea7d3068421ba194fd3f3165ee04b20b",
+    "out/perky/hybrid/noise-hat-offload/wire-clock-negative.log": "d98fe16a663e980d2984cd6ca5da45f31ed67d70eeae9602424a95ca0122ee73",
+    "out/perky/hybrid/noise-hat-offload/observer/OBSERVER_BUILD.json": "6bd120280220f94669ea7ea4cd93298b38f125f50460fab34149194ac6915be3",
+    "out/perky/hybrid/noise-hat-offload/INTEGRATED_OFFLOAD.json": "2cdb2e11549213ece316cf6d56d3a0e19b7c2bc1c2112cc63a66416bc2c33862",
+    "out/perky/hybrid/noise-hat-offload/INTEGRATED_CF_CONTROL.json": "38709da73e6e043148c807109b7ea96395a1e2ea14eb9db4068ac381d18da63c",
+    "out/perky/hybrid/noise-hat-offload/integrated-offload.log": "5f09b821002376fbea23b836adb1c5d45dcbc3326a999594dfc3603d5c56aa1a",
+    "out/perky/hybrid/noise-hat-offload/integrated-offload-m3-recheck.log": "365f9f5f33a5cb1ea79215b245ae5ceeca521209efb1b3b005f9be864580d03c",
+    "out/perky/hybrid/noise-hat-offload/integrated-control.log": "423d7bf9ea26c7049da3c01f7b694ee01ae6147d85ceeeab1c7d56f6889ab34e",
+    "out/perky/hybrid/noise-hat-offload/analyze-offload.log": "3ad8db808c5056a73d5c1c09101a95fe750a79ba3d51025d9d088fc0780ffe50",
+    "out/perky/hybrid/noise-hat-offload/analyze-control.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "out/perky/hybrid/noise-hat-offload/build-final.log": "d77f89260f29bafa59b1e685f798cc6169ac3b3caeda53a7c454cb415bed317f",
+    "out/perky/hybrid/noise-hat-offload/make-check.log": "34c2367752b2563f92b10479cfd74f10e86319cbf10060a1a713445a88558780",
+    "out/perky/hybrid/noise-hat-offload/refhash-check.log": "71a9e4ecf2fe8ec9ede78ff28cb0a9100dee30445be1aa6aea94b94efd2fdc48",
+    "out/perky/hybrid/noise-hat-offload/restore-bus.log": "d337d5ce1aca7aa955818839719faeda352e0bab7addde88f2d18dc096b83c35",
+    "out/perky/hybrid/noise-hat-offload/docs-check.log": "3680334bbc2ff8e4c8ee51f2868d0911e2d2e4dc301e015c984ea5cd0b993304"
+  },
+  "limitations": [
+    "Instrumented local model; no physical cache, SDRAM/card contention, HI08 transfer latency or UI acceptance.",
+    "Integrated DSP scheduling uses existing 4532 instructions/sample, not cycle-accurate DSP time; standalone cycle pricing is separate.",
+    "Isolated long-interrupt peripheral correction; default emulator and vendor sources unchanged.",
+    "Noise Hat inner synthesis only; controls, native clock and original classic delay/ring remain CF.",
+    "New host vector, context-save instruction forms and private-B upper tail/guard remain hardware-unqualified.",
+    "Pulse T4/T7 silence and T8 gate failure unresolved; source exactness does not qualify stock audio.",
+    "Fixed family/mode diagnostic selectors; no complete menu, segment-level ALGO/MODE locks, backend migration or saved-Part lifecycle qualification.",
+    "Observed maxima are not aligned per-frame deltas or hardware lower bounds.",
+    "No flash wrappers, hardware acceptance, push or complete-layout admission."
+  ]
+}

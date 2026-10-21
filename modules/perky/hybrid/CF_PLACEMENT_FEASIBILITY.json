@@ -1,0 +1,1230 @@
+{
+  "schema": "perky-cf-placement-feasibility-v1",
+  "date": "2026-10-20",
+  "status": "NO_EXISTING_PLACEMENT_ESTABLISHES_FULL_MAP",
+  "hardware_validated": false,
+  "source_checkpoint": "4eeae750caf8ba98144dd9ad8ac3b68299e21982",
+  "branch": "perky-cf-dsp-hybrid",
+  "source_checkpoint_note": "Checkpoint plus uncommitted implementation hashes; not a release commit.",
+  "source_sha256": {
+    "tools/harness/perky_cf/placement_cf_engine.c": "6c56242cce486056b35414d13e7c1ff4bf0e8da3a0ca45d7401e517854053961",
+    "modules/perky/cf_fold.c": "96ac7a5a7e4868670f0f159f935ad9f130582d1161088c5948f3eeccbaa7be0f",
+    "modules/perky/cf_karplus.c": "9639a1f1292ddeaf95e46a5feb38a254e2b77497d997ea50fe3f42d676052170",
+    "modules/perky/cf_noise_tone.c": "7fd94294d0e3e41f74633da93def530927fcd3f96312191397f080ba09c3dfd4",
+    "modules/perky/cf_resonant.c": "0eadc795873a362612be5fb25c3099d52cdc9b11b1453f95602d094634696170",
+    "modules/perky/cf_noise_hat.c": "18aac652089aa04d7e6f751dd8bba3314f63aa1a8bf7dfb1016fd421f7df8776",
+    "modules/perky/cf_simple_drum.c": "abc62704ce6a8b4a5580aa5fe75746e2c35442e0b84c8a49cc3cc11497512a8c",
+    "modules/perky/cf_complex_drum.c": "c57c9e5f89b534c165bd5e8b7e65ac666e2496de6bd773f1d7102f408090ab7e",
+    "modules/perky/cf_slap.c": "e0e0a62c8112ceb5b9fe8bb7108feb7e7e396f89f43099e2e55f4107d692ab2b",
+    "modules/perky/cf_wavetable.c": "77dc049c995c8ca6fe00d64096ee8fdd736237ec3f1aa0d077d6b32431f988e8",
+    "modules/perky/cf_acoustic_hats.c": "b097e7220708c930a5fe3efaf4513994756a97c8bad53410bf07b0a8026249e0",
+    "tools/verify/measure_perky_cf_placement.py": "ccf680f1dc695412b6605e1372c9b933b5f719814a1dee0761a966cfc3f77e6e",
+    "modules/perky/cf_perky4.c": "cb6603926391371e43e018ddb20f2cd4e15a5431247bfc7573300ac3a4d8dac3",
+    "modules/perky/cf_native_clock.h": "c0003f005c50232614f90f779681cb377482e0672f86b00faf8e7d7ca85b1202",
+    "modules/perky/cf_acoustic_hats.h": "f75c74baf820c14c290574e52eebcb6949f96acc86df13aef4a04ccad19b6bfc",
+    "modules/perky/cf_complex_drum.h": "98588a85c21c8e94e1b908de10a9b4086ef0830915aa3ecf3fd971b06c0165f2",
+    "modules/perky/cf_control_rates.h": "66a191cfdbe41037c2c0581ecb9963545eb3a6618f45aa0194d250e4556de7a2",
+    "modules/perky/cf_fold.h": "e1e3d3c16065fbbfc77b3606782aef431d42ff745ae3c4105472e1444cc25996",
+    "modules/perky/cf_karplus.h": "8c311ecfa6e2eb9fe2b57c2af05a524419f44f61a002f0b94afe6ca404cd9d70",
+    "modules/perky/cf_math.h": "d621ce5f2738917e076cc74f8d3b6080b4d237e615e8f6f4fc42bc5dbdc83262",
+    "modules/perky/cf_noise_hat.h": "bcdb9999fe511ede8ec4fc991d2a42fd84288e4b9512d22604d6acb5d7d9287b",
+    "modules/perky/cf_noise_tone.h": "9cbf001ccbdedb4ee25cd6ec88d8d804ac442a070b1f3ac4c26470c113417d45",
+    "modules/perky/cf_pcm_rice.h": "c6a3bfd05ae825e8a190e9c4554e7ae39dcee820001a70d4a411282668ba1c0e",
+    "modules/perky/cf_perky4.h": "d16b0d7c24fc759e5690694143c0af61b015e59bbf29957632231ecdc49b97d8",
+    "modules/perky/cf_render_math.h": "a6cf3ddcf0c5a09ebf5fba212333e3611cb07bd1c2486c6da38345c0fffdaf62",
+    "modules/perky/cf_resonant.h": "a11636313ff7e8c2e9bf9d6ad6f40439056a46adbabc103ae843e7f69465834f",
+    "modules/perky/cf_simple_drum.h": "9a535090d2bd3f13cb5f360a74824658321a23330c48a7e92115a646b0631e53",
+    "modules/perky/cf_slap.h": "4d10f0e328cff102aeaf1e4a720438fac504e78965488aeac2f6d2cec8b4ed22",
+    "modules/perky/cf_softfloat.h": "f47a9dd44caa443ddae471bd8abffe1bca7a5d98f93f0bd4047bef8743598222",
+    "modules/perky/cf_wavetable.h": "71845d1551c844e270a71456ba4f779aa4f698df9e9eb403b08105ddc1bcbffe",
+    "modules/perky/resonant_arm.h": "420edfcf228d2adc40ec8af8d2fb47fd776ea2b5c941481e5a02b9a6e9b4aa81",
+    "modules/perky/resonant_fresh.h": "04a254204b4244a7080b96422ea00d72597079dd96971c711d8c789a8c83e2b3",
+    "tools/harness/perky_cf/placement_cf_runner.cpp": "ae321fc6697d5fd22df46194d1224e992e36f15f37a96ae8453c8a7dfd29a08d",
+    "tools/harness/perky_cf/hybrid_cf_alignment.hpp": "6d90976627c5c3853c2d11e009fa6668113a0565ff5795e25be0a2a207df5911",
+    "tools/harness/perky_cf/hybrid_cf_predictor.hpp": "c63e956163e21f48aaa59f685cc49cdabfd1b33836d97c872b2e2959c95550bc",
+    "tools/perky/build_cf_placement_probe.py": "daf5c2e5d6a3725b0453a97f1d9087581be66f97e79d8bc27939aaa9ed4033cf",
+    "tools/verify/measure_perky_cf_placement_integrated.py": "75429e4a90d227043c8533c5929ddcc7e9835df1961f16aef59f38946533a984",
+    "tools/verify/verify_perky_cf_native_clock.py": "8cfb68836d85e588ced1f1e3caa901509b7c7b89ad29fb00e19e0512205587ce",
+    "tools/verify/verify_perky_cf_placement_author.py": "69f5389e05fa79adef8100fb5f40655c1c2c18f56d8ec1f7ddf45b3c15d0dac8",
+    "tools/verify/verify_perky_cf_acoustic_hats_dsp.py": "b81589e934489a51a092453940d2f5118b747bf4a3894418e138f2eabbb0417e",
+    "tools/verify/perky_cf_acoustic_hats_diff.cpp": "64a681d1f7e92762da1ae0df6f6da21c73a392278eed3cb5d741d2fe47d19a75",
+    "tools/harness/perky_cf/placement_cf_api.h": "d72cdd001db9c572a73c6bf3bed602959c009f02d7cd963d9a78d2ae3dc87fb7"
+  },
+  "original_firmware_sha256": "adcdbc4a2c660ffb6477f202211ae3cb70170bfe6ddfaecc3df0e4cb7db398c6",
+  "CPU_hz": 264000000,
+  "PIT_hz": 132000000,
+  "native_hz": 48000,
+  "output_hz": 44100,
+  "output_block_samples": 16,
+  "frame_deadline_us": 362.81179138321994,
+  "source_execution": {
+    "frames": 93312,
+    "state_snapshots": 9072,
+    "native_samples": 3314484,
+    "algorithm_layouts": 81,
+    "mode_rows": 6,
+    "correctness": "passed"
+  },
+  "solo_fallback_maxima": [
+    {
+      "kind": "solo",
+      "algos": "0:1:4:5:",
+      "modes": "1:0:0:0:",
+      "mask": 1,
+      "blocks": 288,
+      "max_cycles": 10007,
+      "stack": 472,
+      "mean_cycles": 8011.826388888889,
+      "max_us": 37.90530303030303
+    },
+    {
+      "kind": "solo",
+      "algos": "0:1:4:5:",
+      "modes": "0:1:0:0:",
+      "mask": 2,
+      "blocks": 288,
+      "max_cycles": 11575,
+      "stack": 520,
+      "mean_cycles": 9479.142361111111,
+      "max_us": 43.84469696969697
+    },
+    {
+      "kind": "solo",
+      "algos": "6:1:4:5:",
+      "modes": "2:0:0:0:",
+      "mask": 1,
+      "blocks": 288,
+      "max_cycles": 8220,
+      "stack": 368,
+      "mean_cycles": 6588.513888888889,
+      "max_us": 31.136363636363637
+    },
+    {
+      "kind": "solo",
+      "algos": "0:7:4:5:",
+      "modes": "0:2:0:0:",
+      "mask": 2,
+      "blocks": 288,
+      "max_cycles": 9388,
+      "stack": 388,
+      "mean_cycles": 7777.652777777777,
+      "max_us": 35.56060606060606
+    }
+  ],
+  "combined_source_maxima": {
+    "layout": {
+      "kind": "layout",
+      "algos": "9:9:8:5:",
+      "modes": "1:2:0:1:",
+      "mask": 15,
+      "blocks": 32,
+      "max_cycles": 54965,
+      "stack": 768,
+      "mean_cycles": 53414.4375,
+      "max_us": 208.20075757575756
+    },
+    "A_V3": {
+      "kind": "A_V3",
+      "algos": "9:9:4:5:",
+      "modes": "1:2:0:1:",
+      "mask": 11,
+      "blocks": 32,
+      "max_cycles": 43263,
+      "stack": 768,
+      "mean_cycles": 42055.875,
+      "max_us": 163.875
+    },
+    "A_V4": {
+      "kind": "A_V4",
+      "algos": "9:9:8:5:",
+      "modes": "0:0:0:0:",
+      "mask": 7,
+      "blocks": 32,
+      "max_cycles": 25870,
+      "stack": 628,
+      "mean_cycles": 24964.8125,
+      "max_us": 97.99242424242425
+    },
+    "cf_remainder": {
+      "kind": "cf_remainder",
+      "algos": "9:9:4:5:",
+      "modes": "0:0:0:0:",
+      "mask": 3,
+      "blocks": 32,
+      "max_cycles": 14228,
+      "stack": 628,
+      "mean_cycles": 13690.46875,
+      "max_us": 53.89393939393939
+    }
+  },
+  "combined_source_maxima_by_V4": {
+    "5": {
+      "kind": "layout",
+      "algos": "9:9:8:5:",
+      "modes": "1:2:0:1:",
+      "mask": 15,
+      "blocks": 32,
+      "max_cycles": 54965,
+      "stack": 768,
+      "mean_cycles": 53414.4375,
+      "max_us": 208.20075757575756
+    },
+    "3": {
+      "kind": "layout",
+      "algos": "9:9:8:3:",
+      "modes": "2:2:2:2:",
+      "mask": 15,
+      "blocks": 32,
+      "max_cycles": 34557,
+      "stack": 628,
+      "mean_cycles": 33495.90625,
+      "max_us": 130.89772727272728
+    },
+    "10": {
+      "kind": "layout",
+      "algos": "9:9:8:10:",
+      "modes": "1:1:1:1:",
+      "mask": 15,
+      "blocks": 32,
+      "max_cycles": 38293,
+      "stack": 628,
+      "mean_cycles": 36220.3125,
+      "max_us": 145.04924242424244
+    }
+  },
+  "independent_clock": {
+    "status": "PASS",
+    "cases": 19108,
+    "header_sha256": "c0003f005c50232614f90f779681cb377482e0672f86b00faf8e7d7ca85b1202",
+    "scope": "Host C arithmetic, all 147 phases and segment lengths 0..16; target execution is covered separately by the placement matrix."
+  },
+  "integrated_rows": [
+    {
+      "scenario": "CF-F1-F2-RES-NT",
+      "sampler_kind": "static",
+      "algorithms": [
+        0,
+        1,
+        4,
+        3
+      ],
+      "modes": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "CF_mask": 15,
+      "requested_frames": 4096,
+      "full_ISR": {
+        "frames": 4110,
+        "max_cycles": 91565,
+        "max_us": 346.8371212121212,
+        "mean_us": 242.29070172528202,
+        "deadline_misses": 0
+      },
+      "private_stack_peak_bytes": 924,
+      "CF_frame_calls": [
+        4110,
+        4110,
+        4110,
+        4110
+      ],
+      "native_samples": [
+        71579,
+        71579,
+        71579,
+        71579
+      ],
+      "playback_card_reads": 568,
+      "source_and_post_FX": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65733,
+          "post_FX_significant": 65709,
+          "source_peak": 985901,
+          "post_FX_peak": 1038829
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65737,
+          "post_FX_significant": 65705,
+          "source_peak": 904277,
+          "post_FX_peak": 906989
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77504,
+          "post_FX_significant": 65706,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78026,
+          "post_FX_significant": 65696,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65726,
+          "post_FX_significant": 65698,
+          "source_peak": 1048576,
+          "post_FX_peak": 1060000
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 65737,
+          "post_FX_significant": 65711,
+          "source_peak": 945751,
+          "post_FX_peak": 956055
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72933,
+          "post_FX_significant": 65706,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76435,
+          "post_FX_significant": 65710,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "inputs": {
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/mainos_PKCFP1.bin": "e5d2e686e6368e71d3e3b888ee3e540a54c3a952ab9112f759e7c62c47dc1cbe",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/platform/runtime.elf": "72e646adf8c6a10823f3b4a7621bcc9401cecf436b52f6922a587dc24897d347",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/integrated-results/CF-F1-F2-RES-NT-static/card.img": "2aff73736999b507983d0d2abda88e5df0ceac7028f0087f702a72a661432d99",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/observer/ot_emu_safety": "39c85bebef164378f66965816e3fb1155ba1f68c156334940b0629c04c37c032",
+        "/Users/jrold/Downloads/octabam/tools/verify/measure_perky_cf_placement_integrated.py": "c39910e9a8c10362a370c21eea23312b6e394f6e9b12568938f11d52ef051e8e"
+      },
+      "local_receipt": "out/perky/hybrid/cf-placement-integrated/integrated-results/CF-F1-F2-RES-NT-static/ROW.json",
+      "local_receipt_sha256": "399d5a39f375b1066e2c24d44443a05c41fd8d72d9c97d0d2d08d4d46c962e75"
+    },
+    {
+      "scenario": "DSPF1-CFCD-RES-NT",
+      "sampler_kind": "static",
+      "algorithms": [
+        0,
+        7,
+        4,
+        3
+      ],
+      "modes": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "CF_mask": 14,
+      "requested_frames": 4096,
+      "full_ISR": {
+        "frames": 4106,
+        "max_cycles": 82145,
+        "max_us": 311.155303030303,
+        "mean_us": 213.52373282262468,
+        "deadline_misses": 0
+      },
+      "private_stack_peak_bytes": 924,
+      "CF_frame_calls": [
+        0,
+        4106,
+        4106,
+        4106
+      ],
+      "native_samples": [
+        0,
+        71510,
+        71510,
+        71510
+      ],
+      "playback_card_reads": 568,
+      "source_and_post_FX": {
+        "T1": {
+          "source_kind": "DSP controls",
+          "source_significant": 0,
+          "post_FX_significant": 65646,
+          "source_peak": 0,
+          "post_FX_peak": 1038829,
+          "DSP_engine_records": {
+            "0": 4105
+          },
+          "DSP_mode_records": {
+            "0": 4105
+          }
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65675,
+          "post_FX_significant": 65643,
+          "source_peak": 1020851,
+          "post_FX_peak": 1023908
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77425,
+          "post_FX_significant": 65642,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 77938,
+          "post_FX_significant": 65632,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65662,
+          "post_FX_significant": 65634,
+          "source_peak": 1048576,
+          "post_FX_peak": 1060000
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 65673,
+          "post_FX_significant": 65647,
+          "source_peak": 945751,
+          "post_FX_peak": 956055
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72854,
+          "post_FX_significant": 65642,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76345,
+          "post_FX_significant": 65646,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "inputs": {
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/mainos_PKCFP1.bin": "e5d2e686e6368e71d3e3b888ee3e540a54c3a952ab9112f759e7c62c47dc1cbe",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/platform/runtime.elf": "72e646adf8c6a10823f3b4a7621bcc9401cecf436b52f6922a587dc24897d347",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/integrated-results/DSPF1-CFCD-RES-NT-static/card.img": "cc5115203b50b9bb7fdf7a7d347e3988786336cd0f74e43ade9770d0a824f950",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/observer/ot_emu_safety": "39c85bebef164378f66965816e3fb1155ba1f68c156334940b0629c04c37c032",
+        "/Users/jrold/Downloads/octabam/tools/verify/measure_perky_cf_placement_integrated.py": "75429e4a90d227043c8533c5929ddcc7e9835df1961f16aef59f38946533a984",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_workload.py": "64e6dfa4e76bad1911a7f2bab64b2ed040d0e03668d062f8b0fb7528289b06ee",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_private_stack.py": "53e6aa7d94fd02974892327b81924530e157fcef3ac005fec990caa08008bde8",
+        "/Users/jrold/Downloads/octabam/tools/harness/blockdump.py": "4b4262df72eb9c1959f356b433e8b2bad96504e378094f7a4a85d231d03cb2f8",
+        "/Users/jrold/Downloads/octabam/tools/harness/recloop.py": "fa362dbb153e040e90458086e2086a1180b4b8cb306548dac566ff7cf99dc2bd"
+      },
+      "local_receipt": "out/perky/hybrid/cf-placement-integrated/integrated-results/DSPF1-CFCD-RES-NT-static/ROW.json",
+      "local_receipt_sha256": "47dafd9d4edc730b6e2292542533dbcebd01c62145a7337041d14497502697e4"
+    },
+    {
+      "scenario": "DSPF1-CFF2-SLAP-HAT",
+      "sampler_kind": "static",
+      "algorithms": [
+        0,
+        1,
+        8,
+        5
+      ],
+      "modes": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "CF_mask": 14,
+      "requested_frames": 4096,
+      "full_ISR": {
+        "frames": 4112,
+        "max_cycles": 105430,
+        "max_us": 399.3560606060606,
+        "mean_us": 255.340244001297,
+        "deadline_misses": 10
+      },
+      "private_stack_peak_bytes": 1084,
+      "CF_frame_calls": [
+        0,
+        4112,
+        4112,
+        4112
+      ],
+      "native_samples": [
+        0,
+        71614,
+        71614,
+        71614
+      ],
+      "playback_card_reads": 568,
+      "source_and_post_FX": {
+        "T1": {
+          "source_kind": "DSP controls",
+          "source_significant": 0,
+          "post_FX_significant": 65742,
+          "source_peak": 0,
+          "post_FX_peak": 1038829,
+          "DSP_engine_records": {
+            "0": 4111
+          },
+          "DSP_mode_records": {
+            "0": 4111
+          }
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65769,
+          "post_FX_significant": 65737,
+          "source_peak": 904277,
+          "post_FX_peak": 906989
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77543,
+          "post_FX_significant": 65738,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78069,
+          "post_FX_significant": 65728,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65745,
+          "post_FX_significant": 65717,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 65608,
+          "post_FX_significant": 65584,
+          "source_peak": 768842,
+          "post_FX_peak": 777218
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72972,
+          "post_FX_significant": 65738,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76479,
+          "post_FX_significant": 65742,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "inputs": {
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/mainos_PKCFP1.bin": "e5d2e686e6368e71d3e3b888ee3e540a54c3a952ab9112f759e7c62c47dc1cbe",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/platform/runtime.elf": "72e646adf8c6a10823f3b4a7621bcc9401cecf436b52f6922a587dc24897d347",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/integrated-results/DSPF1-CFF2-SLAP-HAT-static/card.img": "cc5115203b50b9bb7fdf7a7d347e3988786336cd0f74e43ade9770d0a824f950",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/observer/ot_emu_safety": "39c85bebef164378f66965816e3fb1155ba1f68c156334940b0629c04c37c032",
+        "/Users/jrold/Downloads/octabam/tools/verify/measure_perky_cf_placement_integrated.py": "75429e4a90d227043c8533c5929ddcc7e9835df1961f16aef59f38946533a984",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_workload.py": "64e6dfa4e76bad1911a7f2bab64b2ed040d0e03668d062f8b0fb7528289b06ee",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_private_stack.py": "53e6aa7d94fd02974892327b81924530e157fcef3ac005fec990caa08008bde8",
+        "/Users/jrold/Downloads/octabam/tools/harness/blockdump.py": "4b4262df72eb9c1959f356b433e8b2bad96504e378094f7a4a85d231d03cb2f8",
+        "/Users/jrold/Downloads/octabam/tools/harness/recloop.py": "fa362dbb153e040e90458086e2086a1180b4b8cb306548dac566ff7cf99dc2bd"
+      },
+      "local_receipt": "out/perky/hybrid/cf-placement-integrated/integrated-results/DSPF1-CFF2-SLAP-HAT-static/ROW.json",
+      "local_receipt_sha256": "d6fb24da349e480483655eabdae8f1427779142a0a43fd86795c442bb2420105"
+    },
+    {
+      "scenario": "WTWT-KARP-NT",
+      "sampler_kind": "static",
+      "algorithms": [
+        9,
+        9,
+        2,
+        3
+      ],
+      "modes": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "CF_mask": 15,
+      "requested_frames": 4096,
+      "full_ISR": {
+        "frames": 4107,
+        "max_cycles": 84153,
+        "max_us": 318.7613636363636,
+        "mean_us": 222.40100050910863,
+        "deadline_misses": 0
+      },
+      "private_stack_peak_bytes": 944,
+      "CF_frame_calls": [
+        4107,
+        4107,
+        4107,
+        4107
+      ],
+      "native_samples": [
+        71527,
+        71527,
+        71527,
+        71527
+      ],
+      "playback_card_reads": 568,
+      "source_and_post_FX": {
+        "T1": {
+          "source_significant": 65694,
+          "post_FX_significant": 65657,
+          "source_peak": 1017390,
+          "post_FX_peak": 1135050
+        },
+        "T2": {
+          "source_significant": 65689,
+          "post_FX_significant": 65657,
+          "source_peak": 1035722,
+          "post_FX_peak": 1038828
+        },
+        "T3": {
+          "source_significant": 77445,
+          "post_FX_significant": 65658,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_significant": 77960,
+          "post_FX_significant": 65648,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_significant": 65695,
+          "post_FX_significant": 65667,
+          "source_peak": 1044416,
+          "post_FX_peak": 1055794
+        },
+        "T6": {
+          "source_significant": 65689,
+          "post_FX_significant": 65663,
+          "source_peak": 945751,
+          "post_FX_peak": 956055
+        },
+        "T7": {
+          "source_significant": 72874,
+          "post_FX_significant": 65658,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_significant": 76368,
+          "post_FX_significant": 65662,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "inputs": {
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/mainos_PKCFP1.bin": "e5d2e686e6368e71d3e3b888ee3e540a54c3a952ab9112f759e7c62c47dc1cbe",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/platform/runtime.elf": "72e646adf8c6a10823f3b4a7621bcc9401cecf436b52f6922a587dc24897d347",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/integrated-results/WTWT-KARP-NT-static/card.img": "2aff73736999b507983d0d2abda88e5df0ceac7028f0087f702a72a661432d99",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/observer/ot_emu_safety": "39c85bebef164378f66965816e3fb1155ba1f68c156334940b0629c04c37c032",
+        "/Users/jrold/Downloads/octabam/tools/verify/measure_perky_cf_placement_integrated.py": "1eb72dbdba4a4fa701f9d0b1d1d73737c4cc941ee53dcf97d8e9bf9e16d490ed"
+      },
+      "local_receipt": "out/perky/hybrid/cf-placement-integrated/integrated-results/WTWT-KARP-NT-static/ROW.json",
+      "local_receipt_sha256": "5c9018c8c9fd70d54ea4489bcd9a771a0ebe2a2970fa60721a741f75fc06fab2"
+    },
+    {
+      "scenario": "WTWT-RES-ACOUSTIC",
+      "sampler_kind": "static",
+      "algorithms": [
+        9,
+        9,
+        4,
+        10
+      ],
+      "modes": [
+        0,
+        1,
+        0,
+        2
+      ],
+      "CF_mask": 15,
+      "requested_frames": 4096,
+      "full_ISR": {
+        "frames": 4108,
+        "max_cycles": 88312,
+        "max_us": 334.5151515151515,
+        "mean_us": 238.67969741229234,
+        "deadline_misses": 0
+      },
+      "private_stack_peak_bytes": 944,
+      "CF_frame_calls": [
+        4108,
+        4108,
+        4108,
+        4108
+      ],
+      "native_samples": [
+        71545,
+        71545,
+        71545,
+        71545
+      ],
+      "playback_card_reads": 568,
+      "source_and_post_FX": {
+        "T1": {
+          "source_significant": 65710,
+          "post_FX_significant": 65673,
+          "source_peak": 1017390,
+          "post_FX_peak": 1135050
+        },
+        "T2": {
+          "source_significant": 65705,
+          "post_FX_significant": 65673,
+          "source_peak": 1035722,
+          "post_FX_peak": 1038828
+        },
+        "T3": {
+          "source_significant": 77464,
+          "post_FX_significant": 65674,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_significant": 77982,
+          "post_FX_significant": 65664,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_significant": 65694,
+          "post_FX_significant": 65666,
+          "source_peak": 1048576,
+          "post_FX_peak": 1060000
+        },
+        "T6": {
+          "source_significant": 65235,
+          "post_FX_significant": 65261,
+          "source_peak": 378725,
+          "post_FX_peak": 382851
+        },
+        "T7": {
+          "source_significant": 72894,
+          "post_FX_significant": 65674,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_significant": 76390,
+          "post_FX_significant": 65678,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "inputs": {
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/mainos_PKCFP1.bin": "e5d2e686e6368e71d3e3b888ee3e540a54c3a952ab9112f759e7c62c47dc1cbe",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/platform/runtime.elf": "72e646adf8c6a10823f3b4a7621bcc9401cecf436b52f6922a587dc24897d347",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/integrated-results/WTWT-RES-ACOUSTIC-static/card.img": "2aff73736999b507983d0d2abda88e5df0ceac7028f0087f702a72a661432d99",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/observer/ot_emu_safety": "39c85bebef164378f66965816e3fb1155ba1f68c156334940b0629c04c37c032",
+        "/Users/jrold/Downloads/octabam/tools/verify/measure_perky_cf_placement_integrated.py": "1eb72dbdba4a4fa701f9d0b1d1d73737c4cc941ee53dcf97d8e9bf9e16d490ed"
+      },
+      "local_receipt": "out/perky/hybrid/cf-placement-integrated/integrated-results/WTWT-RES-ACOUSTIC-static/ROW.json",
+      "local_receipt_sha256": "20c8acd73ee974560628136b2472949f95a8180348b98d9ea342fe87d5f65fa8"
+    },
+    {
+      "scenario": "WTWT-RES-HAT",
+      "sampler_kind": "static",
+      "algorithms": [
+        9,
+        9,
+        4,
+        5
+      ],
+      "modes": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "CF_mask": 15,
+      "requested_frames": 4096,
+      "full_ISR": {
+        "frames": 4112,
+        "max_cycles": 106431,
+        "max_us": 403.14772727272725,
+        "mean_us": 261.2164332404787,
+        "deadline_misses": 10
+      },
+      "private_stack_peak_bytes": 1084,
+      "CF_frame_calls": [
+        4112,
+        4112,
+        4112,
+        4112
+      ],
+      "native_samples": [
+        71614,
+        71614,
+        71614,
+        71614
+      ],
+      "playback_card_reads": 568,
+      "source_and_post_FX": {
+        "T1": {
+          "source_significant": 65774,
+          "post_FX_significant": 65736,
+          "source_peak": 1017390,
+          "post_FX_peak": 1135050
+        },
+        "T2": {
+          "source_significant": 65769,
+          "post_FX_significant": 65737,
+          "source_peak": 1035722,
+          "post_FX_peak": 1038828
+        },
+        "T3": {
+          "source_significant": 77543,
+          "post_FX_significant": 65738,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_significant": 78069,
+          "post_FX_significant": 65728,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_significant": 65758,
+          "post_FX_significant": 65730,
+          "source_peak": 1048576,
+          "post_FX_peak": 1060000
+        },
+        "T6": {
+          "source_significant": 65608,
+          "post_FX_significant": 65584,
+          "source_peak": 768842,
+          "post_FX_peak": 777218
+        },
+        "T7": {
+          "source_significant": 72972,
+          "post_FX_significant": 65738,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_significant": 76479,
+          "post_FX_significant": 65742,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "inputs": {
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/mainos_PKCFP1.bin": "e5d2e686e6368e71d3e3b888ee3e540a54c3a952ab9112f759e7c62c47dc1cbe",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/platform/runtime.elf": "72e646adf8c6a10823f3b4a7621bcc9401cecf436b52f6922a587dc24897d347",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/integrated-results/WTWT-RES-HAT-static/card.img": "2aff73736999b507983d0d2abda88e5df0ceac7028f0087f702a72a661432d99",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/observer/ot_emu_safety": "39c85bebef164378f66965816e3fb1155ba1f68c156334940b0629c04c37c032",
+        "/Users/jrold/Downloads/octabam/tools/verify/measure_perky_cf_placement_integrated.py": "1eb72dbdba4a4fa701f9d0b1d1d73737c4cc941ee53dcf97d8e9bf9e16d490ed"
+      },
+      "local_receipt": "out/perky/hybrid/cf-placement-integrated/integrated-results/WTWT-RES-HAT-static/ROW.json",
+      "local_receipt_sha256": "db0f3eb4f0abf17c71352375c6269e88973b8f43f510e9d5741eb3673c096dc4"
+    },
+    {
+      "scenario": "WTWT-SLAP-HAT",
+      "sampler_kind": "static",
+      "algorithms": [
+        9,
+        9,
+        8,
+        5
+      ],
+      "modes": [
+        1,
+        2,
+        0,
+        1
+      ],
+      "CF_mask": 15,
+      "requested_frames": 4096,
+      "full_ISR": {
+        "frames": 4114,
+        "max_cycles": 107253,
+        "max_us": 406.2613636363636,
+        "mean_us": 269.38928050559065,
+        "deadline_misses": 10
+      },
+      "private_stack_peak_bytes": 1084,
+      "CF_frame_calls": [
+        4114,
+        4114,
+        4114,
+        4114
+      ],
+      "native_samples": [
+        71649,
+        71649,
+        71649,
+        71649
+      ],
+      "playback_card_reads": 568,
+      "source_and_post_FX": {
+        "T1": {
+          "source_significant": 65804,
+          "post_FX_significant": 65772,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_significant": 65805,
+          "post_FX_significant": 65774,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_significant": 77582,
+          "post_FX_significant": 65770,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_significant": 78112,
+          "post_FX_significant": 65760,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_significant": 65777,
+          "post_FX_significant": 65749,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_significant": 65640,
+          "post_FX_significant": 65616,
+          "source_peak": 768842,
+          "post_FX_peak": 777218
+        },
+        "T7": {
+          "source_significant": 73012,
+          "post_FX_significant": 65770,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_significant": 76524,
+          "post_FX_significant": 65774,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "inputs": {
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/mainos_PKCFP1.bin": "e5d2e686e6368e71d3e3b888ee3e540a54c3a952ab9112f759e7c62c47dc1cbe",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/platform/runtime.elf": "72e646adf8c6a10823f3b4a7621bcc9401cecf436b52f6922a587dc24897d347",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/integrated-results/WTWT-SLAP-HAT-static/card.img": "2aff73736999b507983d0d2abda88e5df0ceac7028f0087f702a72a661432d99",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/observer/ot_emu_safety": "39c85bebef164378f66965816e3fb1155ba1f68c156334940b0629c04c37c032",
+        "/Users/jrold/Downloads/octabam/tools/verify/measure_perky_cf_placement_integrated.py": "4a8b8d73f7f6c34f292d0fad29f56e36231b910843a0b2462af4e2078ce9eb75"
+      },
+      "local_receipt": "out/perky/hybrid/cf-placement-integrated/integrated-results/WTWT-SLAP-HAT-static/ROW.json",
+      "local_receipt_sha256": "46cc7d129050ce06eb3325e9b576d7514235c6adb4f7b4f196868cb4aad6ba93"
+    }
+  ],
+  "integrated_build": {
+    "schema": "perky-cf-placement-probe-v1",
+    "status": "EXPERIMENT_BUILT_NOT_RELEASE",
+    "hardware_validated": false,
+    "result": {
+      "schema": "octabam.perky.hybrid.build.v1",
+      "profile": "probe",
+      "version": "PKCFP1",
+      "build_number": 14,
+      "hybrid_source_id": "9d94c594fe47dbbd93a5644d73da2f5e0bdb71bc01462e9a19de65f9406e6462",
+      "status": "EXPERIMENT_BUILT_NOT_QUALIFIED",
+      "git_commit": "4eeae750caf8ba98144dd9ad8ac3b68299e21982",
+      "git_tree_clean": false,
+      "source_tree_clean": false,
+      "toolchain": {
+        "m68k-elf-gcc": {
+          "path": "/opt/homebrew/Cellar/m68k-elf-gcc/16.2.0/bin/m68k-elf-gcc",
+          "bytes": 2160152,
+          "sha256": "0f2e9b47833dbb512fa19e7115e1b2357906020e8d7d3f7f0e89990e98b72457"
+        },
+        "m68k-elf-as": {
+          "path": "/opt/homebrew/Cellar/m68k-elf-binutils/2.47/bin/m68k-elf-as",
+          "bytes": 1182864,
+          "sha256": "24282bb8ef91d581773f4a2e80f53b2ea642494298118c2bb59ea79c1aa4f55f"
+        },
+        "m68k-elf-ld": {
+          "path": "/opt/homebrew/Cellar/m68k-elf-binutils/2.47/bin/m68k-elf-ld",
+          "bytes": 1452496,
+          "sha256": "f16dd58e7f66a8d4b789faada09397fcc5a058421b02af737b521e710297410d"
+        },
+        "m68k-elf-objcopy": {
+          "path": "/opt/homebrew/Cellar/m68k-elf-binutils/2.47/bin/m68k-elf-objcopy",
+          "bytes": 846272,
+          "sha256": "403c90fbf80d35d1d3f33f7b9b4ce7a61f6ff1764dd1d5ea98ace20691fa1cc3"
+        },
+        "m68k-elf-nm": {
+          "path": "/opt/homebrew/Cellar/m68k-elf-binutils/2.47/bin/m68k-elf-nm",
+          "bytes": 753440,
+          "sha256": "53b593a6059b5c2d989167737634f30435268ada483433ae64f2325582e1d82f"
+        }
+      },
+      "compiler_flags": [
+        "-mcpu=54455",
+        "-msoft-float",
+        "-O3",
+        "-finline-functions",
+        "-finline-limit=3000",
+        "-funroll-loops",
+        "-fsched-pressure",
+        "-ffreestanding",
+        "-fno-builtin",
+        "-fno-common",
+        "-fno-jump-tables",
+        "-fno-store-merging",
+        "-fno-asynchronous-unwind-tables",
+        "-fno-ident",
+        "-fomit-frame-pointer",
+        "-fno-zero-initialized-in-bss",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-ffunction-sections",
+        "-fdata-sections",
+        "-Wno-unused-function",
+        "-Wno-unused-variable",
+        "-I",
+        "/Users/jrold/Downloads/octabam/modules/perky",
+        "-I",
+        "/Users/jrold/Downloads/octabam/tools/harness/perky_cf",
+        "-I",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement"
+      ],
+      "frozen_dsp_source_commit": "16a8de19a17ee4cba765cbdb30ca051f85af4e23",
+      "frozen_perky4s_main_sha256": "be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0",
+      "tracks": {
+        "1": {
+          "firmware_track_index": 0,
+          "logical_voice": "V1",
+          "runtime": "diagnostic CF selector; frozen DSP source only on T1/T5 when CF is disabled"
+        },
+        "2": {
+          "firmware_track_index": 1,
+          "logical_voice": "V2",
+          "runtime": "diagnostic CF selector; frozen DSP source only on T1/T5 when CF is disabled"
+        },
+        "5": {
+          "firmware_track_index": 4,
+          "logical_voice": "V3",
+          "runtime": "diagnostic CF selector; frozen DSP source only on T1/T5 when CF is disabled"
+        },
+        "6": {
+          "firmware_track_index": 5,
+          "logical_voice": "V4",
+          "runtime": "diagnostic CF selector; frozen DSP source only on T1/T5 when CF is disabled"
+        }
+      },
+      "sources": {
+        "modules/perky/control_cf_dsp_hybrid.c": "b42b5258fe3f44837b5d84bc85ee6d27a1050cdda4257f659252ba15cb720b2f",
+        "modules/perky/hybrid_hooks.s": "58e471335a0126f4818134b87b97515d21f6d4153babb6775b8ba6378fa004bd",
+        "modules/perky/control_four_candidate.c": "c3645850965f76c36b502145481d663bec53592944215a9afc460cdf785e3b5c",
+        "modules/perky/control_three_candidate.c": "37047a761e4b59ef0829e93c636d06ea81953d6cdcc5c311678ba9d00e419529",
+        "modules/perky/control.c": "b56edbb57ad5c87da506632b15ae458e4f4cee7fea065a596602b66e9cf78830",
+        "modules/perky/machine.s": "d6eb00d67d155eff14a5b38676c3fb701b2d3f52fc3937050bdeaca6158e3c23",
+        "modules/perky/machine_four_ui.s": "693e3aa08ce4af1deead4f942cb68b2e202475d35c74c0250496e0c810106ef6",
+        "modules/perky/cf_assets.s": "3d3d2fbf2421450e27712106c5c52dd554ab3d34df04099243b8dfef14654ca8",
+        "modules/perky/cf_perky4.c": "cb6603926391371e43e018ddb20f2cd4e15a5431247bfc7573300ac3a4d8dac3",
+        "modules/perky/cf_perky4.h": "d16b0d7c24fc759e5690694143c0af61b015e59bbf29957632231ecdc49b97d8",
+        "modules/perky/cf_wavetable.c": "77dc049c995c8ca6fe00d64096ee8fdd736237ec3f1aa0d077d6b32431f988e8",
+        "modules/perky/cf_wavetable.h": "71845d1551c844e270a71456ba4f779aa4f698df9e9eb403b08105ddc1bcbffe",
+        "modules/perky/cf_resonant.c": "0eadc795873a362612be5fb25c3099d52cdc9b11b1453f95602d094634696170",
+        "modules/perky/cf_resonant.h": "a11636313ff7e8c2e9bf9d6ad6f40439056a46adbabc103ae843e7f69465834f",
+        "modules/perky/cf_noise_tone.c": "7fd94294d0e3e41f74633da93def530927fcd3f96312191397f080ba09c3dfd4",
+        "modules/perky/cf_noise_tone.h": "9cbf001ccbdedb4ee25cd6ec88d8d804ac442a070b1f3ac4c26470c113417d45",
+        "modules/perky/cf_karplus.c": "9639a1f1292ddeaf95e46a5feb38a254e2b77497d997ea50fe3f42d676052170",
+        "modules/perky/cf_karplus.h": "8c311ecfa6e2eb9fe2b57c2af05a524419f44f61a002f0b94afe6ca404cd9d70",
+        "modules/perky/cf_math.h": "d621ce5f2738917e076cc74f8d3b6080b4d237e615e8f6f4fc42bc5dbdc83262",
+        "modules/perky/cf_pcm_rice.h": "c6a3bfd05ae825e8a190e9c4554e7ae39dcee820001a70d4a411282668ba1c0e",
+        "tools/perky/build_cf_dsp_hybrid.py": "5e0f5bbee9a44ebdb70a5a758d907d36ceecbf5315eabc3e178e00b4f0e19531",
+        "tools/perky/build_four_payload.py": "d46cc6e525c7bcd14234f4ec230e64cd66637f0da8d736b7a7f360eeab528920",
+        "tools/perky/perky_fragmented_image.py": "bbbcda0d46dafb9533242435fb065c41c871f2121b62fbd97d880d5a3f39043e",
+        "tools/perky/repack_machine_loader.py": "423d60d328ff4d115f8339d33f259e060c183aea651c7a04d34eaec89d3bcdb3",
+        "tools/perky/perky_cf_assets.py": "067984479b88314319356c7422a933dc5bed81dfadfbd0fe4a17fa58668fb709",
+        "modules/perky/generate_cf_final.py": "ff93a6716b576dd0661cdcbb5eb3e19f2a471a6fe76ca0dba3259656c7f342ca",
+        "tools/perky/perky_machine_module.py": "347b6581a5c3cbc7dcadeef90beed0fb8f292b2500b299fe78b8d3cb95b35218",
+        "tools/remix/loader.S": "fda27938fb368be03c3cdaa6a838fe7e6bece304649a33b1b8901d201cc3defb"
+      },
+      "artifacts": {
+        "mainos": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/mainos_PKCFP1.bin",
+          "bytes": 1950561,
+          "sha256": "e5d2e686e6368e71d3e3b888ee3e540a54c3a952ab9112f759e7c62c47dc1cbe"
+        },
+        "fragmented_normal": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/fragmented-normal.bin",
+          "bytes": 1803237,
+          "sha256": "709f2852e6f913e4ca3efeb675aa8e85724b8084f53e2cdaea6bd1ffdacb5620"
+        },
+        "runtime_elf": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/platform/runtime.elf",
+          "bytes": 966312,
+          "sha256": "72e646adf8c6a10823f3b4a7621bcc9401cecf436b52f6922a587dc24897d347"
+        },
+        "runtime_raw": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/platform/runtime.raw",
+          "bytes": 961636,
+          "sha256": "fb3e038d810a179e534b6ff3fd267034a2c0b39d0646bb65248ed27ea70cd237"
+        },
+        "dsp_identity_report": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/DSP_IDENTITY.json",
+          "bytes": 15204,
+          "sha256": "1ee0955d39ccc42f0fed03ac497dbeb6e0a96b7912e0852c30883cc7734a4e39"
+        },
+        "memory_report": {
+          "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/probe/MEMORY.json",
+          "bytes": 82461,
+          "sha256": "789e1297e7f306ede20e3ea206155d9f865cd5d10953953b7abd0df325dbce68"
+        }
+      },
+      "dsp_identity_status": "PASS",
+      "memory_status": "PASS",
+      "experimental_contract": "Diagnostic selectors set generic engines/modes; current hybrid UI is not remapped. CF source evolution is 48 kHz with 24-bit source packing."
+    },
+    "generated_sources": {
+      "out/perky/hybrid/cf-placement-integrated/probe/cf-generated/placement-control.c": "3d78cc3d23939d2b757bb2308464a0420674e3b16474d22bb88188e3e8b598f9",
+      "modules/perky/cf_wavetable.c": "77dc049c995c8ca6fe00d64096ee8fdd736237ec3f1aa0d077d6b32431f988e8",
+      "modules/perky/cf_resonant.c": "0eadc795873a362612be5fb25c3099d52cdc9b11b1453f95602d094634696170",
+      "modules/perky/cf_noise_tone.c": "7fd94294d0e3e41f74633da93def530927fcd3f96312191397f080ba09c3dfd4",
+      "modules/perky/cf_karplus.c": "9639a1f1292ddeaf95e46a5feb38a254e2b77497d997ea50fe3f42d676052170",
+      "modules/perky/cf_fold.c": "96ac7a5a7e4868670f0f159f935ad9f130582d1161088c5948f3eeccbaa7be0f",
+      "modules/perky/cf_simple_drum.c": "abc62704ce6a8b4a5580aa5fe75746e2c35442e0b84c8a49cc3cc11497512a8c",
+      "modules/perky/cf_complex_drum.c": "c57c9e5f89b534c165bd5e8b7e65ac666e2496de6bd773f1d7102f408090ab7e",
+      "modules/perky/cf_slap.c": "e0e0a62c8112ceb5b9fe8bb7108feb7e7e396f89f43099e2e55f4107d692ab2b",
+      "modules/perky/cf_noise_hat.c": "18aac652089aa04d7e6f751dd8bba3314f63aa1a8bf7dfb1016fd421f7df8776",
+      "modules/perky/cf_acoustic_hats.c": "b097e7220708c930a5fe3efaf4513994756a97c8bad53410bf07b0a8026249e0",
+      "tools/harness/perky_cf/placement_cf_engine.c": "6c56242cce486056b35414d13e7c1ff4bf0e8da3a0ca45d7401e517854053961"
+    },
+    "implementation_sha256": {
+      "tools/perky/build_cf_placement_probe.py": "daf5c2e5d6a3725b0453a97f1d9087581be66f97e79d8bc27939aaa9ed4033cf",
+      "tools/harness/perky_cf/placement_cf_engine.c": "6c56242cce486056b35414d13e7c1ff4bf0e8da3a0ca45d7401e517854053961",
+      "modules/perky/cf_native_clock.h": "c0003f005c50232614f90f779681cb377482e0672f86b00faf8e7d7ca85b1202",
+      "tools/harness/perky_cf/placement_cf_api.h": "d72cdd001db9c572a73c6bf3bed602959c009f02d7cd963d9a78d2ae3dc87fb7"
+    },
+    "limits": [
+      "Diagnostic algorithm/mode selectors are host-controlled; current hybrid menus are not remapped.",
+      "Native control preparation cadence is the existing port contract; oscillator sample evolution runs at 48 kHz.",
+      "Bank/Part lifecycle and dynamic backend migration are not qualified.",
+      "Extended BSS is bounded to 512 KiB within the existing linker/arena reservation."
+    ],
+    "rebuild_validation": "Metadata-corrected rebuild is bit-identical in MAIN OS and runtime ELF to all seven captured row input hashes."
+  },
+  "source_local_report": {
+    "path": "out/perky/hybrid/cf-placement/REPORT.json",
+    "sha256": "02557ae45a4907a2d522ca6dcb5c098dd182ccbf607278ac90a21d4184dd0641"
+  },
+  "target_artifacts": {
+    "target.bin": "03d09b1f84d1c69328fc1f55c4bd8ac18132ee7f1be3d298daf305bc08b9ac85",
+    "target.elf": "c5ebaaf5ff210dd95e593ec82f3d3ca2f834575a6769da20d885ef4e270103cc",
+    "runner": "414dca8813f59e5b213903601d21b017816d7fdf57a703837496ccc4fc23e23b",
+    "native.dylib": "5d5c010fbd09d45883e20ebd3c9c3d312314140ad6b4c9b7c355e4c6233a29f8",
+    "costs.csv": "95e9a8195997f22ad7ada256d030fb0f0ff1e7563e7aacdb5e1345b76286712f",
+    "EXECUTION.json": "03d61995c4f85bf4928de2c459ea489c8474d50d197fa17c467d541bed209a5c"
+  },
+  "gates": {
+    "default_make_check": {
+      "status": "PASS",
+      "shared_gates": 84,
+      "image_gates": 4,
+      "skips": [
+        "[SKIP] needs /Users/jrold/Downloads/octabam/out/mainos_perky_machine.bin and /Users/jrold/Downloads/octabam/out/perky/machine-canary/packed and /Users/jrold/Downloads/octabam/out/platform-perky-machine/platform (the multi-machine canary writes these; run it, or pass --image/--packed/--platform explicitly)",
+        "[SKIP] PERKY CF odd-access: no generated dir /Users/jrold/Downloads/octabam/out/perky/cf-final/generated (needs tools/perky/build_cf_final.py and its three inputs)",
+        "[SKIP] verify_set: no project (OT_PROJECT=<dir> or --project)",
+        "[SKIP] fragmented FX runtime: needs OT_PROJECT",
+        "[SKIP] PERKY probe port: set OT_PROJECT to a stock project fixture"
+      ],
+      "log_sha256": "51637856796641af0270bf109132757cc895171b1cb9d65207b64f74e06108b4"
+    },
+    "refhash": {
+      "status": "PASS_24_BIT_IDENTICAL",
+      "baseline": "pre-edit local baseline; not re-saved",
+      "log_sha256": "71a9e4ecf2fe8ec9ede78ff28cb0a9100dee30445be1aa6aea94b94efd2fdc48"
+    },
+    "original_core": {
+      "status": "PASS_EXECUTED_ORIGINAL_CORE_DIFFERENTIALS",
+      "hardware_validated": false,
+      "reference_sha256": {
+        "NativeV121FoldDrums.cpp": "117a729f5853a14935a44557128cf729dae499b34c09f83b77bf74b4d72ac8a3",
+        "NativeV121FoldDrums.h": "d3a465ed849944359de1d885a302f5cab7c8274b6dd0166a241a214806add31f",
+        "NativeV121Karplus.cpp": "21337cebe408504d2d76b7083d731b614ee080fa6f8bbe9f657e95de9da09a88",
+        "NativeV121Karplus.h": "642ff2231f08e06aca1aafe9ebe208e8ce3661144f89307050ec3a8983c383e5",
+        "NativeV121NoiseTone.cpp": "7e6f99b6e439d10d9eb14ed9ebd1d353b332c966729891fa4840bdfc391f1a7b",
+        "NativeV121NoiseTone.h": "91b91c3564000616f169e38480d7b7d0adc40bed641f0b7e5337ca1f6fc1df00",
+        "NativeV121NoiseToneShared.cpp": "042f152f2ad99561365bc59557629836c129d56043dd02fd29150b338eb6fcd0",
+        "NativeV121NoiseToneShared.h": "100b77d349baf806913c89c8afd65b4f418e4fb75841fd1252c3b88d8f878b46"
+      },
+      "sources": {
+        "/Users/jrold/Downloads/octabam/modules/perky/cf_fold.c": "96ac7a5a7e4868670f0f159f935ad9f130582d1161088c5948f3eeccbaa7be0f",
+        "/Users/jrold/Downloads/octabam/modules/perky/cf_karplus.c": "9639a1f1292ddeaf95e46a5feb38a254e2b77497d997ea50fe3f42d676052170",
+        "/Users/jrold/Downloads/octabam/modules/perky/cf_noise_tone.c": "7fd94294d0e3e41f74633da93def530927fcd3f96312191397f080ba09c3dfd4",
+        "/Users/jrold/Downloads/octabam/modules/perky/cf_perky4.c": "cb6603926391371e43e018ddb20f2cd4e15a5431247bfc7573300ac3a4d8dac3",
+        "/Users/jrold/Downloads/octabam/modules/perky/cf_resonant.c": "0eadc795873a362612be5fb25c3099d52cdc9b11b1453f95602d094634696170",
+        "/Users/jrold/Downloads/octabam/modules/perky/cf_noise_hat.c": "18aac652089aa04d7e6f751dd8bba3314f63aa1a8bf7dfb1016fd421f7df8776",
+        "/Users/jrold/Downloads/octabam/modules/perky/cf_simple_drum.c": "abc62704ce6a8b4a5580aa5fe75746e2c35442e0b84c8a49cc3cc11497512a8c",
+        "/Users/jrold/Downloads/octabam/modules/perky/cf_complex_drum.c": "c57c9e5f89b534c165bd5e8b7e65ac666e2496de6bd773f1d7102f408090ab7e",
+        "/Users/jrold/Downloads/octabam/modules/perky/cf_slap.c": "e0e0a62c8112ceb5b9fe8bb7108feb7e7e396f89f43099e2e55f4107d692ab2b",
+        "/Users/jrold/Downloads/octabam/modules/perky/cf_wavetable.c": "77dc049c995c8ca6fe00d64096ee8fdd736237ec3f1aa0d077d6b32431f988e8"
+      },
+      "limits": [
+        "Source-native correctness, not target runtime timing or the historical full-release qualification."
+      ]
+    },
+    "ARM_differentials": {
+      "simple": {
+        "status": "PASS",
+        "samples": 6912,
+        "log_sha256": "ab9c01fc4d1f6cea3cb2f89d8024dbcda642a915110c7c87d2b7dd2a9b872e85"
+      },
+      "complex": {
+        "status": "PASS",
+        "samples": 6912,
+        "log_sha256": "f97992684c398c9d27261a601a352ebfec8f4ff290f5af9796510dad873bf438"
+      },
+      "acoustic": {
+        "status": "PASS",
+        "samples": 6912,
+        "log_sha256": "4378a2b8943102b13d0a9e2481595484c6f1eebc448f7eaaa299737a9c47206c"
+      }
+    },
+    "historical_complete_CF_release": {
+      "status": "FAILED_PREEXISTING_STATIC_GUARD",
+      "finding": "cf_resonant.c division operator rejected by historical hot-loop guard; scoped author differentials are not a full-release pass.",
+      "log_sha256": "75377abc4dc4e2dc3c884e26d0c890304b819b7fa0fc748a9a55422928860149"
+    }
+  },
+  "decision": {
+    "existing_B_pair": "Over unchanged source allowance; see DSP_B_FEASIBILITY.json.",
+    "existing_CF_escape": "WT/WT forces four CF voices in the existing strategy; real combined modeled ISR overruns.",
+    "next_candidate": "Selective DSP-A V4 offload, starting with Noise Hat; retain cheaper families on CF where combined bounds allow.",
+    "candidate_proven": false,
+    "required_evidence": [
+      "Actual replacement code/data/ring/asset ledger",
+      "Original PCM/state/control equivalence",
+      "Measured exchange and full combined ISR with all requested combinations",
+      "Bank/Part/ALGO/MODE/backend lifecycle",
+      "Matched physical stock/FX/UI workload"
+    ]
+  },
+  "limitations": [
+    "Combined source benchmark includes prepare, native conversion and source packing, but excludes stock ISR, scheduling, DSP exchange and stock tracks/FX.",
+    "Six mode tuples exercise all three modes per voice; not all 81 mode tuples or continuous controls.",
+    "Architectural target model excludes physical cache/bus/IRQ latency; local passes cannot certify hardware.",
+    "cf_remainder prices a prospective DSP-A offload without crediting unimplemented code/data/time fit.",
+    "Integrated rows run 4096 transport frames each, not sustained hardware tests.",
+    "Conditional CF removals contain no replacement DSP work.",
+    "Diagnostic algorithm/mode selectors do not implement the final menus or backend migration.",
+    "First two DSP stress receipts were superseded by fixed-Fold1 fixtures, verified from actual DSP control records.",
+    "CF interpolation is exact against the rational oracle. Existing DSP Q23 coefficients have the already-qualified tolerance of one source LSB; cross-backend bit identity is not claimed."
+  ]
+}

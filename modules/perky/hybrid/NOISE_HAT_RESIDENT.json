@@ -1,0 +1,1251 @@
+{
+  "schema": "perky-noise-hat-resident-v1",
+  "status": "FUNCTIONAL_RESIDENT_PROTOTYPE_NOT_TIMING_QUALIFIED",
+  "source_commit": "4eeae750caf8ba98144dd9ad8ac3b68299e21982",
+  "source_checkpoint_note": "Checkpoint plus the uncommitted source fingerprints; no release commit.",
+  "hardware_validated": false,
+  "image_sha256": "f31a94e7369bd3d30028f76fd85eef761960930223f99a0f6149b2518cc7e296",
+  "runtime_sha256": "94c0050ecc04e5457b3ec2f986877261dd0996d55a13641efad7c87d928f5706",
+  "version": "PKNHC1",
+  "build_number": 17,
+  "build_receipt_sha256": "5b42025f1367cc2818905838014a92d809d29575ebe18b99389410fc2b311a03",
+  "memory": {
+    "schema": "perky-noise-hat-resident-memory-v1",
+    "A_program": [
+      {
+        "name": "irq",
+        "start": 4634,
+        "length": 1
+      },
+      {
+        "name": "embed",
+        "start": 245155,
+        "length": 188
+      },
+      {
+        "name": "render",
+        "start": 229062,
+        "length": 46
+      },
+      {
+        "name": "frame",
+        "start": 4359,
+        "length": 209
+      },
+      {
+        "name": "segment",
+        "start": 4568,
+        "length": 66
+      },
+      {
+        "name": "noise_hat_classic_mode0",
+        "start": 212387,
+        "length": 204
+      },
+      {
+        "name": "noise_hat_classic_mode1",
+        "start": 6820,
+        "length": 171
+      },
+      {
+        "name": "noise_hat_pulse_voice",
+        "start": 229136,
+        "length": 111
+      },
+      {
+        "name": "noise_hat_phase",
+        "start": 212591,
+        "length": 196
+      },
+      {
+        "name": "noise_hat_filter",
+        "start": 212787,
+        "length": 130
+      },
+      {
+        "name": "noise_hat_envelope",
+        "start": 4096,
+        "length": 263
+      },
+      {
+        "name": "add",
+        "start": 212917,
+        "length": 21
+      },
+      {
+        "name": "multiply",
+        "start": 229247,
+        "length": 38
+      }
+    ],
+    "B_program": [
+      {
+        "name": "synth_seam_glue.asm",
+        "start": 6244,
+        "length": 86
+      },
+      {
+        "name": "pk_three_finish",
+        "start": 6410,
+        "length": 12
+      },
+      {
+        "name": "noise_tone_math.asm",
+        "start": 245344,
+        "length": 132
+      },
+      {
+        "name": "simple_drum_voice.asm",
+        "start": 6330,
+        "length": 80
+      },
+      {
+        "name": "simple_drum_envelope.asm",
+        "start": 3520,
+        "length": 194
+      },
+      {
+        "name": "simple_drum_frequency.asm",
+        "start": 3919,
+        "length": 42
+      },
+      {
+        "name": "simple_drum_oscillator.asm",
+        "start": 3714,
+        "length": 205
+      },
+      {
+        "name": "simple_drum_delta.asm",
+        "start": 228771,
+        "length": 164
+      },
+      {
+        "name": "pk_multi_simple_init",
+        "start": 245712,
+        "length": 48
+      },
+      {
+        "name": "fold_drum_voice.asm",
+        "start": 7583,
+        "length": 189
+      },
+      {
+        "name": "fold_drum2_voice.asm",
+        "start": 7772,
+        "length": 262
+      },
+      {
+        "name": "pk_multi_fold_init",
+        "start": 262077,
+        "length": 61
+      },
+      {
+        "name": "pk_multi_fold2_init",
+        "start": 228935,
+        "length": 65
+      },
+      {
+        "name": "fold_rng_glue",
+        "start": 212944,
+        "length": 48
+      },
+      {
+        "name": "fold_drum2_seam.asm",
+        "start": 229287,
+        "length": 68
+      },
+      {
+        "name": "pk_three_fold2_trigger",
+        "start": 3961,
+        "length": 36
+      },
+      {
+        "name": "pk_three_common_controls",
+        "start": 261952,
+        "length": 125
+      },
+      {
+        "name": "pk_three_common_trigger",
+        "start": 229355,
+        "length": 21
+      },
+      {
+        "name": "pk_three_frame",
+        "start": 245654,
+        "length": 58
+      },
+      {
+        "name": "pk_three_segment",
+        "start": 261801,
+        "length": 151
+      },
+      {
+        "name": "pk_source_clock_prepare",
+        "start": 245582,
+        "length": 72
+      },
+      {
+        "name": "pk_source_clock_finish",
+        "start": 3997,
+        "length": 67
+      },
+      {
+        "name": "complex_drum_production_voice",
+        "start": 8034,
+        "length": 106
+      },
+      {
+        "name": "pk_multi_complex_init",
+        "start": 229000,
+        "length": 62
+      },
+      {
+        "name": "mapped prefetch guard NOPs",
+        "start": 262138,
+        "length": 6
+      },
+      {
+        "name": "experimental private upper guard NOPs",
+        "start": 8186,
+        "length": 6
+      },
+      {
+        "name": "stock startup clear preserving code tails",
+        "start": 4066,
+        "length": 48
+      }
+    ],
+    "A_program_words": 1644,
+    "shared_capacity": 2404,
+    "shared_words": 2015,
+    "shared_free": 389,
+    "private_P_used": {
+      "A": 758,
+      "B": 1333
+    },
+    "A_private_X": [
+      [
+        "resident limbs and preboot initializer padding",
+        14336,
+        14578
+      ],
+      [
+        "scratch and hold/RNG initializer",
+        14592,
+        14720
+      ],
+      [
+        "native stereo PCM",
+        14720,
+        14760
+      ],
+      [
+        "request cursors and initializer",
+        14768,
+        14784
+      ],
+      [
+        "source registers",
+        14784,
+        14820
+      ],
+      [
+        "native PCM return mailbox plus initializer guard",
+        14832,
+        14866
+      ]
+    ],
+    "A_private_X_words": 496,
+    "A_private_X_capacity": 616,
+    "A_low_Y_words": 2093,
+    "A_low_Y_capacity": 2139,
+    "CF_ring_bytes": 9610,
+    "host_vector": null,
+    "return_carrier": {
+      "core": "A",
+      "buffer": "stock X:2600/4600 readback banks",
+      "bits": "low eight bits of each second halfword in the first 48 stereo sample words; stripped before stock CF reads",
+      "additional_DMA_words": 0
+    },
+    "retained_FX": "all twelve code/dispatch bytes exact",
+    "notes": [
+      "A source hook renders resident Noise Hat into a native PCM mailbox, then resumes normal PCM unpack and AMP/FX.",
+      "B retains its single admitted oscillator portfolio; no paired context exchange.",
+      "Shared storage counted once. Ring, clock and control shadow remain CF-owned; inner dynamic histories are A-owned.",
+      "Private-B tail boundary and new source/readback hooks remain hardware-unqualified."
+    ]
+  },
+  "transport": {
+    "evolving_state_round_trip_words": 0,
+    "additional_host_commands": 0,
+    "additional_DMA_words": 0,
+    "native_return_payload_words": 24,
+    "added_latency_OT_samples": 48,
+    "added_latency_ms": 1.0884353741496597,
+    "CF_new_SR_writes": 0,
+    "CF_new_poll_loops": 0,
+    "source_record_capacity_halfwords": 168,
+    "source_PCM_halfwords": 80,
+    "control_padding_capacity_halfwords": 88,
+    "calculated_maximum_live_command_halfwords": 52,
+    "ownership": "DSP-A classic/pulse histories and white hold/RNG; CF original controls, ring and native clock.",
+    "return_path": "Low padding bytes of existing DSP-A post-FX readback; extracted and cleared in stock transfer state zero."
+  },
+  "deadline_us": 362.81179138321994,
+  "rows": [
+    {
+      "reference": false,
+      "panel_mode": 1,
+      "firmware_mode": 1,
+      "full_ISR": {
+        "frames": 4109,
+        "max_cycles": 99704,
+        "max_us": 377.6666666666667,
+        "mean_us": 242.5412232571517,
+        "deadline_misses": 10
+      },
+      "private_stack_peak_bytes": 940,
+      "native_samples": [
+        71562,
+        71562,
+        71562,
+        71510
+      ],
+      "CF_frame_calls": [
+        4109,
+        4109,
+        4109,
+        4109
+      ],
+      "transport_counts": {
+        "pk_nhr_sequence": 4109,
+        "pk_nhr_dma_reads": 4108,
+        "pk_nhr_dma_done": 4108,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4106,
+        "pk_nhr_packet_words": 82260,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2
+      },
+      "exact": {
+        "requests": 7874,
+        "native_samples": 71562,
+        "checked_frames": 4106,
+        "pcm_mismatches": 0,
+        "state_frames": 4107,
+        "state_mismatches": 0,
+        "pending_native": 52
+      },
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65724,
+          "post_FX_significant": 65692,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65725,
+          "post_FX_significant": 65694,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77484,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78004,
+          "post_FX_significant": 65680,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65697,
+          "post_FX_significant": 65669,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 65520,
+          "post_FX_significant": 65502,
+          "source_peak": 686418,
+          "post_FX_peak": 693895
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72913,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76412,
+          "post_FX_significant": 65694,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "image_sha256": "f31a94e7369bd3d30028f76fd85eef761960930223f99a0f6149b2518cc7e296",
+      "runtime_sha256": "94c0050ecc04e5457b3ec2f986877261dd0996d55a13641efad7c87d928f5706",
+      "raw_row_sha256": "b1eb15534af9bd08b86c2d49bb9ab836de639b6b71a74df0fb636e2d3ff7dbb5",
+      "executing_driver_sha256": "79d96a43c39385c3b028065dad601e23f1596cff7f8987c24e64501f530cbb1a",
+      "added_latency_OT_samples": 48
+    },
+    {
+      "reference": false,
+      "panel_mode": 2,
+      "firmware_mode": 0,
+      "full_ISR": {
+        "frames": 4110,
+        "max_cycles": 100460,
+        "max_us": 380.530303030303,
+        "mean_us": 245.06871451743714,
+        "deadline_misses": 10
+      },
+      "private_stack_peak_bytes": 940,
+      "native_samples": [
+        71579,
+        71579,
+        71579,
+        71527
+      ],
+      "CF_frame_calls": [
+        4110,
+        4110,
+        4110,
+        4110
+      ],
+      "transport_counts": {
+        "pk_nhr_sequence": 4110,
+        "pk_nhr_dma_reads": 4109,
+        "pk_nhr_dma_done": 4109,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4107,
+        "pk_nhr_packet_words": 156260,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2
+      },
+      "exact": {
+        "requests": 7876,
+        "native_samples": 71579,
+        "checked_frames": 4107,
+        "pcm_mismatches": 0,
+        "state_frames": 4108,
+        "state_mismatches": 0,
+        "pending_native": 52
+      },
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65740,
+          "post_FX_significant": 65708,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65741,
+          "post_FX_significant": 65710,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77504,
+          "post_FX_significant": 65706,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78026,
+          "post_FX_significant": 65696,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65713,
+          "post_FX_significant": 65685,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 65528,
+          "post_FX_significant": 65505,
+          "source_peak": 768842,
+          "post_FX_peak": 777218
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72933,
+          "post_FX_significant": 65706,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76435,
+          "post_FX_significant": 65710,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "image_sha256": "f31a94e7369bd3d30028f76fd85eef761960930223f99a0f6149b2518cc7e296",
+      "runtime_sha256": "94c0050ecc04e5457b3ec2f986877261dd0996d55a13641efad7c87d928f5706",
+      "raw_row_sha256": "b9077618906302ab6b34c89c78f52104b304fb7e73f026d0f8c2012714330617",
+      "executing_driver_sha256": "79d96a43c39385c3b028065dad601e23f1596cff7f8987c24e64501f530cbb1a",
+      "added_latency_OT_samples": 48
+    },
+    {
+      "reference": false,
+      "panel_mode": 3,
+      "firmware_mode": 2,
+      "full_ISR": {
+        "frames": 4108,
+        "max_cycles": 95907,
+        "max_us": 363.28409090909093,
+        "mean_us": 232.53311904340387,
+        "deadline_misses": 1
+      },
+      "private_stack_peak_bytes": 940,
+      "native_samples": [
+        71545,
+        71545,
+        71545,
+        71492
+      ],
+      "CF_frame_calls": [
+        4108,
+        4108,
+        4108,
+        4108
+      ],
+      "transport_counts": {
+        "pk_nhr_sequence": 4108,
+        "pk_nhr_dma_reads": 4107,
+        "pk_nhr_dma_done": 4107,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4105,
+        "pk_nhr_packet_words": 180832,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2
+      },
+      "exact": {
+        "requests": 7872,
+        "native_samples": 71545,
+        "checked_frames": 4105,
+        "pcm_mismatches": 0,
+        "state_frames": 4106,
+        "state_mismatches": 0,
+        "pending_native": 53
+      },
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65708,
+          "post_FX_significant": 65676,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65709,
+          "post_FX_significant": 65678,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77464,
+          "post_FX_significant": 65674,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 77982,
+          "post_FX_significant": 65664,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65681,
+          "post_FX_significant": 65653,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 64802,
+          "post_FX_significant": 64785,
+          "source_peak": 634671,
+          "post_FX_peak": 641585
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72894,
+          "post_FX_significant": 65674,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76390,
+          "post_FX_significant": 65678,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "image_sha256": "f31a94e7369bd3d30028f76fd85eef761960930223f99a0f6149b2518cc7e296",
+      "runtime_sha256": "94c0050ecc04e5457b3ec2f986877261dd0996d55a13641efad7c87d928f5706",
+      "raw_row_sha256": "07051f66fbeb1ee704708f2bad08a1b9a59092b88903539dd2f0f54a06497414",
+      "executing_driver_sha256": "79d96a43c39385c3b028065dad601e23f1596cff7f8987c24e64501f530cbb1a",
+      "added_latency_OT_samples": 48
+    },
+    {
+      "reference": true,
+      "panel_mode": 1,
+      "firmware_mode": 1,
+      "full_ISR": {
+        "frames": 4111,
+        "max_cycles": 103541,
+        "max_us": 392.20075757575756,
+        "mean_us": 254.64537217222085,
+        "deadline_misses": 10
+      },
+      "private_stack_peak_bytes": 1256,
+      "native_samples": [
+        71597,
+        71597,
+        71597,
+        71597
+      ],
+      "CF_frame_calls": [
+        4111,
+        4111,
+        4111,
+        4111
+      ],
+      "transport_counts": {
+        "pk_nhr_sequence": 0,
+        "pk_nhr_dma_reads": 0,
+        "pk_nhr_dma_done": 0,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 0,
+        "pk_nhr_packet_words": 0,
+        "pk_nhr_initializations": 0,
+        "pk_nhr_lag_min": 4294967295,
+        "pk_nhr_lag_max": 0
+      },
+      "exact": {},
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65756,
+          "post_FX_significant": 65724,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65757,
+          "post_FX_significant": 65726,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77523,
+          "post_FX_significant": 65722,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78048,
+          "post_FX_significant": 65712,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65729,
+          "post_FX_significant": 65701,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 65600,
+          "post_FX_significant": 65582,
+          "source_peak": 686418,
+          "post_FX_peak": 693895
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72953,
+          "post_FX_significant": 65722,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76457,
+          "post_FX_significant": 65726,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "image_sha256": "f31a94e7369bd3d30028f76fd85eef761960930223f99a0f6149b2518cc7e296",
+      "runtime_sha256": "94c0050ecc04e5457b3ec2f986877261dd0996d55a13641efad7c87d928f5706",
+      "raw_row_sha256": "fd23fac8a5fa9724ef0248a69189130d6af3da3468a35d719a437c34a5e1e974",
+      "executing_driver_sha256": "79d96a43c39385c3b028065dad601e23f1596cff7f8987c24e64501f530cbb1a",
+      "added_latency_OT_samples": 0
+    },
+    {
+      "reference": true,
+      "panel_mode": 2,
+      "firmware_mode": 0,
+      "full_ISR": {
+        "frames": 4114,
+        "max_cycles": 107579,
+        "max_us": 407.4962121212121,
+        "mean_us": 270.500678577216,
+        "deadline_misses": 10
+      },
+      "private_stack_peak_bytes": 1256,
+      "native_samples": [
+        71649,
+        71649,
+        71649,
+        71649
+      ],
+      "CF_frame_calls": [
+        4114,
+        4114,
+        4114,
+        4114
+      ],
+      "transport_counts": {
+        "pk_nhr_sequence": 0,
+        "pk_nhr_dma_reads": 0,
+        "pk_nhr_dma_done": 0,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 0,
+        "pk_nhr_packet_words": 0,
+        "pk_nhr_initializations": 0,
+        "pk_nhr_lag_min": 4294967295,
+        "pk_nhr_lag_max": 0
+      },
+      "exact": {},
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65804,
+          "post_FX_significant": 65772,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65805,
+          "post_FX_significant": 65774,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77582,
+          "post_FX_significant": 65770,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78112,
+          "post_FX_significant": 65760,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65777,
+          "post_FX_significant": 65749,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 65640,
+          "post_FX_significant": 65616,
+          "source_peak": 768842,
+          "post_FX_peak": 777218
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 73012,
+          "post_FX_significant": 65770,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76524,
+          "post_FX_significant": 65774,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "image_sha256": "f31a94e7369bd3d30028f76fd85eef761960930223f99a0f6149b2518cc7e296",
+      "runtime_sha256": "94c0050ecc04e5457b3ec2f986877261dd0996d55a13641efad7c87d928f5706",
+      "raw_row_sha256": "fbc1f3807337e8340737698f82a7b00072099623fd3e9392e1276da38687f886",
+      "executing_driver_sha256": "79d96a43c39385c3b028065dad601e23f1596cff7f8987c24e64501f530cbb1a",
+      "added_latency_OT_samples": 0
+    },
+    {
+      "reference": true,
+      "panel_mode": 3,
+      "firmware_mode": 2,
+      "full_ISR": {
+        "frames": 4110,
+        "max_cycles": 99469,
+        "max_us": 376.7765151515151,
+        "mean_us": 244.45005345425054,
+        "deadline_misses": 10
+      },
+      "private_stack_peak_bytes": 1256,
+      "native_samples": [
+        71579,
+        71579,
+        71579,
+        71579
+      ],
+      "CF_frame_calls": [
+        4110,
+        4110,
+        4110,
+        4110
+      ],
+      "transport_counts": {
+        "pk_nhr_sequence": 0,
+        "pk_nhr_dma_reads": 0,
+        "pk_nhr_dma_done": 0,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 0,
+        "pk_nhr_packet_words": 0,
+        "pk_nhr_initializations": 0,
+        "pk_nhr_lag_min": 4294967295,
+        "pk_nhr_lag_max": 0
+      },
+      "exact": {},
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65740,
+          "post_FX_significant": 65708,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65741,
+          "post_FX_significant": 65710,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77504,
+          "post_FX_significant": 65706,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78026,
+          "post_FX_significant": 65696,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65713,
+          "post_FX_significant": 65685,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 64882,
+          "post_FX_significant": 64865,
+          "source_peak": 634671,
+          "post_FX_peak": 641585
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72933,
+          "post_FX_significant": 65706,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76435,
+          "post_FX_significant": 65710,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "image_sha256": "f31a94e7369bd3d30028f76fd85eef761960930223f99a0f6149b2518cc7e296",
+      "runtime_sha256": "94c0050ecc04e5457b3ec2f986877261dd0996d55a13641efad7c87d928f5706",
+      "raw_row_sha256": "07a7420086aa9f95903943e24ba8a603e0b8705e3b26f4b2bf0f38cc51e2ca5e",
+      "executing_driver_sha256": "79d96a43c39385c3b028065dad601e23f1596cff7f8987c24e64501f530cbb1a",
+      "added_latency_OT_samples": 0
+    }
+  ],
+  "persistent_ARM_gate": {
+    "status": "PASS_PERSISTENT_SOURCE_PARSER_PCM_STATE_HOLD_RNG",
+    "cases": [
+      {
+        "panel": 1,
+        "firmware_mode": 1,
+        "corner": 0,
+        "requests": 23,
+        "native_samples": 256,
+        "worst_source_cycles": 31624
+      },
+      {
+        "panel": 1,
+        "firmware_mode": 1,
+        "corner": 1,
+        "requests": 23,
+        "native_samples": 256,
+        "worst_source_cycles": 33424
+      },
+      {
+        "panel": 1,
+        "firmware_mode": 1,
+        "corner": 2,
+        "requests": 23,
+        "native_samples": 256,
+        "worst_source_cycles": 33589
+      },
+      {
+        "panel": 2,
+        "firmware_mode": 0,
+        "corner": 0,
+        "requests": 23,
+        "native_samples": 256,
+        "worst_source_cycles": 68064
+      },
+      {
+        "panel": 2,
+        "firmware_mode": 0,
+        "corner": 1,
+        "requests": 23,
+        "native_samples": 256,
+        "worst_source_cycles": 67744
+      },
+      {
+        "panel": 2,
+        "firmware_mode": 0,
+        "corner": 2,
+        "requests": 23,
+        "native_samples": 256,
+        "worst_source_cycles": 67899
+      },
+      {
+        "panel": 3,
+        "firmware_mode": 2,
+        "corner": 0,
+        "requests": 23,
+        "native_samples": 256,
+        "worst_source_cycles": 49145
+      },
+      {
+        "panel": 3,
+        "firmware_mode": 2,
+        "corner": 1,
+        "requests": 23,
+        "native_samples": 256,
+        "worst_source_cycles": 49890
+      },
+      {
+        "panel": 3,
+        "firmware_mode": 2,
+        "corner": 2,
+        "requests": 23,
+        "native_samples": 256,
+        "worst_source_cycles": 53270
+      }
+    ],
+    "native_samples": 2304,
+    "source_sha256": {
+      "tools/verify/verify_perky_noise_hat_resident.py": "d5d57e90a26441f9d828ade715444386a2471afe69abd77477ff6a63ac4e6da3",
+      "tools/harness/perky_cf/noise_hat_resident_host.cpp": "c87a4471de6e89cde68b1065d6803d6e3ae83fc38b6990c92ce44706e5191420",
+      "tools/perky/perky_noise_hat_resident.py": "3d65aee67a56ceb52c445cda87fd59cd30e59c76d01a6ae0ae9d843674fc034c"
+    }
+  },
+  "complete_source_gate": {
+    "status": "PASS_COMPLETE_DELAYED_SOURCE_PCM",
+    "rows": [
+      {
+        "row": "WTWT-SLAP-HAT-RESIDENT-DSP-M1-static",
+        "checked_frames": 1034,
+        "source_PCM_mismatches": 0,
+        "clock_mismatches": 0,
+        "examples": []
+      },
+      {
+        "row": "WTWT-SLAP-HAT-RESIDENT-DSP-M2-static",
+        "checked_frames": 1035,
+        "source_PCM_mismatches": 0,
+        "clock_mismatches": 0,
+        "examples": []
+      },
+      {
+        "row": "WTWT-SLAP-HAT-RESIDENT-DSP-M3-static",
+        "checked_frames": 1033,
+        "source_PCM_mismatches": 0,
+        "clock_mismatches": 0,
+        "examples": []
+      }
+    ],
+    "scope": "Same firmware image. Original complete CF render including ring, plus independent rational native clock, compared to delayed target source PCM before AMP/FX."
+  },
+  "primary_observer": {
+    "status": "BUILT_ISOLATED_LONG_IRQ_PERIPHERAL_CLOCK",
+    "source_sha256": "b3c65867ad51f2e2ee78cc8e977172fd4cf15c471e40755684ce3d645db269ec",
+    "staged_sha256": "7b12d3d3787073fd5bbec05d8d3d99360baf63f0408c641cd2bfdf94d479407a",
+    "binary_sha256": "827ae499feb316bc0cbcb4f01f1846d6fb9fda0a5377c0a548ce7921778c7621",
+    "commands": [
+      [
+        "/usr/bin/c++",
+        "-DDSP56300_DEBUGGER=0",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor/dsp56300/source",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kEmu/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kBase/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/asmjit/src",
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu++17",
+        "-flto",
+        "-arch",
+        "arm64",
+        "-DASMJIT_STATIC",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-c",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident/observer/dsp.cpp",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident/observer/dsp.o"
+      ],
+      [
+        "/usr/bin/c++",
+        "-DDSP56300_DEBUGGER=0",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor/dsp56300/source",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kEmu/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kBase/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/asmjit/src",
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu++17",
+        "-flto",
+        "-arch",
+        "arm64",
+        "-DASMJIT_STATIC",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-c",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident/observer/machine.cpp",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident/observer/machine.o"
+      ],
+      [
+        "/usr/bin/c++",
+        "-O3",
+        "-flto",
+        "-arch",
+        "arm64",
+        "/Users/jrold/Downloads/octabam/out/emu/CMakeFiles/ot_emu.dir/main.cpp.o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident/observer/machine.o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/observer/periph.o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident/observer/dsp.o",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident/observer/ot_emu_safety",
+        "/Users/jrold/Downloads/octabam/out/emu/libot_machine.a",
+        "/Users/jrold/Downloads/octabam/out/emu/mc68k/lib68kEmu.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kBase/libdsp56kBase.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/asmjit/libasmjit.a",
+        "-lpthread"
+      ]
+    ],
+    "base_observer_receipt_sha256": "1f547e558298670781c7e77d8dfde42467d445e9af24a23e4d1dd537fe75f156",
+    "exact_observer_header_sha256": "5605050d8cef321de71c2f65dfb065fc488340ef84bf21f172ae8e8291b9e863",
+    "oracle_sha256": "2053a175fc62f398c9e384bf6636bd53780d04beacdfc14f2e35912717aa0b7c",
+    "oracle_source_sha256": "18aac652089aa04d7e6f751dd8bba3314f63aa1a8bf7dfb1016fd421f7df8776",
+    "scope": "Same target instructions and clock; existing peripheral service continues inside long DSP interrupts. Default emulator untouched.",
+    "resident_oracle_sha256": "5a8478282e39574d79d9faeaa93267f88170c1e5a75538052c0703dec8e964aa",
+    "oracle_transform": "Only remove the two classic wrapper-delay calls; pulse renderer unchanged. Original control shadow with evolving state retained independently."
+  },
+  "full_source_observer": {
+    "status": "BUILT_ISOLATED_LONG_IRQ_PERIPHERAL_CLOCK",
+    "source_sha256": "b3c65867ad51f2e2ee78cc8e977172fd4cf15c471e40755684ce3d645db269ec",
+    "staged_sha256": "8b162d2af842d9005d692b191bc0d7ded2405b0cd567ccc154c9202aaf7f9404",
+    "binary_sha256": "15812d68368ab301de16e7ded26546a4299ae766b03baf6b69b8293e7a9956ad",
+    "commands": [
+      [
+        "/usr/bin/c++",
+        "-DDSP56300_DEBUGGER=0",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor/dsp56300/source",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kEmu/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kBase/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/asmjit/src",
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu++17",
+        "-flto",
+        "-arch",
+        "arm64",
+        "-DASMJIT_STATIC",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-c",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident-full/observer/dsp.cpp",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident-full/observer/dsp.o"
+      ],
+      [
+        "/usr/bin/c++",
+        "-DDSP56300_DEBUGGER=0",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor/dsp56300/source",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kEmu/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kBase/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/asmjit/src",
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu++17",
+        "-flto",
+        "-arch",
+        "arm64",
+        "-DASMJIT_STATIC",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-c",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident-full/observer/machine.cpp",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident-full/observer/machine.o"
+      ],
+      [
+        "/usr/bin/c++",
+        "-O3",
+        "-flto",
+        "-arch",
+        "arm64",
+        "/Users/jrold/Downloads/octabam/out/emu/CMakeFiles/ot_emu.dir/main.cpp.o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident-full/observer/machine.o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/observer/periph.o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident-full/observer/dsp.o",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-resident-full/observer/ot_emu_safety",
+        "/Users/jrold/Downloads/octabam/out/emu/libot_machine.a",
+        "/Users/jrold/Downloads/octabam/out/emu/mc68k/lib68kEmu.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kBase/libdsp56kBase.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/asmjit/libasmjit.a",
+        "-lpthread"
+      ]
+    ],
+    "base_observer_receipt_sha256": "1f547e558298670781c7e77d8dfde42467d445e9af24a23e4d1dd537fe75f156",
+    "exact_observer_header_sha256": "bc91ef7d4d741efe7552a908f2fae10be07d526ccd86b09ee62dbc4a78829e51",
+    "oracle_sha256": "39d12257baaf9bba4b5dc5c6d419cf4bb82aa999cd5fdeef7ba1c9d2a07c5470",
+    "oracle_source_sha256": "18aac652089aa04d7e6f751dd8bba3314f63aa1a8bf7dfb1016fd421f7df8776",
+    "scope": "Original complete CF renderer plus independent rational clock compared to delayed target source PCM; no target-time renderer added.",
+    "complete_oracle_sha256": "cde0a10c94cde3e2334c55985c6a7721f65b0903461cc654ad67991038f2156c",
+    "inner_header_sha256": "5605050d8cef321de71c2f65dfb065fc488340ef84bf21f172ae8e8291b9e863",
+    "full_header_sha256": "2827e58496919c75c2a9da4c1a648c82eb9fcd98320b3246af51827587f23056",
+    "full_renderer_sha256": "18aac652089aa04d7e6f751dd8bba3314f63aa1a8bf7dfb1016fd421f7df8776"
+  },
+  "rejected_smoke": {
+    "status": "FAILED_NATIVE_CLOCK_GATE_NO_PCM_COMPLETIONS",
+    "frames_requested": 128,
+    "transport": {
+      "pk_nhr_dma_done": 138,
+      "pk_nhr_failures": 138,
+      "pk_nhr_packet_words": 2788,
+      "pk_nhr_initializations": 1,
+      "pk_nhr_consumed": 0,
+      "pk_nhr_dma_reads": 138,
+      "pk_nhr_sequence": 139
+    },
+    "exact": {
+      "requests": 139,
+      "native_samples": 2421,
+      "checked_frames": 0,
+      "pcm_mismatches": 0,
+      "state_frames": 8,
+      "state_mismatches": 552,
+      "pending_native": 2421
+    },
+    "finding": "Live stock DMA preserves upper eight bits. Marker was 0x034e52 and rejected. The stock bank-handshake attribution is retracted; no valid timing or transport verdict can be drawn from absent source rendering. A separate split=0 packet mismatch was also corrected."
+  },
+  "verification": {
+    "make_check": "PASS: 84 shared and 4 image gates; project-specific gate skipped",
+    "make_check_log_sha256": "0782b18201a3278abb10b0f8c75ee16ca4619e1bf03582223d53d03868862f79",
+    "refhash": "PASS: 24 local-baseline configurations bit-identical; baseline not re-saved",
+    "refhash_log_sha256": "71a9e4ecf2fe8ec9ede78ff28cb0a9100dee30445be1aa6aea94b94efd2fdc48",
+    "shipping_bus_restored_sha256": "354bdac8f2fe79696b3156a034894b1bd0d5f757ce76657ca608851089268a58"
+  },
+  "source_sha256": {
+    "tools/verify/verify_perky_noise_hat_resident_campaign.py": "66957531be08936868cf51c0633595463669fb1a8dc606a18b50f5650bad0ff5",
+    "modules/perky/cf_noise_hat_resident.c": "f439f1c133d66b49221c3dd3882ee9f7ba27458952607f5e6a9bdfd61b263563",
+    "tools/perky/perky_noise_hat_resident.py": "3d65aee67a56ceb52c445cda87fd59cd30e59c76d01a6ae0ae9d843674fc034c",
+    "tools/perky/build_noise_hat_resident_probe.py": "dc76ee331ffff9ebcd883ed5001f31be3b63d58b8d123f2f53417b37f0e15a9b",
+    "tools/harness/perky_cf/noise_hat_resident_engine.c": "f5c2b3c87c0de444ff8ee36cc8e94a4d510303eca10e2dad68c7a12d81bb3498",
+    "tools/harness/perky_cf/noise_hat_resident_host.cpp": "c87a4471de6e89cde68b1065d6803d6e3ae83fc38b6990c92ce44706e5191420",
+    "tools/harness/perky_cf/noise_hat_resident_oracle.c": "fe0edcfba68f77f239d5cb9bf69aab4ecd467473acd2f231420309f885b957b2",
+    "tools/harness/perky_cf/noise_hat_resident_observer.h": "5605050d8cef321de71c2f65dfb065fc488340ef84bf21f172ae8e8291b9e863",
+    "tools/harness/perky_cf/noise_hat_resident_full_observer.h": "2827e58496919c75c2a9da4c1a648c82eb9fcd98320b3246af51827587f23056",
+    "tools/verify/verify_perky_noise_hat_resident.py": "d5d57e90a26441f9d828ade715444386a2471afe69abd77477ff6a63ac4e6da3",
+    "tools/verify/verify_perky_noise_hat_resident_boot.py": "64c9a5f8fc965503c27a2d5e82e69e6c4f04b31eda2b1fe135dd40903e7e992d",
+    "tools/verify/measure_perky_noise_hat_resident.py": "79d96a43c39385c3b028065dad601e23f1596cff7f8987c24e64501f530cbb1a",
+    "tools/verify/build_perky_noise_hat_resident_observer.py": "b178ab14f5caba280fb6d3bda60e64a5de52707cebac7c26e6ccee3afc516e8c",
+    "tools/verify/build_perky_noise_hat_resident_full_observer.py": "dcc3f4128c165db9cf159bf96349ec529721fef9a838090cc3dc8d90641a4cd6",
+    "tools/verify/verify_perky_noise_hat_resident_full.py": "04c23bcb2471a43dbbd6cb71825794e780a16ae47ffa3ae4da4ed18c24a02a2a"
+  },
+  "limits": [
+    "All three observed ISR maxima exceed the 362.812 us deadline; no full voice-layout admission.",
+    "48 samples of added source latency; AMP/FX event alignment is not equivalent to the original path.",
+    "Diagnostic 16-bit sequence ownership does not handle wrap; do not run beyond the bounded test window.",
+    "Noise Hat fixed on V4; switching to another V4 algorithm/backend is unsupported in this prototype.",
+    "STOP/Part/Bank lifecycle, mode transitions, private-B upper guard and physical timing remain unqualified.",
+    "DSP integrated scheduler is 4532 instructions/sample, not cycle-accurate hardware.",
+    "The earlier attribution of rejected marker traffic to a bank-handshake failure is retracted."
+  ]
+}

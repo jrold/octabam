@@ -4,7 +4,7 @@
 Renderer oracles remain independent of DSP output. Raw Complex native/ARM
 parity is separately proven by verify_perky_four_renderer.py.
 """
-import itertools, struct, sys
+import itertools, os, struct, sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 sys.path[:0]=[str(ROOT/'tools/verify'),str(ROOT/'tools/perky'),str(ROOT/'modules/perky')]
@@ -43,7 +43,7 @@ class Complex:
 
 
 def main():
-    c.OUT=ROOT/f'out/perky/four-clock-audio-{a.TAG}';c.OUT.mkdir(parents=True,exist_ok=True)
+    c.OUT=Path(os.environ.get('PERKY_FOUR_CLOCK_WORK',ROOT/f'out/perky/four-clock-audio-{a.TAG}'));c.OUT.mkdir(parents=True,exist_ok=True)
     c.HOST.parent.mkdir(parents=True,exist_ok=True);c.build_host();c.CYCLE_METER=True;c.assemble=a.at_production_addresses
     source,fresh=production.build(c.OUT/'payload',native_clock=True)
     tables=c.words(c.OUT/'payload/tables.words');initial=c.words(c.OUT/'payload/state_init.words')

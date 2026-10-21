@@ -14,15 +14,16 @@ import perky_emit_shards as E
 import all_fx_layout as L
 
 
-def plan(asm, tag, *, pad_guard=True):
-    pieces, whole, dest, final, syms = E.emit(asm, tag)
+def plan(asm, tag, *, pad_guard=True, emitter=E.emit, extra_private_spans=()):
+    pieces, whole, dest, final, syms = emitter(asm, tag)
     records = []
     ledger = []
     for name, lo, hi, text, _ in pieces:
         words, _ = B.assemble_syms(E.rewrite(text, syms, final), dest[name], name, strict_layout=True)
         assert len(words) == hi-lo, (name, len(words), hi-lo)
         assert any(a <= dest[name] and dest[name]+len(words) <= b
-                   for a, b in L.local_p_spans(tag) + L.SAFE_SHARED_P_SPANS), name
+                   for a, b in L.local_p_spans(tag) + L.SAFE_SHARED_P_SPANS
+                   + tuple(extra_private_spans)), name
         records.append((dest[name], words))
         ledger.append(dict(name=name, start=dest[name], length=len(words)))
     for i, (a, w) in enumerate(records):
@@ -82,13 +83,44 @@ def seam_source(asm, output):
 
 
 
-def install(image, asm):
+def merge_upload_records(appended):
+    """Union physically shared records, retaining ordinary P on its own core.
+
+    An appended record below the private-P ceiling is NOT shared. In
+    particular B's unused upload tail overlaps live stock code on A.
+    """
+    private = {tag: [] for tag in ('A', 'B')}
+    shared = {}
+    for tag, rows in appended.items():
+        for addr, words in rows:
+            end = addr + len(words)
+            assert words and (0 <= addr < end <= 0x2000 or
+                              0x30000 <= addr < end <= 0x40000), ('P record crosses memory domains', tag, hex(addr))
+            if addr < 0x2000:
+                private[tag].append((addr, words))
+            else:
+                if addr in shared:
+                    assert shared[addr] == words, ('shared helper drift', hex(addr))
+                shared[addr] = words
+    ordered = sorted(shared.items())
+    for (a, w), (b, v) in zip(ordered, ordered[1:]):
+        assert a + len(w) <= b, ('cross-core shared P overlap', hex(a), hex(b))
+    result = {}
+    for tag, rows in private.items():
+        rows = sorted(rows)
+        for (a, w), (b, v) in zip(rows, rows[1:]):
+            assert a + len(w) <= b, ('private P overlap', tag, hex(a), hex(b))
+        result[tag] = rows + ordered
+    return result
+
+
+def install(image, asm, *, planner=plan):
     img = bytearray(image)
     owned='; PERKY3_CORE_OWNED' in Path(asm).read_text()
     appended, ledgers = {}, {}
     for tag, (va, ln) in zip(('A', 'B'), (A.PAYLOAD_A, A.PAYLOAD_B)):
         recs, _ = A.records(img, va, ln)
-        records, ledger, entry = plan(asm, tag)
+        records, ledger, entry = planner(asm, tag)
         site = {'A': 0x39c, 'B': 0x1a2}[tag]
         hook = A.word_at(recs, 0, site)
         hook_entry=L.local_p_spans(tag)[0][0] if owned else entry
@@ -121,16 +153,10 @@ def install(image, asm):
                 A.wr(img,B.PP[tag]['xtab']-A.BASE+3*index,target)
         ledgers[tag] = ledger
     if owned:
-        # Both uploads install the SAME union of both cores' copies. Shared
-        # cold helper records must be identical; core-specific copies have
-        # distinct physical extents and can safely call their own private P.
-        union={}
-        for rows in appended.values():
-            for addr,words in rows:
-                if addr in union:assert union[addr]==words,('shared helper drift',hex(addr))
-                union[addr]=words
-        ordered=sorted(union.items())
-        for (a,w),(b,v) in zip(ordered,ordered[1:]):assert a+len(w)<=b,('cross-core shared P overlap',hex(a),hex(b))
-        appended={tag:ordered for tag in ('A','B')}
-    assert appended['A']==appended['B'], 'shared memory cannot hold payload-specific code'
+        # Both uploads install the same shared union. Shared cold helpers
+        # must be identical; core-owned shared copies have distinct physical
+        # extents. Ordinary private additions remain exclusive to their core.
+        appended = merge_upload_records(appended)
+    assert ([r for r in appended['A'] if r[0] >= 0x30000] ==
+            [r for r in appended['B'] if r[0] >= 0x30000]), 'shared memory cannot hold payload-specific code'
     return bytes(img), appended, ledgers

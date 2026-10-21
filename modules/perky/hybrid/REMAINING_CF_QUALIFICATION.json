@@ -1,0 +1,1651 @@
+{
+  "schema": "octabam.perky.remaining-cf-qualification.v1",
+  "status": "FAIL_HOLD",
+  "admission": "HOLD_FOR_PERFORMANCE_WORK",
+  "functional_status": "PASS_NEW_IMAGE_SOURCE_HANDOFF_LIFECYCLE_MATRIX_SCENES_AND_EIGHT_EXACT_WORKLOADS",
+  "pass_budget": false,
+  "nominal_timing_status": "PASS_NOMINAL_DEADLINES_MODEL_SCOPE",
+  "nominal_deadline_misses": {
+    "PKFM20-WTWT-ResBass-MetallicHat-all14": 0,
+    "PKFM20-WTWT-ResBass-NoiseTone-all14": 0,
+    "PKFM20-WTWT-ResSnare-MetallicHat-all14": 0,
+    "PKFM20-WTWT-ResSnare-NoiseTone-all14": 0,
+    "PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14": 0,
+    "PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14": 0,
+    "PKFM20-WTWT-SlapControl-MetallicHat-all14": 0,
+    "PKFM20-WTWT-SlapControl-NoiseTone-all14": 0,
+    "lifecycle": 0,
+    "matrix": 0,
+    "scenes": 0
+  },
+  "hardware_validated": false,
+  "version": "PKFM20",
+  "source_commit": "4eeae750caf8ba98144dd9ad8ac3b68299e21982",
+  "image_sha256": "9bae33446c3206e200edabee5b8e1ee4eb1e40f950e2de2e5157cea6a59d6935",
+  "elf_sha256": "ff1ea42382eb39d64db8a581c373502c011dd5d16dc3ef2df4f2d5f49468f8e2",
+  "clocks": {
+    "CF": 264000000,
+    "PIT": 132000000
+  },
+  "observer_sha256": "f975b4d2c4b6a2d993d3158bc8e68c8a786b328e2902b58bdde418225287d022",
+  "reference_oracle_sha256": "84c9345815e71c78072902d69477d0c92ddf592c08aaca8bf0e09f6582cadf6d",
+  "budget_sha256": "8608844b96c6f20daed514147dc6cadab7a2c82aae80d2ef7c9a875a22ccaec4",
+  "frames_per_case": 32768,
+  "total_requested_transport_frames": 262144,
+  "controls": {
+    "version": "PKFM17",
+    "image_sha256": "7f3eeecafcfb6746207d981e3677e224d5321e2100b748fe5ba7e633dd314dcb",
+    "elf_sha256": "e16f1da5b17b55083ab7fa7f165efd4e6ec262ada259291d4927b2412921d6c9",
+    "frames_per_case": 32768
+  },
+  "assessments": [
+    {
+      "case": "PKFM20-WTWT-ResBass-MetallicHat-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 200.0119816797063,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 26.42060761737046
+        },
+        "steady_ISR_p99": {
+          "measured_us": 209.60227272727272,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 25.67567567567568
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 296.5833333333333,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 24.755819696945558
+        },
+        "full_ISR_peak": {
+          "measured_us": 302.3219696969697,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 20.58530247174715
+        },
+        "whole_CPU_mean": {
+          "measured_us": 225.73804392959133,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 19.250196770987515
+        },
+        "whole_CPU_p99": {
+          "measured_us": 335.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 2.1341463414634054
+        },
+        "whole_CPU_peak": {
+          "measured_us": 352.523,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -2.674952790078733
+        }
+      },
+      "v3_case": "bass",
+      "voice4_case": "hat",
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-MetallicHat-all14/ROW.json",
+      "receipt_sha256": "53f767e6c65e8eb3e90621baaed51539ebe1c6ac4e6dbf4601996c06b761fc60",
+      "actual_coverage": {
+        "actual_tuples": {
+          "9:9:4:5/1:2:1:1": 32768
+        },
+        "scope": "Actual rendering tuples and coverage; not an exact count of MODE switches"
+      },
+      "fixture_witness": {
+        "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-MetallicHat-all14/RESONANT_FIXTURE.json",
+        "receipt_sha256": "13d0cb25f9b3bd4d18cb76059000d5871dc66684cb0efb49e91dc4f1da31d759",
+        "status": "PASS_FINAL_CARD_RESONANT_SELECTION_AND_MODE_LOCKS",
+        "banks": 16,
+        "part_records": 128,
+        "patterns": 64,
+        "fixture_trigger_MODE_locks": 2880,
+        "tempo_bpm": 120,
+        "pattern_steps": 64,
+        "pattern_scale": "1X",
+        "driver_sha256": "bbabd353c70ce9f3a6829c34bac474bfd397db9180ca658ad151328c56df36ec",
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Driver-bound scan of final card bytes; actual source modes checked independently; no exact runtime switch-count claim"
+      },
+      "activity_evidence": {
+        "counts": {
+          "1": {
+            "source_significant": 524221,
+            "post_FX_significant": 524189
+          },
+          "2": {
+            "source_significant": 524244,
+            "post_FX_significant": 524211
+          },
+          "3": {
+            "source_significant": 556466,
+            "post_FX_significant": 524191
+          },
+          "4": {
+            "source_significant": 553173,
+            "post_FX_significant": 524194
+          },
+          "5": {
+            "source_significant": 524265,
+            "post_FX_significant": 524237
+          },
+          "6": {
+            "source_significant": 428309,
+            "post_FX_significant": 523339
+          },
+          "7": {
+            "source_significant": 560810,
+            "post_FX_significant": 524210
+          },
+          "8": {
+            "source_significant": 548445,
+            "post_FX_significant": 524211
+          }
+        },
+        "block_dump_sha256": "6af211f319dc1aff2be253ed4e7baa2c05db08874af008c6399ecfc7073d58fe",
+        "raw_dump_retained": false,
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Counts were extracted by the source-bound, independently reconstructed calibrated adapter before its deliberate raw-dump cleanup; only the dump hash and aggregate counts survive. These counts establish activity, not replayable or gap-free audio."
+      }
+    },
+    {
+      "case": "PKFM20-WTWT-ResBass-NoiseTone-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 211.94971454688252,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 33.966032796243105
+        },
+        "steady_ISR_p99": {
+          "measured_us": 221.18939393939394,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 32.623211446740854
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 303.1212121212121,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 27.505935214544074
+        },
+        "full_ISR_peak": {
+          "measured_us": 308.0189393939394,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 22.857617695050457
+        },
+        "whole_CPU_mean": {
+          "measured_us": 237.65864643906102,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 25.54747023954991
+        },
+        "whole_CPU_p99": {
+          "measured_us": 334.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 1.8292682926829285
+        },
+        "whole_CPU_peak": {
+          "measured_us": 348.386,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -3.8171015869159386
+        }
+      },
+      "v3_case": "bass",
+      "voice4_case": "noise-tone",
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-NoiseTone-all14/ROW.json",
+      "receipt_sha256": "afbe33e019d58fbf634a71d42989088b141853ccd088d583f49f2c4923144500",
+      "actual_coverage": {
+        "actual_tuples": {
+          "9:9:4:3/1:2:1:1": 32768
+        },
+        "scope": "Actual rendering tuples and coverage; not an exact count of MODE switches"
+      },
+      "fixture_witness": {
+        "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-NoiseTone-all14/RESONANT_FIXTURE.json",
+        "receipt_sha256": "45caf778568595c7885c03173cd8f5b33d66b7ce4ef5688dfd11ec41d939e03d",
+        "status": "PASS_FINAL_CARD_RESONANT_SELECTION_AND_MODE_LOCKS",
+        "banks": 16,
+        "part_records": 128,
+        "patterns": 64,
+        "fixture_trigger_MODE_locks": 2880,
+        "tempo_bpm": 120,
+        "pattern_steps": 64,
+        "pattern_scale": "1X",
+        "driver_sha256": "bbabd353c70ce9f3a6829c34bac474bfd397db9180ca658ad151328c56df36ec",
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Driver-bound scan of final card bytes; actual source modes checked independently; no exact runtime switch-count claim"
+      },
+      "activity_evidence": {
+        "counts": {
+          "1": {
+            "source_significant": 524221,
+            "post_FX_significant": 524189
+          },
+          "2": {
+            "source_significant": 524244,
+            "post_FX_significant": 524211
+          },
+          "3": {
+            "source_significant": 556466,
+            "post_FX_significant": 524191
+          },
+          "4": {
+            "source_significant": 553173,
+            "post_FX_significant": 524194
+          },
+          "5": {
+            "source_significant": 524265,
+            "post_FX_significant": 524237
+          },
+          "6": {
+            "source_significant": 472306,
+            "post_FX_significant": 524143
+          },
+          "7": {
+            "source_significant": 560810,
+            "post_FX_significant": 524210
+          },
+          "8": {
+            "source_significant": 548445,
+            "post_FX_significant": 524211
+          }
+        },
+        "block_dump_sha256": "4e064c40b36be965fe8594ec183de8f0ec527fa2acde4d35ee8da6ffc77c70e4",
+        "raw_dump_retained": false,
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Counts were extracted by the source-bound, independently reconstructed calibrated adapter before its deliberate raw-dump cleanup; only the dump hash and aggregate counts survive. These counts establish activity, not replayable or gap-free audio."
+      }
+    },
+    {
+      "case": "PKFM20-WTWT-ResSnare-MetallicHat-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 200.59282205424782,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 26.787736588652944
+        },
+        "steady_ISR_p99": {
+          "measured_us": 210.1401515151515,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 25.998183057006585
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 298.14772727272725,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 25.413871671898146
+        },
+        "full_ISR_peak": {
+          "measured_us": 303.6212121212121,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 21.103523297274428
+        },
+        "whole_CPU_mean": {
+          "measured_us": 226.35265015110826,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 19.574873602489728
+        },
+        "whole_CPU_p99": {
+          "measured_us": 337.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 2.7439024390243816
+        },
+        "whole_CPU_peak": {
+          "measured_us": 350.136,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -3.333959117864671
+        }
+      },
+      "v3_case": "snare",
+      "voice4_case": "hat",
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-MetallicHat-all14/ROW.json",
+      "receipt_sha256": "2e17d010f0e664b4b5d196e18cb11a40b73b25d6ad351507df10628919c2460a",
+      "actual_coverage": {
+        "actual_tuples": {
+          "9:9:4:5/1:2:0:1": 32768
+        },
+        "scope": "Actual rendering tuples and coverage; not an exact count of MODE switches"
+      },
+      "fixture_witness": {
+        "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-MetallicHat-all14/RESONANT_FIXTURE.json",
+        "receipt_sha256": "df2ba6c9a606a15fb57218b7a12bc8b32cc94907f7de531c3898e9323a7bfea3",
+        "status": "PASS_FINAL_CARD_RESONANT_SELECTION_AND_MODE_LOCKS",
+        "banks": 16,
+        "part_records": 128,
+        "patterns": 64,
+        "fixture_trigger_MODE_locks": 2880,
+        "tempo_bpm": 120,
+        "pattern_steps": 64,
+        "pattern_scale": "1X",
+        "driver_sha256": "bbabd353c70ce9f3a6829c34bac474bfd397db9180ca658ad151328c56df36ec",
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Driver-bound scan of final card bytes; actual source modes checked independently; no exact runtime switch-count claim"
+      },
+      "activity_evidence": {
+        "counts": {
+          "1": {
+            "source_significant": 524221,
+            "post_FX_significant": 524189
+          },
+          "2": {
+            "source_significant": 524244,
+            "post_FX_significant": 524211
+          },
+          "3": {
+            "source_significant": 556466,
+            "post_FX_significant": 524191
+          },
+          "4": {
+            "source_significant": 553173,
+            "post_FX_significant": 524194
+          },
+          "5": {
+            "source_significant": 524128,
+            "post_FX_significant": 524105
+          },
+          "6": {
+            "source_significant": 428309,
+            "post_FX_significant": 523339
+          },
+          "7": {
+            "source_significant": 560810,
+            "post_FX_significant": 524210
+          },
+          "8": {
+            "source_significant": 548445,
+            "post_FX_significant": 524211
+          }
+        },
+        "block_dump_sha256": "1cd09ce2d6a90aade4a0f5dfba9c0738f7cdec415b09a3a120bf28d95e94d5e4",
+        "raw_dump_retained": false,
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Counts were extracted by the source-bound, independently reconstructed calibrated adapter before its deliberate raw-dump cleanup; only the dump hash and aggregate counts survive. These counts establish activity, not replayable or gap-free audio."
+      }
+    },
+    {
+      "case": "PKFM20-WTWT-ResSnare-NoiseTone-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 212.47877385743595,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 34.300432760405755
+        },
+        "steady_ISR_p99": {
+          "measured_us": 221.7689393939394,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 32.9707017942312
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 304.4015151515151,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 28.044486225522224
+        },
+        "full_ISR_peak": {
+          "measured_us": 309.6136363636364,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 23.49368465582886
+        },
+        "whole_CPU_mean": {
+          "measured_us": 238.20011034878817,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 25.833508324470557
+        },
+        "whole_CPU_p99": {
+          "measured_us": 335.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 2.1341463414634054
+        },
+        "whole_CPU_peak": {
+          "measured_us": 347.985,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -3.9278102326814057
+        }
+      },
+      "v3_case": "snare",
+      "voice4_case": "noise-tone",
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-NoiseTone-all14/ROW.json",
+      "receipt_sha256": "2a0e758c0d312b0bb5ef36ddafdc7d15ea530b50563e4547cb37a8b96a13dfd3",
+      "actual_coverage": {
+        "actual_tuples": {
+          "9:9:4:3/1:2:0:1": 32768
+        },
+        "scope": "Actual rendering tuples and coverage; not an exact count of MODE switches"
+      },
+      "fixture_witness": {
+        "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-NoiseTone-all14/RESONANT_FIXTURE.json",
+        "receipt_sha256": "ecc1555c9f0b88d464e1277817511e162b9b45e76691637f0fed453acf661ad8",
+        "status": "PASS_FINAL_CARD_RESONANT_SELECTION_AND_MODE_LOCKS",
+        "banks": 16,
+        "part_records": 128,
+        "patterns": 64,
+        "fixture_trigger_MODE_locks": 2880,
+        "tempo_bpm": 120,
+        "pattern_steps": 64,
+        "pattern_scale": "1X",
+        "driver_sha256": "bbabd353c70ce9f3a6829c34bac474bfd397db9180ca658ad151328c56df36ec",
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Driver-bound scan of final card bytes; actual source modes checked independently; no exact runtime switch-count claim"
+      },
+      "activity_evidence": {
+        "counts": {
+          "1": {
+            "source_significant": 524221,
+            "post_FX_significant": 524189
+          },
+          "2": {
+            "source_significant": 524244,
+            "post_FX_significant": 524211
+          },
+          "3": {
+            "source_significant": 556466,
+            "post_FX_significant": 524191
+          },
+          "4": {
+            "source_significant": 553173,
+            "post_FX_significant": 524194
+          },
+          "5": {
+            "source_significant": 524128,
+            "post_FX_significant": 524105
+          },
+          "6": {
+            "source_significant": 472306,
+            "post_FX_significant": 524143
+          },
+          "7": {
+            "source_significant": 560810,
+            "post_FX_significant": 524210
+          },
+          "8": {
+            "source_significant": 548445,
+            "post_FX_significant": 524211
+          }
+        },
+        "block_dump_sha256": "4830af4ea66d3e03ec00f83ca5ba411397e96f0875c2305e24a7dca255b221e1",
+        "raw_dump_retained": false,
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Counts were extracted by the source-bound, independently reconstructed calibrated adapter before its deliberate raw-dump cleanup; only the dump hash and aggregate counts survive. These counts establish activity, not replayable or gap-free audio."
+      }
+    },
+    {
+      "case": "PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 200.29240366838025,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 26.597852589895176
+        },
+        "steady_ISR_p99": {
+          "measured_us": 209.89772727272728,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 25.852827617533514
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 297.75757575757575,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 25.249757014706596
+        },
+        "full_ISR_peak": {
+          "measured_us": 302.7689393939394,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 20.763582522511626
+        },
+        "whole_CPU_mean": {
+          "measured_us": 226.03726288766572,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 19.40826458714664
+        },
+        "whole_CPU_p99": {
+          "measured_us": 336.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 2.4390243902439046
+        },
+        "whole_CPU_peak": {
+          "measured_us": 349.909,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -3.396629598135903
+        }
+      },
+      "v3_case": "alternate",
+      "voice4_case": "hat",
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14/ROW.json",
+      "receipt_sha256": "f2bf5d6c9f1fe44ed5b3683e39378680e6a52a7a83c707615c6c9519fe0696f0",
+      "actual_coverage": {
+        "actual_tuples": {
+          "9:9:4:5/1:2:0:1": 16880,
+          "9:9:4:5/1:2:1:1": 15888
+        },
+        "scope": "Actual rendering tuples and coverage; not an exact count of MODE switches"
+      },
+      "fixture_witness": {
+        "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14/RESONANT_FIXTURE.json",
+        "receipt_sha256": "e0bfef1b24d62d2805781204404b55771a5e0005d54056d4f85e6297b9bc537b",
+        "status": "PASS_FINAL_CARD_RESONANT_SELECTION_AND_MODE_LOCKS",
+        "banks": 16,
+        "part_records": 128,
+        "patterns": 64,
+        "fixture_trigger_MODE_locks": 2880,
+        "tempo_bpm": 120,
+        "pattern_steps": 64,
+        "pattern_scale": "1X",
+        "driver_sha256": "bbabd353c70ce9f3a6829c34bac474bfd397db9180ca658ad151328c56df36ec",
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Driver-bound scan of final card bytes; actual source modes checked independently; no exact runtime switch-count claim"
+      },
+      "activity_evidence": {
+        "counts": {
+          "1": {
+            "source_significant": 524221,
+            "post_FX_significant": 524189
+          },
+          "2": {
+            "source_significant": 524244,
+            "post_FX_significant": 524211
+          },
+          "3": {
+            "source_significant": 556466,
+            "post_FX_significant": 524191
+          },
+          "4": {
+            "source_significant": 553173,
+            "post_FX_significant": 524194
+          },
+          "5": {
+            "source_significant": 524167,
+            "post_FX_significant": 524139
+          },
+          "6": {
+            "source_significant": 428309,
+            "post_FX_significant": 523339
+          },
+          "7": {
+            "source_significant": 560810,
+            "post_FX_significant": 524210
+          },
+          "8": {
+            "source_significant": 548445,
+            "post_FX_significant": 524211
+          }
+        },
+        "block_dump_sha256": "fc4b3effdb54e3644f5bdf60be9610829deaf07f13bfad1c5212797d17052234",
+        "raw_dump_retained": false,
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Counts were extracted by the source-bound, independently reconstructed calibrated adapter before its deliberate raw-dump cleanup; only the dump hash and aggregate counts survive. These counts establish activity, not replayable or gap-free audio."
+      }
+    },
+    {
+      "case": "PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 212.19040244333212,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 34.1181632329288
+        },
+        "steady_ISR_p99": {
+          "measured_us": 221.4659090909091,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 32.789007494889844
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 304.68560606060606,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 28.163987189496666
+        },
+        "full_ISR_peak": {
+          "measured_us": 309.4166666666667,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 23.41512056566146
+        },
+        "whole_CPU_mean": {
+          "measured_us": 237.90486988876805,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 25.677542221729176
+        },
+        "whole_CPU_p99": {
+          "measured_us": 334.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 1.8292682926829285
+        },
+        "whole_CPU_peak": {
+          "measured_us": 347.095,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -4.173522688370335
+        }
+      },
+      "v3_case": "alternate",
+      "voice4_case": "noise-tone",
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14/ROW.json",
+      "receipt_sha256": "4282b7345439ab2e42dd8d67fb00e3a4e5daa8fb1fe0b88fc4453b048ad7cc4a",
+      "actual_coverage": {
+        "actual_tuples": {
+          "9:9:4:3/1:2:0:1": 16880,
+          "9:9:4:3/1:2:1:1": 15888
+        },
+        "scope": "Actual rendering tuples and coverage; not an exact count of MODE switches"
+      },
+      "fixture_witness": {
+        "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14/RESONANT_FIXTURE.json",
+        "receipt_sha256": "2ec4a7a662b02c323da591cfcb3b10a8404f1e4ced8ed2a412391b2ed1defe2d",
+        "status": "PASS_FINAL_CARD_RESONANT_SELECTION_AND_MODE_LOCKS",
+        "banks": 16,
+        "part_records": 128,
+        "patterns": 64,
+        "fixture_trigger_MODE_locks": 2880,
+        "tempo_bpm": 120,
+        "pattern_steps": 64,
+        "pattern_scale": "1X",
+        "driver_sha256": "bbabd353c70ce9f3a6829c34bac474bfd397db9180ca658ad151328c56df36ec",
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Driver-bound scan of final card bytes; actual source modes checked independently; no exact runtime switch-count claim"
+      },
+      "activity_evidence": {
+        "counts": {
+          "1": {
+            "source_significant": 524221,
+            "post_FX_significant": 524189
+          },
+          "2": {
+            "source_significant": 524244,
+            "post_FX_significant": 524211
+          },
+          "3": {
+            "source_significant": 556466,
+            "post_FX_significant": 524191
+          },
+          "4": {
+            "source_significant": 553173,
+            "post_FX_significant": 524194
+          },
+          "5": {
+            "source_significant": 524167,
+            "post_FX_significant": 524139
+          },
+          "6": {
+            "source_significant": 472306,
+            "post_FX_significant": 524143
+          },
+          "7": {
+            "source_significant": 560810,
+            "post_FX_significant": 524210
+          },
+          "8": {
+            "source_significant": 548445,
+            "post_FX_significant": 524211
+          }
+        },
+        "block_dump_sha256": "bd3ece2b315fd154032681047b1fcd1f4b72626a697306ae3b2ff8d4c5ca9832",
+        "raw_dump_retained": false,
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Counts were extracted by the source-bound, independently reconstructed calibrated adapter before its deliberate raw-dump cleanup; only the dump hash and aggregate counts survive. These counts establish activity, not replayable or gap-free audio."
+      }
+    },
+    {
+      "case": "PKFM20-WTWT-SlapControl-MetallicHat-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 207.13212481962483,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 30.921002116299046
+        },
+        "steady_ISR_p99": {
+          "measured_us": 216.52272727272728,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 29.825119236883957
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 296.75,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 24.825926929143893
+        },
+        "full_ISR_peak": {
+          "measured_us": 302.4734848484849,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 20.645736387260527
+        },
+        "whole_CPU_mean": {
+          "measured_us": 232.86327442978367,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 23.014228408701175
+        },
+        "whole_CPU_p99": {
+          "measured_us": 335.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 2.1341463414634054
+        },
+        "whole_CPU_peak": {
+          "measured_us": 347.598,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -4.034653738694461
+        }
+      },
+      "v3_case": "slap-control",
+      "voice4_case": "hat",
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-MetallicHat-all14/ROW.json",
+      "receipt_sha256": "f737d5a6e4c6db0d72c8144f0587f6a3b55175cd40b663069c15a8a6b563aa23",
+      "actual_coverage": {
+        "actual_tuples": {
+          "9:9:8:5/1:2:0:1": 32768
+        },
+        "scope": "Actual rendering tuples and coverage; not an exact count of MODE switches"
+      },
+      "fixture_witness": {
+        "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-MetallicHat-all14/RESONANT_FIXTURE.json",
+        "receipt_sha256": "533a8a19f1e32dbab41b5a2555120c4de133d39e79873ce41f48dece3148316c",
+        "status": "PASS_FINAL_CARD_RESONANT_SELECTION_AND_MODE_LOCKS",
+        "banks": 16,
+        "part_records": 128,
+        "patterns": 64,
+        "fixture_trigger_MODE_locks": 2880,
+        "tempo_bpm": 120,
+        "pattern_steps": 64,
+        "pattern_scale": "1X",
+        "driver_sha256": "bbabd353c70ce9f3a6829c34bac474bfd397db9180ca658ad151328c56df36ec",
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Driver-bound scan of final card bytes; actual source modes checked independently; no exact runtime switch-count claim"
+      },
+      "activity_evidence": {
+        "counts": {
+          "1": {
+            "source_significant": 524221,
+            "post_FX_significant": 524189
+          },
+          "2": {
+            "source_significant": 524244,
+            "post_FX_significant": 524211
+          },
+          "3": {
+            "source_significant": 556466,
+            "post_FX_significant": 524191
+          },
+          "4": {
+            "source_significant": 553173,
+            "post_FX_significant": 524194
+          },
+          "5": {
+            "source_significant": 523995,
+            "post_FX_significant": 523969
+          },
+          "6": {
+            "source_significant": 428309,
+            "post_FX_significant": 523339
+          },
+          "7": {
+            "source_significant": 560810,
+            "post_FX_significant": 524210
+          },
+          "8": {
+            "source_significant": 548445,
+            "post_FX_significant": 524211
+          }
+        },
+        "block_dump_sha256": "e549a5ed15ac99dfd417dd39a7d505e5dbbb8f7f6d330ab4b720ce428a3b58ff",
+        "raw_dump_retained": false,
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Counts were extracted by the source-bound, independently reconstructed calibrated adapter before its deliberate raw-dump cleanup; only the dump hash and aggregate counts survive. These counts establish activity, not replayable or gap-free audio."
+      }
+    },
+    {
+      "case": "PKFM20-WTWT-SlapControl-NoiseTone-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 218.9175876839451,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 38.37018272961474
+        },
+        "steady_ISR_p99": {
+          "measured_us": 228.21969696969697,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 36.83851919146037
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 303.8484848484849,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 27.811857682318664
+        },
+        "full_ISR_peak": {
+          "measured_us": 308.35227272727275,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 22.990572309179914
+        },
+        "whole_CPU_mean": {
+          "measured_us": 244.64326985677084,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 29.237223647676956
+        },
+        "whole_CPU_p99": {
+          "measured_us": 332.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 1.2195121951219523
+        },
+        "whole_CPU_peak": {
+          "measured_us": 344.898,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -4.780073548087849
+        }
+      },
+      "v3_case": "slap-control",
+      "voice4_case": "noise-tone",
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-NoiseTone-all14/ROW.json",
+      "receipt_sha256": "0765cb8fe8f7028a530d4be000859e5b0dd0fab07d01c8947e1e9f2551cca08b",
+      "actual_coverage": {
+        "actual_tuples": {
+          "9:9:8:3/1:2:0:1": 32768
+        },
+        "scope": "Actual rendering tuples and coverage; not an exact count of MODE switches"
+      },
+      "fixture_witness": {
+        "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-NoiseTone-all14/RESONANT_FIXTURE.json",
+        "receipt_sha256": "52dae84902dce3bb51ea57115e2ce796209492b87b53cffac8c21efa00e7054a",
+        "status": "PASS_FINAL_CARD_RESONANT_SELECTION_AND_MODE_LOCKS",
+        "banks": 16,
+        "part_records": 128,
+        "patterns": 64,
+        "fixture_trigger_MODE_locks": 2880,
+        "tempo_bpm": 120,
+        "pattern_steps": 64,
+        "pattern_scale": "1X",
+        "driver_sha256": "bbabd353c70ce9f3a6829c34bac474bfd397db9180ca658ad151328c56df36ec",
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Driver-bound scan of final card bytes; actual source modes checked independently; no exact runtime switch-count claim"
+      },
+      "activity_evidence": {
+        "counts": {
+          "1": {
+            "source_significant": 524221,
+            "post_FX_significant": 524189
+          },
+          "2": {
+            "source_significant": 524244,
+            "post_FX_significant": 524211
+          },
+          "3": {
+            "source_significant": 556466,
+            "post_FX_significant": 524191
+          },
+          "4": {
+            "source_significant": 553173,
+            "post_FX_significant": 524194
+          },
+          "5": {
+            "source_significant": 523995,
+            "post_FX_significant": 523969
+          },
+          "6": {
+            "source_significant": 472306,
+            "post_FX_significant": 524143
+          },
+          "7": {
+            "source_significant": 560810,
+            "post_FX_significant": 524210
+          },
+          "8": {
+            "source_significant": 548445,
+            "post_FX_significant": 524211
+          }
+        },
+        "block_dump_sha256": "a816c6bf04a3422acd591a9224e487ad749725772fd904453ecca1d1cfb365b4",
+        "raw_dump_retained": false,
+        "adapted_function_sha256": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+        "scope": "Counts were extracted by the source-bound, independently reconstructed calibrated adapter before its deliberate raw-dump cleanup; only the dump hash and aggregate counts survive. These counts establish activity, not replayable or gap-free audio."
+      }
+    }
+  ],
+  "changes_from_matched_PKFM17": [
+    {
+      "v3_case": "bass",
+      "voice4_case": "hat",
+      "control_case": "PKFM17-WTWT-ResBass-MetallicHat-all14",
+      "case": "PKFM20-WTWT-ResBass-MetallicHat-all14",
+      "before_us": {
+        "steady_ISR_mean": 205.6116280457101,
+        "steady_ISR_p99": 214.23863636363637,
+        "steady_ISR_p99_9": 295.95454545454544,
+        "full_ISR_peak": 301.9469696969697,
+        "whole_CPU_mean": 231.38579212535512,
+        "whole_CPU_p99": 337.0,
+        "whole_CPU_peak": 352.424
+      },
+      "after_us": {
+        "steady_ISR_mean": 200.0119816797063,
+        "steady_ISR_p99": 209.60227272727272,
+        "steady_ISR_p99_9": 296.5833333333333,
+        "full_ISR_peak": 302.3219696969697,
+        "whole_CPU_mean": 225.73804392959133,
+        "whole_CPU_p99": 335.0,
+        "whole_CPU_peak": 352.523
+      },
+      "candidate_minus_PKFM17_us": {
+        "steady_ISR_mean": -5.599646366003782,
+        "steady_ISR_p99": -4.6363636363636545,
+        "steady_ISR_p99_9": 0.6287878787878753,
+        "full_ISR_peak": 0.375,
+        "whole_CPU_mean": -5.647748195763796,
+        "whole_CPU_p99": -2.0,
+        "whole_CPU_peak": 0.09900000000004638
+      },
+      "saved_us": {
+        "steady_ISR_mean": 5.599646366003782,
+        "steady_ISR_p99": 4.6363636363636545,
+        "steady_ISR_p99_9": -0.6287878787878753,
+        "full_ISR_peak": -0.375,
+        "whole_CPU_mean": 5.647748195763796,
+        "whole_CPU_p99": 2.0,
+        "whole_CPU_peak": -0.09900000000004638
+      }
+    },
+    {
+      "v3_case": "bass",
+      "voice4_case": "noise-tone",
+      "control_case": "PKFM17-WTWT-ResBass-NoiseTone-all14",
+      "case": "PKFM20-WTWT-ResBass-NoiseTone-all14",
+      "before_us": {
+        "steady_ISR_mean": 216.5355888685967,
+        "steady_ISR_p99": 225.29166666666666,
+        "steady_ISR_p99_9": 303.280303030303,
+        "full_ISR_peak": 309.32954545454544,
+        "whole_CPU_mean": 242.25063982876864,
+        "whole_CPU_p99": 334.0,
+        "whole_CPU_peak": 345.417
+      },
+      "after_us": {
+        "steady_ISR_mean": 211.94971454688252,
+        "steady_ISR_p99": 221.18939393939394,
+        "steady_ISR_p99_9": 303.1212121212121,
+        "full_ISR_peak": 308.0189393939394,
+        "whole_CPU_mean": 237.65864643906102,
+        "whole_CPU_p99": 334.0,
+        "whole_CPU_peak": 348.386
+      },
+      "candidate_minus_PKFM17_us": {
+        "steady_ISR_mean": -4.585874321714186,
+        "steady_ISR_p99": -4.1022727272727195,
+        "steady_ISR_p99_9": -0.15909090909087809,
+        "full_ISR_peak": -1.3106060606060623,
+        "whole_CPU_mean": -4.591993389707625,
+        "whole_CPU_p99": 0.0,
+        "whole_CPU_peak": 2.969000000000051
+      },
+      "saved_us": {
+        "steady_ISR_mean": 4.585874321714186,
+        "steady_ISR_p99": 4.1022727272727195,
+        "steady_ISR_p99_9": 0.15909090909087809,
+        "full_ISR_peak": 1.3106060606060623,
+        "whole_CPU_mean": 4.591993389707625,
+        "whole_CPU_p99": 0.0,
+        "whole_CPU_peak": -2.969000000000051
+      }
+    },
+    {
+      "v3_case": "snare",
+      "voice4_case": "hat",
+      "control_case": "PKFM17-WTWT-ResSnare-MetallicHat-all14",
+      "case": "PKFM20-WTWT-ResSnare-MetallicHat-all14",
+      "before_us": {
+        "steady_ISR_mean": 205.58163855820106,
+        "steady_ISR_p99": 214.1060606060606,
+        "steady_ISR_p99_9": 297.125,
+        "full_ISR_peak": 303.0833333333333,
+        "whole_CPU_mean": 231.3525469230883,
+        "whole_CPU_p99": 337.0,
+        "whole_CPU_peak": 355.341
+      },
+      "after_us": {
+        "steady_ISR_mean": 200.59282205424782,
+        "steady_ISR_p99": 210.1401515151515,
+        "steady_ISR_p99_9": 298.14772727272725,
+        "full_ISR_peak": 303.6212121212121,
+        "whole_CPU_mean": 226.35265015110826,
+        "whole_CPU_p99": 337.0,
+        "whole_CPU_peak": 350.136
+      },
+      "candidate_minus_PKFM17_us": {
+        "steady_ISR_mean": -4.988816503953245,
+        "steady_ISR_p99": -3.9659090909090935,
+        "steady_ISR_p99_9": 1.022727272727252,
+        "full_ISR_peak": 0.5378787878788103,
+        "whole_CPU_mean": -4.999896771980048,
+        "whole_CPU_p99": 0.0,
+        "whole_CPU_peak": -5.204999999999984
+      },
+      "saved_us": {
+        "steady_ISR_mean": 4.988816503953245,
+        "steady_ISR_p99": 3.9659090909090935,
+        "steady_ISR_p99_9": -1.022727272727252,
+        "full_ISR_peak": -0.5378787878788103,
+        "whole_CPU_mean": 4.999896771980048,
+        "whole_CPU_p99": 0.0,
+        "whole_CPU_peak": 5.204999999999984
+      }
+    },
+    {
+      "v3_case": "snare",
+      "voice4_case": "noise-tone",
+      "control_case": "PKFM17-WTWT-ResSnare-NoiseTone-all14",
+      "case": "PKFM20-WTWT-ResSnare-NoiseTone-all14",
+      "before_us": {
+        "steady_ISR_mean": 217.0046874060546,
+        "steady_ISR_p99": 225.8219696969697,
+        "steady_ISR_p99_9": 304.5984848484849,
+        "full_ISR_peak": 310.9469696969697,
+        "whole_CPU_mean": 242.74419634269947,
+        "whole_CPU_p99": 335.0,
+        "whole_CPU_peak": 347.011
+      },
+      "after_us": {
+        "steady_ISR_mean": 212.47877385743595,
+        "steady_ISR_p99": 221.7689393939394,
+        "steady_ISR_p99_9": 304.4015151515151,
+        "full_ISR_peak": 309.6136363636364,
+        "whole_CPU_mean": 238.20011034878817,
+        "whole_CPU_p99": 335.0,
+        "whole_CPU_peak": 347.985
+      },
+      "candidate_minus_PKFM17_us": {
+        "steady_ISR_mean": -4.525913548618632,
+        "steady_ISR_p99": -4.053030303030283,
+        "steady_ISR_p99_9": -0.1969696969697452,
+        "full_ISR_peak": -1.3333333333333144,
+        "whole_CPU_mean": -4.544085993911295,
+        "whole_CPU_p99": 0.0,
+        "whole_CPU_peak": 0.9739999999999895
+      },
+      "saved_us": {
+        "steady_ISR_mean": 4.525913548618632,
+        "steady_ISR_p99": 4.053030303030283,
+        "steady_ISR_p99_9": 0.1969696969697452,
+        "full_ISR_peak": 1.3333333333333144,
+        "whole_CPU_mean": 4.544085993911295,
+        "whole_CPU_p99": 0.0,
+        "whole_CPU_peak": -0.9739999999999895
+      }
+    },
+    {
+      "v3_case": "alternate",
+      "voice4_case": "hat",
+      "control_case": "PKFM17-WTWT-ResSnareBassLocks-MetallicHat-all14",
+      "case": "PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14",
+      "before_us": {
+        "steady_ISR_mean": 205.56592454492844,
+        "steady_ISR_p99": 214.18560606060606,
+        "steady_ISR_p99_9": 297.22727272727275,
+        "full_ISR_peak": 303.0037878787879,
+        "whole_CPU_mean": 231.33836561260802,
+        "whole_CPU_p99": 337.0,
+        "whole_CPU_peak": 350.981
+      },
+      "after_us": {
+        "steady_ISR_mean": 200.29240366838025,
+        "steady_ISR_p99": 209.89772727272728,
+        "steady_ISR_p99_9": 297.75757575757575,
+        "full_ISR_peak": 302.7689393939394,
+        "whole_CPU_mean": 226.03726288766572,
+        "whole_CPU_p99": 336.0,
+        "whole_CPU_peak": 349.909
+      },
+      "candidate_minus_PKFM17_us": {
+        "steady_ISR_mean": -5.27352087654819,
+        "steady_ISR_p99": -4.287878787878782,
+        "steady_ISR_p99_9": 0.5303030303030027,
+        "full_ISR_peak": -0.23484848484849863,
+        "whole_CPU_mean": -5.301102724942297,
+        "whole_CPU_p99": -1.0,
+        "whole_CPU_peak": -1.0720000000000027
+      },
+      "saved_us": {
+        "steady_ISR_mean": 5.27352087654819,
+        "steady_ISR_p99": 4.287878787878782,
+        "steady_ISR_p99_9": -0.5303030303030027,
+        "full_ISR_peak": 0.23484848484849863,
+        "whole_CPU_mean": 5.301102724942297,
+        "whole_CPU_p99": 1.0,
+        "whole_CPU_peak": 1.0720000000000027
+      }
+    },
+    {
+      "v3_case": "alternate",
+      "voice4_case": "noise-tone",
+      "control_case": "PKFM17-WTWT-ResSnareBassLocks-NoiseTone-all14",
+      "case": "PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14",
+      "before_us": {
+        "steady_ISR_mean": 216.77156869100227,
+        "steady_ISR_p99": 225.58712121212122,
+        "steady_ISR_p99_9": 304.4886363636364,
+        "full_ISR_peak": 310.86742424242425,
+        "whole_CPU_mean": 242.50536288637105,
+        "whole_CPU_p99": 334.0,
+        "whole_CPU_peak": 349.557
+      },
+      "after_us": {
+        "steady_ISR_mean": 212.19040244333212,
+        "steady_ISR_p99": 221.4659090909091,
+        "steady_ISR_p99_9": 304.68560606060606,
+        "full_ISR_peak": 309.4166666666667,
+        "whole_CPU_mean": 237.90486988876805,
+        "whole_CPU_p99": 334.0,
+        "whole_CPU_peak": 347.095
+      },
+      "candidate_minus_PKFM17_us": {
+        "steady_ISR_mean": -4.581166247670154,
+        "steady_ISR_p99": -4.121212121212125,
+        "steady_ISR_p99_9": 0.19696969696968836,
+        "full_ISR_peak": -1.4507575757575637,
+        "whole_CPU_mean": -4.6004929976029985,
+        "whole_CPU_p99": 0.0,
+        "whole_CPU_peak": -2.461999999999989
+      },
+      "saved_us": {
+        "steady_ISR_mean": 4.581166247670154,
+        "steady_ISR_p99": 4.121212121212125,
+        "steady_ISR_p99_9": -0.19696969696968836,
+        "full_ISR_peak": 1.4507575757575637,
+        "whole_CPU_mean": 4.6004929976029985,
+        "whole_CPU_p99": 0.0,
+        "whole_CPU_peak": 2.461999999999989
+      }
+    },
+    {
+      "v3_case": "slap-control",
+      "voice4_case": "hat",
+      "control_case": "PKFM17-WTWT-SlapControl-MetallicHat-all14",
+      "case": "PKFM20-WTWT-SlapControl-MetallicHat-all14",
+      "before_us": {
+        "steady_ISR_mean": 210.43675900560666,
+        "steady_ISR_p99": 218.87878787878788,
+        "steady_ISR_p99_9": 295.344696969697,
+        "full_ISR_peak": 300.6666666666667,
+        "whole_CPU_mean": 236.1538963317871,
+        "whole_CPU_p99": 334.0,
+        "whole_CPU_peak": 346.64
+      },
+      "after_us": {
+        "steady_ISR_mean": 207.13212481962483,
+        "steady_ISR_p99": 216.52272727272728,
+        "steady_ISR_p99_9": 296.75,
+        "full_ISR_peak": 302.4734848484849,
+        "whole_CPU_mean": 232.86327442978367,
+        "whole_CPU_p99": 335.0,
+        "whole_CPU_peak": 347.598
+      },
+      "candidate_minus_PKFM17_us": {
+        "steady_ISR_mean": -3.3046341859818256,
+        "steady_ISR_p99": -2.356060606060595,
+        "steady_ISR_p99_9": 1.4053030303030027,
+        "full_ISR_peak": 1.806818181818187,
+        "whole_CPU_mean": -3.290621902003437,
+        "whole_CPU_p99": 1.0,
+        "whole_CPU_peak": 0.9580000000000268
+      },
+      "saved_us": {
+        "steady_ISR_mean": 3.3046341859818256,
+        "steady_ISR_p99": 2.356060606060595,
+        "steady_ISR_p99_9": -1.4053030303030027,
+        "full_ISR_peak": -1.806818181818187,
+        "whole_CPU_mean": 3.290621902003437,
+        "whole_CPU_p99": -1.0,
+        "whole_CPU_peak": -0.9580000000000268
+      }
+    },
+    {
+      "v3_case": "slap-control",
+      "voice4_case": "noise-tone",
+      "control_case": "PKFM17-WTWT-SlapControl-NoiseTone-all14",
+      "case": "PKFM20-WTWT-SlapControl-NoiseTone-all14",
+      "before_us": {
+        "steady_ISR_mean": 221.68127963977574,
+        "steady_ISR_p99": 230.31439393939394,
+        "steady_ISR_p99_9": 302.45075757575756,
+        "full_ISR_peak": 307.125,
+        "whole_CPU_mean": 247.3709820834073,
+        "whole_CPU_p99": 331.0,
+        "whole_CPU_peak": 342.966
+      },
+      "after_us": {
+        "steady_ISR_mean": 218.9175876839451,
+        "steady_ISR_p99": 228.21969696969697,
+        "steady_ISR_p99_9": 303.8484848484849,
+        "full_ISR_peak": 308.35227272727275,
+        "whole_CPU_mean": 244.64326985677084,
+        "whole_CPU_p99": 332.0,
+        "whole_CPU_peak": 344.898
+      },
+      "candidate_minus_PKFM17_us": {
+        "steady_ISR_mean": -2.7636919558306374,
+        "steady_ISR_p99": -2.094696969696969,
+        "steady_ISR_p99_9": 1.397727272727309,
+        "full_ISR_peak": 1.227272727272748,
+        "whole_CPU_mean": -2.72771222663647,
+        "whole_CPU_p99": 1.0,
+        "whole_CPU_peak": 1.9320000000000164
+      },
+      "saved_us": {
+        "steady_ISR_mean": 2.7636919558306374,
+        "steady_ISR_p99": 2.094696969696969,
+        "steady_ISR_p99_9": -1.397727272727309,
+        "full_ISR_peak": -1.227272727272748,
+        "whole_CPU_mean": 2.72771222663647,
+        "whole_CPU_p99": -1.0,
+        "whole_CPU_peak": -1.9320000000000164
+      }
+    }
+  ],
+  "proof_index": {
+    "source": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/SOURCE_GATE.json",
+      "sha256": "fd226c4426f06ee372429852915d6727bdba4203073825c0a1f723f3726bbb97",
+      "status": "PASS_ACTUAL_IMAGE_ALL_LAYOUT_SOURCE_PCM_STATE_SHARED_RNG",
+      "linked_candidate": true
+    },
+    "handoff": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/HANDOFF_GATE.json",
+      "sha256": "3c4068e9a9a209d9b12d2781548583bbd340748e3da3975316b470e8a27bb46c",
+      "status": "PASS_ACTUAL_CF_DSP_NONBLOCKING_STATE_HANDOFF",
+      "linked_candidate": true
+    },
+    "lifecycle": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/lifecycle/RESULT.json",
+      "sha256": "ec3ae83ce309db90ebe80aaea871a5a17da9288a398408d161982e9a387fcbd5",
+      "status": "PASS_FULL_MAP_LIFECYCLE_MODEL_SCOPE",
+      "linked_candidate": true,
+      "observer_receipts": {
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/lifecycle/full-map-exact.json": "295af239f07c93e875f591383fa692b7fadd105b95813ae2bcc5c13a2ef808fc",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/lifecycle/stack.json": "e9817f765fd8da930283209da464b10fb4ad31e286328aa4d22384330d62adb5",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/lifecycle/private.json": "345ae3830188f59c3505e602a75345f8449ac17d6b0de2130deb55f1f51ff3be",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/lifecycle/startup.log": "17b8074347dcc9e97fe0dca8223435f8164b0b88c30963e3450717a1ff7615cb",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/lifecycle/stdout.log": "17b8074347dcc9e97fe0dca8223435f8164b0b88c30963e3450717a1ff7615cb"
+      }
+    },
+    "matrix": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/MATRIX.json",
+      "sha256": "e6234ee029d3c33d7fd065b977fb153c1a5ee9121901f0e7f4afb08bf0ec88a1",
+      "status": "PASS_FULL_MAP_PRODUCTION_MATRIX_MODEL_SCOPE",
+      "linked_candidate": true,
+      "observer_receipts": {
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/matrix/full-map-exact.json": "f93be5a843ed0c5afe58ad9103b4bd070c752548102836599696f15d3ee57940",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/matrix/stack.json": "47b4f2ad09b381511e7a8fb01f06cf11190f4b59842836e87b69f49ba06350ce",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/matrix/private.json": "9dd45568dab4e1bfcb04761cde4f37cc2ea52577c2ce398e06a40a034381bc44",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/matrix/startup.log": "be5a53cf2ee83283e897b9ddaa9575eaf398c3f0f9d5e77f353a70018305a692"
+      }
+    },
+    "scenes": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/SCENES.json",
+      "sha256": "9914dd0521f5ac69c11f1bcdf4b85e5146c2a5a24dc8bcc4dc948cd3c0aa9cf2",
+      "status": "PASS_FULL_MAP_SCENE_FADER_MODEL_SCOPE",
+      "linked_candidate": true,
+      "observer_receipts": {
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/scenes/full-map-exact.json": "d93b911e47a0bfffc8be53f28b2c49b73debeed05ad934bf22d2283f97610aeb",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/scenes/stack.json": "bb7e49751e49fba5d1269032b37ccc3de9ebb88beb0883b3c160b9f6298afeab",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/scenes/private.json": "65f0a2ff5b8afae5cc585c866fe6de80062ddc34764cbdee49b26fee0bfee730",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/scenes/stdout.log": "a1603d7fcff924ffdbbae8c0333d735d0de395667bbd998c641d21088770bde8"
+      }
+    },
+    "linked_synthesis": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/KERNEL_GATE.json",
+      "sha256": "a671f7fc438166fcabeb0945279ff4ffacf419eb170144ec0f46e082b7264a00",
+      "status": "PASS_ACTUAL_LINKED_KERNEL_NATIVE_PCM_FULLSTATE_RNG_HOLD",
+      "linked_candidate": true
+    },
+    "dma": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/DMA_GATE.json",
+      "sha256": "6187b6c8e90b6d26a456903b4901d778261fc960d0f93864fe94da324de599b5",
+      "status": "PASS_ACTUAL_CF_DMA_STARTUP_FULL_WRAP_AND_CARRIER_CLEAR",
+      "linked_candidate": true
+    },
+    "prepare_native": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/prepare-proof-v2/RESULT.json",
+      "sha256": "428a88c6085b9eb2c66b74b848f730880991e07af60944d2ba09fecf57d817ea",
+      "status": "PASS_FAST_PREPARE_ALL_FAMILY_STATE_CLOCK_AND_EVENT_OBSERVATION",
+      "linked_candidate": false
+    },
+    "resonant_linked": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/synthesis-remaining-native20-edge-v2/RESULT.json",
+      "sha256": "abc0462a4eac5a22cdf240f7fe9fad8c8d08dd4f48749e39711d0ed0c2bd97a7",
+      "status": "PASS_LINKED_CF_ORIGINAL_PCM_STATE_RNG_CLOCK",
+      "linked_candidate": false
+    },
+    "stock_source_mix": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/stock-mixer-binding-v2/BINDING.json",
+      "sha256": "b1f07ee3acdca4fd66f39038e0b8c8a10343fe462ef21520e57ef2d7273100f3",
+      "status": "PASS_FINAL_IMAGE_STOCK_MIXER_PROOF_AND_BOOT_BINDING",
+      "linked_candidate": true
+    },
+    "profile_final": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-profile/PKFM20-WTWT-SlapControl-NoiseTone-all14/PROFILE.json",
+      "sha256": "54af71da38fcddfaf98d69a55d2e9b98db4e1959475df4a15a77a5f6359d121f",
+      "status": "PASS_UNCHANGED_AUDIO_STATE_AND_CYCLES",
+      "linked_candidate": true
+    },
+    "default_build": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/DEFAULT_FLOORS.json",
+      "sha256": "d513c020f5ed92d73a9db7119804db8a51b496816dab574f677c3ad8a95386b2",
+      "status": "PASS_LOCAL_DEFAULT_CHECK_REFHASH_AND_RESTORE",
+      "linked_candidate": false
+    }
+  },
+  "interactive_timing": {
+    "lifecycle": {
+      "frames": 52934,
+      "completed": 52933,
+      "max_us": 328.96590909090907,
+      "nominal_deadline_misses": 0,
+      "resident_DSP_state_frames_checked": 48029,
+      "uninitialized_hat_frames": 1328
+    },
+    "matrix": {
+      "frames": 159827,
+      "completed": 159826,
+      "max_us": 333.0037878787879,
+      "nominal_deadline_misses": 0,
+      "resident_DSP_state_frames_checked": 159825,
+      "uninitialized_hat_frames": 0
+    },
+    "scenes": {
+      "frames": 9147,
+      "completed": 9146,
+      "max_us": 302.2916666666667,
+      "nominal_deadline_misses": 0,
+      "resident_DSP_state_frames_checked": 9144,
+      "uninitialized_hat_frames": 0
+    }
+  },
+  "interactive_full_ISR_peak_checks": {
+    "lifecycle": {
+      "measured_us": 328.96590909090907,
+      "ceiling_us": 250.71212121212122,
+      "pass_budget": false
+    },
+    "matrix": {
+      "measured_us": 333.0037878787879,
+      "ceiling_us": 250.71212121212122,
+      "pass_budget": false
+    },
+    "scenes": {
+      "measured_us": 302.2916666666667,
+      "ceiling_us": 250.71212121212122,
+      "pass_budget": false
+    }
+  },
+  "DSP_reuse_identity": {
+    "uploads": {
+      "A": {
+        "candidate": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/dsp-A.upload.bin",
+        "baseline": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-packet-reserve-v2/dsp-A.upload.bin",
+        "sha256": "f20840efbb931ba164e70ed6dc20393cbb54acfcd065ecf7572f95c7c0edb93b",
+        "bytes": 94236
+      },
+      "B": {
+        "candidate": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/dsp-B.upload.bin",
+        "baseline": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-packet-reserve-v2/dsp-B.upload.bin",
+        "sha256": "c8aee0a9d4c110a6ea53891b1cfb79b861cbe9b68b15fa841816c51080d8693b",
+        "bytes": 90519
+      }
+    },
+    "reused_DSP_only_receipts": {
+      "SNAPSHOT_DSP_GATE.json": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-packet-reserve-v2/SNAPSHOT_DSP_GATE.json",
+        "sha256": "e2f3d5bfa3348a00e4b55dba8a185d59af2fa5eef1b689671a0876dd07270620",
+        "status": "PASS_FROZEN_DSP_SNAPSHOT_AUDIO_STATE_AND_RING_FEEDBACK",
+        "scope": "Prior DSP-only proof reused through candidate/baseline A/B upload byte identity"
+      },
+      "STATE_STOCK_FX_GATE.json": {
+        "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-packet-reserve-v2/STATE_STOCK_FX_GATE.json",
+        "sha256": "335db0fbf6cf7a1785e3dfd655e4c0ef0a58b5ca17b08f205396eaa7cc4ee106",
+        "status": "PASS_STATE_HANDOFF_ALL_FOURTEEN_FX_STOCK_DATA_AND_B_SOURCE",
+        "scope": "Prior DSP-only proof reused through candidate/baseline A/B upload byte identity"
+      }
+    }
+  },
+  "receipts": {
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/BUILD.json": "d464f9490f8f1af5085c7b4fbf02568ed5fa1461509719afb94bd33ff480f4e8",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/OPTIMIZATION_PROOFS.json": "2a95899906055be6533789ef3c2a00cc35f5cc67f78e07bdafe0e0a1bd678671",
+    "/Users/jrold/Downloads/octabam/modules/perky/hybrid/EMULATOR_BUDGET.json": "8608844b96c6f20daed514147dc6cadab7a2c82aae80d2ef7c9a875a22ccaec4",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-MetallicHat-all14/ROW.json": "2ef759dac68dfabae118a2a8ec9c10957f59ece705a616029bda457972002dda",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-MetallicHat-all14/INPUTS.json": "a06afb2d5cb25f044738208068ced45509e752774a990c6be0d35a5a5a4b249f",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-MetallicHat-all14/stack.json": "7ff2f94084379a79e875208cb02c29338e6cde545ba01cc7240cdaa588d2ef06",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-MetallicHat-all14/private.json": "d5661caea906dbb247407a1fdd9165154cf9c564aa5f4f017f869a48d4435661",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-MetallicHat-all14/port.log": "f49d95f65ea5a93524aa671fcfae635d01b621239985156ba7f57b18092b36cf",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-MetallicHat-all14/BUDGET_ASSESSMENT.json": "2f1575581bfc3df333f288492d6b7aa7ea73350f5fb6426471e2cd431619167b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-MetallicHat-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-MetallicHat-all14/card-end.log": "55bbdf466a3b35558b06fe011fad3e7c450c4351e61cecead39812b8c23d47f1",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-MetallicHat-all14/full-map-exact.json": "7c3939e99d482258e3fa2d364c7dbbf415ab32191670d64f4e605f5854ae1c0b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-packet-reserve-v2/observer/full-map-oracle.dylib": "84c9345815e71c78072902d69477d0c92ddf592c08aaca8bf0e09f6582cadf6d",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-MetallicHat-all14/RESONANT_FIXTURE.json": "f17f6d328a1599e0d2a82cf799b07216daa944208625af96b54cafdefd04e8b1",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-MetallicHat-all14/MEASUREMENT_ADAPTER.py": "d5f640d2c71fa4c2a5bbddf4bd24f1af22e98d2e3f5fd9c974e1748e39c20846",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-NoiseTone-all14/ROW.json": "3cb757b320a9c2371f0ee82bd6106962b1b20af0471dcb79f34a690d030338d9",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-NoiseTone-all14/INPUTS.json": "24dbee9e841a79cf6fe0cb0cab45a3db0325b5637f9c49176425b90af4750cce",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-NoiseTone-all14/stack.json": "a896a6b785e7abab5e9df66d5fec14a827dcd47bebd9a2d77ed51625b1cda01c",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-NoiseTone-all14/private.json": "b63cf9a42ae87a40d3de7681513c4f4d32c7a2b136e365968c1cdc0ead78266b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-NoiseTone-all14/port.log": "39f6a04d85da2e420abfbbdfa5a90550726a1fe882372bdb5c87e70214cc1e8b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-NoiseTone-all14/BUDGET_ASSESSMENT.json": "f66823a5555e847803e80ba57115ad6498fe05f8e04d596c24413866e474d4b4",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-NoiseTone-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-NoiseTone-all14/card-end.log": "d582ca8db379578b54500531b5bfcf43347980b346bf60e89e37c5a292eeaa50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-NoiseTone-all14/full-map-exact.json": "df76ab85008f56851f79105430d135318faaf23b701b7b03d2791c0cb9697b9f",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-NoiseTone-all14/RESONANT_FIXTURE.json": "4f786f7e97fe4ae7737495fb36646d9968ba13eec55b3ab368273e41b44ec3d8",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResBass-NoiseTone-all14/MEASUREMENT_ADAPTER.py": "d5f640d2c71fa4c2a5bbddf4bd24f1af22e98d2e3f5fd9c974e1748e39c20846",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-MetallicHat-all14/ROW.json": "25f30d22495fa368daed3118284ecfda1000e3279598d53587b1b60a646258f5",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-MetallicHat-all14/INPUTS.json": "43ffe84c4e3cfff432f49e2a7b2dab3feb1843bc24c26991093424d0957004f5",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-MetallicHat-all14/stack.json": "2ee4262fab530073e9ad54e69eac400b5f228b1b766856c9a339702c9fc3aa56",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-MetallicHat-all14/private.json": "d5661caea906dbb247407a1fdd9165154cf9c564aa5f4f017f869a48d4435661",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-MetallicHat-all14/port.log": "aac63a820e1af77fb514f5399cc0cbb7f2bfb690ef7cfc9a7ec8550b707c9577",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-MetallicHat-all14/BUDGET_ASSESSMENT.json": "4a261f11eb5a27010f7fd759155525319eccad82248a9660817b706bfe1eae08",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-MetallicHat-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-MetallicHat-all14/card-end.log": "d582ca8db379578b54500531b5bfcf43347980b346bf60e89e37c5a292eeaa50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-MetallicHat-all14/full-map-exact.json": "c53705a53ce1b9dc633ddf7f17a94a132f17f8c87ca469f8d5322871ffcaa162",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-MetallicHat-all14/RESONANT_FIXTURE.json": "6ebed8cd5961ecf2e3417c73b70154df84fec1e98cb08dea6fe02c904da9cd07",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-MetallicHat-all14/MEASUREMENT_ADAPTER.py": "d5f640d2c71fa4c2a5bbddf4bd24f1af22e98d2e3f5fd9c974e1748e39c20846",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-NoiseTone-all14/ROW.json": "dd69832c171a5abd1376770b525d23e58499b378c24271b55bdf1502918541d2",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-NoiseTone-all14/INPUTS.json": "229bd11a0820b692f929d8b23bb90ab9d591061787d038ba74e3759dec1ee9c0",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-NoiseTone-all14/stack.json": "59740f9e1f9eb01b09f6ce6a1eac985fa5df5472a449d119ff006ddce9f090a8",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-NoiseTone-all14/private.json": "b63cf9a42ae87a40d3de7681513c4f4d32c7a2b136e365968c1cdc0ead78266b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-NoiseTone-all14/port.log": "b92fabb3dde5b62567242dbf1b6283b1e3048089b3efcc6af556f0fc170e0261",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-NoiseTone-all14/BUDGET_ASSESSMENT.json": "c71236cb913084f6ebdfefb701ec6fea393010515734284271e8c19a446e6290",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-NoiseTone-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-NoiseTone-all14/card-end.log": "d582ca8db379578b54500531b5bfcf43347980b346bf60e89e37c5a292eeaa50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-NoiseTone-all14/full-map-exact.json": "bedfcc13cc552575093e9fad6211ceea4b2247983a84af41a11a493d9d7c53a9",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-NoiseTone-all14/RESONANT_FIXTURE.json": "95a1a74d12b4e8f8eb31b13c65a386ac3e03642a96f6c5bc1aef9919e4e3a7f4",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnare-NoiseTone-all14/MEASUREMENT_ADAPTER.py": "d5f640d2c71fa4c2a5bbddf4bd24f1af22e98d2e3f5fd9c974e1748e39c20846",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-MetallicHat-all14/ROW.json": "d9d7698254babbdf05d7ad1066a0b7d385e90839afcf1e058fff79fc11117de7",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-MetallicHat-all14/INPUTS.json": "d8fa6994a6d29bfd33f0cbf6cbe08aa3b0e66d8221cb390093dc39d0856e7cd0",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-MetallicHat-all14/stack.json": "6793f22cca7f832619c46ed252bf92c551663f8b86e681d41001a8be324194f2",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-MetallicHat-all14/private.json": "d5661caea906dbb247407a1fdd9165154cf9c564aa5f4f017f869a48d4435661",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-MetallicHat-all14/port.log": "63f0bcd8a9ed89235078f08406c87a373bd0b2536240404ac885a22d35f63179",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-MetallicHat-all14/BUDGET_ASSESSMENT.json": "40d80978ce80fee84c741e843035641766716461d21dfaf27989e83206b9b6d0",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-MetallicHat-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-MetallicHat-all14/card-end.log": "d582ca8db379578b54500531b5bfcf43347980b346bf60e89e37c5a292eeaa50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-MetallicHat-all14/full-map-exact.json": "5334e491646291066f856324932ab80ac0892a9fd6b0e827efee90655f0d11c7",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-MetallicHat-all14/RESONANT_FIXTURE.json": "adeddbf281894168e958c6076bf967aa6cab0368a6e5d751223ce041c438aa56",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-MetallicHat-all14/MEASUREMENT_ADAPTER.py": "d5f640d2c71fa4c2a5bbddf4bd24f1af22e98d2e3f5fd9c974e1748e39c20846",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-NoiseTone-all14/ROW.json": "a35efbf1517d7a13bb49c0ae3e63d30338ad2940154e4dc030d0b79d1006a0d6",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-NoiseTone-all14/INPUTS.json": "13f51a3f2d549052519ca257c235c6f17fcd2e5a9652cd061060f18d214e1e6b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-NoiseTone-all14/stack.json": "a953fb7f913a4c754a091c98699752c1d0cd1a0e75c8f7e1dc7bc7c2dafdf2f6",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-NoiseTone-all14/private.json": "b63cf9a42ae87a40d3de7681513c4f4d32c7a2b136e365968c1cdc0ead78266b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-NoiseTone-all14/port.log": "6eb19cedd0f0f6c1a5e0d40aa4f8aed78d0a64148dc1a04b8c860d1c17075a93",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-NoiseTone-all14/BUDGET_ASSESSMENT.json": "b17228ddd4558417c423454a4e8466f7ff44a6d9565ed02594f2b175e03837a1",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-NoiseTone-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-NoiseTone-all14/card-end.log": "d582ca8db379578b54500531b5bfcf43347980b346bf60e89e37c5a292eeaa50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-NoiseTone-all14/full-map-exact.json": "9f8fc2d8860c2c51afdb618b5833909fe8f794195279e195aa09b7c17b8f29c5",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-NoiseTone-all14/RESONANT_FIXTURE.json": "35cffb7d771ad24de489f423844b6e58e9378ca341901de644dc01072921be06",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-ResSnareBassLocks-NoiseTone-all14/MEASUREMENT_ADAPTER.py": "d5f640d2c71fa4c2a5bbddf4bd24f1af22e98d2e3f5fd9c974e1748e39c20846",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-MetallicHat-all14/ROW.json": "1861d9c4893fc51241dcdce64671c6e4065d9c4edab4eba7fd783a9a73d77e50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-MetallicHat-all14/INPUTS.json": "93b66fe44428ff9fa3fa673239cf3a90f2756944b05ff2d14f3ad429c4594ade",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-MetallicHat-all14/stack.json": "7015f08bc8ea7e529a0034ff7c6ba594f46dbc0cc89b86dcdf578255a1ef016a",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-MetallicHat-all14/private.json": "d5661caea906dbb247407a1fdd9165154cf9c564aa5f4f017f869a48d4435661",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-MetallicHat-all14/port.log": "0b0af0bdaac0235cf7e86d67c53787522f0a9c7927098472ff4a27b0cbe24bdc",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-MetallicHat-all14/BUDGET_ASSESSMENT.json": "8e8b59651b5ca2cc7255f09d0e7f6c022ffb85a4fa9fa5eaf0436f4abf9ebb74",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-MetallicHat-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-MetallicHat-all14/card-end.log": "d582ca8db379578b54500531b5bfcf43347980b346bf60e89e37c5a292eeaa50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-MetallicHat-all14/full-map-exact.json": "a76a6bb67f8f5331148f73aca336a064e289095c3ef6f7733c6491d37f6cca77",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-MetallicHat-all14/RESONANT_FIXTURE.json": "a7586882fc0d96b3c8b993c9dcfc39728613a1d1d7cc2746d3aafd78e8c9bddc",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-MetallicHat-all14/MEASUREMENT_ADAPTER.py": "d5f640d2c71fa4c2a5bbddf4bd24f1af22e98d2e3f5fd9c974e1748e39c20846",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-NoiseTone-all14/ROW.json": "2c5d4fced2cd57ebf53e34f07dca1b2a7abed0cac0d3a9d5801a560886dac8ce",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-NoiseTone-all14/INPUTS.json": "40e7b9d6f6650795e5fb203f1994fca87604ae1b46a38ab6f42e07e38af2c59a",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-NoiseTone-all14/stack.json": "c52c7c49cff1824767d607c1a582e0b4a1fd7cccd6c04968155e5d818f73ed32",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-NoiseTone-all14/private.json": "b63cf9a42ae87a40d3de7681513c4f4d32c7a2b136e365968c1cdc0ead78266b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-NoiseTone-all14/port.log": "7935bededd2e6993c5ab7fc20312b325252ded6062b95e8fc546b161211d7cfd",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-NoiseTone-all14/BUDGET_ASSESSMENT.json": "8e88b7ab40cafef82e573107f77d66a62210ffdd4c6db0fe67a30e525a919f37",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-NoiseTone-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-NoiseTone-all14/card-end.log": "d582ca8db379578b54500531b5bfcf43347980b346bf60e89e37c5a292eeaa50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-NoiseTone-all14/full-map-exact.json": "920345f1f1bdba735c7bf53aa0c99e9861e7ab9fc4d2d146ecf455a7fda27130",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-NoiseTone-all14/RESONANT_FIXTURE.json": "eb1e89e8a55b3825ead9a8d5824e9739be4a0a3bb01cc5f45a9ac9f4c8af6cf7",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-feasibility-v1/PKFM17-WTWT-SlapControl-NoiseTone-all14/MEASUREMENT_ADAPTER.py": "d5f640d2c71fa4c2a5bbddf4bd24f1af22e98d2e3f5fd9c974e1748e39c20846",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-MetallicHat-all14/ROW.json": "53f767e6c65e8eb3e90621baaed51539ebe1c6ac4e6dbf4601996c06b761fc60",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-MetallicHat-all14/INPUTS.json": "fcb481a379c9d8749ee1a5f3aff6f4a52ecf14dae6135e940e9499a98d6a9c26",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-MetallicHat-all14/stack.json": "9944b5cc5f6ca4f7cd802b5974349b8f1b96be90ce9b5dddc062bbf3187a2549",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-MetallicHat-all14/private.json": "6bfbbca68d389df8a072bbccfd45c150d95ae407d81f38a5ba211627da820ce7",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-MetallicHat-all14/port.log": "7c38fdb3fb3951e24830d537cfa87839bce81d85387852b3434096f20790fa68",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-MetallicHat-all14/BUDGET_ASSESSMENT.json": "61b2cbada3378b0d149ee58dd0cb910a1c0c314448ce0094d37c598a04109f22",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-MetallicHat-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-MetallicHat-all14/card-end.log": "d582ca8db379578b54500531b5bfcf43347980b346bf60e89e37c5a292eeaa50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-MetallicHat-all14/full-map-exact.json": "7c3939e99d482258e3fa2d364c7dbbf415ab32191670d64f4e605f5854ae1c0b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-remaining-cf-mix-v1/observer/full-map-oracle.dylib": "84c9345815e71c78072902d69477d0c92ddf592c08aaca8bf0e09f6582cadf6d",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-MetallicHat-all14/RESONANT_FIXTURE.json": "13d0cb25f9b3bd4d18cb76059000d5871dc66684cb0efb49e91dc4f1da31d759",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-MetallicHat-all14/MEASUREMENT_ADAPTER.py": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-NoiseTone-all14/ROW.json": "afbe33e019d58fbf634a71d42989088b141853ccd088d583f49f2c4923144500",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-NoiseTone-all14/INPUTS.json": "f6eb3251faa49720f26cdc967c2db3bab872b8f87bdbe7f13c9d60a4effb7eec",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-NoiseTone-all14/stack.json": "ddbc0e8dde026fbbdf7a6f604e263d3a99dc43d03567c81d44c58d853385c602",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-NoiseTone-all14/private.json": "b63cf9a42ae87a40d3de7681513c4f4d32c7a2b136e365968c1cdc0ead78266b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-NoiseTone-all14/port.log": "0d0e4e4e6e4cf8ba43c6b0becf45d376c7c16393df487efbb1f487e37e9086e7",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-NoiseTone-all14/BUDGET_ASSESSMENT.json": "752b6e3a7992412b011feb375e1c38fbb8861804267269830c96b812367c6338",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-NoiseTone-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-NoiseTone-all14/card-end.log": "d582ca8db379578b54500531b5bfcf43347980b346bf60e89e37c5a292eeaa50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-NoiseTone-all14/full-map-exact.json": "df76ab85008f56851f79105430d135318faaf23b701b7b03d2791c0cb9697b9f",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-NoiseTone-all14/RESONANT_FIXTURE.json": "45caf778568595c7885c03173cd8f5b33d66b7ce4ef5688dfd11ec41d939e03d",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResBass-NoiseTone-all14/MEASUREMENT_ADAPTER.py": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-MetallicHat-all14/ROW.json": "2e17d010f0e664b4b5d196e18cb11a40b73b25d6ad351507df10628919c2460a",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-MetallicHat-all14/INPUTS.json": "30b97748ccf2dee0bee3db1a215898c183af70fa7bbdead3894c21666034a634",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-MetallicHat-all14/stack.json": "2fcdb26ada8c4b0d16dd5890fac534857107a47639bba5ca4b83ab4ae9fce6ff",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-MetallicHat-all14/private.json": "6bfbbca68d389df8a072bbccfd45c150d95ae407d81f38a5ba211627da820ce7",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-MetallicHat-all14/port.log": "03e3be0154edd241f14954a7a0575bbbad74db32b725b69cec2b86ab22d9e42e",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-MetallicHat-all14/BUDGET_ASSESSMENT.json": "88c2816a0827a09b2d7c0d27f9b79514c6b6e353399fb46a0d423106e469ab40",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-MetallicHat-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-MetallicHat-all14/card-end.log": "55bbdf466a3b35558b06fe011fad3e7c450c4351e61cecead39812b8c23d47f1",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-MetallicHat-all14/full-map-exact.json": "c53705a53ce1b9dc633ddf7f17a94a132f17f8c87ca469f8d5322871ffcaa162",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-MetallicHat-all14/RESONANT_FIXTURE.json": "df2ba6c9a606a15fb57218b7a12bc8b32cc94907f7de531c3898e9323a7bfea3",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-MetallicHat-all14/MEASUREMENT_ADAPTER.py": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-NoiseTone-all14/ROW.json": "2a0e758c0d312b0bb5ef36ddafdc7d15ea530b50563e4547cb37a8b96a13dfd3",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-NoiseTone-all14/INPUTS.json": "414847aeb6ddfd2df0a4f83cf38e3e09a8dbda313f8439327c2d4da5a3c9b64b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-NoiseTone-all14/stack.json": "80633e03a0dbcba3223beb03c7d07ff6875d39e9fa62134fc4f7347d912d08e0",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-NoiseTone-all14/private.json": "b63cf9a42ae87a40d3de7681513c4f4d32c7a2b136e365968c1cdc0ead78266b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-NoiseTone-all14/port.log": "6c48f099a17fdb7722b6a5b4ab2cebbc6979c404164f5a30c172b3e39f261451",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-NoiseTone-all14/BUDGET_ASSESSMENT.json": "a75b54677637c9ac72caf5f7f36774fa83774e550e326322cb13abf5deb969c9",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-NoiseTone-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-NoiseTone-all14/card-end.log": "d582ca8db379578b54500531b5bfcf43347980b346bf60e89e37c5a292eeaa50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-NoiseTone-all14/full-map-exact.json": "bedfcc13cc552575093e9fad6211ceea4b2247983a84af41a11a493d9d7c53a9",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-NoiseTone-all14/RESONANT_FIXTURE.json": "ecc1555c9f0b88d464e1277817511e162b9b45e76691637f0fed453acf661ad8",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnare-NoiseTone-all14/MEASUREMENT_ADAPTER.py": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14/ROW.json": "f2bf5d6c9f1fe44ed5b3683e39378680e6a52a7a83c707615c6c9519fe0696f0",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14/INPUTS.json": "a41ba6db8fa57eca2e13470e123c1381adfeaa477d56d0035f77979f72b54aba",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14/stack.json": "bfa1b06946676c1ac688171c079329a9f16aee55e9951a8f1643707ac30aabaf",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14/private.json": "6bfbbca68d389df8a072bbccfd45c150d95ae407d81f38a5ba211627da820ce7",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14/port.log": "62525562c7a8eb3f580681b294fdecbb1d27f18cf2fb8233001d6d143f6db141",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14/BUDGET_ASSESSMENT.json": "a0428a7041216794b52c1aade0b3aea41cebd7df6112ce04a47b328964216bf4",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14/card-end.log": "55bbdf466a3b35558b06fe011fad3e7c450c4351e61cecead39812b8c23d47f1",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14/full-map-exact.json": "5334e491646291066f856324932ab80ac0892a9fd6b0e827efee90655f0d11c7",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14/RESONANT_FIXTURE.json": "e0bfef1b24d62d2805781204404b55771a5e0005d54056d4f85e6297b9bc537b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-MetallicHat-all14/MEASUREMENT_ADAPTER.py": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14/ROW.json": "4282b7345439ab2e42dd8d67fb00e3a4e5daa8fb1fe0b88fc4453b048ad7cc4a",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14/INPUTS.json": "522abf208327615fc3edda8222e962d289e0c42986d0dc5c97d0a53470c6f044",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14/stack.json": "de85c1a04715520bec6f0a755f19fa56159029100177e73a9347a95b8599ab7d",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14/private.json": "b63cf9a42ae87a40d3de7681513c4f4d32c7a2b136e365968c1cdc0ead78266b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14/port.log": "e853f282edb1b16dbb29ba2fa5aa34fd8fa6cb10f539807e4719bc396df91438",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14/BUDGET_ASSESSMENT.json": "1422d732ca7894a826e36d5fadb9712e71aafa15c692d6286b3b6a8ba7e9730b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14/card-end.log": "d582ca8db379578b54500531b5bfcf43347980b346bf60e89e37c5a292eeaa50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14/full-map-exact.json": "9f8fc2d8860c2c51afdb618b5833909fe8f794195279e195aa09b7c17b8f29c5",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14/RESONANT_FIXTURE.json": "2ec4a7a662b02c323da591cfcb3b10a8404f1e4ced8ed2a412391b2ed1defe2d",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-ResSnareBassLocks-NoiseTone-all14/MEASUREMENT_ADAPTER.py": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-MetallicHat-all14/ROW.json": "f737d5a6e4c6db0d72c8144f0587f6a3b55175cd40b663069c15a8a6b563aa23",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-MetallicHat-all14/INPUTS.json": "526eaf96599696db407d3a423c73ce89639ada94a2eb00378c361fe245ac51b9",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-MetallicHat-all14/stack.json": "b35add01758335a70f9618f3d8d12842b3effa20934e4902c407bed5ff957bf6",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-MetallicHat-all14/private.json": "6bfbbca68d389df8a072bbccfd45c150d95ae407d81f38a5ba211627da820ce7",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-MetallicHat-all14/port.log": "6249e7205a42c6aab54b76ac4964a718a5215777b84c45326b5dfbb5dc0151e1",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-MetallicHat-all14/BUDGET_ASSESSMENT.json": "93a50ea26c5da49f8b6f74b46e930e0cdb51adb4e37253d2a0c67eea7c6d7c9c",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-MetallicHat-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-MetallicHat-all14/card-end.log": "d582ca8db379578b54500531b5bfcf43347980b346bf60e89e37c5a292eeaa50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-MetallicHat-all14/full-map-exact.json": "a76a6bb67f8f5331148f73aca336a064e289095c3ef6f7733c6491d37f6cca77",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-MetallicHat-all14/RESONANT_FIXTURE.json": "533a8a19f1e32dbab41b5a2555120c4de133d39e79873ce41f48dece3148316c",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-MetallicHat-all14/MEASUREMENT_ADAPTER.py": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-NoiseTone-all14/ROW.json": "0765cb8fe8f7028a530d4be000859e5b0dd0fab07d01c8947e1e9f2551cca08b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-NoiseTone-all14/INPUTS.json": "41afd25419e8575fb82eaca86b594a9a2ec6d2df653cd0f5fece361366f33c05",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-NoiseTone-all14/stack.json": "1f08f5531b54ad15c01cea12d84142f7b3b653f5f33fb10dd639e27fa33c2b5c",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-NoiseTone-all14/private.json": "b63cf9a42ae87a40d3de7681513c4f4d32c7a2b136e365968c1cdc0ead78266b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-NoiseTone-all14/port.log": "7b7404d80f22f611ac5ea64bfa8288b3bd2a79879abbfe77516a32378db552aa",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-NoiseTone-all14/BUDGET_ASSESSMENT.json": "2662e176b4f243736fa36a8650bb37549c15b4ee331d5a7847377df495cd4031",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-NoiseTone-all14/card-load.log": "22030349d6fd1d7c86992a97110a5e63fd856cf7d09d16fb4ecf216f1715a03b",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-NoiseTone-all14/card-end.log": "d582ca8db379578b54500531b5bfcf43347980b346bf60e89e37c5a292eeaa50",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-NoiseTone-all14/full-map-exact.json": "920345f1f1bdba735c7bf53aa0c99e9861e7ab9fc4d2d146ecf455a7fda27130",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-NoiseTone-all14/RESONANT_FIXTURE.json": "52dae84902dce3bb51ea57115e2ce796209492b87b53cffac8c21efa00e7054a",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/resonant-cf-optimization/final-workload/PKFM20-WTWT-SlapControl-NoiseTone-all14/MEASUREMENT_ADAPTER.py": "5cf7e9bcb93968b2ebc3d893d62c11fa2105c7b8234bf7ba609d17983ea877a6"
+  },
+  "source_sha256": {
+    "tools/verify/qualify_perky_remaining_cf.py": "9c520071279406e40932cc057edc67368686014e3ade2393587a919a811174f9"
+  },
+  "limits": [
+    "Candidate measurements use a new actual image/ELF, unchanged original-source oracle, frozen cycle observer, CF264/PIT132 clocks and calibrated seven-ceiling budget.",
+    "All eight deltas compare matched 32768-frame PKFM17 controls with identical voice selections, MODE fixture order and all fourteen retained FX; they do not use unmatched historical maxima as hardware multipliers.",
+    "New-image 5355-frame direct source/state/RNG, 800-frame handoff, lifecycle, selector matrix and scene proofs are required. Prior CF proofs are not transferred to this changed image.",
+    "Native preparation and Resonant standalone proofs remain separately scoped; they do not replace the linked actual-image source gate.",
+    "Only DSP-only snapshot/stock-FX proofs are reused, and only after actual candidate A/B upload bytes match PKFM17 exactly.",
+    "Runtime exact-source reports compare original-reference PCM and DSP Hat state/side/clock/feedback. Raw CF state is checked separately by the new-image direct source gate.",
+    "Per-track activity counts were extracted by the source-bound calibrated adapter before deliberate raw-dump cleanup; aggregate counts and hashes cannot establish replayable or gap-free stock audio.",
+    "Alternate rows verify both source modes and MODE locks alternating within each 45-trigger pattern, with one repeated mode at its loop boundary; no exact runtime switch-count claim.",
+    "Valid exact workloads may fail the fixed performance budget or nominal deadlines and are recorded as FAIL_HOLD, not discarded or called hardware-ready.",
+    "The local model does not establish physical cache, SDRAM, card, bus or IRQ timing, UI acceptance, or Octatrack hardware admission."
+  ]
+}

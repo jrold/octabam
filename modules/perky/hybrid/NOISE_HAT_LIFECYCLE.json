@@ -1,0 +1,2161 @@
+{
+  "schema": "perky-noise-hat-lifecycle-campaign-v1",
+  "status": "NOT_QUALIFIED_FOR_BACKEND_SWITCHING",
+  "hardware_validated": false,
+  "image_sha256": "68d5adda3fc03972b2c0b67e98cef7a0aa78e3933a51228c1b3a0d0d1e376546",
+  "runtime_sha256": "19f4dcfcb62b7e05b38d2edca25dc44797e1b2587b070cf83794e13fff298641",
+  "observer_receipt_sha256": "beca6d4d870279a33d9e8caed91c97b8b14e4a03490e146cc4160dc3034b6e3f",
+  "cases": [
+    {
+      "case": "cf-calibration",
+      "status": "PASS_MODEL_SCOPE",
+      "errors": {
+        "source_PCM_mismatches": 0,
+        "state_mismatches": 0,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_mismatches": 0,
+        "CF_native_mismatches": 0,
+        "control_mismatches": 0,
+        "transport_failures": 0,
+        "deadline_misses": 0,
+        "DMA_overlaps": 0,
+        "DMA_restarts": 0,
+        "guard_writes": 0,
+        "stack_extent_errors": 0,
+        "private_ownership_errors": 0,
+        "inactive_tracks": 0
+      },
+      "exact": {
+        "requests": 0,
+        "native_samples": 0,
+        "source_frames": 0,
+        "source_PCM_mismatches": 0,
+        "source_significant": 0,
+        "source_peak": 0,
+        "state_mismatches": 0,
+        "feedback_frames": 0,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 0,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "controls": {
+        "calls": 4708,
+        "mismatches": 0,
+        "examples": []
+      },
+      "lifecycle": {
+        "backend_transitions": 1,
+        "dynamic_oracle_stopped_at_departure": false,
+        "CF_native_calls": 9073,
+        "CF_native_samples": 81996,
+        "CF_native_mismatches": 0,
+        "CF_native_scope": "stateless original renderer from full target pre-call state; no migration/clock claim",
+        "examples": []
+      },
+      "full_ISR": {
+        "frames": 4708,
+        "returns": 4708,
+        "max_cycles": 91283,
+        "max_us": 345.7689393939394,
+        "deadline_misses": 0
+      },
+      "events": [
+        {
+          "label": "loaded-playing",
+          "counts": {
+            "pk_nhr_sequence": 0,
+            "pk_nhr_consumed": 0,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 0,
+            "pk_nhr_dma_done": 0,
+            "pk_nhr_lag_min": 4294967295,
+            "pk_nhr_lag_max": 0,
+            "pk_nht_pending_max": 0,
+            "pk_nhr_enabled": 0,
+            "pk_nhf_batches": 80,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "status": "status sample=565503.798 ms=12823.215 frames=2992 frame=on idle=44755 wall=20.231"
+        },
+        {
+          "label": "CF-continuous",
+          "counts": {
+            "pk_nhr_sequence": 0,
+            "pk_nhr_consumed": 0,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 0,
+            "pk_nhr_dma_done": 0,
+            "pk_nhr_lag_min": 4294967295,
+            "pk_nhr_lag_max": 0,
+            "pk_nht_pending_max": 0,
+            "pk_nhr_enabled": 0,
+            "pk_nhf_batches": 97,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "status": "status sample=572118.800 ms=12973.215 frames=3449 frame=on idle=45245 wall=23.201"
+        },
+        {
+          "label": "CF-mode-1",
+          "counts": {
+            "pk_nhr_sequence": 0,
+            "pk_nhr_consumed": 0,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 0,
+            "pk_nhr_dma_done": 0,
+            "pk_nhr_lag_min": 4294967295,
+            "pk_nhr_lag_max": 0,
+            "pk_nht_pending_max": 0,
+            "pk_nhr_enabled": 0,
+            "pk_nhf_batches": 102,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 1,
+          "status": "status sample=576529.580 ms=13073.233 frames=3764 frame=on idle=45357 wall=25.381"
+        },
+        {
+          "label": "CF-mode-2",
+          "counts": {
+            "pk_nhr_sequence": 0,
+            "pk_nhr_consumed": 0,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 0,
+            "pk_nhr_dma_done": 0,
+            "pk_nhr_lag_min": 4294967295,
+            "pk_nhr_lag_max": 0,
+            "pk_nht_pending_max": 0,
+            "pk_nhr_enabled": 0,
+            "pk_nhf_batches": 110,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 2,
+          "status": "status sample=580939.582 ms=13173.233 frames=4082 frame=on idle=45596 wall=27.461"
+        },
+        {
+          "label": "CF-mode-0",
+          "counts": {
+            "pk_nhr_sequence": 0,
+            "pk_nhr_consumed": 0,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 0,
+            "pk_nhr_dma_done": 0,
+            "pk_nhr_lag_min": 4294967295,
+            "pk_nhr_lag_max": 0,
+            "pk_nht_pending_max": 0,
+            "pk_nhr_enabled": 0,
+            "pk_nhf_batches": 118,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "status": "status sample=585349.590 ms=13273.233 frames=4393 frame=on idle=45860 wall=29.508"
+        },
+        {
+          "label": "end",
+          "counts": {
+            "pk_nhr_sequence": 0,
+            "pk_nhr_consumed": 0,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 0,
+            "pk_nhr_dma_done": 0,
+            "pk_nhr_lag_min": 4294967295,
+            "pk_nhr_lag_max": 0,
+            "pk_nht_pending_max": 0,
+            "pk_nhr_enabled": 0,
+            "pk_nhf_batches": 124,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "status": "status sample=589761.675 ms=13373.281 frames=4708 frame=on idle=46074 wall=31.607"
+        }
+      ],
+      "audio": {
+        "T1": {
+          "source_significant": 75308,
+          "post_FX_significant": 75275
+        },
+        "T2": {
+          "source_significant": 75307,
+          "post_FX_significant": 75276
+        },
+        "T3": {
+          "source_significant": 90259,
+          "post_FX_significant": 75274
+        },
+        "T4": {
+          "source_significant": 91169,
+          "post_FX_significant": 75264
+        },
+        "T5": {
+          "source_significant": 75281,
+          "post_FX_significant": 75253
+        },
+        "T6": {
+          "source_significant": 74356,
+          "post_FX_significant": 74346
+        },
+        "T7": {
+          "source_significant": 83636,
+          "post_FX_significant": 75274
+        },
+        "T8": {
+          "source_significant": 89391,
+          "post_FX_significant": 75278
+        }
+      },
+      "raw_sha256": "bc446cabce9162fbf4b122fd50ff417320f3607a9b34a8c36574e525aca6b9bc",
+      "input_archive_sha256": "46b59938036663470ab88409b00ddec69df6afac88b03cb8beecc8f5c6d23c35",
+      "executed_instrument_receipt_sha256": "08782b2f120021d8a2399e4f67684a54e1d1c27b2d8a21c17ac4ab0ecb7f9fc2"
+    },
+    {
+      "case": "panel",
+      "status": "PASS_MODEL_SCOPE",
+      "errors": {
+        "source_PCM_mismatches": 0,
+        "state_mismatches": 0,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_mismatches": 0,
+        "CF_native_mismatches": 0,
+        "control_mismatches": 0,
+        "transport_failures": 0,
+        "deadline_misses": 0,
+        "DMA_overlaps": 0,
+        "DMA_restarts": 0,
+        "guard_writes": 0,
+        "stack_extent_errors": 0,
+        "private_ownership_errors": 0,
+        "inactive_tracks": 0
+      },
+      "exact": {
+        "requests": 95690,
+        "native_samples": 863222,
+        "source_frames": 49565,
+        "source_PCM_mismatches": 0,
+        "source_significant": 791906,
+        "source_peak": 757331,
+        "state_mismatches": 0,
+        "feedback_frames": 49564,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 49563,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "controls": {
+        "calls": 49566,
+        "mismatches": 0,
+        "examples": []
+      },
+      "lifecycle": {
+        "backend_transitions": 0,
+        "dynamic_oracle_stopped_at_departure": false,
+        "CF_native_calls": 0,
+        "CF_native_samples": 0,
+        "CF_native_mismatches": 0,
+        "CF_native_scope": "stateless original renderer from full target pre-call state; no migration/clock claim",
+        "examples": []
+      },
+      "full_ISR": {
+        "frames": 49567,
+        "returns": 49566,
+        "max_cycles": 86577,
+        "max_us": 327.9431818181818,
+        "deadline_misses": 0
+      },
+      "events": [
+        {
+          "label": "loaded-playing",
+          "counts": {
+            "pk_nhr_sequence": 3018,
+            "pk_nhr_consumed": 3015,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 3018,
+            "pk_nhr_dma_done": 3018,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 81,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=565501.921 ms=12823.173 frames=3019 frame=on idle=45261 wall=19.955"
+        },
+        {
+          "label": "stop-0",
+          "counts": {
+            "pk_nhr_sequence": 3332,
+            "pk_nhr_consumed": 3329,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 3332,
+            "pk_nhr_dma_done": 3332,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 92,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 0,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=569911.943 ms=12923.173 frames=3333 frame=on idle=45544 wall=22.080"
+        },
+        {
+          "label": "start-0",
+          "counts": {
+            "pk_nhr_sequence": 3716,
+            "pk_nhr_consumed": 3713,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 3716,
+            "pk_nhr_dma_done": 3716,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 108,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=575203.952 ms=13043.174 frames=3717 frame=on idle=45919 wall=24.517"
+        },
+        {
+          "label": "stop-1",
+          "counts": {
+            "pk_nhr_sequence": 4034,
+            "pk_nhr_consumed": 4031,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 4034,
+            "pk_nhr_dma_done": 4034,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 116,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 0,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=579614.078 ms=13143.176 frames=4035 frame=on idle=46154 wall=26.749"
+        },
+        {
+          "label": "start-1",
+          "counts": {
+            "pk_nhr_sequence": 4422,
+            "pk_nhr_consumed": 4419,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 4421,
+            "pk_nhr_dma_done": 4421,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 129,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=584906.095 ms=13263.177 frames=4422 frame=on idle=46528 wall=29.261"
+        },
+        {
+          "label": "stop-2",
+          "counts": {
+            "pk_nhr_sequence": 4740,
+            "pk_nhr_consumed": 4737,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 4740,
+            "pk_nhr_dma_done": 4740,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 138,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 0,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=589316.108 ms=13363.177 frames=4741 frame=on idle=46761 wall=31.389"
+        },
+        {
+          "label": "start-2",
+          "counts": {
+            "pk_nhr_sequence": 5127,
+            "pk_nhr_consumed": 5124,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 5127,
+            "pk_nhr_dma_done": 5127,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 151,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=594608.206 ms=13483.179 frames=5128 frame=on idle=47131 wall=33.809"
+        },
+        {
+          "label": "part-2",
+          "counts": {
+            "pk_nhr_sequence": 5852,
+            "pk_nhr_consumed": 5849,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 5852,
+            "pk_nhr_dma_done": 5852,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 178,
+            "placement_status": 1
+          },
+          "part": 2,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=604751.404 ms=13713.184 frames=5853 frame=on idle=47788 wall=38.620"
+        },
+        {
+          "label": "part-0",
+          "counts": {
+            "pk_nhr_sequence": 6565,
+            "pk_nhr_consumed": 6562,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 6564,
+            "pk_nhr_dma_done": 6564,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 196,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=614896.137 ms=13943.223 frames=6565 frame=on idle=48531 wall=43.299"
+        },
+        {
+          "label": "background-bank-ready",
+          "counts": {
+            "pk_nhr_sequence": 6565,
+            "pk_nhr_consumed": 6562,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 6564,
+            "pk_nhr_dma_done": 6564,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 196,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=614896.137 ms=13943.223 frames=6565 frame=on idle=48531 wall=43.299"
+        },
+        {
+          "label": "bank-1",
+          "counts": {
+            "pk_nhr_sequence": 29469,
+            "pk_nhr_consumed": 29466,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 29468,
+            "pk_nhr_dma_done": 29468,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 788,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1075303712,
+          "working_bank": 1,
+          "playing_bank": 1,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=938591.231 ms=21283.248 frames=29469 frame=on idle=73462 wall=193.790"
+        },
+        {
+          "label": "bank-0",
+          "counts": {
+            "pk_nhr_sequence": 49254,
+            "pk_nhr_consumed": 49251,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 49254,
+            "pk_nhr_dma_done": 49254,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 1281,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=1218185.520 ms=27623.254 frames=49255 frame=on idle=94848 wall=323.922"
+        },
+        {
+          "label": "end",
+          "counts": {
+            "pk_nhr_sequence": 49566,
+            "pk_nhr_consumed": 49563,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 49566,
+            "pk_nhr_dma_done": 49566,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 1290,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=1222595.543 ms=27723.255 frames=49567 frame=on idle=95180 wall=326.151"
+        }
+      ],
+      "audio": {
+        "T1": {
+          "source_significant": 792951,
+          "post_FX_significant": 792433
+        },
+        "T2": {
+          "source_significant": 793012,
+          "post_FX_significant": 782683
+        },
+        "T3": {
+          "source_significant": 829854,
+          "post_FX_significant": 782659
+        },
+        "T4": {
+          "source_significant": 825437,
+          "post_FX_significant": 792864
+        },
+        "T5": {
+          "source_significant": 792669,
+          "post_FX_significant": 782040
+        },
+        "T6": {
+          "source_significant": 791906,
+          "post_FX_significant": 780677,
+          "source_kind": "DSP source PCM witnessed before AMP; controls in DMA records"
+        },
+        "T7": {
+          "source_significant": 826618,
+          "post_FX_significant": 782660
+        },
+        "T8": {
+          "source_significant": 819830,
+          "post_FX_significant": 782695
+        }
+      },
+      "raw_sha256": "72a7d6f2fb7d6c3649c9b596be561ca2e02007feb8c3bfb06ba6c77d2ee9366e",
+      "input_archive_sha256": "054478418f3570353fdd022b03c73ca9bb3b6d5f082f6b9e1c5c40d6b9ef8e5b",
+      "executed_instrument_receipt_sha256": "beca6d4d870279a33d9e8caed91c97b8b14e4a03490e146cc4160dc3034b6e3f"
+    },
+    {
+      "case": "modes",
+      "status": "PASS_MODEL_SCOPE",
+      "errors": {
+        "source_PCM_mismatches": 0,
+        "state_mismatches": 0,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_mismatches": 0,
+        "CF_native_mismatches": 0,
+        "control_mismatches": 0,
+        "transport_failures": 0,
+        "deadline_misses": 0,
+        "DMA_overlaps": 0,
+        "DMA_restarts": 0,
+        "guard_writes": 0,
+        "stack_extent_errors": 0,
+        "private_ownership_errors": 0,
+        "inactive_tracks": 0
+      },
+      "exact": {
+        "requests": 10100,
+        "native_samples": 90946,
+        "source_frames": 5220,
+        "source_PCM_mismatches": 0,
+        "source_significant": 81427,
+        "source_peak": 686418,
+        "state_mismatches": 0,
+        "feedback_frames": 5219,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 4589,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "controls": {
+        "calls": 5222,
+        "mismatches": 0,
+        "examples": []
+      },
+      "lifecycle": {
+        "backend_transitions": 0,
+        "dynamic_oracle_stopped_at_departure": false,
+        "CF_native_calls": 0,
+        "CF_native_samples": 0,
+        "CF_native_mismatches": 0,
+        "CF_native_scope": "stateless original renderer from full target pre-call state; no migration/clock claim",
+        "examples": []
+      },
+      "full_ISR": {
+        "frames": 5222,
+        "returns": 5221,
+        "max_cycles": 85852,
+        "max_us": 325.1969696969697,
+        "deadline_misses": 0
+      },
+      "events": [
+        {
+          "label": "loaded-playing",
+          "counts": {
+            "pk_nhr_sequence": 3018,
+            "pk_nhr_consumed": 3015,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 3018,
+            "pk_nhr_dma_done": 3018,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 81,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=565501.921 ms=12823.173 frames=3019 frame=on idle=45261 wall=20.052"
+        },
+        {
+          "label": "mode-0-1",
+          "counts": {
+            "pk_nhr_sequence": 3329,
+            "pk_nhr_consumed": 3326,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 3328,
+            "pk_nhr_dma_done": 3328,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 93,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 1,
+          "B_unavailable": 0,
+          "status": "status sample=569912.035 ms=12923.175 frames=3329 frame=on idle=45609 wall=22.128"
+        },
+        {
+          "label": "mode-1-2",
+          "counts": {
+            "pk_nhr_sequence": 3645,
+            "pk_nhr_consumed": 3642,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 3644,
+            "pk_nhr_dma_done": 3644,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 101,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 2,
+          "B_unavailable": 0,
+          "status": "status sample=574322.056 ms=13023.176 frames=3646 frame=on idle=45905 wall=24.252"
+        },
+        {
+          "label": "mode-2-0",
+          "counts": {
+            "pk_nhr_sequence": 3963,
+            "pk_nhr_consumed": 3960,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 3963,
+            "pk_nhr_dma_done": 3963,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 108,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=578732.063 ms=13123.176 frames=3964 frame=on idle=46173 wall=26.411"
+        },
+        {
+          "label": "mode-3-2",
+          "counts": {
+            "pk_nhr_sequence": 4279,
+            "pk_nhr_consumed": 4276,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 4278,
+            "pk_nhr_dma_done": 4278,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 116,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 2,
+          "B_unavailable": 0,
+          "status": "status sample=583142.092 ms=13223.177 frames=4279 frame=on idle=46496 wall=28.537"
+        },
+        {
+          "label": "mode-4-1",
+          "counts": {
+            "pk_nhr_sequence": 4596,
+            "pk_nhr_consumed": 4593,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 4595,
+            "pk_nhr_dma_done": 4595,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 123,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 1,
+          "B_unavailable": 0,
+          "status": "status sample=587552.092 ms=13323.177 frames=4596 frame=on idle=46782 wall=30.636"
+        },
+        {
+          "label": "mode-5-0",
+          "counts": {
+            "pk_nhr_sequence": 4910,
+            "pk_nhr_consumed": 4907,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 4910,
+            "pk_nhr_dma_done": 4910,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 131,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=591962.103 ms=13423.177 frames=4911 frame=on idle=47105 wall=32.678"
+        },
+        {
+          "label": "end",
+          "counts": {
+            "pk_nhr_sequence": 5222,
+            "pk_nhr_consumed": 5219,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 5221,
+            "pk_nhr_dma_done": 5221,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 140,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "B_unavailable": 0,
+          "status": "status sample=596372.203 ms=13523.179 frames=5222 frame=on idle=47447 wall=34.755"
+        }
+      ],
+      "audio": {
+        "T1": {
+          "source_significant": 83531,
+          "post_FX_significant": 83498
+        },
+        "T2": {
+          "source_significant": 83531,
+          "post_FX_significant": 83500
+        },
+        "T3": {
+          "source_significant": 100831,
+          "post_FX_significant": 83497
+        },
+        "T4": {
+          "source_significant": 102336,
+          "post_FX_significant": 83486
+        },
+        "T5": {
+          "source_significant": 83503,
+          "post_FX_significant": 83475
+        },
+        "T6": {
+          "source_significant": 81427,
+          "post_FX_significant": 81426,
+          "source_kind": "DSP source PCM witnessed before AMP; controls in DMA records"
+        },
+        "T7": {
+          "source_significant": 93998,
+          "post_FX_significant": 83497
+        },
+        "T8": {
+          "source_significant": 99410,
+          "post_FX_significant": 83501
+        }
+      },
+      "raw_sha256": "479a0827c8e391b4c5a2a2fac9e57b368dfdc3f1df91c308b4b1a77dc1de7153",
+      "input_archive_sha256": "077c6cac2a49f94fa5f5f659f90a0bd826e047f087dc5179ed55cb1f8205110c",
+      "executed_instrument_receipt_sha256": "beca6d4d870279a33d9e8caed91c97b8b14e4a03490e146cc4160dc3034b6e3f"
+    },
+    {
+      "case": "backend",
+      "status": "FAILED_QUALIFICATION",
+      "errors": {
+        "source_PCM_mismatches": 0,
+        "state_mismatches": 0,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_mismatches": 0,
+        "CF_native_mismatches": 0,
+        "control_mismatches": 0,
+        "transport_failures": 6,
+        "deadline_misses": 0,
+        "DMA_overlaps": 0,
+        "DMA_restarts": 0,
+        "guard_writes": 0,
+        "stack_extent_errors": 0,
+        "private_ownership_errors": 0,
+        "inactive_tracks": 0
+      },
+      "exact": {
+        "requests": 10100,
+        "native_samples": 90946,
+        "source_frames": 5221,
+        "source_PCM_mismatches": 0,
+        "source_significant": 81443,
+        "source_peak": 686418,
+        "state_mismatches": 0,
+        "feedback_frames": 5219,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 4589,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "controls": {
+        "calls": 7846,
+        "mismatches": 0,
+        "examples": []
+      },
+      "lifecycle": {
+        "backend_transitions": 6,
+        "dynamic_oracle_stopped_at_departure": true,
+        "CF_native_calls": 1481,
+        "CF_native_samples": 12897,
+        "CF_native_mismatches": 0,
+        "CF_native_scope": "stateless original renderer from full target pre-call state; no migration/clock claim",
+        "examples": []
+      },
+      "full_ISR": {
+        "frames": 7846,
+        "returns": 7846,
+        "max_cycles": 93456,
+        "max_us": 354.0,
+        "deadline_misses": 0
+      },
+      "events": [
+        {
+          "label": "loaded-playing",
+          "counts": {
+            "pk_nhr_sequence": 3018,
+            "pk_nhr_consumed": 3015,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 3018,
+            "pk_nhr_dma_done": 3018,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 81,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "status": "status sample=565501.921 ms=12823.173 frames=3019 frame=on idle=45261 wall=20.282"
+        },
+        {
+          "label": "mode-0-1",
+          "counts": {
+            "pk_nhr_sequence": 3329,
+            "pk_nhr_consumed": 3326,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 3328,
+            "pk_nhr_dma_done": 3328,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 93,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 1,
+          "status": "status sample=569912.035 ms=12923.175 frames=3329 frame=on idle=45609 wall=22.416"
+        },
+        {
+          "label": "mode-1-2",
+          "counts": {
+            "pk_nhr_sequence": 3645,
+            "pk_nhr_consumed": 3642,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 3644,
+            "pk_nhr_dma_done": 3644,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 101,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 2,
+          "status": "status sample=574322.056 ms=13023.176 frames=3646 frame=on idle=45905 wall=24.703"
+        },
+        {
+          "label": "mode-2-0",
+          "counts": {
+            "pk_nhr_sequence": 3963,
+            "pk_nhr_consumed": 3960,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 3963,
+            "pk_nhr_dma_done": 3963,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 108,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "status": "status sample=578732.063 ms=13123.176 frames=3964 frame=on idle=46173 wall=26.940"
+        },
+        {
+          "label": "mode-3-2",
+          "counts": {
+            "pk_nhr_sequence": 4279,
+            "pk_nhr_consumed": 4276,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 4278,
+            "pk_nhr_dma_done": 4278,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 116,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 2,
+          "status": "status sample=583142.092 ms=13223.177 frames=4279 frame=on idle=46496 wall=29.086"
+        },
+        {
+          "label": "mode-4-1",
+          "counts": {
+            "pk_nhr_sequence": 4596,
+            "pk_nhr_consumed": 4593,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 4595,
+            "pk_nhr_dma_done": 4595,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 123,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 1,
+          "status": "status sample=587552.092 ms=13323.177 frames=4596 frame=on idle=46782 wall=31.476"
+        },
+        {
+          "label": "mode-5-0",
+          "counts": {
+            "pk_nhr_sequence": 4910,
+            "pk_nhr_consumed": 4907,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 4910,
+            "pk_nhr_dma_done": 4910,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 131,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "status": "status sample=591962.103 ms=13423.177 frames=4911 frame=on idle=47105 wall=33.588"
+        },
+        {
+          "label": "DSP-mode-0",
+          "counts": {
+            "pk_nhr_sequence": 5222,
+            "pk_nhr_consumed": 5219,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 5221,
+            "pk_nhr_dma_done": 5221,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 140,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "status": "status sample=596372.203 ms=13523.179 frames=5222 frame=on idle=47447 wall=35.639"
+        },
+        {
+          "label": "CF-0",
+          "counts": {
+            "pk_nhr_sequence": 5222,
+            "pk_nhr_consumed": 5219,
+            "pk_nhr_failures": 0,
+            "pk_nhr_dma_reads": 5221,
+            "pk_nhr_dma_done": 5221,
+            "pk_nhr_lag_min": 2,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 52,
+            "pk_nhr_enabled": 0,
+            "pk_nhf_batches": 147,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "status": "status sample=599900.203 ms=13603.179 frames=5465 frame=on idle=47710 wall=37.334"
+        },
+        {
+          "label": "DSP-0",
+          "counts": {
+            "pk_nhr_sequence": 5541,
+            "pk_nhr_consumed": 5536,
+            "pk_nhr_failures": 2,
+            "pk_nhr_dma_reads": 5541,
+            "pk_nhr_dma_done": 5541,
+            "pk_nhr_lag_min": 0,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 88,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 156,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 0,
+          "status": "status sample=604310.230 ms=13703.180 frames=5785 frame=on idle=47960 wall=39.489"
+        },
+        {
+          "label": "DSP-mode-1",
+          "counts": {
+            "pk_nhr_sequence": 5849,
+            "pk_nhr_consumed": 5844,
+            "pk_nhr_failures": 2,
+            "pk_nhr_dma_reads": 5849,
+            "pk_nhr_dma_done": 5849,
+            "pk_nhr_lag_min": 0,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 88,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 166,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 1,
+          "status": "status sample=608720.231 ms=13803.180 frames=6093 frame=on idle=48333 wall=41.493"
+        },
+        {
+          "label": "CF-1",
+          "counts": {
+            "pk_nhr_sequence": 5849,
+            "pk_nhr_consumed": 5844,
+            "pk_nhr_failures": 2,
+            "pk_nhr_dma_reads": 5849,
+            "pk_nhr_dma_done": 5849,
+            "pk_nhr_lag_min": 0,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 88,
+            "pk_nhr_enabled": 0,
+            "pk_nhf_batches": 172,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 1,
+          "status": "status sample=612248.255 ms=13883.180 frames=6343 frame=on idle=48436 wall=43.253"
+        },
+        {
+          "label": "DSP-1",
+          "counts": {
+            "pk_nhr_sequence": 6169,
+            "pk_nhr_consumed": 6162,
+            "pk_nhr_failures": 4,
+            "pk_nhr_dma_reads": 6170,
+            "pk_nhr_dma_done": 6170,
+            "pk_nhr_lag_min": 0,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 122,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 179,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 1,
+          "status": "status sample=616658.255 ms=13983.180 frames=6664 frame=on idle=48657 wall=45.407"
+        },
+        {
+          "label": "DSP-mode-2",
+          "counts": {
+            "pk_nhr_sequence": 6486,
+            "pk_nhr_consumed": 6479,
+            "pk_nhr_failures": 4,
+            "pk_nhr_dma_reads": 6486,
+            "pk_nhr_dma_done": 6486,
+            "pk_nhr_lag_min": 0,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 122,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 187,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 2,
+          "status": "status sample=621068.255 ms=14083.180 frames=6980 frame=on idle=48984 wall=47.492"
+        },
+        {
+          "label": "CF-2",
+          "counts": {
+            "pk_nhr_sequence": 6486,
+            "pk_nhr_consumed": 6479,
+            "pk_nhr_failures": 4,
+            "pk_nhr_dma_reads": 6486,
+            "pk_nhr_dma_done": 6486,
+            "pk_nhr_lag_min": 0,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 122,
+            "pk_nhr_enabled": 0,
+            "pk_nhf_batches": 191,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 2,
+          "status": "status sample=624596.322 ms=14163.182 frames=7227 frame=on idle=49256 wall=49.104"
+        },
+        {
+          "label": "DSP-2",
+          "counts": {
+            "pk_nhr_sequence": 6790,
+            "pk_nhr_consumed": 6781,
+            "pk_nhr_failures": 6,
+            "pk_nhr_dma_reads": 6791,
+            "pk_nhr_dma_done": 6791,
+            "pk_nhr_lag_min": 0,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 122,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 196,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 2,
+          "status": "status sample=629006.322 ms=14263.182 frames=7532 frame=on idle=49670 wall=50.977"
+        },
+        {
+          "label": "end",
+          "counts": {
+            "pk_nhr_sequence": 7105,
+            "pk_nhr_consumed": 7096,
+            "pk_nhr_failures": 6,
+            "pk_nhr_dma_reads": 7105,
+            "pk_nhr_dma_done": 7105,
+            "pk_nhr_lag_min": 0,
+            "pk_nhr_lag_max": 2,
+            "pk_nht_pending_max": 122,
+            "pk_nhr_enabled": 1,
+            "pk_nhf_batches": 205,
+            "placement_status": 1
+          },
+          "part": 0,
+          "bank_pointer": 1074668000,
+          "working_bank": 0,
+          "playing_bank": 0,
+          "transport": 1,
+          "mode": 2,
+          "status": "status sample=633417.129 ms=14363.200 frames=7846 frame=on idle=49978 wall=53.002"
+        }
+      ],
+      "audio": {
+        "T1": {
+          "source_significant": 125514,
+          "post_FX_significant": 125477
+        },
+        "T2": {
+          "source_significant": 125515,
+          "post_FX_significant": 125484
+        },
+        "T3": {
+          "source_significant": 152213,
+          "post_FX_significant": 125474
+        },
+        "T4": {
+          "source_significant": 156673,
+          "post_FX_significant": 125470
+        },
+        "T5": {
+          "source_significant": 125452,
+          "post_FX_significant": 125424
+        },
+        "T6": {
+          "source_significant": 81443,
+          "post_FX_significant": 123337,
+          "source_kind": "DSP source PCM witnessed before AMP; controls in DMA records"
+        },
+        "T7": {
+          "source_significant": 144531,
+          "post_FX_significant": 125478
+        },
+        "T8": {
+          "source_significant": 150229,
+          "post_FX_significant": 125481
+        }
+      },
+      "raw_sha256": "e2257869ecc1422071569423b846006d2e621868fdf97c45361d717d1b3e963d",
+      "input_archive_sha256": "46b59938036663470ab88409b00ddec69df6afac88b03cb8beecc8f5c6d23c35",
+      "executed_instrument_receipt_sha256": "08782b2f120021d8a2399e4f67684a54e1d1c27b2d8a21c17ac4ab0ecb7f9fc2"
+    }
+  ],
+  "full_workload_rows": [
+    {
+      "schema": "perky-cf-placement-integrated-row-v1",
+      "status": "FUNCTIONAL_MODEL_ROW",
+      "scenario": "WTWT-SLAP-HAT-FAST-OPT-M1",
+      "kind": "static",
+      "algorithms": [
+        9,
+        9,
+        8,
+        5
+      ],
+      "modes": [
+        1,
+        2,
+        0,
+        0
+      ],
+      "CF_mask": 15,
+      "requested_frames": 4096,
+      "inputs": {
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/probe/mainos_PKNHE1.bin": "68d5adda3fc03972b2c0b67e98cef7a0aa78e3933a51228c1b3a0d0d1e376546",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/probe/platform/runtime.elf": "19f4dcfcb62b7e05b38d2edca25dc44797e1b2587b070cf83794e13fff298641",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/card.img": "2aff73736999b507983d0d2abda88e5df0ceac7028f0087f702a72a661432d99",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/observer/ot_emu_safety": "6c238a7644c7b81b0db0506c448be67ce76ba4c66eff44da60345e010c4068bc",
+        "/Users/jrold/Downloads/octabam/tools/verify/measure_perky_cf_placement_integrated.py": "bc0c438528e832593469c61453759512279f235e8e677c21fd145431305412ac",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_workload.py": "64e6dfa4e76bad1911a7f2bab64b2ed040d0e03668d062f8b0fb7528289b06ee",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_private_stack.py": "53e6aa7d94fd02974892327b81924530e157fcef3ac005fec990caa08008bde8",
+        "/Users/jrold/Downloads/octabam/tools/harness/blockdump.py": "4b4262df72eb9c1959f356b433e8b2bad96504e378094f7a4a85d231d03cb2f8",
+        "/Users/jrold/Downloads/octabam/tools/harness/recloop.py": "fa362dbb153e040e90458086e2086a1180b4b8cb306548dac566ff7cf99dc2bd"
+      },
+      "command": [
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/observer/ot_emu_safety",
+        "--image",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/probe/mainos_PKNHE1.bin",
+        "--card",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/card.img",
+        "--set",
+        "OCTABAM",
+        "--project",
+        "RIG",
+        "--load-ms",
+        "90000",
+        "--sequencer",
+        "--internal-clock",
+        "--bank",
+        "0",
+        "--frames",
+        "4096",
+        "--dsp",
+        "--dsp-dirty",
+        "123",
+        "--main-level",
+        "64",
+        "--pit-clock-hz",
+        "132000000",
+        "--cf-cycles-clock",
+        "1.0",
+        "--cf-cycles-clock-before-transport",
+        "--cf-frame-hist",
+        "--poke-before-play",
+        "0x40cf8390=0x0;0x40cf8391=0x0;0x40cf8392=0x0;0x40cf8393=0xf;0x40d2fe70=0x0;0x40d2fe71=0x0;0x40d2fe72=0x0;0x40d2fe73=0x9;0x40d2fe74=0x0;0x40d2fe75=0x0;0x40d2fe76=0x0;0x40d2fe77=0x1;0x40d2fe98=0x0;0x40d2fe99=0x0;0x40d2fe9a=0x0;0x40d2fe9b=0x9;0x40d2fe9c=0x0;0x40d2fe9d=0x0;0x40d2fe9e=0x0;0x40d2fe9f=0x2;0x40d2fec0=0x0;0x40d2fec1=0x0;0x40d2fec2=0x0;0x40d2fec3=0x8;0x40d2fec4=0x0;0x40d2fec5=0x0;0x40d2fec6=0x0;0x40d2fec7=0x0;0x40d2fee8=0x0;0x40d2fee9=0x0;0x40d2feea=0x0;0x40d2feeb=0x5;0x40d2feec=0x0;0x40d2feed=0x0;0x40d2feee=0x0;0x40d2feef=0x0;0x40cf8388=0x0;0x40cf8389=0x0;0x40cf838a=0x0;0x40cf838b=0x1;0x40cf8394=0x0;0x40cf8395=0x0;0x40cf8396=0x0;0x40cf8397=0x1",
+        "--mem-dump",
+        "0x40d2fe6c,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/placement_status.bin;0x40d2fe5c,16=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/placement_calls.bin;0x40d2fe4c,16=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/placement_native_samples.bin;0x40d2fe70,160=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/placement_inputs.bin;0x40d2fd4c,256=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/placement_output.bin;0x40d2f3ec,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nhr_sequence.bin;0x40d2f3e8,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nhr_dma_reads.bin;0x40d2f3e4,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nhr_dma_done.bin;0x40d2f3e0,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nhr_failures.bin;0x40d2f3dc,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nhr_consumed.bin;0x40d2f3d8,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nhr_packet_words.bin;0x40d2f3d4,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nhr_initializations.bin;0x40cf8384,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nhr_lag_min.bin;0x40d2f3d0,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nhr_lag_max.bin;0x40d2f40c,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nht_pending_max.bin;0x40d2f408,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nht_tap_words.bin;0x40d4ce30,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nhf_batches.bin;0x40cf8394,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nhf_enabled.bin;0x40d2f3a0,48=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/pk_nhr_mail.bin",
+        "--block-dump",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/blocks.bin",
+        "--cmd-log",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/card-load.log",
+        "--cmd-log-end",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M1-static/card-end.log",
+        "--dsp-peek",
+        "0:P:0,8192;1:P:0,8192;0:P:33da3,204;0:P:33e6f,196;0:P:33f33,130;0:P:33fb5,21;0:P:33fd0,48;0:P:37da3,164;0:P:37e47,65;0:P:37e88,62;0:P:37ec6,38;0:P:37f10,111;0:P:37fa7,68;0:P:37feb,21;0:P:3bda3,188;0:P:3be60,132;0:P:3bee4,95;0:P:3bf4e,72;0:P:3bf96,58;0:P:3bfd0,48;0:P:3fda3,90;0:P:3fdfd,82;0:P:3fe4f,72;0:P:3fea9,151;0:P:3ff40,125;0:P:3ffbd,61;0:P:3fffa,6;1:P:33da3,204;1:P:33e6f,196;1:P:33f33,130;1:P:33fb5,21;1:P:33fd0,48;1:P:37da3,164;1:P:37e47,65;1:P:37e88,62;1:P:37ec6,38;1:P:37f10,111;1:P:37fa7,68;1:P:37feb,21;1:P:3bda3,188;1:P:3be60,132;1:P:3bee4,95;1:P:3bf4e,72;1:P:3bf96,58;1:P:3bfd0,48;1:P:3fda3,90;1:P:3fdfd,82;1:P:3fe4f,72;1:P:3fea9,151;1:P:3ff40,125;1:P:3ffbd,61;1:P:3fffa,6"
+      ],
+      "hardware_validated": false,
+      "CF_frame_calls": [
+        4109,
+        4109,
+        4109,
+        4109
+      ],
+      "native_samples": [
+        71562,
+        71562,
+        71562,
+        71562
+      ],
+      "full_ISR": {
+        "frames": 4109,
+        "max_cycles": 85758,
+        "max_us": 324.84090909090907,
+        "mean_us": 232.4085313465637,
+        "deadline_misses": 0
+      },
+      "private_stack_peak_bytes": 940,
+      "source_and_post_FX": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65724,
+          "post_FX_significant": 65692,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65725,
+          "post_FX_significant": 65694,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77484,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78004,
+          "post_FX_significant": 65680,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65697,
+          "post_FX_significant": 65669,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "DSP controls/taps; PCM witnessed before AMP",
+          "source_significant": 65552,
+          "post_FX_significant": 65550,
+          "source_peak": 686418,
+          "post_FX_peak": 693895,
+          "control_record_significant": 60222
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72913,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76412,
+          "post_FX_significant": 65694,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "audio_failures": [],
+      "playback_card_reads": 568,
+      "outputs": {
+        "stack.json": "0c06e57d0c83650f313d0d282a81649364f84742ba40502063a1331d504574b2",
+        "pk_nhr_mail.bin": "b3b0af3a38384b5f60dcce3b7d105ee9f50c014406b5c3185b130b215d356b55",
+        "pk_nht_tap_words.bin": "2b1d3dc5fb2cd38a0480aeb057004abe756ecb39013d1ce89320ac76a10a54b3",
+        "pk_nhr_dma_done.bin": "c18048b49abe038ff632c6d354e8c986776154035fad0cf60db0c847304a1855",
+        "placement_inputs.bin": "ce6149b2344bf975b1a71ec8dee594935ce5d0fdba85bd0ee1febea6b2ec43ad",
+        "placement_native_samples.bin": "3d949f6f097c2a5467dbea2736b8d6c6b066e13992e4dd437979be2ca1bc912e",
+        "exact.json": "ad79642bbb66e2f0f7c8fc587616f53f59797e3d8a1c78ab0055b25f966ff863",
+        "pk_nht_pending_max.bin": "46cecbeaa7de6866910a4856ef1f7378f9dd9dfa698578637ce4ecb33e7f7bac",
+        "card-end.log": "e7b252bf7fe21c5c6fb216511d7224c2831c01c848fd4d9fcc9808ebb04f3af0",
+        "card-load.log": "e578b1c02723c35693a795e6420922cec9b402a7a5c0f6240bf6250ff91d4a73",
+        "blocks.bin": "789f5d3af0b51a9918431c6c31120178c8c9adcaec36a5417b5900812ef3caa9",
+        "private.json": "e953648ea2866d2c471581747919a563150b1d34ca1ac4e373904d690d7c0b75",
+        "pk_nhr_lag_max.bin": "433ebf5bc03dffa38536673207a21281612cef5faa9bc7a4d5b9be2fdb12cf1a",
+        "pk_nhr_failures.bin": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+        "pk_nhr_packet_words.bin": "f75303802328b407d162036975f8cdaa06dd1dff623ec4d00ed72ed94890bccb",
+        "placement_calls.bin": "a3cf2d8fb652143f24a5a62d23d1915f6326a36a27ff733e5ec6060f30e3dab0",
+        "pk_nhr_initializations.bin": "b40711a88c7039756fb8a73827eabe2c0fe5a0346ca7e0a104adc0fc764f528d",
+        "pk_nhr_consumed.bin": "0afed939aeebc130fa54c2edf0e59c0d2680f36fda07501a07722f4eff101962",
+        "tone.wav": "b39603dc3d78146cefc521502cbd3408ec6c646a58079d474258c9d2d65c1fbf",
+        "port.log": "f07bfc9ff8ad253631ad310be939470fdf55d518a136c5c5bd46de9e73da9f24",
+        "placement_output.bin": "354419217807b0a4d1712d1d17ac00d3e737273a5b5620f2171034a92d1fe60b",
+        "exact.json.controls.json": "c76f68285fa60f803e8fabd26168d7b36e9a7beea4525350b0eec37d62ed0361",
+        "pk_nhr_dma_reads.bin": "c18048b49abe038ff632c6d354e8c986776154035fad0cf60db0c847304a1855",
+        "pk_nhr_lag_min.bin": "433ebf5bc03dffa38536673207a21281612cef5faa9bc7a4d5b9be2fdb12cf1a",
+        "placement_status.bin": "b40711a88c7039756fb8a73827eabe2c0fe5a0346ca7e0a104adc0fc764f528d",
+        "pk_nhf_batches.bin": "1ee0ebf56fabd2a106c4c165c3d74781270de6cdc7486953968ba81e9b63d6ff",
+        "pk_nhr_sequence.bin": "6816e9c8e93588cfcc60c7ea32f515577c58772f82b3154c3ca4f6f69ca049fb",
+        "pk_nhf_enabled.bin": "b40711a88c7039756fb8a73827eabe2c0fe5a0346ca7e0a104adc0fc764f528d"
+      },
+      "limits": [
+        "Short emulated row; no physical cache, SDRAM/card arbitration or UI latency acceptance.",
+        "Frozen DSP source on T1 when CF mask excludes V1. Other selections run the existing CF engines.",
+        "Fixed diagnostic algorithm/mode selectors; raw controls use actual LFO/scene/p-lock delivery."
+      ],
+      "control_exact": {
+        "calls": 4109,
+        "mismatches": 0,
+        "examples": []
+      },
+      "optimized": true,
+      "program_ownership": "all loaded private/shared P exact except stock bank masks",
+      "driver_sha256": "c0b71ed210c99c0161f155c73022044d1e722ddb5e5255a1b51ab0aa3f0c602d",
+      "transport_counts": {
+        "pk_nhr_sequence": 4109,
+        "pk_nhr_dma_reads": 4108,
+        "pk_nhr_dma_done": 4108,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4106,
+        "pk_nhr_packet_words": 448288,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2,
+        "pk_nht_pending_max": 52,
+        "pk_nht_tap_words": 357810,
+        "pk_nhf_batches": 109,
+        "pk_nhf_enabled": 1
+      },
+      "exact": {
+        "requests": 7874,
+        "native_samples": 71562,
+        "source_frames": 4107,
+        "source_PCM_mismatches": 0,
+        "source_significant": 65552,
+        "source_peak": 686418,
+        "state_mismatches": 0,
+        "feedback_frames": 4106,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 4106,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "panel_mode": 1,
+      "firmware_mode": 1,
+      "reference": false,
+      "added_latency_OT_samples": 0,
+      "feedback_latency_frames": 3,
+      "dynamic_state_round_trip_words": 0,
+      "return_payload_words_per_frame": 24,
+      "additional_DMA_words_per_frame": 0
+    },
+    {
+      "schema": "perky-cf-placement-integrated-row-v1",
+      "status": "FUNCTIONAL_MODEL_ROW",
+      "scenario": "WTWT-SLAP-HAT-FAST-OPT-M2",
+      "kind": "static",
+      "algorithms": [
+        9,
+        9,
+        8,
+        5
+      ],
+      "modes": [
+        1,
+        2,
+        0,
+        1
+      ],
+      "CF_mask": 15,
+      "requested_frames": 4096,
+      "inputs": {
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/probe/mainos_PKNHE1.bin": "68d5adda3fc03972b2c0b67e98cef7a0aa78e3933a51228c1b3a0d0d1e376546",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/probe/platform/runtime.elf": "19f4dcfcb62b7e05b38d2edca25dc44797e1b2587b070cf83794e13fff298641",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/card.img": "2aff73736999b507983d0d2abda88e5df0ceac7028f0087f702a72a661432d99",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/observer/ot_emu_safety": "6c238a7644c7b81b0db0506c448be67ce76ba4c66eff44da60345e010c4068bc",
+        "/Users/jrold/Downloads/octabam/tools/verify/measure_perky_cf_placement_integrated.py": "bc0c438528e832593469c61453759512279f235e8e677c21fd145431305412ac",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_workload.py": "64e6dfa4e76bad1911a7f2bab64b2ed040d0e03668d062f8b0fb7528289b06ee",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_private_stack.py": "53e6aa7d94fd02974892327b81924530e157fcef3ac005fec990caa08008bde8",
+        "/Users/jrold/Downloads/octabam/tools/harness/blockdump.py": "4b4262df72eb9c1959f356b433e8b2bad96504e378094f7a4a85d231d03cb2f8",
+        "/Users/jrold/Downloads/octabam/tools/harness/recloop.py": "fa362dbb153e040e90458086e2086a1180b4b8cb306548dac566ff7cf99dc2bd"
+      },
+      "command": [
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/observer/ot_emu_safety",
+        "--image",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/probe/mainos_PKNHE1.bin",
+        "--card",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/card.img",
+        "--set",
+        "OCTABAM",
+        "--project",
+        "RIG",
+        "--load-ms",
+        "90000",
+        "--sequencer",
+        "--internal-clock",
+        "--bank",
+        "0",
+        "--frames",
+        "4096",
+        "--dsp",
+        "--dsp-dirty",
+        "123",
+        "--main-level",
+        "64",
+        "--pit-clock-hz",
+        "132000000",
+        "--cf-cycles-clock",
+        "1.0",
+        "--cf-cycles-clock-before-transport",
+        "--cf-frame-hist",
+        "--poke-before-play",
+        "0x40cf8390=0x0;0x40cf8391=0x0;0x40cf8392=0x0;0x40cf8393=0xf;0x40d2fe70=0x0;0x40d2fe71=0x0;0x40d2fe72=0x0;0x40d2fe73=0x9;0x40d2fe74=0x0;0x40d2fe75=0x0;0x40d2fe76=0x0;0x40d2fe77=0x1;0x40d2fe98=0x0;0x40d2fe99=0x0;0x40d2fe9a=0x0;0x40d2fe9b=0x9;0x40d2fe9c=0x0;0x40d2fe9d=0x0;0x40d2fe9e=0x0;0x40d2fe9f=0x2;0x40d2fec0=0x0;0x40d2fec1=0x0;0x40d2fec2=0x0;0x40d2fec3=0x8;0x40d2fec4=0x0;0x40d2fec5=0x0;0x40d2fec6=0x0;0x40d2fec7=0x0;0x40d2fee8=0x0;0x40d2fee9=0x0;0x40d2feea=0x0;0x40d2feeb=0x5;0x40d2feec=0x0;0x40d2feed=0x0;0x40d2feee=0x0;0x40d2feef=0x1;0x40cf8388=0x0;0x40cf8389=0x0;0x40cf838a=0x0;0x40cf838b=0x1;0x40cf8394=0x0;0x40cf8395=0x0;0x40cf8396=0x0;0x40cf8397=0x1",
+        "--mem-dump",
+        "0x40d2fe6c,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/placement_status.bin;0x40d2fe5c,16=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/placement_calls.bin;0x40d2fe4c,16=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/placement_native_samples.bin;0x40d2fe70,160=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/placement_inputs.bin;0x40d2fd4c,256=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/placement_output.bin;0x40d2f3ec,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nhr_sequence.bin;0x40d2f3e8,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nhr_dma_reads.bin;0x40d2f3e4,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nhr_dma_done.bin;0x40d2f3e0,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nhr_failures.bin;0x40d2f3dc,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nhr_consumed.bin;0x40d2f3d8,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nhr_packet_words.bin;0x40d2f3d4,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nhr_initializations.bin;0x40cf8384,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nhr_lag_min.bin;0x40d2f3d0,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nhr_lag_max.bin;0x40d2f40c,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nht_pending_max.bin;0x40d2f408,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nht_tap_words.bin;0x40d4ce30,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nhf_batches.bin;0x40cf8394,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nhf_enabled.bin;0x40d2f3a0,48=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/pk_nhr_mail.bin",
+        "--block-dump",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/blocks.bin",
+        "--cmd-log",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/card-load.log",
+        "--cmd-log-end",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M2-static/card-end.log",
+        "--dsp-peek",
+        "0:P:0,8192;1:P:0,8192;0:P:33da3,204;0:P:33e6f,196;0:P:33f33,130;0:P:33fb5,21;0:P:33fd0,48;0:P:37da3,164;0:P:37e47,65;0:P:37e88,62;0:P:37ec6,38;0:P:37f10,111;0:P:37fa7,68;0:P:37feb,21;0:P:3bda3,188;0:P:3be60,132;0:P:3bee4,95;0:P:3bf4e,72;0:P:3bf96,58;0:P:3bfd0,48;0:P:3fda3,90;0:P:3fdfd,82;0:P:3fe4f,72;0:P:3fea9,151;0:P:3ff40,125;0:P:3ffbd,61;0:P:3fffa,6;1:P:33da3,204;1:P:33e6f,196;1:P:33f33,130;1:P:33fb5,21;1:P:33fd0,48;1:P:37da3,164;1:P:37e47,65;1:P:37e88,62;1:P:37ec6,38;1:P:37f10,111;1:P:37fa7,68;1:P:37feb,21;1:P:3bda3,188;1:P:3be60,132;1:P:3bee4,95;1:P:3bf4e,72;1:P:3bf96,58;1:P:3bfd0,48;1:P:3fda3,90;1:P:3fdfd,82;1:P:3fe4f,72;1:P:3fea9,151;1:P:3ff40,125;1:P:3ffbd,61;1:P:3fffa,6"
+      ],
+      "hardware_validated": false,
+      "CF_frame_calls": [
+        4109,
+        4109,
+        4109,
+        4109
+      ],
+      "native_samples": [
+        71562,
+        71562,
+        71562,
+        71562
+      ],
+      "full_ISR": {
+        "frames": 4109,
+        "max_cycles": 86407,
+        "max_us": 327.29924242424244,
+        "mean_us": 234.8485816426617,
+        "deadline_misses": 0
+      },
+      "private_stack_peak_bytes": 940,
+      "source_and_post_FX": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65724,
+          "post_FX_significant": 65692,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65725,
+          "post_FX_significant": 65694,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77484,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78004,
+          "post_FX_significant": 65680,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65697,
+          "post_FX_significant": 65669,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "DSP controls/taps; PCM witnessed before AMP",
+          "source_significant": 65544,
+          "post_FX_significant": 65536,
+          "source_peak": 768842,
+          "post_FX_peak": 777218,
+          "control_record_significant": 56001
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72913,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76412,
+          "post_FX_significant": 65694,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "audio_failures": [],
+      "playback_card_reads": 568,
+      "outputs": {
+        "stack.json": "6a37c61efeb8cd8acb77b0dc7fd5c8ab4621fcf5de319d927ca466261499f27b",
+        "pk_nhr_mail.bin": "aba7fb476b44c750b732ac947f0104bb088c55682fa798a5f69df44b218229af",
+        "pk_nht_tap_words.bin": "2b1d3dc5fb2cd38a0480aeb057004abe756ecb39013d1ce89320ac76a10a54b3",
+        "pk_nhr_dma_done.bin": "c18048b49abe038ff632c6d354e8c986776154035fad0cf60db0c847304a1855",
+        "placement_inputs.bin": "5b562c2f939414a1e2f153e7fcd82c290b1b563606729422dba5c885664fb7e0",
+        "placement_native_samples.bin": "3d949f6f097c2a5467dbea2736b8d6c6b066e13992e4dd437979be2ca1bc912e",
+        "exact.json": "a359b3865af12fd892b7284813ef9bf1f5f2d590640044b30f5d34f944ff5d85",
+        "pk_nht_pending_max.bin": "46cecbeaa7de6866910a4856ef1f7378f9dd9dfa698578637ce4ecb33e7f7bac",
+        "card-end.log": "e7b252bf7fe21c5c6fb216511d7224c2831c01c848fd4d9fcc9808ebb04f3af0",
+        "card-load.log": "e578b1c02723c35693a795e6420922cec9b402a7a5c0f6240bf6250ff91d4a73",
+        "blocks.bin": "2addc0a70416686daed5235fe324db3f32e4114c8609186cd29efd65670a8273",
+        "private.json": "e953648ea2866d2c471581747919a563150b1d34ca1ac4e373904d690d7c0b75",
+        "pk_nhr_lag_max.bin": "433ebf5bc03dffa38536673207a21281612cef5faa9bc7a4d5b9be2fdb12cf1a",
+        "pk_nhr_failures.bin": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+        "pk_nhr_packet_words.bin": "9df3f8c3c38b1541736442fe5312ed2083c9de4d42a8bd6ea507e860b81c5544",
+        "placement_calls.bin": "a3cf2d8fb652143f24a5a62d23d1915f6326a36a27ff733e5ec6060f30e3dab0",
+        "pk_nhr_initializations.bin": "b40711a88c7039756fb8a73827eabe2c0fe5a0346ca7e0a104adc0fc764f528d",
+        "pk_nhr_consumed.bin": "0afed939aeebc130fa54c2edf0e59c0d2680f36fda07501a07722f4eff101962",
+        "tone.wav": "b39603dc3d78146cefc521502cbd3408ec6c646a58079d474258c9d2d65c1fbf",
+        "port.log": "c385a33658097bc42ccfae56c80e524b377ced01d15e2ca920c2a94433d0a6d2",
+        "placement_output.bin": "354419217807b0a4d1712d1d17ac00d3e737273a5b5620f2171034a92d1fe60b",
+        "exact.json.controls.json": "c76f68285fa60f803e8fabd26168d7b36e9a7beea4525350b0eec37d62ed0361",
+        "pk_nhr_dma_reads.bin": "c18048b49abe038ff632c6d354e8c986776154035fad0cf60db0c847304a1855",
+        "pk_nhr_lag_min.bin": "433ebf5bc03dffa38536673207a21281612cef5faa9bc7a4d5b9be2fdb12cf1a",
+        "placement_status.bin": "b40711a88c7039756fb8a73827eabe2c0fe5a0346ca7e0a104adc0fc764f528d",
+        "pk_nhf_batches.bin": "1ee0ebf56fabd2a106c4c165c3d74781270de6cdc7486953968ba81e9b63d6ff",
+        "pk_nhr_sequence.bin": "6816e9c8e93588cfcc60c7ea32f515577c58772f82b3154c3ca4f6f69ca049fb",
+        "pk_nhf_enabled.bin": "b40711a88c7039756fb8a73827eabe2c0fe5a0346ca7e0a104adc0fc764f528d"
+      },
+      "limits": [
+        "Short emulated row; no physical cache, SDRAM/card arbitration or UI latency acceptance.",
+        "Frozen DSP source on T1 when CF mask excludes V1. Other selections run the existing CF engines.",
+        "Fixed diagnostic algorithm/mode selectors; raw controls use actual LFO/scene/p-lock delivery."
+      ],
+      "control_exact": {
+        "calls": 4109,
+        "mismatches": 0,
+        "examples": []
+      },
+      "optimized": true,
+      "program_ownership": "all loaded private/shared P exact except stock bank masks",
+      "driver_sha256": "c0b71ed210c99c0161f155c73022044d1e722ddb5e5255a1b51ab0aa3f0c602d",
+      "transport_counts": {
+        "pk_nhr_sequence": 4109,
+        "pk_nhr_dma_reads": 4108,
+        "pk_nhr_dma_done": 4108,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4106,
+        "pk_nhr_packet_words": 522250,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2,
+        "pk_nht_pending_max": 52,
+        "pk_nht_tap_words": 357810,
+        "pk_nhf_batches": 109,
+        "pk_nhf_enabled": 1
+      },
+      "exact": {
+        "requests": 7874,
+        "native_samples": 71562,
+        "source_frames": 4107,
+        "source_PCM_mismatches": 0,
+        "source_significant": 65544,
+        "source_peak": 768842,
+        "state_mismatches": 0,
+        "feedback_frames": 4106,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 4106,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "panel_mode": 2,
+      "firmware_mode": 0,
+      "reference": false,
+      "added_latency_OT_samples": 0,
+      "feedback_latency_frames": 3,
+      "dynamic_state_round_trip_words": 0,
+      "return_payload_words_per_frame": 24,
+      "additional_DMA_words_per_frame": 0
+    },
+    {
+      "schema": "perky-cf-placement-integrated-row-v1",
+      "status": "FUNCTIONAL_MODEL_ROW",
+      "scenario": "WTWT-SLAP-HAT-FAST-OPT-M3",
+      "kind": "static",
+      "algorithms": [
+        9,
+        9,
+        8,
+        5
+      ],
+      "modes": [
+        1,
+        2,
+        0,
+        2
+      ],
+      "CF_mask": 15,
+      "requested_frames": 4096,
+      "inputs": {
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/probe/mainos_PKNHE1.bin": "68d5adda3fc03972b2c0b67e98cef7a0aa78e3933a51228c1b3a0d0d1e376546",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/probe/platform/runtime.elf": "19f4dcfcb62b7e05b38d2edca25dc44797e1b2587b070cf83794e13fff298641",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/card.img": "2aff73736999b507983d0d2abda88e5df0ceac7028f0087f702a72a661432d99",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/observer/ot_emu_safety": "6c238a7644c7b81b0db0506c448be67ce76ba4c66eff44da60345e010c4068bc",
+        "/Users/jrold/Downloads/octabam/tools/verify/measure_perky_cf_placement_integrated.py": "bc0c438528e832593469c61453759512279f235e8e677c21fd145431305412ac",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_workload.py": "64e6dfa4e76bad1911a7f2bab64b2ed040d0e03668d062f8b0fb7528289b06ee",
+        "/Users/jrold/Downloads/octabam/tools/verify/verify_perky_hybrid_private_stack.py": "53e6aa7d94fd02974892327b81924530e157fcef3ac005fec990caa08008bde8",
+        "/Users/jrold/Downloads/octabam/tools/harness/blockdump.py": "4b4262df72eb9c1959f356b433e8b2bad96504e378094f7a4a85d231d03cb2f8",
+        "/Users/jrold/Downloads/octabam/tools/harness/recloop.py": "fa362dbb153e040e90458086e2086a1180b4b8cb306548dac566ff7cf99dc2bd"
+      },
+      "command": [
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/observer/ot_emu_safety",
+        "--image",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/probe/mainos_PKNHE1.bin",
+        "--card",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/card.img",
+        "--set",
+        "OCTABAM",
+        "--project",
+        "RIG",
+        "--load-ms",
+        "90000",
+        "--sequencer",
+        "--internal-clock",
+        "--bank",
+        "0",
+        "--frames",
+        "4096",
+        "--dsp",
+        "--dsp-dirty",
+        "123",
+        "--main-level",
+        "64",
+        "--pit-clock-hz",
+        "132000000",
+        "--cf-cycles-clock",
+        "1.0",
+        "--cf-cycles-clock-before-transport",
+        "--cf-frame-hist",
+        "--poke-before-play",
+        "0x40cf8390=0x0;0x40cf8391=0x0;0x40cf8392=0x0;0x40cf8393=0xf;0x40d2fe70=0x0;0x40d2fe71=0x0;0x40d2fe72=0x0;0x40d2fe73=0x9;0x40d2fe74=0x0;0x40d2fe75=0x0;0x40d2fe76=0x0;0x40d2fe77=0x1;0x40d2fe98=0x0;0x40d2fe99=0x0;0x40d2fe9a=0x0;0x40d2fe9b=0x9;0x40d2fe9c=0x0;0x40d2fe9d=0x0;0x40d2fe9e=0x0;0x40d2fe9f=0x2;0x40d2fec0=0x0;0x40d2fec1=0x0;0x40d2fec2=0x0;0x40d2fec3=0x8;0x40d2fec4=0x0;0x40d2fec5=0x0;0x40d2fec6=0x0;0x40d2fec7=0x0;0x40d2fee8=0x0;0x40d2fee9=0x0;0x40d2feea=0x0;0x40d2feeb=0x5;0x40d2feec=0x0;0x40d2feed=0x0;0x40d2feee=0x0;0x40d2feef=0x2;0x40cf8388=0x0;0x40cf8389=0x0;0x40cf838a=0x0;0x40cf838b=0x1;0x40cf8394=0x0;0x40cf8395=0x0;0x40cf8396=0x0;0x40cf8397=0x1",
+        "--mem-dump",
+        "0x40d2fe6c,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/placement_status.bin;0x40d2fe5c,16=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/placement_calls.bin;0x40d2fe4c,16=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/placement_native_samples.bin;0x40d2fe70,160=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/placement_inputs.bin;0x40d2fd4c,256=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/placement_output.bin;0x40d2f3ec,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nhr_sequence.bin;0x40d2f3e8,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nhr_dma_reads.bin;0x40d2f3e4,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nhr_dma_done.bin;0x40d2f3e0,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nhr_failures.bin;0x40d2f3dc,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nhr_consumed.bin;0x40d2f3d8,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nhr_packet_words.bin;0x40d2f3d4,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nhr_initializations.bin;0x40cf8384,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nhr_lag_min.bin;0x40d2f3d0,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nhr_lag_max.bin;0x40d2f40c,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nht_pending_max.bin;0x40d2f408,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nht_tap_words.bin;0x40d4ce30,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nhf_batches.bin;0x40cf8394,4=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nhf_enabled.bin;0x40d2f3a0,48=/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/pk_nhr_mail.bin",
+        "--block-dump",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/blocks.bin",
+        "--cmd-log",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/card-load.log",
+        "--cmd-log-end",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-lifecycle/rerun/integrated-results/WTWT-SLAP-HAT-FAST-OPT-M3-static/card-end.log",
+        "--dsp-peek",
+        "0:P:0,8192;1:P:0,8192;0:P:33da3,204;0:P:33e6f,196;0:P:33f33,130;0:P:33fb5,21;0:P:33fd0,48;0:P:37da3,164;0:P:37e47,65;0:P:37e88,62;0:P:37ec6,38;0:P:37f10,111;0:P:37fa7,68;0:P:37feb,21;0:P:3bda3,188;0:P:3be60,132;0:P:3bee4,95;0:P:3bf4e,72;0:P:3bf96,58;0:P:3bfd0,48;0:P:3fda3,90;0:P:3fdfd,82;0:P:3fe4f,72;0:P:3fea9,151;0:P:3ff40,125;0:P:3ffbd,61;0:P:3fffa,6;1:P:33da3,204;1:P:33e6f,196;1:P:33f33,130;1:P:33fb5,21;1:P:33fd0,48;1:P:37da3,164;1:P:37e47,65;1:P:37e88,62;1:P:37ec6,38;1:P:37f10,111;1:P:37fa7,68;1:P:37feb,21;1:P:3bda3,188;1:P:3be60,132;1:P:3bee4,95;1:P:3bf4e,72;1:P:3bf96,58;1:P:3bfd0,48;1:P:3fda3,90;1:P:3fdfd,82;1:P:3fe4f,72;1:P:3fea9,151;1:P:3ff40,125;1:P:3ffbd,61;1:P:3fffa,6"
+      ],
+      "hardware_validated": false,
+      "CF_frame_calls": [
+        4107,
+        4107,
+        4107,
+        4107
+      ],
+      "native_samples": [
+        71527,
+        71527,
+        71527,
+        71527
+      ],
+      "full_ISR": {
+        "frames": 4107,
+        "max_cycles": 83662,
+        "max_us": 316.9015151515151,
+        "mean_us": 222.4128234499856,
+        "deadline_misses": 0
+      },
+      "private_stack_peak_bytes": 940,
+      "source_and_post_FX": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65692,
+          "post_FX_significant": 65660,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65693,
+          "post_FX_significant": 65662,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77445,
+          "post_FX_significant": 65658,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 77960,
+          "post_FX_significant": 65648,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65665,
+          "post_FX_significant": 65637,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "DSP controls/taps; PCM witnessed before AMP",
+          "source_significant": 64818,
+          "post_FX_significant": 64817,
+          "source_peak": 634671,
+          "post_FX_peak": 641585,
+          "control_record_significant": 45186
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72874,
+          "post_FX_significant": 65658,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76368,
+          "post_FX_significant": 65662,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "audio_failures": [],
+      "playback_card_reads": 568,
+      "outputs": {
+        "stack.json": "8ee7405acc7f5a2acedbe25650d20a20ac65ad58aa1bfc356a46e8e8705c3627",
+        "pk_nhr_mail.bin": "d4c2cd44ea6e5de89bdadaba4b041db781f1bdd7b8679391865d9865feaf0b9c",
+        "pk_nht_tap_words.bin": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+        "pk_nhr_dma_done.bin": "0afed939aeebc130fa54c2edf0e59c0d2680f36fda07501a07722f4eff101962",
+        "placement_inputs.bin": "65cf4df58c672002ae424e6a4d0f9c08b89cdcd281ac03a78331ef92e6fe4bb8",
+        "placement_native_samples.bin": "1d52e82d6fa0e1bf79c3dc21925808b6435b963691805c58035eb139b2bd7872",
+        "exact.json": "1b9863178ee1640e0592d1927d0136ecd029a19137a8b39534da4f6498ff2f6c",
+        "pk_nht_pending_max.bin": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+        "card-end.log": "e7b252bf7fe21c5c6fb216511d7224c2831c01c848fd4d9fcc9808ebb04f3af0",
+        "card-load.log": "e578b1c02723c35693a795e6420922cec9b402a7a5c0f6240bf6250ff91d4a73",
+        "blocks.bin": "b4be1ddc5f89fccc23737772c0216b5d10079a0a08cef68744d6e651397807c9",
+        "private.json": "02d89501e937505f5e565fa3137844bdb91d7271d4d19368e359562c4e96e2aa",
+        "pk_nhr_lag_max.bin": "433ebf5bc03dffa38536673207a21281612cef5faa9bc7a4d5b9be2fdb12cf1a",
+        "pk_nhr_failures.bin": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+        "pk_nhr_packet_words.bin": "a942d31d4cfdd33d702cda285010a44e2c4ddd30368eef7b145050aa11eb2407",
+        "placement_calls.bin": "d271dae7b9f17a7166127d4cf73a0aa8dea350942e5184b6d25c65603fc2bafd",
+        "pk_nhr_initializations.bin": "b40711a88c7039756fb8a73827eabe2c0fe5a0346ca7e0a104adc0fc764f528d",
+        "pk_nhr_consumed.bin": "3a985ef31d254edc3f1e1e5d34a610a929e59eb3d1a7c38eb5fc10e3a43a4f51",
+        "tone.wav": "b39603dc3d78146cefc521502cbd3408ec6c646a58079d474258c9d2d65c1fbf",
+        "port.log": "55a7ed2915d430458ce4392e19681233bff70e7647c3b6e74297416f1d9c81f2",
+        "placement_output.bin": "f8a9465d4c9165f8a49d9e95a2d6ec120af598e0bc9c47837550f5350a073623",
+        "exact.json.controls.json": "eac9a4c82432d8c4e17efeceec830da28a4be98166250ab3001e717c7f81707b",
+        "pk_nhr_dma_reads.bin": "0afed939aeebc130fa54c2edf0e59c0d2680f36fda07501a07722f4eff101962",
+        "pk_nhr_lag_min.bin": "433ebf5bc03dffa38536673207a21281612cef5faa9bc7a4d5b9be2fdb12cf1a",
+        "placement_status.bin": "b40711a88c7039756fb8a73827eabe2c0fe5a0346ca7e0a104adc0fc764f528d",
+        "pk_nhf_batches.bin": "1ee0ebf56fabd2a106c4c165c3d74781270de6cdc7486953968ba81e9b63d6ff",
+        "pk_nhr_sequence.bin": "c797c80d48205f717dc77d02d8eba4822da9e8be2f3943fa0be58bcdb34a5e2e",
+        "pk_nhf_enabled.bin": "b40711a88c7039756fb8a73827eabe2c0fe5a0346ca7e0a104adc0fc764f528d"
+      },
+      "limits": [
+        "Short emulated row; no physical cache, SDRAM/card arbitration or UI latency acceptance.",
+        "Frozen DSP source on T1 when CF mask excludes V1. Other selections run the existing CF engines.",
+        "Fixed diagnostic algorithm/mode selectors; raw controls use actual LFO/scene/p-lock delivery."
+      ],
+      "control_exact": {
+        "calls": 4107,
+        "mismatches": 0,
+        "examples": []
+      },
+      "optimized": true,
+      "program_ownership": "all loaded private/shared P exact except stock bank masks",
+      "driver_sha256": "c0b71ed210c99c0161f155c73022044d1e722ddb5e5255a1b51ab0aa3f0c602d",
+      "transport_counts": {
+        "pk_nhr_sequence": 4107,
+        "pk_nhr_dma_reads": 4106,
+        "pk_nhr_dma_done": 4106,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4104,
+        "pk_nhr_packet_words": 189002,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2,
+        "pk_nht_pending_max": 0,
+        "pk_nht_tap_words": 0,
+        "pk_nhf_batches": 109,
+        "pk_nhf_enabled": 1
+      },
+      "exact": {
+        "requests": 7870,
+        "native_samples": 71527,
+        "source_frames": 4105,
+        "source_PCM_mismatches": 0,
+        "source_significant": 64818,
+        "source_peak": 634671,
+        "state_mismatches": 0,
+        "feedback_frames": 4104,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 0,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "panel_mode": 3,
+      "firmware_mode": 2,
+      "reference": false,
+      "added_latency_OT_samples": 0,
+      "feedback_latency_frames": 3,
+      "dynamic_state_round_trip_words": 0,
+      "return_payload_words_per_frame": 24,
+      "additional_DMA_words_per_frame": 0
+    }
+  ],
+  "checks": {
+    "make_check_sha256": "2731308d3c4ac1dea91d4f3a80b8abde9415e447fde99e264c67323648b861af",
+    "shared_gates": 84,
+    "image_gates": 4,
+    "refhash_cases": 24,
+    "refhash_log_sha256": "71a9e4ecf2fe8ec9ede78ff28cb0a9100dee30445be1aa6aea94b94efd2fdc48",
+    "wire_ID_gate_sha256": "f2a4146bca8a90bfb50db4879faaca0a9cd86dbea3dfe2166dd4d38caf0f5536"
+  },
+  "source_sha256": {
+    "tools/verify/verify_perky_noise_hat_lifecycle_campaign.py": "536e5c522c6aab6bb135d0a5c4a8f8de678a631ce705307f1ccb84cdeb3ac29b",
+    "tools/verify/qualify_perky_noise_hat_lifecycle.py": "b5ad0743d738e1f4eedfe6a55db6b3a13f0389dfa0681c5440755a6a84628fdd",
+    "tools/verify/build_perky_noise_hat_lifecycle_observer.py": "ca0f0b70cb03424839a220f947051d89f36048cf35156e5c211c79ca1f3364f7",
+    "tools/verify/rerun_perky_noise_hat_lifecycle_workload.py": "5407e4f48ee2ce66f85eaa86c047626352932c66cedf585d64d17d085f34cda2",
+    "tools/verify/verify_perky_noise_hat_lifecycle_ids.py": "d7c79c5dd98325b9ba4d8ef21a35033f2148a853cdc3d4b9f7164575af2b1684",
+    "tools/harness/perky_cf/noise_hat_lifecycle_observer.h": "9f7a64d9c5382a3489c40640cd85107b119d30fdc21e59551d3acfab33cc04a9"
+  },
+  "limits": [
+    "Fixed diagnostic ALGO/MODE selectors: real Part/Bank key actions do not qualify product selector persistence or generation reset.",
+    "Stock tracks/FX: retained program identity and active source/post-FX witnesses, not a stock-output bit-identity comparison across UI actions.",
+    "No physical qualification, cache/card arbitration, long sequence-wrap, release wrapper or flash."
+  ]
+}

@@ -1,0 +1,200 @@
+{
+  "schema": "perky-full-map-qualification-v1",
+  "status": "PASS_LOCAL_FULL_MAP; MKII_ACCEPTANCE_PENDING",
+  "version": "PKFM6",
+  "source_commit": "4eeae750caf8ba98144dd9ad8ac3b68299e21982",
+  "branch": "perky-cf-dsp-hybrid",
+  "source_tree_clean": false,
+  "hardware_flashed": false,
+  "physical_acceptance": false,
+  "artifacts": {
+    "main": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-release/probe/mainos_PKFM6.bin",
+      "bytes": 1608016,
+      "sha256": "c062f9232949f0073198b5e073c2948558275ff1d02f716054d82b9a314bfa77"
+    },
+    "card": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-release/upgrade/OCTATRACK_PKFM6.bin",
+      "bytes": 934480,
+      "sha256": "5527e0c1e5f2f4b5e661fc1cb10e0b2926c0ca6efc98fe94563f9070d1f9a9a6"
+    },
+    "midi": {
+      "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-release/upgrade/OCTATRACK_OS1.40C_PKFM6.syx",
+      "bytes": 1305307,
+      "sha256": "562931eca6292046e6c386e4ad513e743ec2de2691b4e60c229f73cf4bf24098"
+    }
+  },
+  "asset_file": {
+    "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-release/PERKYAH.DAT",
+    "sha256": "215e081e1d389f2bbabda54cff76c02cd622a39c03dee1f50fd613e71bffb429",
+    "payload_crc32": 1462568038,
+    "bytes": 452124,
+    "required_card_path": "/PERKYAH.DAT",
+    "loading": "UI task, 4096-byte bounded chunks; CRC before audio readiness",
+    "missing_behavior": "Acoustic source silent; other algorithms remain available; retries while transport is stopped"
+  },
+  "memory": {
+    "shared_P_words": 2220,
+    "shared_P_capacity": 2404,
+    "shared_P_free": 184,
+    "custom_private_P_words": {
+      "A": 0,
+      "B": 0
+    },
+    "A_private_X_words": 564,
+    "A_private_X_capacity": 616,
+    "A_low_Y_words": 2093,
+    "A_low_Y_capacity": 2139
+  },
+  "placement": {
+    "T1": "CF: Fold1 / WT V1 / Simple",
+    "T2": "CF: Fold2 / WT V2 / Complex",
+    "T5": "CF: Resonant / Slap / Karplus",
+    "T6": "DSP-A: Noise Hat; CF: Noise/Tone / Acoustic Hats"
+  },
+  "timing": {
+    "SCENES.json": {
+      "frames": 9165,
+      "max_cycles": 86476,
+      "max_us": 327.56060606060606,
+      "deadline_misses": 0
+    },
+    "lifecycle/RESULT.json": {
+      "frames": 53189,
+      "returns": 53188,
+      "max_cycles": 93809,
+      "max_us": 355.3371212121212,
+      "deadline_misses": 0
+    },
+    "MATRIX.json": {
+      "frames": 160096,
+      "returns": 160095,
+      "max_cycles": 92170,
+      "max_us": 349.1287878787879,
+      "deadline_misses": 0
+    },
+    "MODE_MATRIX.json": {
+      "frames": 247902,
+      "returns": 247901,
+      "max_cycles": 89102,
+      "max_us": 337.50757575757575,
+      "deadline_misses": 0
+    },
+    "integrated-results/FULL-WTWT-8-5-M0-static/FULL_ROW.json": {
+      "frames": 16384,
+      "max_cycles": 85511,
+      "max_us": 323.905303030303,
+      "mean_us": 231.16347087513316,
+      "deadline_misses": 0
+    },
+    "integrated-results/FULL-WTWT-8-5-M1-static/FULL_ROW.json": {
+      "frames": 16384,
+      "max_cycles": 86138,
+      "max_us": 326.280303030303,
+      "mean_us": 232.54611737800366,
+      "deadline_misses": 0
+    },
+    "integrated-results/FULL-WTWT-8-5-M2-static/FULL_ROW.json": {
+      "frames": 16384,
+      "max_cycles": 82313,
+      "max_us": 311.7916666666667,
+      "mean_us": 217.74454428932884,
+      "deadline_misses": 0
+    },
+    "integrated-results/FULL-WTWT-8-3-M1-static/FULL_ROW.json": {
+      "frames": 16384,
+      "max_cycles": 85728,
+      "max_us": 324.72727272727275,
+      "mean_us": 232.4919581557765,
+      "deadline_misses": 0
+    },
+    "integrated-results/FULL-WTWT-8-10-M1-static/FULL_ROW.json": {
+      "frames": 16384,
+      "max_cycles": 86893,
+      "max_us": 329.1401515151515,
+      "mean_us": 229.03109417539653,
+      "deadline_misses": 0
+    },
+    "integrated-results/HANDOFF-DEMO-static/FULL_ROW.json": {
+      "frames": 512,
+      "max_cycles": 85426,
+      "max_us": 323.5833333333333,
+      "mean_us": 220.59157492897728,
+      "deadline_misses": 0
+    },
+    "persistence-cold-reload": {
+      "frames": 512,
+      "max_cycles": 87595,
+      "max_us": 331.79924242424244,
+      "deadline_misses": 0
+    }
+  },
+  "maximum": {
+    "case": "lifecycle/RESULT.json",
+    "cycles": 93809,
+    "microseconds": 355.3371212121212,
+    "deadline_microseconds": 362.81179138321994,
+    "observed_reserve_microseconds": 7.474670171098751
+  },
+  "coverage": {
+    "algorithm_layouts": 81,
+    "layout_mode_tuples": 243,
+    "additional_cartesian_mode_tuples": 324,
+    "direct_source_frames": 5355,
+    "mixed_DSP_frames": 1224,
+    "sustained_frames_per_fixed_row": 16384,
+    "lifecycle_frames": 53189,
+    "backend_switches": 22,
+    "old_generation_feedback_checked": 35,
+    "repository_floor": "make check REMIX=perky-machine",
+    "refhash_configurations": 24
+  },
+  "source_snapshot": {
+    "path": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-release/source",
+    "manifest_sha256": "b54dcc9af5a21e8c95bd9e789e1350dd8528be529cd161434bc20b251038686b",
+    "files": 399
+  },
+  "limits": [
+    "Local instruction/cycle model at CF264/PIT132; no physical WCET, cache/SDRAM/card/DMA contention or UI acceptance.",
+    "All 81 algorithm layouts with three rotated mode tuples; all 81 mode tuples on four specified demanding layouts. Not every Cartesian continuous-control/algorithm/mode combination.",
+    "Independent original source PCM/state/RNG/clocks and feedback; stock FX code/dispatch identity and active chains, not whole-project post-FX PCM identity across UI actions.",
+    "PK/2 projects; no automatic PK/1 migration. Exact Acoustic samples require /PERKYAH.DAT, loaded outside audio.",
+    "One final firmware candidate and consolidated hardware session. PERKY4S remains the hardware-confirmed release."
+  ],
+  "receipt_sha256": {
+    "out/perky/hybrid/full-map-release/BUILD.json": "43b2904884411d09fe7d57949ce0207e60aff9a02c53be387d64eec086d249e5",
+    "out/perky/hybrid/full-map-release/CF_STAGE_BUILD.json": "01b6708eb512d2bb5961140e5b8e49f858307dc23ca75ff548d9f28a109b2368",
+    "out/perky/hybrid/full-map-release/MEMORY.json": "ccb1358c123ff17450cca685f6f5c14509fc419b7ff035b32dc1e6a4f7f5dfa8",
+    "out/perky/hybrid/full-map-release/PROFILE_BUILD.json": "81f20fc655616656a649a5f2dc4b743594621753ca14df6746a158e672fffe3a",
+    "out/perky/hybrid/full-map-release/observer/OBSERVER_BUILD.json": "c611c2c182079a0e2fce38ba913feb02415ae354233b4eaa8801da5c9e28346b",
+    "out/perky/hybrid/full-map-release/persistence-stack.json": "fe72cb4de4237fa80d994ffebb414c7745ad152456f2afaccc8501323d61368c",
+    "out/perky/hybrid/full-map-release/persistence-private.json": "ae46b9f8d6c740d9241a182288d6861b4ff283b72b18743e6ef054f3a4e0afaa",
+    "out/perky/hybrid/full-map-release/source/SOURCE.json": "b54dcc9af5a21e8c95bd9e789e1350dd8528be529cd161434bc20b251038686b",
+    "out/perky/hybrid/full-map-release/SOURCE_GATE.json": "1b922b5c28328e279a1208dd27ee8eff6b3c5876ae42aee4e629655cd0718bf3",
+    "out/perky/hybrid/full-map-release/MIXED_DSP_GATE.json": "08f06956daf799fb8e933be6ae768460ba098f1e40828e9bb9f7ec070f76889e",
+    "out/perky/hybrid/full-map-release/RNG_GATE.json": "75f62599e325f2c2c01a9edaa6a85d571c6df5051f5e396efbe2bad798fd0dbc",
+    "out/perky/hybrid/full-map-release/PRODUCTION_DSP_GATE.json": "02ca1fffe7cbe0927d9ea5bfae06adca3e5d96502a446a60f9735adf94a71f0e",
+    "out/perky/hybrid/full-map-release/STOCK_FX_GATE.json": "19bc7bd8ea8455247cc4a4151f910cbb440f210cef3e4debc19de4ec394157b5",
+    "out/perky/hybrid/full-map-release/SELECTION.json": "911f3bcd63a9b1c3b81348e666d4e9a941280d39ef8b22d175b182aee073a1cb",
+    "out/perky/hybrid/full-map-release/CARD_ASSET_GATE.json": "f49a44bb341a9e5c9f43fd0eec3a128578055602437ce2fe8123f3940d291e08",
+    "out/perky/hybrid/full-map-release/CARD_RESET_GATE.json": "f3595e7f8d567df00f5a93a1e6ca9482c2648ca541feb89236f94572e8cda87c",
+    "out/perky/hybrid/full-map-release/REGISTER_GATE.json": "7c3463b614e85fcfbea5db5d132832288e87a2078d7ebd414c612052f3557349",
+    "out/perky/hybrid/full-map-release/WRAPPERS.json": "cdeeb634fc891972b31b7d484b9f96008d6e4163a1bf84a9876fec2800cabba4",
+    "out/perky/hybrid/full-map-release/SCENES.json": "7fcade0ffc69cc6845f4f99f2ca9c14170e11cfcf61cea088868a67195674dc9",
+    "out/perky/hybrid/full-map-release/lifecycle/RESULT.json": "f9c1b98b025263357afee870b70402fb198922fb10f2c451a618c9c38a04a9e4",
+    "out/perky/hybrid/full-map-release/persistence/RESULT.json": "f73c04e290f9b78052ff65e34a2dc0bfc95a5e5b31837631132cce16e00a5ed2",
+    "out/perky/hybrid/full-map-release/MATRIX.json": "810193d8d7922649554fb462674b2127279f0a1dc25d63e7d2a19517b9074f57",
+    "out/perky/hybrid/full-map-release/MODE_MATRIX.json": "7a7eba75b0113ee11a4ca61c29afaa1e6b8a4a80981166da0d8ca533ef08e53d",
+    "out/perky/hybrid/full-map-release/REPOSITORY_GATES.json": "00a8001b588cbcefe9bc1ef62d40e846bfe33c6d1105a1d62ecf357677703807",
+    "out/perky/hybrid/full-map-release/HANDOFF_PROJECT.json": "8f1ca2279c7e0882d48d211844951690c1e0bcf569a227f0fe17bf2a9b1fd6ae",
+    "out/perky/hybrid/full-map-release/integrated-results/FULL-WTWT-8-5-M0-static/FULL_ROW.json": "b7702d832618a6b499707227efb86b32d4629fe2c4ea16d309dbeeb7426f2db8",
+    "out/perky/hybrid/full-map-release/integrated-results/FULL-WTWT-8-5-M1-static/FULL_ROW.json": "97b679b4afb24fe1f84b217c4447c03ecc825084d8e4cd4809034bc5f8e90003",
+    "out/perky/hybrid/full-map-release/integrated-results/FULL-WTWT-8-5-M2-static/FULL_ROW.json": "9a342db3c4e6ea913a82281e5b7d6c4f4ddc6abee8ba1bbd60081f6abe50736c",
+    "out/perky/hybrid/full-map-release/integrated-results/FULL-WTWT-8-3-M1-static/FULL_ROW.json": "17080e720a71b8e03a5618c7c9860f41e57f2987bd707069296bfba3c6e58a4a",
+    "out/perky/hybrid/full-map-release/integrated-results/FULL-WTWT-8-10-M1-static/FULL_ROW.json": "6bdd6cef5ade11ffa6ccca1b4f06d53515155cf127d333b0e6c09e4d80fd6e4e",
+    "out/perky/hybrid/full-map-release/integrated-results/HANDOFF-DEMO-static/FULL_ROW.json": "a693425df165e019b19a240de695566f2e17e8cf096682166dc796b7941104c1",
+    "out/perky/hybrid/full-map-release/repository-check.log": "5fc410b9d1beafa89181abd03f101f894781929704388b617f99f612a2b36f64",
+    "out/perky/hybrid/full-map-release/refhash.log": "71a9e4ecf2fe8ec9ede78ff28cb0a9100dee30445be1aa6aea94b94efd2fdc48"
+  },
+  "complete_local_receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-release/QUALIFICATION.json"
+}

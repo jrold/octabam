@@ -1,0 +1,1574 @@
+{
+  "schema": "octabam.perky.empirical-model-budget.v1",
+  "status": "FAIL_EMPIRICAL_WORKING_ENVELOPE",
+  "calibration_status": "NO_UNIVERSAL_SCALAR_SEPARATOR_USE_WORKING_ENVELOPE_TARGET",
+  "historical_image_sha256": "f7f04e26969522d2024b1bba5be85f620857d636dbe0b284aa38c0fb087a21db",
+  "current_image_sha256": "c062f9232949f0073198b5e073c2948558275ff1d02f716054d82b9a314bfa77",
+  "observer_sha256": "f975b4d2c4b6a2d993d3158bc8e68c8a786b328e2902b58bdde418225287d022",
+  "clocks": {
+    "CF": 264000000,
+    "PIT": 132000000
+  },
+  "PERKY4S_reference": {
+    "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/PERKY4S/ROW.json",
+    "receipt_sha256": "2c20b4a51dd3af072862ff1b82309f615192df64fe4f943d026e2da22d9627c2",
+    "image_sha256": "be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0",
+    "metrics_us": {
+      "steady_ISR_mean": 153.4848110165414,
+      "steady_ISR_p99": 162.59848484848484,
+      "steady_ISR_p99_9": 233.7348484848485,
+      "full_ISR_peak": 237.73863636363637,
+      "whole_CPU_mean": 189.17100409305456,
+      "whole_CPU_p99": 323.0,
+      "whole_CPU_peak": 351.439
+    },
+    "configuration": {
+      "version": "PERKY4S",
+      "role": "hardware-confirmed-reference",
+      "DSP_voices": 2,
+      "CF_voices": 0,
+      "stock_tracks": 6,
+      "FX": "shared12"
+    },
+    "scope": "Exact hardware-confirmed PERKY4S MAIN; same port, stock samples and twelve FX, two DSP voices plus six STATIC tracks. Reference, not a matched voice-count performance A/B."
+  },
+  "physical_acceptance": false,
+  "admission": "HOLD_FOR_PERFORMANCE_WORK",
+  "steady_window": "Exclude first 512 completed audio interrupts; all remaining frames included.",
+  "hardware_evidence": {
+    "path": "/Users/jrold/Downloads/octabam/modules/perky/hybrid/CF_FOOTPRINT_20261016_HARDWARE.json",
+    "sha256": "69a44d789e204d9a1c96b22f5581367dcd71f283861de7fd4f1597fccef63425"
+  },
+  "hardware_labels": {
+    "working": "2 DSP + 1 CF + 5 FLEX/STATIC tracks reported working",
+    "failing": "2 DSP + 2 CF + 3 stock tracks reported sluggish and eventual lockup"
+  },
+  "controls": {
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/H4-failing-shape-snare-bass-OBSERVER_CONTROL.json": "0c92211f8f7a74e3c20a488bddd291d6a2ac6792851f4610ee07da105bf04099",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/F6-WTWT-Slap-5-M1-shared12-OBSERVER_CONTROL.json": "4ac43f30bea1c17bf4097806e550701ce938ca9dc41dfee227985bb00079ae6a"
+  },
+  "historical_source_binding": {
+    "record": "/Users/jrold/Downloads/octabam/modules/perky/hybrid/CF_OPTIMIZATION_20261016.json",
+    "sha256": "c7dc3ed5cc1d4a03f0645e4aa9820d7d071cb40759cf6f7f4c198a259bf7e8c5",
+    "meaning": "Selected PKH4O2 source/image binding; same preserved binary used for one- and two-CF configurations."
+  },
+  "policy": "Meet every observed working-envelope ceiling; do not allow an interrupt-only pass to hide background work. No clock throttling.",
+  "budgets_us": {
+    "steady_ISR_mean": 158.21153326922013,
+    "steady_ISR_p99": 166.78030303030303,
+    "steady_ISR_p99_9": 237.7310606060606,
+    "full_ISR_peak": 250.71212121212122,
+    "whole_CPU_mean": 189.2978376908736,
+    "whole_CPU_p99": 328.0,
+    "whole_CPU_peak": 362.212
+  },
+  "separation": {
+    "steady_ISR_mean": {
+      "working_envelope_max_us": 158.21153326922013,
+      "failing_envelope_min_us": 157.26392347812146,
+      "separates_replayed_shapes": false,
+      "separating_midpoint_us": null
+    },
+    "steady_ISR_p99": {
+      "working_envelope_max_us": 166.78030303030303,
+      "failing_envelope_min_us": 163.79924242424244,
+      "separates_replayed_shapes": false,
+      "separating_midpoint_us": null
+    },
+    "steady_ISR_p99_9": {
+      "working_envelope_max_us": 237.7310606060606,
+      "failing_envelope_min_us": 222.93939393939394,
+      "separates_replayed_shapes": false,
+      "separating_midpoint_us": null
+    },
+    "full_ISR_peak": {
+      "working_envelope_max_us": 250.71212121212122,
+      "failing_envelope_min_us": 237.9810606060606,
+      "separates_replayed_shapes": false,
+      "separating_midpoint_us": null
+    },
+    "whole_CPU_mean": {
+      "working_envelope_max_us": 189.2978376908736,
+      "failing_envelope_min_us": 178.66167056921756,
+      "separates_replayed_shapes": false,
+      "separating_midpoint_us": null
+    },
+    "whole_CPU_p99": {
+      "working_envelope_max_us": 328.0,
+      "failing_envelope_min_us": 319.0,
+      "separates_replayed_shapes": false,
+      "separating_midpoint_us": null
+    },
+    "whole_CPU_peak": {
+      "working_envelope_max_us": 362.212,
+      "failing_envelope_min_us": 353.769,
+      "separates_replayed_shapes": false,
+      "separating_midpoint_us": null
+    }
+  },
+  "historical_classification": {
+    "working-shape": [
+      {
+        "case": "H4-working-shape-V1-V1",
+        "pass_budget": true,
+        "checks": {
+          "steady_ISR_mean": {
+            "measured_us": 153.46487512235893,
+            "budget_us": 158.21153326922013,
+            "pass_budget": true,
+            "excess_percent": -3.00019729837524
+          },
+          "steady_ISR_p99": {
+            "measured_us": 161.54166666666666,
+            "budget_us": 166.78030303030303,
+            "pass_budget": true,
+            "excess_percent": -3.1410401998637316
+          },
+          "steady_ISR_p99_9": {
+            "measured_us": 226.32575757575756,
+            "budget_us": 237.7310606060606,
+            "pass_budget": true,
+            "excess_percent": -4.79756536702729
+          },
+          "full_ISR_peak": {
+            "measured_us": 239.18939393939394,
+            "budget_us": 250.71212121212122,
+            "pass_budget": true,
+            "excess_percent": -4.595999274793017
+          },
+          "whole_CPU_mean": {
+            "measured_us": 184.53228297378078,
+            "budget_us": 189.2978376908736,
+            "pass_budget": true,
+            "excess_percent": -2.5174903079849487
+          },
+          "whole_CPU_p99": {
+            "measured_us": 325.0,
+            "budget_us": 328.0,
+            "pass_budget": true,
+            "excess_percent": -0.9146341463414642
+          },
+          "whole_CPU_peak": {
+            "measured_us": 358.208,
+            "budget_us": 362.212,
+            "pass_budget": true,
+            "excess_percent": -1.1054299691893088
+          }
+        }
+      },
+      {
+        "case": "H4-working-shape-snare-snare",
+        "pass_budget": true,
+        "checks": {
+          "steady_ISR_mean": {
+            "measured_us": 158.21153326922013,
+            "budget_us": 158.21153326922013,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          },
+          "steady_ISR_p99": {
+            "measured_us": 166.78030303030303,
+            "budget_us": 166.78030303030303,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          },
+          "steady_ISR_p99_9": {
+            "measured_us": 237.7310606060606,
+            "budget_us": 237.7310606060606,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          },
+          "full_ISR_peak": {
+            "measured_us": 250.71212121212122,
+            "budget_us": 250.71212121212122,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          },
+          "whole_CPU_mean": {
+            "measured_us": 189.2978376908736,
+            "budget_us": 189.2978376908736,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          },
+          "whole_CPU_p99": {
+            "measured_us": 328.0,
+            "budget_us": 328.0,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          },
+          "whole_CPU_peak": {
+            "measured_us": 362.212,
+            "budget_us": 362.212,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          }
+        }
+      },
+      {
+        "case": "H4-working-shape-snare-bass",
+        "pass_budget": true,
+        "checks": {
+          "steady_ISR_mean": {
+            "measured_us": 158.21153326922013,
+            "budget_us": 158.21153326922013,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          },
+          "steady_ISR_p99": {
+            "measured_us": 166.78030303030303,
+            "budget_us": 166.78030303030303,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          },
+          "steady_ISR_p99_9": {
+            "measured_us": 237.7310606060606,
+            "budget_us": 237.7310606060606,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          },
+          "full_ISR_peak": {
+            "measured_us": 250.71212121212122,
+            "budget_us": 250.71212121212122,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          },
+          "whole_CPU_mean": {
+            "measured_us": 189.2978376908736,
+            "budget_us": 189.2978376908736,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          },
+          "whole_CPU_p99": {
+            "measured_us": 328.0,
+            "budget_us": 328.0,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          },
+          "whole_CPU_peak": {
+            "measured_us": 362.212,
+            "budget_us": 362.212,
+            "pass_budget": true,
+            "excess_percent": 0.0
+          }
+        }
+      },
+      {
+        "case": "H4-working-shape-third-third",
+        "pass_budget": true,
+        "checks": {
+          "steady_ISR_mean": {
+            "measured_us": 156.57742146609348,
+            "budget_us": 158.21153326922013,
+            "pass_budget": true,
+            "excess_percent": -1.0328651580324144
+          },
+          "steady_ISR_p99": {
+            "measured_us": 164.5340909090909,
+            "budget_us": 166.78030303030303,
+            "pass_budget": true,
+            "excess_percent": -1.3468089938678207
+          },
+          "steady_ISR_p99_9": {
+            "measured_us": 233.1818181818182,
+            "budget_us": 237.7310606060606,
+            "pass_budget": true,
+            "excess_percent": -1.9136087697773974
+          },
+          "full_ISR_peak": {
+            "measured_us": 245.4659090909091,
+            "budget_us": 250.71212121212122,
+            "pass_budget": true,
+            "excess_percent": -2.0925243246509906
+          },
+          "whole_CPU_mean": {
+            "measured_us": 187.66578720555162,
+            "budget_us": 189.2978376908736,
+            "pass_budget": true,
+            "excess_percent": -0.862160130950429
+          },
+          "whole_CPU_p99": {
+            "measured_us": 327.0,
+            "budget_us": 328.0,
+            "pass_budget": true,
+            "excess_percent": -0.3048780487804881
+          },
+          "whole_CPU_peak": {
+            "measured_us": 357.739,
+            "budget_us": 362.212,
+            "pass_budget": true,
+            "excess_percent": -1.2349121508950622
+          }
+        }
+      }
+    ],
+    "matched-one": [
+      {
+        "case": "H4-matched-one-V1-V1",
+        "pass_budget": true,
+        "checks": {
+          "steady_ISR_mean": {
+            "measured_us": 136.84987547157564,
+            "budget_us": 158.21153326922013,
+            "pass_budget": true,
+            "excess_percent": -13.501959911667427
+          },
+          "steady_ISR_p99": {
+            "measured_us": 142.91287878787878,
+            "budget_us": 166.78030303030303,
+            "pass_budget": true,
+            "excess_percent": -14.310697251873727
+          },
+          "steady_ISR_p99_9": {
+            "measured_us": 193.12121212121212,
+            "budget_us": 237.7310606060606,
+            "pass_budget": true,
+            "excess_percent": -18.764838036360153
+          },
+          "full_ISR_peak": {
+            "measured_us": 204.09469696969697,
+            "budget_us": 250.71212121212122,
+            "pass_budget": true,
+            "excess_percent": -18.594004955581077
+          },
+          "whole_CPU_mean": {
+            "measured_us": 158.27631840561375,
+            "budget_us": 189.2978376908736,
+            "pass_budget": true,
+            "excess_percent": -16.38767756867803
+          },
+          "whole_CPU_p99": {
+            "measured_us": 308.0,
+            "budget_us": 328.0,
+            "pass_budget": true,
+            "excess_percent": -6.0975609756097615
+          },
+          "whole_CPU_peak": {
+            "measured_us": 348.008,
+            "budget_us": 362.212,
+            "pass_budget": true,
+            "excess_percent": -3.9214603602310327
+          }
+        }
+      },
+      {
+        "case": "H4-matched-one-snare-snare",
+        "pass_budget": true,
+        "checks": {
+          "steady_ISR_mean": {
+            "measured_us": 141.5549240037726,
+            "budget_us": 158.21153326922013,
+            "pass_budget": true,
+            "excess_percent": -10.528062601544885
+          },
+          "steady_ISR_p99": {
+            "measured_us": 148.8598484848485,
+            "budget_us": 166.78030303030303,
+            "pass_budget": true,
+            "excess_percent": -10.744946627299557
+          },
+          "steady_ISR_p99_9": {
+            "measured_us": 204.50757575757575,
+            "budget_us": 237.7310606060606,
+            "pass_budget": true,
+            "excess_percent": -13.975239400264494
+          },
+          "full_ISR_peak": {
+            "measured_us": 215.61742424242425,
+            "budget_us": 250.71212121212122,
+            "pass_budget": true,
+            "excess_percent": -13.998005680788062
+          },
+          "whole_CPU_mean": {
+            "measured_us": 162.97655949448094,
+            "budget_us": 189.2978376908736,
+            "pass_budget": true,
+            "excess_percent": -13.904690363857053
+          },
+          "whole_CPU_p99": {
+            "measured_us": 311.0,
+            "budget_us": 328.0,
+            "pass_budget": true,
+            "excess_percent": -5.182926829268297
+          },
+          "whole_CPU_peak": {
+            "measured_us": 356.625,
+            "budget_us": 362.212,
+            "pass_budget": true,
+            "excess_percent": -1.5424668426225474
+          }
+        }
+      },
+      {
+        "case": "H4-matched-one-snare-bass",
+        "pass_budget": true,
+        "checks": {
+          "steady_ISR_mean": {
+            "measured_us": 141.5549240037726,
+            "budget_us": 158.21153326922013,
+            "pass_budget": true,
+            "excess_percent": -10.528062601544885
+          },
+          "steady_ISR_p99": {
+            "measured_us": 148.8598484848485,
+            "budget_us": 166.78030303030303,
+            "pass_budget": true,
+            "excess_percent": -10.744946627299557
+          },
+          "steady_ISR_p99_9": {
+            "measured_us": 204.50757575757575,
+            "budget_us": 237.7310606060606,
+            "pass_budget": true,
+            "excess_percent": -13.975239400264494
+          },
+          "full_ISR_peak": {
+            "measured_us": 215.61742424242425,
+            "budget_us": 250.71212121212122,
+            "pass_budget": true,
+            "excess_percent": -13.998005680788062
+          },
+          "whole_CPU_mean": {
+            "measured_us": 162.97655949448094,
+            "budget_us": 189.2978376908736,
+            "pass_budget": true,
+            "excess_percent": -13.904690363857053
+          },
+          "whole_CPU_p99": {
+            "measured_us": 311.0,
+            "budget_us": 328.0,
+            "pass_budget": true,
+            "excess_percent": -5.182926829268297
+          },
+          "whole_CPU_peak": {
+            "measured_us": 356.625,
+            "budget_us": 362.212,
+            "pass_budget": true,
+            "excess_percent": -1.5424668426225474
+          }
+        }
+      },
+      {
+        "case": "H4-matched-one-third-third",
+        "pass_budget": true,
+        "checks": {
+          "steady_ISR_mean": {
+            "measured_us": 139.88303659388745,
+            "budget_us": 158.21153326922013,
+            "pass_budget": true,
+            "excess_percent": -11.584804404963355
+          },
+          "steady_ISR_p99": {
+            "measured_us": 146.01136363636363,
+            "budget_us": 166.78030303030303,
+            "pass_budget": true,
+            "excess_percent": -12.452873041108337
+          },
+          "steady_ISR_p99_9": {
+            "measured_us": 199.95075757575756,
+            "budget_us": 237.7310606060606,
+            "pass_budget": true,
+            "excess_percent": -15.892034862414562
+          },
+          "full_ISR_peak": {
+            "measured_us": 210.5568181818182,
+            "budget_us": 250.71212121212122,
+            "pass_budget": true,
+            "excess_percent": -16.016498458935157
+          },
+          "whole_CPU_mean": {
+            "measured_us": 161.32147286155006,
+            "budget_us": 189.2978376908736,
+            "pass_budget": true,
+            "excess_percent": -14.779019755634703
+          },
+          "whole_CPU_p99": {
+            "measured_us": 311.0,
+            "budget_us": 328.0,
+            "pass_budget": true,
+            "excess_percent": -5.182926829268297
+          },
+          "whole_CPU_peak": {
+            "measured_us": 353.773,
+            "budget_us": 362.212,
+            "pass_budget": true,
+            "excess_percent": -2.329851026470675
+          }
+        }
+      }
+    ],
+    "failing-shape": [
+      {
+        "case": "H4-failing-shape-V1-V1",
+        "pass_budget": true,
+        "checks": {
+          "steady_ISR_mean": {
+            "measured_us": 157.26392347812146,
+            "budget_us": 158.21153326922013,
+            "pass_budget": true,
+            "excess_percent": -0.5989511456703789
+          },
+          "steady_ISR_p99": {
+            "measured_us": 163.79924242424244,
+            "budget_us": 166.78030303030303,
+            "pass_budget": true,
+            "excess_percent": -1.787417669770608
+          },
+          "steady_ISR_p99_9": {
+            "measured_us": 222.93939393939394,
+            "budget_us": 237.7310606060606,
+            "pass_budget": true,
+            "excess_percent": -6.222016857602652
+          },
+          "full_ISR_peak": {
+            "measured_us": 237.9810606060606,
+            "budget_us": 250.71212121212122,
+            "pass_budget": true,
+            "excess_percent": -5.077959751012273
+          },
+          "whole_CPU_mean": {
+            "measured_us": 178.66167056921756,
+            "budget_us": 189.2978376908736,
+            "pass_budget": true,
+            "excess_percent": -5.618747288083159
+          },
+          "whole_CPU_p99": {
+            "measured_us": 319.0,
+            "budget_us": 328.0,
+            "pass_budget": true,
+            "excess_percent": -2.7439024390243927
+          },
+          "whole_CPU_peak": {
+            "measured_us": 353.769,
+            "budget_us": 362.212,
+            "pass_budget": true,
+            "excess_percent": -2.330955352114228
+          }
+        }
+      },
+      {
+        "case": "H4-failing-shape-snare-snare",
+        "pass_budget": false,
+        "checks": {
+          "steady_ISR_mean": {
+            "measured_us": 166.8264417269235,
+            "budget_us": 158.21153326922013,
+            "pass_budget": false,
+            "excess_percent": 5.445183596725434
+          },
+          "steady_ISR_p99": {
+            "measured_us": 176.375,
+            "budget_us": 166.78030303030303,
+            "pass_budget": false,
+            "excess_percent": 5.752895752895748
+          },
+          "steady_ISR_p99_9": {
+            "measured_us": 246.62878787878788,
+            "budget_us": 237.7310606060606,
+            "pass_budget": false,
+            "excess_percent": 3.7427701916795453
+          },
+          "full_ISR_peak": {
+            "measured_us": 260.7613636363636,
+            "budget_us": 250.71212121212122,
+            "pass_budget": false,
+            "excess_percent": 4.008279446425322
+          },
+          "whole_CPU_mean": {
+            "measured_us": 188.29349332867247,
+            "budget_us": 189.2978376908736,
+            "pass_budget": true,
+            "excess_percent": -0.5305630399440875
+          },
+          "whole_CPU_p99": {
+            "measured_us": 325.0,
+            "budget_us": 328.0,
+            "pass_budget": true,
+            "excess_percent": -0.9146341463414642
+          },
+          "whole_CPU_peak": {
+            "measured_us": 354.436,
+            "budget_us": 362.212,
+            "pass_budget": true,
+            "excess_percent": -2.146809051052978
+          }
+        }
+      },
+      {
+        "case": "H4-failing-shape-snare-bass",
+        "pass_budget": false,
+        "checks": {
+          "steady_ISR_mean": {
+            "measured_us": 166.57015412007854,
+            "budget_us": 158.21153326922013,
+            "pass_budget": false,
+            "excess_percent": 5.283193126404373
+          },
+          "steady_ISR_p99": {
+            "measured_us": 175.5,
+            "budget_us": 166.78030303030303,
+            "pass_budget": false,
+            "excess_percent": 5.228253463547583
+          },
+          "steady_ISR_p99_9": {
+            "measured_us": 245.54545454545453,
+            "budget_us": 237.7310606060606,
+            "pass_budget": false,
+            "excess_percent": 3.287073182390343
+          },
+          "full_ISR_peak": {
+            "measured_us": 259.32575757575756,
+            "budget_us": 250.71212121212122,
+            "pass_budget": false,
+            "excess_percent": 3.4356680969359843
+          },
+          "whole_CPU_mean": {
+            "measured_us": 187.9573616259026,
+            "budget_us": 189.2978376908736,
+            "pass_budget": true,
+            "excess_percent": -0.7081306798443321
+          },
+          "whole_CPU_p99": {
+            "measured_us": 326.0,
+            "budget_us": 328.0,
+            "pass_budget": true,
+            "excess_percent": -0.6097560975609762
+          },
+          "whole_CPU_peak": {
+            "measured_us": 356.822,
+            "budget_us": 362.212,
+            "pass_budget": true,
+            "excess_percent": -1.488078804677917
+          }
+        }
+      },
+      {
+        "case": "H4-failing-shape-third-third",
+        "pass_budget": false,
+        "checks": {
+          "steady_ISR_mean": {
+            "measured_us": 163.46299548479314,
+            "budget_us": 158.21153326922013,
+            "pass_budget": false,
+            "excess_percent": 3.319266368929563
+          },
+          "steady_ISR_p99": {
+            "measured_us": 170.65530303030303,
+            "budget_us": 166.78030303030303,
+            "pass_budget": false,
+            "excess_percent": 2.323415852827626
+          },
+          "steady_ISR_p99_9": {
+            "measured_us": 236.92045454545453,
+            "budget_us": 237.7310606060606,
+            "pass_budget": true,
+            "excess_percent": -0.34097608387374523
+          },
+          "full_ISR_peak": {
+            "measured_us": 250.3219696969697,
+            "budget_us": 250.71212121212122,
+            "pass_budget": true,
+            "excess_percent": -0.15561733244697784
+          },
+          "whole_CPU_mean": {
+            "measured_us": 184.89753052682588,
+            "budget_us": 189.2978376908736,
+            "pass_budget": true,
+            "excess_percent": -2.3245416945720687
+          },
+          "whole_CPU_p99": {
+            "measured_us": 321.0,
+            "budget_us": 328.0,
+            "pass_budget": true,
+            "excess_percent": -2.1341463414634165
+          },
+          "whole_CPU_peak": {
+            "measured_us": 355.534,
+            "budget_us": 362.212,
+            "pass_budget": true,
+            "excess_percent": -1.8436716618996596
+          }
+        }
+      }
+    ]
+  },
+  "current_assessments": [
+    {
+      "case": "F6-WTWT-Slap-5-M0-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 231.55478415391315,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 46.357714490945945
+        },
+        "steady_ISR_p99": {
+          "measured_us": 240.79924242424244,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 44.3811037928685
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 318.68560606060606,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 34.05299469415721
+        },
+        "full_ISR_peak": {
+          "measured_us": 323.905303030303,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 29.194113736628992
+        },
+        "whole_CPU_mean": {
+          "measured_us": 277.37292896617544,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 46.52725691411747
+        },
+        "whole_CPU_p99": {
+          "measured_us": 338.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 3.0487804878048808
+        },
+        "whole_CPU_peak": {
+          "measured_us": 348.72,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -3.7248903956798696
+        }
+      }
+    },
+    {
+      "case": "F6-WTWT-Slap-5-M1-shared12",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 233.065161204408,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 47.31237122126455
+        },
+        "steady_ISR_p99": {
+          "measured_us": 242.4090909090909,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 45.34635475811945
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 320.6780303030303,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 34.89109478816464
+        },
+        "full_ISR_peak": {
+          "measured_us": 326.31060606060606,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 30.153502145403998
+        },
+        "whole_CPU_mean": {
+          "measured_us": 299.3445362900243,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 58.13415511848514
+        },
+        "whole_CPU_p99": {
+          "measured_us": 338.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 3.0487804878048808
+        },
+        "whole_CPU_peak": {
+          "measured_us": 346.845,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -4.242543041091951
+        }
+      }
+    },
+    {
+      "case": "F6-WTWT-Slap-5-M1-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 232.8792763986895,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 47.19487990955202
+        },
+        "steady_ISR_p99": {
+          "measured_us": 242.20833333333334,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 45.22598228480581
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 320.6136363636364,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 34.86400790299709
+        },
+        "full_ISR_peak": {
+          "measured_us": 326.4128787878788,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 30.19429503837554
+        },
+        "whole_CPU_mean": {
+          "measured_us": 299.1437352498372,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 58.02807834410857
+        },
+        "whole_CPU_p99": {
+          "measured_us": 338.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 3.0487804878048808
+        },
+        "whole_CPU_peak": {
+          "measured_us": 346.208,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -4.418406899826611
+        }
+      }
+    },
+    {
+      "case": "F6-WTWT-Slap-5-M2-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 218.0149866068701,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 37.79968002451859
+        },
+        "steady_ISR_p99": {
+          "measured_us": 226.83712121212122,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 36.00953895071542
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 304.4621212121212,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 28.06997976450343
+        },
+        "full_ISR_peak": {
+          "measured_us": 311.7916666666667,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 24.362422191333778
+        },
+        "whole_CPU_mean": {
+          "measured_us": 270.62853703354347,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 42.96441012468626
+        },
+        "whole_CPU_p99": {
+          "measured_us": 338.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 3.0487804878048808
+        },
+        "whole_CPU_peak": {
+          "measured_us": 346.413,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -4.361810210594896
+        }
+      }
+    },
+    {
+      "case": "F6-WTWT-Slap-3-M1-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 232.90170702743157,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 47.20905752876761
+        },
+        "steady_ISR_p99": {
+          "measured_us": 242.5,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 45.40086304792188
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 316.97727272727275,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 33.33439556412423
+        },
+        "full_ISR_peak": {
+          "measured_us": 324.72727272727275,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 29.521967728289123
+        },
+        "whole_CPU_mean": {
+          "measured_us": 259.4747936364376,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 37.07224382571348
+        },
+        "whole_CPU_p99": {
+          "measured_us": 333.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 1.5243902439024293
+        },
+        "whole_CPU_peak": {
+          "measured_us": 341.826,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -5.6281956423310024
+        }
+      }
+    },
+    {
+      "case": "F6-WTWT-Slap-10-M1-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 229.175933271093,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 44.85412569835634
+        },
+        "steady_ISR_p99": {
+          "measured_us": 254.12878787878788,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 52.37338178514648
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 311.6060606060606,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 31.075030671914107
+        },
+        "full_ISR_peak": {
+          "measured_us": 329.1401515151515,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 31.282105517616476
+        },
+        "whole_CPU_mean": {
+          "measured_us": 256.0036702011571,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 35.2385602096603
+        },
+        "whole_CPU_p99": {
+          "measured_us": 333.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 1.5243902439024293
+        },
+        "whole_CPU_peak": {
+          "measured_us": 344.803,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -4.806301282122072
+        }
+      }
+    }
+  ],
+  "measurements": [
+    {
+      "case": "H4-working-shape-V1-V1",
+      "configuration": {
+        "version": "PKH4O2",
+        "role": "working-shape",
+        "pair": [
+          "V1",
+          "V1"
+        ],
+        "cf_tracks": [
+          1
+        ],
+        "stock_tracks": [
+          2,
+          3,
+          5,
+          6,
+          7
+        ]
+      },
+      "frames": 16393,
+      "metrics_us": {
+        "steady_ISR_mean": 153.46487512235893,
+        "steady_ISR_p99": 161.54166666666666,
+        "steady_ISR_p99_9": 226.32575757575756,
+        "full_ISR_peak": 239.18939393939394,
+        "whole_CPU_mean": 184.53228297378078,
+        "whole_CPU_p99": 325.0,
+        "whole_CPU_peak": 358.208
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/H4-working-shape-V1-V1/ROW.json",
+      "receipt_sha256": "e9400448313467c18a9438162b2d879239d40f03357540366593c39a908d3d6f"
+    },
+    {
+      "case": "H4-matched-one-V1-V1",
+      "configuration": {
+        "version": "PKH4O2",
+        "role": "matched-one",
+        "pair": [
+          "V1",
+          "V1"
+        ],
+        "cf_tracks": [
+          1
+        ],
+        "stock_tracks": [
+          2,
+          3,
+          6
+        ]
+      },
+      "frames": 16384,
+      "metrics_us": {
+        "steady_ISR_mean": 136.84987547157564,
+        "steady_ISR_p99": 142.91287878787878,
+        "steady_ISR_p99_9": 193.12121212121212,
+        "full_ISR_peak": 204.09469696969697,
+        "whole_CPU_mean": 158.27631840561375,
+        "whole_CPU_p99": 308.0,
+        "whole_CPU_peak": 348.008
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/H4-matched-one-V1-V1/ROW.json",
+      "receipt_sha256": "9358cdc4259db470442f6052a1642e987346d2721e787b1f762d2793adf1053b"
+    },
+    {
+      "case": "H4-failing-shape-V1-V1",
+      "configuration": {
+        "version": "PKH4O2",
+        "role": "failing-shape",
+        "pair": [
+          "V1",
+          "V1"
+        ],
+        "cf_tracks": [
+          1,
+          5
+        ],
+        "stock_tracks": [
+          2,
+          3,
+          6
+        ]
+      },
+      "frames": 16391,
+      "metrics_us": {
+        "steady_ISR_mean": 157.26392347812146,
+        "steady_ISR_p99": 163.79924242424244,
+        "steady_ISR_p99_9": 222.93939393939394,
+        "full_ISR_peak": 237.9810606060606,
+        "whole_CPU_mean": 178.66167056921756,
+        "whole_CPU_p99": 319.0,
+        "whole_CPU_peak": 353.769
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/H4-failing-shape-V1-V1/ROW.json",
+      "receipt_sha256": "b54a786a3c47d286de9c62a79207699ee4acab9c8b54c6424c8a8068ff1da3ae"
+    },
+    {
+      "case": "H4-working-shape-snare-snare",
+      "configuration": {
+        "version": "PKH4O2",
+        "role": "working-shape",
+        "pair": [
+          "snare",
+          "snare"
+        ],
+        "cf_tracks": [
+          1
+        ],
+        "stock_tracks": [
+          2,
+          3,
+          5,
+          6,
+          7
+        ]
+      },
+      "frames": 16393,
+      "metrics_us": {
+        "steady_ISR_mean": 158.21153326922013,
+        "steady_ISR_p99": 166.78030303030303,
+        "steady_ISR_p99_9": 237.7310606060606,
+        "full_ISR_peak": 250.71212121212122,
+        "whole_CPU_mean": 189.2978376908736,
+        "whole_CPU_p99": 328.0,
+        "whole_CPU_peak": 362.212
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/H4-working-shape-snare-snare/ROW.json",
+      "receipt_sha256": "2cdbdf8dd6901498973546950f575218dcb4732ee37330d14a572c36d43f66c2"
+    },
+    {
+      "case": "H4-matched-one-snare-snare",
+      "configuration": {
+        "version": "PKH4O2",
+        "role": "matched-one",
+        "pair": [
+          "snare",
+          "snare"
+        ],
+        "cf_tracks": [
+          1
+        ],
+        "stock_tracks": [
+          2,
+          3,
+          6
+        ]
+      },
+      "frames": 16384,
+      "metrics_us": {
+        "steady_ISR_mean": 141.5549240037726,
+        "steady_ISR_p99": 148.8598484848485,
+        "steady_ISR_p99_9": 204.50757575757575,
+        "full_ISR_peak": 215.61742424242425,
+        "whole_CPU_mean": 162.97655949448094,
+        "whole_CPU_p99": 311.0,
+        "whole_CPU_peak": 356.625
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/H4-matched-one-snare-snare/ROW.json",
+      "receipt_sha256": "37750c86b3bfc68d5ecbf3fb994dc8bf26a36332591494b8b0717b9b1fb7e63d"
+    },
+    {
+      "case": "H4-failing-shape-snare-snare",
+      "configuration": {
+        "version": "PKH4O2",
+        "role": "failing-shape",
+        "pair": [
+          "snare",
+          "snare"
+        ],
+        "cf_tracks": [
+          1,
+          5
+        ],
+        "stock_tracks": [
+          2,
+          3,
+          6
+        ]
+      },
+      "frames": 16391,
+      "metrics_us": {
+        "steady_ISR_mean": 166.8264417269235,
+        "steady_ISR_p99": 176.375,
+        "steady_ISR_p99_9": 246.62878787878788,
+        "full_ISR_peak": 260.7613636363636,
+        "whole_CPU_mean": 188.29349332867247,
+        "whole_CPU_p99": 325.0,
+        "whole_CPU_peak": 354.436
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/H4-failing-shape-snare-snare/ROW.json",
+      "receipt_sha256": "8586270140be204f965156d21f6f3d9534849cc5387a11229d8a90a7222c93b3"
+    },
+    {
+      "case": "H4-working-shape-snare-bass",
+      "configuration": {
+        "version": "PKH4O2",
+        "role": "working-shape",
+        "pair": [
+          "snare",
+          "bass"
+        ],
+        "cf_tracks": [
+          1
+        ],
+        "stock_tracks": [
+          2,
+          3,
+          5,
+          6,
+          7
+        ]
+      },
+      "frames": 16393,
+      "metrics_us": {
+        "steady_ISR_mean": 158.21153326922013,
+        "steady_ISR_p99": 166.78030303030303,
+        "steady_ISR_p99_9": 237.7310606060606,
+        "full_ISR_peak": 250.71212121212122,
+        "whole_CPU_mean": 189.2978376908736,
+        "whole_CPU_p99": 328.0,
+        "whole_CPU_peak": 362.212
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/H4-working-shape-snare-bass/ROW.json",
+      "receipt_sha256": "b35adc1b2e1fa5982a83ff6e57536a26729ca42e24bce094c96210775e863ebb"
+    },
+    {
+      "case": "H4-matched-one-snare-bass",
+      "configuration": {
+        "version": "PKH4O2",
+        "role": "matched-one",
+        "pair": [
+          "snare",
+          "bass"
+        ],
+        "cf_tracks": [
+          1
+        ],
+        "stock_tracks": [
+          2,
+          3,
+          6
+        ]
+      },
+      "frames": 16384,
+      "metrics_us": {
+        "steady_ISR_mean": 141.5549240037726,
+        "steady_ISR_p99": 148.8598484848485,
+        "steady_ISR_p99_9": 204.50757575757575,
+        "full_ISR_peak": 215.61742424242425,
+        "whole_CPU_mean": 162.97655949448094,
+        "whole_CPU_p99": 311.0,
+        "whole_CPU_peak": 356.625
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/H4-matched-one-snare-bass/ROW.json",
+      "receipt_sha256": "a395025737b92122fe6dcabe07ecd674a81788d071b44c03fc5089eb4719767d"
+    },
+    {
+      "case": "H4-failing-shape-snare-bass",
+      "configuration": {
+        "version": "PKH4O2",
+        "role": "failing-shape",
+        "pair": [
+          "snare",
+          "bass"
+        ],
+        "cf_tracks": [
+          1,
+          5
+        ],
+        "stock_tracks": [
+          2,
+          3,
+          6
+        ]
+      },
+      "frames": 16391,
+      "metrics_us": {
+        "steady_ISR_mean": 166.57015412007854,
+        "steady_ISR_p99": 175.5,
+        "steady_ISR_p99_9": 245.54545454545453,
+        "full_ISR_peak": 259.32575757575756,
+        "whole_CPU_mean": 187.9573616259026,
+        "whole_CPU_p99": 326.0,
+        "whole_CPU_peak": 356.822
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/H4-failing-shape-snare-bass/ROW.json",
+      "receipt_sha256": "5d6b85243c836d04bf774015101a33df867bb5774fff4ae22728cd0d2f4d3f4e"
+    },
+    {
+      "case": "H4-working-shape-third-third",
+      "configuration": {
+        "version": "PKH4O2",
+        "role": "working-shape",
+        "pair": [
+          "third",
+          "third"
+        ],
+        "cf_tracks": [
+          1
+        ],
+        "stock_tracks": [
+          2,
+          3,
+          5,
+          6,
+          7
+        ]
+      },
+      "frames": 16393,
+      "metrics_us": {
+        "steady_ISR_mean": 156.57742146609348,
+        "steady_ISR_p99": 164.5340909090909,
+        "steady_ISR_p99_9": 233.1818181818182,
+        "full_ISR_peak": 245.4659090909091,
+        "whole_CPU_mean": 187.66578720555162,
+        "whole_CPU_p99": 327.0,
+        "whole_CPU_peak": 357.739
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/H4-working-shape-third-third/ROW.json",
+      "receipt_sha256": "92d13b1f74e1667244821fd1a0c7788136e7eab5db4a1453f0d319befba4e9da"
+    },
+    {
+      "case": "H4-matched-one-third-third",
+      "configuration": {
+        "version": "PKH4O2",
+        "role": "matched-one",
+        "pair": [
+          "third",
+          "third"
+        ],
+        "cf_tracks": [
+          1
+        ],
+        "stock_tracks": [
+          2,
+          3,
+          6
+        ]
+      },
+      "frames": 16384,
+      "metrics_us": {
+        "steady_ISR_mean": 139.88303659388745,
+        "steady_ISR_p99": 146.01136363636363,
+        "steady_ISR_p99_9": 199.95075757575756,
+        "full_ISR_peak": 210.5568181818182,
+        "whole_CPU_mean": 161.32147286155006,
+        "whole_CPU_p99": 311.0,
+        "whole_CPU_peak": 353.773
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/H4-matched-one-third-third/ROW.json",
+      "receipt_sha256": "49b6cf8c4e854c427cb3349c129077b57240053a970f6ce3dc2597c42c331127"
+    },
+    {
+      "case": "H4-failing-shape-third-third",
+      "configuration": {
+        "version": "PKH4O2",
+        "role": "failing-shape",
+        "pair": [
+          "third",
+          "third"
+        ],
+        "cf_tracks": [
+          1,
+          5
+        ],
+        "stock_tracks": [
+          2,
+          3,
+          6
+        ]
+      },
+      "frames": 16391,
+      "metrics_us": {
+        "steady_ISR_mean": 163.46299548479314,
+        "steady_ISR_p99": 170.65530303030303,
+        "steady_ISR_p99_9": 236.92045454545453,
+        "full_ISR_peak": 250.3219696969697,
+        "whole_CPU_mean": 184.89753052682588,
+        "whole_CPU_p99": 321.0,
+        "whole_CPU_peak": 355.534
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/H4-failing-shape-third-third/ROW.json",
+      "receipt_sha256": "2d9bbdf5007e0d1dac3a25a4fc1c3cb46ed3e0bc9ba4488f8a7c93909a4e546b"
+    },
+    {
+      "case": "F6-WTWT-Slap-5-M0-all14",
+      "configuration": {
+        "version": "PKFM6",
+        "role": "candidate",
+        "algos": [
+          9,
+          9,
+          8,
+          5
+        ],
+        "modes": [
+          1,
+          2,
+          0,
+          0
+        ],
+        "FX": "all14"
+      },
+      "frames": 16384,
+      "metrics_us": {
+        "steady_ISR_mean": 231.55478415391315,
+        "steady_ISR_p99": 240.79924242424244,
+        "steady_ISR_p99_9": 318.68560606060606,
+        "full_ISR_peak": 323.905303030303,
+        "whole_CPU_mean": 277.37292896617544,
+        "whole_CPU_p99": 338.0,
+        "whole_CPU_peak": 348.72
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/F6-WTWT-Slap-5-M0-all14/ROW.json",
+      "receipt_sha256": "076841889aec33788ae22315bc8ca61120d46de60b76e2af7bb583e43f509cb1"
+    },
+    {
+      "case": "F6-WTWT-Slap-5-M1-shared12",
+      "configuration": {
+        "version": "PKFM6",
+        "role": "candidate",
+        "algos": [
+          9,
+          9,
+          8,
+          5
+        ],
+        "modes": [
+          1,
+          2,
+          0,
+          1
+        ],
+        "FX": "shared12"
+      },
+      "frames": 16384,
+      "metrics_us": {
+        "steady_ISR_mean": 233.065161204408,
+        "steady_ISR_p99": 242.4090909090909,
+        "steady_ISR_p99_9": 320.6780303030303,
+        "full_ISR_peak": 326.31060606060606,
+        "whole_CPU_mean": 299.3445362900243,
+        "whole_CPU_p99": 338.0,
+        "whole_CPU_peak": 346.845
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/F6-WTWT-Slap-5-M1-shared12/ROW.json",
+      "receipt_sha256": "510ecf924e432137b837993215995adf6fde7c9df3f38d7ffa3dbbe2e18300f2"
+    },
+    {
+      "case": "F6-WTWT-Slap-5-M1-all14",
+      "configuration": {
+        "version": "PKFM6",
+        "role": "candidate",
+        "algos": [
+          9,
+          9,
+          8,
+          5
+        ],
+        "modes": [
+          1,
+          2,
+          0,
+          1
+        ],
+        "FX": "all14"
+      },
+      "frames": 16384,
+      "metrics_us": {
+        "steady_ISR_mean": 232.8792763986895,
+        "steady_ISR_p99": 242.20833333333334,
+        "steady_ISR_p99_9": 320.6136363636364,
+        "full_ISR_peak": 326.4128787878788,
+        "whole_CPU_mean": 299.1437352498372,
+        "whole_CPU_p99": 338.0,
+        "whole_CPU_peak": 346.208
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/F6-WTWT-Slap-5-M1-all14/ROW.json",
+      "receipt_sha256": "3df155e512b31e082244ee0cd718593333eb37a7445df091334f272c712d4f5c"
+    },
+    {
+      "case": "F6-WTWT-Slap-5-M2-all14",
+      "configuration": {
+        "version": "PKFM6",
+        "role": "candidate",
+        "algos": [
+          9,
+          9,
+          8,
+          5
+        ],
+        "modes": [
+          1,
+          2,
+          0,
+          2
+        ],
+        "FX": "all14"
+      },
+      "frames": 16384,
+      "metrics_us": {
+        "steady_ISR_mean": 218.0149866068701,
+        "steady_ISR_p99": 226.83712121212122,
+        "steady_ISR_p99_9": 304.4621212121212,
+        "full_ISR_peak": 311.7916666666667,
+        "whole_CPU_mean": 270.62853703354347,
+        "whole_CPU_p99": 338.0,
+        "whole_CPU_peak": 346.413
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/F6-WTWT-Slap-5-M2-all14/ROW.json",
+      "receipt_sha256": "805b4ccd7af7e4d1dff4f928dbefd9748fee117c2c8d5e82663c5a19741c2cdd"
+    },
+    {
+      "case": "F6-WTWT-Slap-3-M1-all14",
+      "configuration": {
+        "version": "PKFM6",
+        "role": "candidate",
+        "algos": [
+          9,
+          9,
+          8,
+          3
+        ],
+        "modes": [
+          1,
+          2,
+          0,
+          1
+        ],
+        "FX": "all14"
+      },
+      "frames": 16384,
+      "metrics_us": {
+        "steady_ISR_mean": 232.90170702743157,
+        "steady_ISR_p99": 242.5,
+        "steady_ISR_p99_9": 316.97727272727275,
+        "full_ISR_peak": 324.72727272727275,
+        "whole_CPU_mean": 259.4747936364376,
+        "whole_CPU_p99": 333.0,
+        "whole_CPU_peak": 341.826
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/F6-WTWT-Slap-3-M1-all14/ROW.json",
+      "receipt_sha256": "9d3b957d11f6b5c4f3ec919c86350c0d8b47d0a7671a02e85e68bd4c57817480"
+    },
+    {
+      "case": "F6-WTWT-Slap-10-M1-all14",
+      "configuration": {
+        "version": "PKFM6",
+        "role": "candidate",
+        "algos": [
+          9,
+          9,
+          8,
+          10
+        ],
+        "modes": [
+          1,
+          2,
+          0,
+          1
+        ],
+        "FX": "all14"
+      },
+      "frames": 16384,
+      "metrics_us": {
+        "steady_ISR_mean": 229.175933271093,
+        "steady_ISR_p99": 254.12878787878788,
+        "steady_ISR_p99_9": 311.6060606060606,
+        "full_ISR_peak": 329.1401515151515,
+        "whole_CPU_mean": 256.0036702011571,
+        "whole_CPU_p99": 333.0,
+        "whole_CPU_peak": 344.803
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/budget-calibration/replay/F6-WTWT-Slap-10-M1-all14/ROW.json",
+      "receipt_sha256": "b6fb558026894fe4b7fb51de4e904627f36f0a9dacf103e089c2aff08b873d1d"
+    }
+  ],
+  "sources": {
+    "tools/verify/qualify_perky_hybrid_budget.py": "9f88887d2060493c16d795c2770712904d2b67d96bf4e82920e7167a89dc075e",
+    "tools/verify/calibrate_perky_hybrid_budget.py": "18ee3fa40243e9cb86ae2352ebb4cbbd58d44bd616214f20bdc416aa88864911"
+  },
+  "limits": [
+    "Hardware algorithm pairs, complete control history, card contents and exact capture project are unavailable. These are matched local configuration replays, not exact hardware trace replays.",
+    "All four algorithm choices in a configuration shape are model envelope samples, not four independently hardware-confirmed working or failing cases.",
+    "Budgets are conservative engineering ceilings copied from the working-shape envelope, not physical safety thresholds. Overlapping distributions cannot establish a universal scalar conversion.",
+    "Independent per-metric envelope maxima may come from different rows. No row or number is an analytical worst-case bound.",
+    "Whole-CPU mean is the exact playback CPU-cycle sum divided by requested transport frames; ACK quantiles/peaks additionally contain startup windows. Both include intervening stock tasks and the actual Hat shadow worker; neither measures interrupt latency.",
+    "No cache, SDRAM/card contention or physical UI latency has been added to the model.",
+    "The nominal-clock exact-audio qualification remains evidence of correctness; it is not evidence of passing this performance gate."
+  ]
+}

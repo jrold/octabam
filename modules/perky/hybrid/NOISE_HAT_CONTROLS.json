@@ -1,0 +1,5047 @@
+{
+  "schema": "perky-noise-hat-controls-v1",
+  "status": "EXACT_CONTROL_BATCHING_MEETS_ALL_THREE_MODEL_DEADLINES",
+  "version": "PKNHE1",
+  "build_number": 19,
+  "hardware_validated": false,
+  "source_commit": "4eeae750caf8ba98144dd9ad8ac3b68299e21982",
+  "source_checkpoint_note": "Checkpoint plus uncommitted source fingerprints; no release commit.",
+  "image_sha256": "68d5adda3fc03972b2c0b67e98cef7a0aa78e3933a51228c1b3a0d0d1e376546",
+  "runtime_sha256": "19f4dcfcb62b7e05b38d2edca25dc44797e1b2587b070cf83794e13fff298641",
+  "build_receipt_sha256": "cbe1481e686eaff0461da412be4c8cffb54851548e7ba8fe9e4dd2535f8f646b",
+  "DSP_uploads_identical_to_PKNHD1": true,
+  "memory": {
+    "schema": "perky-noise-hat-taps-memory-v1",
+    "A_program": [
+      {
+        "name": "irq",
+        "start": 4637,
+        "length": 1
+      },
+      {
+        "name": "embed",
+        "start": 245155,
+        "length": 188
+      },
+      {
+        "name": "render",
+        "start": 4593,
+        "length": 44
+      },
+      {
+        "name": "frame",
+        "start": 4359,
+        "length": 234
+      },
+      {
+        "name": "segment",
+        "start": 261539,
+        "length": 90
+      },
+      {
+        "name": "clock_prepare",
+        "start": 261711,
+        "length": 72
+      },
+      {
+        "name": "clock_finish",
+        "start": 245476,
+        "length": 95
+      },
+      {
+        "name": "delay",
+        "start": 261629,
+        "length": 82
+      },
+      {
+        "name": "noise_hat_classic_mode0",
+        "start": 212387,
+        "length": 204
+      },
+      {
+        "name": "noise_hat_classic_mode1",
+        "start": 6820,
+        "length": 171
+      },
+      {
+        "name": "noise_hat_pulse_voice",
+        "start": 229136,
+        "length": 111
+      },
+      {
+        "name": "noise_hat_phase",
+        "start": 212591,
+        "length": 196
+      },
+      {
+        "name": "noise_hat_filter",
+        "start": 212787,
+        "length": 130
+      },
+      {
+        "name": "noise_hat_envelope",
+        "start": 4096,
+        "length": 263
+      },
+      {
+        "name": "add",
+        "start": 212917,
+        "length": 21
+      },
+      {
+        "name": "multiply",
+        "start": 229062,
+        "length": 38
+      }
+    ],
+    "B_program": [
+      {
+        "name": "synth_seam_glue.asm",
+        "start": 6244,
+        "length": 86
+      },
+      {
+        "name": "pk_three_finish",
+        "start": 6410,
+        "length": 12
+      },
+      {
+        "name": "noise_tone_math.asm",
+        "start": 245344,
+        "length": 132
+      },
+      {
+        "name": "simple_drum_voice.asm",
+        "start": 6330,
+        "length": 80
+      },
+      {
+        "name": "simple_drum_envelope.asm",
+        "start": 3520,
+        "length": 194
+      },
+      {
+        "name": "simple_drum_frequency.asm",
+        "start": 3919,
+        "length": 42
+      },
+      {
+        "name": "simple_drum_oscillator.asm",
+        "start": 3714,
+        "length": 205
+      },
+      {
+        "name": "simple_drum_delta.asm",
+        "start": 228771,
+        "length": 164
+      },
+      {
+        "name": "pk_multi_simple_init",
+        "start": 245712,
+        "length": 48
+      },
+      {
+        "name": "fold_drum_voice.asm",
+        "start": 7583,
+        "length": 189
+      },
+      {
+        "name": "fold_drum2_voice.asm",
+        "start": 7772,
+        "length": 262
+      },
+      {
+        "name": "pk_multi_fold_init",
+        "start": 262077,
+        "length": 61
+      },
+      {
+        "name": "pk_multi_fold2_init",
+        "start": 228935,
+        "length": 65
+      },
+      {
+        "name": "fold_rng_glue",
+        "start": 212944,
+        "length": 48
+      },
+      {
+        "name": "fold_drum2_seam.asm",
+        "start": 229287,
+        "length": 68
+      },
+      {
+        "name": "pk_three_fold2_trigger",
+        "start": 3961,
+        "length": 36
+      },
+      {
+        "name": "pk_three_common_controls",
+        "start": 261952,
+        "length": 125
+      },
+      {
+        "name": "pk_three_common_trigger",
+        "start": 229355,
+        "length": 21
+      },
+      {
+        "name": "pk_three_frame",
+        "start": 245654,
+        "length": 58
+      },
+      {
+        "name": "pk_three_segment",
+        "start": 261801,
+        "length": 151
+      },
+      {
+        "name": "pk_source_clock_prepare",
+        "start": 245582,
+        "length": 72
+      },
+      {
+        "name": "pk_source_clock_finish",
+        "start": 3997,
+        "length": 67
+      },
+      {
+        "name": "complex_drum_production_voice",
+        "start": 8034,
+        "length": 106
+      },
+      {
+        "name": "pk_multi_complex_init",
+        "start": 229000,
+        "length": 62
+      },
+      {
+        "name": "mapped prefetch guard NOPs",
+        "start": 262138,
+        "length": 6
+      },
+      {
+        "name": "experimental private upper guard NOPs",
+        "start": 8186,
+        "length": 6
+      },
+      {
+        "name": "stock startup clear preserving code tails",
+        "start": 4066,
+        "length": 48
+      }
+    ],
+    "A_program_words": 1940,
+    "shared_capacity": 2404,
+    "shared_words": 2308,
+    "shared_free": 96,
+    "private_P_used": {
+      "A": 761,
+      "B": 1333
+    },
+    "A_private_X": [
+      [
+        "resident limbs and preboot initializer padding",
+        14336,
+        14578
+      ],
+      [
+        "scratch and hold/RNG initializer",
+        14592,
+        14720
+      ],
+      [
+        "native stereo PCM",
+        14720,
+        14760
+      ],
+      [
+        "request cursors and initializer",
+        14768,
+        14784
+      ],
+      [
+        "source registers",
+        14784,
+        14820
+      ],
+      [
+        "feedback return mailbox plus initializer guard",
+        14832,
+        14866
+      ],
+      [
+        "native clock, gains and initializer guard",
+        14883,
+        14900
+      ]
+    ],
+    "A_private_X_words": 513,
+    "A_private_X_capacity": 616,
+    "A_low_Y_words": 2093,
+    "A_low_Y_capacity": 2139,
+    "CF_ring_bytes": 9610,
+    "host_vector": null,
+    "return_carrier": {
+      "core": "A",
+      "buffer": "stock X:2600/4600 readback banks",
+      "bits": "low eight bits of each second halfword in the first 48 stereo sample words; stripped before stock CF reads",
+      "additional_DMA_words": 0
+    },
+    "retained_FX": "all twelve code/dispatch bytes exact",
+    "notes": [
+      "A source hook renders, processes delay taps and resamples the CURRENT source frame, then jumps to stock AMP/FX.",
+      "B retains its single admitted oscillator portfolio; no paired context exchange.",
+      "Shared storage counted once. Ring and control shadow remain CF-owned; inner histories, delay arithmetic and clock are A-owned.",
+      "Private-B tail boundary and new source/readback hooks remain hardware-unqualified."
+    ]
+  },
+  "deadline_us": 362.81179138321994,
+  "bottleneck_profiles": [
+    {
+      "profile": {
+        "frames": 4109,
+        "returns": 4109,
+        "sum_cycles": 253820264,
+        "worst": {
+          "frame": 1,
+          "cycles": 97902,
+          "buckets": {
+            "entry-and-RTE": 11,
+            "envelope_trigger": 22,
+            "nh_common_update": 5884,
+            "nh_update": 8103,
+            "nhr_emit": 2902,
+            "pk4_algo_init": 196,
+            "pk4_render": 428,
+            "pk_cf_slap_render": 7286,
+            "pk_cf_slap_trigger": 42,
+            "pk_cf_slap_update": 143,
+            "pk_cf_wt_render": 7103,
+            "pk_hybrid_commit_longs.constprop.0": 414,
+            "pk_hybrid_frame_begin": 57,
+            "pk_hybrid_frame_end": 309,
+            "pk_nha_codec": 407,
+            "pk_nhr_dma_step": 32,
+            "pk_nhr_expect": 5,
+            "pk_nhr_frame": 1017,
+            "pk_render": 1755,
+            "placement_pack": 788,
+            "placement_prepare": 2758,
+            "placement_segment": 4166,
+            "prepare_wt": 1239,
+            "runtime-other": 99,
+            "stock": 51686,
+            "wt_frequency_block": 1050
+          },
+          "top_PCs": [
+            [
+              1086799842,
+              1120
+            ],
+            [
+              1073791586,
+              1024
+            ],
+            [
+              1073792480,
+              768
+            ],
+            [
+              1073791616,
+              768
+            ],
+            [
+              1073791596,
+              768
+            ],
+            [
+              1073791568,
+              768
+            ],
+            [
+              1086740170,
+              595
+            ],
+            [
+              1086740038,
+              595
+            ],
+            [
+              1086699726,
+              595
+            ],
+            [
+              1086699594,
+              595
+            ],
+            [
+              1073791398,
+              576
+            ],
+            [
+              1073791390,
+              576
+            ],
+            [
+              1073791388,
+              576
+            ],
+            [
+              1086800112,
+              455
+            ],
+            [
+              1086799774,
+              353
+            ],
+            [
+              1086486006,
+              288
+            ],
+            [
+              1073791576,
+              261
+            ],
+            [
+              1073792528,
+              256
+            ],
+            [
+              1073792526,
+              256
+            ],
+            [
+              1073792524,
+              256
+            ],
+            [
+              1073792522,
+              256
+            ],
+            [
+              1073792520,
+              256
+            ],
+            [
+              1073792518,
+              256
+            ],
+            [
+              1073792486,
+              256
+            ],
+            [
+              1073792484,
+              256
+            ],
+            [
+              1073791626,
+              256
+            ],
+            [
+              1073791624,
+              256
+            ],
+            [
+              1073791622,
+              256
+            ],
+            [
+              1073791620,
+              256
+            ],
+            [
+              1073791614,
+              256
+            ],
+            [
+              1073791608,
+              256
+            ],
+            [
+              1073791606,
+              256
+            ]
+          ]
+        },
+        "misses": [
+          {
+            "frame": 1,
+            "cycles": 97902,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_common_update": 5884,
+              "nh_update": 8103,
+              "nhr_emit": 2902,
+              "pk4_algo_init": 196,
+              "pk4_render": 428,
+              "pk_cf_slap_render": 7286,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7103,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 57,
+              "pk_hybrid_frame_end": 309,
+              "pk_nha_codec": 407,
+              "pk_nhr_dma_step": 32,
+              "pk_nhr_expect": 5,
+              "pk_nhr_frame": 1017,
+              "pk_render": 1755,
+              "placement_pack": 788,
+              "placement_prepare": 2758,
+              "placement_segment": 4166,
+              "prepare_wt": 1239,
+              "runtime-other": 99,
+              "stock": 51686,
+              "wt_frequency_block": 1050
+            },
+            "top_PCs": [
+              [
+                1086799842,
+                1120
+              ],
+              [
+                1073791586,
+                1024
+              ],
+              [
+                1073792480,
+                768
+              ],
+              [
+                1073791616,
+                768
+              ],
+              [
+                1073791596,
+                768
+              ],
+              [
+                1073791568,
+                768
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1086699726,
+                595
+              ],
+              [
+                1086699594,
+                595
+              ],
+              [
+                1073791398,
+                576
+              ],
+              [
+                1073791390,
+                576
+              ],
+              [
+                1073791388,
+                576
+              ],
+              [
+                1086800112,
+                455
+              ],
+              [
+                1086799774,
+                353
+              ],
+              [
+                1086486006,
+                288
+              ],
+              [
+                1073791576,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792518,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073791626,
+                256
+              ],
+              [
+                1073791624,
+                256
+              ],
+              [
+                1073791622,
+                256
+              ],
+              [
+                1073791620,
+                256
+              ],
+              [
+                1073791614,
+                256
+              ],
+              [
+                1073791608,
+                256
+              ],
+              [
+                1073791606,
+                256
+              ]
+            ]
+          },
+          {
+            "frame": 345,
+            "cycles": 95878,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_common_update": 5884,
+              "nh_update": 7896,
+              "nhr_emit": 2991,
+              "pk4_algo_init": 196,
+              "pk4_render": 821,
+              "pk_cf_slap_render": 7693,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7268,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 69,
+              "pk_hybrid_frame_end": 307,
+              "pk_nha_codec": 312,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 319,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1796,
+              "pk_render": 2726,
+              "placement_pack": 827,
+              "placement_prepare": 2776,
+              "placement_segment": 5037,
+              "prepare_wt": 1074,
+              "runtime-other": 99,
+              "stock": 46076,
+              "wt_frequency_block": 1064
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086799842,
+                980
+              ],
+              [
+                1073792480,
+                768
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086800112,
+                595
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1086699726,
+                595
+              ],
+              [
+                1086699594,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1073792518,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1073792342,
+                213
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1073776796,
+                210
+              ],
+              [
+                1073776792,
+                210
+              ],
+              [
+                1073776784,
+                210
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ],
+              [
+                1073792346,
+                208
+              ],
+              [
+                1073792344,
+                208
+              ],
+              [
+                1073792340,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 690,
+            "cycles": 97374,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_common_update": 5891,
+              "nh_update": 7938,
+              "nhr_emit": 2992,
+              "pk4_algo_init": 196,
+              "pk4_render": 807,
+              "pk_cf_slap_render": 7676,
+              "pk_cf_slap_trigger": 49,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 8209,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 62,
+              "pk_hybrid_frame_end": 314,
+              "pk_nha_codec": 312,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 319,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1850,
+              "pk_render": 2662,
+              "placement_pack": 800,
+              "placement_prepare": 2783,
+              "placement_segment": 4917,
+              "prepare_wt": 1245,
+              "runtime-other": 99,
+              "stock": 46544,
+              "wt_frequency_block": 1104
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086800112,
+                980
+              ],
+              [
+                1073792480,
+                768
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086799842,
+                595
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1086699726,
+                595
+              ],
+              [
+                1086699594,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1086486006,
+                288
+              ],
+              [
+                1073792526,
+                261
+              ],
+              [
+                1073792522,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792518,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1073792346,
+                213
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ],
+              [
+                1073792344,
+                208
+              ],
+              [
+                1073792342,
+                208
+              ],
+              [
+                1073792340,
+                208
+              ],
+              [
+                1073792338,
+                208
+              ],
+              [
+                1073792312,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 1379,
+            "cycles": 96589,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_common_update": 5877,
+              "nh_update": 7942,
+              "nhr_emit": 2998,
+              "pk4_algo_init": 196,
+              "pk4_render": 814,
+              "pk_cf_slap_render": 7673,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7464,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 62,
+              "pk_hybrid_frame_end": 306,
+              "pk_nha_codec": 312,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 319,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1819,
+              "pk_render": 2544,
+              "placement_pack": 825,
+              "placement_prepare": 2804,
+              "placement_segment": 5056,
+              "prepare_wt": 1294,
+              "runtime-other": 99,
+              "stock": 46474,
+              "wt_frequency_block": 1064
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086800112,
+                805
+              ],
+              [
+                1086799842,
+                770
+              ],
+              [
+                1073792480,
+                768
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1086699726,
+                595
+              ],
+              [
+                1086699594,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1086486006,
+                272
+              ],
+              [
+                1073792520,
+                261
+              ],
+              [
+                1073792486,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792518,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073776796,
+                216
+              ],
+              [
+                1073776792,
+                216
+              ],
+              [
+                1073776784,
+                216
+              ],
+              [
+                1073776492,
+                216
+              ],
+              [
+                1073776488,
+                216
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1073792338,
+                213
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 1723,
+            "cycles": 95971,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_common_update": 5884,
+              "nh_update": 7913,
+              "nhr_emit": 2974,
+              "pk4_algo_init": 196,
+              "pk4_render": 807,
+              "pk_cf_slap_render": 7712,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7258,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 62,
+              "pk_hybrid_frame_end": 306,
+              "pk_nha_codec": 312,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 312,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1871,
+              "pk_render": 2590,
+              "placement_pack": 767,
+              "placement_prepare": 2797,
+              "placement_segment": 4990,
+              "prepare_wt": 1060,
+              "runtime-other": 92,
+              "stock": 46357,
+              "wt_frequency_block": 1064
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086800112,
+                980
+              ],
+              [
+                1073792480,
+                768
+              ],
+              [
+                1073792318,
+                629
+              ],
+              [
+                1086799842,
+                595
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1086699726,
+                595
+              ],
+              [
+                1086699594,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1073792522,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792518,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1073776796,
+                210
+              ],
+              [
+                1073776792,
+                210
+              ],
+              [
+                1073776784,
+                210
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ],
+              [
+                1073792346,
+                208
+              ],
+              [
+                1073792344,
+                208
+              ],
+              [
+                1073792342,
+                208
+              ],
+              [
+                1073792340,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 2068,
+            "cycles": 96356,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_common_update": 5884,
+              "nh_update": 7918,
+              "nhr_emit": 2985,
+              "pk4_algo_init": 196,
+              "pk4_render": 821,
+              "pk_cf_slap_render": 7789,
+              "pk_cf_slap_trigger": 49,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7413,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 62,
+              "pk_hybrid_frame_end": 306,
+              "pk_nha_codec": 312,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 319,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1942,
+              "pk_render": 2666,
+              "placement_pack": 809,
+              "placement_prepare": 2811,
+              "placement_segment": 5039,
+              "prepare_wt": 1046,
+              "runtime-other": 92,
+              "stock": 46228,
+              "wt_frequency_block": 1064
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086799842,
+                840
+              ],
+              [
+                1073792480,
+                768
+              ],
+              [
+                1086800112,
+                735
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1086699726,
+                595
+              ],
+              [
+                1086699594,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1073792528,
+                266
+              ],
+              [
+                1086486006,
+                256
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792518,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073776796,
+                228
+              ],
+              [
+                1073776792,
+                228
+              ],
+              [
+                1073776784,
+                228
+              ],
+              [
+                1073776492,
+                228
+              ],
+              [
+                1073776488,
+                228
+              ],
+              [
+                1086799822,
+                220
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1073792340,
+                213
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1073792350,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 2412,
+            "cycles": 96464,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_common_update": 5884,
+              "nh_update": 7949,
+              "nhr_emit": 2987,
+              "pk4_algo_init": 196,
+              "pk4_render": 821,
+              "pk_cf_slap_render": 7775,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7215,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 62,
+              "pk_hybrid_frame_end": 306,
+              "pk_nha_codec": 312,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 312,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1845,
+              "pk_render": 2638,
+              "placement_pack": 793,
+              "placement_prepare": 2783,
+              "placement_segment": 5025,
+              "prepare_wt": 1254,
+              "runtime-other": 92,
+              "stock": 46504,
+              "wt_frequency_block": 1064
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086799842,
+                840
+              ],
+              [
+                1073792480,
+                768
+              ],
+              [
+                1086800112,
+                735
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1086699726,
+                595
+              ],
+              [
+                1086699594,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1073792522,
+                261
+              ],
+              [
+                1073792486,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792518,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073776796,
+                225
+              ],
+              [
+                1073776792,
+                225
+              ],
+              [
+                1073776784,
+                225
+              ],
+              [
+                1073776492,
+                225
+              ],
+              [
+                1073776488,
+                225
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1073792310,
+                213
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ],
+              [
+                1073792346,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 3446,
+            "cycles": 96387,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_common_update": 5884,
+              "nh_update": 7934,
+              "nhr_emit": 2867,
+              "pk4_algo_init": 196,
+              "pk4_render": 800,
+              "pk_cf_slap_render": 7316,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7124,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 69,
+              "pk_hybrid_frame_end": 313,
+              "pk_nha_codec": 312,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 319,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1888,
+              "pk_render": 2687,
+              "placement_pack": 763,
+              "placement_prepare": 2783,
+              "placement_segment": 5015,
+              "prepare_wt": 1308,
+              "runtime-other": 92,
+              "stock": 47054,
+              "wt_frequency_block": 1016
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086799842,
+                805
+              ],
+              [
+                1086800112,
+                770
+              ],
+              [
+                1073792480,
+                768
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1086699726,
+                595
+              ],
+              [
+                1086699594,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1073792526,
+                261
+              ],
+              [
+                1073792486,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792518,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073776796,
+                231
+              ],
+              [
+                1073776792,
+                231
+              ],
+              [
+                1073776784,
+                231
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1073792340,
+                213
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1086486006,
+                208
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ],
+              [
+                1073792346,
+                208
+              ],
+              [
+                1073792344,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 3790,
+            "cycles": 96436,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_common_update": 5884,
+              "nh_update": 7903,
+              "nhr_emit": 2987,
+              "pk4_algo_init": 196,
+              "pk4_render": 807,
+              "pk_cf_slap_render": 7703,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7153,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 62,
+              "pk_hybrid_frame_end": 306,
+              "pk_nha_codec": 312,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 312,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1897,
+              "pk_render": 2659,
+              "placement_pack": 754,
+              "placement_prepare": 2797,
+              "placement_segment": 4991,
+              "prepare_wt": 1287,
+              "runtime-other": 92,
+              "stock": 46623,
+              "wt_frequency_block": 1064
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086800112,
+                805
+              ],
+              [
+                1073792480,
+                773
+              ],
+              [
+                1086799842,
+                770
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1086699726,
+                595
+              ],
+              [
+                1086699594,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1073792522,
+                261
+              ],
+              [
+                1073792518,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073776796,
+                252
+              ],
+              [
+                1073776792,
+                252
+              ],
+              [
+                1073776784,
+                252
+              ],
+              [
+                1073776492,
+                252
+              ],
+              [
+                1073776488,
+                252
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1073792338,
+                213
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1086486060,
+                208
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ]
+            ]
+          }
+        ],
+        "aggregate": {
+          "entry-and-RTE": 45165,
+          "envelope_trigger": 220,
+          "nh_common_update": 606698,
+          "nh_update": 817390,
+          "nhr_emit": 11160148,
+          "pk4_algo_init": 805364,
+          "pk4_render": 3227671,
+          "pk_cf_slap_render": 30617368,
+          "pk_cf_slap_trigger": 434,
+          "pk_cf_slap_update": 4737,
+          "pk_cf_wt_render": 28169820,
+          "pk_hybrid_commit_longs.constprop.0": 1701126,
+          "pk_hybrid_frame_begin": 260449,
+          "pk_hybrid_frame_end": 1251086,
+          "pk_nha_codec": 1279898,
+          "pk_nhr_accept": 20530,
+          "pk_nhr_dma_step": 1288763,
+          "pk_nhr_expect": 39370,
+          "pk_nhr_frame": 7573097,
+          "pk_render": 10844945,
+          "placement_pack": 3317526,
+          "placement_prepare": 4317093,
+          "placement_segment": 21329292,
+          "prepare_wt": 656006,
+          "runtime-other": 391551,
+          "stock": 119807110,
+          "wt_frequency_block": 4287407
+        }
+      },
+      "raw_row_sha256": "5a40893c7bb7afb18a5241779cb7d5c50c6a14a6554bcdbc37ac11875c5cd536",
+      "observer_binary_sha256": "3d5deedde45a75b53ce63d9236383ccb3adda5ee291491dea1fe0128c93909ed",
+      "image_sha256": "3a1e2937116af7e3982b386b8632112ebf0b81c46db67c9dd810e4bfe96f7088"
+    },
+    {
+      "profile": {
+        "frames": 4109,
+        "returns": 4109,
+        "sum_cycles": 256204005,
+        "worst": {
+          "frame": 1,
+          "cycles": 98336,
+          "buckets": {
+            "entry-and-RTE": 11,
+            "envelope_trigger": 22,
+            "nh_update": 14005,
+            "nhr_emit": 3102,
+            "pk4_algo_init": 196,
+            "pk4_render": 428,
+            "pk_cf_slap_render": 7286,
+            "pk_cf_slap_trigger": 42,
+            "pk_cf_slap_update": 143,
+            "pk_cf_wt_render": 7103,
+            "pk_hybrid_commit_longs.constprop.0": 414,
+            "pk_hybrid_frame_begin": 57,
+            "pk_hybrid_frame_end": 316,
+            "pk_nha_codec": 556,
+            "pk_nhr_dma_step": 32,
+            "pk_nhr_expect": 5,
+            "pk_nhr_frame": 1103,
+            "pk_render": 1755,
+            "placement_pack": 788,
+            "placement_prepare": 2760,
+            "placement_segment": 4166,
+            "prepare_wt": 1239,
+            "runtime-other": 99,
+            "stock": 51658,
+            "wt_frequency_block": 1050
+          },
+          "top_PCs": [
+            [
+              1086799842,
+              1120
+            ],
+            [
+              1073791586,
+              1024
+            ],
+            [
+              1073792480,
+              768
+            ],
+            [
+              1073791616,
+              768
+            ],
+            [
+              1073791596,
+              768
+            ],
+            [
+              1073791568,
+              768
+            ],
+            [
+              1086742198,
+              595
+            ],
+            [
+              1086742064,
+              595
+            ],
+            [
+              1086740170,
+              595
+            ],
+            [
+              1086740038,
+              595
+            ],
+            [
+              1073791398,
+              576
+            ],
+            [
+              1073791390,
+              576
+            ],
+            [
+              1073791388,
+              576
+            ],
+            [
+              1086800112,
+              455
+            ],
+            [
+              1086799774,
+              353
+            ],
+            [
+              1086486006,
+              288
+            ],
+            [
+              1073791576,
+              261
+            ],
+            [
+              1073792528,
+              256
+            ],
+            [
+              1073792526,
+              256
+            ],
+            [
+              1073792524,
+              256
+            ],
+            [
+              1073792522,
+              256
+            ],
+            [
+              1073792520,
+              256
+            ],
+            [
+              1073792518,
+              256
+            ],
+            [
+              1073792486,
+              256
+            ],
+            [
+              1073792484,
+              256
+            ],
+            [
+              1073791626,
+              256
+            ],
+            [
+              1073791624,
+              256
+            ],
+            [
+              1073791622,
+              256
+            ],
+            [
+              1073791620,
+              256
+            ],
+            [
+              1073791614,
+              256
+            ],
+            [
+              1073791608,
+              256
+            ],
+            [
+              1073791606,
+              256
+            ]
+          ]
+        },
+        "misses": [
+          {
+            "frame": 1,
+            "cycles": 98336,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_update": 14005,
+              "nhr_emit": 3102,
+              "pk4_algo_init": 196,
+              "pk4_render": 428,
+              "pk_cf_slap_render": 7286,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7103,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 57,
+              "pk_hybrid_frame_end": 316,
+              "pk_nha_codec": 556,
+              "pk_nhr_dma_step": 32,
+              "pk_nhr_expect": 5,
+              "pk_nhr_frame": 1103,
+              "pk_render": 1755,
+              "placement_pack": 788,
+              "placement_prepare": 2760,
+              "placement_segment": 4166,
+              "prepare_wt": 1239,
+              "runtime-other": 99,
+              "stock": 51658,
+              "wt_frequency_block": 1050
+            },
+            "top_PCs": [
+              [
+                1086799842,
+                1120
+              ],
+              [
+                1073791586,
+                1024
+              ],
+              [
+                1073792480,
+                768
+              ],
+              [
+                1073791616,
+                768
+              ],
+              [
+                1073791596,
+                768
+              ],
+              [
+                1073791568,
+                768
+              ],
+              [
+                1086742198,
+                595
+              ],
+              [
+                1086742064,
+                595
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1073791398,
+                576
+              ],
+              [
+                1073791390,
+                576
+              ],
+              [
+                1073791388,
+                576
+              ],
+              [
+                1086800112,
+                455
+              ],
+              [
+                1086799774,
+                353
+              ],
+              [
+                1086486006,
+                288
+              ],
+              [
+                1073791576,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792518,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073791626,
+                256
+              ],
+              [
+                1073791624,
+                256
+              ],
+              [
+                1073791622,
+                256
+              ],
+              [
+                1073791620,
+                256
+              ],
+              [
+                1073791614,
+                256
+              ],
+              [
+                1073791608,
+                256
+              ],
+              [
+                1073791606,
+                256
+              ]
+            ]
+          },
+          {
+            "frame": 345,
+            "cycles": 96358,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_update": 13800,
+              "nhr_emit": 3247,
+              "pk4_algo_init": 196,
+              "pk4_render": 821,
+              "pk_cf_slap_render": 7693,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7254,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 69,
+              "pk_hybrid_frame_end": 307,
+              "pk_nha_codec": 617,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 312,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1875,
+              "pk_render": 2726,
+              "placement_pack": 834,
+              "placement_prepare": 2764,
+              "placement_segment": 5030,
+              "prepare_wt": 1060,
+              "runtime-other": 92,
+              "stock": 45950,
+              "wt_frequency_block": 1064
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086799842,
+                980
+              ],
+              [
+                1073792480,
+                773
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086800112,
+                595
+              ],
+              [
+                1086742198,
+                595
+              ],
+              [
+                1086742064,
+                595
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1073792518,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1073792344,
+                213
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1073776796,
+                210
+              ],
+              [
+                1073776792,
+                210
+              ],
+              [
+                1073776784,
+                210
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ],
+              [
+                1073792346,
+                208
+              ],
+              [
+                1073792342,
+                208
+              ],
+              [
+                1073792340,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 690,
+            "cycles": 97882,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_update": 13807,
+              "nhr_emit": 3206,
+              "pk4_algo_init": 196,
+              "pk4_render": 807,
+              "pk_cf_slap_render": 7676,
+              "pk_cf_slap_trigger": 49,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 8202,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 62,
+              "pk_hybrid_frame_end": 314,
+              "pk_nha_codec": 617,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 319,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1929,
+              "pk_render": 2662,
+              "placement_pack": 800,
+              "placement_prepare": 2771,
+              "placement_segment": 4917,
+              "prepare_wt": 1259,
+              "runtime-other": 99,
+              "stock": 46481,
+              "wt_frequency_block": 1104
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086800112,
+                980
+              ],
+              [
+                1073792480,
+                773
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086799842,
+                595
+              ],
+              [
+                1086742198,
+                595
+              ],
+              [
+                1086742064,
+                595
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1086486006,
+                288
+              ],
+              [
+                1073792522,
+                261
+              ],
+              [
+                1073792518,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1073792344,
+                213
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ],
+              [
+                1073792346,
+                208
+              ],
+              [
+                1073792342,
+                208
+              ],
+              [
+                1073792340,
+                208
+              ],
+              [
+                1073792338,
+                208
+              ],
+              [
+                1073792312,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 1379,
+            "cycles": 97118,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_update": 13800,
+              "nhr_emit": 3223,
+              "pk4_algo_init": 196,
+              "pk4_render": 814,
+              "pk_cf_slap_render": 7673,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7457,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 62,
+              "pk_hybrid_frame_end": 306,
+              "pk_nha_codec": 617,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 319,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1898,
+              "pk_render": 2544,
+              "placement_pack": 825,
+              "placement_prepare": 2792,
+              "placement_segment": 5056,
+              "prepare_wt": 1287,
+              "runtime-other": 99,
+              "stock": 46439,
+              "wt_frequency_block": 1064
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086800112,
+                805
+              ],
+              [
+                1086799842,
+                770
+              ],
+              [
+                1073792480,
+                768
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086742198,
+                595
+              ],
+              [
+                1086742064,
+                595
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1086486006,
+                272
+              ],
+              [
+                1073792528,
+                261
+              ],
+              [
+                1073792518,
+                261
+              ],
+              [
+                1073792484,
+                261
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792320,
+                220
+              ],
+              [
+                1073776796,
+                216
+              ],
+              [
+                1073776792,
+                216
+              ],
+              [
+                1073776784,
+                216
+              ],
+              [
+                1073776492,
+                216
+              ],
+              [
+                1073776488,
+                216
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ],
+              [
+                1073792346,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 1723,
+            "cycles": 96536,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_update": 13800,
+              "nhr_emit": 3223,
+              "pk4_algo_init": 196,
+              "pk4_render": 807,
+              "pk_cf_slap_render": 7712,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7244,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 62,
+              "pk_hybrid_frame_end": 306,
+              "pk_nha_codec": 617,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 312,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1950,
+              "pk_render": 2590,
+              "placement_pack": 767,
+              "placement_prepare": 2785,
+              "placement_segment": 4990,
+              "prepare_wt": 1067,
+              "runtime-other": 92,
+              "stock": 46305,
+              "wt_frequency_block": 1064
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086800112,
+                980
+              ],
+              [
+                1073792480,
+                768
+              ],
+              [
+                1073792318,
+                629
+              ],
+              [
+                1086799842,
+                595
+              ],
+              [
+                1086742198,
+                595
+              ],
+              [
+                1086742064,
+                595
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1073792526,
+                261
+              ],
+              [
+                1073792520,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792518,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1073776796,
+                210
+              ],
+              [
+                1073776792,
+                210
+              ],
+              [
+                1073776784,
+                210
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ],
+              [
+                1073792346,
+                208
+              ],
+              [
+                1073792344,
+                208
+              ],
+              [
+                1073792342,
+                208
+              ],
+              [
+                1073792340,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 2068,
+            "cycles": 96890,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_update": 13813,
+              "nhr_emit": 3199,
+              "pk4_algo_init": 196,
+              "pk4_render": 821,
+              "pk_cf_slap_render": 7789,
+              "pk_cf_slap_trigger": 49,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7392,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 62,
+              "pk_hybrid_frame_end": 306,
+              "pk_nha_codec": 617,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 319,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 2014,
+              "pk_render": 2666,
+              "placement_pack": 809,
+              "placement_prepare": 2792,
+              "placement_segment": 5039,
+              "prepare_wt": 1053,
+              "runtime-other": 92,
+              "stock": 46193,
+              "wt_frequency_block": 1064
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086799842,
+                840
+              ],
+              [
+                1073792480,
+                773
+              ],
+              [
+                1086800112,
+                735
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086742198,
+                595
+              ],
+              [
+                1086742064,
+                595
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1073792518,
+                261
+              ],
+              [
+                1086486006,
+                256
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073776796,
+                228
+              ],
+              [
+                1073776792,
+                228
+              ],
+              [
+                1073776784,
+                228
+              ],
+              [
+                1073776492,
+                228
+              ],
+              [
+                1073776488,
+                228
+              ],
+              [
+                1086799822,
+                220
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1073792348,
+                213
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1073792350,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 2412,
+            "cycles": 96982,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_update": 13807,
+              "nhr_emit": 3208,
+              "pk4_algo_init": 196,
+              "pk4_render": 821,
+              "pk_cf_slap_render": 7775,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7201,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 62,
+              "pk_hybrid_frame_end": 306,
+              "pk_nha_codec": 617,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 312,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1924,
+              "pk_render": 2638,
+              "placement_pack": 793,
+              "placement_prepare": 2764,
+              "placement_segment": 5025,
+              "prepare_wt": 1261,
+              "runtime-other": 92,
+              "stock": 46469,
+              "wt_frequency_block": 1064
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086799842,
+                840
+              ],
+              [
+                1073792480,
+                773
+              ],
+              [
+                1086800112,
+                735
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086742198,
+                595
+              ],
+              [
+                1086742064,
+                595
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1073792524,
+                261
+              ],
+              [
+                1073792520,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792518,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073776796,
+                225
+              ],
+              [
+                1073776792,
+                225
+              ],
+              [
+                1073776784,
+                225
+              ],
+              [
+                1073776492,
+                225
+              ],
+              [
+                1073776488,
+                225
+              ],
+              [
+                1073792320,
+                220
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ],
+              [
+                1073792346,
+                208
+              ],
+              [
+                1073792344,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 2757,
+            "cycles": 96216,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_update": 13800,
+              "nhr_emit": 3084,
+              "pk4_algo_init": 196,
+              "pk4_render": 821,
+              "pk_cf_slap_render": 7503,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7135,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 76,
+              "pk_hybrid_frame_end": 306,
+              "pk_nha_codec": 617,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 326,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 2005,
+              "pk_render": 2666,
+              "placement_pack": 807,
+              "placement_prepare": 2764,
+              "placement_segment": 5015,
+              "prepare_wt": 1074,
+              "runtime-other": 92,
+              "stock": 46266,
+              "wt_frequency_block": 1016
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086799842,
+                805
+              ],
+              [
+                1086800112,
+                770
+              ],
+              [
+                1073792480,
+                768
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086742198,
+                595
+              ],
+              [
+                1086742064,
+                595
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1073792526,
+                261
+              ],
+              [
+                1073792520,
+                261
+              ],
+              [
+                1073792484,
+                261
+              ],
+              [
+                1073792528,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792518,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073776796,
+                237
+              ],
+              [
+                1073776792,
+                237
+              ],
+              [
+                1073776784,
+                237
+              ],
+              [
+                1073776492,
+                237
+              ],
+              [
+                1073776488,
+                237
+              ],
+              [
+                1086486006,
+                224
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1086799822,
+                213
+              ],
+              [
+                1073792350,
+                213
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1073792348,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 3446,
+            "cycles": 96865,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_update": 13800,
+              "nhr_emit": 3081,
+              "pk4_algo_init": 196,
+              "pk4_render": 800,
+              "pk_cf_slap_render": 7316,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7145,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 62,
+              "pk_hybrid_frame_end": 313,
+              "pk_nha_codec": 617,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 319,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1944,
+              "pk_render": 2666,
+              "placement_pack": 756,
+              "placement_prepare": 2771,
+              "placement_segment": 5015,
+              "prepare_wt": 1287,
+              "runtime-other": 92,
+              "stock": 47022,
+              "wt_frequency_block": 1016
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086799842,
+                805
+              ],
+              [
+                1086800112,
+                770
+              ],
+              [
+                1073792480,
+                768
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086742198,
+                595
+              ],
+              [
+                1086742064,
+                595
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1073792314,
+                421
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1073792528,
+                261
+              ],
+              [
+                1073792486,
+                261
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792518,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073776796,
+                231
+              ],
+              [
+                1073776792,
+                231
+              ],
+              [
+                1073776784,
+                231
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1086486006,
+                208
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ],
+              [
+                1073792346,
+                208
+              ],
+              [
+                1073792344,
+                208
+              ],
+              [
+                1073792342,
+                208
+              ]
+            ]
+          },
+          {
+            "frame": 3790,
+            "cycles": 96965,
+            "buckets": {
+              "entry-and-RTE": 11,
+              "envelope_trigger": 22,
+              "nh_update": 13807,
+              "nhr_emit": 3194,
+              "pk4_algo_init": 196,
+              "pk4_render": 807,
+              "pk_cf_slap_render": 7703,
+              "pk_cf_slap_trigger": 42,
+              "pk_cf_slap_update": 143,
+              "pk_cf_wt_render": 7139,
+              "pk_hybrid_commit_longs.constprop.0": 414,
+              "pk_hybrid_frame_begin": 62,
+              "pk_hybrid_frame_end": 306,
+              "pk_nha_codec": 617,
+              "pk_nhr_accept": 5,
+              "pk_nhr_dma_step": 312,
+              "pk_nhr_expect": 10,
+              "pk_nhr_frame": 1969,
+              "pk_render": 2659,
+              "placement_pack": 754,
+              "placement_prepare": 2778,
+              "placement_segment": 4991,
+              "prepare_wt": 1280,
+              "runtime-other": 92,
+              "stock": 46588,
+              "wt_frequency_block": 1064
+            },
+            "top_PCs": [
+              [
+                1073792352,
+                1608
+              ],
+              [
+                1086800112,
+                805
+              ],
+              [
+                1073792480,
+                773
+              ],
+              [
+                1086799842,
+                770
+              ],
+              [
+                1073792318,
+                624
+              ],
+              [
+                1086742198,
+                595
+              ],
+              [
+                1086742064,
+                595
+              ],
+              [
+                1086740170,
+                595
+              ],
+              [
+                1086740038,
+                595
+              ],
+              [
+                1073792314,
+                416
+              ],
+              [
+                1086799774,
+                360
+              ],
+              [
+                1073792214,
+                328
+              ],
+              [
+                1073792528,
+                261
+              ],
+              [
+                1073792526,
+                256
+              ],
+              [
+                1073792524,
+                256
+              ],
+              [
+                1073792522,
+                256
+              ],
+              [
+                1073792520,
+                256
+              ],
+              [
+                1073792518,
+                256
+              ],
+              [
+                1073792486,
+                256
+              ],
+              [
+                1073792484,
+                256
+              ],
+              [
+                1073776796,
+                252
+              ],
+              [
+                1073776792,
+                252
+              ],
+              [
+                1073776784,
+                252
+              ],
+              [
+                1073776492,
+                252
+              ],
+              [
+                1073776488,
+                252
+              ],
+              [
+                1073792320,
+                215
+              ],
+              [
+                1073792346,
+                213
+              ],
+              [
+                1086799346,
+                210
+              ],
+              [
+                1086799342,
+                210
+              ],
+              [
+                1086486060,
+                208
+              ],
+              [
+                1073792350,
+                208
+              ],
+              [
+                1073792348,
+                208
+              ]
+            ]
+          }
+        ],
+        "aggregate": {
+          "entry-and-RTE": 45148,
+          "envelope_trigger": 220,
+          "nh_update": 1431652,
+          "nhr_emit": 12101191,
+          "pk4_algo_init": 805364,
+          "pk4_render": 3228238,
+          "pk_cf_slap_render": 30617046,
+          "pk_cf_slap_trigger": 434,
+          "pk_cf_slap_update": 4723,
+          "pk_cf_wt_render": 28121247,
+          "pk_hybrid_commit_longs.constprop.0": 1701126,
+          "pk_hybrid_frame_begin": 259936,
+          "pk_hybrid_frame_end": 1251148,
+          "pk_nha_codec": 2562933,
+          "pk_nhr_accept": 20530,
+          "pk_nhr_dma_step": 1288315,
+          "pk_nhr_expect": 39370,
+          "pk_nhr_frame": 7827871,
+          "pk_render": 10845456,
+          "placement_pack": 3280209,
+          "placement_prepare": 4316574,
+          "placement_segment": 21328550,
+          "prepare_wt": 655999,
+          "runtime-other": 391813,
+          "stock": 119791519,
+          "wt_frequency_block": 4287393
+        }
+      },
+      "raw_row_sha256": "1f7b26b1e0faed9845e2ccec99df1fb94059f9243c18163380df4e34bb2b64c5",
+      "observer_binary_sha256": "3d5deedde45a75b53ce63d9236383ccb3adda5ee291491dea1fe0128c93909ed",
+      "image_sha256": "3a1e2937116af7e3982b386b8632112ebf0b81c46db67c9dd810e4bfe96f7088"
+    }
+  ],
+  "optimized_profile": {
+    "profile": {
+      "frames": 269,
+      "returns": 269,
+      "sum_cycles": 15333007,
+      "worst": {
+        "frame": 1,
+        "cycles": 85758,
+        "buckets": {
+          "entry-and-RTE": 11,
+          "nh_common_update": 739,
+          "nh_update": 1002,
+          "nhr_emit": 2874,
+          "pk4_algo_init": 180,
+          "pk4_render": 435,
+          "pk_cf_slap_render": 7321,
+          "pk_cf_slap_trigger": 42,
+          "pk_cf_slap_update": 143,
+          "pk_cf_wt_render": 7145,
+          "pk_hybrid_commit_longs.constprop.0": 414,
+          "pk_hybrid_frame_begin": 57,
+          "pk_hybrid_frame_end": 330,
+          "pk_nha_codec": 400,
+          "pk_nhr_dma_step": 32,
+          "pk_nhr_expect": 5,
+          "pk_nhr_frame": 975,
+          "pk_render": 1748,
+          "placement_pack": 816,
+          "placement_prepare": 2248,
+          "placement_segment": 4131,
+          "prepare_nh": 559,
+          "prepare_wt": 1323,
+          "runtime-other": 99,
+          "stock": 51672,
+          "wt_frequency_block": 1057
+        },
+        "top_PCs": [
+          [
+            1086802744,
+            1120
+          ],
+          [
+            1073791586,
+            1024
+          ],
+          [
+            1073792480,
+            768
+          ],
+          [
+            1073791616,
+            768
+          ],
+          [
+            1073791596,
+            768
+          ],
+          [
+            1073791568,
+            768
+          ],
+          [
+            1073791398,
+            576
+          ],
+          [
+            1073791390,
+            576
+          ],
+          [
+            1073791388,
+            576
+          ],
+          [
+            1086803014,
+            455
+          ],
+          [
+            1086802676,
+            346
+          ],
+          [
+            1086486006,
+            288
+          ],
+          [
+            1073791576,
+            261
+          ],
+          [
+            1073792528,
+            256
+          ],
+          [
+            1073792526,
+            256
+          ],
+          [
+            1073792524,
+            256
+          ],
+          [
+            1073792522,
+            256
+          ],
+          [
+            1073792520,
+            256
+          ],
+          [
+            1073792518,
+            256
+          ],
+          [
+            1073792486,
+            256
+          ],
+          [
+            1073792484,
+            256
+          ],
+          [
+            1073791626,
+            256
+          ],
+          [
+            1073791624,
+            256
+          ],
+          [
+            1073791622,
+            256
+          ],
+          [
+            1073791620,
+            256
+          ],
+          [
+            1073791614,
+            256
+          ],
+          [
+            1073791608,
+            256
+          ],
+          [
+            1073791606,
+            256
+          ],
+          [
+            1073791604,
+            256
+          ],
+          [
+            1073791602,
+            256
+          ],
+          [
+            1073791600,
+            256
+          ],
+          [
+            1073791594,
+            256
+          ]
+        ]
+      },
+      "misses": [],
+      "aggregate": {
+        "entry-and-RTE": 2956,
+        "nh_common_update": 4047,
+        "nh_update": 5546,
+        "nhr_emit": 714317,
+        "pk4_algo_init": 48420,
+        "pk4_render": 120312,
+        "pk_cf_slap_render": 1931432,
+        "pk_cf_slap_trigger": 42,
+        "pk_cf_slap_update": 293,
+        "pk_cf_wt_render": 1781641,
+        "pk_hybrid_commit_longs.constprop.0": 111366,
+        "pk_hybrid_frame_begin": 18572,
+        "pk_hybrid_frame_end": 89016,
+        "pk_nha_codec": 78094,
+        "pk_nhr_accept": 1330,
+        "pk_nhr_dma_step": 85132,
+        "pk_nhr_expect": 1345,
+        "pk_nhr_frame": 460181,
+        "pk_render": 728058,
+        "placement_pack": 221240,
+        "placement_prepare": 271122,
+        "placement_segment": 1229261,
+        "prepare_nh": 30163,
+        "prepare_wt": 41039,
+        "runtime-other": 25913,
+        "stock": 7053978,
+        "wt_frequency_block": 278191
+      }
+    },
+    "raw_row_sha256": "ebc39623d5474f298b0a498ec9c68bf68df066243977225f48dba114d792d1cc",
+    "observer_binary_sha256": "b7534996e695f148ed191034b02208ecdfb24a50f24c3ab57ae9ccb8a299ae1f",
+    "image_sha256": "68d5adda3fc03972b2c0b67e98cef7a0aa78e3933a51228c1b3a0d0d1e376546"
+  },
+  "control_gate": {
+    "status": "PASS_RAW_CONTROLS_PCM_STATE_RING_RNG",
+    "cases": [
+      "engine-10-mode-1-corner-0",
+      "engine-10-mode-1-corner-1",
+      "engine-10-mode-1-corner-2",
+      "engine-10-mode-1-corner-3",
+      "engine-10-mode-1-corner-4",
+      "engine-10-mode-2-corner-0",
+      "engine-10-mode-2-corner-1",
+      "engine-10-mode-2-corner-2",
+      "engine-10-mode-2-corner-3",
+      "engine-10-mode-2-corner-4",
+      "engine-10-mode-3-corner-0",
+      "engine-10-mode-3-corner-1",
+      "engine-10-mode-3-corner-2",
+      "engine-10-mode-3-corner-3",
+      "engine-10-mode-3-corner-4"
+    ],
+    "control_calls": 2880,
+    "native_samples": 24525,
+    "source_sha256": {
+      "tools/verify/verify_perky_noise_hat_controls.py": "5d130a7ce1ec7e4e3ed7c6552144c5684e0a342936ad12f6e422092a17130dcf",
+      "tools/harness/perky_cf/noise_hat_controls_oracle.c": "14e91fc7548d18f9e6c82b3fbc62605236a4c58fbfaea7e7dc2bdc10689658c6",
+      "modules/perky/cf_noise_hat_controls.h": "3a58fc907997a615b72e90bfcdaa5881c166fb2e9bdff9765e341e725ab66f2e",
+      "modules/perky/cf_perky4.c": "cb6603926391371e43e018ddb20f2cd4e15a5431247bfc7573300ac3a4d8dac3",
+      "out/perky/hybrid/noise-hat-fast/cf_perky4_settle.c": "c58c547de4f993d1092bedbd5bdafdb1b5a76d59a60814f4ce75b138854993c5",
+      "tools/perky/build_noise_hat_fast_probe.py": "32afbd53e7425dd2678388d19ff75e95ad2b412cb6ab640df400e03c73317a51"
+    },
+    "scope": "Complete 11736-byte object, control history, PCM, dynamic state/ring/hold/RNG; repeated triggers, mode/note changes, arbitrary 32-bit smoother values and 16-bit envelope configs. Target execution is checked separately by the live observer."
+  },
+  "cached_identical_DSP_gate_sha256": "0a5c6d18ef165c5e8b3399661ed449296736999a8c339fd0c1fd94c4d100165b",
+  "rows": [
+    {
+      "kind": "optimized",
+      "panel_mode": 1,
+      "full_ISR": {
+        "frames": 4109,
+        "max_cycles": 85758,
+        "max_us": 324.84090909090907,
+        "mean_us": 232.4085313465637,
+        "deadline_misses": 0
+      },
+      "control_exact": {
+        "calls": 4109,
+        "mismatches": 0,
+        "examples": []
+      },
+      "exact": {
+        "requests": 7874,
+        "native_samples": 71562,
+        "source_frames": 4107,
+        "source_PCM_mismatches": 0,
+        "source_significant": 65552,
+        "source_peak": 686418,
+        "state_mismatches": 0,
+        "feedback_frames": 4106,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 4106,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "transport_counts": {
+        "pk_nhr_sequence": 4109,
+        "pk_nhr_dma_reads": 4108,
+        "pk_nhr_dma_done": 4108,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4106,
+        "pk_nhr_packet_words": 448288,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2,
+        "pk_nht_pending_max": 52,
+        "pk_nht_tap_words": 357810,
+        "pk_nhf_batches": 109,
+        "pk_nhf_enabled": 1
+      },
+      "private_stack_peak_bytes": 940,
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65724,
+          "post_FX_significant": 65692,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65725,
+          "post_FX_significant": 65694,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77484,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78004,
+          "post_FX_significant": 65680,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65697,
+          "post_FX_significant": 65669,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "DSP controls/taps; PCM witnessed before AMP",
+          "source_significant": 65552,
+          "post_FX_significant": 65550,
+          "source_peak": 686418,
+          "post_FX_peak": 693895,
+          "control_record_significant": 60222
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72913,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76412,
+          "post_FX_significant": 65694,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "raw_row_sha256": "e983b68c1663b6b98bfb802bdeaa93e667c2738e858d270de84494a51c1cf3f2"
+    },
+    {
+      "kind": "optimized",
+      "panel_mode": 2,
+      "full_ISR": {
+        "frames": 4109,
+        "max_cycles": 86407,
+        "max_us": 327.29924242424244,
+        "mean_us": 234.8485816426617,
+        "deadline_misses": 0
+      },
+      "control_exact": {
+        "calls": 4109,
+        "mismatches": 0,
+        "examples": []
+      },
+      "exact": {
+        "requests": 7874,
+        "native_samples": 71562,
+        "source_frames": 4107,
+        "source_PCM_mismatches": 0,
+        "source_significant": 65544,
+        "source_peak": 768842,
+        "state_mismatches": 0,
+        "feedback_frames": 4106,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 4106,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "transport_counts": {
+        "pk_nhr_sequence": 4109,
+        "pk_nhr_dma_reads": 4108,
+        "pk_nhr_dma_done": 4108,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4106,
+        "pk_nhr_packet_words": 522250,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2,
+        "pk_nht_pending_max": 52,
+        "pk_nht_tap_words": 357810,
+        "pk_nhf_batches": 109,
+        "pk_nhf_enabled": 1
+      },
+      "private_stack_peak_bytes": 940,
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65724,
+          "post_FX_significant": 65692,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65725,
+          "post_FX_significant": 65694,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77484,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78004,
+          "post_FX_significant": 65680,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65697,
+          "post_FX_significant": 65669,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "DSP controls/taps; PCM witnessed before AMP",
+          "source_significant": 65544,
+          "post_FX_significant": 65536,
+          "source_peak": 768842,
+          "post_FX_peak": 777218,
+          "control_record_significant": 56001
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72913,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76412,
+          "post_FX_significant": 65694,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "raw_row_sha256": "a498ee2c64f2fcf7475f9844c689628018e08a2e0cc5a99290f58a5cc7f0fffd"
+    },
+    {
+      "kind": "optimized",
+      "panel_mode": 3,
+      "full_ISR": {
+        "frames": 4107,
+        "max_cycles": 83662,
+        "max_us": 316.9015151515151,
+        "mean_us": 222.4128234499856,
+        "deadline_misses": 0
+      },
+      "control_exact": {
+        "calls": 4107,
+        "mismatches": 0,
+        "examples": []
+      },
+      "exact": {
+        "requests": 7870,
+        "native_samples": 71527,
+        "source_frames": 4105,
+        "source_PCM_mismatches": 0,
+        "source_significant": 64818,
+        "source_peak": 634671,
+        "state_mismatches": 0,
+        "feedback_frames": 4104,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 0,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "transport_counts": {
+        "pk_nhr_sequence": 4107,
+        "pk_nhr_dma_reads": 4106,
+        "pk_nhr_dma_done": 4106,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4104,
+        "pk_nhr_packet_words": 189002,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2,
+        "pk_nht_pending_max": 0,
+        "pk_nht_tap_words": 0,
+        "pk_nhf_batches": 109,
+        "pk_nhf_enabled": 1
+      },
+      "private_stack_peak_bytes": 940,
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65692,
+          "post_FX_significant": 65660,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65693,
+          "post_FX_significant": 65662,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77445,
+          "post_FX_significant": 65658,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 77960,
+          "post_FX_significant": 65648,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65665,
+          "post_FX_significant": 65637,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "DSP controls/taps; PCM witnessed before AMP",
+          "source_significant": 64818,
+          "post_FX_significant": 64817,
+          "source_peak": 634671,
+          "post_FX_peak": 641585,
+          "control_record_significant": 45186
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72874,
+          "post_FX_significant": 65658,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76368,
+          "post_FX_significant": 65662,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "raw_row_sha256": "9662e8712ac15aecb044bfe1bf240f01fcf768181bde62a275f63d5d748da3fd"
+    },
+    {
+      "kind": "unbatched",
+      "panel_mode": 1,
+      "full_ISR": {
+        "frames": 4109,
+        "max_cycles": 95582,
+        "max_us": 362.0530303030303,
+        "mean_us": 233.3825536331925,
+        "deadline_misses": 0
+      },
+      "control_exact": {
+        "calls": 4109,
+        "mismatches": 0,
+        "examples": []
+      },
+      "exact": {
+        "requests": 7874,
+        "native_samples": 71562,
+        "source_frames": 4107,
+        "source_PCM_mismatches": 0,
+        "source_significant": 65552,
+        "source_peak": 686418,
+        "state_mismatches": 0,
+        "feedback_frames": 4106,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 4106,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "transport_counts": {
+        "pk_nhr_sequence": 4109,
+        "pk_nhr_dma_reads": 4108,
+        "pk_nhr_dma_done": 4108,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4106,
+        "pk_nhr_packet_words": 448288,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2,
+        "pk_nht_pending_max": 52,
+        "pk_nht_tap_words": 357810,
+        "pk_nhf_batches": 0,
+        "pk_nhf_enabled": 0
+      },
+      "private_stack_peak_bytes": 940,
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65724,
+          "post_FX_significant": 65692,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65725,
+          "post_FX_significant": 65694,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77484,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78004,
+          "post_FX_significant": 65680,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65697,
+          "post_FX_significant": 65669,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "DSP controls/taps; PCM witnessed before AMP",
+          "source_significant": 65552,
+          "post_FX_significant": 65550,
+          "source_peak": 686418,
+          "post_FX_peak": 693895,
+          "control_record_significant": 60222
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72913,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76412,
+          "post_FX_significant": 65694,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "raw_row_sha256": "bf42f3fadd5e1ce940b5d8aefb467328829201b85469ecc82d637d63c695a2bc"
+    },
+    {
+      "kind": "unbatched",
+      "panel_mode": 2,
+      "full_ISR": {
+        "frames": 4109,
+        "max_cycles": 97707,
+        "max_us": 370.10227272727275,
+        "mean_us": 235.97852736417474,
+        "deadline_misses": 9
+      },
+      "control_exact": {
+        "calls": 4109,
+        "mismatches": 0,
+        "examples": []
+      },
+      "exact": {
+        "requests": 7874,
+        "native_samples": 71562,
+        "source_frames": 4107,
+        "source_PCM_mismatches": 0,
+        "source_significant": 65544,
+        "source_peak": 768842,
+        "state_mismatches": 0,
+        "feedback_frames": 4106,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 4106,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "transport_counts": {
+        "pk_nhr_sequence": 4109,
+        "pk_nhr_dma_reads": 4108,
+        "pk_nhr_dma_done": 4108,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4106,
+        "pk_nhr_packet_words": 522250,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2,
+        "pk_nht_pending_max": 52,
+        "pk_nht_tap_words": 357810,
+        "pk_nhf_batches": 0,
+        "pk_nhf_enabled": 0
+      },
+      "private_stack_peak_bytes": 940,
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65724,
+          "post_FX_significant": 65692,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65725,
+          "post_FX_significant": 65694,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77484,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78004,
+          "post_FX_significant": 65680,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65697,
+          "post_FX_significant": 65669,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "DSP controls/taps; PCM witnessed before AMP",
+          "source_significant": 65544,
+          "post_FX_significant": 65536,
+          "source_peak": 768842,
+          "post_FX_peak": 777218,
+          "control_record_significant": 56001
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72913,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76412,
+          "post_FX_significant": 65694,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "raw_row_sha256": "d91bd09d7ba3c67c771c7dd43e430fad91ce5eb20850998de0f7c51da168c8e5"
+    },
+    {
+      "kind": "unbatched",
+      "panel_mode": 3,
+      "full_ISR": {
+        "frames": 4108,
+        "max_cycles": 93931,
+        "max_us": 355.79924242424244,
+        "mean_us": 223.45186590835326,
+        "deadline_misses": 0
+      },
+      "control_exact": {
+        "calls": 4108,
+        "mismatches": 0,
+        "examples": []
+      },
+      "exact": {
+        "requests": 7872,
+        "native_samples": 71545,
+        "source_frames": 4106,
+        "source_PCM_mismatches": 0,
+        "source_significant": 64834,
+        "source_peak": 634671,
+        "state_mismatches": 0,
+        "feedback_frames": 4105,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 0,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "transport_counts": {
+        "pk_nhr_sequence": 4108,
+        "pk_nhr_dma_reads": 4107,
+        "pk_nhr_dma_done": 4107,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4105,
+        "pk_nhr_packet_words": 189048,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2,
+        "pk_nht_pending_max": 0,
+        "pk_nht_tap_words": 0,
+        "pk_nhf_batches": 0,
+        "pk_nhf_enabled": 0
+      },
+      "private_stack_peak_bytes": 940,
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65708,
+          "post_FX_significant": 65676,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65709,
+          "post_FX_significant": 65678,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77464,
+          "post_FX_significant": 65674,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 77982,
+          "post_FX_significant": 65664,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65681,
+          "post_FX_significant": 65653,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "DSP controls/taps; PCM witnessed before AMP",
+          "source_significant": 64834,
+          "post_FX_significant": 64833,
+          "source_peak": 634671,
+          "post_FX_peak": 641585,
+          "control_record_significant": 45197
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72894,
+          "post_FX_significant": 65674,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76390,
+          "post_FX_significant": 65678,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "raw_row_sha256": "af215255bd68ec71a22e7db88676e09df6f05275054495d68a735a0d9d6532c4"
+    },
+    {
+      "kind": "full_CF",
+      "panel_mode": 1,
+      "full_ISR": {
+        "frames": 4111,
+        "max_cycles": 100852,
+        "max_us": 382.0151515151515,
+        "mean_us": 252.6976413981705,
+        "deadline_misses": 10
+      },
+      "control_exact": null,
+      "exact": null,
+      "transport_counts": {
+        "pk_nhr_sequence": 0,
+        "pk_nhr_dma_reads": 0,
+        "pk_nhr_dma_done": 0,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 0,
+        "pk_nhr_packet_words": 0,
+        "pk_nhr_initializations": 0,
+        "pk_nhr_lag_min": 4294967295,
+        "pk_nhr_lag_max": 0,
+        "pk_nht_pending_max": 0,
+        "pk_nht_tap_words": 0,
+        "pk_nhf_batches": 0,
+        "pk_nhf_enabled": 0
+      },
+      "private_stack_peak_bytes": 1212,
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65756,
+          "post_FX_significant": 65724,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65757,
+          "post_FX_significant": 65726,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77523,
+          "post_FX_significant": 65722,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78048,
+          "post_FX_significant": 65712,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65729,
+          "post_FX_significant": 65701,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 65600,
+          "post_FX_significant": 65582,
+          "source_peak": 686418,
+          "post_FX_peak": 693895
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72953,
+          "post_FX_significant": 65722,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76457,
+          "post_FX_significant": 65726,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "raw_row_sha256": "7a560d5b242e20169701e56d59789989c24a61f1ecbf8d7487dbae6dc6760d35"
+    },
+    {
+      "kind": "full_CF",
+      "panel_mode": 2,
+      "full_ISR": {
+        "frames": 4114,
+        "max_cycles": 106520,
+        "max_us": 403.4848484848485,
+        "mean_us": 269.3597729850768,
+        "deadline_misses": 10
+      },
+      "control_exact": null,
+      "exact": null,
+      "transport_counts": {
+        "pk_nhr_sequence": 0,
+        "pk_nhr_dma_reads": 0,
+        "pk_nhr_dma_done": 0,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 0,
+        "pk_nhr_packet_words": 0,
+        "pk_nhr_initializations": 0,
+        "pk_nhr_lag_min": 4294967295,
+        "pk_nhr_lag_max": 0,
+        "pk_nht_pending_max": 0,
+        "pk_nht_tap_words": 0,
+        "pk_nhf_batches": 0,
+        "pk_nhf_enabled": 0
+      },
+      "private_stack_peak_bytes": 1212,
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65804,
+          "post_FX_significant": 65772,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65805,
+          "post_FX_significant": 65774,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77582,
+          "post_FX_significant": 65770,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78112,
+          "post_FX_significant": 65760,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65777,
+          "post_FX_significant": 65749,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 65640,
+          "post_FX_significant": 65616,
+          "source_peak": 768842,
+          "post_FX_peak": 777218
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 73012,
+          "post_FX_significant": 65770,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76524,
+          "post_FX_significant": 65774,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "raw_row_sha256": "7e3654b288040bfa715dd7015c8d3d144672170872a5f9f4debe4d8510d1a7a0"
+    },
+    {
+      "kind": "full_CF",
+      "panel_mode": 3,
+      "full_ISR": {
+        "frames": 4110,
+        "max_cycles": 98640,
+        "max_us": 373.6363636363636,
+        "mean_us": 243.12236323084863,
+        "deadline_misses": 10
+      },
+      "control_exact": null,
+      "exact": null,
+      "transport_counts": {
+        "pk_nhr_sequence": 0,
+        "pk_nhr_dma_reads": 0,
+        "pk_nhr_dma_done": 0,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 0,
+        "pk_nhr_packet_words": 0,
+        "pk_nhr_initializations": 0,
+        "pk_nhr_lag_min": 4294967295,
+        "pk_nhr_lag_max": 0,
+        "pk_nht_pending_max": 0,
+        "pk_nht_tap_words": 0,
+        "pk_nhf_batches": 0,
+        "pk_nhf_enabled": 0
+      },
+      "private_stack_peak_bytes": 1212,
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65740,
+          "post_FX_significant": 65708,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65741,
+          "post_FX_significant": 65710,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77504,
+          "post_FX_significant": 65706,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78026,
+          "post_FX_significant": 65696,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65713,
+          "post_FX_significant": 65685,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 64882,
+          "post_FX_significant": 64865,
+          "source_peak": 634671,
+          "post_FX_peak": 641585
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72933,
+          "post_FX_significant": 65706,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76435,
+          "post_FX_significant": 65710,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "raw_row_sha256": "7006789fe49cfa2d878001a248056984d4af903218a6f7ed6109cb1a50dcd11f"
+    }
+  ],
+  "observer": {
+    "status": "BUILT_ISOLATED_LONG_IRQ_PERIPHERAL_CLOCK",
+    "source_sha256": "b3c65867ad51f2e2ee78cc8e977172fd4cf15c471e40755684ce3d645db269ec",
+    "staged_sha256": "93b208e1937248c9804818c3c5d355407c88239f9659778c8bf9b0605bbcc571",
+    "binary_sha256": "6c238a7644c7b81b0db0506c448be67ce76ba4c66eff44da60345e010c4068bc",
+    "commands": [
+      [
+        "/usr/bin/c++",
+        "-DDSP56300_DEBUGGER=0",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor/dsp56300/source",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kEmu/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kBase/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/asmjit/src",
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu++17",
+        "-flto",
+        "-arch",
+        "arm64",
+        "-DASMJIT_STATIC",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-c",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-fast/observer/dsp.cpp",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-fast/observer/dsp.o"
+      ],
+      [
+        "/usr/bin/c++",
+        "-DDSP56300_DEBUGGER=0",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor/dsp56300/source",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kEmu/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kBase/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/asmjit/src",
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu++17",
+        "-flto",
+        "-arch",
+        "arm64",
+        "-DASMJIT_STATIC",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-c",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-fast/observer/machine.cpp",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-fast/observer/machine.o"
+      ],
+      [
+        "/usr/bin/c++",
+        "-O3",
+        "-flto",
+        "-arch",
+        "arm64",
+        "/Users/jrold/Downloads/octabam/out/emu/CMakeFiles/ot_emu.dir/main.cpp.o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-fast/observer/machine.o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/observer/periph.o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-fast/observer/dsp.o",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-fast/observer/ot_emu_safety",
+        "/Users/jrold/Downloads/octabam/out/emu/libot_machine.a",
+        "/Users/jrold/Downloads/octabam/out/emu/mc68k/lib68kEmu.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kBase/libdsp56kBase.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/asmjit/libasmjit.a",
+        "-lpthread"
+      ]
+    ],
+    "base_observer_receipt_sha256": "1f547e558298670781c7e77d8dfde42467d445e9af24a23e4d1dd537fe75f156",
+    "exact_observer_header_sha256": "f069fec77f43dab9c66fa224a5731d01a43719eb5bcadbb31fea69c3a3aaf5cd",
+    "oracle_sha256": "cab00080724a0abf3d1e414981a0b2856bc6c5443ccf3ce76f768fd9623767f4",
+    "oracle_source_sha256": "18aac652089aa04d7e6f751dd8bba3314f63aa1a8bf7dfb1016fd421f7df8776",
+    "scope": "Current DSP source, resident state, rational clock, feedback and committed CF ring; original complete CF renderer. No target-time renderer added.",
+    "complete_oracle_sha256": "ec9d10b3e29a77afff8e29927c6da04fedd4fe4e8ecdc432d88e9c39fca086fd",
+    "control_extension_sha256": "8455b698208d2e4625c2066d574396ccabef7e905e745ba401bac031c44259c6",
+    "control_oracle_source_sha256": "14e91fc7548d18f9e6c82b3fbc62605236a4c58fbfaea7e7dc2bdc10689658c6",
+    "original_controls_source_sha256": "cb6603926391371e43e018ddb20f2cd4e15a5431247bfc7573300ac3a4d8dac3"
+  },
+  "source_sha256": {
+    "tools/verify/verify_perky_noise_hat_fast_campaign.py": "24b2aeefee399d3bfd5922ad03976b42bf4f7a258a9be91e7ba514c07e870161",
+    "modules/perky/cf_noise_hat_controls.h": "3a58fc907997a615b72e90bfcdaa5881c166fb2e9bdff9765e341e725ab66f2e",
+    "tools/perky/build_noise_hat_fast_probe.py": "32afbd53e7425dd2678388d19ff75e95ad2b412cb6ab640df400e03c73317a51",
+    "tools/verify/verify_perky_noise_hat_controls.py": "5d130a7ce1ec7e4e3ed7c6552144c5684e0a342936ad12f6e422092a17130dcf",
+    "tools/verify/build_perky_noise_hat_fast_observer.py": "077f042fb6fa05d2a88f7a15de7a15b6c3ecd9d0f140a145a8cc9ca7eca456c1",
+    "tools/verify/measure_perky_noise_hat_fast.py": "c0b71ed210c99c0161f155c73022044d1e722ddb5e5255a1b51ab0aa3f0c602d",
+    "tools/verify/profile_perky_noise_hat_taps.py": "86b0ee1495d1c9665dba189c0703a7df1df93f31609d1eaf51e4068c1c575761",
+    "tools/harness/perky_cf/noise_hat_cycle_profile.h": "2878eb34f9d6ca689409c03823cd7c9a0f7df54ddfe90047314b11cb1f1bf780",
+    "tools/harness/perky_cf/noise_hat_controls_oracle.c": "14e91fc7548d18f9e6c82b3fbc62605236a4c58fbfaea7e7dc2bdc10689658c6",
+    "tools/harness/perky_cf/noise_hat_controls_observer.h": "8455b698208d2e4625c2066d574396ccabef7e905e745ba401bac031c44259c6"
+  },
+  "verification": {
+    "make_check": "PASS: 84 shared, 4 image gates; project-specific gates skipped without OT_PROJECT",
+    "make_check_log_sha256": "4dd80232c9094df9d4de73ceb4a370635718194d164c8ae7b0a3f5cd85c7b737",
+    "refhash": "PASS: all 24 configurations bit-identical to existing local baseline; baseline not re-saved",
+    "refhash_log_sha256": "71a9e4ecf2fe8ec9ede78ff28cb0a9100dee30445be1aa6aea94b94efd2fdc48",
+    "shipping_bus_restored_sha256": "354bdac8f2fe79696b3156a034894b1bd0d5f757ce76657ca608851089268a58"
+  },
+  "limits": [
+    "Bounded local model workload; fixed WT/WT/Slap/Hat placement and three fixed Noise Hat modes.",
+    "Same-image unbatched controls include changed CF outlining/layout; they are not the original PKNHD1 binary.",
+    "No added source queue; unchanged stock scheduled DMA and original delay ring. STOP/Part/Bank, backend/mode migration, long sequence wrap and hardware timing remain unqualified.",
+    "DSP scheduler remains 4532 instructions/sample; private-B tail and source/readback hooks remain hardware-unqualified."
+  ]
+}

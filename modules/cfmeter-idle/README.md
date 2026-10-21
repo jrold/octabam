@@ -20,12 +20,14 @@ loads a project and answers the scripted host calls: the port reads the
 first 0x80 bytes as main's park for its idle skip, its burst end and its
 run-to-park (`tools/emu/ot_emu/rtos.cpp`, `Rtos::atSpin`,
 `spinRange`); the narrative prints `main's park is detoured to ...`. A
-borrowed call (`--call`, the sequencer branch) still returns to the stock
-`bras .` behind the detour, where main then parks for good, so the loop's
-own idle accounting stops at the first such call: the idle slot's number
-needs the unit. Before 28 Sep the port advanced its clock only at the
-stock `bras .` and `cfmeter` never posted its load (card ready 0); remix
-`cfmeter-port` leaves the loop out.
+borrowed call (`--call`, the sequencer branch) now returns to the actual
+parked PC, so the detoured loop resumes (20 Oct 2026). The port also excludes
+the final stock-init JSR from the idle range. The earlier observation that
+accounting stopped at the first borrowed call applied to the previous port.
+The idle slot still needs hardware qualification; modeled idle skipping is
+not a physical CPU-utilization measurement. Before 28 Sep the port advanced
+its clock only at the stock `bras .` and `cfmeter` never posted its load (card
+ready 0); remix `cfmeter-port` leaves the loop out.
 
 ## On the unit
 

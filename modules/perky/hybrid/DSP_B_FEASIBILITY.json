@@ -1,0 +1,171 @@
+{
+  "schema": "perky-dsp-b-feasibility-receipt-v1",
+  "date": "2026-10-20",
+  "branch": "perky-cf-dsp-hybrid",
+  "source_checkpoint": "4eeae750caf8ba98144dd9ad8ac3b68299e21982",
+  "implementation": "uncommitted implementation pinned by local source inventory",
+  "hardware_validated": false,
+  "baseline_main_sha256": "be74504aadc747817c54dc1226944abfb062244d404408c46d6040744a9ae1d0",
+  "experiment_main_sha256": "6ff339e916a30d7ff339e906cb88008a7095be20abaa2f85bf0699a72f475b04",
+  "source_inventory_sha256": "7efa88aacdfa56281d75b125fd6ad86ad07eb0c298cbd2ae7d1d365843a7f1d2",
+  "source_files": 643,
+  "artifacts": {
+    "placement.json": "f5ab7e39ab33e342cb007db93078dec581c3b11897ef549e84b560aac4cb1c47",
+    "pair-report.json": "64c56810c05bd423cd56b85fcd2c8b3eff6712ea797ef8f7830f18e01cfe825d",
+    "ownership.json": "e272fae7fae13d098f65b987dfb89e693d4a1f2ecdedac5608fa86c26d4ba752",
+    "original-renderer/report.json": "507e5fc5f7e503607bbae5f22ebe52a1e1727295f80f98a8f0ca27058f3c3eb9",
+    "original-clock/report.json": "7b06467b671d30ddc140c66322c48a158ee94cce5d555a675bf5a8f322008e0c"
+  },
+  "logs": {
+    "build.log": "7311a36a06a070d84f461efae6d75aa45ca36d7687a55e058612fd54df33d8cb",
+    "pair.log": "9d46b72300af6e32030dc4755e102ca4bc26037c3df1f4001cc4cba83026cf79",
+    "oracles.log": "e2f2b59b4848d79f8380d08b94b681fa97a3af2c144c5729b8786d18a9c79f63",
+    "ownership.log": "506d3f585e5a5f3aa1c8cb0e73095d7a038c4f2f641e26e858a741e6aac1a5ba",
+    "make-check.log": "eaa4e90d489001775d61d8ccc77670e7f6b62e5c81f174e97d6629003c527c61",
+    "refhash.log": "71a9e4ecf2fe8ec9ede78ff28cb0a9100dee30445be1aa6aea94b94efd2fdc48"
+  },
+  "placement": {
+    "stock_private_upload_ends": {
+      "A": 8159,
+      "B": 7583
+    },
+    "candidate_private_ceiling": 8192,
+    "upper_guard_words": 6,
+    "relocated_B_kernel_words": 557,
+    "context_helper_shared_words": 57,
+    "shared_words": 1138,
+    "shared_free": 1266,
+    "A_private_donor_free": 726,
+    "B_private_free_including_candidate_tail": 50,
+    "second_context_words": 142,
+    "private_X_words": 560,
+    "private_X_capacity": 616,
+    "default_installer_baseline_identical": true
+  },
+  "correctness": {
+    "fixed_pair_cases": 108,
+    "fixed_pair_blocks": 6912,
+    "interior_transition_cases": 768,
+    "interior_transition_blocks": 2304,
+    "dirty_pairs": 4,
+    "raw_original_renderer": {
+      "core": "B",
+      "cases": 155,
+      "blocks": 2480,
+      "original_ARM_blocks": 432,
+      "randomized_native_blocks": 2048,
+      "worst_raw_modeled_cycles": 16100,
+      "capture_sha256": "7ce287f17a477967b1716888564d40161bfbb894478c09048f8938b9cd2434ab",
+      "capture_files": 72,
+      "status": "raw renderer only; integrated clock/control/stock continuation not qualified"
+    },
+    "clock_oracle": {
+      "core": "B",
+      "blocks": 18432,
+      "worst_cycles": {
+        "0": 16277,
+        "3": 22003,
+        "2": 12924,
+        "5": 18280
+      },
+      "rejected_position_blocks": 576,
+      "dirty_cases": 12,
+      "transitions": 768,
+      "worst_transition_cycles": 22139
+    },
+    "stock_FX_port": [
+      {
+        "engine": 0,
+        "frames": 2600,
+        "kernel_pc": 7583,
+        "kernel_arrivals": 24,
+        "log_sha256": "1afa58e965fd42c8a1463f12bcbe49bf277778ece16112d37efa1dfd766cb509"
+      },
+      {
+        "engine": 3,
+        "frames": 2600,
+        "kernel_pc": 7772,
+        "kernel_arrivals": 24,
+        "log_sha256": "dd4aea44b44b64f5b6a8434daaa95b0628759131e47f535cb2b06a0db10e3999"
+      },
+      {
+        "engine": 2,
+        "frames": 2600,
+        "kernel_pc": 6330,
+        "kernel_arrivals": 24,
+        "log_sha256": "964f5fec2b035140b331a9c7640c4264d9fc916154774ed541989568d6d590a7"
+      },
+      {
+        "engine": 5,
+        "frames": 2600,
+        "kernel_pc": 8034,
+        "kernel_arrivals": 24,
+        "log_sha256": "3ba58e7d589a77abca382912e13f37cd38cbcc75d356c8c14eb3217b631cf42e"
+      }
+    ]
+  },
+  "timing": {
+    "unit": "modeled DSP source cycles per 16-sample OT block",
+    "conservative_allowance": 23040,
+    "pairs": [
+      {
+        "engines": [
+          0,
+          3
+        ],
+        "paired_modeled_cycles_max": 39661,
+        "aligned_solo_sum_max": 38114,
+        "exchange_and_capture_overhead_max": 1547
+      },
+      {
+        "engines": [
+          0,
+          5
+        ],
+        "paired_modeled_cycles_max": 35264,
+        "aligned_solo_sum_max": 33717,
+        "exchange_and_capture_overhead_max": 1547
+      },
+      {
+        "engines": [
+          2,
+          3
+        ],
+        "paired_modeled_cycles_max": 36065,
+        "aligned_solo_sum_max": 34518,
+        "exchange_and_capture_overhead_max": 1547
+      },
+      {
+        "engines": [
+          2,
+          5
+        ],
+        "paired_modeled_cycles_max": 31668,
+        "aligned_solo_sum_max": 30121,
+        "exchange_and_capture_overhead_max": 1547
+      }
+    ],
+    "worst_pair": 39661,
+    "worst_transition": 39195,
+    "fixed_cases_exceeding_allowance": 108,
+    "decision": "does not fit unchanged conservative allowance"
+  },
+  "verification": {
+    "private_upload_negative_controls": 7,
+    "build_upload_and_boot": "passed",
+    "paired_correctness": "passed; timing no-go",
+    "original_author_oracles": "passed",
+    "scoped_port_ownership": "passed",
+    "make_check": "passed all runnable checks; six SKIP lines; 84 shared and four image module gates, zero failed",
+    "refhash": "24 configurations bit-identical to pre-edit local save; REFHASH_LOCAL=1 REFHASH_JOBS=1",
+    "docs": "verify_docs passed: 62 modules, 78 remixes, zero problems",
+    "diff_check": "passed"
+  },
+  "limits": [
+    "No production T2 admission or secondary-context upload initializer.",
+    "The candidate restores stock source handling on A; it is a DSP experiment based on preserved PERKY4S, not a new complete hybrid release.",
+    "Candidate B tail passes model upload/execution/FX checks; physical memory, guards and timing remain unqualified.",
+    "A upper tail is census-only; no execution or capacity qualification.",
+    "No flash wrapper generated, no hardware flashed, no push or upstream integration."
+  ]
+}

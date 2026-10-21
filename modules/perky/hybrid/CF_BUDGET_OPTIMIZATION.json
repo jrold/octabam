@@ -1,0 +1,668 @@
+{
+  "schema": "octabam.perky.cf-budget-optimization.v1",
+  "status": "FAIL_FROZEN_BUDGET",
+  "admission": "HOLD_FOR_PERFORMANCE_WORK",
+  "hardware_validated": false,
+  "version": "PKFM11",
+  "main_sha256": "ade52581b99c919f89da0e3c94df3a07b2e46486f901942b58ac34bd223e8cff",
+  "runtime_sha256": "9de6d4254ce9b550172a37fe49e8636098ff35fb534e0ec699ba1dac4893c3e5",
+  "clocks": {
+    "CF": 264000000,
+    "PIT": 132000000
+  },
+  "observer_sha256": "f975b4d2c4b6a2d993d3158bc8e68c8a786b328e2902b58bdde418225287d022",
+  "DSP_uploads": {
+    "A": {
+      "identical_to_PKFM6": true,
+      "sha256": "221017215ebb374e9f56df271c0a5b20c2b678354e36002a0f1826dcb7444d31"
+    },
+    "B": {
+      "identical_to_PKFM6": true,
+      "sha256": "9de0a32bb381f7d8fa18967424e5a755606249e6ca8f7db25fa0ff78c5877ffd"
+    }
+  },
+  "budget_path": "/Users/jrold/Downloads/octabam/modules/perky/hybrid/EMULATOR_BUDGET.json",
+  "budget_sha256": "8608844b96c6f20daed514147dc6cadab7a2c82aae80d2ef7c9a875a22ccaec4",
+  "assessments": [
+    {
+      "case": "PKFM11-WTWT-Slap-5-M0-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 223.4996873663551,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 41.2663683538403
+        },
+        "steady_ISR_p99": {
+          "measured_us": 232.7840909090909,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 39.575289575289574
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 312.5984848484849,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 31.492487372731492
+        },
+        "full_ISR_peak": {
+          "measured_us": 315.3030303030303,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 25.76297818335651
+        },
+        "whole_CPU_mean": {
+          "measured_us": 268.8769512754498,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 42.03910332802121
+        },
+        "whole_CPU_p99": {
+          "measured_us": 339.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 3.3536585365853577
+        },
+        "whole_CPU_peak": {
+          "measured_us": 349.095,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -3.621359866597451
+        }
+      },
+      "baseline_PKFM6_us": {
+        "steady_ISR_mean": 231.55478415391315,
+        "steady_ISR_p99": 240.79924242424244,
+        "steady_ISR_p99_9": 318.68560606060606,
+        "full_ISR_peak": 323.905303030303,
+        "whole_CPU_mean": 277.37292896617544,
+        "whole_CPU_p99": 338.0,
+        "whole_CPU_peak": 348.72
+      },
+      "change_us": {
+        "steady_ISR_mean": -8.055096787558057,
+        "steady_ISR_p99": -8.01515151515153,
+        "steady_ISR_p99_9": -6.08712121212119,
+        "full_ISR_peak": -8.602272727272691,
+        "whole_CPU_mean": -8.495977690725624,
+        "whole_CPU_p99": 1.0,
+        "whole_CPU_peak": 0.375
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/measurement/PKFM11-WTWT-Slap-5-M0-all14/ROW.json"
+    },
+    {
+      "case": "PKFM11-WTWT-Slap-5-M1-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 222.40664854823436,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 40.57549658518056
+        },
+        "steady_ISR_p99": {
+          "measured_us": 231.82575757575756,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 39.00068135362251
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 312.1628787878788,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 31.309252561304014
+        },
+        "full_ISR_peak": {
+          "measured_us": 314.7651515151515,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 25.548437783283973
+        },
+        "whole_CPU_mean": {
+          "measured_us": 281.34433029637194,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 48.6252213592697
+        },
+        "whole_CPU_p99": {
+          "measured_us": 338.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 3.0487804878048808
+        },
+        "whole_CPU_peak": {
+          "measured_us": 346.375,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -4.372301304208581
+        }
+      },
+      "baseline_PKFM6_us": {
+        "steady_ISR_mean": 232.8792763986895,
+        "steady_ISR_p99": 242.20833333333334,
+        "steady_ISR_p99_9": 320.6136363636364,
+        "full_ISR_peak": 326.4128787878788,
+        "whole_CPU_mean": 299.1437352498372,
+        "whole_CPU_p99": 338.0,
+        "whole_CPU_peak": 346.208
+      },
+      "change_us": {
+        "steady_ISR_mean": -10.472627850455154,
+        "steady_ISR_p99": -10.382575757575779,
+        "steady_ISR_p99_9": -8.450757575757564,
+        "full_ISR_peak": -11.647727272727309,
+        "whole_CPU_mean": -17.799404953465285,
+        "whole_CPU_p99": 0.0,
+        "whole_CPU_peak": 0.16699999999997317
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/measurement/PKFM11-WTWT-Slap-5-M1-all14/ROW.json"
+    },
+    {
+      "case": "PKFM11-WTWT-Slap-5-M2-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 212.57619860398339,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 34.36201154959657
+        },
+        "steady_ISR_p99": {
+          "measured_us": 222.20454545454547,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 33.23188734953442
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 303.0189393939394,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 27.462914867513266
+        },
+        "full_ISR_peak": {
+          "measured_us": 306.75757575757575,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 22.35450534840151
+        },
+        "whole_CPU_mean": {
+          "measured_us": 262.91469643332744,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 38.88943457593601
+        },
+        "whole_CPU_p99": {
+          "measured_us": 335.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 2.1341463414634054
+        },
+        "whole_CPU_peak": {
+          "measured_us": 344.697,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -4.8355659116760314
+        }
+      },
+      "baseline_PKFM6_us": {
+        "steady_ISR_mean": 218.0149866068701,
+        "steady_ISR_p99": 226.83712121212122,
+        "steady_ISR_p99_9": 304.4621212121212,
+        "full_ISR_peak": 311.7916666666667,
+        "whole_CPU_mean": 270.62853703354347,
+        "whole_CPU_p99": 338.0,
+        "whole_CPU_peak": 346.413
+      },
+      "change_us": {
+        "steady_ISR_mean": -5.438788002886724,
+        "steady_ISR_p99": -4.632575757575751,
+        "steady_ISR_p99_9": -1.443181818181813,
+        "full_ISR_peak": -5.034090909090935,
+        "whole_CPU_mean": -7.713840600216031,
+        "whole_CPU_p99": -3.0,
+        "whole_CPU_peak": -1.7160000000000082
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/measurement/PKFM11-WTWT-Slap-5-M2-all14/ROW.json"
+    },
+    {
+      "case": "PKFM11-WTWT-Slap-3-M1-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 231.3754224133981,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 46.2443461815637
+        },
+        "steady_ISR_p99": {
+          "measured_us": 240.87121212121212,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 44.42425618896206
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 315.7765151515151,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 32.829304823058905
+        },
+        "full_ISR_peak": {
+          "measured_us": 318.8181818181818,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 27.16504502326704
+        },
+        "whole_CPU_mean": {
+          "measured_us": 257.89310802112925,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 36.236689846543754
+        },
+        "whole_CPU_p99": {
+          "measured_us": 331.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 0.9146341463414531
+        },
+        "whole_CPU_peak": {
+          "measured_us": 341.038,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -5.845747794109524
+        }
+      },
+      "baseline_PKFM6_us": {
+        "steady_ISR_mean": 232.90170702743157,
+        "steady_ISR_p99": 242.5,
+        "steady_ISR_p99_9": 316.97727272727275,
+        "full_ISR_peak": 324.72727272727275,
+        "whole_CPU_mean": 259.4747936364376,
+        "whole_CPU_p99": 333.0,
+        "whole_CPU_peak": 341.826
+      },
+      "change_us": {
+        "steady_ISR_mean": -1.5262846140334716,
+        "steady_ISR_p99": -1.6287878787878753,
+        "steady_ISR_p99_9": -1.2007575757576205,
+        "full_ISR_peak": -5.909090909090935,
+        "whole_CPU_mean": -1.581685615308345,
+        "whole_CPU_p99": -2.0,
+        "whole_CPU_peak": -0.7880000000000109
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/measurement/PKFM11-WTWT-Slap-3-M1-all14/ROW.json"
+    },
+    {
+      "case": "PKFM11-WTWT-Slap-10-M1-all14",
+      "pass_budget": false,
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 228.54334128520588,
+          "budget_us": 158.21153326922013,
+          "pass_budget": false,
+          "excess_percent": 44.45428633594357
+        },
+        "steady_ISR_p99": {
+          "measured_us": 253.79924242424244,
+          "budget_us": 166.78030303030303,
+          "pass_budget": false,
+          "excess_percent": 52.175789234612765
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 310.5189393939394,
+          "budget_us": 237.7310606060606,
+          "pass_budget": false,
+          "excess_percent": 30.617740316438557
+        },
+        "full_ISR_peak": {
+          "measured_us": 329.13257575757575,
+          "budget_us": 250.71212121212122,
+          "pass_budget": false,
+          "excess_percent": 31.279083821840814
+        },
+        "whole_CPU_mean": {
+          "measured_us": 255.3664240981593,
+          "budget_us": 189.2978376908736,
+          "pass_budget": false,
+          "excess_percent": 34.90192345206646
+        },
+        "whole_CPU_p99": {
+          "measured_us": 332.0,
+          "budget_us": 328.0,
+          "pass_budget": false,
+          "excess_percent": 1.2195121951219523
+        },
+        "whole_CPU_peak": {
+          "measured_us": 341.883,
+          "budget_us": 362.212,
+          "pass_budget": true,
+          "excess_percent": -5.612459001910485
+        }
+      },
+      "baseline_PKFM6_us": {
+        "steady_ISR_mean": 229.175933271093,
+        "steady_ISR_p99": 254.12878787878788,
+        "steady_ISR_p99_9": 311.6060606060606,
+        "full_ISR_peak": 329.1401515151515,
+        "whole_CPU_mean": 256.0036702011571,
+        "whole_CPU_p99": 333.0,
+        "whole_CPU_peak": 344.803
+      },
+      "change_us": {
+        "steady_ISR_mean": -0.6325919858871032,
+        "steady_ISR_p99": -0.32954545454543904,
+        "steady_ISR_p99_9": -1.0871212121212466,
+        "full_ISR_peak": -0.007575757575750686,
+        "whole_CPU_mean": -0.6372461029977785,
+        "whole_CPU_p99": -1.0,
+        "whole_CPU_peak": -2.920000000000016
+      },
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/measurement/PKFM11-WTWT-Slap-10-M1-all14/ROW.json"
+    }
+  ],
+  "interactive_ISR_assessments": {
+    "MATRIX.json": {
+      "steady_ISR_mean": {
+        "measured_us": 222.1629400495484,
+        "budget_us": 158.21153326922013,
+        "pass_budget": false
+      },
+      "steady_ISR_p99": {
+        "measured_us": 249.08712121212122,
+        "budget_us": 166.78030303030303,
+        "pass_budget": false
+      },
+      "steady_ISR_p99_9": {
+        "measured_us": 318.56060606060606,
+        "budget_us": 237.7310606060606,
+        "pass_budget": false
+      },
+      "full_ISR_peak": {
+        "measured_us": 347.4128787878788,
+        "budget_us": 250.71212121212122,
+        "pass_budget": false
+      }
+    },
+    "lifecycle/RESULT.json": {
+      "steady_ISR_mean": {
+        "measured_us": 219.42984267244614,
+        "budget_us": 158.21153326922013,
+        "pass_budget": false
+      },
+      "steady_ISR_p99": {
+        "measured_us": 255.62878787878788,
+        "budget_us": 166.78030303030303,
+        "pass_budget": false
+      },
+      "steady_ISR_p99_9": {
+        "measured_us": 306.5378787878788,
+        "budget_us": 237.7310606060606,
+        "pass_budget": false
+      },
+      "full_ISR_peak": {
+        "measured_us": 345.9280303030303,
+        "budget_us": 250.71212121212122,
+        "pass_budget": false
+      }
+    },
+    "SCENES.json": {
+      "steady_ISR_mean": {
+        "measured_us": 232.93892964684176,
+        "budget_us": 158.21153326922013,
+        "pass_budget": false
+      },
+      "steady_ISR_p99": {
+        "measured_us": 245.0,
+        "budget_us": 166.78030303030303,
+        "pass_budget": false
+      },
+      "steady_ISR_p99_9": {
+        "measured_us": 311.8068181818182,
+        "budget_us": 237.7310606060606,
+        "pass_budget": false
+      },
+      "full_ISR_peak": {
+        "measured_us": 314.0151515151515,
+        "budget_us": 250.71212121212122,
+        "pass_budget": false
+      }
+    }
+  },
+  "functional": {
+    "SOURCE_GATE.json": {
+      "status": "PASS_ACTUAL_IMAGE_ALL_LAYOUT_SOURCE_PCM_STATE_SHARED_RNG",
+      "frames": 5355,
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/SOURCE_GATE.json",
+      "receipt_sha256": "d89291f772dbe4b948f15617fc013bc60dd16aa15574a50256858a147e084378"
+    },
+    "TAP_GATE.json": {
+      "status": "PASS_ALL_RING_CURSORS_PACKET_AND_CARRY",
+      "frames": null,
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/TAP_GATE.json",
+      "receipt_sha256": "235d9beb39721090f7b84e39ccabc710fa4941621e2a1b446e57d8aed7e77728"
+    },
+    "FILTER_GATE.json": {
+      "status": "PASS_ORIGINAL_WRAP_CLAMP_FILTER",
+      "frames": null,
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/FILTER_GATE.json",
+      "receipt_sha256": "400515a35e4ce6a3b32b92e82c05b47baf664d94625911db98016351f99575fe"
+    },
+    "STOCK_FX_GATE.json": {
+      "status": "PASS_ALL_FOURTEEN_FX_CODE_BOTH_DISPATCHES_STOCK_DATA_AND_B_SOURCE",
+      "frames": null,
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/STOCK_FX_GATE.json",
+      "receipt_sha256": "fabafee30bf8b0de7de075ae92a2e84737ed3c7ca904f18fff2d38d0f8ebf143"
+    },
+    "MATRIX.json": {
+      "status": "PASS_FULL_MAP_PRODUCTION_MATRIX_MODEL_SCOPE",
+      "frames": 160161,
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/MATRIX.json",
+      "receipt_sha256": "16a36a0cb6e9a60ab56686183f76ff9e124fc5a75f9380524d76229d9be2c722"
+    },
+    "lifecycle/RESULT.json": {
+      "status": "PASS_FULL_MAP_LIFECYCLE_MODEL_SCOPE",
+      "frames": 52987,
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/lifecycle/RESULT.json",
+      "receipt_sha256": "3f3572f7ffd41edef51044afff7e01dfe5198ab3b58051368e4d63d84ab8aa71"
+    },
+    "SCENES.json": {
+      "status": "PASS_FULL_MAP_SCENE_FADER_MODEL_SCOPE",
+      "frames": 9218,
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/SCENES.json",
+      "receipt_sha256": "22bd31bf1d66cf3c36c4cfdd2496d69eab18364e600a90ff35df647920d117ae"
+    }
+  },
+  "receipts": {
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/measurement/PKFM11-WTWT-Slap-5-M0-all14/ROW.json": "d0b4d438c55ca1716c2296bfc2ddf9c11d4eb507987ed5096eeba2f7845ab1e6",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/measurement/PKFM11-WTWT-Slap-5-M1-all14/ROW.json": "2811aa64e40408ea47828253fb7c36406983441a1464f49d999e02fc22b673f9",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/measurement/PKFM11-WTWT-Slap-5-M2-all14/ROW.json": "fe65cec1bd07b3aa6cae6b42b207ea2dba3f28d84d975666f7771a46ac5d6210",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/measurement/PKFM11-WTWT-Slap-3-M1-all14/ROW.json": "01e978e2de4fb22bf15e5b2a289b5c6e412cb5c7c3215a66b1efe9a25fb604e1",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/measurement/PKFM11-WTWT-Slap-10-M1-all14/ROW.json": "9639ccb6e4697197bdf44cc2d25eb92b3d82c18ff3c6d2dcf6e98c4f6a9811c4",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/SOURCE_GATE.json": "d89291f772dbe4b948f15617fc013bc60dd16aa15574a50256858a147e084378",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/TAP_GATE.json": "235d9beb39721090f7b84e39ccabc710fa4941621e2a1b446e57d8aed7e77728",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/FILTER_GATE.json": "400515a35e4ce6a3b32b92e82c05b47baf664d94625911db98016351f99575fe",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/STOCK_FX_GATE.json": "fabafee30bf8b0de7de075ae92a2e84737ed3c7ca904f18fff2d38d0f8ebf143",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/MATRIX.json": "16a36a0cb6e9a60ab56686183f76ff9e124fc5a75f9380524d76229d9be2c722",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/lifecycle/RESULT.json": "3f3572f7ffd41edef51044afff7e01dfe5198ab3b58051368e4d63d84ab8aa71",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/SCENES.json": "22bd31bf1d66cf3c36c4cfdd2496d69eab18364e600a90ff35df647920d117ae",
+    "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/profile/PROFILE.json": "50a7f6c45cba3fb2432878ee4a36faba152755578f24cc4535fda5c715e244c1"
+  },
+  "controlled_profile": {
+    "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-v5/profile/PROFILE.json",
+    "receipt_sha256": "50a7f6c45cba3fb2432878ee4a36faba152755578f24cc4535fda5c715e244c1",
+    "per_frame_us": {
+      "ISR": [
+        [
+          "stock",
+          109.5714162638227
+        ],
+        [
+          "pk_cf_wt_render",
+          25.772070503421308
+        ],
+        [
+          "pk_cf_slap_render",
+          11.006295152889786
+        ],
+        [
+          "pk_cf_slap_delay_block",
+          8.798426712945993
+        ],
+        [
+          "pk_render",
+          8.451779482068671
+        ],
+        [
+          "pk_nhr_frame",
+          7.856055833027859
+        ],
+        [
+          "nhr_emit",
+          6.767370020772239
+        ],
+        [
+          "pk_budget_slap_filter",
+          6.2874938427877565
+        ],
+        [
+          "pk_nhb_native_convert_fast",
+          6.216408111482772
+        ],
+        [
+          "pk_budget_gather_taps",
+          5.358078405654325
+        ],
+        [
+          "placement_segment",
+          4.521764313370602
+        ],
+        [
+          "placement_prepare",
+          4.188152712228129
+        ],
+        [
+          "wt_frequency_block",
+          3.864635359390274
+        ],
+        [
+          "pk4_render",
+          2.9748146154081136
+        ],
+        [
+          "pk_prod_pack",
+          2.0592490873961387
+        ],
+        [
+          "pk_prod_clear",
+          1.9924734046615347
+        ],
+        [
+          "pk_nhr_dma_step",
+          1.1742567433406648
+        ],
+        [
+          "pk_hybrid_frame_end",
+          1.0592240289742179
+        ],
+        [
+          "placement_production_event",
+          0.8809734504826491
+        ],
+        [
+          "pk4_algo_init",
+          0.6212121212121212
+        ],
+        [
+          "prepare_wt",
+          0.5820162149468475
+        ],
+        [
+          "fm_voice_engine",
+          0.5512618943976051
+        ],
+        [
+          "prepare_nh",
+          0.4297564703231916
+        ],
+        [
+          "runtime-other",
+          0.37001265808284456
+        ]
+      ],
+      "background": [
+        [
+          "nh_block_metallic.isra.0",
+          28.352854559964562
+        ],
+        [
+          "stock",
+          26.081877319693913
+        ],
+        [
+          "pk_nhb_work",
+          4.108867865270651
+        ],
+        [
+          "pk_nhb_inner_renderer",
+          0.6621081817418133
+        ],
+        [
+          "runtime-other",
+          0.09959529455339688
+        ],
+        [
+          "pk_ui_tick",
+          0.05627405608504399
+        ],
+        [
+          "pk_ui_playing",
+          0.04005051777859238
+        ],
+        [
+          "pk_machine_glyph",
+          0.028334154294965788
+        ],
+        [
+          "fma_tick",
+          0.0017149506659335288
+        ],
+        [
+          "fm_voice_len",
+          0.0011040024743401758
+        ]
+      ]
+    }
+  },
+  "default_build_checks": {
+    "full-map-budget-default-check.log": {
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-default-check.log",
+      "sha256": "615d8b728f16fef019af4fa1df0ed659b6aa36b0a160363408b27022da9e6141",
+      "skipped": [
+        "[SKIP] needs /Users/jrold/Downloads/octabam/out/mainos_perky_machine.bin and /Users/jrold/Downloads/octabam/out/perky/machine-canary/packed and /Users/jrold/Downloads/octabam/out/platform-perky-machine/platform (the multi-machine canary writes these; run it, or pass --image/--packed/--platform explicitly)",
+        "[SKIP] PERKY CF odd-access: no generated dir /Users/jrold/Downloads/octabam/out/perky/cf-final/generated (needs tools/perky/build_cf_final.py and its three inputs)",
+        "[SKIP] verify_set: no project (OT_PROJECT=<dir> or --project)",
+        "[SKIP] fragmented FX runtime: needs OT_PROJECT",
+        "[SKIP] PERKY probe port: set OT_PROJECT to a stock project fixture",
+        "all runnable checks passed (a [SKIP] line above names what did not run); out/mainos_bus.bin restored to the shipping build"
+      ]
+    },
+    "full-map-budget-refhash.log": {
+      "receipt": "/Users/jrold/Downloads/octabam/out/perky/hybrid/full-map-budget-refhash.log",
+      "sha256": "71a9e4ecf2fe8ec9ede78ff28cb0a9100dee30445be1aa6aea94b94efd2fdc48",
+      "skipped": []
+    }
+  },
+  "build_receipt_sha256": "36a7afb9f7c49c90f1035564c6642993afb93229feb4ac372b47219a4b34f06c",
+  "source_snapshot_manifest_sha256": "775d8136386e86760d205e4e799d40a3649c9bdba2c08f76624245513384c097",
+  "source_sha256": {
+    "tools/verify/qualify_perky_budget_optimized.py": "53442ef4cda4161aba49c0a9b139cb9a8061430283c71c1e98aa0d28feec66b0"
+  },
+  "limits": [
+    "Same native clocks and fixed measuring binary as calibration; budget was not changed.",
+    "All fourteen stock FX and all eight track outputs active in workload rows; source state/PCM/shared RNG checked against independent originals.",
+    "Model correctness and nominal deadline passes are separate from the calibrated performance gate.",
+    "Seven ceilings assessed on sustained rows; interactive lifecycle/matrix/scenes additionally assess the four ISR ceilings. Whole-CPU ACK statistics were not captured for interactive runs.",
+    "The working-envelope budget is an engineering target, not a measured physical safe threshold.",
+    "No physical flash or performance qualification; no new release or handoff bundle."
+  ]
+}

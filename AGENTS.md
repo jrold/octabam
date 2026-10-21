@@ -145,6 +145,8 @@ moment it costs real work, and add its line here.
 - [Reading `a0` exposes the fractional left shift](docs/contributing/TRAPS.md#trap-a0) — integer use of a0 is 2× the multiplier. Pin it with a predictable-arithmetic test.
 - [`asr #n,a,a` leaves the remainder in a0 and Z tests all 56 bits](docs/contributing/TRAPS.md#trap-asr-a0) — reload clean (`move a,x1 / move x1,a / tst a`) before a `teq`/`cmp` snap.
 - [A logical op leaves A2 stale; the next store saturates](docs/contributing/TRAPS.md#trap-a2-stale) — use the Tcc conditional transfers, not hand-rolled sign masks.
+- [A masked DMA halfword can keep a stale accumulator extension](docs/contributing/TRAPS.md#trap-dma-halfword-a2) — reload A1/B1 before accumulator comparisons or `DO B`.
+- [A fractional interpolation table can differ from rational division](docs/contributing/TRAPS.md#trap-rational-approximation) — the original clock permits one source LSB; exact paths need an integer residual correction.
 - [A Tcc pair sharing one compare breaks if arithmetic lands between](docs/contributing/TRAPS.md#trap-tcc-pair) — park the compare's result; check what the code below assumed about condition codes.
 - [`move a,b` limits; `tfr a,b` moves all 56 bits](docs/contributing/TRAPS.md#trap-move-tfr) — interchangeable only when the source fits 24 bits.
 - [`Tcc` takes a register source; `clr` takes an accumulator](docs/contributing/TRAPS.md#trap-tcc-operands) — move the value through `x0`.
@@ -163,6 +165,8 @@ moment it costs real work, and add its line here.
 - [The vendored AGU mis-stepped a pre-decrement from a modulo base](docs/contributing/TRAPS.md#trap-agu-modulo) — fixed in `agu.h`; the bit-identity gates audit it.
 - [A rewritten trampoline is not retranslated](docs/contributing/TRAPS.md#trap-trampoline) — never rewrite emulated code in place (`r.emac_slots`).
 - [A measurement can be structurally blind to what it rules out](docs/contributing/TRAPS.md#trap-blind-instrument) — before a null result, ask what the instrument cannot see; before-step IRQ observers must distinguish observation from execution (private-stack switch/RTE window controls).
+- [Selector coverage does not establish sustained algorithm timing](docs/contributing/TRAPS.md#trap-sustained-algorithm-coverage) — require matched sustained Resonant Snare, Bass and MODE-lock rows with runtime selection, active audio and frozen budgets; preserve historical Slap reports.
+- [The source seam discards its JSR return](docs/contributing/TRAPS.md#trap-source-return) — a paired DSP harness needs the stock caller's stack shape; require both PCM channels and both complete contexts against solo runs.
 - [A probe builder's success label is not qualification](docs/contributing/TRAPS.md#trap-hybrid-receipts) — bind sustained timing, active audio, lifecycle and timer evidence to the actual image and recorded source commit.
 - [A bus client that registers and writes zero steals everyone's level](docs/contributing/TRAPS.md#trap-bus-zero-client) — N/(N+1) dilution; gate registration on the knob.
 - [r7 scratch `$00..$83` is the per-instance block; `$84+` hangs the unit](docs/contributing/TRAPS.md#trap-r7-scratch) — the slot census of the source is the truth, not the header map.
@@ -188,6 +192,7 @@ moment it costs real work, and add its line here.
 - [The boot verifier booted the wrong image](docs/contributing/TRAPS.md#trap-boot-verifier) — a verifier that reads `out/` must know who wrote it last.
 - [`make … | grep | tail` reports tail's exit code](docs/contributing/TRAPS.md#trap-pipe-exit) — `> log; echo $?`.
 - [Matching an author's bytes with GNU as](docs/contributing/TRAPS.md#trap-gnu-as) — `lea SYM:l` for same-unit labels; `moveq`; the `-Ttext` 2-mod-4 `nop`.
+- [ColdFire alignment padding can execute as zero halfwords](docs/contributing/TRAPS.md#trap-cf-live-alignment) — use explicit `.balignw 4,0x4e71` in live fallthrough and inspect the final disassembly.
 - [A loader draft clobbered d0 and reused a0 after the hash](docs/contributing/TRAPS.md#trap-loader-regs) — `verify_dram_boot` watches entry and `fatal`.
 - [Fixed `/tmp` names corrupted parallel builds](docs/contributing/TRAPS.md#trap-tmp-race) — mkdtemp per process now; a failure moving between remixes is a shared-scratch race.
 - [Replacing a stock routine can halt every other caller](docs/contributing/TRAPS.md#trap-stock-callee) — diff the routine and its callers with `tools/build/where.py`.
@@ -198,6 +203,13 @@ moment it costs real work, and add its line here.
 - [A CF optimization assumed initialization values never change](docs/contributing/TRAPS.md#trap-cf-engine-invariants) — trace every writer and compare fresh triggers, controls, PCM, state and RNG.
 - [GCC option scopes can outline every sample-loop primitive](docs/contributing/TRAPS.md#trap-cf-inline-options) — compile with inline-missed diagnostics; match helper/caller options and measure actual ColdFire code.
 - [Native-endian decoded PCM is not an ARM table](docs/contributing/TRAPS.md#trap-cf-pcm-endian) — compare decoded bytes on ColdFire; a host round-trip is blind to the byte order.
+- [Host structure offsets do not describe a ColdFire object](docs/contributing/TRAPS.md#trap-cf-host-abi) — use target alignment and loaded layout records; calibrate the fallback oracle before reporting handoff failures.
+- [A detoured idle loop can contain real work](docs/contributing/TRAPS.md#trap-idle-return) — preserve the actual borrowed-call return PC, execute initialization, and skip only an empty worker queue.
+- [Frame-entry controls may not be the controls that render](docs/contributing/TRAPS.md#trap-event-boundary) — observe the actual event boundary; calibrate one persistent author stream before qualifying migration.
+- [The editor bank is not the playing bank latch](docs/contributing/TRAPS.md#trap-playing-bank) — gate the playing byte and frame-ISR latch; preserve editor and per-track observations separately.
+- [Audio retiming can expose stock's PIO write race](docs/contributing/TRAPS.md#trap-pio-retiming) — retain CPU/IRQ/card evidence and qualify with the existing author-proven first-sector fix explicitly in the image.
+- [Diagnostic Part tests bypassed production resets](docs/contributing/TRAPS.md#trap-production-generation) — require staged selectors, actual generation events, initializer-based audio and full-ISR reset timing; keep failed production admission separate.
+- [A worst post-Part frame is not necessarily a reset frame](docs/contributing/TRAPS.md#trap-reset-profile) — profile actual generation frames and global peaks separately; require same-image normal/profile cycle-total identity.
 - [A BSS readiness flag can skip initialization](docs/contributing/TRAPS.md#trap-cf-ready-bss) — use a loaded nonzero cookie and poison BSS in the target probe.
 - [A STATIC fixture can play a tiny region without streaming](docs/contributing/TRAPS.md#trap-static-fixture-markers) — use the STATIC marker records; check sustained source audio and card reads after PLAY.
 - [Auto-grown emulator pages bypass read watches](docs/contributing/TRAPS.md#trap-automap-read-watch) — map benchmark assets explicitly and separate instruction-stream reads from data traffic.
@@ -205,7 +217,24 @@ moment it costs real work, and add its line here.
 - [Two target instances can share branch-predictor history](docs/contributing/TRAPS.md#trap-shared-predictor) — isolate model state per image and prove same-image and comparison-partner invariance before using paired cycle counts.
 - [An interactive run can accept an inactive cycle-clock flag](docs/contributing/TRAPS.md#trap-panel-cycle-clock) — validate clock activation in stdout; the checked workaround runs one sequencer frame before panel control.
 - [DSP source records contain controls, not rendered PCM](docs/contributing/TRAPS.md#trap-source-control-record) — use post-FX read-back for DSP voices and source PCM for CF/sample tracks.
+- [Stock host DMA words retain a nonzero upper byte](docs/contributing/TRAPS.md#trap-host-dma-upper-byte) — mask every 16-bit packet field; poison upper bytes in the parser gate.
+- [Delayed PCM still needs the current stock split](docs/contributing/TRAPS.md#trap-delayed-source-split) — carry old event timing separately from the current source packet framing.
+- [A native sample block is not an OT audio block](docs/contributing/TRAPS.md#trap-native-block-clock) — price the 48-to-44.1 kHz adapter and combined ISR; keep diagnostic sample traces in the host shadow.
 - [A panel's quit reply precedes its final reports](docs/contributing/TRAPS.md#trap-panel-quit-reports) — wait for child exit before reading observer files.
+- [Nominal emulator headroom can admit an overloaded design](docs/contributing/TRAPS.md#trap-empirical-budget) — replay hardware-labeled configurations, price background work and enforce the fixed working-envelope target; unmatched maxima cannot calibrate a hardware multiplier.
+- [An epoch check is not atomic publication](docs/contributing/TRAPS.md#trap-epoch-publication) — give IRQ and worker state single writers, retire cancelled jobs in the worker, and arm a new request only after completion drains.
+- [A wrapped sequence is not a startup flag](docs/contributing/TRAPS.md#trap-sequence-startup) — use a deterministically reset startup latch; test a backend request at full 32-bit sequence zero after wrap.
+- [A long DSP interrupt can stop the emulator's peripheral clock](docs/contributing/TRAPS.md#trap-long-irq-peripherals) — use the isolated timed-service correction and its same-request negative control.
+- [An HI08 halfword also writes the preceding byte lane](docs/contributing/TRAPS.md#trap-hi08-halfword) — preserve TX/ICR lanes, pending stock replies and transfer ownership; exact voice PCM still needs the full stock-audio gate.
+- [Raw DSP SR storage can contain unresolved condition flags](docs/contributing/TRAPS.md#trap-dsp-lazy-ccr) — compare architectural `getSR()` at both IRQ boundaries.
+- [Stock source PCM can disappear before FX despite exact synthesis](docs/contributing/TRAPS.md#trap-amp-dropout) — measure AMP and every audio chain; partial RAM clears do not establish the startup cause.
+
+- [A backend clock restore can undo another algorithm's trigger](docs/contributing/TRAPS.md#trap-full-map-clock) — restore only an unchanged Hat clock; qualify actual split CF PCM.
+- [A missing observer environment can skip a real worker](docs/contributing/TRAPS.md#trap-full-map-worker) — bind queue counters and require actual worker completion.
+- [Persisted Part edits may not publish live controls](docs/contributing/TRAPS.md#trap-full-map-controls) — use real locks/panel delivery and assert actual selector tuples.
+- [First Hat use may follow the generation event](docs/contributing/TRAPS.md#trap-full-map-first-hat) — restore/export all three limbs before lazy-use backend cutover.
+- [A buffered read beyond the payload can return sector padding](docs/contributing/TRAPS.md#trap-buffered-eof) — use declared payload/CRC and pin the complete asset file.
+- [Batch DSP peeks do not run after interactive quit](docs/contributing/TRAPS.md#trap-interactive-dsp-peek) — use live DSP readback before quit; wait for final reports.
 
 ## How claims are written here
 

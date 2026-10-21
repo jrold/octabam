@@ -25,7 +25,7 @@ c = address.c
 
 def main():
     tag = address.TAG
-    c.OUT = ROOT/f'out/perky/four-renderer-{tag}'
+    c.OUT = Path(os.environ.get('PERKY_FOUR_RENDERER_WORK',ROOT/f'out/perky/four-renderer-{tag}'))
     c.OUT.mkdir(parents=True,exist_ok=True)
     c.HOST.parent.mkdir(parents=True,exist_ok=True)
     c.build_host(); c.CYCLE_METER = True

@@ -1,0 +1,1170 @@
+{
+  "schema": "perky-noise-hat-taps-v1",
+  "status": "FUNCTIONAL_CURRENT_FRAME_PROTOTYPE_NOT_TIMING_QUALIFIED",
+  "source_commit": "4eeae750caf8ba98144dd9ad8ac3b68299e21982",
+  "source_checkpoint_note": "Checkpoint plus uncommitted source fingerprints; no release commit.",
+  "hardware_validated": false,
+  "image_sha256": "3a1e2937116af7e3982b386b8632112ebf0b81c46db67c9dd810e4bfe96f7088",
+  "runtime_sha256": "3919a81862dcd54ba9d2c0ffa20f3866daaa42bf0eb7c3c84b4490ead8e661f0",
+  "version": "PKNHD1",
+  "build_number": 18,
+  "build_receipt_sha256": "7788ae72540992f1258fc56f0ecf4d9a653346fa0db1226869ef5fdae80c4c53",
+  "memory": {
+    "schema": "perky-noise-hat-taps-memory-v1",
+    "A_program": [
+      {
+        "name": "irq",
+        "start": 4637,
+        "length": 1
+      },
+      {
+        "name": "embed",
+        "start": 245155,
+        "length": 188
+      },
+      {
+        "name": "render",
+        "start": 4593,
+        "length": 44
+      },
+      {
+        "name": "frame",
+        "start": 4359,
+        "length": 234
+      },
+      {
+        "name": "segment",
+        "start": 261539,
+        "length": 90
+      },
+      {
+        "name": "clock_prepare",
+        "start": 261711,
+        "length": 72
+      },
+      {
+        "name": "clock_finish",
+        "start": 245476,
+        "length": 95
+      },
+      {
+        "name": "delay",
+        "start": 261629,
+        "length": 82
+      },
+      {
+        "name": "noise_hat_classic_mode0",
+        "start": 212387,
+        "length": 204
+      },
+      {
+        "name": "noise_hat_classic_mode1",
+        "start": 6820,
+        "length": 171
+      },
+      {
+        "name": "noise_hat_pulse_voice",
+        "start": 229136,
+        "length": 111
+      },
+      {
+        "name": "noise_hat_phase",
+        "start": 212591,
+        "length": 196
+      },
+      {
+        "name": "noise_hat_filter",
+        "start": 212787,
+        "length": 130
+      },
+      {
+        "name": "noise_hat_envelope",
+        "start": 4096,
+        "length": 263
+      },
+      {
+        "name": "add",
+        "start": 212917,
+        "length": 21
+      },
+      {
+        "name": "multiply",
+        "start": 229062,
+        "length": 38
+      }
+    ],
+    "B_program": [
+      {
+        "name": "synth_seam_glue.asm",
+        "start": 6244,
+        "length": 86
+      },
+      {
+        "name": "pk_three_finish",
+        "start": 6410,
+        "length": 12
+      },
+      {
+        "name": "noise_tone_math.asm",
+        "start": 245344,
+        "length": 132
+      },
+      {
+        "name": "simple_drum_voice.asm",
+        "start": 6330,
+        "length": 80
+      },
+      {
+        "name": "simple_drum_envelope.asm",
+        "start": 3520,
+        "length": 194
+      },
+      {
+        "name": "simple_drum_frequency.asm",
+        "start": 3919,
+        "length": 42
+      },
+      {
+        "name": "simple_drum_oscillator.asm",
+        "start": 3714,
+        "length": 205
+      },
+      {
+        "name": "simple_drum_delta.asm",
+        "start": 228771,
+        "length": 164
+      },
+      {
+        "name": "pk_multi_simple_init",
+        "start": 245712,
+        "length": 48
+      },
+      {
+        "name": "fold_drum_voice.asm",
+        "start": 7583,
+        "length": 189
+      },
+      {
+        "name": "fold_drum2_voice.asm",
+        "start": 7772,
+        "length": 262
+      },
+      {
+        "name": "pk_multi_fold_init",
+        "start": 262077,
+        "length": 61
+      },
+      {
+        "name": "pk_multi_fold2_init",
+        "start": 228935,
+        "length": 65
+      },
+      {
+        "name": "fold_rng_glue",
+        "start": 212944,
+        "length": 48
+      },
+      {
+        "name": "fold_drum2_seam.asm",
+        "start": 229287,
+        "length": 68
+      },
+      {
+        "name": "pk_three_fold2_trigger",
+        "start": 3961,
+        "length": 36
+      },
+      {
+        "name": "pk_three_common_controls",
+        "start": 261952,
+        "length": 125
+      },
+      {
+        "name": "pk_three_common_trigger",
+        "start": 229355,
+        "length": 21
+      },
+      {
+        "name": "pk_three_frame",
+        "start": 245654,
+        "length": 58
+      },
+      {
+        "name": "pk_three_segment",
+        "start": 261801,
+        "length": 151
+      },
+      {
+        "name": "pk_source_clock_prepare",
+        "start": 245582,
+        "length": 72
+      },
+      {
+        "name": "pk_source_clock_finish",
+        "start": 3997,
+        "length": 67
+      },
+      {
+        "name": "complex_drum_production_voice",
+        "start": 8034,
+        "length": 106
+      },
+      {
+        "name": "pk_multi_complex_init",
+        "start": 229000,
+        "length": 62
+      },
+      {
+        "name": "mapped prefetch guard NOPs",
+        "start": 262138,
+        "length": 6
+      },
+      {
+        "name": "experimental private upper guard NOPs",
+        "start": 8186,
+        "length": 6
+      },
+      {
+        "name": "stock startup clear preserving code tails",
+        "start": 4066,
+        "length": 48
+      }
+    ],
+    "A_program_words": 1940,
+    "shared_capacity": 2404,
+    "shared_words": 2308,
+    "shared_free": 96,
+    "private_P_used": {
+      "A": 761,
+      "B": 1333
+    },
+    "A_private_X": [
+      [
+        "resident limbs and preboot initializer padding",
+        14336,
+        14578
+      ],
+      [
+        "scratch and hold/RNG initializer",
+        14592,
+        14720
+      ],
+      [
+        "native stereo PCM",
+        14720,
+        14760
+      ],
+      [
+        "request cursors and initializer",
+        14768,
+        14784
+      ],
+      [
+        "source registers",
+        14784,
+        14820
+      ],
+      [
+        "feedback return mailbox plus initializer guard",
+        14832,
+        14866
+      ],
+      [
+        "native clock, gains and initializer guard",
+        14883,
+        14900
+      ]
+    ],
+    "A_private_X_words": 513,
+    "A_private_X_capacity": 616,
+    "A_low_Y_words": 2093,
+    "A_low_Y_capacity": 2139,
+    "CF_ring_bytes": 9610,
+    "host_vector": null,
+    "return_carrier": {
+      "core": "A",
+      "buffer": "stock X:2600/4600 readback banks",
+      "bits": "low eight bits of each second halfword in the first 48 stereo sample words; stripped before stock CF reads",
+      "additional_DMA_words": 0
+    },
+    "retained_FX": "all twelve code/dispatch bytes exact",
+    "notes": [
+      "A source hook renders, processes delay taps and resamples the CURRENT source frame, then jumps to stock AMP/FX.",
+      "B retains its single admitted oscillator portfolio; no paired context exchange.",
+      "Shared storage counted once. Ring and control shadow remain CF-owned; inner histories, delay arithmetic and clock are A-owned.",
+      "Private-B tail boundary and new source/readback hooks remain hardware-unqualified."
+    ]
+  },
+  "transport": {
+    "evolving_state_round_trip_words": 0,
+    "additional_host_commands": 0,
+    "additional_DMA_words": 0,
+    "feedback_mailbox_words": 24,
+    "added_source_queue_latency_OT_samples": 0,
+    "feedback_latency_frames": 3,
+    "CF_new_SR_writes": 0,
+    "CF_new_poll_loops": 0,
+    "source_record_capacity_halfwords": 168,
+    "conservative_maximum_packet_halfwords": 154,
+    "minimum_delay_tap_native_samples": 573,
+    "pending_guard": "pending < 573; actual production function boundary-tested",
+    "ownership": "A: original synthesis histories, delay arithmetic and exact native resampling. CF: original controls and 4805-sample ring.",
+    "latency_proof": "Current sequence-tagged source PCM checked before AMP against current CF control event; delayed returns carry ring writes only."
+  },
+  "deadline_us": 362.81179138321994,
+  "rows": [
+    {
+      "reference": false,
+      "panel_mode": 1,
+      "firmware_mode": 1,
+      "full_ISR": {
+        "frames": 4109,
+        "max_cycles": 97902,
+        "max_us": 370.84090909090907,
+        "mean_us": 233.9840335700642,
+        "deadline_misses": 9
+      },
+      "private_stack_peak_bytes": 940,
+      "native_samples": [
+        71562,
+        71562,
+        71562,
+        71562
+      ],
+      "CF_frame_calls": [
+        4109,
+        4109,
+        4109,
+        4109
+      ],
+      "transport_counts": {
+        "pk_nhr_sequence": 4109,
+        "pk_nhr_dma_reads": 4108,
+        "pk_nhr_dma_done": 4108,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4106,
+        "pk_nhr_packet_words": 448288,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2,
+        "pk_nht_pending_max": 52,
+        "pk_nht_tap_words": 357810
+      },
+      "exact": {
+        "requests": 7874,
+        "native_samples": 71562,
+        "source_frames": 4107,
+        "source_PCM_mismatches": 0,
+        "source_significant": 65552,
+        "source_peak": 686418,
+        "state_mismatches": 0,
+        "feedback_frames": 4106,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 4106,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65724,
+          "post_FX_significant": 65692,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65725,
+          "post_FX_significant": 65694,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77484,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78004,
+          "post_FX_significant": 65680,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65697,
+          "post_FX_significant": 65669,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "DSP controls/taps; PCM witnessed before AMP",
+          "source_significant": 65552,
+          "post_FX_significant": 65550,
+          "source_peak": 686418,
+          "post_FX_peak": 693895,
+          "control_record_significant": 60222
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72913,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76412,
+          "post_FX_significant": 65694,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "image_sha256": "3a1e2937116af7e3982b386b8632112ebf0b81c46db67c9dd810e4bfe96f7088",
+      "runtime_sha256": "3919a81862dcd54ba9d2c0ffa20f3866daaa42bf0eb7c3c84b4490ead8e661f0",
+      "raw_row_sha256": "c5ddc93ba0027a3abc19b8c86386e86f0b8dcfb2d878147edbd4036c2784de7b",
+      "added_latency_OT_samples": 0
+    },
+    {
+      "reference": false,
+      "panel_mode": 2,
+      "firmware_mode": 0,
+      "full_ISR": {
+        "frames": 4109,
+        "max_cycles": 98336,
+        "max_us": 372.4848484848485,
+        "mean_us": 236.18148355052102,
+        "deadline_misses": 10
+      },
+      "private_stack_peak_bytes": 940,
+      "native_samples": [
+        71562,
+        71562,
+        71562,
+        71562
+      ],
+      "CF_frame_calls": [
+        4109,
+        4109,
+        4109,
+        4109
+      ],
+      "transport_counts": {
+        "pk_nhr_sequence": 4109,
+        "pk_nhr_dma_reads": 4108,
+        "pk_nhr_dma_done": 4108,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4106,
+        "pk_nhr_packet_words": 522250,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2,
+        "pk_nht_pending_max": 52,
+        "pk_nht_tap_words": 357810
+      },
+      "exact": {
+        "requests": 7874,
+        "native_samples": 71562,
+        "source_frames": 4107,
+        "source_PCM_mismatches": 0,
+        "source_significant": 65544,
+        "source_peak": 768842,
+        "state_mismatches": 0,
+        "feedback_frames": 4106,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 4106,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65724,
+          "post_FX_significant": 65692,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65725,
+          "post_FX_significant": 65694,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77484,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78004,
+          "post_FX_significant": 65680,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65697,
+          "post_FX_significant": 65669,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "DSP controls/taps; PCM witnessed before AMP",
+          "source_significant": 65544,
+          "post_FX_significant": 65536,
+          "source_peak": 768842,
+          "post_FX_peak": 777218,
+          "control_record_significant": 56001
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72913,
+          "post_FX_significant": 65690,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76412,
+          "post_FX_significant": 65694,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "image_sha256": "3a1e2937116af7e3982b386b8632112ebf0b81c46db67c9dd810e4bfe96f7088",
+      "runtime_sha256": "3919a81862dcd54ba9d2c0ffa20f3866daaa42bf0eb7c3c84b4490ead8e661f0",
+      "raw_row_sha256": "bb094ddbc3be99720ece4e3831985ac1776723a3ba1d16f7e01af8c34ee5e5e1",
+      "added_latency_OT_samples": 0
+    },
+    {
+      "reference": false,
+      "panel_mode": 3,
+      "firmware_mode": 2,
+      "full_ISR": {
+        "frames": 4108,
+        "max_cycles": 94645,
+        "max_us": 358.5037878787879,
+        "mean_us": 223.93638521288838,
+        "deadline_misses": 0
+      },
+      "private_stack_peak_bytes": 940,
+      "native_samples": [
+        71545,
+        71545,
+        71545,
+        71545
+      ],
+      "CF_frame_calls": [
+        4108,
+        4108,
+        4108,
+        4108
+      ],
+      "transport_counts": {
+        "pk_nhr_sequence": 4108,
+        "pk_nhr_dma_reads": 4107,
+        "pk_nhr_dma_done": 4107,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 4105,
+        "pk_nhr_packet_words": 189048,
+        "pk_nhr_initializations": 1,
+        "pk_nhr_lag_min": 2,
+        "pk_nhr_lag_max": 2,
+        "pk_nht_pending_max": 0,
+        "pk_nht_tap_words": 0
+      },
+      "exact": {
+        "requests": 7872,
+        "native_samples": 71545,
+        "source_frames": 4106,
+        "source_PCM_mismatches": 0,
+        "source_significant": 64834,
+        "source_peak": 634671,
+        "state_mismatches": 0,
+        "feedback_frames": 4105,
+        "feedback_mismatches": 0,
+        "clock_mismatches": 0,
+        "ring_frames": 0,
+        "ring_mismatches": 0,
+        "examples": []
+      },
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65708,
+          "post_FX_significant": 65676,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65709,
+          "post_FX_significant": 65678,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77464,
+          "post_FX_significant": 65674,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 77982,
+          "post_FX_significant": 65664,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65681,
+          "post_FX_significant": 65653,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "DSP controls/taps; PCM witnessed before AMP",
+          "source_significant": 64834,
+          "post_FX_significant": 64833,
+          "source_peak": 634671,
+          "post_FX_peak": 641585,
+          "control_record_significant": 45197
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72894,
+          "post_FX_significant": 65674,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76390,
+          "post_FX_significant": 65678,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "image_sha256": "3a1e2937116af7e3982b386b8632112ebf0b81c46db67c9dd810e4bfe96f7088",
+      "runtime_sha256": "3919a81862dcd54ba9d2c0ffa20f3866daaa42bf0eb7c3c84b4490ead8e661f0",
+      "raw_row_sha256": "b56feaf9aa0cc94a66a3befeb31c57ea660c55631007dde2f4f7e5251838fbfa",
+      "added_latency_OT_samples": 0
+    },
+    {
+      "reference": true,
+      "panel_mode": 1,
+      "firmware_mode": 1,
+      "full_ISR": {
+        "frames": 4111,
+        "max_cycles": 103221,
+        "max_us": 390.9886363636364,
+        "mean_us": 253.27554860205066,
+        "deadline_misses": 10
+      },
+      "private_stack_peak_bytes": 1212,
+      "native_samples": [
+        71597,
+        71597,
+        71597,
+        71597
+      ],
+      "CF_frame_calls": [
+        4111,
+        4111,
+        4111,
+        4111
+      ],
+      "transport_counts": {
+        "pk_nhr_sequence": 0,
+        "pk_nhr_dma_reads": 0,
+        "pk_nhr_dma_done": 0,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 0,
+        "pk_nhr_packet_words": 0,
+        "pk_nhr_initializations": 0,
+        "pk_nhr_lag_min": 4294967295,
+        "pk_nhr_lag_max": 0,
+        "pk_nht_pending_max": 0,
+        "pk_nht_tap_words": 0
+      },
+      "exact": null,
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65756,
+          "post_FX_significant": 65724,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65757,
+          "post_FX_significant": 65726,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77523,
+          "post_FX_significant": 65722,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78048,
+          "post_FX_significant": 65712,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65729,
+          "post_FX_significant": 65701,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 65600,
+          "post_FX_significant": 65582,
+          "source_peak": 686418,
+          "post_FX_peak": 693895
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72953,
+          "post_FX_significant": 65722,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76457,
+          "post_FX_significant": 65726,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "image_sha256": "3a1e2937116af7e3982b386b8632112ebf0b81c46db67c9dd810e4bfe96f7088",
+      "runtime_sha256": "3919a81862dcd54ba9d2c0ffa20f3866daaa42bf0eb7c3c84b4490ead8e661f0",
+      "raw_row_sha256": "386352d95c7a598d32915481f775fdac766200b4e8bac7f2750e837749c7c265",
+      "added_latency_OT_samples": 0
+    },
+    {
+      "reference": true,
+      "panel_mode": 2,
+      "firmware_mode": 0,
+      "full_ISR": {
+        "frames": 4114,
+        "max_cycles": 107198,
+        "max_us": 406.0530303030303,
+        "mean_us": 269.318537219546,
+        "deadline_misses": 10
+      },
+      "private_stack_peak_bytes": 1212,
+      "native_samples": [
+        71649,
+        71649,
+        71649,
+        71649
+      ],
+      "CF_frame_calls": [
+        4114,
+        4114,
+        4114,
+        4114
+      ],
+      "transport_counts": {
+        "pk_nhr_sequence": 0,
+        "pk_nhr_dma_reads": 0,
+        "pk_nhr_dma_done": 0,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 0,
+        "pk_nhr_packet_words": 0,
+        "pk_nhr_initializations": 0,
+        "pk_nhr_lag_min": 4294967295,
+        "pk_nhr_lag_max": 0,
+        "pk_nht_pending_max": 0,
+        "pk_nht_tap_words": 0
+      },
+      "exact": null,
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65804,
+          "post_FX_significant": 65772,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65805,
+          "post_FX_significant": 65774,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77582,
+          "post_FX_significant": 65770,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78112,
+          "post_FX_significant": 65760,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65777,
+          "post_FX_significant": 65749,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 65640,
+          "post_FX_significant": 65616,
+          "source_peak": 768842,
+          "post_FX_peak": 777218
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 73012,
+          "post_FX_significant": 65770,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76524,
+          "post_FX_significant": 65774,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "image_sha256": "3a1e2937116af7e3982b386b8632112ebf0b81c46db67c9dd810e4bfe96f7088",
+      "runtime_sha256": "3919a81862dcd54ba9d2c0ffa20f3866daaa42bf0eb7c3c84b4490ead8e661f0",
+      "raw_row_sha256": "324aa3f270f487d338f3e87db66a500c68394f12a97cd8508cebe8efc3b3ddc6",
+      "added_latency_OT_samples": 0
+    },
+    {
+      "reference": true,
+      "panel_mode": 3,
+      "firmware_mode": 2,
+      "full_ISR": {
+        "frames": 4110,
+        "max_cycles": 99410,
+        "max_us": 376.5530303030303,
+        "mean_us": 243.35392612253926,
+        "deadline_misses": 10
+      },
+      "private_stack_peak_bytes": 1212,
+      "native_samples": [
+        71579,
+        71579,
+        71579,
+        71579
+      ],
+      "CF_frame_calls": [
+        4110,
+        4110,
+        4110,
+        4110
+      ],
+      "transport_counts": {
+        "pk_nhr_sequence": 0,
+        "pk_nhr_dma_reads": 0,
+        "pk_nhr_dma_done": 0,
+        "pk_nhr_failures": 0,
+        "pk_nhr_consumed": 0,
+        "pk_nhr_packet_words": 0,
+        "pk_nhr_initializations": 0,
+        "pk_nhr_lag_min": 4294967295,
+        "pk_nhr_lag_max": 0,
+        "pk_nht_pending_max": 0,
+        "pk_nht_tap_words": 0
+      },
+      "exact": null,
+      "audio": {
+        "T1": {
+          "source_kind": "PCM",
+          "source_significant": 65740,
+          "post_FX_significant": 65708,
+          "source_peak": 1038766,
+          "post_FX_peak": 1188229
+        },
+        "T2": {
+          "source_kind": "PCM",
+          "source_significant": 65741,
+          "post_FX_significant": 65710,
+          "source_peak": 946062,
+          "post_FX_peak": 948899
+        },
+        "T3": {
+          "source_kind": "PCM",
+          "source_significant": 77504,
+          "post_FX_significant": 65706,
+          "source_peak": 2560000,
+          "post_FX_peak": 850973
+        },
+        "T4": {
+          "source_kind": "PCM",
+          "source_significant": 78026,
+          "post_FX_significant": 65696,
+          "source_peak": 2560000,
+          "post_FX_peak": 1090278
+        },
+        "T5": {
+          "source_kind": "PCM",
+          "source_significant": 65713,
+          "post_FX_significant": 65685,
+          "source_peak": 781785,
+          "post_FX_peak": 790301
+        },
+        "T6": {
+          "source_kind": "PCM",
+          "source_significant": 64882,
+          "post_FX_significant": 64865,
+          "source_peak": 634671,
+          "post_FX_peak": 641585
+        },
+        "T7": {
+          "source_kind": "PCM",
+          "source_significant": 72933,
+          "post_FX_significant": 65706,
+          "source_peak": 2560000,
+          "post_FX_peak": 808803
+        },
+        "T8": {
+          "source_kind": "PCM",
+          "source_significant": 76435,
+          "post_FX_significant": 65710,
+          "source_peak": 2560000,
+          "post_FX_peak": 832742
+        }
+      },
+      "playback_card_reads": 568,
+      "image_sha256": "3a1e2937116af7e3982b386b8632112ebf0b81c46db67c9dd810e4bfe96f7088",
+      "runtime_sha256": "3919a81862dcd54ba9d2c0ffa20f3866daaa42bf0eb7c3c84b4490ead8e661f0",
+      "raw_row_sha256": "46c9db915d5a6897f57be89483680dc3accbb171f98039b03789d725429b1a52",
+      "added_latency_OT_samples": 0
+    }
+  ],
+  "persistent_gate": {
+    "status": "PASS_CURRENT_SOURCE_PCM_FEEDBACK_STATE_CLOCK",
+    "cases": [
+      {
+        "panel": 1,
+        "corner": 0,
+        "frames": 80,
+        "native_samples": 1394,
+        "max_packet_halfwords": 102,
+        "peak_pending_writes": 52
+      },
+      {
+        "panel": 1,
+        "corner": 1,
+        "frames": 80,
+        "native_samples": 1394,
+        "max_packet_halfwords": 102,
+        "peak_pending_writes": 52
+      },
+      {
+        "panel": 1,
+        "corner": 2,
+        "frames": 80,
+        "native_samples": 1394,
+        "max_packet_halfwords": 102,
+        "peak_pending_writes": 52
+      },
+      {
+        "panel": 2,
+        "corner": 0,
+        "frames": 80,
+        "native_samples": 1394,
+        "max_packet_halfwords": 102,
+        "peak_pending_writes": 52
+      },
+      {
+        "panel": 2,
+        "corner": 1,
+        "frames": 80,
+        "native_samples": 1394,
+        "max_packet_halfwords": 102,
+        "peak_pending_writes": 52
+      },
+      {
+        "panel": 2,
+        "corner": 2,
+        "frames": 80,
+        "native_samples": 1394,
+        "max_packet_halfwords": 102,
+        "peak_pending_writes": 52
+      },
+      {
+        "panel": 3,
+        "corner": 0,
+        "frames": 80,
+        "native_samples": 1394,
+        "max_packet_halfwords": 12,
+        "peak_pending_writes": 0
+      },
+      {
+        "panel": 3,
+        "corner": 1,
+        "frames": 80,
+        "native_samples": 1394,
+        "max_packet_halfwords": 12,
+        "peak_pending_writes": 0
+      },
+      {
+        "panel": 3,
+        "corner": 2,
+        "frames": 80,
+        "native_samples": 1394,
+        "max_packet_halfwords": 12,
+        "peak_pending_writes": 0
+      }
+    ],
+    "frames": 720,
+    "arithmetic_vectors": 2560,
+    "negative_boundary_test": "actual production guard accepts 0/52/572 and refuses 573/574/UINT32_MAX",
+    "source_sha256": {
+      "tools/verify/verify_perky_noise_hat_taps.py": "076273a8491b4270f90fafe86d29df95995b439f9d6edb8d25c045dfda7bed4d",
+      "tools/harness/perky_cf/noise_hat_taps_host.cpp": "f2cac90f016225620bf71fcd92e9149a3cbdcda9e9ea777d8253994142897aeb",
+      "tools/perky/perky_noise_hat_taps.py": "cf3fa50fc721e3277659a716fede8c67aeeaa2c733d1670fb5852ffd4a4a2aa2"
+    }
+  },
+  "observer": {
+    "status": "BUILT_ISOLATED_LONG_IRQ_PERIPHERAL_CLOCK",
+    "source_sha256": "b3c65867ad51f2e2ee78cc8e977172fd4cf15c471e40755684ce3d645db269ec",
+    "staged_sha256": "0c9fefe5abbf257954ec3ba69308fea494ad7f5fa31c75d3d3372044d9f301b0",
+    "binary_sha256": "57864c2b966dbc670fc5e42a1a87fc831ec1d2fedfaf0cd0ab5d3ad73568eb6e",
+    "commands": [
+      [
+        "/usr/bin/c++",
+        "-DDSP56300_DEBUGGER=0",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor/dsp56300/source",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kEmu/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kBase/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/asmjit/src",
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu++17",
+        "-flto",
+        "-arch",
+        "arm64",
+        "-DASMJIT_STATIC",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-c",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-taps/observer/dsp.cpp",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-taps/observer/dsp.o"
+      ],
+      [
+        "/usr/bin/c++",
+        "-DDSP56300_DEBUGGER=0",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu/../../../vendor/dsp56300/source",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kEmu/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/dsp56kBase/..",
+        "-I/Users/jrold/Downloads/octabam/vendor/dsp56300/source/asmjit/src",
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu++17",
+        "-flto",
+        "-arch",
+        "arm64",
+        "-DASMJIT_STATIC",
+        "-I/Users/jrold/Downloads/octabam/tools/emu/ot_emu",
+        "-c",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-taps/observer/machine.cpp",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-taps/observer/machine.o"
+      ],
+      [
+        "/usr/bin/c++",
+        "-O3",
+        "-flto",
+        "-arch",
+        "arm64",
+        "/Users/jrold/Downloads/octabam/out/emu/CMakeFiles/ot_emu.dir/main.cpp.o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-taps/observer/machine.o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/cf-placement-integrated/observer/periph.o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-taps/observer/dsp.o",
+        "-o",
+        "/Users/jrold/Downloads/octabam/out/perky/hybrid/noise-hat-taps/observer/ot_emu_safety",
+        "/Users/jrold/Downloads/octabam/out/emu/libot_machine.a",
+        "/Users/jrold/Downloads/octabam/out/emu/mc68k/lib68kEmu.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kEmu/libdsp56kEmu.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/dsp56kBase/libdsp56kBase.a",
+        "/Users/jrold/Downloads/octabam/out/emu/dsp56300/asmjit/libasmjit.a",
+        "-lpthread"
+      ]
+    ],
+    "base_observer_receipt_sha256": "1f547e558298670781c7e77d8dfde42467d445e9af24a23e4d1dd537fe75f156",
+    "exact_observer_header_sha256": "585922916ae6381f949078ccccffae586b73d44dcdff5a5bcb8039cf4f52bc7a",
+    "oracle_sha256": "ad74dd1e3fa26091aad3cad8025409ddb636b50b3673f1bf28e916669a63afd8",
+    "oracle_source_sha256": "18aac652089aa04d7e6f751dd8bba3314f63aa1a8bf7dfb1016fd421f7df8776",
+    "scope": "Current DSP source, resident state, rational clock, feedback and committed CF ring; original complete CF renderer. No target-time renderer added.",
+    "complete_oracle_sha256": "1d773717d6248d2820166c3a826abdaf9b0170bfa7a104230a3802fdc34be4be"
+  },
+  "verification": {
+    "make_check": "PASS: 84 shared and 4 image gates; project-specific gate skipped",
+    "make_check_log_sha256": "8a2e90e8dec9b12a4f6989c7590ce6a9d968816bb46225b9d0c9fda078851a87",
+    "refhash": "PASS: 24 local-baseline configurations bit-identical; baseline not re-saved",
+    "refhash_log_sha256": "71a9e4ecf2fe8ec9ede78ff28cb0a9100dee30445be1aa6aea94b94efd2fdc48",
+    "shipping_bus_restored_sha256": "354bdac8f2fe79696b3156a034894b1bd0d5f757ce76657ca608851089268a58"
+  },
+  "source_sha256": {
+    "tools/verify/verify_perky_noise_hat_taps_campaign.py": "b5f5fe6e4ba15969e66a7acdf2f349569d64dd572e9cca8d3aa73689e9a8b37d",
+    "modules/perky/cf_noise_hat_taps.c": "58bab0832238cf9ce2084e118ee94cab7677dcc1b240520bfd13e42e1e8580c5",
+    "modules/perky/noise_hat_taps_ring.h": "c33b2e1178513f7050ba2cb85ffe1e3101ba5155caa8ef0a0224a82b34483898",
+    "tools/perky/perky_noise_hat_taps.py": "cf3fa50fc721e3277659a716fede8c67aeeaa2c733d1670fb5852ffd4a4a2aa2",
+    "tools/perky/build_noise_hat_taps_probe.py": "d58104ababea97e89ebb082c2420b1ab5f5409edf06ddaa8dea547f2eb702ada",
+    "tools/harness/perky_cf/noise_hat_taps_engine.c": "ba5adf9a3aa6fead1800ad4377b9b5ee6a18b347f51565bb5fdbf5dc0b66deea",
+    "tools/harness/perky_cf/noise_hat_taps_host.cpp": "f2cac90f016225620bf71fcd92e9149a3cbdcda9e9ea777d8253994142897aeb",
+    "tools/harness/perky_cf/noise_hat_taps_observer.h": "585922916ae6381f949078ccccffae586b73d44dcdff5a5bcb8039cf4f52bc7a",
+    "tools/verify/verify_perky_noise_hat_taps.py": "076273a8491b4270f90fafe86d29df95995b439f9d6edb8d25c045dfda7bed4d",
+    "tools/verify/measure_perky_noise_hat_taps.py": "1d166e112962d38ae07338dca5962cec0c46c166da5139448e417d959dc1fcaa",
+    "tools/verify/build_perky_noise_hat_taps_observer.py": "db7d806bafd21ac7d22058d09b55a9ebd9a3f52ba2bed815a221ea5111a30513",
+    "tools/perky/perky_noise_hat_resident.py": "3d65aee67a56ceb52c445cda87fd59cd30e59c76d01a6ae0ae9d843674fc034c",
+    "tools/perky/perky_noise_hat_offload.py": "9fcf9c953e563232c9d97dfde506dffddbdecc60a4e547c3d9e0916ea8ecc9f1",
+    "tools/perky/source_clock.py": "44be31af5dbf9cb206b87f168f352d4a88f166319ecaa50d7f818cbf2e60a5d4",
+    "tools/harness/perky_cf/noise_hat_resident_oracle.c": "fe0edcfba68f77f239d5cb9bf69aab4ecd467473acd2f231420309f885b957b2",
+    "modules/perky/cf_noise_hat.c": "18aac652089aa04d7e6f751dd8bba3314f63aa1a8bf7dfb1016fd421f7df8776",
+    "modules/perky/cf_noise_hat_offload.c": "94332af8cc87ece3f6c482a1f557af6e7a02b514d49002d77025da47ed6e81f9",
+    "tools/perky/build_cf_placement_probe.py": "6ab484c5d8ca452e6c8d27759b18aa1caa36a1768f3d63ea1338869f3909b7cc",
+    "tools/verify/verify_perky_noise_hat_resident_boot.py": "64c9a5f8fc965503c27a2d5e82e69e6c4f04b31eda2b1fe135dd40903e7e992d"
+  },
+  "limits": [
+    "Fixed Noise Hat V4; STOP/Part/Bank, mode/backend transitions and long sequence-wrap runs are unqualified.",
+    "Private-B upper tail, new source/readback hooks and physical timing are unqualified.",
+    "DSP scheduler is 4532 instructions/sample, not cycle-accurate hardware; no flash wrapper or hardware release.",
+    "Zero additional source queue is relative to the stock DMA schedule; physical input-to-DAC latency is not measured."
+  ]
+}

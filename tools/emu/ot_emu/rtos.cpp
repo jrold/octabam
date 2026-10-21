@@ -408,6 +408,11 @@ namespace ot
 		{
 			m_spinLo = m_machine.peek32(g_mainSpin - 4);
 			m_spinHi = m_spinLo + 0x80;
+            // The detoured idle prologue still calls main's final stock init.
+            // It is executable work, never an idle PC: skipping it can leave
+            // boot callbacks half initialized. The loop begins after the JSR.
+            if(m_machine.peek32(m_spinLo) == 0x4eb94009 && m_machine.read16(m_spinLo + 4) == 0x8a2c)
+                m_spinLo += 6;
 		}
 	}
 
@@ -1454,7 +1459,8 @@ namespace ot
 		// retaddr at [sp], then the args in the order given -- the convention
 		// the firmware's own call sites use (`pea a1; pea a0; jsr addr`).
 		const auto sp = m_machine.getA7() - 4 * static_cast<uint32_t>(1 + _args.size());
-		m_machine.poke32(sp, g_mainSpin);
+		const auto returnPark = m_machine.pc();
+		m_machine.poke32(sp, returnPark);
 		for(size_t i = 0; i < _args.size(); ++i)
 			m_machine.poke32(sp + 4 * static_cast<uint32_t>(i + 1), _args[i]);
 		m_machine.setA7(sp);
@@ -1468,7 +1474,7 @@ namespace ot
 		RunSpec s;
 		s.hasEnd = false;
 		s.budget = _budget;
-		s.pc = g_mainSpin;
+		s.pc = returnPark;
 		s.pcArmed = true;
 		s.idleSkip = false;
 		s.needInstall = false;

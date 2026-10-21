@@ -210,10 +210,10 @@ namespace ot
 		// A mod may DETOUR main's park: CF METER IDLE replaces the `jsr` at
 		// g_mainSpin-6 with `jmp m_idle` and spins in its own DRAM loop, never
 		// reaching the stock `bras .`. install() reads the site: a `jmp abs.l`
-		// there makes [target, target+0x80) count as the park for the idle
-		// skip, the burst end and runToMainSpin. A borrowed call still returns
-		// to the stock `bras .` (intact behind the detour), where main then
-		// parks for good; the meter's own idle accounting stops there.
+		// there makes [target, target+0x80) count as the park, excluding a
+		// recognized final stock-init JSR prologue. A borrowed call returns
+		// to the actual parked PC, preserving the detoured loop. A loop with
+		// published work must not be treated as empty idle by its harness.
 		std::pair<uint32_t, uint32_t> spinRange() const { return {m_spinLo, m_spinHi}; }
 		bool atSpin(const uint32_t _pc) const { return _pc == g_mainSpin || (_pc >= m_spinLo && _pc < m_spinHi); }
 

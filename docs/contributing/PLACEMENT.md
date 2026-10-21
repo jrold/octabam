@@ -242,6 +242,38 @@ stock Part routines and the CC dispatch as stock, so none is needed (`git show 2
 
 ## PERKY4S shared-program boundary reservation
 
+The [native-clock CF placement measurement](../../modules/perky/hybrid/CF_PLACEMENT_FEASIBILITY.md)
+prices all 81 requested algorithm layouts with the existing renderer bodies.
+The WT/WT escape route overruns a real combined modeled ISR with four active
+stock STATIC tracks and retained FX. CF remainder costs favor investigating
+V4 on DSP-A, but removal of CF work is not a replacement DSP memory/cycle
+ledger. Neither the private-P recovery below nor the measured CF fallbacks
+establish the complete layout.
+
+The [split Noise Hat prototype](../../modules/perky/hybrid/NOISE_HAT_OFFLOAD.md)
+places 1,453 words of DSP-A service/kernel code with 584 shared P words free.
+Its 4,805-sample ring remains in CF RAM. Exact voice tests pass locally, but
+blocking HI08 exchange makes WT/WT + Slap + Hat slower than its same-image
+CF control, and the pulse row loses stock post-FX audio. Code/data fit is
+measured; complete workload feasibility is rejected for this prototype.
+
+The [cooperative follow-up](../../modules/perky/hybrid/NOISE_HAT_ASYNC.md)
+uses byte-identical DSP uploads, with 324 bytes of CF transaction state,
+80 bytes of CF coordinator state and 24 bytes of queue/split state. It
+finishes the tested requests during other CF rendering without using its
+cleanup wait path. All three modes pass source/state and stock audio gates,
+but the peak combined ISR is 494.034 us and private-stack use reaches 1,596
+of 4,096 bytes. This does not admit a new production placement.
+
+The opt-in [20 October DSP-B specialization experiment](../../modules/perky/hybrid/DSP_B_FEASIBILITY.md)
+also tests appended **ordinary private P** records. They remain exclusive to
+the addressed core; only records in the physically shared window are unioned
+across uploads. B's candidate `0x1d9f..0x2000` tail overlaps A's live stock
+program and must never be copied into A's private P. The experiment's 557-word
+relocation passes local execution/readback checks, but its paired oscillator
+cost exceeds the existing allowance. The default placement and the physical
+qualification of the new private boundary remain separate.
+
 The four-engine PERKY profile reserves the last six mapped shared-P words,
 0x3fffa..0x3ffff, for explicit NOP uploads on both cores. Executable placement
 uses 2398 shared words; the six guard words fill the 2404-word physical tail
@@ -255,3 +287,228 @@ all-algorithm, Dark Reverb cases; normal PERKY4S reproduces that MAIN OS exactly
 Instruction prefetch beyond mapped memory is the suspected mechanism, not an
 emulated or measured exact fetch depth. The permanent boundary gate rejects
 the frozen unsafe R placement. See [the release record](../../modules/perky/PERKY4S_RELEASE.md).
+
+The [resident-state experiment](../../modules/perky/hybrid/NOISE_HAT_RESIDENT.md)
+keeps Noise Hat's classic and pulse dynamic histories on A. CF retains control
+smoothing, the large ring and rational clock. Commands use the existing T6
+source record's padding; native results use otherwise discarded low bytes in
+the existing A readback, cleared before stock CF audio processing. It adds no
+host command or DMA payload words and no new CF IPL7 reservation. All three 4,096-frame
+rows pass source/state, all-track audio and program readback, but peak CF ISR
+cost is 380.530 µs versus 362.812 µs available. Added source latency is a
+stable 48 samples. The separate full-renderer/rational-clock witness confirms
+the delayed source stream; AMP/FX event alignment and the complete voice map
+remain unqualified.
+
+
+The subsequent [current-source tap-DMA prototype](../../modules/perky/hybrid/NOISE_HAT_TAPS.md)
+moves Noise Hat delay arithmetic and exact rational resampling to A. CF owns
+the 4,805-sample ring and emits five taps per native classic sample; scheduled
+readback carries feedback writes only. This removes the additional 48-sample
+source queue without adding host commands, DMA words or CF interrupt holds.
+A uses 1,940 P words; shared P is 2,308/2,404, A private P 761/774, private X
+513/616 and low Y 2,093/2,139. All twelve retained FX remain byte-exact.
+The production tap guard refuses 573 or more pending writes; the tested
+largest pending count at a read is 52. Current source PCM, state, feedback,
+clock and committed ring match the original renderer in all three 4,096-frame
+rows. Pulse meets the modeled CF deadline at 358.504 µs with zero misses;
+white/metallic still exceed it at 370.841/372.485 µs. This is a bounded local
+feasibility result; full all-mode timing and hardware admission remain open.
+
+
+The [profiled control-settling follow-up](../../modules/perky/hybrid/NOISE_HAT_CONTROLS.md)
+keeps that DSP placement and transport byte-identical. Complete CF frame
+profiles identify sixteen repeated Noise Hat control derivations as the
+avoidable overrun cost (13,987/14,005 cycles on the white/metallic maxima).
+Batched exact smoothing retains the penultimate PARAM2 attack input, final
+sixteenth derivation and trigger/seventeenth ordering. A full pre/post raw
+ColdFire control witness checks the original routine independently. All
+three 4,096-frame combined rows meet the 362.812 µs modeled deadline at
+324.841/327.299/316.902 µs, with zero misses and no exactness or stock-audio
+failures. Same-image unbatched controls separate batching from CF outlining
+and layout changes. No additional DSP memory is used; hardware timing,
+lifecycle and other family combinations remain unqualified.
+
+The [lifecycle follow-up](../../modules/perky/hybrid/NOISE_HAT_LIFECYCLE.md)
+keeps PKNHE1 and its memory placement unchanged. Actual STOP/START, Part 1→3→1
+and playing Bank A→B→A preserve the tested continuing source contract across
+49,565 source frames, peaking at 327.943 µs with zero modeled misses. All six
+directed mode changes pass separately. Three live DSP→CF→DSP round trips fail
+with six target transport errors, although their 354.000 µs maximum meets the
+budget. Resident state, outstanding ring writes and both clocks need a coherent
+ownership handoff; the existing enable toggle supplies none. The dynamic audio
+oracle stops at that departure. Stateless CF arithmetic passes independently
+but cannot establish migration. Product Part/generation semantics and hardware
+qualification remain open; fixed-mode full-workload timing is reproduced.
+
+
+The [PKNHF7 handoff and CF synthesis experiment](../../modules/perky/hybrid/NOISE_HAT_HANDOFF.md)
+resolves the enable-toggle failure in the model and profiles the remaining CF
+work. CF WT/WT and Slap plus resident A Hat pass eighteen backend transitions
+and both-backend STOP/START, Part and playing Bank changes. The worker mirrors
+inner state and the retained native sample without waiting in the audio ISR.
+CF resumes with its logical ring cursor, and old DMA writes retire into their
+original positions before a 573-sample tap can reach them. Ordered source DMA
+imports return ownership to A after dirty limbs and old jobs drain.
+
+A uses 2,023 P words; shared P is 2,381/2,404 and A private P plus startup clear
+is 771/774. X/Y residency is unchanged. Both DSP uploads are identical to
+PKNHF1; all 2,414 B portfolio words still match PKNHE1. CF text/data/BSS are
+1,059,870/580/997,584 bytes: +53,404/+16/+650,812 from PKNHE1, including the
+638,976-byte bounded queue. F7 adds 6,056 text bytes over F6 and no data/BSS;
+private stack peaks at 1,716/4,096 bytes. The original exact resampler remains
+in assembly. The serial Slap delay assembly is unchanged from F6. A typed-int16
+classic Hat delay specialization checks every tap/gain word and cursor on every call;
+other metadata uses the original C recurrence. The ring remains little-endian; no DMA, latency or interrupt-mask cost is added.
+The explicit author-proven PIO first-sector fix remains byte-identical.
+
+All three 16,384-frame workload rows pass with peaks
+320.379/324.890/312.102 µs. The worst overall frame is 345.379 µs, leaving
+4,602.313 modeled cycles / 17.433 µs. CF calibration is 28 cycles above F6,
+while the switching regression is fixed: 339.830→331.110 µs, below F5's
+334.356 µs. Panel peaks at 336.489 µs. Both candidate read-only profiles
+reproduce normal frame and cycle totals. Persistent Hat exactness and
+actual-call Slap PCM, full raw-state/ring and RNG differentials pass. The CF
+direct gate covers 96,880 cases including altered-metadata fallbacks. Hardware,
+B-tail silicon remain unqualified. That F7 evidence does not qualify production
+Part/generation resets; G3 below supplies the scoped local proof. This is not
+a flash release.
+
+The subsequent [G3 production reset candidate](../../modules/perky/hybrid/PRODUCTION_LIFECYCLE.md)
+integrates staged family-local selectors and real Bank/Part generations.
+Resident DSP, CF ring/control/clock and the interruptible shadow reset at the
+same event; pending feedback is checked and retired by generation. All-mode
+16,384-frame stock/FX rows, CF-only and DSP-enabled lifecycle, and actual
+encoder/SAVE PROJECT/cold reload pass exact Hat/Slap audio and timing locally.
+Eighteen rapid handoffs with cycling production MODE locks also pass.
+Peak 349.439 µs leaves 13.372 µs, versus G2's 4.903 µs (2.7× reserve).
+Read-only actual-reset profiles reproduce normal frame/cycle totals exactly
+for G2 and G3: the global worst frame occurs 400 frames after the Bank reset.
+Boot-derived sparse raw-state restores lower generations 2–5 restoration
+from 18,652–18,673 to 7,681–7,709 cycles; worst later reset falls from
+350.174 to 301.019 µs. Templates use 6,176 extra BSS bytes with a guarded
+dense-initializer fallback. Direct source records, identical zero clearing
+and exact reciprocal resampling reduce common CF overhead without changing
+synthesis. Linked text/data/BSS is 1,061,870/588/1,138,484 bytes. The A service uses 1,946 P words, shared P uses
+2,306/2,404, and private A X uses 564/616 including packed initializer records.
+Register preservation and reset/import gates run on the final program.
+B-owned code/data and both CF synthesis assembly bodies stay exact to F7;
+both complete uploads are identical to G2 (shared P differs from F7).
+G2's passing baseline, G1's failed audio/timing admission and F7's continuing-history evidence remain
+preserved. This is local WT/WT + Slap + Hat admission; physical timing and V4
+alternative source dispatch remain unqualified. No flash release is produced.
+
+
+### Complete-map PKFM6 candidate
+
+**Subsequent performance screen: FAIL.** Same-instrument replays of the exact
+PERKY4S image and reported working one-CF configuration establish an operating
+target of 158.212 us steady ISR mean, 166.780 us ISR p99 and 189.298 us total
+playback CF work/frame. PKFM6 metallic Hat measures 232.879 / 242.208 / 299.144 us.
+All five tested full-workload alternatives exceed the target. The
+[budget record](../../modules/perky/hybrid/EMULATOR_BUDGET.md) retains the full
+vector, historical overlap and measurement limits. This is a provisional
+working-envelope policy; no scalar hardware slowdown or safe voice limit is
+established. Nominal deadline passes below are not performance admission.
+
+The subsequent [PKFM11 CF optimization campaign](../../modules/perky/hybrid/CF_BUDGET_OPTIMIZATION.md)
+retains this placement and both DSP uploads. WT block sizing, fixed-tap and
+Slap filter assembly, sparse controls and a transposed background Hat renderer
+reduce metallic ISR/total means to 222.407/281.344 us. All five sustained
+alternatives still fail the unchanged working-envelope target. This candidate
+is held for further performance work; no physical admission is claimed.
+
+The [PKFM15 state handoff campaign](../../modules/perky/hybrid/STATE_HANDOFF_QUALIFICATION.md)
+replaces that continuous CF Hat renderer with a requested coherent DSP snapshot
+and interruptible CF catch-up. DSP-A keeps rendering until CF is ready. Its
+190-word payload and cursor reuse 191 retired A low-Y wave words at
+07a5..0863; envelope/clock tables and the overall low-Y reservation are unchanged.
+Snapshot fragments occupy only spare words in the existing 24-halfword
+scheduled feedback transfer. Shared custom P is 2,312/2,404 words (92 free),
+with no added private-P donor or X allocation. Normal DSP ownership executes
+zero CF Hat inner renders or replay jobs. Metallic total CF mean falls to
+248.054 us while ISR mean remains 222.128 us; all five full-workload rows
+still fail the unchanged performance target. This is not physical admission.
+
+The [PKFM17 CF synthesis/ISR campaign](../../modules/perky/hybrid/CF_SYNTHESIS_QUALIFICATION.md)
+retains those DSP uploads byte-for-byte and optimizes CF oscillator arithmetic,
+native block handling, control settling, resampling, tap gathering, packet
+publication and guarded stock sample-position loops. Actual CF ELF text grows
+3,756 bytes; data and BSS sizes are unchanged. There is no new DSP allocation,
+DMA word count or source latency. Metallic ISR/total means fall to
+210.117/235.939 us. All five sustained rows retain exact original-reference
+audio and still fail six of the seven frozen budget ceilings. The worst
+Noise/Tone means among these Slap-based rows need a further 28.5% ISR and
+23.4% total-CF reduction; no physical performance admission is claimed.
+
+The subsequent [sustained Resonant screen](../../modules/perky/hybrid/RESONANT_WORKLOAD_QUALIFICATION.md)
+corrects that campaign's missing dedicated Snare/Bass workload. Eight matched
+32,768-block runs use WT/WT, Slap or Resonant, metallic DSP-A Hat or CF Noise/Tone,
+four active stock sample tracks and all fourteen FX. Snare/Bass and sequenced
+MODE-lock ISR means are 205.566–205.612 us with Hat and 216.536–217.005 us with
+Noise/Tone; every row fails six of seven frozen timing ceilings. The prior
+selector sweep did not establish these sustained means. Current local Resonant
+means are slightly below Slap while peaks are higher, which does not settle the
+reported greater Resonant burden on hardware. Firmware, DSP allocation, native
+clocks and budget are unchanged. Dedicated sustained Snare, Bass and MODE-lock
+rows with actual selection witnesses are required for future four-voice
+performance claims; no physical admission is established.
+
+The [PKFM20 remaining-CF campaign](../../modules/perky/hybrid/REMAINING_CF_QUALIFICATION.md)
+adds exact twenty-sample Resonant chunks, an authoritative unchanged-control
+preparation path after production generation observation, and a 558-byte
+assembly replacement for the fixed stock source-mixing block. The latter
+preserves all data/MAC ordering and binds its independently executed bytes to
+the packaged and booted image. Public preparation remains a real `noinline`
+boundary for the frozen source observer. CF text is 577,292 bytes, 4,084 less
+than PKFM17; data/BSS and both DSP uploads are unchanged. There is no new DSP
+allocation, DMA word count or source latency. Eight matched full workloads
+improve Resonant ISR means by 4.526–5.600 us and Slap by 2.764–3.305 us; all
+still fail six of seven fixed budget ceilings. Individual peaks do not improve
+uniformly. The worst mean remains Slap/CF Noise-Tone at 218.918 us ISR and
+244.643 us total CF; this placement remains held for performance work.
+
+The [PKFM21 stock/CF campaign](../../modules/perky/hybrid/STOCK_CF_QUALIFICATION.md)
+adds a 974-byte zero-ramp stock DELAY mixer, exact signed interpolation,
+bounded packet loops and Slap ring spans. Every executed helper proof is bound
+to the final code and actual loader readback. CF text is 578,396 bytes, 1,104
+more than PKFM20; data/BSS, both DSP uploads, DMA words and latency are unchanged.
+The segment trace frame shrinks 100→80 bytes; Slap's span helper uses 44 extra
+private stack bytes locally. The actual selector sweep observes a 1,244-byte
+private peak within the existing 4,096-byte capacity. All eight matched full
+workloads improve sustained means and peaks, but still fail six of seven
+fixed timing ceilings. Worst means remain 214.982 us ISR / 240.727 us total CF
+against 158.212/189.298 us targets. Functional and lifecycle gates pass; this
+placement remains held for performance work and has no physical admission.
+
+The [full-map record](../../modules/perky/hybrid/FULL_MAP_QUALIFICATION.md)
+separates the logical T1/T2/T5/T6 contract from source placement. Both WT voices
+and the Fold/Simple/Complex/Resonant/Slap/Karplus/Noise-Tone/Acoustic alternatives
+use CF; Noise Hat histories, delay arithmetic and conversion use A, with its
+ring/control shadow on CF. Current-frame mixed PCM/Hat segments share the
+existing scheduled DMA transport. Shared per-voice RNG and all original engine
+histories survive ALGO changes; resets and pending retirement are generation-aware.
+
+Measured assembled custom P is 2,220/2,404 shared words (184 free), with no
+private-P donor or upper-tail use. The unused B oscillator portfolio is removed;
+B resumes stock source handling. Both Plate and Compressor are restored, bringing
+the candidate to all fourteen stock effects. A private X is 564/616 and low Y
+2,093/2,139. Upload identity, loaded custom/private program readback and active FX
+workloads are separate gates; the compact qualification receipt records their
+actual completion and timing.
+
+The card wrapper measures 934,480 bytes. Exact Acoustic PCM moves to a versioned,
+CRC-pinned `/PERKYAH.DAT` file (452,124 bytes), read in bounded UI-task chunks.
+All source access waits for readiness; repeated boot invalidates that loaded
+cookie before clearing the buffers. PK/2 signatures prevent silent reuse of
+legacy selector meanings. This is an opt-in final-map candidate. Performance
+work against the empirical target is required before its pending physical
+MKII acceptance; it has no hardware qualification or silicon timing bound.
+
+Final local PKFM6 qualification passes 160,096 layout-sweep frames and 247,902
+mode-corner frames, five 16,384-frame full-workload rows, and a 53,189-frame
+production lifecycle capture with 22 handoffs. Exact source/state/RNG/clock and
+feedback counters stay zero. The observed maximum is 93,809 cycles / 355.337 µs,
+leaving 7.475 µs in the CF264/PIT132 model. That thin ISR reserve is not a physical
+WCET bound or 20% whole-CPU margin. The later empirical performance gate fails;
+another nominal deadline pass does not supersede that verdict.
