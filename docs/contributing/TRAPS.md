@@ -1668,3 +1668,48 @@ surrounding bytes, and positively distinguishes startup from active transport.
 Ordinary PCM/state/RNG/clock checks continue through the source trajectory;
 no target synthesis state is repaired. Earlier images fail the directed
 ownership and repeated-zero controls at their intended boundaries.
+
+## The frozen predictor model never credits a table hit for taken NE, CS, VS, MI or LT branches
+<a id="trap-predictor-condition"></a>
+
+**Measured 21 Oct 2026 (PKFM22–26 campaign).** `tools/patches/mc68k-predictor.patch`
+passes Musashi's raw condition value to `m68ki_cf_bcc` as `taken`. For EQ,
+CC, VC, PL, GE and the compound HI, LS, GT and LE (`m68kcpu.h` lines 820–833)
+that value is 0 or 1, but `COND_NE()` is the raw `not_z_flag` and
+`COND_CS()`, `COND_VS()`, `COND_MI()` and `COND_LT()` are masked flag bits
+(0x100 or 0x80). The test
+`(bhs >= 2) == taken` therefore never holds for those branches when taken. A
+taken `bne`, `bcs`, `bvs`, `bmi` or `blt` costs 0 on a branch-cache hit and
+**8 otherwise, never the 1-cycle prediction-table hit**; not-taken branches of
+every kind still score 1 when predicted. The model also lets not-taken
+branches overwrite branch-cache slots. The shipped Wavetable oscillator's
+loop-closing `bne` shared its slot with a not-taken `beq` and cost 8 cycles per
+sample (`cf_cycle_bench` reproduces the in-situ bin, 11 cycles for 4
+one-cycle instructions).
+
+It cost a wrong conclusion that the loop was memory-bound before the bench
+replay isolated it. The frozen observer stays unchanged: the calibrated budget
+and every reference row were measured with the same quirk. **Do not flip branch
+senses to dodge it**; that lowers model cost without lowering hardware cost and
+erodes the budget's conservatism. Keeping a hot loop's taken branches resident
+in the 8-entry branch cache (distinct `(pc >> 1) & 7` slots for every branch
+executed in the loop, with `pc` past the displacement) is a real hardware
+improvement and is fair game. `tools/harness/perky_cf/cf_cycle_bench.cpp`
+reports per-instruction cycles and mispredict counts for a candidate kernel.
+
+## Inlining a placement seam silently stops the frozen oracle
+<a id="trap-observer-seams"></a>
+
+**21 Oct 2026, PKFM23.** A dispatcher fast path that performed
+`placement_prepare`'s unchanged-control effects and the merged segment inline
+was byte-identical to PKFM21 under the 1,500-frame dispatcher differential
+gate, yet the sustained workload reported PCM mismatches on V1–V3 and only
+~1,600 of 32,768 source frames. The frozen full-map observer
+(`tools/harness/perky_cf/full_map_observer.h`) advances its independent oracle
+at the **entry** of `placement_prepare(tr, input, trig)` and at the entry and
+return of `placement_segment(tr, begin, end, half)` for V1–V3, and at
+`pk_nhr_frame(split, slot)` for V4; production qualifiers also watch
+`placement_production_event`. These are measurement seams: their entry points,
+argument order and call positions must stay, while their bodies may change.
+A run that loses them is not an audio verdict either way. Keep the seams and
+require `source_frames` of 32,768 (32,766 for V4) in every row.

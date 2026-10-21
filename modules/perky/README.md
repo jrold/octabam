@@ -4,6 +4,21 @@ For continuation of the current hybrid experiment, start with the
 [Claude handoff](hybrid/CLAUDE_HANDOFF.md): branch authorization, complete voice
 map, measured budget gap, local artifacts, next steps and completion criteria.
 
+## Merged segments and assembly kernels: PKFM26 (performance target still failed)
+
+The [kernel campaign](hybrid/KERNEL_CF_QUALIFICATION.md) renders each CF voice's
+frame in one native segment when the event boundary is a rendering no-op,
+moves the Wavetable and Noise/Tone renderers into exact assembly chunks (with
+the original C as their fallbacks), runs Slap's envelope through a shared
+assembly envelope block, and merges the V4 Noise/Tone frame with byte-identical
+DSP-A packets. All eight sustained rows keep exact synth PCM, Hat state, side
+words, clocks and feedback; steady ISR means fall 16.5–21.9 µs from PKFM21 (worst
+row 214.98 → 193.10 µs). Five rows now meet ACK p99 and all meet ACK peak, but
+every row still fails the mean, p99, p99.9, peak and total-CF ceilings
+(158.21 / 166.78 / 237.73 / 250.71 / 189.30 µs). Verdict `FAIL_HOLD`. DSP
+uploads, algorithms, precision, clocks and source latency are unchanged.
+PERKY4S remains the hardware-confirmed release.
+
 ## Stock and CF candidate: PKFM21 (performance target still failed)
 
 The [stock and CF campaign](hybrid/STOCK_CF_QUALIFICATION.md) adds a guarded

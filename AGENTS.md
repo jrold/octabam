@@ -225,6 +225,8 @@ moment it costs real work, and add its line here.
 - [An epoch check is not atomic publication](docs/contributing/TRAPS.md#trap-epoch-publication) — give IRQ and worker state single writers, retire cancelled jobs in the worker, and arm a new request only after completion drains.
 - [A wrapped sequence is not a startup flag](docs/contributing/TRAPS.md#trap-sequence-startup) — use a deterministically reset startup latch; test a backend request at full 32-bit sequence zero after wrap.
 - [A long DSP interrupt can stop the emulator's peripheral clock](docs/contributing/TRAPS.md#trap-long-irq-peripherals) — use the isolated timed-service correction and its same-request negative control.
+- [The frozen predictor never credits a table hit for taken NE/CS/VS/MI/LT](docs/contributing/TRAPS.md#trap-predictor-condition) — such branches cost 0 on a branch-cache hit, else 8; keep hot-loop branches cache-resident, never flip senses to dodge it.
+- [Inlining a placement seam silently stops the frozen oracle](docs/contributing/TRAPS.md#trap-observer-seams) — keep the `placement_prepare`/`placement_segment`/`pk_nhr_frame` calls; require full `source_frames`.
 - [An HI08 halfword also writes the preceding byte lane](docs/contributing/TRAPS.md#trap-hi08-halfword) — preserve TX/ICR lanes, pending stock replies and transfer ownership; exact voice PCM still needs the full stock-audio gate.
 - [Raw DSP SR storage can contain unresolved condition flags](docs/contributing/TRAPS.md#trap-dsp-lazy-ccr) — compare architectural `getSR()` at both IRQ boundaries.
 - [Stock source PCM can disappear before FX despite exact synthesis](docs/contributing/TRAPS.md#trap-amp-dropout) — measure AMP and every audio chain; partial RAM clears do not establish the startup cause.
