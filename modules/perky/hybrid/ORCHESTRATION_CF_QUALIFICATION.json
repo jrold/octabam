@@ -1,0 +1,713 @@
+{
+  "schema": "octabam.perky.orchestration-cf-qualification.v1",
+  "budget_sha256": "8608844b96c6f20daed514147dc6cadab7a2c82aae80d2ef7c9a875a22ccaec4",
+  "observer_sha256": "f975b4d2c4b6a2d993d3158bc8e68c8a786b328e2902b58bdde418225287d022",
+  "budget_us": {
+    "steady_ISR_mean": 158.21153326922013,
+    "steady_ISR_p99": 166.78030303030303,
+    "steady_ISR_p99_9": 237.7310606060606,
+    "full_ISR_peak": 250.71212121212122,
+    "whole_CPU_mean": 189.2978376908736,
+    "whole_CPU_p99": 328.0,
+    "whole_CPU_peak": 362.212
+  },
+  "candidates": {
+    "PKFM26": {
+      "build": "out/perky/hybrid/full-map-kernels-v3",
+      "main_sha256": "e9502d2c477ba4e7ecdcffb949d879e2784833b9eec5d879ea60df8914ad2f9f",
+      "elf_sha256": "62befe69dc57fb647d17627fb35d5f5d6573fb25030f93ae6f8164d7ff2f4412",
+      "kernels": [
+        "wt",
+        "slap",
+        "nt",
+        "v4merge"
+      ],
+      "verdict": "baseline: previous best",
+      "worst_row_steady_ISR": {
+        "frames": 32256,
+        "mean_us": 193.10198408001142,
+        "p50_us": 192.75,
+        "p95_us": 199.34469696969697,
+        "p99_us": 204.28030303030303,
+        "p99_9_us": 292.9128787878788,
+        "max_us": 297.1931818181818
+      },
+      "worst_row_exact_source": {
+        "source_frames": [
+          32768,
+          32768,
+          32768,
+          32766
+        ],
+        "PCM_mismatches": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "oracle_errors": 0
+      }
+    },
+    "PKFM28": {
+      "build": "out/perky/hybrid/full-map-kernels-v5",
+      "main_sha256": "ccaba75f18747c477f54627a1f968cb27830aaf43615c9d4aadfeded20fda568",
+      "elf_sha256": "f4299fb1f7a25b79508b565836515395eed9c813280cdae8c662e230e883fd31",
+      "kernels": [
+        "wt",
+        "slap",
+        "nt",
+        "v4merge",
+        "placement"
+      ],
+      "verdict": "kept",
+      "worst_row_steady_ISR": {
+        "frames": 32256,
+        "mean_us": 191.2548368966826,
+        "p50_us": 190.9431818181818,
+        "p95_us": 197.16666666666666,
+        "p99_us": 201.63636363636363,
+        "p99_9_us": 288.5,
+        "max_us": 293.45454545454544
+      },
+      "worst_row_exact_source": {
+        "source_frames": [
+          32768,
+          32768,
+          32768,
+          32766
+        ],
+        "PCM_mismatches": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "oracle_errors": 0
+      }
+    },
+    "PKFM29": {
+      "build": "out/perky/hybrid/full-map-kernels-v6",
+      "main_sha256": "cbf233f39783e94d680922664a744c0c2db9e0f06940f5da8508a74f461e97a1",
+      "elf_sha256": "cef85d37f123019ac44fa8257c95f3515a7402aaff951ea26363d01d16950f38",
+      "kernels": [
+        "wt",
+        "slap",
+        "slaprender",
+        "nt",
+        "v4merge",
+        "placement"
+      ],
+      "verdict": "kept",
+      "worst_row_steady_ISR": {
+        "frames": 32256,
+        "mean_us": 188.15637894007034,
+        "p50_us": 187.84848484848484,
+        "p95_us": 194.04545454545453,
+        "p99_us": 198.28787878787878,
+        "p99_9_us": 284.6931818181818,
+        "max_us": 288.8712121212121
+      },
+      "worst_row_exact_source": {
+        "source_frames": [
+          32768,
+          32768,
+          32768,
+          32766
+        ],
+        "PCM_mismatches": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "oracle_errors": 0
+      }
+    },
+    "PKFM30": {
+      "build": "out/perky/hybrid/full-map-kernels-v7",
+      "main_sha256": "89f3ea6adc0d41e67d0da9f9354fcb15e3764a9d1ef20c0bb369a033a68fcd7f",
+      "elf_sha256": "548ea3335ee9dc0d6b331c63ddc521aadff80c9f0d5a0d7d3c284f04e3e00665",
+      "kernels": [
+        "wt",
+        "slap",
+        "slaprender",
+        "nt",
+        "v4merge",
+        "placement",
+        "render"
+      ],
+      "verdict": "kept",
+      "worst_row_steady_ISR": {
+        "frames": 32256,
+        "mean_us": 187.41898265579906,
+        "p50_us": 187.11742424242425,
+        "p95_us": 193.0909090909091,
+        "p99_us": 197.5,
+        "p99_9_us": 283.7310606060606,
+        "max_us": 288.4469696969697
+      },
+      "worst_row_exact_source": {
+        "source_frames": [
+          32768,
+          32768,
+          32768,
+          32766
+        ],
+        "PCM_mismatches": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "oracle_errors": 0
+      }
+    },
+    "PKFM31": {
+      "build": "out/perky/hybrid/full-map-kernels-v8",
+      "main_sha256": "77c70410327245324a30bf453dca0d5d092341bdd10ad31f382fac3b476982a9",
+      "elf_sha256": "0d2261861e856404901df2d61f75ed81578c6044cd5043243fc52fcf2d9b4b3a",
+      "kernels": [
+        "wt",
+        "slap",
+        "slaprender",
+        "nt",
+        "v4merge",
+        "placement",
+        "predicates",
+        "render"
+      ],
+      "verdict": "best candidate",
+      "worst_row_steady_ISR": {
+        "frames": 32256,
+        "mean_us": 186.88263764411226,
+        "p50_us": 186.60227272727272,
+        "p95_us": 192.45454545454547,
+        "p99_us": 196.84469696969697,
+        "p99_9_us": 282.77272727272725,
+        "max_us": 287.125
+      },
+      "worst_row_exact_source": {
+        "source_frames": [
+          32768,
+          32768,
+          32768,
+          32766
+        ],
+        "PCM_mismatches": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "oracle_errors": 0
+      }
+    }
+  },
+  "rows": {
+    "PKFM31-WTWT-ResBass-MetallicHat-all14": {
+      "row_sha256": "97ac856fa3ba3e3f7c84dcd0825358cf6114ec217be1edc5477198466c98ec35",
+      "image_sha256": "77c70410327245324a30bf453dca0d5d092341bdd10ad31f382fac3b476982a9",
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 176.25082895078012,
+          "pass_budget": false
+        },
+        "steady_ISR_p99": {
+          "measured_us": 186.14772727272728,
+          "pass_budget": false
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 283.7462121212121,
+          "pass_budget": false
+        },
+        "full_ISR_peak": {
+          "measured_us": 289.13257575757575,
+          "pass_budget": false
+        },
+        "whole_CPU_mean": {
+          "measured_us": 202.14280561967328,
+          "pass_budget": false
+        },
+        "whole_CPU_p99": {
+          "measured_us": 327.0,
+          "pass_budget": true
+        },
+        "whole_CPU_peak": {
+          "measured_us": 351.545,
+          "pass_budget": true
+        }
+      },
+      "exact_source": {
+        "source_frames": [
+          32768,
+          32768,
+          32768,
+          32766
+        ],
+        "PCM_mismatches": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "DSP_state_mismatches": 0,
+        "DSP_side_mismatches": 0,
+        "DSP_clock_mismatches": 0,
+        "feedback_mismatches": 0,
+        "oracle_errors": 0
+      }
+    },
+    "PKFM31-WTWT-ResBass-NoiseTone-all14": {
+      "row_sha256": "3fc1f998430ef9a8d88fc4f96f1fcadae5ec1c6246c54ece5be40d980ba34cec",
+      "image_sha256": "77c70410327245324a30bf453dca0d5d092341bdd10ad31f382fac3b476982a9",
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 183.85507124349897,
+          "pass_budget": false
+        },
+        "steady_ISR_p99": {
+          "measured_us": 194.6401515151515,
+          "pass_budget": false
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 288.4886363636364,
+          "pass_budget": false
+        },
+        "full_ISR_peak": {
+          "measured_us": 292.8068181818182,
+          "pass_budget": false
+        },
+        "whole_CPU_mean": {
+          "measured_us": 209.69975511955494,
+          "pass_budget": false
+        },
+        "whole_CPU_p99": {
+          "measured_us": 326.0,
+          "pass_budget": true
+        },
+        "whole_CPU_peak": {
+          "measured_us": 343.182,
+          "pass_budget": true
+        }
+      },
+      "exact_source": {
+        "source_frames": [
+          32768,
+          32768,
+          32768,
+          32766
+        ],
+        "PCM_mismatches": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "DSP_state_mismatches": 0,
+        "DSP_side_mismatches": 0,
+        "DSP_clock_mismatches": 0,
+        "feedback_mismatches": 0,
+        "oracle_errors": 0
+      }
+    },
+    "PKFM31-WTWT-ResSnare-MetallicHat-all14": {
+      "row_sha256": "5cd4ff6cdd1052381507e8fcad98472eb803cc25acebde38d5eee818ccacdd68",
+      "image_sha256": "77c70410327245324a30bf453dca0d5d092341bdd10ad31f382fac3b476982a9",
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 176.40735749891022,
+          "pass_budget": false
+        },
+        "steady_ISR_p99": {
+          "measured_us": 186.34848484848484,
+          "pass_budget": false
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 285.6818181818182,
+          "pass_budget": false
+        },
+        "full_ISR_peak": {
+          "measured_us": 290.5378787878788,
+          "pass_budget": false
+        },
+        "whole_CPU_mean": {
+          "measured_us": 202.30526421286842,
+          "pass_budget": false
+        },
+        "whole_CPU_p99": {
+          "measured_us": 328.0,
+          "pass_budget": true
+        },
+        "whole_CPU_peak": {
+          "measured_us": 352.034,
+          "pass_budget": true
+        }
+      },
+      "exact_source": {
+        "source_frames": [
+          32768,
+          32768,
+          32768,
+          32766
+        ],
+        "PCM_mismatches": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "DSP_state_mismatches": 0,
+        "DSP_side_mismatches": 0,
+        "DSP_clock_mismatches": 0,
+        "feedback_mismatches": 0,
+        "oracle_errors": 0
+      }
+    },
+    "PKFM31-WTWT-ResSnare-NoiseTone-all14": {
+      "row_sha256": "33bfc1d3a1f490b14675692cc302897cbf893de9fa0161125663784c4ee9025e",
+      "image_sha256": "77c70410327245324a30bf453dca0d5d092341bdd10ad31f382fac3b476982a9",
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 184.06462539738908,
+          "pass_budget": false
+        },
+        "steady_ISR_p99": {
+          "measured_us": 195.00757575757575,
+          "pass_budget": false
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 290.29545454545456,
+          "pass_budget": false
+        },
+        "full_ISR_peak": {
+          "measured_us": 294.6401515151515,
+          "pass_budget": false
+        },
+        "whole_CPU_mean": {
+          "measured_us": 209.9202425407641,
+          "pass_budget": false
+        },
+        "whole_CPU_p99": {
+          "measured_us": 326.0,
+          "pass_budget": true
+        },
+        "whole_CPU_peak": {
+          "measured_us": 344.655,
+          "pass_budget": true
+        }
+      },
+      "exact_source": {
+        "source_frames": [
+          32768,
+          32768,
+          32768,
+          32766
+        ],
+        "PCM_mismatches": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "DSP_state_mismatches": 0,
+        "DSP_side_mismatches": 0,
+        "DSP_clock_mismatches": 0,
+        "feedback_mismatches": 0,
+        "oracle_errors": 0
+      }
+    },
+    "PKFM31-WTWT-ResSnareBassLocks-MetallicHat-all14": {
+      "row_sha256": "d43285e30f76522df806c5f41011f4fce702732614df5a04e013e0d097da584c",
+      "image_sha256": "77c70410327245324a30bf453dca0d5d092341bdd10ad31f382fac3b476982a9",
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 176.30149453049845,
+          "pass_budget": false
+        },
+        "steady_ISR_p99": {
+          "measured_us": 186.1931818181818,
+          "pass_budget": false
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 285.1628787878788,
+          "pass_budget": false
+        },
+        "full_ISR_peak": {
+          "measured_us": 289.7916666666667,
+          "pass_budget": false
+        },
+        "whole_CPU_mean": {
+          "measured_us": 202.20233582005358,
+          "pass_budget": false
+        },
+        "whole_CPU_p99": {
+          "measured_us": 328.0,
+          "pass_budget": true
+        },
+        "whole_CPU_peak": {
+          "measured_us": 351.337,
+          "pass_budget": true
+        }
+      },
+      "exact_source": {
+        "source_frames": [
+          32768,
+          32768,
+          32768,
+          32766
+        ],
+        "PCM_mismatches": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "DSP_state_mismatches": 0,
+        "DSP_side_mismatches": 0,
+        "DSP_clock_mismatches": 0,
+        "feedback_mismatches": 0,
+        "oracle_errors": 0
+      }
+    },
+    "PKFM31-WTWT-ResSnareBassLocks-NoiseTone-all14": {
+      "row_sha256": "acda08d69834ffcfc7d1081a990be7162d355a9f10f9007ecd5caf6b467e571b",
+      "image_sha256": "77c70410327245324a30bf453dca0d5d092341bdd10ad31f382fac3b476982a9",
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 183.93355394063403,
+          "pass_budget": false
+        },
+        "steady_ISR_p99": {
+          "measured_us": 194.8030303030303,
+          "pass_budget": false
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 290.0113636363636,
+          "pass_budget": false
+        },
+        "full_ISR_peak": {
+          "measured_us": 294.469696969697,
+          "pass_budget": false
+        },
+        "whole_CPU_mean": {
+          "measured_us": 209.78263092041016,
+          "pass_budget": false
+        },
+        "whole_CPU_p99": {
+          "measured_us": 327.0,
+          "pass_budget": true
+        },
+        "whole_CPU_peak": {
+          "measured_us": 343.178,
+          "pass_budget": true
+        }
+      },
+      "exact_source": {
+        "source_frames": [
+          32768,
+          32768,
+          32768,
+          32766
+        ],
+        "PCM_mismatches": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "DSP_state_mismatches": 0,
+        "DSP_side_mismatches": 0,
+        "DSP_clock_mismatches": 0,
+        "feedback_mismatches": 0,
+        "oracle_errors": 0
+      }
+    },
+    "PKFM31-WTWT-SlapControl-MetallicHat-all14": {
+      "row_sha256": "8591f3ba76e56622a472ee917427e7db68b71306547ad2c506dd564f5efb53bf",
+      "image_sha256": "77c70410327245324a30bf453dca0d5d092341bdd10ad31f382fac3b476982a9",
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 179.3948457322481,
+          "pass_budget": false
+        },
+        "steady_ISR_p99": {
+          "measured_us": 188.62121212121212,
+          "pass_budget": false
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 278.32954545454544,
+          "pass_budget": false
+        },
+        "full_ISR_peak": {
+          "measured_us": 284.8219696969697,
+          "pass_budget": false
+        },
+        "whole_CPU_mean": {
+          "measured_us": 205.2634699272387,
+          "pass_budget": false
+        },
+        "whole_CPU_p99": {
+          "measured_us": 327.0,
+          "pass_budget": true
+        },
+        "whole_CPU_peak": {
+          "measured_us": 348.208,
+          "pass_budget": true
+        }
+      },
+      "exact_source": {
+        "source_frames": [
+          32768,
+          32768,
+          32768,
+          32766
+        ],
+        "PCM_mismatches": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "DSP_state_mismatches": 0,
+        "DSP_side_mismatches": 0,
+        "DSP_clock_mismatches": 0,
+        "feedback_mismatches": 0,
+        "oracle_errors": 0
+      }
+    },
+    "PKFM31-WTWT-SlapControl-NoiseTone-all14": {
+      "row_sha256": "1e4d1fa8697833cf49ec365abedf856f132cf10a4f47e27c2c81a78d96574cba",
+      "image_sha256": "77c70410327245324a30bf453dca0d5d092341bdd10ad31f382fac3b476982a9",
+      "checks": {
+        "steady_ISR_mean": {
+          "measured_us": 186.88263764411226,
+          "pass_budget": false
+        },
+        "steady_ISR_p99": {
+          "measured_us": 196.84469696969697,
+          "pass_budget": false
+        },
+        "steady_ISR_p99_9": {
+          "measured_us": 282.77272727272725,
+          "pass_budget": false
+        },
+        "full_ISR_peak": {
+          "measured_us": 287.125,
+          "pass_budget": false
+        },
+        "whole_CPU_mean": {
+          "measured_us": 212.71849765199605,
+          "pass_budget": false
+        },
+        "whole_CPU_p99": {
+          "measured_us": 325.0,
+          "pass_budget": true
+        },
+        "whole_CPU_peak": {
+          "measured_us": 345.856,
+          "pass_budget": true
+        }
+      },
+      "exact_source": {
+        "source_frames": [
+          32768,
+          32768,
+          32768,
+          32766
+        ],
+        "PCM_mismatches": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "DSP_state_mismatches": 0,
+        "DSP_side_mismatches": 0,
+        "DSP_clock_mismatches": 0,
+        "feedback_mismatches": 0,
+        "oracle_errors": 0
+      }
+    }
+  },
+  "gates": {
+    "SOURCE_GATE.json": {
+      "status": "PASS_ACTUAL_IMAGE_ALL_LAYOUT_SOURCE_PCM_STATE_SHARED_RNG",
+      "sha256": "b416f051e4b03eabae6ac66993914595318da26bf0f062206ec8c38cfedc27da"
+    },
+    "KERNEL_GATE.json": {
+      "status": "PASS_ACTUAL_LINKED_KERNEL_NATIVE_PCM_FULLSTATE_RNG_HOLD",
+      "sha256": "89ddb2467e936984a59b0557079b7ffb2dd9c7eae69d04958c921ae0f0285d4f"
+    },
+    "HANDOFF_GATE.json": {
+      "status": "PASS_ACTUAL_CF_DSP_NONBLOCKING_STATE_HANDOFF",
+      "sha256": "58cde186897dfa3d14827a3342ef4cdf2410482a0205b8c4026b0b6c4212d6ed"
+    },
+    "DMA_GATE.json": {
+      "status": "PASS_ACTUAL_CF_DMA_STARTUP_FULL_WRAP_AND_CARRIER_CLEAR",
+      "sha256": "aef7741662faa39835cd0223a3528d94c74c2371a3b8b0f60da3e84c9a9889ef"
+    },
+    "MERGED_GATE.json": {
+      "status": "PASS_ACTUAL_IMAGE_MERGED_SEGMENT_PCM_AND_STATE",
+      "sha256": "3646bcc224812dcf92bfa4313da68006a8c9a98cc8b4d121393d68e0f117d564"
+    },
+    "DISPATCH_DIFFERENTIAL.json": {
+      "status": "PASS_DISPATCH_DIFFERENTIAL_ALL_PLACEMENT_PRODUCTION_HAT_STATE_PACKETS",
+      "sha256": "7b8193b907ad671586aeca18d4fb4357abb71c0d6ed0885213ccd6cd4f150a1e"
+    },
+    "MATRIX.json": {
+      "status": "PASS_FULL_MAP_PRODUCTION_MATRIX_MODEL_SCOPE",
+      "sha256": "c1187e9b7378533f80a737f321b6b85e9b946b3cbcc9f3b52c1fd0ab99fcb886"
+    },
+    "SCENES.json": {
+      "status": "PASS_FULL_MAP_SCENE_FADER_MODEL_SCOPE",
+      "sha256": "c953c276b74ed6f568cb6cb1c88ef84157a70eab7fd8206498e634986d16aaa7"
+    },
+    "lifecycle/RESULT.json": {
+      "status": "PASS_FULL_MAP_LIFECYCLE_MODEL_SCOPE",
+      "sha256": "6fe894985f96ce0c68774cf16901834841a451312411d8403fcd849a27d557ad"
+    }
+  },
+  "source_sha256": {
+    "modules/perky/cf_placement.s": "eb0642cd4b99faac09ed3ebc46271c52e25df760f6849b7217b6dc61f310d7ee",
+    "modules/perky/cf_slap_render.s": "0cce3b4991de6f20876fe4900df5c20f237e0edd019dfc78a55803bd550971b5",
+    "modules/perky/cf_render.s": "0f1bf6872ccc269af0bcb9ec443e8f4bb21130293165d7d40e6bf80a3736c5f0",
+    "modules/perky/cf_placement_predicates.s": "1de450146ae7e75ec2e313c465f1e6e3f684a60aa9dfe67dbc57a71a172656a7",
+    "tools/perky/generate_cf_placement_asm.py": "4438632040cb4fd0da46a3925c24a26d98535e5406ebfcf06fd24113a7edceaf",
+    "tools/perky/generate_cf_slap_render_asm.py": "9265633a094242f9ac080ea29e4f6af6de2022ec1860864f2824dd6125dbd5ee",
+    "tools/perky/generate_cf_render_asm.py": "b1ec8ff056ce236aac87ca48083486bf504dedb22c252ff365c59b06623bf719",
+    "tools/perky/generate_cf_placement_predicates_asm.py": "6d980b37e71ed42c1828acea191a880e22a37d2cc9d882165fad21f72ca7f2df",
+    "tools/perky/build_perky_kernels_cf.py": "606ca0aebbcba9bc510808bc3b1e373f4303ff47c79ffbbc516e04c9e30559f4",
+    "tools/harness/perky_cf/diagnostic/full_map_track_observer.h": "ed9abae4c544a2764544a9557c268f8435ea54ba3e679e01ca971096ff5fb5ad",
+    "tools/harness/perky_cf/diagnostic/full_map_stockpc_observer.h": "25f7aa889c06e3d85dd46c9bd2b78422ce8bb1c4ecb85ac34e9cbb94fda82cdf",
+    "tools/harness/perky_cf/diagnostic/full_map_pcbin_observer.h": "1423f465018ed28cfe262f12e8648aa993ad440c3e76c0da3933419056e9dfb9",
+    "tools/harness/perky_cf/diagnostic/build_diagnostic_observer.py": "091ab22272f1e13c21c7abe028b36edf7ad934fbafaa8a3e14555a40a084f6a8",
+    "tools/verify/qualify_perky_orchestration_cf.py": "f041ce6b5071be5ef0ddac3178e8289f46e7d56424e04526b8260c0fe04f523f"
+  },
+  "default_floors": {
+    "default-check": {
+      "exit": 0,
+      "log_sha256": "9cb77e8533ebf48f533bb06541efc321603de42e56f9f2b6d6dcbb67421bb941",
+      "skips": [
+        "[SKIP] needs /Users/jrold/Downloads/octabam/out/mainos_perky_machine.bin and /Users/jrold/Downloads/octabam/out/perky/machine-canary/packed and /Users/jrold/Downloads/octabam/out/platform-perky-machine/platform (the multi-machine canary writes these; run it, or pass --image/--packed/--platform explicitly)",
+        "[SKIP] PERKY CF odd-access: no generated dir /Users/jrold/Downloads/octabam/out/perky/cf-final/generated (needs tools/perky/build_cf_final.py and its three inputs)",
+        "[SKIP] verify_set: no project (OT_PROJECT=<dir> or --project)",
+        "[SKIP] fragmented FX runtime: needs OT_PROJECT",
+        "[SKIP] PERKY probe port: set OT_PROJECT to a stock project fixture"
+      ]
+    },
+    "refhash": {
+      "exit": 0,
+      "log_sha256": "09e9925f44d78ef3e7d032a3baa3d42b7c472223c207be04c8e98c82901f66e1",
+      "skips": []
+    },
+    "default-restore": {
+      "exit": 0,
+      "log_sha256": "ffd1f40b29f263957996f7335682660be203ebd458466850413c328cb59271e7",
+      "skips": []
+    }
+  },
+  "best": "PKFM31",
+  "verdict": "FAIL_HOLD",
+  "admission": "HOLD_FOR_PERFORMANCE_WORK",
+  "hardware_validated": false
+}

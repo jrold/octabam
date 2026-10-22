@@ -4,6 +4,23 @@ For continuation of the current hybrid experiment, start with the
 [Claude handoff](hybrid/CLAUDE_HANDOFF.md): branch authorization, complete voice
 map, measured budget gap, local artifacts, next steps and completion criteria.
 
+## Assembly orchestration and Slap loops: PKFM31 (performance target still failed)
+
+The [orchestration campaign](hybrid/ORCHESTRATION_CF_QUALIFICATION.md) moves
+the placement seams (`placement_prepare`, `placement_segment`), the `pk_render`
+dispatcher, the boundary no-op and V4 merge predicates and Slap's chunk loops
+into assembly. Each is pinned by SHA-256 to the C it mirrors, keeps the
+frozen oracle's seams and falls back to that C. All eight sustained rows keep
+exact synth PCM, Hat state, side words, clocks and feedback; steady ISR means
+fall a further 3.5–6.2 µs from PKFM26 (worst row 193.10 → 186.88 µs). All eight
+rows now meet both ACK ceilings, but every row still fails the mean, p99,
+p99.9, peak and total-CF ceilings. Verdict `FAIL_HOLD`. Measured with new
+read-only diagnostic observers: stock code is 96.9 µs per frame and diffuse;
+PERKY's synthesis kernels already run near one instruction per cycle, and
+the further CF-side gains found are about 2 µs. DSP uploads, algorithms,
+precision, clocks and source latency are unchanged. PERKY4S remains the
+hardware-confirmed release.
+
 ## Merged segments and assembly kernels: PKFM26 (performance target still failed)
 
 The [kernel campaign](hybrid/KERNEL_CF_QUALIFICATION.md) renders each CF voice's

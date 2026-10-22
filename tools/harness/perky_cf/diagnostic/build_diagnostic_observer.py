@@ -3,13 +3,17 @@
 
   build_diagnostic_observer.py count OUT_DIR   # full_map_count_observer.h: function entry counts
   build_diagnostic_observer.py spike OUT_DIR   # full_map_spike_observer.h: ISRs above CF_SPIKE_THRESHOLD only
+  build_diagnostic_observer.py track OUT_DIR   # full_map_track_observer.h: stock cycles by track (CF_TRACK_REPORT)
+  build_diagnostic_observer.py stockpc OUT_DIR # full_map_stockpc_observer.h: stock cycles by PC bin (CF_STOCKPC_REPORT)
+  build_diagnostic_observer.py pcbin OUT_DIR   # full_map_pcbin_observer.h: cycles per PC in [CF_PCBIN_LO, CF_PCBIN_HI)
 
 The variant adds one read-only observer beside the reused cost observer
 (out/perky/hybrid/resonant-cf-optimization/profiles/observer) and links the
 same objects. A profile made with it is valid only when the profile tool's
 own exact-equality checks against the unprofiled control row pass, as they do
-for the cost observer. Environment: CF_COUNT_SYMBOLS/CF_COUNT_REPORT or
-CF_SPIKE_SYMBOLS/CF_SPIKE_REPORT/CF_SPIKE_THRESHOLD (cycles).
+for the cost observer. Environment: CF_COUNT_SYMBOLS/CF_COUNT_REPORT,
+CF_SPIKE_SYMBOLS/CF_SPIKE_REPORT/CF_SPIKE_THRESHOLD (cycles), CF_TRACK_REPORT,
+CF_STOCKPC_REPORT, or CF_PCBIN_REPORT/CF_PCBIN_LO/CF_PCBIN_HI.
 """
 import hashlib
 import json
@@ -20,7 +24,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[4]
 BASE = ROOT / 'out/perky/hybrid/resonant-cf-optimization/profiles/observer'
 VARIANTS = {'count': ('full_map_count_observer.h', 'full_map_count'),
-            'spike': ('full_map_spike_observer.h', 'full_map_spike')}
+            'spike': ('full_map_spike_observer.h', 'full_map_spike'),
+            'track': ('full_map_track_observer.h', 'full_map_track'),
+            'stockpc': ('full_map_stockpc_observer.h', 'full_map_stockpc'),
+            'pcbin': ('full_map_pcbin_observer.h', 'full_map_pcbin')}
 
 
 def main():

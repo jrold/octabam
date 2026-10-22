@@ -1,5 +1,12 @@
 # Merged segments and assembly kernels: PKFM22–PKFM26 — 21 October 2026
 
+> Superseded as the best candidate by PKFM31; see
+> [the orchestration campaign](ORCHESTRATION_CF_QUALIFICATION.md). Correction
+> (21 October 2026): the receipt's hash for `generate_cf_v4_merge.py` is the
+> later PKFM27 revision, not PKFM26's input, and the committed tree does not
+> rebuild PKFM26's image; that campaign's reproduction note has the details.
+> This record is unchanged otherwise.
+
 **PKFM26 is the best candidate and still fails the fixed performance budget.**
 All eight sustained rows keep exact original-reference synth PCM, DSP Hat
 state, side words, clocks and feedback. Steady ISR means fall 16.5–21.9 µs

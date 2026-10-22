@@ -15,15 +15,20 @@ from pathlib import Path
 import build_perky_merge_cf as base
 import generate_cf_dispatch_lean as lean
 import generate_cf_nt_render_asm as nt
+import generate_cf_placement_asm as placement
+import generate_cf_placement_predicates_asm as predicates
+import generate_cf_render_asm as render
 import generate_cf_slap_env_asm as slap
+import generate_cf_slap_render_asm as slaprender
 import generate_cf_v4_merge as v4merge
 import generate_cf_wt_render_asm as wt
 
 ROOT = base.ROOT
 WORK = Path(os.environ.get('PERKY_KERNELS_CF_WORK', str(ROOT / 'out/perky/hybrid/full-map-kernels-v1'))).resolve()
 VERSION = os.environ.get('PERKY_KERNELS_CF_VERSION', 'PKFM24')
-KERNELS = {'wt': ('pkwavetable', wt), 'slap': ('pkslap', slap), 'nt': ('pknoise', nt),
-           'v4merge': ('pkplacement', v4merge), 'lean': ('pkcontrol', lean)}
+KERNELS = {'wt': ('pkwavetable', wt), 'slap': ('pkslap', slap), 'slaprender': ('pkslap', slaprender), 'nt': ('pknoise', nt),
+           'v4merge': ('pkplacement', v4merge), 'lean': ('pkcontrol', lean), 'placement': ('pkplacement', placement),
+           'render': ('pkcontrol', render), 'predicates': ('pkplacement', predicates)}
 
 
 def main():
@@ -48,14 +53,15 @@ def main():
         previous = kwargs.get('source_transform')
 
         def source(name, path):
-            prior = previous(name, path) if previous else None
+            # Every selected kernel for this unit, in PERKY_KERNELS order, each
+            # transforming the previous one's output.
+            actual = previous(name, path) if previous else None
             for kernel in selected:
                 unit, generator = KERNELS[kernel]
                 if name == unit:
-                    actual = generator.transform(WORK, prior or path)
+                    actual = generator.transform(WORK, actual or path)
                     generated.append(Path(actual))
-                    return actual
-            return prior
+            return actual
 
         kwargs['source_transform'] = source
         return original_build(work, **kwargs)
