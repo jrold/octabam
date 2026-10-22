@@ -228,6 +228,15 @@ packet tail copies, Noise/Tone shift idioms). **CF optimization of PERKY code
 alone does not reach the budget.** EMAC opcodes cost zero cycles in the port;
 moving multiplies onto EMAC would exploit that model artifact and must not be
 used to pass.
+
+[The structural placement study](STRUCTURAL_PLACEMENT_STUDY.md) prices each
+voice's ColdFire cost by clearing `placement_mask` bits on PKFM31's worst rows
+(measured): V4 Noise/Tone 24.0 µs, the DSP-A Hat's ColdFire transport 16.4,
+Slap 19.5, each Wavetable voice 8.7–11.0. With V4 entirely off the ColdFire,
+WT/WT/Slap still measures 162.98 µs, so no V4 placement alone meets the
+budget; Wavetable + Slap with nothing else placed passes all seven ceilings
+(154.04 µs). Noise/Tone on a DSP also lacks program space without dropping
+stock FX, and on B would add cross-core latency.
 Closing it needs at least one of: exact stock-side reductions (the sequencer
 step and DSP frame builder dominate spikes), a different placement for a voice
 family, a product decision on the default-on diagnostic profiler (~2.3 µs), or

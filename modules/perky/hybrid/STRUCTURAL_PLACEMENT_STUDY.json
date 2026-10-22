@@ -1,0 +1,352 @@
+{
+  "schema": "octabam.perky.structural-placement-study.v1",
+  "status": "DIAGNOSTIC_NOT_ADMISSION",
+  "image_main_sha256": "77c70410327245324a30bf453dca0d5d092341bdd10ad31f382fac3b476982a9",
+  "observer_sha256": "f975b4d2c4b6a2d993d3158bc8e68c8a786b328e2902b58bdde418225287d022",
+  "budget_sha256": "8608844b96c6f20daed514147dc6cadab7a2c82aae80d2ef7c9a875a22ccaec4",
+  "driver_sha256": "0b11a8e6b4d76f273d2467358c912df959dae574c56c73997d4ee7bd28053946",
+  "method": "PKFM31 Slap/Noise-Tone and Slap/metallic-Hat rows (32,768 blocks, all 14 FX) with placement_mask bits cleared: T1/T5 to the DSP-voice control path, T2/T6 to the stock source routine.",
+  "rows": {
+    "PKFM31-WTWT-SlapControl-MetallicHat-all14-mask0": {
+      "placement_mask": 0,
+      "unplaced_tracks": [
+        1,
+        2,
+        5,
+        6
+      ],
+      "checks_us": {
+        "steady_ISR_mean": 123.64,
+        "steady_ISR_p99": 129.886,
+        "steady_ISR_p99_9": 193.519,
+        "full_ISR_peak": 208.591,
+        "whole_CPU_mean": 149.927,
+        "whole_CPU_p99": 301.0,
+        "whole_CPU_peak": 353.913
+      },
+      "pass_budget": {
+        "steady_ISR_mean": true,
+        "steady_ISR_p99": true,
+        "steady_ISR_p99_9": true,
+        "full_ISR_peak": true,
+        "whole_CPU_mean": true,
+        "whole_CPU_p99": true,
+        "whole_CPU_peak": true
+      },
+      "source_frames": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "PCM_mismatches": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "diagnostic_sha256": "f3134aace422ccbf3ad4267d5833653e8d82fbbc725f038a38563f2ae82357fb",
+      "row_sha256": "ac53c46e0d31ae1fd291fc5ed1e92703867f35f689fc0efc3cea955d1d13b831"
+    },
+    "PKFM31-WTWT-SlapControl-MetallicHat-all14-mask8": {
+      "placement_mask": 8,
+      "unplaced_tracks": [
+        1,
+        2,
+        5
+      ],
+      "checks_us": {
+        "steady_ISR_mean": 140.027,
+        "steady_ISR_p99": 148.398,
+        "steady_ISR_p99_9": 221.955,
+        "full_ISR_peak": 230.814,
+        "whole_CPU_mean": 166.313,
+        "whole_CPU_p99": 314.0,
+        "whole_CPU_peak": 362.777
+      },
+      "pass_budget": {
+        "steady_ISR_mean": true,
+        "steady_ISR_p99": true,
+        "steady_ISR_p99_9": true,
+        "full_ISR_peak": true,
+        "whole_CPU_mean": true,
+        "whole_CPU_p99": true,
+        "whole_CPU_peak": false
+      },
+      "source_frames": [
+        0,
+        0,
+        0,
+        32766
+      ],
+      "PCM_mismatches": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "diagnostic_sha256": "bdca388a5aa2345049d04bad18430f4d6bbbb0958348e5186b1d95dbfcac1e9d",
+      "row_sha256": "c79757b0523b1dccd72a587d5c78435d3bc17a219472e5d203cf2cdf440b6cad"
+    },
+    "PKFM31-WTWT-SlapControl-MetallicHat-all14-maskc": {
+      "placement_mask": 12,
+      "unplaced_tracks": [
+        1,
+        2
+      ],
+      "checks_us": {
+        "steady_ISR_mean": 159.483,
+        "steady_ISR_p99": 168.004,
+        "steady_ISR_p99_9": 245.97,
+        "full_ISR_peak": 252.61,
+        "whole_CPU_mean": 185.627,
+        "whole_CPU_p99": 323.0,
+        "whole_CPU_peak": 357.125
+      },
+      "pass_budget": {
+        "steady_ISR_mean": false,
+        "steady_ISR_p99": false,
+        "steady_ISR_p99_9": false,
+        "full_ISR_peak": false,
+        "whole_CPU_mean": true,
+        "whole_CPU_p99": true,
+        "whole_CPU_peak": true
+      },
+      "source_frames": [
+        0,
+        0,
+        32768,
+        32766
+      ],
+      "PCM_mismatches": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "diagnostic_sha256": "198be15c889605446ef2704e3f4ca5734cf8a7f9f6761fc4e9edc194f9acffb7",
+      "row_sha256": "51074cc7af60c38925aa3b5ee192ea5f03ed6365a9e69a39c9b8e4caaada3f83"
+    },
+    "PKFM31-WTWT-SlapControl-MetallicHat-all14-maske": {
+      "placement_mask": 14,
+      "unplaced_tracks": [
+        1
+      ],
+      "checks_us": {
+        "steady_ISR_mean": 170.468,
+        "steady_ISR_p99": 179.633,
+        "steady_ISR_p99_9": 263.784,
+        "full_ISR_peak": 270.72,
+        "whole_CPU_mean": 196.414,
+        "whole_CPU_p99": 326.0,
+        "whole_CPU_peak": 354.133
+      },
+      "pass_budget": {
+        "steady_ISR_mean": false,
+        "steady_ISR_p99": false,
+        "steady_ISR_p99_9": false,
+        "full_ISR_peak": false,
+        "whole_CPU_mean": false,
+        "whole_CPU_p99": true,
+        "whole_CPU_peak": true
+      },
+      "source_frames": [
+        0,
+        32768,
+        32768,
+        32766
+      ],
+      "PCM_mismatches": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "diagnostic_sha256": "57c9a72890d5034c33dccb3c68b811442eb297be532936398afb172c252a9930",
+      "row_sha256": "589dc19f320b9bbcf0f556c757c5975acc9e3d6fc5cd6436abbf834d1ed0119c"
+    },
+    "PKFM31-WTWT-SlapControl-NoiseTone-all14-mask6": {
+      "placement_mask": 6,
+      "unplaced_tracks": [
+        1,
+        6
+      ],
+      "checks_us": {
+        "steady_ISR_mean": 154.043,
+        "steady_ISR_p99": 161.727,
+        "steady_ISR_p99_9": 236.231,
+        "full_ISR_peak": 246.019,
+        "whole_CPU_mean": 180.103,
+        "whole_CPU_p99": 317.0,
+        "whole_CPU_peak": 352.269
+      },
+      "pass_budget": {
+        "steady_ISR_mean": true,
+        "steady_ISR_p99": true,
+        "steady_ISR_p99_9": true,
+        "full_ISR_peak": true,
+        "whole_CPU_mean": true,
+        "whole_CPU_p99": true,
+        "whole_CPU_peak": true
+      },
+      "source_frames": [
+        0,
+        32768,
+        32768,
+        0
+      ],
+      "PCM_mismatches": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "diagnostic_sha256": "c707ccf25c0e72a7a68a70952b915180fd481826a625cc0f1847617395dfdb88",
+      "row_sha256": "b5aebd1969c76941e09212f972150fea11261e58ea0b156ed62cc9ece4685386"
+    },
+    "PKFM31-WTWT-SlapControl-NoiseTone-all14-mask7": {
+      "placement_mask": 7,
+      "unplaced_tracks": [
+        6
+      ],
+      "checks_us": {
+        "steady_ISR_mean": 162.978,
+        "steady_ISR_p99": 170.773,
+        "steady_ISR_p99_9": 250.667,
+        "full_ISR_peak": 258.746,
+        "whole_CPU_mean": 188.856,
+        "whole_CPU_p99": 319.0,
+        "whole_CPU_peak": 347.667
+      },
+      "pass_budget": {
+        "steady_ISR_mean": false,
+        "steady_ISR_p99": false,
+        "steady_ISR_p99_9": false,
+        "full_ISR_peak": false,
+        "whole_CPU_mean": true,
+        "whole_CPU_p99": true,
+        "whole_CPU_peak": true
+      },
+      "source_frames": [
+        32768,
+        32768,
+        32768,
+        0
+      ],
+      "PCM_mismatches": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "diagnostic_sha256": "5e0fa801d271b4f9cdab3d280f4baf26eab655e09b379c86369a950a68ab1caa",
+      "row_sha256": "036a0b0d624b405785563b0ff72c8097fbf2228beb7d540d1c052c567ac7469a"
+    },
+    "PKFM31-WTWT-SlapControl-NoiseTone-all14-maske": {
+      "placement_mask": 14,
+      "unplaced_tracks": [
+        1
+      ],
+      "checks_us": {
+        "steady_ISR_mean": 178.166,
+        "steady_ISR_p99": 188.042,
+        "steady_ISR_p99_9": 268.337,
+        "full_ISR_peak": 274.235,
+        "whole_CPU_mean": 204.07,
+        "whole_CPU_p99": 326.0,
+        "whole_CPU_peak": 348.481
+      },
+      "pass_budget": {
+        "steady_ISR_mean": false,
+        "steady_ISR_p99": false,
+        "steady_ISR_p99_9": false,
+        "full_ISR_peak": false,
+        "whole_CPU_mean": false,
+        "whole_CPU_p99": true,
+        "whole_CPU_peak": true
+      },
+      "source_frames": [
+        0,
+        32768,
+        32768,
+        32766
+      ],
+      "PCM_mismatches": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "diagnostic_sha256": "ea142d0687ba729664e958eced183fec26e74f5c809464ab65bb6914344abf73",
+      "row_sha256": "65ef6ad61e97e439508e37f220d69d2ec02aca9c61fcdfb42238ef40753d1a70"
+    },
+    "PKFM31-WTWT-SlapControl-NoiseTone-all14": {
+      "placement_mask": 15,
+      "unplaced_tracks": [],
+      "checks_us": {
+        "steady_ISR_mean": 186.883,
+        "steady_ISR_p99": 196.845,
+        "steady_ISR_p99_9": 282.773,
+        "full_ISR_peak": 287.125,
+        "whole_CPU_mean": 212.718,
+        "whole_CPU_p99": 325.0,
+        "whole_CPU_peak": 345.856
+      },
+      "pass_budget": {
+        "steady_ISR_mean": false,
+        "steady_ISR_p99": false,
+        "steady_ISR_p99_9": false,
+        "full_ISR_peak": false,
+        "whole_CPU_mean": false,
+        "whole_CPU_p99": true,
+        "whole_CPU_peak": true
+      },
+      "row_sha256": "1e4d1fa8697833cf49ec365abedf856f132cf10a4f47e27c2c81a78d96574cba"
+    },
+    "PKFM31-WTWT-SlapControl-MetallicHat-all14": {
+      "placement_mask": 15,
+      "unplaced_tracks": [],
+      "checks_us": {
+        "steady_ISR_mean": 179.395,
+        "steady_ISR_p99": 188.621,
+        "steady_ISR_p99_9": 278.33,
+        "full_ISR_peak": 284.822,
+        "whole_CPU_mean": 205.263,
+        "whole_CPU_p99": 327.0,
+        "whole_CPU_peak": 348.208
+      },
+      "pass_budget": {
+        "steady_ISR_mean": false,
+        "steady_ISR_p99": false,
+        "steady_ISR_p99_9": false,
+        "full_ISR_peak": false,
+        "whole_CPU_mean": false,
+        "whole_CPU_p99": true,
+        "whole_CPU_peak": true
+      },
+      "row_sha256": "8591f3ba76e56622a472ee917427e7db68b71306547ad2c506dd564f5efb53bf"
+    }
+  },
+  "increments_steady_mean_us": {
+    "V4_metallic_Hat_CF_transport": [
+      16.39,
+      16.42,
+      16.42
+    ],
+    "V4_Noise_Tone_on_CF": [
+      23.91,
+      24.12
+    ],
+    "V1_Wavetable_net_of_DSP_control_path": [
+      8.72,
+      8.93,
+      8.94
+    ],
+    "V2_Wavetable_net_of_stock_path": [
+      10.98
+    ],
+    "V3_Slap_net_of_DSP_control_path": [
+      19.46
+    ]
+  }
+}
